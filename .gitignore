@@ -1,0 +1,9 @@
+# local dev tooling (Claude preview server; serve.ps1 has an absolute local path)
+.claude/
+
+# design mockups / screenshots
+*.png
+
+# prototype scratch files (not part of the app)
+proto_ui.html
+semont_2d.html

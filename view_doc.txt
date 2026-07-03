@@ -1,0 +1,532 @@
+==========================================================================
+ OTOREPO — DOKUMENTACJA WIZUALIZACJI (2.5D)
+ Plik: otorepo.html  |  Moduły: Scene3D, makeManualOrientation
+ Charakter: matematyka 3D (czysta) → schematyczne SVG przez rzut ortograficzny.
+ Zasada: BEZ three.js (offline); styl schematyczny; jedno źródło prawdy 3D
+         wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
+ Ostatnia aktualizacja: 2026-07-02
+==========================================================================
+
+GŁÓWNA IDEA
+ - orientacja głowy = kwaternion (konwencja silnika), z PLUGGABLE źródła
+ - obserwator (lekarz) = KAMERA (right/up/fwd w świecie)
+ - każdy widok = rzut modelu głowy przez kamerę
+ - zamiana stron L/P i lustro WYNIKAJĄ z kamery (koniec z flagami swap/behindHead)
+
+=== ROZMIAR/GĘSTOŚĆ ZŁOGU — INTEGRACJA UI (Repozycja) ===
+Silnik przyjmuje `size` ("small"|"medium"|"big"; medium=r1=baza) skalujący dynamikę cząstki
+(tauP∝r⁻², gc∝r³, adh∝r — patrz engine_doc). Warstwa UI dokłada:
+ - state.size (dom. "medium"). Selektor w setup (Repozycja) i kompaktowy `.sizepill` na ekranie kroku
+   (renderGuide, obok kropek kroków). pickSize(s): przebudowa planu (nowe holdy) + unieważnienie cache
+   dynamiki (klucz `name|side|size` w currentManSim) + re-render. Diagnostyka NIE zmieniona (medium dom.).
+ - HOLDY ZALEŻNE OD ROZMIARU (małe = wolno osiadające → dłuższe utrzymanie pozycji):
+     • klinicznie zalecany hold kroku: sizedSeconds() mnoży `st.seconds` (small ×1.6, siatka 15 s;
+       medium/big bez zmian) w genPlan() — stąd suwak/licznik startują z dłuższą wartością dla small.
+     • hold DYNAMIKI (maneuverTimeline): cap holdu 12 s → dla small round(12/r²)≈20 s, by wolny złóg
+       zdążył osiągnąć φ=178° (wyjście). Zweryfikowane: small z dłuższymi holdami CZYŚCI Epley/Semont/
+       Yacovino/Lempert (bez nich Semont/Yacovino utykały na φ≈157°/128°). medium/big: cap 12 s (regresja).
+     • NOTA w UI (tylko small): „wydłużono zalecany czas utrzymania pozycji" z cytatem literaturowym.
+ - ANIMACJA OTOLITU wg rozmiaru (setupGuideAnim): DUR przejścia ∝ 1/r² (prędkość osiadania Stokesa ∝ r²)
+   → small ~2630 ms (wolniej), medium 1600 ms (bez zmian), big ~878 ms (szybciej); clamp [800,3000].
+   Intensywność/latencja oczopląsu (startNys/startDialNys, obwiednia manStepEnv) wynikają wprost z
+   ξ(t) skalowanego rozmiarem — bez osobnego kodu.
+ - Uwaga spójności: sizeRadius() w warstwie UI musi pozostać ZGODNE z SIZE_R w module Vestibular.
+ CYTAT (uzasadnienie dłuższych holdów dla drobnych/wolno osiadających złogów):
+   Hain TC, Squires TM, Stone HA (2005). „Clinical implications of a mathematical model of BPPV."
+   Ann N Y Acad Sci 1039:384-394. (uzasadnienie utrzymania pozycji ~30 s w CRP; wolne osiadanie otoconiów).
+   Zmienność latencji/siły wg rozmiaru: „Extremely Long Latency BPPV" (Res Vestib Sci, 2017).
+
+--------------------------------------------------------------------------
+ Scene3D  (etap A)
+--------------------------------------------------------------------------
+HEAD_POINTS — anatomiczne punkty głowy (jednostkowe, układ głowy):
+   nose[0,0,1] top[0,1,0] chin[0,-1,0] earR[1,0,0] earL[-1,0,0]
+   occiput[0,0,-1] eyeR[0.4,0.15,0.85] eyeL[-0.4,0.15,0.85]
+
+CAMERAS — kamery ortograficzne {right, up, fwd} (wektory świata):
+   topDownBehind — nad głową, od tyłu  → ODTWARZA OBECNY DIAL (behind+swap)
+   topDownFront  — nad głową, od przodu
+   frontal       — naprzeciw pacjenta (oczy; LUSTRO: prawe ucho pacjenta po lewej ekranu)
+   behind        — za głową (prawe ucho pacjenta po prawej ekranu)
+   sideRight / sideLeft — z boku
+   Konwencja: right = świat→ekran +x; up = świat→"góra ekranu";
+              SVG y w dół, więc ekranowe y = -(p·up); fwd = kierunek patrzenia (głębia/okluzja).
+
+project(pHead, qHead, cam) -> {x, y, depth}
+   Obraca punkt głowy o qHead (głowa→świat) i rzutuje przez kamerę.
+   depth = p·fwd (do sortowania/okluzji i znaku skrętności w przyszłości).
+
+screenAngleCW(p) -> stopnie
+   Kąt zgodny z ruchem wskazówek zegara od "góry ekranu" — do obrotów schematu.
+
+--------------------------------------------------------------------------
+ makeManualOrientation()  (źródło orientacji — etap A)
+--------------------------------------------------------------------------
+ Zwraca obiekt: setQuat(q) | setYaw(yawDeg) | get() -> kwaternion.
+ setYaw: obrót wokół osi czaszki (y); znak zgodny z dialem (yaw>0 = obrót w lewo).
+ Interfejs docelowy (OrientationSource): te same metody dla źródeł:
+   żyroskop (Generic Sensor / DeviceOrientation), replay nagrania.
+
+--------------------------------------------------------------------------
+ STATUS / WALIDACJA (offline)
+--------------------------------------------------------------------------
+ [x] topDownBehind + qaxis([0,1,0], yaw) odtwarza dial: rot = 180 - yaw (cały zakres)
+ [x] strony L/P i lustro wynikają z kamery (frontal: prawe ucho po lewej; behind: po prawej)
+ [x] PRZEPIĘCIE dialu na Scene3D: rot = kąt nosa (kamera), strony L/P z rzutu uszu,
+     znak oczopląsu z kamery (up·nos<0 → obserwator z tyłu odbija poziom+skręt).
+     Zwalidowane offline: identyczne z poprzednim (behind+swap). Flagi swap/behindHead/dialSwap
+     zbędne dla dialu.
+ [x] oczy diagnostyczne: kierunek oczopląsu z kamery 'frontal' (lustro) zamiast zaszytego -sign;
+     zwalidowane offline (20 faz dix/roll/bow&lean identyczne). Para oczu to stały widok od przodu.
+ [x] UI: karta 'Głowa (z góry)' w Diagnostyce ujednolicona z Repozycją (kamera topDownBehind);
+     panel 'Mechanizm' przeniesiony pod karty faz; siatka .minihead = .viz (+ reguła mobilna).
+     UWAGA: dial w Diagnostyce to teraz widok 'z tyłu' (L lewo/P prawo), a karta oczu pozostaje
+     'frontal' (lustro) — dwa różni obserwatorzy w jednej fazie (świadomy wybór: zgodność z Repozycją).
+ [x] UI: dodano frontalną kartę 'Oczopląs (widok frontalny)' do Repozycji (eyesNysFromHead → kamera frontal,
+     ten sam układ {kind,dir,strength} co diagnostyka). Obie zakładki: dial = widok z tyłu, oczy = frontalny;
+     w obu kartach oznaczono 'widok frontalny'. Dwaj obserwatorzy zachowani (do oceny klinicznej).
+ [x] Yacovino (kanał przedni): dodano headNys do kroku prowokacyjnego → dwie animacje (dial 'z tyłu'
+     + karta 'Oczopląs (widok frontalny)'), układ kart jak w pozostałych manewrach; dial=behindHead.
+     Uogólniono pion oczopląsu polem 'vdir' (downbeat dla kanału przedniego); startNys/arrowGlyph
+     obsługują ↑/↓. Kanał tylny bez zmian (upbeat). Zwalidowane offline (P→↓↺, L→↓↻).
+ [x] Animacja oczopląsu (oczy + dial) STEROWANA SILNIKIEM: obwiednia czasowa z ξ(t)
+     (simulateCanalith/Cupulolith przez provokeQ/engineXi/xiEnvelope). Kanalolitiaza = przejściowa
+     (latencja→szczyt→wygasanie, cząstka wychodzi → gra RAZ, bez pętli); kupulolitiaza = uporczywa.
+     Usunięto zapętlony nysEnvelope. Skrętność oczu 15°→9°. Diagnostyka używa realnej pozycji q;
+     manewry — pozycji prowokującej kanał (do czasu wprowadzenia kwaternionowych osi czasu manewrów).
+ [x] Diagnostyka: karta 'Głowa (z góry)' też animuje oczopląs (startDialNysIn — per-faza, w zakresie
+     kontenera data-dialnys). Widok z tyłu (topDownBehind), składowe anatomiczne z position() (pole anat
+     w nysFromGeom), obwiednia ξ(t) z silnika (transient/uporczywy). Spójne z kartą oczu (to samo źródło).
+ [x] ETAP B (sylwetka): obserwator = KAMERA po stronie CHOREJ; 'away' (twarz vs tył głowy) z rzutu nosa.
+     Schemat ciała pozostaje 2D (pełny rzut ciała = etap C). postureFront (Semont) = obserwator frontal.
+ [x] KONWENCJA yaw UJEDNOLICONA: yaw>0 = PRAWO (zgodnie z silnikiem qSupineYaw i dialem). Naprawiono
+     U ŹRÓDŁA: yawToA (był odwrócony) → obrót KU uchu choremu (L:-45 / P:+45); yaw w Roll; turnLabel;
+     kamera-obserwator sylwetki. KIERUNKI OCZOPLĄSU BEZ ZMIAN (q-literały testów nietknięte; regresja czysta).
+ [x] Mechanizm diagnostyczny (otolit w kanale) napędzony REALNYM φ(t) z silnika (simulateCanalith):
+     cząstka po latencji wędruje wg grawitacji i zatrzymuje się (Dix/Yacovino→wyjście; Roll→ku bańce),
+     bez sztucznej pętli. Kupulolitiaza: osklepek odgina się wg ξ(t) (uporczywie). φ→ułamek ścieżki = φ/360.
+ [ ] Labirynt REPOZYCYJNY (Wędrówka otolitów) wciąż na interpolacji 'progress' — wierne φ(t) dla CAŁEGO
+     manewru wymaga KWATERNIONOWEJ OSI CZASU MANEWRU (orientacja głowy per krok = orientacja ciała ∘ skręt).
+     Próba offline: szybki model orientacji NIE wyprowadza cząstki (Epley krok 'na bok, nos w dół' cofa φ)
+     → ZROBIONE: maneuverTimeline/maneuverSim (engine_doc). 5/6 manewrów wyprowadza cząstkę obustronnie.
+     ZROBIONE: setupGuideAnim → animacja otolitu jako PRZEJŚCIE na wejściu w krok (1.6s, ease), NIEZALEŻNE
+     od timera (wcześniej ruch sprzężony z timerem = stał bez 'Start'). Ułamki z realnego φ (manFractions:
+     cummax dla czyszczących), placeOtolith(canal,p,exitBlend) wpada do łagiewki (150,100) przy wyjściu.
+     manFractions: silnik WALIDUJE wyjście (man.exited) i wskazuje krok kuracyjny = ostatni repozycyjny
+     (nSteps-2, przed powrotem do siadu); wędrówkę pokazujemy jako monotoniczną progresję 0.15→1.0 z
+     wyjściem w kroku kuracyjnym (ruch w KAŻDYM kroku repozycyjnym), potem spoczynek w łagiewce.
+     Surowe φ jest front-loaded i dla kanału poziomego idzie ku bańce → schemat zamiast surowego φ/krok.
+     Gufoni-apo (brak wyjścia): ruch ku bańce wg silnika + notka 'konwersja'.
+     Ścieżki CANAL_PATHS startują przy łagiewce (M150 96)→odnoga wspólna; φ=90 apex≈0.51, φ=178≈1.0.
+     Gufoni-apo (brak wyjścia) → notka 'manewr konwersji' w panelu labiryntu (renderGuide).
+ [x] ETAP C: pełne ciało (tułów+szyja+kończyny) jako rzut 3D — ZROBIONE (figProj/bodyJoints, patrz
+        ARCHITEKTURA figProj niżej oraz PODSUMOWANIE SESJI 2026-07-02). Swobodny wybór kamery (K4) pozostaje
+        w migracja_3d.txt jako projekt na przyszłość.
+
+ZALEŻNOŚCI
+ Scene3D używa Vestibular.rotate / Vestibular.qaxis (wspólna algebra kwaternionów).
+
+
+=== KOMPAKTOWY UKŁAD KROKU REPOZYCJI (renderGuide) — jeden ekran ===
+Wybór strony: pigułka L|P w nagłówku (.sidepill, kolor L=--left/P=--right, aria-pressed), onclick=setGuideSide.
+  Usunięto pełnowierszowy sideSel z widoku Repozycji (sideSel nadal w Diagnostyce).
+Karta timera (.tcard) zamiast pierścienia + dwóch .switchrow:
+  - rząd: Start (#btnGo), Reset (↺, .ghost), dwie IKONY bez podpisu (.ic, role=switch, aria-checked):
+      auto-przejście = „skok do następnego" (trójkąt+kreska ▸|, onclick=toggleAuto),
+      sygnał+wibracja = dzwonek (onclick=toggleSound); odczyt m:ss (.tval, #tread).
+  - cienki liniowy pasek postępu #tprog (.tprog, szerokość = pozostały czas, ubywa).
+  - liniowy SUWAK czasu (.slider/#track): zakres 0–2:00, snap co 15 s, przeciąganie palcem (pointer),
+      etykiety-skoki 0:30/1:00/2:00 (onclick=setStepSeconds). setStepSeconds ustawia state.total+st.seconds
+      i przesuwa #knob/#fill; initGuideSlider podpina pointerdown/move/up. Pętla setupGuideAnim czyta
+      state.total NA ŻYWO (suwak działa od razu) i aktualizuje #tprog (liniowo) + #tread (fmtClock m:ss).
+  - krok bez odliczania (st.seconds==null): .tcard z notką + same ikony (bez Start/suwaka).
+Karta ODWRACANA (.flipwrap/.flip) — łączy „widok frontalny" i „wędrówkę otolitów" w JEDNYM miejscu:
+  - tylko gdy krok ma oczopląs frontalny (gn=eyesNysFromHead); inaczej zwykły panel labiryntu.
+  - front = WIDOK FRONTALNY (domyślnie widoczny), back = wędrówka otolitów (labirynt).
+  - mechanika: warstwy position:absolute inset:0, transform-style:preserve-3d, .flip.flipped→rotateY(180deg),
+      backface-visibility:hidden; flipGuide() toggluje klasę; dotknięcie/Enter/Spacja, role=button.
+  - OBIE strony są w DOM równocześnie → animacje (#otolith z setupGuideAnim i [data-nys-guide] z startNys)
+      działają niezależnie od tego, która strona widoczna (obrót czysto wizualny).
+  - sizeFlip() wyrównuje wysokość obu stron (max scrollHeight) — brak „skakania"; .flip min-height:200px (zapas).
+fmtClock(s)=m:ss (spójne z etykietami suwaka); fmt(s) pozostaje dla starych miejsc. Funkcja adjust() nieużywana.
+
+=== NAWIGACJA KROKÓW W KARCIE KROK (renderGuide) ===
+Usunięto dolny wiersz .nav (← Poprzedni / Następny →) oraz podpis .meta „Sugerowany czas: N s…".
+Nawigacja jest teraz w nagłówku karty KROK (.stephead): małe ikony-strzałki .stepnav po bokach „KROK n/N":
+  - ‹ poprzedni → goStep(step-1); disabled na pierwszym kroku (.stepnav:disabled);
+  - › następny → goStep(step+1); na OSTATNIM kroku zamienia się w ✓ (.stepnav.fin, kolor --primary)
+    → backToSetup() („Zakończ serię"). aria-label na każdym przycisku.
+
+=== FIX: brak oczopląsu w manewrach Gufoniego ===
+Przyczyna: gufoniGeo/gufoniApo nie miały headNys na żadnym kroku (→ brak widoku frontalnego gn i brak
+nystagmusu na tarczy) ani headView/dialSwap (jak Lempert). Dodano:
+  - headView:"behindHead", dialSwap:true (spójnie z Lempertem — drugi manewr kanału poziomego).
+  - headNys na krokach prowokujących (canal:"horizontal", ear:"healthy" — bicie ku uchu ZDROWEMU):
+      gufoniGeo: krok „na bok zdrowy" (intensity strong, geotropowy ku podłodze=zdrowemu) +
+                 krok „nosem w dół" (weak, liberacyjny);
+      gufoniApo: krok „na bok chory" (strong, apogeotropowy ku górze=zdrowemu).
+  Uzasadnienie kierunku (Ewald): geo kładzie na bok ZDROWY → geotropowy ku podłodze=ucho zdrowe;
+  apo kładzie na bok CHORY → apogeotropowy ku górze=ucho zdrowe. W obu ear:"healthy".
+  Zweryfikowano: eyesNysFromHead zwraca kind=horizontal, dir ku uchu zdrowemu (P-chora→lewe, L-chora→prawe).
+
+=== WIDOK FRONTALNY — uproszczenie UI (Repozycja + Diagnostyka) ===
+- Nagłówek „Oczopląs (widok frontalny)" → „Widok frontalny" (oba widoki).
+- Usunięto opis „...prawe ucho pacjenta po Twojej lewej". Zamiast niego litery po bokach oczu:
+  P (lewo ekranu = ucho prawe pacjenta) | L (prawo ekranu = ucho lewe) — konwencja lustrzana. (.eyesrow/.emk)
+- Dodano małą strzałkę „ZIEMIA" = aktualny kierunek do dołu (do podłogi). gravArrowFor(body,yaw,face):
+  rzut grawitacji kroku (stepGravity → gHead) na ekran frontalny (right=-x, up=y → wektor SVG=(-g.x,-g.y)),
+  kąt = atan2. Ukryta gdy rzut w płaszczyźnie <0.15 (grawitacja ~wzdłuż osi nos-potylica). (.gravmark)
+  Weryfikacja: bok L→strzałka w prawo, bok P→w lewo, siad→w dół (pokrywa się z geotropią w manewrach poziomych).
+
+=== UJEDNOLICENIE UI DIAGNOSTYKI Z REPOZYCJĄ ===
+- Wybór strony: zamiast sideSel (Strona Lewa/Prawa) → pigułka L|P (.sidepill, te same ikony co Repozycja),
+  w wierszu .diagside z podpisem „Chora strona:". onclick=setDiagSide.
+- Wariant kanalolitiaza/kupulolitiaza: usunięto zakładki .tabs; przeniesiono na kartę „Mechanizm" jako
+  FLIP (#mechflip, klasa .flip jak w Repozycji): przód = kanalolitiaza, tył = kupulolitiaza (każda strona
+  z własnym diagCanalSVG + features + nota + interpretacja; obie animowane startDiagOtolith).
+  flipDiagMech(): odwraca wizualnie (CSS), a po zakończeniu animacji (500 ms = czas transition) re-render
+  z nowym state.variant — dzięki temu fazy (przemijający/uporczywy), oczopląs i zalecenie pozostają spójne.
+  Stan początkowy: .flipped = (variant==='cupulo'). FLIP_ICO uwspólnione do zasięgu globalnego.
+  sizeFlip(id) uogólnione (sizeFlip("flip") w Repozycji, sizeFlip("mechflip") w Diagnostyce).
+
+=== DIAGNOSTYKA: pary pozycji jako karty odwracane (Roll, Bow-Lean) ===
+Gdy test ma DWIE fazy (phases.length===2 → Roll: ucho L/P w dole; Bow-Lean: skłon/odchylenie), renderują
+się jako jedna karta FLIP (#phaseflip) zamiast dwóch osobnych. phaseInner(ph,i) buduje treść pojedynczej
+pozycji (ułożenie + tarcza data-dialnys=i + widok frontalny data-nys=i + nota). front=faza0, back=faza1.
+flipPhases(): czysto wizualny obrót (obie pozycje stale w DOM, animacje per-indeks działają niezależnie,
+bez re-renderu). fliphint pokazuje ptitle drugiej pozycji. sizeFlip("phaseflip") wyrównuje wysokość
+(+ inline min-height:470px na czas przed pomiarem). Testy 1-fazowe (Dix, head-hang) bez zmian (.phase).
+Podpis Roll poprawiony: „Ucho ${SIDE} w dole" (żeńskie lewa/prawa) → „Ucho lewe/prawe w dole" (neutrum).
+
+=== RESTART OCZOPLĄSU PRZY ODWRACANIU KART POZYCJI (Roll, Bow-Lean) ===
+Odwrócenie karty pary pozycji = zmiana ułożenia pacjenta → oczopląs powinien ruszyć od początku
+(latencja → narost → szczyt → wygasanie), a nie być złapany w środku/po zakończeniu obwiedni.
+- startNys / startDialNysIn: dodany token restartu (container.__nysTok / __dialTok). Każde wywołanie
+  inkrementuje licznik; pętla loopRAF na starcie sprawdza token i kończy się, gdy nieaktualny —
+  dzięki temu ponowne wywołanie czysto zastępuje starą pętlę (bez podwójnej animacji).
+- renderDiag zapisuje state._diagPhaseNys = phases.map(p=>p.nys).
+- flipPhases(): po toggle .flipped wyznacza odsłoniętą pozycję i = flipped?1:0, po czym restartuje
+  jej animacje: startNys([data-nys=i]) + startDialNysIn([data-dialnys=i]) → obwiednia gra od t=0.
+Zakres: tylko flipy zmieniające POZYCJĘ (Roll, Bow-Lean). Flip mechanizmu (kanalo/kupulo) i tak robi
+re-render (reset). Flip frontal⇄labirynt w Repozycji to ta sama pozycja — bez resetu.
+
+=== UPROSZCZENIE EKRANU WYBORU (setup) ===
+Usunięto przyciski CTA „Rozpocznij manewr" i „Pokaż test". Kliknięcie pozycji otwiera ją od razu:
+- manewr: onclick=openMan(k) → ustawia maneuverKey i woła startPlan() (kanał wybierasz wcześniej, jak dotąd);
+- test: onclick=openTest(k) → ustawia testKey + screen='diag'.
+pickMan/pickTest (samo zaznaczenie) i startDiag pozostają w kodzie, ale nie są już używane na setupie.
+
+=== FIX: nagłówek karty-flip nie nachodzi na znaczek przełączenia ===
+.fliphint jest w prawym górnym rogu (top:11px). Długi tytuł („Mechanizm — Kanał … · kupulolitiaza")
+wchodził pod niego. Dodano margin-top:26px (≈2 linie) na pierwszy nagłówek kart-flip Diagnostyki:
+#mechflip .face h4 oraz #phaseflip .phaseface .ptitle. Przy okazji style .ptitle/.ppos rozszerzone na
+.phaseface (były tylko pod .phase) — spójny wygląd tytułów pozycji w kartach odwracanych.
+
+=== FIX: zbędny pasek przewijania w kartach-flip (np. „wędrówka otolitów") ===
+Przyczyna: box-sizing:border-box + ramka 1px na .panelbox; sizeFlip ustawiał height = scrollHeight,
+więc ścianka była o ~2px (ramka) za niska → przepełnienie → pasek (widoczny na desktopie przy overflow:auto).
+Fix: sizeFlip dolicza ramkę: h = max(scrollHeight + (offsetHeight - clientHeight)). Dodatkowo .flip .face
+ma teraz overflow:hidden (gwarancja braku paska; dokładny rozmiar zapobiega przycięciu). Dotyczy wszystkich
+kart-flip (#flip, #mechflip, #phaseflip).
+
+=== ETAP C (v1): artykułowana sylwetka — widok z boku ===
+figSide(body,face,yaw,viewSide): zamiast prostokąt-tułów + koło-głowa rysuje sylwetkę z KAPSUŁ
+(grube linie, stroke-linecap=round): nogi (udo/goleń/stopa), ręce (ramię/przedramię), tułów, szyja, głowa.
+Prosta kinematyka: seg(punkt,długość,kąt_ekranowy) — kąty 0=prawo,90=dół. Pozy w jednej tabeli POSE
+(pelvis + kąty segmentów) do łatwego strojenia. Zachowane: kamera po stronie chorej (twarz vs tył głowy
+przez rzut nosa) i faceAngle dla obrotu twarzy. Kozetka przy supineHang krótsza — głowa zwisa za krawędzią.
+Pokryte pozycje (posture): sit (długi siad), supineHang, prone, sideL, sideR.
+POZOSTAJE w C: widok PRZEDNI (postureFront: sitFront, leanL/leanR — Semont/Bow-Lean) na ten sam rig;
+opcjonalnie swobodna kamera 3D. Proporcje/kąty do dostrojenia wizualnie.
+
+=== FIX Roll test: pozycja supineFlex (głowa przygięta, nie zwis) ===
+Roll test używał body:"supineHang" → sylwetka zwisała głową poza kozetkę i odgięta w dół (błędnie).
+Wprowadzono osobny body "supineFlex": głowa NA kozetce, uniesiona/przygięta ~30° ku klatce (neck=-28,
+faceAngle=-28). Silnik traktuje supineFlex IDENTYCZNIE jak supineHang (stepGravity/stepHeadQ → qSupineYaw),
+więc grawitacja, oczopląs i strzałka „ziemia" Roll NIE zmieniają się numerycznie. supineHang zostaje
+poprawny dla Dix-Hallpike/Yacovino/deep-head-hang/Epley (głowa faktycznie zwisa, odgięta).
+(Lempert: też supineHang dla kanału poziomego — do ewentualnej korekty osobno, jeśli trzeba.)
+
+=== Lempert: pozycja supineFlat (głowa płasko/lekko przygięta) ===
+Kroki Lemperta „na plecach" (1-2) zmienione z supineHang na nowy supineFlat: głowa NA kozetce,
+prawie płasko / lekko przygięta (neck=-12, faceAngle=-12) — mniej niż 30° Roll (supineFlex, neck=-28).
+Kroki bok/brzuch/siad bez zmian. Silnik: stepGravity/stepHeadQ uproszczone do body.startsWith("supine")
+— obejmuje supineHang/Flex/Flat jednolicie (wszystkie qSupineYaw), więc grawitacja/oczopląs bez zmian.
+Warianty supine: Hang=zwis+odgięcie (Dix/Yacovino/deep-hang/Epley), Flex=~30° (Roll), Flat=płasko (Lempert).
+
+=== Głowa w widoku z boku: twarz/tył/PROFIL z rzutu (różnicowanie supine) ===
+Problem: w widoku z boku „głowa ku choremu" (yaw=45) i „nos do sufitu" (yaw=0) rysowały tę samą frontalną
+twarz (faceAngle = sztywny lookup, bez yaw). Fix: dla pozycji supine* orientacja głowy liczona z rzutu osi
+nosa przez kamerę boczną (stepHeadQ → project): |depth|>0.4 → twarz (nos ku kamerze) / tył (nos od kamery),
+|depth|≤0.4 → PROFIL (nos w płaszczyźnie ekranu) rysowany nową profileMarks (nos wystający + jedno oko),
+zorientowany wg screenAngleCW(nos). Zweryfikowano: Lempert k1=twarz(d=-0.71), k2=profil nos~góra (oba boki).
+Skręty supine (Roll ±90, Dix 45) bez zmian (twarz/tył jak dotąd). sit/bok/brzuch zostają na away+faceAngle.
+profileMarks to v1 — do dopracowania wizualnego.
+
+=== Głowa: poprawki kolejności tułów→szyja→głowa(twarz) ===
+1) Pozycje boczne (sideL/sideR, face=fwd): faceAngle zmienione 90→0. Wcześniej obrót 90° kierował
+   frontalny nos dystalnie (wystawał od tułowia, np. Lempert krok 5). Teraz twarz/tył pionowo (away decyduje).
+2) profileMarks (profil supine, np. Lempert krok 2 „nos do sufitu"): uproszczony — nos = wierzchołek
+   distalny (trójkąt u góry), jedno oko tuż pod nosem. Czytelna kolejność nos→oko (było mylące oko/nos).
+Uwaga: pełna spójność orientacji we wszystkich pozycjach wymaga docelowo wyprowadzenia CAŁEJ sylwetki
+z rzutu kamery (3D źródło prawdy) — schemat jest rysowany ręcznie, więc rzut stosujemy punktowo (supine).
+
+=== ARCHITEKTURA figProj: composeHead + szkielet 3D (FK) + renderer rzutowy ===
+(Referencja projektowa; figProj jest dziś JEDYNYM rendererem sylwetki — patrz PODSUMOWANIE SESJI niżej
+ dla historii przejścia z figSide/POSE i listy naprawionych błędów.)
+
+composeHead(body,face,yaw): head→świat = BODY_Q[body] ∘ headPitchQ(body,face) ∘ qaxis([0,1,0],yaw)
+  (ciało ∘ pitch ∘ skręt szyi). BODY_Q = orientacja głowy przy neutralnej twarzy/yaw=0 (per klasa ciała).
+  headPitchQ: pitch neutral→face wyznaczony z BASE_G przez qFromToVec (najkrótsza rotacja a→b).
+  Przypadki specjalne: supine*→Vestibular.qSupineYaw(yaw) (jak stepHeadQ); leanL/R→qFromG(LEAN_G[...]).
+  Właściwość rdzeniowa: gHead(composeHead) == stepGravity dla wszystkich używanych kombinacji (zwalidowane
+  21/21, max err 0.00045) — RENDER I SILNIK zgadzają się co do orientacji, przy poprawnym rollu anatomicznym.
+
+Szkielet 3D (FK): układ ciała x=prawo,y=góra(czaszka),z=przód(nos). SKEL = drzewo [nazwa,rodzic,offset] dla
+  postawy neutralnej (pelvis→spine→neck→head; spine→ramiona→łokcie→dłonie; pelvis→biodra→kolana→kostki→palce).
+  fkJoints(rot): kinematyka prosta, rotacja stawu wpływa na potomków przez worldRot łańcucha rodziców.
+  POSE3D[klasa]: artykulacja (kąty stawów, np. zgięte biodra w sit, zgięte kolana). TORSO_Q[body]: orientacja
+  tułowia per klasa ciała. bodyJoints(body,face): FK(POSE3D)∘TORSO_Q → pozycje 3D stawów (+ dynamiczny kark,
+  patrz PODSUMOWANIE SESJI).
+
+figProj(body,yaw,face,obsCam,opt): rzut szkieletu przez kamerę obserwatora → {fig, headC}.
+  - bodyJoints → Scene3D.project(staw,I,obsCam) → {x,y,depth}; kapsuły sortowane wg głębi (dalej→bliżej).
+  - GŁOWA: koło w pos.head; twarz/profil/tył z rzutu nosa+czaszki (composeHead), BEZ osobnej faceAngle:
+      |nose.depth|≤0.4 → profil (profileMarks); nose.depth<0 → twarz (frontFace); >0 → tył; plus reguła
+      ekranowa „nos prosto w dół → tył" (patrz sekcja Lempert KROK 5 niżej) dla widoków z boku.
+  - opt.bedY: kotwiczenie CAŁEJ grupy do kozetki (patrz PODSUMOWANIE SESJI, błąd „pływający pacjent").
+  - Boki (sideL/R): leżenie jako supine + roll wokół osi długiej, by broadside trafiał na kamerę boczną
+    (nie skrót perspektywiczny).
+
+==========================================================================
+PODSUMOWANIE SESJI 2026-07-02: figProj jako jedyny renderer + odpieszczenie 2.5D
+==========================================================================
+Po przejściu z powrotem na 2.5D (migracja 3D odłożona — patrz migracja_3d.txt) i po zaleceniu
+porzucenia figSide/POSE na rzecz domknięcia figProj, naprawiono kolejno:
+
+Błąd A „pływający pacjent”: kozetka na stałej y, pelvis w POSE zakodowany na sztywno → ciało
+  pływało (supineHang ~20px nad łóżkiem) lub zapadało się. FIX: kotwiczenie liczone z bounding-boxu
+  CAŁEJ sylwetki (z grubością segmentów), transformacja translate() na całej grupie. Później
+  uogólnione jako opt.bedY w samym figProj (nie tylko w starym figSide).
+Doprecyzowanie supineHang: głowa w Dix-Hallpike CELOWO zwisa poza krawędź, poniżej blatu — kotwiczenie
+  wyklucza głowę+szyję z bounding-boxu dla tej pozycji (kotwiczymy tułów, nie najniższy punkt w ogóle).
+Błąd B „sztywna szyja” (Yacovino, sit/down): kark się nie zginał, tylko obracały się rysy twarzy.
+  FIX pierwotny w figSide, później PRZENIESIONY DO ŹRÓDŁA: bodyJoints(body,face) zgina kark w samym
+  szkielecie 3D (sit/down +30°, sit/up -30°) — więc dotyczy też przyszłego Three.js, nie tylko SVG.
+Błąd C hack scale(-1 1) w Semoncie: lustrzenie całej grupy fałszowało L/P (ucho, przyszłe cieniowanie
+  kierunkowe). FIX: usunięty; koniec głowy wynika czysto z TORSO_Q + jedna stała kamera (topDownBehind).
+Fix mieszczenia w ramce (A/B siad): sylwetka wychodziła nad ramkę — dobrano s/ay tak, by czubek głowy
+  mieścił się z marginesem (potem zastąpione ogólnym mechanizmem bedY/bbox w figProj).
+Błąd zgłoszony przez Pawła (Epley krok 4, nos↓ na boku zdrowym): z boku widać było twarz zamiast tyłu
+  głowy. Przyczyna: logika twarz/tył patrzyła tylko na depth (składową poziomą), ignorując że nos
+  wskazuje GŁÓWNIE w podłogę. FIX: reguła „nos ku podłodze (world-y<-0.6) → zawsze tył głowy”,
+  niezależna od depth. Naprawiło też prone (był błędny identycznie).
+
+PRZEJŚCIE KOŃCOWE (na zalecenie): figSide, POSE, postureFront, faceAngle, faceMarks, backMarks
+  CAŁKOWICIE USUNIĘTE. figProj (FK+kwaterniony, bodyJoints) jest teraz JEDYNYM źródłem renderu
+  sylwetki dla wszystkich pozycji i widoków (bok/frontal/odgórny). Skutek uboczny: klasa błędów
+  „pływająca miednica”/„sztywna szyja” jest teraz STRUKTURALNIE niemożliwa (kotwiczenie i kark są
+  własnościami szkieletu/renderera, nie ręcznie wpisanymi współrzędnymi per pozycja).
+
+STAN WERYFIKACJI: wszystkie powyższe fixy potwierdzone LICZBOWO (bounding boxy, world-space wektory
+  nosa/czaszki, node --check) — podgląd obrazów niedostępny po stronie asystenta przez całą sesję;
+  ocenę wizualną (finalny wygląd) wykonywał Paweł na wyeksportowanych PNG. Ostatnie potwierdzenie
+  Pawła: „Teraz jest ok” (po fixie Epley krok 4).
+
+OTWARTE (patrz też todo.txt): zgięcia łokci (kosmetyczne), opcjonalny wyprost karku dla sit/up
+  (nie zgłoszony jako błąd, zostawiony), migracja Three.js (odłożona, plan w migracja_3d.txt).
+
+--- Krok 2.5D: FIX legibility — "bok chory" nieodróżnialny od "bok zdrowy" w widoku odgórnym Semonta ---
+Paweł zgłosił: dla chora=lewa figurka "kładzie się na swój prawy bok" (na odwrót niż powinno). Weryfikacja LICZBOWA
+  (nie sign-bug, tylko GEOMETRIA): TORSO_Q i leanA/leanH w semont() są poprawne — dla chora=L krok2 (leanR) lewe
+  ramię ma world.y=-13 (fizycznie na dole/kozetce), prawe +13 (u góry) = leżenie na lewym/chorym boku, prawidłowo.
+  Problem: w CZYSTO ODGÓRNEJ kamerze (topDownBehind) lewa i prawa kończyna (shL/shR, hipL/hipR itd.) rzutują się
+  na DOKŁADNIE TEN SAM piksel ekranu (zweryfikowano: identyczne screenX,screenY, różnią się tylko depth) — górna
+  ręka całkowicie zasłania dolną. Rezultat: sylwetka NIE POKAZUJE w ogóle, który bok jest na dole — jedyne dostępne
+  wizualnie sygnały to pozycja głowy i skręt twarzy, łatwe do opacznego odczytania jako "strona leżenia".
+FIX w bodyJoints(body,face): dla leanL/leanR górna (widoczna) ręka — sh+up qaxis(x,-100) — wychylona do przodu,
+  na klatkę piersiową (jak w rzeczywistej pozycji Semonta / na referencyjnym schemacie); dolna ręka zostaje prosta
+  (nadal nakłada się na tułów = "schowana pod ciałem", fizycznie poprawne, nie wymaga zmiany).
+Weryfikacja: górna dłoń odsunięta 47.3px od linii tułowia (widoczna asymetria) na płótnie 200×160; dolna bez zmian.
+  Mirror poprawny: chora=LEWA→widoczna PRAWA ręka (leży na lewym), chora=PRAWA→widoczna LEWA (leży na prawym).
+Regresja czysta: twarz/tył i koniec głowy identyczne jak przed zmianą; sit/supineHang/prone/sideL bez zmian.
+
+--- Krok 2.5D: FIX strony leżenia w Semoncie (kamera topDownBehind → topDownFront) ---
+Zgłoszenie: Semont, „Ułożenie pacjenta", krok 2 (bok chory) — figurka leżała na złej stronie ekranu; oba kroki i obie
+  strony BPPV odwrócone względem instrukcji „na wprost pacjenta".
+Przyczyna: leżenie renderowane kamerą topDownBehind (right=[1,0,0], widok „zza głowy") → patient-prawo=ekran-prawo (BEZ lustra),
+  a instrukcje/komentarz semont() zakładają obserwatora NA WPROST (patient-lewo=ekran-prawo, lustro). Dodatkowo niespójność:
+  siad używał frontal (lustro), leżenie topDownBehind (bez lustra). Mapowanie leanA/leanH na bok chory/zdrowy było POPRAWNE
+  — błędna była tylko skrętność kamery.
+Poprawka: leżenie Semonta → kamera topDownFront (right=[-1,0,0] lustro, fwd=[0,-1,0] jak dotąd → twarz/tył bez zmian).
+  Teraz patient-lewo=ekran-prawo dla obu stron i obu kroków; siad i leżenie w tej samej konwencji „na wprost".
+Weryfikacja liczbowa (głowa na ekranie): A=L krok2(chory L)=ekran-PRAWO, krok3(zdrowy P)=ekran-LEWO; A=P odwrotnie.
+  Twarz/tył zachowane: krok2=TWARZ (nos↑), krok3=tył (nos↓). Głowa y=101 (w ramce, kozetka 120).
+
+--- Krok 2.5D: FIX odwrócenia głowa-stopy w prone (Lempert krok 4) ---
+Zgłoszenie: Lempert (rolka BBQ) krok 4 (prone) — figurka nagle zmieniała ułożenie: głowa tam gdzie wcześniej stopy.
+Przyczyna: wszystkie supine/side mają bazę TORSO_Q=qaxis(x,-90) (cranial→-z = ekran-lewo), ale prone było qaxis(x,+90)
+  (cranial→+z = ekran-prawo) — fizycznie „upadek w przód" vs „w tył", głowa na przeciwnym końcu. To odwracało oś głowa-stopy
+  tylko w kroku prone.
+Poprawka: prone = „supine + obrót 180° wokół osi długiej”: TORSO_Q[prone]=qmul(qaxis(z,180),qaxis(x,-90));
+  BODY_Q[prone]=qmul(qaxis(z,180),qaxis(x,-107.5)) (spójnie, głowa+tułów). Twarz zostaje w dół (nos.y=-0.95 → tył głowy).
+Weryfikacja: cały Lempert A=P — głowa na LEWO w każdym kroku (prone też x=28, było ~170); prone face=tył. Silnik nietknięty
+  (BODY_Q/TORSO_Q są render-only). node --check OK.
+
+==========================================================================
+PRIORYTET A: historyczne ξ(t) per krok manewru (zamiast świeżego provokeQ)
+==========================================================================
+Cel: oczopląs w guide ma odzwierciedlać STAN OSKLEPKA przeniesiony z poprzednich kroków (ciągła symulacja manewru),
+  zamiast liczyć świeżą prowokację provokeQ osobno dla każdego kroku (co ignorowało historię).
+Implementacja:
+  • Nowy helper manStepEnv(man, step): z HISTORYCZNEGO state._manSim.sim (ciągła symulacja całego timeline) wycina
+    okno kroku [seg.t0, +dur], normalizuje |ξ| GLOBALNYM szczytem (env niesie WZGLĘDNĄ intensywność między krokami)
+    i zwraca {env, tEnd}. env(0) może być >0 = rezyduum z poprzedniego kroku. Gładki ogon (TAIL=6s) do zera po oknie
+    symulacji, by uniknąć urwania (bo _manSim ma skrócony tHold≤12 dla dynamiki cząstki).
+  • startNys(container, nys, envOv) i startDialNys(headNys, plan, envOv): opcjonalny 3. arg. Gdy podany — używa jego
+    {env,tEnd} ORAZ ustawia strength/amp=1 (env niesie magnitudę → bez podwójnego skalowania). Bez arg = jak dotąd
+    (świeży engineXi). Diagnostyka (renderDiag/flipPhases) wywołuje bez envOv → BEZ ZMIAN.
+  • Wpięcie w renderGuide: startDialNys(st.headNys,p,manStepEnv(man,step)) i startNys(c,gn,manStepEnv(man,step)),
+    gdzie man=state._manSim (liczone/cache'owane).
+Weryfikacja (Epley, obie strony identyczne): k1 env0=0.00 szczyt=1.00 (świeży provoke, latencja→narost);
+  k2 env0=0.91 (REZYDUUM z k1, nie od zera!) wygasa; k3 env0=0.16 (rezyduum); k4≈0. Dokładnie carry-over.
+UWAGA KLINICZNA (do świadomej oceny Pawła): przy tHold≤12 (obecny _manSim) carry-over jest silny (k2=0.91), ale ξ nie
+  zdąża w pełni wygasnąć w oknie — stąd ogon wygładzający. Skan tHold pokazał kompromis: dłuższe trzymanie → k1 gładko
+  gaśnie, ale k2/k3 spadają ku zeru (cząstka osiada; model NIE re-prowokuje na przejściach krok→krok). Czyli obecny
+  model pokazuje głównie ZANIKAJĄCY ślad z prowokacji kroku 1, nie świeże prowokacje per krok. Jeśli klinicznie
+  chcesz per-krok re-prowokację, to osobne zadanie (silnik: prowokacja na każdym przejściu), nie ta zmiana.
+  Kierunek oczopląsu wciąż z geometrii (headNys), nie ze znaku ξ — odwrócenie („Oczopląs ODWRÓCONY") = osobny TODO.
+
+==========================================================================
+WALIDACJA kroków POŚREDNICH Epleya/Lemperta po podłączeniu dynamiki (Priorytet A)
+==========================================================================
+Kontekst: „statyczny etap 1" (świeży provokeQ per krok) był niewiarygodny dla kroków pośrednich (ignorował historię).
+Po podłączeniu historycznego ξ (manStepEnv z _manSim) zwalidowano oba manewry, obie strony, na REALNYCH planach.
+
+WYNIK EPLEY (P i L — identyczne): WIARYGODNE.
+  • Progresja cząstki φ: 90→164→178° monotonicznie ↑, wyjście=true. (Uwaga: „front-loaded" — cząstka osiąga 178°
+    już w k2; to znana cecha silnika, dla POZYCJI otolitu obchodzona schematycznym rampem w manFractions.)
+  • Oczopląs (env historyczny): k1 start=0.00/szczyt=1.00 (świeża prowokacja, latencja→narost); k2 start=0.91
+    (REZYDUUM przeniesione z k1 — carry-over działa!); k3 start=0.16 (słabe rezyduum). Wszystkie geotropowe (affected).
+  • Wszystkie annotowane kroki mają realny sygnał historyczny → używają HISTORII. Poprawnie.
+
+WYNIK LEMPERT (P i L): WYMAGAŁ BEZPIECZNIKA — walidacja wykryła niezgodność fizyki z annotacjami.
+  • Model horyzontalny NIE re-prowokuje na obrotach: k0 (annot strong) miał env=0.00, k4 (annot strong) env=0.04 —
+    czysto-historyczny env kazałby tym krokom ZNIKNĄĆ. k2 (annot weak) ma env=1.00 (duży transit 109→178°).
+  • BEZPIECZNIK: manStepEnv zwraca null, gdy szczyt historyczny kroku < 0.10 → startNys wraca do świeżego provokeQ
+    z annotacją. Efekt: k0/k4 = PROVOKE(annot) szczyt=1.00 (annotowany oczopląs nie znika), k2 = HISTORIA (transit).
+  • Po bezpieczniku: żaden annotowany krok nie jest pusty; carry-over zostaje tam gdzie fizyka go daje (Epley).
+
+POZOSTAŁE DO DECYZJI KLINICZNEJ (nie błędy renderowania — rozbieżność model↔annotacja):
+  1. Lempert k2: fizyka=silny (transit), annotacja=weak. Który jest prawdą klinicznie? (obecnie pokazujemy silny/historię)
+  2. Epley „front-loaded": kroki 3–4 pod-reprezentowane w oczopląsie (cząstka już wyszła). Jeśli klinicznie ważny
+     oczopląs w k3/k4, wymaga korekty dynamiki φ w silniku (osobne zadanie, nie warstwa wizualizacji).
+  3. Re-prowokacja per obrót (Lempert) — model tego nie ma; bezpiecznik to obchodzi annotacją. Pełne rozwiązanie =
+     zmiana w silniku (prowokacja na każdym przejściu head-Q). Osobne zadanie.
+Diagnostyka (renderDiag/flipPhases): woła startNys/startDialNysIn BEZ envOv → engineXi, NIETKNIĘTA.
+
+==========================================================================
+POPRAWKA: rektyfikacja Ewalda II w oczopląsie historycznym (+ ujednolicenie numeracji 1-indeks)
+==========================================================================
+UWAGA NUMERACJA: aplikacja pokazuje użytkownikowi kroki 1-indeksowane (renderGuide: "KROK ${state.step+1}/${n}").
+  Wcześniejsze wpisy walidacyjne w tym pliku używały 0-indeksu (k0,k1,...). Od teraz numerujemy 1-indeksowo,
+  zgodnie z UI. (Mapowanie: dawne kX = KROK X+1.)
+
+PROBLEM (zgłoszony klinicznie przez Pawła): w Lempercie KROK 3 (przetaczanie na bok zdrowy) oczopląs MA być weak,
+  bo endolimfa płynie AMPULLOFUGALNIE → wg II prawa Ewalda to HAMOWANIE (słabsza odpowiedź w kanale poziomym).
+SPRAWDZENIE W SILNIKU: silnik liczy ξ ZE ZNAKIEM (flow=gc·G.exc·dφ; poziomy G.exc=-1 → ruch ku wyjściu daje ξ<0),
+  a funkcja dynNystagmus MA rektyfikację: intensywność=|ξ|·(ξ>0?1:0.45). ALE dynNystagmus było tylko EKSPORTOWANE,
+  nigdzie nieużywane — a manStepEnv brał surowe |ξ|, więc pomijał hamowanie. Cała rolka Lemperta jest ampullofugalna
+  (ξ<0 we wszystkich krokach), więc KROK 3 (największy transit, |ξ|=0.99) wychodził błędnie jako najsilniejszy.
+POPRAWKA: manStepEnv używa teraz intensywności ABSOLUTNEJ z rektyfikacją Ewalda (jak dynNystagmus): |ξ|·(ξ>0?1:0.45),
+  BEZ normalizacji do szczytu manewru (inaczej — gdy cały manewr jest hamujący — osłabienie by zniknęło).
+WERYFIKACJA (1-indeks): Lempert KROK 3 szczyt 1.00 → 0.45 (osłabiony, hamowanie); KROK 1/5 = PROVOKE(annot) strong=1.00.
+  Epley (cały pobudzający, ξ>0) bez zmian: KROK 2=0.81, 3=0.74 (rezyduum), 4=0.13.
+DO DECYZJI PAWŁA: model daje KROK 3 = 0.45 (współczynnik hamowania 0.45 z dynNystagmus). Annotacja "weak"≈0.22 —
+  jeśli klinicznie ma być SŁABSZY, można wzmocnić współczynnik hamowania (stała w silniku). Kierunek już poprawny.
+
+==========================================================================
+AUDYT SILNIKA POD KĄTEM PRAW EWALDA (na życzenie Pawła) — WYNIK: SPÓJNY
+==========================================================================
+Rama (Paweł): kierunek oczopląsu = FAZA SZYBKA (skokowa, korowo-mięśniowa, tak nazywamy oczopląs);
+  FAZA WOLNA = dryf z przepływu endolimfy w płaszczyźnie pobudzonego kanału (Ewald I), przeciwna do szybkiej.
+
+CO SPRAWDZONO I POTWIERDZONO:
+1. quickPhase (faza szybka, Ewald I — swoistość płaszczyzny, ipsiwersyjnie do pobudzonego ucha):
+   poziomy → poziomo ku pobudzonemu uchu; tylny → upbeat+skręt ku uchu; przedni → downbeat. POPRAWNE dla wszystkich.
+2. nysOffset (render fazy szybkiej/wolnej): szybki skok (ease-out cubic) w kierunku nazwanym, potem wolny liniowy
+   dryf w przeciwną stronę. Zgodne: faza wolna = endolimfa, faza szybka = korekta mięśniowa. POPRAWNE.
+3. isExcitatory / position / dynNystagmus: Ewald II (poziomy: ampullopetal pobudza) i Ewald III (pionowe:
+   ampullofugal pobudza) — POPRAWNE. Znak ξ (flow=gc·G.exc·dφ) koduje pobudzenie/hamowanie spójnie.
+4. Asymetria Ewalda II (hamowanie ×0.45): wpięta w manStepEnv (magnituda oczopląsu manewru) ORAZ w diagnostyce
+   (nysFromGeom tryb "asym"). dynNystagmus odwraca też KIERUNEK przy ξ<0 (reguła Ewalda — hamowanie odwraca).
+
+DWA POZIOMY WPIĘCIA (ważne rozróżnienie):
+  • DIAGNOSTYKA: kierunek+pobudzenie+asymetria LICZONE Z SILNIKA (nysFromGeom → position() → rzut grawitacji na
+    oś pobudzenia → Ewald). W pełni auto-wyprowadzone.
+  • MANEWRY: kierunek RĘCZNIE ANNOTOWANY (headNys.ear affected/healthy → eyesNysFromHead → nystagmus), NIE
+    auto-wyprowadzany z orientacji kroku.
+
+WERYFIKACJA ANNOTACJI MANEWRÓW vs SILNIK (dynamiczne ξ z ciągłej symulacji + dynNystagmus), wszystkie manewry,
+  oba boki, kroki 1-indeksowane:
+  Epley (tylny) ✓ · Semont (tylny) ✓ · Yacovino (przedni) ✓ · Lempert (poziomy) ✓ · Gufoni geo ✓ · Gufoni apo (cupulo) ✓.
+  WSZYSTKIE annotacje kierunku ZGODNE z dynamicznym ξ silnika. (Uwaga metodyczna: statyczny position() dawał
+  fałszywe „rozbieżne" dla kroków pośrednich tylnego kanału — bo tam cząstka PŁYNIE DALEJ tym samym kierunkiem
+  [ξ>0], mimo że statyczna grawitacja rzutuje przeciwnie. Referencją dla oczopląsu manewru jest DYNAMIKA, nie statyka.)
+  Lempert KROK 1/5: ξ≈0 w ciągłej symulacji (model nie re-prowokuje) → bezpiecznik → provokeQ z annotacją, kierunek
+    zgodny (h ku choremu, jak annotacja). W praktyce poprawne.
+
+WNIOSEK: prawa Ewalda są spójnie zastosowane we WSZYSTKICH manewrach i pozycjach. Rdzeń (quickPhase/position/
+  dynNystagmus/isExcitatory) jest Ewald-poprawny. Brak błędów kierunku.
+
+MOŻLIWE ULEPSZENIE (nie błąd): kierunek manewru mógłby być AUTO-WYPROWADZANY ze znaku dynamicznego ξ (dynNystagmus)
+  zamiast annotacji — wtedy (a) zero zależności od ręcznych annotacji, (b) AUTOMATYCZNY oczopląs ODWRÓCONY, gdy
+  przepływ się odwraca (nietypowy/nieudany manewr). Obecne annotacje są poprawne dla standardowych manewrów, więc to
+  ulepszenie odporności/dydaktyki, nie naprawa. (Pokrywa się z TODO „Oczopląs ODWRÓCONY".)
+
+==========================================================================
+PEŁNE EWALD-WIRING MANEWRÓW + ODWRÓCONY OCZOPLĄS (usunięcie ręcznych adnotacji)
+==========================================================================
+Na życzenie Pawła: usuwamy ręczne adnotacje kierunku/intensywności; wszystko wyprowadzamy z FIZYKI (Ewald).
+  „Adnotacja ma wynikać z fizyki, nie odwrotnie."
+
+ZMIANY:
+1. USUNIĘTE adnotacje: wszystkie headNys:{canal,ear,intensity} → headNys:true (sam MARKER „obserwuj oczopląs tu";
+   kierunek/intensywność/odwrócenie NIE są już wpisywane ręcznie). Usunięto martwy eyesNysFromHead.
+2. NOWE nysFromDyn(canal, side, ξ): kierunek + intensywność + ODWRÓCENIE z Vestibular.dynNystagmus:
+   - kierunek = quickPhase(canal,side) × sign(ξ)  → ξ<0 (hamowanie) ODWRACA oczopląs (automatycznie);
+   - intensywność = |ξ|·(ξ>0?1:0.45)  → rektyfikacja Ewalda II (hamowanie słabsze);
+   - vdir/kind/dir mapowane jak dotąd; anat{h,v,t} do dialu; label z fizyki (dopisek „ODWRÓCONY"/„słaby").
+3. NOWE stepXiPeak(man, plan, step): szczyt ξ ZE ZNAKIEM z ciągłej symulacji; przy luce (model nie re-prowokuje)
+   — świeży provoke z FAKTYCZNEJ orientacji kroku (neutralny start → pozycja). Znak steruje odwróceniem.
+4. renderGuide: gn = nysFromDyn(...stepXiPeak...) (było eyesNysFromHead z annotacji). startDialNys używa anat.
+   headDial: etykieta z nys.strength (numer) i nys.reversed (zamiast .intensity string). Diagnostyka NIETKNIĘTA
+   (nysFromGeom/position + startDialNysIn — osobna ścieżka, już Ewald-wyprowadzona).
+5. FIX Lempert yaw=90° (KROK 1 „głowa 90° w stronę chorą"): było yaw=45 → ξ=0.00 (brak prowokacji). Teraz
+   yaw=±90 → ξ=0.52, pobudzenie ku choremu. Instrukcja mówiła 90°, kod miał 45.
+
+WERYFIKACJA (nysFromDyn + stepXiPeak, wszystkie manewry, oba boki):
+  Epley/Semont (tylny): upbeat+skręt ku choremu, int 0.81→0.13, pobudzenie ✓ (zgodne z dawnymi adnotacjami).
+  Yacovino (przedni): downbeat, int 0.67 ✓.
+  Lempert: KROK 1 pobudzenie ku choremu (int 0.52 — naprawione); KROK 3 ODWRÓCONY+słaby (ξ=-1.03 ampullofugal,
+    int 0.46, Ewald II); KROK 5 pobudzenie ku choremu (int 0.84). Odwrócenie AUTOMATYCZNE ze znaku ξ.
+  Gufoni geo: KROK 2/3 ODWRÓCONY+słaby (ampullofugal, int 0.41).
+WNIOSEK: kierunek, intensywność i odwrócenie wynikają teraz WYŁĄCZNIE z fizyki (znak i wielkość ξ + prawa Ewalda).
+  Zostaje minimalny marker headNys:true (które kroki mają kartę oczopląsu — wybór dydaktyczny, nie adnotacja Ewalda).
+
+--- Zdjęcie markera headNys: karta oczopląsu czysto z fizyki (próg 0.10) ---
+Usunięto marker headNys:true ze WSZYSTKICH kroków. renderGuide: gn = nysFromDyn(...stepXiPeak...); karta pojawia się
+  tylko gdy gn.strength >= 0.10 (fizyka decyduje, które kroki). Weryfikacja (strona P):
+  Epley: karty k2,3,4 (siad k1,k5 — brak). Semont: k2,3, +k4 siad słaby (0.15). Lempert: k1–5 (każdy obrót; k2,k4
+    ODWRÓCONE — ampullofugal), siad k6 brak — pełniejsze niż dawne k1/3/5. Yacovino: k2, +k3 broda-klatka (0.85, DOŁOŻONE),
+    +k4 słaby (0.17). Gufoni geo: k2,3 (ODWRÓCONE), siad k1/k4 brak.
+  Uwaga: końcowe „powrót do siadu" w Semoncie/Yacovino dają słabą kartę (0.15–0.17, rezyduum przy siadaniu) — powyżej
+  progu 0.10. Jeśli klinicznie mają nie pokazywać, wystarczy podnieść próg (np. 0.20). Kierunek/siła/odwrócenie w 100% z fizyki.
+
+--- FIX twarz/tył Lempert KROK 5 (obrót ku 360°): reguła „nos w podłogę" za agresywna ---
+Zgłoszenie: Lempert KROK 5 (bok chory, ~270°→360°) pokazywał TYŁ głowy, powinien TWARZ (obserwator od strony chorej
+  widzi twarz, gdy pacjent na boku chorym). Przyczyna: reguła noseDown używała ŚWIATOWEGO nose.y<-0.6 → łapała też nos
+  skierowany w dół-DO-PRZODU (profil boczny, noseW=[0,-0.71,0.71], depth≈0), nie tylko prosto w podłogę.
+Poprawka (figProj): noseDown = noseP.y>0.5 && |noseP.x| < 0.6·noseP.y (RZUT EKRANOWY — tył tylko gdy nos celuje prawie
+  PROSTO w dół ekranu). Weryfikacja: Epley4=TYŁ, prone=TYŁ (zachowane); Lempert KROK 5 i 3 = profil (twarz z boku,
+  naprawione); Dix-Hallpike=TWARZ, Semont Initial=TWARZ, Maneuver=TYŁ (zachowane).

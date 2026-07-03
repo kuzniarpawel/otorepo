@@ -1,0 +1,366 @@
+==========================================================================
+ OTOREPO — DOKUMENTACJA SILNIKA (moduł `Vestibular`)
+ Plik: otorepo.html  |  Moduł: const Vestibular = (()=>{ ... })()
+ Charakter: czysty moduł BEZ DOM (testowalny offline w node)
+ Ostatnia aktualizacja: 2026-07-02
+==========================================================================
+
+Dokument opisuje API publiczne i wewnętrzne pomocnicze silnika oraz przyjęte
+konwencje. Uaktualniać wraz z rozwojem silnika.
+
+--------------------------------------------------------------------------
+ KONWENCJE I UKŁADY WSPÓŁRZĘDNYCH
+--------------------------------------------------------------------------
+Układ głowy (head frame):  x = prawo, y = góra (czaszka), z = przód (nos).
+Świat: oś „góra" = +y; grawitacja świata = (0,-1,0).
+Strony (ear/side): "L" = lewe ucho, "P" = prawe ucho.
+Kanały (canal): "posterior" (tylny), "horizontal" (poziomy), "anterior" (przedni).
+
+Kwaternion: q = [w, x, y, z]; obraca wektory GŁOWY → ŚWIATA
+            (v_świat = q ⊗ v_głowa ⊗ q*).
+
+Składowe oczopląsu (anatomiczne, układ pacjenta), zwracane jako {h, v, t}:
+   h: + w prawo / − w lewo        (pozioma)
+   v: + ku górze / − w dół         (pionowa)
+   t: + górne bieguny w prawo / − w lewo  (skrętna)
+
+Prawa Ewalda używane w silniku:
+   I   — swoistość płaszczyzny: oś szybkiej fazy danego kanału (quickPhase)
+   II  — kanał poziomy: przepływ AMPULLOPETALNY jest pobudzający; pobudzenie > hamowanie
+   III — kanały pionowe: przepływ AMPULLOFUGALNY jest pobudzający
+
+--------------------------------------------------------------------------
+ API PUBLICZNE (zwracane z modułu)
+--------------------------------------------------------------------------
+
+— ETAP 0 (regułowy) ——————————————————————————————————————————————
+
+isExcitatory(canal, flow) -> bool
+   Czy dany kierunek przepływu pobudza kanał (prawo Ewalda II/III).
+   flow: "ampullopetal" | "ampullofugal".
+   Zwraca: poziomy → (flow==="ampullopetal"); pionowe → (flow==="ampullofugal").
+
+quickPhase(canal, ear) -> {h, v, t}
+   Oś szybkiej fazy dla POBUDZENIA kanału, ipsiwersyjnie do ucha (Ewald I).
+   ear: "L"|"P". (ipsi = ear==="P" ? +1 : -1)
+   horizontal → {h:ipsi, v:0,  t:0}      (poziomy ku pobudzonemu uchu)
+   posterior  → {h:0,    v:+1, t:ipsi}   (ku górze + skrętny ku uchu)
+   anterior   → {h:0,    v:-1, t:ipsi}   (w dół + skrętny ku uchu)
+
+nystagmus({canal, ear, excited=true}) -> {h, v, t}
+   Szybka faza dla zadanego, pobudzonego/hamowanego kanału.
+   Hamowanie (excited=false) odwraca znak wszystkich składowych.
+   Zastosowanie przyszłe: jednostronna utrata (excited:false), push-pull.
+
+— ETAP 1 (geometria statyczna) ————————————————————————————————————
+
+gHead(q) -> [x, y, z]
+   Wektor grawitacji wyrażony w układzie głowy dla orientacji q.
+   Pionowo-stojąca głowa (q=[1,0,0,0]) → [0,-1,0].
+
+qSupineYaw(deg) -> q
+   Orientacja „supine head-hanging" (pochylenie -100° wokół osi międzyusznej)
+   ze skrętem głowy o `deg` wokół osi czaszki (y). Użycie: Dix-Hallpike (±45),
+   Roll (±90). Uwaga: dodatni deg = prawe ucho w dół (konwencja 3D, NIE schematu UI).
+
+qPitch(deg) -> q
+   Czyste pochylenie wokół osi międzyusznej (x). +deg = skłon w przód (bow),
+   -deg = odchylenie w tył (lean). Użycie: test Bow & Lean.
+
+position({canal, side, variant, q}) -> {excited, mag, h, v, t}
+   Statyczna stymulacja CHOREGO kanału w orientacji głowy q.
+   side: "L"|"P"; variant: "canalo" (geotropowy) | "cupulo" (apogeotropowy).
+   Mechanizm: rzut grawitacji na oś pobudzenia kanału → przepływ → Ewald.
+     - poziomy:  proj = g · uHC(side);  excited = (variant==="cupulo" ? proj<0 : proj>0)
+                 (Ewald II: geo/apo odwracają się)
+     - pionowe:  proj = g · GEXC[kanał];  excited = proj>0
+                 (Ewald III; bez odwrócenia geo/apo dla kanałów pionowych)
+   excited: bool; mag = |proj| (siła surowa); {h,v,t} = quickPhase ze znakiem pobudzenia.
+   ZWALIDOWANE: Dix-Hallpike (tylny), Roll (geo/apo), Bow & Lean.
+
+— ETAP 2 (dynamika cząstki) ————————————————————————————————————————
+
+simulateCanalith({canal, side, timeline, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}) -> [{t, xi, phi, exited}, ...]
+   Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
+   timeline: tablica segmentów [{q, tTrans, tHold}, ...]
+       q      — orientacja docelowa (kwaternion)
+       tTrans — czas przejścia do q [s] (interpolacja slerp od poprzedniego q)
+       tHold  — czas utrzymania w q [s]
+   Model:
+       φ — kąt łuku cząstki (ampułka φ=0, ujście/odnoga wspólna φ≈180°); dolne ograniczenie 3°.
+       Ruch przetłumiony (opór Stokesa, bez bezwładności):
+           dφ/dt = (g_głowa · styczna(φ)) / tauP
+       Osklepek (model 1. rzędu, długa stała czasowa):
+           dξ/dt = -ξ/tauC + gc · exc · dφ/dt   (exc: +1 pionowe / -1 poziomy)
+   ADHEZJA OTOLITU (latencja):
+       Otolit początkowo przyklejony; wiązanie (adh) zrywane przez utrzymaną siłę styczną
+       powyżej progu fStat → opóźnienie startu = LATENCJA. Silniejsza prowokacja = krótsza
+       latencja (zgodnie z kliniką). Po zerwaniu otolit już się nie przykleja w tej sesji.
+   WYJŚCIE OTOLITU (efekty zależne od historii):
+       phiExit [°]: po dotarciu φ≥phiExit otolit wchodzi do woreczka JEDNOKIERUNKOWO (exited)
+       → wyleczenie blokuje fazę odwróconą. Ruch wsteczny (dφ/dt<0) → ξ<0 → oczopląs ODWRÓCONY.
+   STAŁE SKALIBROWANE DO LITERATURY (kanał tylny, kanalolitiaza):
+       latencja ~1–3 s, czas do szczytu ~7–9 s, czas trwania napadu ~25 s;
+       tauC=5 s odpowiada długiej stałej osklepka/kanału (~4–6 s).
+   Zwraca: t [s], xi (znak = pobudzenie/hamowanie), phi [°], exited (bool).
+   Parametry strojeniowe: tauP, tauC, gc, phiExit, fStat, adh.
+   ROZMIAR/GĘSTOŚĆ CZĄSTKI (size): "small" | "medium" (dom.) | "big" — lub liczba (mnożnik promienia r).
+       Mapowanie SIZE_R = {small:0.78, medium:1.0, big:1.35}. Skalowanie fizyczne od r:
+         tauP ∝ r⁻²  (prędkość osiadania Stokesa v ∝ r² → szybszy przepływ dla większej cząstki),
+         gc   ∝ r³   (wyparta objętość/masa endolimfy → wychylenie osklepka),
+         adh  ∝ r    (siła oderwania sfery od ścianki, skalowanie JKR/DMT).
+       medium == r=1 → wynik IDENTYCZNY z dotychczasową kalibracją (bezpieczny domyślny).
+       Emergentnie: DUŻA = krótsza latencja, silniejszy/szybszy oczopląs, szybsze wyjście;
+       MAŁA = długa latencja, słaby i wolny przebieg, MOŻE NIE osiągnąć φ=178° w skróconych holdach
+       manewru (np. Semont/Yacovino) — spójne z uzasadnieniem holdów ~30 s dla wolno osiadających
+       odłamków (Hain [2]) oraz z „extremely long-latency BPPV" [11]. Adresuje uproszczenie
+       „brak wpływu rozmiaru cząstki" z sekcji UPROSZCZENIA.
+
+nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
+   Klasyfikacja fazy względem kierunku prowokującego:
+   "primary" (ξ>thr, pierwotny/liberatoryjny), "reversed" (ξ<-thr, odwrócony), "none".
+
+simulateCupulolith({canal, side, timeline, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
+   size skaluje gain ∝ r³ (cięższy klaster otoconiów → silniejsze wychylenie osklepka); latencji brak
+   (tauCup bez zmian). SIZE_R jak w simulateCanalith. medium == r=1 → wynik identyczny.
+   Symulacja KUPULOLITIAZY: otolity przyklejone do osklepka → ciężki osklepek odchylany
+   WPROST grawitacją (rzut statyczny), bez wolnej cząstki w świetle kanału.
+   Model:
+       target = gain · |proj| · (excited ? +1 : -1)
+                gdzie proj/excited z position({canal,side,variant:"cupulo",q}) (reguła Ewalda;
+                poziomy: apogeotropowy = odwrócony względem geotropowego)
+       dξ/dt = (target - ξ) / tauCup           (szybka relaksacja)
+   Cechy emergentne (kontrast do kanalolitiazy):
+       - BRAK LATENCJI (ξ podąża natychmiast za grawitacją; tauCup małe)
+       - UPORCZYWOŚĆ (ξ trzyma się celu, dopóki pozycja utrzymana; brak wygasania)
+       - płynne odwrócenie przy zmianie pozycji
+   Zwraca: t [s], xi (znak = pobudzenie/hamowanie), target (cel statyczny).
+   Parametry strojeniowe: tauCup, gain — DO KALIBRACJI.
+
+dynNystagmus(canal, side, xi) -> {excited, intensity, h, v, t}
+   Konwersja chwilowego ξ (z simulateCanalith) na składowe oczopląsu.
+   excited = (xi>0); kierunek = quickPhase ze znakiem pobudzenia.
+   intensity = min(1, |xi| · (excited ? 1 : 0.45))
+               — rektyfikacja Ewalda II: odpowiedź hamująca słabsza.
+   [2026-07-02] TERAZ JEDYNE ŹRÓDŁO kierunku/siły/odwrócenia oczopląsu w CAŁEJ aplikacji — diagnostyka
+   (przez nysFromGeom→position) I manewry (przez widok: nysFromDyn/stepXiPeak w otorepo.html, poza
+   modułem Vestibular). Ręczne adnotacje kierunku dla manewrów (headNys.ear/intensity) USUNIĘTE;
+   kierunek+siła+odwrócenie (ξ<0→hamowanie) wynikają wyłącznie z tej funkcji. Zwalidowane audytem
+   Ewalda dla wszystkich manewrów/stron (view_doc.txt: „AUDYT SILNIKA POD KĄTEM PRAW EWALDA").
+
+--------------------------------------------------------------------------
+ STAŁE I POMOCNICZE WEWNĘTRZNE (nieeksportowane)
+--------------------------------------------------------------------------
+qmul, qconj, qaxis(ax,deg), rotv(q,v), dot3, nrm3, nrm4 — algebra wektorów/kwaternionów.
+slerpQ(a,b,t) — interpolacja sferyczna kwaternionów (z obsługą półkuli i przypadku bliskiego).
+Q_SUPINE = qaxis([1,0,0],-100) — baza orientacji supine head-hanging.
+
+GEXC — osie pobudzenia kanałów PIONOWYCH (w płaszczyźnie kanału; g·GEXC>0 = ampullofugalny):
+   RP: norm(1,0,-1)  LP: norm(-1,0,-1)  RA: norm(1,0,1)  LA: norm(-1,0,1)
+uHC(side) — oś ampullopetalna kanału POZIOMEGO (międzyuszna + przednio-tylna):
+   P: norm(0.87,0,0.5)   L: norm(-0.87,0,0.5)
+CK — mapowanie {canal,side} → klucz GEXC dla kanałów pionowych.
+
+CANAL_GEOM — geometria łuku dla dynamiki (e1=kierunek ampułki φ=0, e2=druga oś płaszczyzny,
+             exc=znak pobudzenia):
+   posterior  P:{e1 norm(-1,0,1),  e2 (0,-1,0), exc +1}   L:{e1 norm(1,0,1),  e2 (0,-1,0), exc +1}
+   horizontal P:{e1 norm(0.87,0,0.5), e2 norm(0.5,0,-0.87), exc -1}
+              L:{e1 norm(-0.87,0,0.5), e2 norm(-0.5,0,-0.87), exc -1}
+   anterior   P:{e1 norm(1,0,1),   e2 (0,-1,0), exc +1}   L:{e1 norm(-1,0,1), e2 (0,-1,0), exc +1}
+   Uwaga: ampułki kanału tylnego i przedniego po przeciwnych stronach (e1 odwrotne) —
+   wynik kalibracji do przepływu ampullofugalnego w pozycji prowokującej.
+
+--------------------------------------------------------------------------
+ STATUS WALIDACJI (offline, node)
+--------------------------------------------------------------------------
+ [x] Etap 0: kierunki quickPhase zgodne z zatwierdzonymi wcześniej kierunkami UI.
+ [x] Etap 1: Dix-Hallpike, Roll (geo/apo), Bow & Lean — zgodne z kliniką; zgodne z UI.
+ [x] Etap 2: wszystkie 6 kanałów — kierunki dynamiczne zgodne; Epley tylny: latencja ~2.7 s,
+     szczyt ~11 s, brak odwrócenia, wygasanie.
+ [x] Etap 2: faza odwrócona + jednokierunkowe wyjście otolitu (kanalolitiaza).
+ [x] Etap 2: kupulolitiaza — apogeotropowy kierunek, brak latencji (~0.2 s), uporczywość;
+     kontrast z kanalolitiazą (narastanie+wygasanie).
+ [x] Etap 2: KALIBRACJA stałych do literatury (tylny, kanalolitiaza): latencja ~1.6 s,
+     szczyt ~9 s, trwanie ~25 s (tauP=6.5, tauC=5, gc=1.6); adhezja otolitu (fStat=0.04, adh=0.2).
+ [x] Etap 2: ROZMIAR CZĄSTKI (size small/medium/big). Walidacja offline (silnik w przeglądarce,
+     preview_eval — node niedostępny; moduł DOM-free, więc równoważne). Wyniki (posterior|P):
+       medium: lat 1.15 s, szczyt +8.45 s, ξpeak 0.81, trwanie 27 s — IDENTYCZNE z bazą (regresja OK).
+       small : lat 3.0 s,  szczyt +12.1 s, ξpeak 0.27 — dłuższa latencja, słabszy/wolniejszy.
+       big   : lat 0.25 s, szczyt +5.5 s,  ξpeak 2.80 (nasyca intensity→1) — krótka latencja, florydny.
+     Monotoniczność lat↓/ξ↑/szczyt↓ wraz z r potwierdzona dla wszystkich 6 kanałów, obie strony symetryczne.
+     Cupulolith: gain ∝ r³ dokładnie (small −0.41 / medium −0.85 / big −2.10). Manewry (plany gen, str. P):
+       medium/big — Epley/Semont/Yacovino/Lempert osiągają φ=178° (exited); small — Epley/Lempert tak,
+       Semont (φmax 157) i Yacovino (φmax 128) NIE czyszczą w skróconych holdach (emergentne, klinicznie
+       spójne: wolne odłamki → rozważ powtórzenie / dłuższe holdy).
+
+--------------------------------------------------------------------------
+ PRZYKŁADY UŻYCIA
+--------------------------------------------------------------------------
+// Statycznie (diagnostyka): kierunek oczopląsu w Dix-Hallpike po stronie prawej
+Vestibular.position({canal:"posterior", side:"P", variant:"canalo",
+                     q: Vestibular.qSupineYaw(45)});
+// -> {excited:true, mag:~0.98, h:0, v:1, t:1}
+
+// Dynamicznie: przebieg ξ(t) dla pierwszej pozycji Epleya (tylny prawy)
+const tr = Vestibular.simulateCanalith({canal:"posterior", side:"P", timeline:[
+   {q:[1,0,0,0], tTrans:0, tHold:2},
+   {q:Vestibular.qSupineYaw(45), tTrans:1.5, tHold:25}
+]});
+Vestibular.dynNystagmus("posterior","P", tr[tr.length-1].xi);
+
+--------------------------------------------------------------------------
+ ZALEŻNOŚCI MIĘDZYWARSTWOWE
+--------------------------------------------------------------------------
+ quickPhase  ──> nystagmus, position, dynNystagmus   (źródło kierunku {h,v,t})
+ gHead       ──> position, simulateCanalith           (grawitacja w układzie głowy)
+ GEXC/uHC    ──> position                             (statyczny rzut → Ewald)
+ CANAL_GEOM  ──> simulateCanalith                     (łuk + znak pobudzenia)
+ position    ──> simulateCupulolith                    (statyczny cel grawitacyjny osklepka)
+ slerpQ      ──> simulateCanalith, simulateCupulolith  (interpolacja orientacji)
+
+--------------------------------------------------------------------------
+ BIBLIOGRAFIA I ZGODNOŚĆ MODELU Z LITERATURĄ
+--------------------------------------------------------------------------
+Silnik jest ZREDUKOWANĄ, fenomenologiczną implementacją uznanych modeli
+biomechanicznych BPPV — nie zawiera nowych hipotez naukowych. Mapowanie:
+
+[1] Squires TM, Weidman MS, Hain TC, Stone HA (2004). "A mathematical model
+    for top-shelf vertigo: the role of sedimenting otoconia in BPPV."
+    J Biomech 37(8):1137-1146.
+    → Kanoniczny model kanalolitiazy: otolit osiadający pod grawitacją z oporem
+      Stokesa, ciśnienie transkupularne, wychylenie osklepka. ZGODNE z naszą
+      warstwą dynamiki (simulateCanalith), w wersji uproszczonej.
+    → GŁÓWNY mechanizm latencji wg [1]: brak istotnego ciśnienia, dopóki otolit
+      nie dotrze z szerokiej bańki do WĄSKIEGO przewodu (wzmocnienie ciśnienia).
+      TEGO NIE MODELUJEMY — patrz adnotacja o latencji niżej.
+
+[2] Hain TC, Squires TM, Stone HA (2005). "Clinical implications of a
+    mathematical model of BPPV." Ann N Y Acad Sci 1039:384-394.
+    → Implikacje kliniczne [1]; uzasadnienie utrzymania pozycji ~30 s w CRP.
+
+[3] House MG, Honrubia V (2003). "Theoretical models for the mechanisms of BPPV."
+    → Oba mechanizmy (kanalo- i kupulolitiaza) są fizycznie wiarygodne.
+
+[4] Obrist D, Hegemann S (2008). "Fluid-particle dynamics in canalithiasis."
+    J R Soc Interface 5(27):1215-1229.
+    → Dynamika płyn–cząstka; otwarte pytanie, czy otolity przylegają do ścianki.
+
+[5] Dai M, Klein A, Cohen B, Raphan T (1999). "Model-based study of the human
+    cupular time constant." J Vestib Res.
+    → Długa stała czasowa osklepka/kanału (~4–6 s). ZGODNE z tauC=5.
+
+[6] Schuknecht HF (1969). Kupulolitiaza (ciężki osklepek → natychmiastowy,
+    uporczywy oczopląs). ZGODNE z simulateCupulolith (brak latencji, uporczywość).
+
+[7] Hall SF, Ruby RRF, McClure JA (1979). Kanalolitiaza (wolne odłamki w kanale).
+    ZGODNE z modelem cząstki. (por. Brandt & Steddin 1993 — kanalolitiaza lepiej
+    tłumaczy latencję i męczliwość).
+
+[8] Steinhausen (1933); Van Egmond, Groen, Jongkees (1949) — model wahadła
+    torsyjnego osklepka. ZGODNE z osklepkiem 1. rzędu.
+
+[9] Ewald (1892) — prawa Ewalda I/II/III. ZGODNE z quickPhase / isExcitatory.
+
+[10] Della Santina i wsp. (2005) — orientacje płaszczyzn kanałów. Podstawa dla
+     normalnych kanałów (GEXC, CANAL_GEOM) w wersji wyidealizowanej (45°).
+
+[11] "Extremely Long Latency BPPV" (Res Vestib Sci, 2017) — bardzo długie latencje
+     przypisane PRZYLEGANIU otolitów i ich rozmiarowi. Podstawa hipotezy adhezji
+     (nasza latencja) jako mechanizmu mniejszościowego.
+
+ADNOTACJA — LATENCJA (świadomy wybór modelowy):
+  Nasza latencja wynika z ADHEZJI otolitu (wiązanie zrywane utrzymaną siłą
+  styczną). To w literaturze hipoteza UZNANA, lecz MNIEJSZOŚCIOWA, przywoływana
+  zwłaszcza dla długich latencji (Hain/dizziness-and-balance; "Extremely Long
+  Latency BPPV" 2017). GŁÓWNY nurt [1,2] tłumaczy latencję geometrią bańka→wąski
+  przewód (wzmocnienie ciśnienia), czego NIE implementujemy. Inne hipotezy:
+  bezwładność skrzepu otolitowego. Reprodukujemy poprawne zachowanie kliniczne
+  (latencja obecna, krótsza przy silniejszej prowokacji) drogą alternatywną.
+
+UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI:
+  - proxy "styczna grawitacja → przepływ" zamiast pełnego ciśnienia transkupularnego ΔPc;
+  - brak wzmocnienia w wąskim przewodzie (główny mechanizm latencji wg [1]);
+  - rozmiar cząstki: OBSŁUGIWANY jako parametr skalujący (size → tauP∝r⁻², gc∝r³, adh∝r);
+    nadal brak oddziaływań ze ściankami i magazynowania prędkości;
+  - kupulolitiaza i kanalolitiaza o porównywalnej sile (wg [1] kupulo jest słabsza);
+  - brak modelu męczliwości (rozproszenia wielu otolitów przy powtórzeniach).
+
+
+=== MANEWRY JAKO OSIE CZASU KWATERNIONÓW (wejście do dynamiki) ===
+Most plan manewru → silnik. simulateCanalith używa WYŁĄCZNIE gHead (grawitacji w ramce głowy),
+więc krok definiujemy przez docelowy gHead i budujemy kwaternion qFromG(g).
+Ramka głowy: x=prawe ucho, y=czaszka(+czubek), z=nos.
+Funkcje (po xiEnvelope w pliku):
+- qFromG(g) → kwaternion head→świat taki, że gHead(q)=g.
+- rotYg(g,deg) → obrót grawitacji wokół osi czaszki (skręt szyi).
+- BASE_G[body|face] → gHead dla yaw=0 (sit/sideL/sideR/prone/sitFront). Skręt: rotYg(g,-yaw).
+- LEAN_G[leanL/R|up/down] → gHead KOŃCOWE dla rzutów Semonta (skręt szyi wbudowany; lustro wg strony).
+- stepGravity(body,yaw,face) → gHead kroku (supineHang: z qSupineYaw — zwalidowane).
+- stepHeadQ(body,yaw,face) → orientacja głowy (head→świat) kroku.
+- maneuverTimeline(plan) → [{q,tTrans:0.8,tHold:6–12}] (hold ograniczony do dynamiki).
+- maneuverSim(plan) → simulateCanalith po osi czasu → φ(t) cząstki w kanale.
+  [2026-07-02] Lempert KROK 1 (obrót głowy w stronę chorą, kanał poziomy): yaw musi być ±90° — przy 45°
+  ξ_peak≈0 (nie prowokuje). Instrukcja kliniczna mówi "90°"; kod był niespójny (45°), poprawiony.
+KLUCZOWA ZASADA FIZYCZNA: kroki kuracyjne "nos w dół" mają składową +czaszka w gHead
+(czubek głowy opada → otolit przenoszony przez odnogę wspólną). Bez tego cząstka się cofa.
+WALIDACJA (offline, realne plany gen, obie strony — cząstka osiąga φ=178°=wyjście):
+  Epley ✓✓ · Yacovino ✓✓ · Lempert ✓✓ · Semont ✓✓ · Gufoni geotropowy ✓✓
+  Gufoni apogeotropowy ✗✗ — POPRAWNIE: manewr KONWERSJI (apo→geo), nie czyści wprost
+  (φmax 90°), po nim Roll test i leczenie postaci geotropowej.
+
+=== TEST KANAŁU PRZEDNIEGO (deep head-hang) + uwaga o spójności ===
+Diagnostyka: test 'headhang' (deep head-hang, supineHang/yaw0/face:up) → oczopląs DOWNbeat + skrętny
+ku uchu choremu; leczenie: Yacovino. Lateralizacja kanału przedniego bywa niepewna (skręt często słaby).
+ROZWIĄZANE: GEXC kanału przedniego miało ZŁY ZNAK (RA/LA = +e1 = ampullopetalne) zamiast -e1
+(ampullofugalne, jak tylne). Reguła: oś pobudzenia = -e1 (styczna ampullofugalna przy φ=90°).
+Poprawka: GEXC RA:[1,0,1]→[-1,0,-1], LA:[-1,0,1]→[1,0,-1]. Po niej position()↔simulateCanalith
+ZGODNE 24/24 (wszystkie kanały/strony/pozycje). Obejście antHeadHangNys USUNIĘTE — test deep head-hang
+i przełącznik Dix używają teraz nysFromGeom (z quickPhase anterior t:0 → czysty downbeat).
+
+=== KOREKTA KLINICZNA: kanał przedni = CZYSTY DOWNBEAT (bez torsji) ===
+quickPhase('anterior') zmienione z {0,-1,ipsi} na {0,-1,0}. Powód: klinicznie deep head-hang daje
+przede wszystkim/wyłącznie downbeat; torsja śladowa/zmienna/nieobecna → lateralizacja oczopląsem
+NIEWIARYGODNA (kanały przednie blisko płaszczyzny strzałkowej). Wyidealizowana geometria CANAL_GEOM
+dawała pion:skręt = 1:1 (jak tylny: normalna [0.71,0,±0.71]) → przeszacowanie torsji. Zmiana dotyczy
+wszędzie (test deep head-hang, dial, oczy frontalne, Yacovino). arrowGlyph: dir=0 → czysty pionowy (↓).
+Test deep head-hang: usunięto deklarację lateralizacji skrętem (latNote/label/note/recommend).
+
+=== RÓŻNICOWANIE W DIX-HALLPIKE: kanał tylny vs przedni (wyprowadzone z silnika) ===
+Probe dynamiczny (simulateCanalith, ξpeak≈0.81) w pozycji Dix-Hallpike potwierdza koplanarność LARP/RALP:
+  PRAWY Dix-Hallpike (qSupineYaw +45): tylny PRAWY → ↑+skrętny (v+1,t+1);  przedni LEWY → ↓downbeat (v-1,t0)
+  LEWY  Dix-Hallpike (qSupineYaw -45): tylny LEWY  → ↑+skrętny;            przedni PRAWY → ↓downbeat
+Różnicownik = kierunek pionowy: ↑→tylny (ucho dolne); ↓→przedni (ucho PRZECIWNE, ta sama płaszczyzna).
+(Po poprawce GEXC=-e1 statyczne position() zgadza się z dynamiką — nysFromGeom liczy oczopląs bezpośrednio.)
+UI: w teście Dix przełącznik 'Zaobserwowany oczopląs' (↑skrętny / ↓downbeat) — tryb downbeat przełącza
+animację (czysty downbeat), mechanizm (kanał przedni ucha przeciwnego), zalecenie (Yacovino) i pokazuje
+CZERWONĄ FLAGĘ ośrodkową (izolowany/uporczywy downbeat bez latencji → móżdżek/pogranicze czaszk.-szyjne).
+
+=== MAGNITUDY OCZOPLĄSU Z REALNYCH NORMALNYCH KANAŁÓW (zamiast idealnych 45°) ===
+ŹRÓDŁO (cytowane w kodzie, stała CANAL_NORMALS):
+  Wu S, Lin P, Zheng Y, Zhou Y, Liu Z, Yang X (2021). "Measurement of Human Semicircular Canal
+  Spatial Attitude". Front Neurol 12:741948. doi:10.3389/fneur.2021.741948  (MRI, n=55).
+  Kierunkowo zgodne z kanonem: Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP
+  (2005). "Orientation of human semicircular canals measured by 3D multiplanar CT reconstruction".
+  JARO 6:191-206. doi:10.1007/s10162-005-0003-x.
+  Walidacja wewnętrzna danych: koplanarność LARP/RALP — RA∥LP (cos≈0.985, ~10°), RP∥LA (cos≈0.988, ~9°).
+
+WEKTORY NORMALNE (układ Wu: x=lewo, y=przednio-tylny, z=góra):
+  RP[-0.651,0.702,0.287] LP[0.660,0.702,0.266] RA[0.749,0.577,0.324]
+  LA[-0.739,0.588,0.329] RH[-0.017,-0.299,0.954] LH[0.025,-0.279,0.960]
+
+MAPOWANIE NA MAGNITUDY (biorę |składowe| — znak osi Wu nieistotny dla proporcji; kierunki bicia
+z konwencji klinicznej w quickPhase): PION ∝ |x|(międzyuszna), POZIOM ∝ |z|(czaszkowa),
+SKRĘT ∝ |y|(nosowo-potyliczna). nysMag() normalizuje do max=1.
+
+REALNE PROPORCJE (max=1):  tylny v1.00:h0.41:t0.99 · przedni v1.00:h0.44:t0.78 · poziomy v0.02:h1.00:t0.29
+
+MASKA KLINICZNA (stała NYS_SHOW) — geometria daje magnitudy, ale konwencja kliniczna decyduje,
+KTÓRE składowe wyrażamy (każdą można odsłonić flagą true):
+  posterior.h=false  geom.≈0.41 — klin. pomijany (tylny opisywany jako pionowo-skrętny)
+  posterior.t=true                — skręt wyrażony; realne v:t ≈ 0.93:1 (było sztywne 1:1)
+  anterior.t=false   geom.≈0.78 — OVERRIDE KLINICZNY: czysty downbeat. UWAGA: geometria daje
+                                   ISTOTNY skręt (~0.78× pionu); "przedni = czysty downbeat" jest
+                                   decyzją kliniczną (torsja obserwacyjnie śladowa), NIE wynikiem geometrii.
+  horizontal.t=false geom.≈0.29 — klin. czysto poziomy (geom. mały skręt pominięty)
+Znaki bicia i maski zweryfikowane: tylny upbeat+skręt ipsi, przedni downbeat t=0, poziomy ku uchu.
+Jedyna od razu widoczna zmiana vs poprzednio: tylny v:t = 0.93:1 (realne) zamiast 1:1.

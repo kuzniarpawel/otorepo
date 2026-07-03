@@ -1,0 +1,99 @@
+==========================================================================
+ OTOREPO — lista zadań (todo)
+ Aplikacja: repozycja otolitów (BPPV) + diagnostyka, single-file HTML/JS
+ Pliki: otorepo.html (apka) · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
+ Ostatnia aktualizacja: 2026-07-02
+==========================================================================
+
+Konwencje techniczne:
+- Walidacja składni po każdej zmianie:
+    awk '/<script>/{f=1;next} /<\/script>/{f=0} f' otorepo.html > app.js && node --check app.js
+- Silnik = moduł `Vestibular` (czysty, BEZ DOM) — testowany offline w node przed podłączeniem.
+- Układ głowy: x=prawo, y=góra(czaszka), z=przód(nos). Strony: L=lewa, P=prawa. yaw>0 = w prawo.
+- Składowe oczopląsu (anat.): h:+prawo/-lewo, v:+góra/-dół, t:+górne bieguny w prawo/-w lewo.
+
+==========================================================================
+ OTWARTE (do zrobienia)
+==========================================================================
+
+SILNIK (fizyka) — rozszerzenia wg korzyść/koszt:
+ [ ] Męczliwość oczopląsu (rozproszenie otolitów przy powtórzeniach) — ŚREDNIA-WYSOKA (kryterium różnicujące).
+ [ ] Latencja przez wąski przewód gc(φ) — główny literaturowy mechanizm (mógłby zastąpić adhezję). ŚREDNI.
+ [ ] Kupulolitiaza słabsza od kanalolitiazy (~1 współczynnik) — NISKA-ŚREDNIA, tania korekta.
+ [ ] Pełne ΔP_c / hydrodynamika ścianek — NISKA korzyść, ryzyko fałszywej precyzji → odłożyć/pominąć.
+ [ ] Model ośrodkowy + magazynowanie prędkości — NISKA dla BPPV → pominąć.
+ [ ] Inne stany (excited:false / push-pull): jednostronna westybulopatia, oczopląs ośrodkowy.
+
+WALIDACJA / modelowanie kliniczne (otwarte):
+ [ ] Epley "front-loaded": cząstka osiąga wyjście (φ=178°) już w KROKU 2 → oczopląs w krokach 4/5 pod-reprezentowany.
+        Naprawa = korekta dynamiki φ w silniku (osobne zadanie).
+ [ ] Re-prowokacja per obrót (Lempert poziomy): model nie re-prowokuje na przejściach; obecnie łatane świeżym
+        provoke z faktycznej orientacji kroku (stepXiPeak). Pełne rozwiązanie = prowokacja na każdym przejściu head-Q.
+
+WIZUALIZACJA:
+ [ ] (opc.) Wykres czasowy ξ(t)/intensywności — pomoc dydaktyczna.
+ [ ] (opc.) Realny φ(t) przejścia otolitu w obrębie kroku (latencja) zamiast easeInOut (tylko czasowanie przejścia).
+ [ ] (kosmet.) Zgięcia ŁOKCI w figProj (ręce = proste linie shoulder->elbow->hand).
+ [ ] (opc.) sit/up: symetryczny wyprost karku vs zgięcie sit/down (nie zgłoszone jako błąd).
+
+DYDAKTYKA:
+ [ ] NOWA zakładka "geometria vs używane" (realne proporcje Wu 2021 + jawne override'y: przedni skręt ~0.78 ukryty,
+        poziomy ~0.29 ukryty). OSOBNO, poza Diagnostyką/Leczeniem, by nie komplikować obrazu klinicznego.
+
+SENSORY / KAMERA (przyszłość, po wizualizacji):
+ [ ] OrientationSource jako pluggable interfejs: ręczny stepper | Generic Sensor (Android, kwaternion) |
+        DeviceOrientation (iOS, Euler->kwaternion) | replay. Kalibracja "głowa neutralnie -> tap=zero".
+ [ ] Śledzenie oczu: MediaPipe Iris/FaceLandmarker lokalnie (WASM, ~3 MB -> osobny leniwie ładowany asset,
+        rdzeń zostaje single-file). Pozycja tęczówki -> ξ(t) -> nakładka "zmierzone vs przewidziane".
+ [ ] Pakowanie PWA over HTTPS (lub Capacitor/TWA) dla sensorów; tryb schematyczny może zostać file://.
+    Zastrzeżenia kliniczne: RGB ~30 fps != VNG/Frenzel (IR, wysokie fps, brak fiksacji); żyro dryfuje; magnetometr
+    zaszumiony w pomieszczeniach; MediaPipe nie testowany na chorobach oczu. Narzędzie dydaktyczne, nie pomiar SPV.
+
+MIGRACJA 3D (K4, odłożone jako projekt na przyszłość — patrz migracja_3d.txt):
+ [ ] Ścieżka B: Three.js single-file inline, geometria proceduralna, offline zachowany. Etap 0 czeka na dostarczenie
+        three.min.js. Fundament (FK+kwaterniony czyste, DOM-free) już gotowy pod tę migrację. Nie priorytet.
+
+==========================================================================
+ ZROBIONE (kamienie milowe)
+==========================================================================
+
+SILNIK (Vestibular, czysty moduł, zwalidowany offline):
+ [x] Rozmiar/gęstość cząstki jako parametr skalujący (size small/medium/big; medium=r1=baza). r → tauP∝r⁻²
+        (Stokes), gc∝r³ (masa/objętość), adh∝r (JKR). simulateCanalith + simulateCupulolith(gain∝r³).
+        Zwalidowane (preview_eval, 6 kanałów + realne manewry): regresja medium OK, monotoniczność lat↓/ξ↑. [engine_doc]
+ [x] UI rozmiaru złogu (Repozycja): selektor w setup + pill na ekranie kroku (pickSize/genPlan/currentManSim).
+        Małe złogi = dłuższe holdy (klinicznie ×1.6 sizedSeconds + dynamika cap≈20 s → small CZYŚCI wszystkie
+        manewry) z NOTĄ i cytatem Hain 2005. Animacja otolitu DUR∝1/r² (Stokes). Diagnostyka bez zmian. [view_doc]
+ [x] Prawa Ewalda: I (płaszczyzna/faza szybka ipsiwersyjnie), II (poziomy ampullopetal pobudza), III (pionowe
+        ampullofugal pobudza). quickPhase / isExcitatory / nystagmus / position.
+ [x] Dynamika cząstki: simulateCanalith (otolit na łuku, opór Stokesa, osklepek 1. rzędu -> latencja/crescendo/
+        decrescendo/wygasanie) + simulateCupulolith (osklepek ciężki, bez latencji, uporczywy). Kalibracja do
+        literatury (tauP=6.5, tauC=5, gc=1.6, adhezja). Wszystkie 6 kanałów zwalidowane.
+ [x] dynNystagmus(canal,side,ξ): kierunek = quickPhase*sign(ξ), intensywność = |ξ|*(ξ>0?1:0.45) (rektyfikacja
+        Ewalda II). Oczopląs ODWRÓCONY automatycznie ze znaku ξ; jednokierunkowe wyjście do woreczka (exited).
+ [x] Manewry jako osie czasu kwaternionów: stepHeadQ / maneuverTimeline / simulateCanalith. Epley/Semont/Lempert/
+        Yacovino/Gufoni geo+apo — 5/6 wychodzi obustronnie, apo=konwersja. Lempert KROK 1 yaw=90 (prowokacja poziomego).
+
+PEŁNE EWALD-WIRING MANEWRÓW (kierunek/siła/odwrócenie WYŁĄCZNIE z fizyki — zero ręcznych adnotacji):
+ [x] nysFromDyn(canal,side,ξ) + stepXiPeak(man,plan,step): ξ ze znakiem z ciągłej symulacji (+fallback provoke),
+        -> dynNystagmus. Usunięto headNys.ear/intensity oraz eyesNysFromHead. Karta oczopląsu gated progiem 0.10
+        (pojawia się tam, gdzie fizyka daje sygnał — np. Yacovino "broda do klatki"). Audyt Ewalda: SPÓJNY.
+ [x] Historyczne ξ(t) per krok (carry-over): manStepEnv z _manSim — kroki 2/3 startują od rezydualnej deflekcji;
+        rektyfikacja Ewalda II. Diagnostyka = osobna ścieżka (nysFromGeom/position), też Ewald-wyprowadzona.
+
+MODEL 2.5D SYLWETKI (figProj — JEDYNY renderer; figSide/POSE/postureFront/faceAngle/faceMarks/backMarks USUNIĘTE):
+ [x] FK+kwaterniony: SKEL/fkJoints/POSE3D/TORSO_Q/bodyJoints; composeHead (ciało o pitch o skręt szyi), gHead==stepGravity.
+ [x] Kotwiczenie do kozetki: opt.bedY, transformacja korzenia na całą grupę, wykluczenia zwisających części
+        (supineHang głowa+szyja poza krawędź; sit stopy/podudzia). Dół=118.0 dla wszystkich pozycji.
+ [x] Dynamiczny kark w bodyJoints (sit/down +30 broda-klatka, sit/up -30); kolana zgięte w siadzie.
+ [x] Depth cueing (przyciemnianie dalszych segmentów, normalizacja do zakresu głębi sylwetki).
+ [x] Twarz/profil/tył z rzutu nosa: reguła "nos prosto w dół ekranu -> tył" (noseP.y>0.5 && |noseP.x|<0.6*noseP.y);
+        nos w dół-do-przodu = profil. Semont bez hacka scale(-1); kamera topDownFront (obserwator na wprost).
+
+DIAGNOSTYKA I UI:
+ [x] Diagnostyka: Dix-Hallpike (tylny/przedni), Roll (geo/apo), Bow&Lean, deep head-hang; oczy+dial z oczopląsem,
+        karty odwracane (warianty, pary pozycji), mechanizm otolitu, karta zalecanego leczenia.
+ [x] Repozycja: przewodnik krok-po-kroku, timer (rAF, suwak, auto/dzwonek), animacja otolitu w labiryncie,
+        schemat głowy z góry + karta frontalna "Oczopląs", nawigacja kroków w karcie.
+ [x] Magnitudy {h,v,t} z normalnych (Wu 2021/Della Santina 2005); override'y: przedni czysty downbeat, poziomy czysto
+        poziomy (maska NYS_SHOW). Kanał przedni GEXC=-e1 (naprawiony znak), zgodność position<->dynamika 24/24.

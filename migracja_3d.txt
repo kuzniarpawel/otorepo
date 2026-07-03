@@ -1,0 +1,101 @@
+PLAN MIGRACJI 3D — ŚCIEŻKA B
+(Three.js w jednym pliku HTML, geometria proceduralna, offline zachowany)
+otorepo.html — kontynuacja. Silnik Vestibular przenosimy 1:1.
+
+═══════════════════════════════════════════════════════════════════
+CEL I OGRANICZENIA
+═══════════════════════════════════════════════════════════════════
+• Zostaje: JEDEN samodzielny plik .html, działający offline na Androidzie.
+• Dochodzi: interaktywny widok 3D (obrót palcem/myszą, perspektywa, przezroczysty błędnik).
+• Konsekwencja offline: three.min.js MUSI być w pliku (nie z CDN).
+  → three.min.js (~600 KB) dostarcza Paweł (pobrać raz), wklejamy krokiem sklejającym.
+  → Artefakt końcowy to nadal jeden .html (tylko większy).
+• Ograniczenie po stronie asystenta: brak podglądu 3D. Matematykę (adapter, pozycje kości,
+  oś czasu) weryfikuję liczbowo; WYGLĄD 3D ocenia Paweł. To główne ryzyko — planujemy
+  etapy tak, by każdy zostawiał DZIAŁAJĄCĄ apkę i dało się cofnąć.
+
+═══════════════════════════════════════════════════════════════════
+CO PRZENOSIMY / CO WYRZUCAMY
+═══════════════════════════════════════════════════════════════════
+PRZENIEŚĆ 1:1 (serce aplikacji, bez zmian logiki):
+  • Vestibular: kwaterniony qmul/qaxis/rotate/slerpQ, stepHeadQ/stepGravity, LEAN_G/BASE_G,
+    cały model oczopląsu i fizyki otolitu.
+  • Sekwencje kroków manewrów (generatory), instrukcje tekstowe, timery, UI stanu.
+STAJE SIĘ RIGIEM PROCEDURALNYM W THREE:
+  • SKEL / bodyJoints / composeHead / TORSO_Q / POSE3D / NECK_DEG
+    → hierarchia THREE.Object3D (kość = Object3D, offset = position, rotacja = quaternion).
+DO USUNIĘCIA (zastępuje Three):
+  • Scene3D.project (Three rzutuje sam), figProj/figSide/postureFront + cały render SVG sylwetki
+    — ale DOPIERO w ostatnim etapie (do tego czasu SVG jest naszym fallbackiem/porównaniem).
+
+═══════════════════════════════════════════════════════════════════
+UKŁADY WSPÓŁRZĘDNYCH — MOST (najważniejsza matematyka)
+═══════════════════════════════════════════════════════════════════
+Nasz świat:  x=prawo, y=góra, z=PRZÓD (nos, brzuch). Grawitacja dół=[0,-1,0].
+Three.js:    x=prawo, y=góra, z=TYŁ (ku obserwatorowi); "przód" obiektu to lokalne -z.
+UWAGA: to odbicie osi z — NIE wystarczy negować składowej z wektora, bo zmienia skrętność.
+ZASADA: NIE ufamy gotowemu wzorowi. Budujemy orientację głowy w Three z WEKTORÓW BAZOWYCH
+  (gdzie w świecie wskazuje nos i wierzchołek) i WERYFIKUJEMY tym samym testem, którego
+  używaliśmy: obróć nos [0,0,1], wierzchołek [0,1,0], grawitację — sprawdź, czy lądują tam,
+  gdzie mówi gHead(stepHeadQ). Dopiero gdy test przechodzi dla wszystkich 21 kombinacji
+  (pozycja×twarz), most jest gotowy. Kandydat do sprawdzenia: q'=(-qx,-qy,qz,qw) (odbicie z),
+  ale POTWIERDZAMY liczbowo, nie zakładamy.
+
+═══════════════════════════════════════════════════════════════════
+ETAPY (każdy zostawia działającą apkę)
+═══════════════════════════════════════════════════════════════════
+ETAP 0 — Three offline w pliku
+  • Paweł dostarcza three.min.js do /mnt/user-data/uploads.
+  • Krok sklejający: three.min.js wklejone w <script> na początku otorepo.html (inline).
+  • Weryfikacja: w pliku istnieje THREE; apka nadal otwiera się i działa jak dotąd (SVG bez zmian).
+  DZIAŁA OFFLINE: tak (biblioteka w pliku).
+
+ETAP 1 — Piaskownica 3D obok SVG
+  • Dodaj <canvas> obok obecnego widoku ułożenia. Scena: kamera perspektywiczna, światło
+    (ambient + directional), OrbitControls (obrót palcem/myszą). Pętla renderu requestAnimationFrame.
+  • Prymitywy: kula = głowa, kapsuła/walec = tułów, przy [0,0,0]. Osie pomocnicze (AxesHelper).
+  • Cel: potwierdzić mapowanie osi i że canvas współżyje z resztą UI.
+  • Weryfikacja: Paweł widzi obracalną bryłę; ja sprawdzam brak błędów konsoli/parsera.
+
+ETAP 2 — Most kwaternionowy (matematyka, weryfikowalna bez podglądu)
+  • Funkcja toThree(q) wg zasady wyżej. Podłącz stepHeadQ → head3d.quaternion.
+  • Test liczbowy (jak dotąd): dla każdej pozycji×twarz porównaj kierunek nosa/wierzchołka/grawitacji
+    w Three vs gHead. Próg błędu jak w K1 (~1e-3).
+  • Weryfikacja wizualna (Paweł): "klockowa" głowa reaguje poprawnie na kroki manewru.
+
+ETAP 3 — Rig ciała proceduralny
+  • Zbuduj hierarchię Object3D wg SKEL (pelvis→spine→neck→head; kończyny), offsety=position.
+  • Pozy (POSE3D) i orientacje (composeHead/TORSO_Q) → bone.quaternion (przez most z Etapu 2).
+  • Weryfikacja liczbowa: world-position kości w Three == bodyJoints (po transformacji układu).
+    Długości kości zachowane. Weryfikacja wizualna: sylwetka w każdej pozycji Semonta/Epleya.
+
+ETAP 4 — Błędnik + otolit
+  • Kanały półkoliste jako THREE.CatmullRomCurve3 (te same ścieżki co CANAL_PATHS, ale 3D).
+  • Otolit = mała sfera; pozycja = punkt na krzywej wg phi z silnika (curve.getPointAt).
+  • Półprzezroczysta czaszka/błędnik (material transparent, opacity). Osadzić w głowie lub obok.
+  • Weryfikacja: ruch otolitu zgodny z phi(t) silnika (liczbowo); Paweł ocenia czytelność.
+
+ETAP 5 — Płynne przejścia (oś czasu)
+  • Między krokami: slerpQ (mamy) na kościach/głowie; otolit po krzywej. Ewent. GSAP (też musiałby
+    być inline dla offline — albo własny tween na slerpQ, bez zależności).
+  • Weryfikacja: przejścia odwzorowują interpolację silnika.
+
+ETAP 6 — Zdjęcie SVG
+  • Gdy 3D stabilnie oddaje wszystkie ułożenia + oczopląs → usuń render SVG sylwetki.
+  • Zostaw ewentualnie tryb 2D jako opcję/fallback (przełącznik), jeśli przydatny dydaktycznie.
+
+═══════════════════════════════════════════════════════════════════
+PODZIAŁ RÓL
+═══════════════════════════════════════════════════════════════════
+ASYSTENT (pewne, weryfikowalne liczbowo): krok sklejający Three, kod sceny/rigu/mostu,
+  testy kwaternionów i pozycji kości, ścieżki kanałów, tweeny, integracja z silnikiem.
+PAWEŁ (to, czego nie zweryfikuję bez podglądu): dostarczenie three.min.js; ocena WYGLĄDU 3D
+  na każdym etapie (proporcje, czytelność, estetyka, poprawność wizualna ułożeń).
+
+RYZYKA
+  • Brak podglądu 3D u asystenta — debug wizualny wolniejszy, oparty o opis Pawła.
+  • Rozmiar pliku (Three inline) — plik urośnie do ~1 MB; akceptowalne dla offline single-file.
+  • Etap 3 (rig) — najwięcej pracy; robimy przyrostowo, pozycja po pozycji.
+
+NASTĘPNY KROK: Etap 0 — Paweł wrzuca three.min.js; asystent wpina ją inline i potwierdza,
+  że apka działa jak dotąd. Potem Etap 1 (piaskownica).
