@@ -76,3 +76,12 @@ Silnik jest zredukowaną, fenomenologiczną implementacją uznanych modeli biome
 - Schuknecht (1969) — kupulolitiaza; Hall, Ruby, McClure (1979) — kanalolitiaza.
 - Ewald (1892) — prawa Ewalda I/II/III.
 - Wu i wsp. (2021); Della Santina i wsp. (2005) — orientacje płaszczyzn kanałów.
+
+## Licencja
+
+Projekt objęty licencją **GNU General Public License v3.0** (GPL-3.0). Oznacza to m.in., że
+możesz go używać, studiować, modyfikować i rozpowszechniać, pod warunkiem że utwory pochodne
+pozostaną objęte tą samą licencją (copyleft) i zachowają informację o źródle. Oprogramowanie
+dostarczane jest **bez jakiejkolwiek gwarancji**, w zakresie dopuszczalnym przez prawo.
+
+Pełny tekst licencji znajduje się w pliku [`LICENSE`](LICENSE).
