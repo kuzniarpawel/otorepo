@@ -926,6 +926,22 @@ function loopRAF(fn){ // fn(now) -> true aby kontynuować
 const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 const lerp=(a,b,t)=>a+(b-a)*t;
 
+/* ============ Wake Lock — ekran nie gaśnie podczas odliczania manewru ============
+   W3C Screen Wake Lock API: bez wtyczek/zależności; działa w WebView Capacitora (kontekst https)
+   i w przeglądarce po http(s)/localhost. Wymaga secure context (po file:// milcząco nieaktywny).
+   Blokada aktywna WYŁĄCZNIE gdy licznik biegnie (state.running); zwalniana przy pauzie/resecie/końcu/
+   wyjściu. System zwalnia blokadę po zejściu apki w tło → ponawiamy przy powrocie, jeśli licznik trwa. */
+let _wakeLock=null;
+async function acquireWake(){
+  try{ if('wakeLock' in navigator && !_wakeLock){
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', ()=>{ _wakeLock=null; });
+  } }catch(e){ /* nieobsługiwane / odrzucone → brak działania (fallback: natywny FLAG_KEEP_SCREEN_ON) */ }
+}
+async function releaseWake(){ try{ const w=_wakeLock; _wakeLock=null; if(w) await w.release(); }catch(e){} }
+function syncWake(){ if(state.running) acquireWake(); else releaseWake(); }   // spina blokadę ze stanem licznika
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && state.running) acquireWake(); });
+
 /* ============ SVG: głowa z góry ============ */
 function headDial(yaw,face,headView,nys,swap){
   // obserwator jako KAMERA (zamiast flag behind/swap): obecny dial = "z góry, od tyłu"
@@ -1413,6 +1429,7 @@ function setupGuideAnim(){
   if(blendOnly) placeOtolith(canal, 1, 1); else placeOtolith(canal, fFrom, 0);
   if(state.autostart && total>0){ state.running=true; }
   state.autostart=false;
+  syncWake();                                                    // auto‑przejście: utrzymaj blokadę ekranu, gdy krok startuje sam
 
   let last=performance.now(), lastSec=-1, otoStart=null;
   const rSize=sizeRadius(state.size);                            // ANIMACJA wg rozmiaru: prędkość osiadania ∝ r² (Stokes) →
@@ -1445,7 +1462,7 @@ function setupGuideAnim(){
     return true;
   });
 }
-function updateGoBtn(){ const b=$("#btnGo"); if(b){ b.textContent=state.running?"Pauza":"Start"; b.classList.toggle("run",state.running);} }
+function updateGoBtn(){ const b=$("#btnGo"); if(b){ b.textContent=state.running?"Pauza":"Start"; b.classList.toggle("run",state.running);} syncWake(); }
 function toggleTimer(){ if(!state.running && state.elapsedMs/1000>=state.total) state.elapsedMs=0; state.running=!state.running; updateGoBtn(); }
 function resetTimer(){ state.elapsedMs=0; state.running=false; updateGoBtn(); }
 function adjust(d){ state.total=Math.max(5,state.total+d); const st=state.plan.steps[state.step]; st.seconds=state.total;
@@ -1732,7 +1749,7 @@ function startManeuver(key){
   state.plan=genPlan(key,state.side); state.step=0; state.autostart=false; state.screen="guide"; render();
 }
 function startDiag(){ state.screen="diag"; render(); }
-function backToSetup(){ state.running=false; state.screen="setup"; render(); }
+function backToSetup(){ state.running=false; releaseWake(); state.screen="setup"; render(); }
 function goStep(i,autostart){ const n=state.plan.steps.length; if(i<0||i>=n) return; state.step=i; state.autostart=!!autostart; render(); }
 function toggleAuto(el){ state.autoAdvance=!state.autoAdvance; el.setAttribute("aria-checked",state.autoAdvance); }
 function toggleSound(el){ state.sound=!state.sound; el.setAttribute("aria-checked",state.sound); if(state.sound)beep(); }
