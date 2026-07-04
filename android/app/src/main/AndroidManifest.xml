@@ -35,7 +35,7 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
-
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Aplikacja jest w pełni offline (jednoplikowy HTML z lokalnych zasobów, brak żądań sieciowych)
+         → celowo BEZ uprawnienia INTERNET (zero uprawnień). Jeśli po uruchomieniu WebView byłby pusty,
+         przywróć: <uses-permission android:name="android.permission.INTERNET" /> -->
 </manifest>
