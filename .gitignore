@@ -1,9 +1,22 @@
 # local dev tooling (Claude preview server; serve.ps1 has an absolute local path)
 .claude/
 
-# design mockups / screenshots
-*.png
+# design mockups / screenshots (root only — must NOT match Android launcher icons under android/)
+/*.png
 
 # prototype scratch files (not part of the app)
 proto_ui.html
 semont_2d.html
+
+# --- Node / Capacitor ---
+node_modules/
+
+# generated web root — copied from otorepo.html by `npm run copy:web`
+www/
+
+# app signing keys — NEVER commit these
+*.keystore
+*.jks
+
+# stray Windows shortcuts
+*.lnk

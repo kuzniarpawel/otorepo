@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OTOREPO</string>
+    <string name="title_activity_main">OTOREPO</string>
+    <string name="package_name">com.kuzniarpawel.otorepo</string>
+    <string name="custom_url_scheme">com.kuzniarpawel.otorepo</string>
+</resources>
