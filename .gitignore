@@ -14,9 +14,10 @@ node_modules/
 # generated web root — copied from otorepo.html by `npm run copy:web`
 www/
 
-# app signing keys — NEVER commit these
+# app signing keys & secrets — NEVER commit these
 *.keystore
 *.jks
+keystore.properties
 
 # stray Windows shortcuts
 *.lnk
