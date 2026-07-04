@@ -1,7 +1,7 @@
-<!-- Foreground adaptive-icon OTOREPO: logo "ucho/ślimak" z otorepo.html (topbar .mark).
-     Ścieżka w układzie 24x24 (jak w SVG aplikacji), wyśrodkowana w 108dp przez group scale+translate,
-     w strefie bezpiecznej (~66dp). Kolor = --primary (#4FC9E8) na tle --bg (ic_launcher_background).
-     Regulacja rozmiaru/pozycji: zmień scaleX/scaleY i translateX/translateY w <group>. -->
+<!-- Foreground adaptive-icon OTOREPO: logo "ucho/slimak" z otorepo.html (topbar .mark).
+     Sciezka w ukladzie 24x24 (jak w SVG aplikacji), wysrodkowana w 108dp przez group scale i translate,
+     w strefie bezpiecznej (ok. 66dp). Kolor = primary aplikacji (#4FC9E8) na tle bg (#0E141B).
+     Regulacja rozmiaru/pozycji: zmien scaleX/scaleY oraz translateX/translateY w group. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
