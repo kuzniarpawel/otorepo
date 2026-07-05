@@ -21,3 +21,6 @@ keystore.properties
 
 # stray Windows shortcuts
 *.lnk
+
+# raw phone screenshots / Play store upload assets (not repo content)
+Screenshot_*
