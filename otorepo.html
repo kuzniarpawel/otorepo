@@ -975,6 +975,7 @@ const state={
 
 /* ============ rAF rejestr ============ */
 let animFrames=[];
+let _otoStart=null;   // start animacji wędrówki otolitu (moduł, by dało się ją zrestartować przy flipie karty)
 function cancelAnims(){ animFrames.forEach(id=>cancelAnimationFrame(id)); animFrames=[]; }
 function loopRAF(fn){ // fn(now) -> true aby kontynuować
   const idx=animFrames.length;
@@ -1488,15 +1489,15 @@ function setupGuideAnim(){
   if(state.autostart && total>0){ state.running=true; }
   state.autostart=false; syncWake();
 
-  let last=performance.now(), lastSec=-1, otoStart=null;
+  _otoStart=null; let last=performance.now(), lastSec=-1;
   const rSize=sizeRadius(state.size);                            // ANIMACJA wg rozmiaru: prędkość osiadania ∝ r² (Stokes) →
   const DUR=Math.max(800, Math.min(3000, Math.round(1600/(rSize*rSize))));  // czas wędrówki ∝ 1/r² (małe = wolniej, duże = szybciej; medium=1600 bez zmian)
   loopRAF((now)=>{
     if(!document.getElementById("otolith")) return false;
     const dt=now-last; last=now;
     // ANIMACJA OTOLITU: przejście fFrom→fTo na wejściu w krok, niezależnie od timera (ruch przy repozycji)
-    if(otoStart===null) otoStart=now;
-    const ot=Math.min(1,(now-otoStart)/DUR);
+    if(_otoStart===null) _otoStart=now;
+    const ot=Math.min(1,(now-_otoStart)/DUR);
     if(blendOnly){ placeOtolith(canal, 1, 1); }
     else if(exited && state.step===sched.exitStep){
       // najpierw dojazd po ścieżce do wyjścia (0–0.65), potem wpadnięcie do łagiewki (0.65–1)
@@ -1541,7 +1542,21 @@ function initGuideSlider(){
   track.onpointerup=track.onpointercancel=()=>{ drag=false; };
 }
 // Odwracana karta: widok frontalny ⇄ wędrówka otolitów (animacja czysto CSS; obie strony w DOM)
-function flipGuide(){ const f=$("#flip"); if(f) f.classList.toggle("flipped"); }
+function flipGuide(){ const f=$("#flip"); if(!f) return; f.classList.toggle("flipped"); replayGuideAnims(); }
+// Odtwarza od nowa ZSYNCHRONIZOWANE animacje kroku (wędrówka otolitu + oczopląs: oczy i dial). Wywoływane
+// przy obróceniu karty, żeby strona „wędrówka otolitów" nie pokazywała stanu końcowego, lecz grała w parze
+// z oczopląsem od tego samego t=0 (te same env/parametry co przy wejściu w krok w renderGuide).
+function replayGuideAnims(){
+  _otoStart=null;                                   // restart wędrówki otolitu (pętla setupGuideAnim gra dalej)
+  const p=state.plan, _man=currentManSim();
+  const _gn=nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step, state.size));
+  const gn=(_gn && _gn.strength>=0.10)?_gn:null;
+  if(gn){
+    const env=manStepEnv(_man, state.step);
+    const c=$("[data-nys-guide]"); if(c) startNys(c, gn, env);
+    startDialNys(gn, p, env);
+  }
+}
 // wyrównanie wysokości obu stron (warstwy absolutne) — bez „skakania" przy obrocie
 function sizeFlip(id="flip"){ const f=$("#"+id); if(!f) return; let h=0;
   f.querySelectorAll(".face").forEach(el=>{ h=Math.max(h, el.scrollHeight + (el.offsetHeight - el.clientHeight)); });  // +ramka (border-box) → bez paska
