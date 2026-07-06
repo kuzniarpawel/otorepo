@@ -5,6 +5,14 @@
 
 <title>Repozycja otolitów — asystent manewrów</title>
 
+<!-- PWA: instalacja na ekranie początkowym + działanie offline (iPhone/iPad/Android) -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OTOREPO">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
 <style>
 /* IBM Plex Sans — tylko latin + latin-ext (polski), woff2 wklejone inline, wagi 400-800.
    Podzbiory cyrillic/greek/vietnamese pominięte (niepotrzebne). Każdy plik wklejony RAZ (zakresy wag). */
@@ -1804,5 +1812,12 @@ function toggleAuto(el){ state.autoAdvance=!state.autoAdvance; el.setAttribute("
 function toggleSound(el){ state.sound=!state.sound; el.setAttribute("aria-checked",state.sound); if(state.sound)beep(); }
 
 render();
+</script>
+<!-- Rejestracja service workera (PWA offline). WYŁĄCZONA w natywnej apce Capacitor
+     (window.Capacitor), by uniknąć serwowania nieaktualnego cache po aktualizacji. -->
+<script>
+if('serviceWorker' in navigator && !window.Capacitor){
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
 </script>
 </body></html>
