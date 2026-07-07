@@ -18,13 +18,18 @@ Aplikacja jest w pełni offline (brak three.js / CDN); wizualizacja to schematyc
 
 ## Co robi
 
-Dwie zakładki:
+Trzy zakładki:
 
 - **Repozycja** — wybór zajętego kanału (tylny ~85% / poziomy ~10% / przedni ~1–2%), dobór manewru
   (Epley, Semont, Lempert/BBQ, Gufoni geo/apo, Yacovino), przewodnik krok-po-kroku z licznikiem,
   schematem głowy z góry, animacją wędrówki otolitu w labiryncie oraz kartą frontalną oczopląsu.
 - **Diagnostyka** — Dix–Hallpike (tylny/przedni), Roll test (geo/apo), Bow & Lean, deep head-hang;
   predykcja oczopląsu (oczy + dial), mechanizm otolitu (kanalo-/kupulolitiaza), karta zalecanego leczenia.
+- **HINTS (różnicowanie ośrodek↔obwód)** — model **„od pierwszych zasad"** (silnik `NeuroVOR`): zmieniasz
+  fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs
+  samoistny, jego zależność od fiksacji/spojrzenia, wynik pchnięcia głowy (vHIT) i odchylenie skośne
+  **wynikają same**. Scenariusze (zdrowy / neuronitis / udar), interaktywne panele (oczopląs + Frenzel/spojrzenie,
+  vHIT z sakadą korygującą, naprzemienne zasłanianie) i karta werdyktu HINTS (mnemonik INFARCT).
 
 ## Architektura
 
@@ -35,6 +40,11 @@ Jedno źródło prawdy 3D (układ głowy: `x = prawo, y = góra/czaszka, z = prz
   decrescendo / wygasanie / jednokierunkowe wyjście do woreczka) oraz kupulolitiazy (ciężki osklepek,
   bez latencji, uporczywy). Kierunek, siła i odwrócenie oczopląsu wynikają **wyłącznie z fizyki**.
   Dokumentacja: [`engine_doc.txt`](engine_doc.txt).
+- **Silnik `NeuroVOR`** — druga czysta warstwa **bez DOM**: fizjologia toniczna/ośrodkowa VOR (spoczynkowa
+  aktywność błędników + prawo Ewalda z obcięciem hamowania → oczopląs samoistny; supresja fiksacji przez
+  kłaczek; wzmocnienie kanałów → vHIT + sakada korygująca; integrator „leaky" → oczopląs spojrzeniowy;
+  oś grawiceptywna otolity/MLF → skew) oraz synteza **HINTS** (obwód↔ośrodek). Patologia emerguje ze zmiany
+  kilku parametrów. Dokumentacja: [`engine_doc.txt`](engine_doc.txt) (sekcja „MODUŁ NeuroVOR", bibliografia [H1]–[H9]).
 - **Wizualizacja `Scene3D` (2.5D)** — matematyka 3D (kwaterniony, FK szkieletu) rzutowana ortograficznie
   do schematycznego SVG; kamera = obserwator (lekarz). Dokumentacja: [`view_doc.txt`](view_doc.txt).
 
@@ -76,6 +86,15 @@ Silnik jest zredukowaną, fenomenologiczną implementacją uznanych modeli biome
 - Schuknecht (1969) — kupulolitiaza; Hall, Ruby, McClure (1979) — kanalolitiaza.
 - Ewald (1892) — prawa Ewalda I/II/III.
 - Wu i wsp. (2021); Della Santina i wsp. (2005) — orientacje płaszczyzn kanałów.
+
+Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS) — pełne odnośniki [H1]–[H9] w `engine_doc.txt`:
+
+- Goldberg & Fernández (1971) — spoczynkowa aktywność aferentów kanałowych (~90/s).
+- Halmagyi & Curthoys (1988); Weber i wsp. (2008) — test pchnięcia głowy (vHIT), sakady korygujące.
+- Cannon & Robinson (1987) — integrator nerwowy „leaky" (oczopląs spojrzeniowy).
+- Brandt & Dieterich (1993) — odchylenie skośne / OTR (znak pniowy).
+- Kattah i wsp. (2009) — HINTS; Tarnutzer i wsp. (2011) — różnicowanie AVS obwód/ośrodek.
+- Leigh & Zee, *The Neurology of Eye Movements* — VOR, supresja fiksacji, integrator.
 
 ## Licencja
 

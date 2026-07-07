@@ -4,7 +4,7 @@
  Charakter: matematyka 3D (czysta) → schematyczne SVG przez rzut ortograficzny.
  Zasada: BEZ three.js (offline); styl schematyczny; jedno źródło prawdy 3D
          wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
- Ostatnia aktualizacja: 2026-07-02
+ Ostatnia aktualizacja: 2026-07-07
 ==========================================================================
 
 GŁÓWNA IDEA
@@ -35,6 +35,24 @@ Silnik przyjmuje `size` ("small"|"medium"|"big"; medium=r1=baza) skalujący dyna
    Hain TC, Squires TM, Stone HA (2005). „Clinical implications of a mathematical model of BPPV."
    Ann N Y Acad Sci 1039:384-394. (uzasadnienie utrzymania pozycji ~30 s w CRP; wolne osiadanie otoconiów).
    Zmienność latencji/siły wg rozmiaru: „Extremely Long Latency BPPV" (Res Vestib Sci, 2017).
+
+=== RÓŻNICOWANIE OŚRODEK↔OBWÓD — UI „HINTS" (moduł silnika: NeuroVOR) ===
+Trzecia zakładka (obok Repozycji i Diagnostyki). state.screen==="hints"; renderHints() rysuje:
+ - selektor scenariusza (NeuroVOR.SCENARIOS) + karta WERDYKTU (hintsVerdictHTML: verdict obwód/ośrodek,
+   tagi HI·N·TS zielony/czerwony, blok INFARCT dla ośrodka).
+ - PANEL OCZOPLĄSU SAMOISTNEGO: eyesSVG (te same oczy co Diagnostyka) + startNeuroNys — CIĄGŁY oczopląs
+   poziomo-skrętny (translate x = poziom + rotate = skręt wokół tęczówki), amplituda ∝ strength z
+   NeuroVOR.nystagmusAtGaze(p,gazeDeg,fixOn). Odchylenie spojrzenia = translate x (mirror kamery ~0.5 px/°).
+   Bez tEnd (trwa aż do zmiany warunków). Tło „.dark" = tryb Frenzel/ciemność. Przełączniki: fiksacja
+   (Frenzel/światło) + spojrzenie (L/środek/P) → re-render.
+ - PANEL vHIT: hitSVG (głowa-slab z oczami + cel ○). startHIT(hi): oś czasu pchnięcie→utrzymanie→SAKADA
+   korygująca→powrót. Głowa = translate x; tęczówki lokalnie = (błąd_fiksacji − translate_głowy), więc
+   oko-w-przestrzeni = (1−gain)·amplituda podczas pchnięcia, potem sakada do celu. gain 1 → oczy „zamknięte" na celu.
+ - PANEL SKEW: skewSVG (oczy P/L + zasłona) + startSkew: naprzemienne przesuwanie zasłony; odsłonięte oko
+   robi PIONOWĄ sakadę dev→0; oko pod zasłoną dryfuje do rozjazdu (±skewDeg·4 px). Brak skew → oczy w linii.
+Wszystkie pętle przez loopRAF (sprzątane cancelAnims przy re-render). CSS: .tabs.three, .pillseg, .hint-eyes,
+.hverdict.{peripheral|central|normal}, .hrow .tag.{ok|bad}. Kolor: obwód=zielony (uspokajający), ośrodek=czerwony.
+Fizyka i literatura: engine_doc „MODUŁ NeuroVOR" [H1]-[H8].
 
 --------------------------------------------------------------------------
  Scene3D  (etap A)

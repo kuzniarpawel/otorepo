@@ -259,6 +259,28 @@
   .stepnav.fin{background:var(--primary); color:var(--ink); border-color:transparent; box-shadow:0 6px 16px -8px rgba(79,210,238,.6)}
   @media (prefers-reduced-motion:reduce){ .toggle::after,.opt,.cta,.tabs button{transition:none !important} }
   @media (prefers-reduced-motion:reduce){ .flip{transition:none !important} }
+
+  /* --- HINTS / różnicowanie ośrodek↔obwód --- */
+  .tabs.three{grid-template-columns:1fr 1fr 1fr}
+  .tabs.three button{font-size:12.5px;padding:12px 3px}
+  .hctrl{display:flex;align-items:center;gap:10px;margin:11px 0 2px;flex-wrap:wrap}
+  .hctrl .lbl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);flex:0 0 auto;font-weight:700}
+  .pillseg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel2)}
+  .pillseg button{appearance:none;cursor:pointer;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:12.5px;padding:8px 13px;min-height:36px;transition:background .15s,color .15s}
+  .pillseg button[aria-pressed="true"]{background:var(--primary);color:var(--ink)}
+  .hint-eyes{background:radial-gradient(120% 120% at 50% 30%, #10202b, var(--panel));border:1px solid var(--line);border-radius:14px;padding:12px 10px 10px;transition:background .2s}
+  .hint-eyes.dark{background:radial-gradient(120% 120% at 50% 30%, #0a0f14, #05080b);border-color:#1a2630}
+  .frenzel-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;letter-spacing:.05em;color:var(--faint);margin-top:2px}
+  .hverdict{margin-top:14px;border-radius:var(--r);padding:14px 15px;border:1px solid var(--line);box-shadow:var(--shadow);background:var(--panel)}
+  .hverdict.peripheral{background:linear-gradient(160deg,rgba(63,209,158,.12),var(--panel) 62%);border-color:#2f7f68}
+  .hverdict.central{background:linear-gradient(160deg,#3a1620,#2a1118);border-color:#d9576b}
+  .hverdict h4{margin:0 0 5px;font-family:var(--display);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:var(--faint)}
+  .hverdict .vv{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:2px}
+  .hverdict.peripheral .vv{color:#7fe3c4} .hverdict.central .vv{color:#ff9bab}
+  .hrow{display:flex;gap:9px;align-items:flex-start;margin-top:8px;font-size:13px;line-height:1.42}
+  .hrow .tag{font-size:11px;font-weight:800;padding:2px 8px;border-radius:7px;flex:0 0 auto;margin-top:1px;min-width:22px;text-align:center;background:var(--panel2);color:var(--faint);border:1px solid var(--line)}
+  .hrow .tag.ok{background:rgba(63,209,158,.16);color:#7fe3c4;border-color:#2f7f68}
+  .hrow .tag.bad{background:rgba(217,87,107,.16);color:#ff9bab;border-color:#d9576b}
 </style>
 
 </head><body><div class="wrap" id="app">
@@ -505,6 +527,219 @@ const Scene3D = (()=>{
   // kąt zgodny z ruchem wskazówek zegara od "góry ekranu" (dla obrotów schematu)
   function screenAngleCW(p){ const a=Math.atan2(p.x, -p.y)*180/Math.PI; return ((a%360)+360)%360; }
   return { HEAD_POINTS, CAMERAS, project, screenAngleCW };
+})();
+
+/* ============ NeuroVOR — silnik toniczny/ośrodkowy (warstwa HINTS) ============
+   Model „od pierwszych zasad": nie kodujemy wyglądu patologii, lecz fizjologię
+   (spoczynkowa aktywność błędników, prawo Ewalda z obcięciem hamowania, przetwarzanie
+   ośrodkowe). Oczopląs i objawy WYNIKAJĄ z asymetrii parametrów. Warstwa niezależna od
+   dynamiki BPPV (simulateCanalith); współdzieli tylko konwencje kierunków i kamerę.
+   Konwencje: "P"=prawa=+x (ucho prawe), "L"=lewa=-x; kamera frontalna (lekarz naprzeciw)
+   odbija poziom/skręt (cam.right[0]=-1), tak jak nysFromGeom/nysFromDyn.
+   Etapy: (1) oczopląs samoistny push-pull ← TU; (2) supresja fiksacji; (3) vHIT;
+   (4) integrator „leaky" + skew/OTR; (5) synteza HINTS.
+   LITERATURA (pełne odnośniki w engine_doc.txt, sekcja „MODUŁ NeuroVOR"):
+   [H1] Goldberg&Fernández 1971 (spoczynkowa aktywność aferentów ~90/s) · [H2] Ewald 1892 / Baloh&Honrubia
+   (II prawo: pobudzenie>hamowanie, obcięcie hamowania) · [H3] Leigh&Zee, Neurology of Eye Movements
+   (supresja fiksacji przez kłaczek; integrator) · [H4] Halmagyi&Curthoys 1988 (head impulse) · [H5] Weber
+   i wsp. 2008 (vHIT: VOR gain + sakady korygujące) · [H6] Cannon&Robinson 1987 (integrator „leaky" →
+   oczopląs spojrzeniowy) · [H7] Brandt&Dieterich 1993 (skew/OTR, znak pniowy, MLF) · [H8] Kattah i wsp.
+   2009, Stroke (HINTS; mnemonik INFARCT). */
+const NeuroVOR = (()=>{
+  const R0 = 90;         // spoczynkowa częstotliwość aferentów kanału (Hz) — zdrowy błędnik
+  const R_SAT = 300;     // sufit pobudzenia (Hz) — aferent nie przekracza ~3× spoczynku (nasycenie)
+  const SPV_MAX = 12;    // faza wolna (°/s) przy pełnej asymetrii (błędnik 0 Hz) — rząd kliniczny UVH w ciemności
+  const TORS_FRAC = 0.5; // udział składowej skrętnej wzgl. poziomej w oczopląsie obwodowym (poglądowo — oczopląs poziomo-skrętny)
+  const camRx = ()=>Scene3D.CAMERAS.frontal.right[0];   // odbicie kamery obserwatora (=-1)
+
+  // Aferent po REKTYFIKACJI: prawo Ewalda — obcięcie hamowania (firing ≥ 0) + nasycenie (≤ R_SAT).
+  // Wspólny prymityw: spoczynek (drive=0) i pchnięcie głowy (drive≠0, etap 3). drive w Hz-równoważnych.
+  function afferent(tone, drive){ return Math.max(0, Math.min(R_SAT, tone + drive)); }
+
+  // Kanoniczny „pacjent": globalne parametry fizjologii. Patologię tworzy zmiana kilku liczb;
+  // zachowanie gałek wynika z modelu. Pola dynamiczne wykorzystywane w kolejnych etapach.
+  function makePatient(o){ return Object.assign({
+    toneL:R0, toneR:R0,      // spoczynkowa aktywność błędnika L/P (Hz) — hipofunkcja obniża
+    gainL:1.0, gainR:1.0,    // wzmocnienie VOR kanału poziomego L/P (0..~1.1) — vHIT (etap 3)
+    fixationGain:0.9,        // zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0 (etap 2)
+    integratorTau:25,        // stała czasowa integratora nerwowego (s); ośrodek „leaky" → krótka (etap 4)
+    skewTone:0, otrTorsion:0 // grawiceptywna asymetria / OTR (etap 4)
+  }, o||{}); }
+
+  // ETAP 1 — Oczopląs SAMOISTNY z asymetrii tonicznej (push-pull). [H1][H2]
+  // Mózg szacuje prędkość głowy z różnicy aferentów pary poziomej: Ω_est ∝ (rateL − rateR)
+  //   (obrót w LEWO pobudza lewy kanał → rateL↑). W spoczynku rate=tone → asymetria toniczna
+  //   udaje stały obrót: faza WOLNA ku błędnikowi słabszemu, faza SZYBKA (widoczny beat) ku
+  //   silniejszemu (zdrowemu). Kierunek stały niezależnie od spojrzenia — cecha OBWODOWA.
+  function spontaneous(p){
+    const rL=afferent(p.toneL,0), rR=afferent(p.toneR,0);
+    const imbalance = rL - rR;                     // >0 ⇒ pozorny obrót w lewo ⇒ faza wolna w prawo ⇒ bije w LEWO
+    const asym = Math.min(1, Math.abs(imbalance)/R0);
+    const spv = SPV_MAX*asym;                      // °/s — surowa faza wolna (bez fiksacji)
+    const beatSign = -Math.sign(imbalance) || 0;   // head-frame: +1 ku P, −1 ku L (ku silniejszemu uchu)
+    const beatEar   = beatSign>0 ? "P" : beatSign<0 ? "L" : null;   // ucho silniejsze/zdrowe
+    const lesionEar = imbalance>0 ? "P" : imbalance<0 ? "L" : null; // ucho słabsze (jeśli obniżone)
+    // składowe head-frame: poziom ku silniejszemu uchu + śladowy skręt (biegun górny ku niemu); pion ≈0.
+    const h=beatSign, t=beatSign*TORS_FRAC, v=0;
+    return { kind:"horizontalTorsional", h, v, t,
+      dir:  Math.sign(h*camRx()) || 0,             // znak EKRANOWY poziomu (jak nysFromDyn)
+      tdir: Math.sign(t*camRx()) || 0,             // znak EKRANOWY skrętu
+      vdir: 1, strength: asym, spv, beatEar, lesionEar };
+  }
+
+  // ETAP 2 — SUPRESJA FIKSACJI (kłaczek / parakłaczek). [H3]
+  // Równanie oka: prędkość_oka = sygnał_VOR − fixationGain·retinal_slip. W fazie wolnej poślizg
+  // siatkówkowy = surowa faza wolna; pętla wzrokowa (pościg/optokinetyka przez kłaczek) odejmuje ją.
+  // Z FIKSACJĄ (światło) oczopląs OBWODOWY gaśnie (fixationGain≈0.9); w ciemności/goglach Frenzla
+  // (brak fiksacji) bije z pełną siłą. OŚRODEK: kłaczek uszkodzony → fixationGain≈0 → NIE tłumi się
+  // fiksacją (a bywa silniejszy: fixationGain<0 = paradoksalne wzmocnienie).
+  function suppressionFactor(p, fixOn){
+    if(!fixOn) return 1;                                    // ciemność / Frenzel — brak sprzężenia wzrokowego
+    const g = Math.max(-0.5, Math.min(1, p.fixationGain));
+    return Math.max(0, 1 - g);                              // g=0.9→0.1 (obwód gaśnie); g=0→1 (ośrodek trwa); g<0→>1 (paradoks)
+  }
+  // Oczopląs OBSERWOWANY w danym stanie fiksacji (fixOn: true=światło/fiksacja, false=ciemność/Frenzel).
+  function observe(p, fixOn){
+    const s = spontaneous(p), f = suppressionFactor(p, fixOn), spvRaw = s.spv;
+    return Object.assign({}, s, {
+      spv: spvRaw*f, spvRaw, fixation: !!fixOn, suppressionFactor: f,
+      suppressed: spvRaw>0.5 && f<=0.5,                     // klinicznie „tłumi się fiksacją" (≥50% redukcji)
+      strength: spvRaw>0 ? s.strength*f : 0                 // amplituda renderera skaluje się z WIDOCZNĄ fazą wolną
+    });
+  }
+
+  // ETAP 3 — TEST PCHNIĘCIA GŁOWY (Head Impulse / vHIT). [H4][H5]
+  // Szybkie, bierne pchnięcie głowy w bok X pobudza kanał poziomy IPSILATERALNY (Ewald II —
+  // przepływ ampullopetalny), a hamuje przeciwny. Przy dużej prędkości kanał HAMOWANY uderza w
+  // OBCIĘCIE HAMOWANIA (0 Hz) i przestaje nieść informację → sygnał prędkości niesie WYŁĄCZNIE kanał
+  // POBUDZANY. Dlatego HIT bada kanał ipsilateralny: uszkodzony (niska gainX) → VOR gain<1 → oko nie
+  // nadąża → poślizg siatkówkowy → SAKADA KORYGUJĄCA (catch-up) ku celowi (przeciwnie do pchnięcia).
+  //   OBWÓD (neuronitis): gain kanału chorego niski → sakada przy pchnięciu ku choremu = wynik PATOLOGICZNY.
+  //   OŚRODEK (udar): kanały zdrowe (gain≈1) → HIT PRAWIDŁOWY (brak sakady) = zły znak (nie uspokaja).
+  const S_HZ = 0.8;          // czułość aferentu (Hz na °/s) — kalibracja: obcięcie hamowania ~tone/S ≈112°/s < prędkości vHIT
+  const VIS_THRESH = 2;      // próg widoczności klinicznej oczopląsu (°/s) — poniżej: brak jawnego oczopląsu
+  function headImpulse(p, toSide, opts){
+    opts = opts||{};
+    const Ohm = opts.headVel||200, amp = opts.headAmp||15;   // szczyt prędkości (°/s) i amplituda (°) pchnięcia
+    const gEx = toSide==="P" ? p.gainR : p.gainL;            // kanał POBUDZANY = ipsilateralny do pchnięcia
+    const gIn = toSide==="P" ? p.gainL : p.gainR;            // kanał HAMOWANY = przeciwny
+    const toneEx = toSide==="P" ? p.toneR : p.toneL;
+    const toneIn = toSide==="P" ? p.toneL : p.toneR;
+    const rateEx = afferent(toneEx, +gEx*S_HZ*Ohm);          // pobudzany (może nasycać ≤R_SAT)
+    const rateIn = afferent(toneIn, -gIn*S_HZ*Ohm);          // hamowany (obcięcie na 0)
+    const modEx = rateEx - toneEx, modIn = rateIn - toneIn;  // modulacje względem spoczynku (+ / −)
+    // Przy prędkości vHIT kanał hamowany jest obcięty → prędkość VOR niesie kanał pobudzany.
+    // gain = modulacja pobudzana / modulacja idealna (gEx=1 bez nasycenia → gain 1).
+    const gain = Math.max(0, Math.min(1.25, modEx/(S_HZ*Ohm)));
+    const deficit = Math.max(0, 1-gain);
+    const saccadeAmp = deficit*amp;                          // niedomiar rotacji oka → wielkość sakady korygującej
+    const overt = saccadeAmp >= 2.5;                         // sakada widoczna gołym okiem (≈ gain<0.83 przy amp 15°)
+    return {
+      toSide, headVel:Ohm, headAmp:amp, gain, deficit,
+      rateEx, rateIn, modEx, modIn, inhibitedFloored: rateIn<=0,
+      saccadePresent: overt, saccadeAmp,
+      saccadeToSide: toSide==="P" ? "L" : "P",               // catch-up przeciwnie do pchnięcia (ku celowi/linii środkowej)
+      abnormal: overt                                        // patologiczny HIT = obecna sakada korygująca
+    };
+  }
+
+  // ETAP 4a — INTEGRATOR NERWOWY „leaky" → oczopląs SPOJRZENIOWY (gaze-evoked). [H6]
+  // Utrzymanie oka w położeniu skrajnym θ wymaga tonicznego sygnału pozycji z integratora
+  // (pień/móżdżek). Integrator NIESZCZELNY (mała stała τ) nie utrzymuje → oko dryfuje ku środkowi
+  // z prędkością θ/τ (faza wolna), a szybka faza wraca ku celowi → oczopląs bije W KIERUNKU spojrzenia.
+  //   Zdrowy τ≈25 s → przy 20° dryf 0.8°/s (klinicznie niewidoczny). OŚRODEK (leaky) τ≈1–3 s →
+  //   dryf ~7–20°/s → oczopląs ZMIENIAJĄCY KIERUNEK ze spojrzeniem (prawo→bije w prawo, lewo→w lewo).
+  function gazeEvoked(p, gazeDeg){
+    const tau = Math.max(0.2, p.integratorTau||25);
+    const drift = gazeDeg/tau;                               // °/s: znak = kierunek szybkiej fazy (ku spojrzeniu)
+    return { gazeDeg, tau, spv: Math.abs(drift), beatSign: Math.sign(gazeDeg)||0, driftVel: drift, present: Math.abs(drift)>=VIS_THRESH };
+  }
+  // Oczopląs WYPADKOWY przy danym spojrzeniu: suma prędkości bicia — SAMOISTNY (obwód, stały kierunek,
+  // z fiksacją) + SPOJRZENIOWY (ośrodek, zmienny kierunek). Prędkości w head-frame x (+ = bije ku P/prawej).
+  function nystagmusAtGaze(p, gazeDeg, fixOn){
+    const sp = observe(p, fixOn);                            // samoistny (po supresji fiksacji)
+    const Vspont = (sp.h||0)*sp.spv;                         // sp.h = znak bicia head-frame; sp.spv = |faza wolna|
+    const Vge = gazeEvoked(p, gazeDeg).driftVel;             // spojrzeniowy (nie tłumiony fiksacją — objaw ośrodkowy)
+    const Vnet = Vspont + Vge;                               // wypadkowa prędkość bicia
+    const beatHead = Math.sign(Vnet)||0, spv = Math.abs(Vnet);
+    return { gazeDeg, beatHead, spv, strength: Math.min(1, spv/SPV_MAX),
+      dir: Math.sign(beatHead*camRx())||0, tdir: sp.tdir, t: sp.t, vdir:1,
+      kind:"horizontalTorsional", components:{Vspont, Vge} };
+  }
+  // Czy oczopląs ZMIENIA KIERUNEK ze spojrzeniem (cecha OŚRODKOWA)? Próbkujemy skrajne spojrzenia.
+  // Wymóg: oczopląs KLINICZNIE WIDOCZNY (≥próg) po OBU stronach i przeciwne kierunki bicia. Silny
+  // oczopląs samoistny (obwód) może zdominować dryf spojrzeniowy → pozostaje jednokierunkowy.
+  function directionChanging(p, fixOn, ecc){
+    ecc = ecc||20;
+    const L = nystagmusAtGaze(p, -ecc, fixOn), R = nystagmusAtGaze(p, +ecc, fixOn);
+    return L.spv>=VIS_THRESH && R.spv>=VIS_THRESH && L.beatHead!==0 && R.beatHead!==0 && L.beatHead!==R.beatHead;
+  }
+
+  // ETAP 4b — ODCHYLENIE SKOŚNE / OTR (otolity + MLF). [H7]
+  // Łagiewka wysyła wektor grawiceptywny; sygnał krzyżuje się w pniu i utrzymuje oczy w poziomie.
+  // Asymetria toniczna grawiceptywna lub przerwanie MLF → reakcja pochylenia ocznego (OTR): jedno oko
+  // wyżej (hyper), drugie niżej (hypo) + współtowarzysząca torsja (bieguny górne ku oku niższemu).
+  // Test naprzemiennego zasłaniania (cover): odsłonięte oko łapie fiksację PIONOWĄ SAKADĄ korygującą
+  //   → widoczny rozjazd pionowy = TS DODATNI = objaw OŚRODKOWY (w kontekście AVS).
+  //   skewTone (°, ze znakiem): + = oko PRAWE wyżej / lewe niżej; − = odwrotnie. 0 = oczy w linii.
+  function skew(p){
+    const st = p.skewTone||0, mag = Math.abs(st);
+    return { present: mag>=1, skewDeg: mag, sign: Math.sign(st)||0,
+      hyperSide: st>0?"P":st<0?"L":null,                     // oko wyżej (hipertropijne)
+      torsionDeg: p.otrTorsion||0 };                         // torsja OTR (bieguny górne ku oku niższemu)
+  }
+
+  // ETAP 5 — SCENARIUSZE (presety) i SYNTEZA HINTS. [H8]
+  // KLUCZ „first principles": ton STATYCZNY (spoczynkowa aktywność → oczopląs samoistny) i
+  // wzmocnienie DYNAMICZNE kanału (gain → HIT) to OSOBNE parametry. Dlatego udar może dać oczopląs
+  // samoistny przy PRAWIDŁOWYM HIT (rozprzężenie stat./dyn.), a obwód — oczopląs + patologiczny HIT
+  // po tej samej stronie. Patologię tworzy zmiana kilku liczb; wynik HINTS wypada sam.
+  const SCENARIOS = {
+    normal:       { label:"Zdrowy / równowaga", side:null,
+      params:{} },
+    neuritisR:    { label:"Neuronitis przedsionkowy — ucho P (OBWÓD)", side:"P",
+      params:{ toneR:5, gainR:0.35, fixationGain:0.9, integratorTau:25, skewTone:0 } },
+    neuritisL:    { label:"Neuronitis przedsionkowy — ucho L (OBWÓD)", side:"L",
+      params:{ toneL:5, gainL:0.35, fixationGain:0.9, integratorTau:25, skewTone:0 } },
+    strokeCentral:{ label:"Udar móżdżku / pnia (OŚRODEK)", side:"P",
+      // kanały SPRAWNE (gain≈1 → HIT prawidłowy), łagodny ton asymetryczny ośrodkowy (oczopląs samoistny),
+      // integrator „leaky" (oczopląs zmienny kierunkowo), asymetria grawiceptywna (skew + torsja).
+      params:{ toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:3, otrTorsion:4 } },
+  };
+  function scenario(key){ const s = SCENARIOS[key]||SCENARIOS.normal; return makePatient(s.params); }
+
+  // Synteza HINTS z parametrów pacjenta → trzy składowe + werdykt obwód/ośrodek (mnemonik INFARCT).
+  function hints(p){
+    const hiR = headImpulse(p,"P"), hiL = headImpulse(p,"L");
+    const hiAbnormal = hiR.abnormal || hiL.abnormal;
+    const hiSide = hiR.abnormal ? "P" : hiL.abnormal ? "L" : null;
+    const dark = observe(p,false), lit = observe(p,true);
+    const hasSpont = dark.spv >= VIS_THRESH;                  // AVS = obecny oczopląs samoistny
+    const dirChanging = directionChanging(p, true);
+    const ts = skew(p);
+    const nyPattern = dirChanging ? "directionChanging" : (hasSpont ? "unidirectional" : "none");
+    // INFARCT — ważny w kontekście AVS (obecny oczopląs samoistny):
+    const impulseNormalDanger = hasSpont && !hiAbnormal;      // HIT prawidłowy MIMO oczopląsu = ośrodek
+    const anyFinding = hasSpont || dirChanging || ts.present || hiAbnormal;
+    const centralSigns = [];
+    if(impulseNormalDanger) centralSigns.push("HIT prawidłowy mimo oczopląsu samoistnego (Impulse Normal)");
+    if(dirChanging)         centralSigns.push("oczopląs zmienny kierunkowo (Fast-phase Alternating)");
+    if(ts.present)          centralSigns.push("dodatni Test of Skew — pionowa sakada przy odsłanianiu (Refixation on Cover Test)");
+    const verdict = !anyFinding ? "normal" : (centralSigns.length ? "central" : "peripheral");
+    return {
+      verdict,
+      hi: { abnormal:hiAbnormal, side:hiSide, right:hiR, left:hiL },
+      ny: { pattern:nyPattern, hasSpontaneous:hasSpont, directionChanging:dirChanging,
+            suppresses:lit.suppressed, dark, lit },
+      ts,
+      infarct: { impulseNormal:impulseNormalDanger, fastAlternating:dirChanging, refixationCover:ts.present },
+      centralSigns
+    };
+  }
+
+  return { R0, R_SAT, SPV_MAX, VIS_THRESH, afferent, makePatient, spontaneous, suppressionFactor, observe,
+           headImpulse, gazeEvoked, nystagmusAtGaze, directionChanging, skew,
+           SCENARIOS, scenario, hints };
 })();
 
 /* Źródło orientacji głowy (pluggable) — etap A: ręczne; później: żyroskop / DeviceOrientation / replay.
@@ -971,6 +1206,8 @@ const state={
   total:0, elapsedMs:0, running:false,
   _manKey:null, _manSim:null,
   autoAdvance:false, sound:true, autostart:false,
+  // HINTS / różnicowanie (etap: silnik NeuroVOR)
+  hintsScenario:"neuritisR", hintsFix:false, hintsGaze:0,   // scenariusz · fiksacja(true=światło/false=Frenzel) · spojrzenie(-1/0/+1)
 };
 
 /* ============ rAF rejestr ============ */
@@ -1571,6 +1808,7 @@ function render(){
   cancelAnims();
   if(state.screen==="setup") renderSetup();
   else if(state.screen==="guide") renderGuide();
+  else if(state.screen==="hints") renderHints();
   else renderDiag();
 }
 
@@ -1590,6 +1828,13 @@ function renderSetup(){
     body=`<div class="group"><div class="label"><span class="eyebrow">Kanał półkolisty</span><span class="hint">zajęty kanał</span></div>
         <div class="seg three">${canalOpt("posterior")}${canalOpt("horizontal")}${canalOpt("anterior")}</div></div>
       ${man}${sizeGroup}`;
+  } else if(state.mode==="hints"){
+    const scDesc={normal:"prawidłowy VOR — bez oczopląsu", neuritisR:"obwód — wypadnięcie ucha P",
+      neuritisL:"obwód — wypadnięcie ucha L", strokeCentral:"ośrodek — objaw groźny (AVS)"};
+    const scOpt=k=>`<button class="opt" aria-pressed="${state.hintsScenario===k}" onclick="openHints('${k}')">${NeuroVOR.SCENARIOS[k].label}<small>${scDesc[k]}</small></button>`;
+    body=`<div class="group"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">obwód ↔ ośrodek</span></div>
+        <div class="seg two">${["normal","neuritisR","neuritisL","strokeCentral"].map(scOpt).join("")}</div></div>
+      <div class="note" style="margin-top:14px">Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz, aby przejść do różnicowania HINTS.</div>`;
   } else {
     const testOpt=k=>`<button class="opt" aria-pressed="${state.testKey===k}" onclick="openTest('${k}')">${DIAG[k].name}<small>${DIAG[k].tests}</small></button>`;
     body=`<div class="group"><div class="label"><span class="eyebrow">Test diagnostyczny</span><span class="hint">stronę ustalisz na karcie testu</span></div>
@@ -1600,9 +1845,10 @@ function renderSetup(){
       <div class="mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 13c0-5 4-8 7.5-8S20 7.5 20 11c0 3-2.5 4-2.5 6.5S16 21 14 21s-2-2-2-3.5S10.5 15 9 14s-4 .5-4-1Z" stroke="var(--primary)" stroke-width="1.6"/></svg></div>
       <div><h1>BPPV — asystent</h1><div class="sub">Repozycja i diagnostyka otolitów — prototyp</div></div>
     </div>
-    <div class="tabs" role="tablist">
+    <div class="tabs three" role="tablist">
       <button role="tab" aria-selected="${state.mode==='treat'}" onclick="setMode('treat')">Repozycja</button>
       <button role="tab" aria-selected="${state.mode==='diag'}" onclick="setMode('diag')">Diagnostyka</button>
+      <button role="tab" aria-selected="${state.mode==='hints'}" onclick="setMode('hints')">HINTS</button>
     </div>
     <div class="disclaimer"><b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe (wariant kanalitiazy/geotropowy) — zweryfikuj z własnym protokołem.</div>
     ${body}
@@ -1771,8 +2017,209 @@ function renderDiag(){
   });
 }
 
+/* ============ HINTS — różnicowanie ośrodek↔obwód (silnik NeuroVOR) ============ */
+function hintsNysLabel(nys){
+  const dirArrow = nys.dir<0?"⟵":nys.dir>0?"⟶":"•";
+  const tor = nys.tdir<0?" ↺":nys.tdir>0?" ↻":"";
+  const spv=(nys.spv||0);
+  const txt = spv < NeuroVOR.VIS_THRESH ? "brak jawnego oczopląsu"
+    : `oczopląs poziomo-skrętny bije ${nys.dir<0?"w lewo":"w prawo"} · faza wolna ${spv.toFixed(1)}°/s`;
+  return `<div class="nyslabel"><span class="arrow">${dirArrow}${tor}</span><span>${txt}</span></div>`;
+}
+// Werdykt HINTS: trzy składowe (HI · N · TS) z tagami + synteza obwód/ośrodek (INFARCT).
+function hintsVerdictHTML(H){
+  const v=H.verdict;
+  const tag=(cls,txt)=>`<span class="tag ${cls}">${txt}</span>`;
+  const hiNA = !H.ny.hasSpontaneous && !H.hi.abnormal;                 // brak AVS → HIT nieinformacyjny do różnicowania
+  const hiRow = H.hi.abnormal
+    ? [tag("ok","HI"), `Head-Impulse: sakada korygująca po stronie ${H.hi.side==="P"?"prawej":"lewej"} (kanał chory) — <b>obwodowy</b>.`]
+    : H.ny.hasSpontaneous
+      ? [tag("bad","HI"), `Head-Impulse: prawidłowy MIMO oczopląsu — <b>groźny</b> (ośrodek).`]
+      : [tag("","HI"), `Head-Impulse: prawidłowy.`];
+  const nyRow = H.ny.pattern==="directionChanging"
+    ? [tag("bad","N"), `Oczopląs: zmienny kierunkowo, niehamowany fiksacją — <b>ośrodek</b>.`]
+    : H.ny.pattern==="unidirectional"
+      ? [tag("ok","N"), `Oczopląs: jednokierunkowy${H.ny.suppresses?", tłumiony fiksacją":""} — <b>obwodowy</b>.`]
+      : [tag("","N"), `Oczopląs: brak samoistnego.`];
+  const tsRow = H.ts.present
+    ? [tag("bad","TS"), `Test of Skew: dodatni (rozjazd pionowy) — <b>ośrodek</b>.`]
+    : [tag("ok","TS"), `Test of Skew: ujemny (oczy w linii).`];
+  const vText = v==="central"?"Wzorzec OŚRODKOWY — groźny" : v==="peripheral"?"Wzorzec OBWODOWY — uspokajający" : "Bez cech ostrego zespołu przedsionkowego";
+  const foot = v==="central"
+    ? `<div class="note" style="color:#ffd9df;margin-top:10px"><b>INFARCT / czerwona flaga:</b> ${H.centralSigns.join("; ")}. Pilna ocena neurologiczna i MRI tylnego dołu (wyklucz udar). W ostrym zespole przedsionkowym HINTS bywa czulszy niż wczesne MRI — nie zwalnia z diagnostyki.</div>`
+    : v==="peripheral"
+      ? `<div class="note" style="margin-top:10px">Triada uspokajająca: patologiczny HIT + oczopląs jednokierunkowy tłumiony fiksacją + brak skew — zgodne z przyczyną obwodową. Zawsze interpretuj klinicznie (m.in. HINTS dotyczy AVS z oczopląsem).</div>`
+      : `<div class="note" style="margin-top:10px">Brak oczopląsu samoistnego, HIT prawidłowy, brak skew — w tym modelu bez cech ostrego zespołu przedsionkowego.</div>`;
+  const row=r=>`<div class="hrow">${r[0]}<span>${r[1]}</span></div>`;
+  return `<div class="hverdict ${v}"><h4>Werdykt HINTS</h4><div class="vv">${vText}</div>
+    ${row(hiRow)}${row(nyRow)}${row(tsRow)}${foot}</div>`;
+}
+function renderHints(){
+  const key=state.hintsScenario||"neuritisR";
+  const p=NeuroVOR.scenario(key);
+  const fixOn=!!state.hintsFix;                    // true=światło/fiksacja · false=Frenzel/ciemność
+  const gaze=state.hintsGaze||0, gazeDeg=gaze*20;  // -1/0/+1 → -20/0/+20°
+  const nys=NeuroVOR.nystagmusAtGaze(p, gazeDeg, fixOn);
+  const H=NeuroVOR.hints(p);
+  const scDesc={normal:"prawidłowy VOR", neuritisR:"obwód — ucho P", neuritisL:"obwód — ucho L", strokeCentral:"ośrodek (AVS)"};
+  const scBtn=k=>`<button class="opt" aria-pressed="${key===k}" onclick="setHintsScenario('${k}')" style="min-height:auto;padding:10px 11px;font-size:12.5px">${NeuroVOR.SCENARIOS[k].label}<small>${scDesc[k]}</small></button>`;
+  const gazeBtn=(g,lbl)=>`<button aria-pressed="${gaze===g}" onclick="setHintsGaze(${g})">${lbl}</button>`;
+  const fixBtn=(v,lbl)=>`<button aria-pressed="${fixOn===v}" onclick="setHintsFix(${v})">${lbl}</button>`;
+  const suppl = H.ny.hasSpontaneous
+    ? (fixOn ? (H.ny.suppresses ? "Z fiksacją oczopląs OBWODOWY słabnie (kłaczek tłumi dryf)."
+                                : "Mimo fiksacji oczopląs NIE słabnie — cecha OŚRODKOWA.")
+             : "Bez fiksacji (gogle Frenzla / ciemność) oczopląs bije z pełną siłą.")
+    : "Brak oczopląsu samoistnego w tym scenariuszu.";
+  const dcNote = H.ny.directionChanging ? " Zmienia kierunek ze spojrzeniem → OŚRODEK." : "";
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>Różnicowanie — HINTS</b><span>ośrodek ↔ obwód · silnik z pierwszych zasad</span></div></div>
+    <div class="group" style="margin-top:4px"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">zmienia tylko parametry fizjologii</span></div>
+      <div class="seg two">${["normal","neuritisR","neuritisL","strokeCentral"].map(scBtn).join("")}</div></div>
+    ${hintsVerdictHTML(H)}
+    <div class="panelbox hpanel" style="margin-top:12px">
+      <h4>Oczopląs samoistny — widok frontalny</h4>
+      <div class="hint-eyes ${fixOn?'':'dark'}">
+        <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-neuronys>${eyesSVG()}</div><span class="emk">L</span></div>
+        ${fixOn?"":'<div class="frenzel-tag">◌ gogle Frenzla — fiksacja zniesiona</div>'}
+      </div>
+      ${hintsNysLabel(nys)}
+      <div class="hctrl"><span class="lbl">Fiksacja</span>
+        <div class="pillseg">${fixBtn(false,"Frenzel")}${fixBtn(true,"Światło")}</div></div>
+      <div class="hctrl"><span class="lbl">Spojrzenie</span>
+        <div class="pillseg">${gazeBtn(-1,"◀ lewo")}${gazeBtn(0,"środek")}${gazeBtn(1,"prawo ▶")}</div></div>
+      <div class="note">${suppl}${dcNote}</div>
+    </div>
+    <div class="panelbox hpanel" style="margin-top:12px">
+      <h4>Test pchnięcia głowy (vHIT) — obserwuj cel ○</h4>
+      <div data-hit>${hitSVG()}</div>
+      <div class="hctrl" style="justify-content:center"><span class="lbl">Pchnij</span>
+        <div class="pillseg"><button onclick="hintsHIT('L')">◀ w lewo (L)</button><button onclick="hintsHIT('P')">w prawo (P) ▶</button></div></div>
+      <div class="note" data-hitlabel>Kliknij stronę, aby wykonać szybkie pchnięcie głowy. Oczy powinny zostać na celu; sakada korygująca = kanał chory po tej stronie.</div>
+    </div>
+    <div class="panelbox hpanel" style="margin-top:12px">
+      <h4>Odchylenie skośne — naprzemienne zasłanianie</h4>
+      <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-skew>${skewSVG()}</div><span class="emk">L</span></div>
+      <div class="note">${skewLabel(H.ts)}</div>
+    </div>
+    <p class="footnote">Wzorce poglądowe — narzędzie dydaktyczne, nie urządzenie diagnostyczne. Interpretuj klinicznie.</p>`;
+  requestAnimationFrame(()=>{
+    const c=$('[data-neuronys]'); if(c) startNeuroNys(c, nys, gazeDeg);
+    const sk=$('[data-skew]'); if(sk) startSkew(sk, H.ts);
+  });
+}
+// Ciągły oczopląs poziomo-skrętny + odchylenie spojrzenia (bez tEnd — trwa aż do zmiany warunków).
+function startNeuroNys(container, nys, gazeDeg){
+  const irises=[...container.querySelectorAll(".iris")]; if(!irises.length) return;
+  const token=(container.__nnTok=(container.__nnTok||0)+1);
+  const camRx=Scene3D.CAMERAS.frontal.right[0];
+  const gazePx=(gazeDeg||0)*camRx*0.5;             // odchylenie spojrzenia (mirror kamery) ~0.5px/°
+  const strength=Math.max(0,Math.min(1,nys.strength||0));
+  const Ah=7*strength, At=8*strength;              // amplituda pozioma (px) · skrętna (deg)
+  const hDir=nys.dir||0, tDir=nys.tdir||hDir;
+  const T=780, fast=0.17, start=performance.now();
+  if(Ah<0.2 && At<0.2){ for(const g of irises){ g.setAttribute("transform",`translate(${gazePx.toFixed(2)} 0) rotate(0 ${g.dataset.cx} ${g.dataset.cy})`);} return; }
+  loopRAF((now)=>{
+    if(container.__nnTok!==token || !document.body.contains(container)) return false;
+    const ph=((now-start)%T)/T, o=nysOffset(ph,fast);
+    const x=gazePx + o*Ah*hDir, rot=o*At*tDir;
+    for(const g of irises){ const cx=+g.dataset.cx, cy=+g.dataset.cy;
+      g.setAttribute("transform",`translate(${x.toFixed(2)} 0) rotate(${rot.toFixed(2)} ${cx} ${cy})`); }
+    return true;                                    // ciągły — do zmiany warunków (fiksacja/spojrzenie/scenariusz)
+  });
+}
+
+/* --- Test pchnięcia głowy (vHIT): głowa przesuwa się, oczy kompensują wg VOR gain, sakada korygująca gdy niedomiar --- */
+function hitSVG(){
+  const eye=(cx)=>`<ellipse cx="${cx}" cy="62" rx="32" ry="25" fill="#EEF3F7" stroke="var(--line)" stroke-width="2"/>
+    <g class="hiris"><circle cx="${cx}" cy="62" r="14" fill="#3A6B86"/><circle cx="${cx}" cy="62" r="6.5" fill="#0b1118"/></g>`;
+  return `<svg viewBox="0 0 240 132" class="eyes" role="img" aria-label="Test pchnięcia głowy">
+    <line x1="120" y1="4" x2="120" y2="18" stroke="var(--faint)" stroke-width="2"/><circle cx="120" cy="24" r="4" fill="none" stroke="var(--faint)" stroke-width="2"/>
+    <g id="hithead">
+      <rect x="30" y="20" width="180" height="96" rx="44" fill="#16222c" stroke="#2b3e4b" stroke-width="2"/>
+      ${eye(88)}${eye(152)}
+      <path d="M120 80 l-6 13 h12 Z" fill="#22303d" stroke="#33404d" stroke-width="1.4"/>
+    </g>
+  </svg>`;
+}
+function startHIT(container, hi){
+  const head=container.querySelector('#hithead');
+  const irises=[...container.querySelectorAll('.hiris')];
+  if(!head||!irises.length) return;
+  const token=(container.__hitTok=(container.__hitTok||0)+1);
+  const camRx=Scene3D.CAMERAS.frontal.right[0];
+  const dir=Math.sign((hi.toSide==="P"?1:-1)*camRx);      // ekranowy kierunek pchnięcia (lustro)
+  const HEADPX=30, gain=Math.max(0,Math.min(1.2,hi.gain));
+  const T_IMP=200, T_HOLD=140, T_SAC=90, T_RET=420, T_END=T_IMP+T_HOLD+T_SAC+T_RET;
+  const start=performance.now();
+  loopRAF((now)=>{
+    if(container.__hitTok!==token || !document.body.contains(container)) return false;
+    const t=now-start; let headX, gaze;               // gaze = błąd fiksacji (pozycja oka w przestrzeni, cel=0)
+    if(t<T_IMP){ const u=easeInOut(t/T_IMP); headX=dir*HEADPX*u; gaze=dir*HEADPX*(1-gain)*u; }        // pchnięcie: oko nie nadąża o (1-gain)
+    else if(t<T_IMP+T_HOLD){ headX=dir*HEADPX; gaze=dir*HEADPX*(1-gain); }                            // utrzymanie — błąd widoczny
+    else if(t<T_IMP+T_HOLD+T_SAC){ const u=(t-T_IMP-T_HOLD)/T_SAC; headX=dir*HEADPX; gaze=dir*HEADPX*(1-gain)*(1-u); } // SAKADA korygująca → cel
+    else if(t<T_END){ const u=easeInOut((t-T_IMP-T_HOLD-T_SAC)/T_RET); headX=dir*HEADPX*(1-u); gaze=0; } // głowa wraca, oczy na celu
+    else { head.setAttribute('transform','translate(0 0)'); for(const g of irises) g.setAttribute('transform','translate(0 0)'); return false; }
+    head.setAttribute('transform',`translate(${headX.toFixed(2)} 0)`);
+    const local=gaze-headX;                            // iris jest dzieckiem głowy → absolut = headX+local = gaze
+    for(const g of irises) g.setAttribute('transform',`translate(${local.toFixed(2)} 0)`);
+    return true;
+  });
+}
+function hitLabel(hi){
+  const s=hi.toSide==="P"?"w prawo (kanał P)":"w lewo (kanał L)", g=hi.gain.toFixed(2);
+  return hi.saccadePresent
+    ? `<b style="color:#ff9bab">Pchnięcie ${s}: sakada korygująca OBECNA</b> · VOR gain ${g} → HIT patologiczny po stronie chorej — wzorzec OBWODOWY.`
+    : `<b style="color:#7fe3c4">Pchnięcie ${s}: bez sakady</b> · VOR gain ${g} → HIT prawidłowy.`;
+}
+function hintsHIT(side){
+  const hi=NeuroVOR.headImpulse(NeuroVOR.scenario(state.hintsScenario), side);
+  const c=$('[data-hit]'); if(c) startHIT(c, hi);
+  const lab=$('[data-hitlabel]'); if(lab) lab.innerHTML=hitLabel(hi);
+}
+
+/* --- Test odchylenia skośnego: naprzemienne zasłanianie → pionowa sakada korygująca gdy skew obecny --- */
+function skewSVG(){
+  const eye=(cx,side)=>`<ellipse cx="${cx}" cy="55" rx="32" ry="25" fill="#EEF3F7" stroke="var(--line)" stroke-width="2"/>
+    <g class="skiris" data-eye="${side}"><circle cx="${cx}" cy="55" r="14" fill="#3A6B86"/><circle cx="${cx}" cy="55" r="6.5" fill="#0b1118"/></g>`;
+  return `<svg viewBox="0 0 240 110" class="eyes" role="img" aria-label="Test naprzemiennego zasłaniania">
+    ${eye(70,"P")}${eye(170,"L")}
+    <rect id="skcover" x="34" y="22" width="72" height="66" rx="10" fill="#0b1118" stroke="#33404d" stroke-width="2" opacity="0.96"/>
+  </svg>`;
+}
+function startSkew(container, sk){
+  const irisP=container.querySelector('.skiris[data-eye="P"]');
+  const irisL=container.querySelector('.skiris[data-eye="L"]');
+  const cover=container.querySelector('#skcover');
+  if(!irisP||!irisL||!cover) return;
+  const token=(container.__skTok=(container.__skTok||0)+1);
+  const off=sk.present?Math.min(15, sk.skewDeg*4):0;      // px pionowego rozjazdu (SVG: −y=góra)
+  const devP=(sk.sign>0?-1:1)*off, devL=-devP;             // sign>0: oko P wyżej
+  const period=2600, half=1300, SAC=150, covXP=34, covXL=134;
+  const start=performance.now();
+  loopRAF((now)=>{
+    if(container.__skTok!==token || !document.body.contains(container)) return false;
+    const tt=(now-start)%period, pCov=tt<half;            // pCov: zasłonięte oko P (odsłonięte L)
+    cover.setAttribute('x', pCov?covXP:covXL);
+    const yP = pCov ? devP : devP*(1-Math.min(1,(tt-half)/SAC));   // odsłonięte P: sakada dev→cel
+    const yL = !pCov ? devL : devL*(1-Math.min(1,tt/SAC));          // odsłonięte L: sakada dev→cel
+    irisP.setAttribute('transform',`translate(0 ${yP.toFixed(2)})`);
+    irisL.setAttribute('transform',`translate(0 ${yL.toFixed(2)})`);
+    return true;
+  });
+}
+function skewLabel(sk){
+  return sk.present
+    ? `<b style="color:#ff9bab">Skew OBECNY (~${sk.skewDeg}°${sk.hyperSide?`, oko ${sk.hyperSide==="P"?"prawe":"lewe"} wyżej`:""})</b> — pionowa sakada przy odsłanianiu = objaw OŚRODKOWY.`
+    : `<b style="color:#7fe3c4">Skew nieobecny</b> — oczy pozostają w linii pionowej przy naprzemiennym zasłanianiu.`;
+}
+
 /* ============ Akcje ============ */
 function setMode(m){ state.mode=m; render(); }
+function openHints(key){ state.hintsScenario=key; state.hintsFix=false; state.hintsGaze=0; state.screen="hints"; render(); }
+function setHintsScenario(key){ state.hintsScenario=key; render(); }
+function setHintsFix(v){ state.hintsFix=!!v; render(); }
+function setHintsGaze(g){ state.hintsGaze=g; render(); }
 function pickSide(s){ state.side=s; render(); }
 function pickCanal(k){ state.canal=k; const keys=CANALS[k].maneuvers; if(!keys.includes(state.maneuverKey)) state.maneuverKey=keys.length===1?keys[0]:null; render(); }
 function pickMan(k){ state.maneuverKey=k; render(); }

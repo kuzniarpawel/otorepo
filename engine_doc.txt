@@ -1,8 +1,11 @@
 ==========================================================================
- OTOREPO — DOKUMENTACJA SILNIKA (moduł `Vestibular`)
- Plik: otorepo.html  |  Moduł: const Vestibular = (()=>{ ... })()
- Charakter: czysty moduł BEZ DOM (testowalny offline w node)
- Ostatnia aktualizacja: 2026-07-02
+ OTOREPO — DOKUMENTACJA SILNIKA (moduły `Vestibular` + `NeuroVOR`)
+ Plik: otorepo.html  |  Moduły: const Vestibular = (()=>{...})()  ·  const NeuroVOR = (()=>{...})()
+ Charakter: czyste moduły BEZ DOM (testowalne offline w node)
+ Ostatnia aktualizacja: 2026-07-07
+ Uwaga: `Vestibular` = fizyka BPPV (złóg otolitowy w kanale). `NeuroVOR` = warstwa
+        toniczna/ośrodkowa (VOR, fiksacja, vHIT, oczopląs spojrzeniowy, skew, HINTS) —
+        patrz sekcja „MODUŁ NeuroVOR" na końcu pliku.
 ==========================================================================
 
 Dokument opisuje API publiczne i wewnętrzne pomocnicze silnika oraz przyjęte
@@ -364,3 +367,152 @@ KTÓRE składowe wyrażamy (każdą można odsłonić flagą true):
   horizontal.t=false geom.≈0.29 — klin. czysto poziomy (geom. mały skręt pominięty)
 Znaki bicia i maski zweryfikowane: tylny upbeat+skręt ipsi, przedni downbeat t=0, poziomy ku uchu.
 Jedyna od razu widoczna zmiana vs poprzednio: tylny v:t = 0.93:1 (realne) zamiast 1:1.
+
+
+==========================================================================
+ MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)
+ Plik: otorepo.html  |  Moduł: const NeuroVOR = (()=>{ ... })()
+ Charakter: czysty moduł BEZ DOM (testowalny offline w node)
+ Dodano: 2026-07-07
+==========================================================================
+
+CEL I FILOZOFIA („od pierwszych zasad")
+ Nie kodujemy WYGLĄDU patologii, lecz FIZJOLOGIĘ: spoczynkową aktywność błędników,
+ prawo Ewalda z obcięciem hamowania, supresję fiksacji (kłaczek), wzmocnienie VOR
+ kanałów, integrator nerwowy oraz oś grawiceptywną (otolity/MLF). Objawy — oczopląs
+ samoistny, jego zależność od fiksacji i spojrzenia, wynik pchnięcia głowy (vHIT),
+ odchylenie skośne — WYNIKAJĄ z asymetrii kilku parametrów. Warstwa NIEZALEŻNA od
+ dynamiki BPPV (simulateCanalith); współdzieli tylko konwencje kierunków (quickPhase)
+ i kamerę frontalną (odbicie cam.right[0] = -1, jak nysFromGeom/nysFromDyn).
+ Realizuje pozycję todo: „Inne stany (excited:false / push-pull): jednostronna
+ westybulopatia, oczopląs ośrodkowy".
+
+KONWENCJE
+ Strony: "P"=prawa=+x (ucho prawe), "L"=lewa=-x. Częstotliwości aferentów w Hz.
+ Prędkości fazy wolnej (SPV) i dryfu w °/s. Kąt spojrzenia gazeDeg: + = w prawo (P).
+ Znak „head-frame" h/t jak w Vestibular; `dir`/`tdir` = znak EKRANOWY po odbiciu kamery.
+
+„PACJENT" — makePatient(overrides) -> obiekt parametrów
+   toneL, toneR   : spoczynkowa aktywność błędnika L/P [Hz], zdrowy = 90. Hipofunkcja obniża. [H1]
+   gainL, gainR   : wzmocnienie VOR kanału poziomego L/P (0..~1.1), zdrowy = 1.0.            [H4][H5]
+   fixationGain   : zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0.              [H3]
+   integratorTau  : stała czasowa integratora nerwowego [s]; zdrowy ~25, ośrodek „leaky" ~1–3. [H6]
+   skewTone       : grawiceptywna asymetria pionowa [°, ze znakiem]; + = oko P wyżej.          [H7]
+   otrTorsion     : torsja OTR [°] (bieguny górne ku oku niższemu).                            [H7]
+
+API PUBLICZNE (zwracane z modułu)
+
+ afferent(tone, drive) -> Hz                                                                  [H1][H2]
+   Aferent po REKTYFIKACJI: max(0, min(R_SAT, tone+drive)). Obcięcie hamowania (≥0) +
+   nasycenie (≤R_SAT=300). Wspólny prymityw: spoczynek (drive=0) i pchnięcie głowy (drive≠0).
+
+ spontaneous(p) -> {kind,h,v,t,dir,tdir,vdir,strength,spv,beatEar,lesionEar}                  [H1][H2]
+   ETAP 1 — oczopląs SAMOISTNY z asymetrii tonicznej (push-pull). Mózg szacuje prędkość głowy
+   z różnicy aferentów pary poziomej: Ω_est ∝ (rateL − rateR). Asymetria toniczna udaje stały
+   obrót → faza WOLNA ku błędnikowi słabszemu, faza SZYBKA (widoczny beat) ku silniejszemu.
+   spv = SPV_MAX·|toneL−toneR|/R0 (SPV_MAX=12°/s, R0=90). Oczopląs poziomo-skrętny (t = 0.5·h).
+   Kierunek STAŁY niezależnie od spojrzenia — cecha OBWODOWA.
+
+ suppressionFactor(p, fixOn) -> [0..~1.5]                                                       [H3]
+ observe(p, fixOn) -> spontaneous(p) z nałożoną supresją {spv,spvRaw,suppressionFactor,suppressed,...}
+   ETAP 2 — SUPRESJA FIKSACJI. oko = VOR − fixationGain·retinal_slip. fixOn=true (światło):
+   obwód (fixationGain≈0.9) gaśnie (×0.1); ośrodek (≈0) trwa; <0 = paradoksalne wzmocnienie.
+   fixOn=false (Frenzel/ciemność): pełna faza wolna. `suppressed` = klinicznie „tłumi się fiksacją".
+
+ headImpulse(p, toSide, {headVel=200, headAmp=15}) -> {gain,deficit,saccadePresent,saccadeAmp,
+                                                        saccadeToSide,inhibitedFloored,abnormal,...}  [H4][H5]
+   ETAP 3 — pchnięcie głowy (vHIT). Przy prędkości pchnięcia kanał HAMOWANY uderza w obcięcie
+   hamowania (0 Hz, `inhibitedFloored`) → prędkość VOR niesie WYŁĄCZNIE kanał POBUDZANY
+   (ipsilateralny). gain = modulacja pobudzana / idealna. deficit → SAKADA korygująca (overt gdy
+   ≥2.5° ≈ gain<0.83), skierowana przeciwnie do pchnięcia (`saccadeToSide`). OŚRODEK: gainy≈1 →
+   HIT prawidłowy (groźny). Kalibracja S_HZ=0.8 → obcięcie ~tone/S≈112°/s < prędkości vHIT.
+
+ gazeEvoked(p, gazeDeg) -> {tau,spv,beatSign,driftVel,present}                                  [H6]
+ nystagmusAtGaze(p, gazeDeg, fixOn) -> wypadkowy oczopląs {beatHead,spv,dir,strength,components}
+ directionChanging(p, fixOn, ecc=20) -> bool
+   ETAP 4a — integrator „leaky": przy spojrzeniu θ dryf ku środkowi = θ/τ (faza wolna), szybka faza
+   ku spojrzeniu. Zdrowy τ≈25 (dryf pomijalny); ośrodek τ≈1–3 → oczopląs ZMIENNY KIERUNKOWO.
+   nystagmusAtGaze sumuje prędkości bicia: SAMOISTNY (obwód, stały) + SPOJRZENIOWY (ośrodek, zmienny).
+   directionChanging wymaga widoczności ≥VIS_THRESH(2°/s) PO OBU stronach i przeciwnych kierunków
+   (silny oczopląs samoistny może zdominować dryf → pozostaje jednokierunkowy — realistyczne).
+
+ skew(p) -> {present,skewDeg,sign,hyperSide,torsionDeg}                                          [H7]
+   ETAP 4b — odchylenie skośne / OTR z asymetrii grawiceptywnej (otolity + MLF). present gdy |skewTone|≥1°.
+   Test naprzemiennego zasłaniania: odsłonięte oko łapie fiksację PIONOWĄ SAKADĄ = TS dodatni = ośrodek.
+
+ SCENARIOS, scenario(key) -> patient                                                            [H8]
+   Presety: normal · neuritisR/neuritisL (OBWÓD: tone↓ + gain↓ chorego kanału, kłaczek sprawny,
+   integrator prawidłowy, brak skew) · strokeCentral (OŚRODEK: kanały SPRAWNE gain≈1 → HIT prawidłowy,
+   łagodny ton asymetryczny, integrator „leaky", skew+torsja). KLUCZ: ton STATYCZNY (oczopląs) i
+   wzmocnienie DYNAMICZNE (HIT) to OSOBNE parametry — dlatego udar daje oczopląs przy prawidłowym HIT.
+
+ hints(p) -> {verdict, hi, ny, ts, infarct, centralSigns}                                       [H8]
+   ETAP 5 — synteza HINTS. verdict: "normal" | "peripheral" (uspokajający) | "central" (groźny).
+   Cechy ośrodkowe (INFARCT): Impulse Normal (HIT prawidłowy MIMO oczopląsu samoistnego) ·
+   Fast-phase Alternating (oczopląs zmienny kierunkowo) · Refixation on Cover Test (dodatni skew).
+   Obecność którejkolwiek → "central". Triada uspokajająca (patolog. HIT + jednokierunkowy tłumiony
+   fiksacją + brak skew) → "peripheral".
+
+STAŁE (nieeksportowane): R0=90 (spoczynek), R_SAT=300 (nasycenie), SPV_MAX=12 (°/s przy pełnej
+   asymetrii), TORS_FRAC=0.5 (udział skrętu), S_HZ=0.8 (czułość aferentu Hz/°·s⁻¹), VIS_THRESH=2 (°/s).
+
+STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+Scene3D+NeuroVOR z HTML):
+ [x] Etap 1: symetria→0; wypadnięcie P→bije w lewo (ekran +1), spv 12; L→lustro; liniowość z asymetrią;
+     stan drażniący (tone↑) odwraca kierunek. (22 asercje)
+ [x] Etap 2: obwód (fixationGain 0.9) fix ≈0.1×dark, suppressed; ośrodek (0) fix==dark; paradoks (<0). (13)
+ [x] Etap 3: zdrowy gain≈1 bez sakady; wypadnięcie P: pchnięcie w P gain 0.35 + sakada ku L; w L prawidłowo;
+     ośrodek gain≈1 bez sakady (HIT prawidłowy = groźny); obcięcie hamowania obecne przy vHIT, brak przy 50°/s. (18)
+ [x] Etap 4: zdrowy brak spojrzeniowego/skew; ośrodek (τ=2) zmienny kierunkowo; obwód jednokierunkowy;
+     skew present/hyperSide/torsion; silny oczopląs samoistny maskuje dryf (jednokierunkowy). (21)
+ [x] Etap 5: normal→normal; neuritis L/P→peripheral (HIT patolog. ipsilateralny, jednokier., tłumiony, brak skew);
+     stroke→central (3 cechy INFARCT). (28)  ŁĄCZNIE 102/102 asercje.
+ [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; toggery fiksacja/spojrzenie i
+     animacje (oczopląs poziomo-skrętny, vHIT z sakadą, naprzemienne zasłanianie) zgodne z werdyktem.
+
+ZALEŻNOŚCI: NeuroVOR używa Scene3D.CAMERAS.frontal.right[0] (odbicie) oraz konwencji stron; NIE zależy od
+   simulateCanalith. UI (poza modułem): renderHints/startNeuroNys/startHIT/startSkew + karta werdyktu.
+
+--------------------------------------------------------------------------
+ BIBLIOGRAFIA — MODUŁ NeuroVOR
+--------------------------------------------------------------------------
+Warstwa jest ZREDUKOWANĄ, fenomenologiczną implementacją uznanych modeli neurofizjologii
+odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hipotez naukowych.
+
+[H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
+     canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
+     → spoczynkowa aktywność aferentów kanałowych (~90 imp./s) → R0; podstawa push-pull.
+[H2] Ewald JR (1892). "Physiologische Untersuchungen über das Endorgan des Nervus octavus";
+     Baloh RW, Honrubia V, "Clinical Neurophysiology of the Vestibular System."
+     → II prawo Ewalda: pobudzenie skuteczniejsze niż hamowanie; NASYCENIE i OBCIĘCIE HAMOWANIA
+       aferentu (0 imp./s) → afferent()/rektyfikacja; mechanizm ipsilateralności vHIT.
+[H3] Leigh RJ, Zee DS. "The Neurology of Eye Movements" (Oxford University Press, wyd. 5, 2015).
+     → VOR i jego supresja przez fiksację (kłaczek/pościg-optokinetyka); w uszkodzeniu móżdżku brak
+       supresji; prawo Alexandra (modulacja amplitudy spojrzeniem) → suppressionFactor/observe.
+[H4] Halmagyi GM, Curthoys IS (1988). "A clinical sign of canal paresis." Arch Neurol 45(7):737–739.
+     → kliniczny test pchnięcia głowy; sakada korygująca przy niedowładzie kanału → headImpulse.
+[H5] Weber KP, Aw ST, Todd MJ, McGarvie LA, Curthoys IS, Halmagyi GM (2008). "Head impulse test in
+     unilateral vestibular loss: vestibulo-ocular reflex and catch-up saccades." Neurology 70(6):454–463.
+     → VOR gain, sakady covert/overt, ipsilateralność uszkodzonego kanału → headImpulse (gain, saccade).
+[H6] Cannon SC, Robinson DA (1987). "Loss of the neural integrator of the oculomotor system from brain
+     stem lesions in monkey." J Neurophysiol 57(5):1383–1409.
+     → integrator nerwowy „leaky" (dryf θ/τ) → oczopląs spojrzeniowy zmienny kierunkowo → gazeEvoked.
+[H7] Brandt T, Dieterich M (1993). "Skew deviation with ocular torsion: a vestibular brainstem sign of
+     topographic diagnostic value." Ann Neurol 33(5):528–534.
+     → reakcja pochylenia ocznego (OTR)/odchylenie skośne; oś grawiceptywna otolitowo-pniowa, MLF → skew.
+[H8] Kattah JC, Talkad AV, Wang DZ, Hsieh YH, Newman-Toker DE (2009). "HINTS to diagnose stroke in the
+     acute vestibular syndrome: three-step bedside oculomotor examination more sensitive than early MRI
+     diffusion-weighted imaging." Stroke 40(11):3504–3510.
+     → protokół HINTS i mnemonik INFARCT (Impulse Normal, Fast-phase Alternating, Refixation on Cover
+       Test) → hints()/werdykt.
+[H9] Tarnutzer AA, Berkowitz AL, Robinson KA, Hsieh YH, Newman-Toker DE (2011). "Acute vestibular
+     syndrome: does my patient have a stroke?" CMAJ 183(9):E571–E592.
+     → przegląd różnicowania AVS obwód/ośrodek; kontekst kliniczny werdyktu (narzędzie dydaktyczne).
+
+UPROSZCZENIA / ZASTRZEŻENIA:
+  - oczopląs poziomo-skrętny UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo, bez
+    pełnego składania trzech kanałów;
+  - vHIT: pojedyncza wartość gain (kanał pobudzany) zamiast pełnej dynamiki prędkości i sakad covert/overt;
+  - integrator liniowy (dryf θ/τ) bez asymetrii poziom/pion i bez rebound nystagmus;
+  - skew jako skalarny rozjazd pionowy; brak pełnej geometrii OTR (pochylenie głowy, cyklotorsja);
+  - HINTS jako model DYDAKTYCZNY — NIE zastępuje badania; ważny w AVS z utrzymującym się oczopląsem,
+    interpretować z HINTS „plus" (słuch) i kontekstem (Tarnutzer 2011 [H9]).

@@ -2,13 +2,14 @@
  OTOREPO — lista zadań (todo)
  Aplikacja: repozycja otolitów (BPPV) + diagnostyka, single-file HTML/JS
  Pliki: otorepo.html (apka) · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
- Ostatnia aktualizacja: 2026-07-02
+ Ostatnia aktualizacja: 2026-07-07
 ==========================================================================
 
 Konwencje techniczne:
 - Walidacja składni po każdej zmianie:
     awk '/<script>/{f=1;next} /<\/script>/{f=0} f' otorepo.html > app.js && node --check app.js
-- Silnik = moduł `Vestibular` (czysty, BEZ DOM) — testowany offline w node przed podłączeniem.
+- Silniki = moduły `Vestibular` (BPPV) i `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS) — czyste, BEZ DOM,
+    testowane offline w node przed podłączeniem (harness wyodrębnia IIFE z HTML: scratchpad vlab.mjs).
 - Układ głowy: x=prawo, y=góra(czaszka), z=przód(nos). Strony: L=lewa, P=prawa. yaw>0 = w prawo.
 - Składowe oczopląsu (anat.): h:+prawo/-lewo, v:+góra/-dół, t:+górne bieguny w prawo/-w lewo.
 
@@ -21,8 +22,17 @@ SILNIK (fizyka) — rozszerzenia wg korzyść/koszt:
  [ ] Latencja przez wąski przewód gc(φ) — główny literaturowy mechanizm (mógłby zastąpić adhezję). ŚREDNI.
  [ ] Kupulolitiaza słabsza od kanalolitiazy (~1 współczynnik) — NISKA-ŚREDNIA, tania korekta.
  [ ] Pełne ΔP_c / hydrodynamika ścianek — NISKA korzyść, ryzyko fałszywej precyzji → odłożyć/pominąć.
- [ ] Model ośrodkowy + magazynowanie prędkości — NISKA dla BPPV → pominąć.
- [ ] Inne stany (excited:false / push-pull): jednostronna westybulopatia, oczopląs ośrodkowy.
+ [ ] Magazynowanie prędkości (velocity storage) — NISKA dla BPPV → nadal pominięte.
+ [→] Inne stany (push-pull / excited:false): jednostronna westybulopatia + oczopląs OŚRODKOWY —
+        ZROBIONE 2026-07-07 jako moduł NeuroVOR (patrz ZROBIONE / engine_doc „MODUŁ NeuroVOR").
+
+RÓŻNICOWANIE OŚRODEK↔OBWÓD (moduł NeuroVOR — rozszerzenia):
+ [ ] „MATEMATYCZNY PACJENT": tryb WŁASNYCH PARAMETRÓW — suwaki toneL/R, gainL/R, fixationGain,
+        integratorTau, skewTone/otrTorsion → ręczne tworzenie przypadków MIESZANYCH (obwód+ośrodek),
+        z werdyktem HINTS liczonym na żywo. Cel: eksperymentowanie z trudnymi/nakładającymi się patologiami.
+ [ ] (opc.) HINTS „plus" — ubytek słuchu (AICA) jako dodatkowy parametr różnicujący.
+ [ ] (opc.) vHIT: sakady COVERT vs OVERT (obecnie tylko overt) + krzywa prędkości oka.
+ [ ] (opc.) Rebound nystagmus i asymetria integratora (pion/poziom).
 
 WALIDACJA / modelowanie kliniczne (otwarte):
  [ ] Epley "front-loaded": cząstka osiąga wyjście (φ=178°) już w KROKU 2 → oczopląs w krokach 4/5 pod-reprezentowany.
@@ -56,6 +66,27 @@ MIGRACJA 3D (K4, odłożone jako projekt na przyszłość — patrz migracja_3d.
 ==========================================================================
  ZROBIONE (kamienie milowe)
 ==========================================================================
+
+SILNIK NeuroVOR — warstwa toniczna/ośrodkowa „od pierwszych zasad" (2026-07-07, offline 102/102, node):
+ [x] Push-pull + spoczynkowa aktywność błędników (~90 Hz) + rektyfikator Ewalda (OBCIĘCIE HAMOWANIA) →
+        oczopląs SAMOISTNY UVH: kierunek/siła z asymetrii tonu (bije ku silniejszemu uchu). [H1][H2]
+ [x] Supresja fiksacji (kłaczek): oko = VOR − fixationGain·retinal_slip → obwód gaśnie z fiksacją,
+        ośrodek (fixationGain≈0) NIE. Przełącznik Frenzel↔światło. [H3]
+ [x] vHIT: przy prędkości pchnięcia kanał hamowany „floored" (0 Hz) → gain z kanału POBUDZANEGO; niedomiar →
+        SAKADA korygująca (obwód, ipsilateralnie). Ośrodek gain≈1 → HIT prawidłowy = GROŹNY. [H4][H5]
+ [x] Integrator „leaky" → oczopląs SPOJRZENIOWY zmienny kierunkowo (ośrodek). [H6] · Skew/OTR z osi
+        grawiceptywnej (otolity/MLF) → naprzemienne zasłanianie, pionowa sakada. [H7]
+ [x] Scenariusze (normal / neuritis L·P / udar) + synteza HINTS/INFARCT → werdykt obwód↔ośrodek. [H8]
+        KLUCZ: ton STATYCZNY (oczopląs) i gain DYNAMICZNY (HIT) = OSOBNE parametry. [engine_doc: MODUŁ NeuroVOR]
+
+UI RÓŻNICOWANIE — zakładka „HINTS" (2026-07-07, walidacja w przeglądarce mobile+desktop, 0 błędów):
+ [x] 3. zakładka HINTS (tabs three) → renderHints: wybór scenariusza + karta WERDYKTU (INFARCT, kolor
+        zielony=obwód / czerwony=ośrodek, tagi HI·N·TS).
+ [x] Panel oczopląsu samoistnego: eyesSVG + startNeuroNys (poziomo-skrętny, ciągły), przełącznik
+        Frenzel/światło (supresja) + spojrzenie L/środek/P (Alexander vs zmiana kierunku).
+ [x] Panel vHIT (startHIT): pchnięcie L/P, głowa rusza, oczy kompensują wg gain, sakada korygująca gdy niedomiar.
+ [x] Panel skew (startSkew): naprzemienne zasłanianie z pionową sakadą korygującą gdy skew obecny.
+        Literatura wpisana inline w silniku [H1]-[H8] i w engine_doc/view_doc. [view_doc: HINTS]
 
 SILNIK (Vestibular, czysty moduł, zwalidowany offline):
  [x] Rozmiar/gęstość cząstki jako parametr skalujący (size small/medium/big; medium=r1=baza). r → tauP∝r⁻²
