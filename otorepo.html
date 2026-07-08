@@ -1294,7 +1294,7 @@ const state={
   _manKey:null, _manSim:null,
   autoAdvance:false, sound:true, autostart:false,
   // HINTS / różnicowanie (etap: silnik NeuroVOR)
-  hintsScenario:"neuritisR", hintsFix:false, hintsGaze:0,   // scenariusz · fiksacja(true=światło/false=Frenzel) · spojrzenie(-1/0/+1)
+  hintsScenario:"neuritisR", hintsSide:"P", hintsFix:false, hintsGaze:0,   // scenariusz(engine key) · ucho zajęte neuronitis(L/P) · fiksacja · spojrzenie(-1/0/+1)
   hintsComp:0, hintsRecovery:false, hintsHitSide:null,       // kompensacja ośrodkowa c(0..1) · regeneracja (Bechterew) · ostatnio pchnięte ucho — etap 6
 };
 
@@ -1917,12 +1917,13 @@ function renderSetup(){
         <div class="seg three">${canalOpt("posterior")}${canalOpt("horizontal")}${canalOpt("anterior")}</div></div>
       ${man}${sizeGroup}`;
   } else if(state.mode==="hints"){
-    const scDesc={normal:"prawidłowy VOR — bez oczopląsu", neuritisR:"obwód — wypadnięcie ucha P",
-      neuritisL:"obwód — wypadnięcie ucha L", strokeCentral:"ośrodek — objaw groźny (AVS)"};
-    const scOpt=k=>`<button class="opt" aria-pressed="${state.hintsScenario===k}" onclick="openHints('${k}')">${NeuroVOR.SCENARIOS[k].label}<small>${scDesc[k]}</small></button>`;
+    const famOf=k=> k==="normal"?"normal": k==="strokeCentral"?"stroke":"neuritis";
+    const curFam=famOf(state.hintsScenario);
+    const scDesc={normal:"prawidłowy VOR — bez oczopląsu", neuritis:"obwód — wypadnięcie błędnika", stroke:"ośrodek — objaw groźny (AVS)"};
+    const scOpt=(f,key,lbl)=>`<button class="opt" aria-pressed="${curFam===f}" onclick="openHints('${key}')">${lbl}<small>${scDesc[f]}</small></button>`;
     body=`<div class="group"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">obwód ↔ ośrodek</span></div>
-        <div class="seg two">${["normal","neuritisR","neuritisL","strokeCentral"].map(scOpt).join("")}</div></div>
-      <div class="note" style="margin-top:14px">Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz, aby przejść do różnicowania HINTS.</div>`;
+        <div class="seg three">${scOpt('normal','normal','Zdrowy / równowaga')}${scOpt('neuritis','neuritisR','Neuronitis przedsionkowy')}${scOpt('stroke','strokeCentral','Udar móżdżku / pnia')}</div></div>
+      <div class="note" style="margin-top:14px">Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz (przy neuronitis stronę ucha ustawisz przełącznikiem na karcie HINTS).</div>`;
   } else {
     const testOpt=k=>`<button class="opt" aria-pressed="${state.testKey===k}" onclick="openTest('${k}')">${DIAG[k].name}<small>${DIAG[k].tests}</small></button>`;
     body=`<div class="group"><div class="label"><span class="eyebrow">Test diagnostyczny</span><span class="hint">stronę ustalisz na karcie testu</span></div>
@@ -2058,8 +2059,8 @@ function renderDiag(){
     : phases.map((ph,i)=>`<div class="phase">${phaseInner(ph,i)}</div>`).join("");
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="ttl"><b>${t.name}</b><span>${t.tests}</span></div></div>
-    <div class="diagside"><span class="lbl">Chora strona:</span><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">P</button></div></div>
+      <div class="ttl"><b>${t.name}</b><span>${t.tests}</span></div>
+      <div class="sidewrap"><em>strona</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">P</button></div></div></div>
     <div class="card" style="margin-bottom:4px"><div class="instr" style="font-size:14px;color:#D4DEE8">${t.intro}</div></div>
     ${isDix ? `<div class="obsrow"><div class="obslabel">Zaobserwowany oczopląs w Dix-Hallpike:</div>
       <div class="seg segobs">
@@ -2150,15 +2151,16 @@ function renderHints(){
   const nys=NeuroVOR.nystagmusAtGaze(p, gazeDeg, fixOn);
   const H=NeuroVOR.hints(p), sp=NeuroVOR.spontaneous(p);
   const lastHi = state.hintsHitSide ? NeuroVOR.headImpulse(p, state.hintsHitSide) : null;   // odtwórz opis dla ostatnio pchniętego ucha
-  const scDesc={normal:"prawidłowy VOR", neuritisR:"obwód — ucho P", neuritisL:"obwód — ucho L", strokeCentral:"ośrodek (AVS)"};
-  const scBtn=k=>`<button class="opt" aria-pressed="${key===k}" onclick="setHintsScenario('${k}')" style="min-height:auto;padding:10px 11px;font-size:12.5px">${NeuroVOR.SCENARIOS[k].label}<small>${scDesc[k]}</small></button>`;
+  const fam = key==="normal" ? "normal" : key==="strokeCentral" ? "stroke" : "neuritis";   // 3 scenariusze; strona neuronitis osobno
+  const famBtn=(f,lbl,desc)=>`<button class="opt" aria-pressed="${fam===f}" onclick="setHintsDx('${f}')" style="min-height:auto;padding:10px 11px;font-size:12.5px">${lbl}<small>${desc}</small></button>`;
   const gazeBtn=(g,lbl)=>`<button aria-pressed="${gaze===g}" onclick="setHintsGaze(${g})">${lbl}</button>`;
   const fixBtn=(v,lbl)=>`<button aria-pressed="${fixOn===v}" onclick="setHintsFix(${v})">${lbl}</button>`;
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="ttl"><b>Różnicowanie — HINTS</b><span>ośrodek ↔ obwód · silnik z pierwszych zasad</span></div></div>
+      <div class="ttl"><b>Różnicowanie — HINTS</b><span>ośrodek ↔ obwód · silnik z pierwszych zasad</span></div>
+      ${fam==="neuritis" ? `<div class="sidewrap"><em>strona</em><div class="sidepill"><button data-s="L" aria-pressed="${state.hintsSide==='L'}" onclick="setHintsNeuritisSide('L')">L</button><button data-s="P" aria-pressed="${state.hintsSide==='P'}" onclick="setHintsNeuritisSide('P')">P</button></div></div>` : ""}</div>
     <div class="group" style="margin-top:4px"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">zmienia tylko parametry fizjologii</span></div>
-      <div class="seg two">${["normal","neuritisR","neuritisL","strokeCentral"].map(scBtn).join("")}</div></div>
+      <div class="seg three">${famBtn('normal','Zdrowy','prawidłowy VOR')}${famBtn('neuritis','Neuronitis','obwód')}${famBtn('stroke','Udar móżdżku','ośrodek (AVS)')}</div></div>
     ${hintsCompPanel(key)}
     <div data-verdict>${hintsVerdictHTML(H)}</div>
     <div class="panelbox hpanel" style="margin-top:12px">
@@ -2286,7 +2288,7 @@ function startNeuroNys(container, nys, gazeDeg){
    sakada korygująca gdy niedomiar — JAWNA (po ruchu) vs UKRYTA (w trakcie, tylko vHIT). --- */
 function hitSVG(){
   const eye=(cx)=>`<ellipse cx="${cx}" cy="66" rx="27" ry="21" fill="#EEF3F7" stroke="var(--line)" stroke-width="2"/>
-    <g class="hiris"><circle cx="${cx}" cy="66" r="12.5" fill="#3A6B86"/><circle cx="${cx}" cy="66" r="6" fill="#0b1118"/></g>`;
+    <g class="hiris"><circle cx="${cx}" cy="66" r="10" fill="#3A6B86"/><circle cx="${cx}" cy="66" r="5" fill="#0b1118"/></g>`;
   return `<svg viewBox="0 0 240 150" class="eyes" role="img" aria-label="Test pchnięcia głowy — widok frontalny (badający naprzeciw pacjenta)">
     <line x1="120" y1="2" x2="120" y2="15" stroke="var(--faint)" stroke-width="2"/><circle cx="120" cy="21" r="4" fill="none" stroke="var(--faint)" stroke-width="2"/>
     <g id="hithead">
@@ -2306,7 +2308,8 @@ function startHIT(container, hi){
   const token=(container.__hitTok=(container.__hitTok||0)+1);
   const camRx=Scene3D.CAMERAS.frontal.right[0];
   const dir=Math.sign((hi.toSide==="P"?1:-1)*camRx);      // ekranowy kierunek pchnięcia (lustro)
-  const HEADPX=30, gain=Math.max(0,Math.min(1.2,hi.gain)), errMax=Math.max(0,1-gain);  // niedomiar rotacji oka (frakcja HEADPX)
+  const HEADPX=15, IRIS_MAX=15;                           // skok głowy = zakres obrotu oka (oko rx27, źrenica r10 → źrenica NIE wychodzi poza obrys)
+  const gain=Math.max(0,Math.min(1.2,hi.gain)), errMax=Math.max(0,1-gain);  // niedomiar rotacji oka (frakcja HEADPX)
   const covFrac=Math.max(0,Math.min(1,hi.covertFrac||0)); // udział sakady UKRYTEJ (predykcyjnej) z fuzji szyjno-ocznej
   const T_IMP=200, T_COV=110, T_HOLD=150, T_SAC=90, T_RET=420, T_END=T_IMP+T_HOLD+T_SAC+T_RET;
   // frakcja niedomiaru już skorygowana: sakada UKRYTA podczas pchnięcia (T_COV..T_IMP), JAWNA po (T_SAC)
@@ -2325,7 +2328,7 @@ function startHIT(container, hi){
     else { head.setAttribute('transform','translate(0 0)'); for(const g of irises) g.setAttribute('transform','translate(0 0)'); return false; }
     const gaze=dir*HEADPX*errMax*Math.max(0, raw-corr(t));   // pozostały błąd fiksacji (covert znosi część JUŻ w trakcie ruchu)
     head.setAttribute('transform',`translate(${headX.toFixed(2)} 0)`);
-    const local=gaze-headX;                            // iris jest dzieckiem głowy → absolut = headX+local = gaze
+    const local=Math.max(-IRIS_MAX, Math.min(IRIS_MAX, gaze-headX));   // źrenica jako dziecko głowy; klamrowana do obrysu oka
     for(const g of irises) g.setAttribute('transform',`translate(${local.toFixed(2)} 0)`);
     return true;
   });
@@ -2387,8 +2390,15 @@ function skewLabel(sk){
 
 /* ============ Akcje ============ */
 function setMode(m){ state.mode=m; render(); }
-function openHints(key){ state.hintsScenario=key; state.hintsFix=false; state.hintsGaze=0; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; state.screen="hints"; render(); }
-function setHintsScenario(key){ state.hintsScenario=key; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; render(); }  // nowy scenariusz → reset kompensacji i pchnięcia
+function openHints(key){ state.hintsScenario=key||"neuritisR"; state.hintsSide = key==="neuritisL"?"L":"P"; state.hintsFix=false; state.hintsGaze=0; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; state.screen="hints"; render(); }
+// 3 scenariusze: zdrowy / neuronitis / udar (strona neuronitis osobnym przełącznikiem L/P jak w manewrach)
+function setHintsDx(fam){
+  state.hintsScenario = fam==="normal" ? "normal" : fam==="stroke" ? "strokeCentral" : (state.hintsSide==="L"?"neuritisL":"neuritisR");
+  state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; render();
+}
+function setHintsNeuritisSide(s){    // L/P ucha zajętego; zachowuje poziom kompensacji (porównanie stron), wymusza ponowne pchnięcie
+  state.hintsSide=s; state.hintsScenario = s==="L"?"neuritisL":"neuritisR"; state.hintsHitSide=null; render();
+}
 function setHintsFix(v){ state.hintsFix=!!v; render(); }
 function setHintsGaze(g){ state.hintsGaze=g; render(); }
 function setHintsComp(v){ state.hintsComp=Math.max(0,Math.min(1,(+v||0)/100)); refreshHintsComp(); }   // suwak (oninput) → lekkie odświeżenie
