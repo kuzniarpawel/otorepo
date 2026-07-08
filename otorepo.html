@@ -281,6 +281,12 @@
   .hrow .tag{font-size:11px;font-weight:800;padding:2px 8px;border-radius:7px;flex:0 0 auto;margin-top:1px;min-width:22px;text-align:center;background:var(--panel2);color:var(--faint);border:1px solid var(--line)}
   .hrow .tag.ok{background:rgba(63,209,158,.16);color:#7fe3c4;border-color:#2f7f68}
   .hrow .tag.bad{background:rgba(217,87,107,.16);color:#ff9bab;border-color:#d9576b}
+  .comptag{float:right;font-weight:700;font-size:12px;color:var(--primary);text-transform:none;letter-spacing:0}
+  .comprange{-webkit-appearance:none;appearance:none;width:100%;height:7px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);margin:10px 0 5px;cursor:pointer}
+  .comprange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:21px;height:21px;border-radius:50%;background:var(--primary);border:2px solid var(--ink);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .comprange::-moz-range-thumb{width:19px;height:19px;border-radius:50%;background:var(--primary);border:2px solid var(--ink);cursor:pointer}
+  .comprow{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin:3px 0 5px}
+  .comprow b{color:var(--text);font-weight:700}
 </style>
 
 </head><body><div class="wrap" id="app">
@@ -562,9 +568,45 @@ const NeuroVOR = (()=>{
     toneL:R0, toneR:R0,      // spoczynkowa aktywność błędnika L/P (Hz) — hipofunkcja obniża
     gainL:1.0, gainR:1.0,    // wzmocnienie VOR kanału poziomego L/P (0..~1.1) — vHIT (etap 3)
     fixationGain:0.9,        // zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0 (etap 2)
-    integratorTau:25,        // stała czasowa integratora nerwowego (s); ośrodek „leaky" → krótka (etap 4)
-    skewTone:0, otrTorsion:0 // grawiceptywna asymetria / OTR (etap 4)
+    integratorTau:25,        // stała czasowa integratora UTRZYMANIA SPOJRZENIA (s); ośrodek „leaky" → krótka (etap 4)
+    skewTone:0, otrTorsion:0,// grawiceptywna asymetria / OTR (etap 4)
+    comp:0,                  // poziom KOMPENSACJI ośrodkowej c∈[0,1]: 0=faza ostra, 1=pełna symetria spoczynkowa (etap 6)
+    pacemakerBias:0,         // TRWAŁY (sticky) ładunek pacemakera jądra chorego (Hz) → oczopląs powrotny Bechterewa (etap 6b)
+    lesionEar:null,          // jawna strona chora dla kompensacji (null → wykrywana ze słabszego błędnika)
+    tauVS:15                 // stała czasowa VELOCITY STORAGE (s) — wygaszanie po obrocie; kompensacja skraca (etap 6c)
   }, o||{}); }
+
+  // ETAP 6 — KOMPENSACJA OŚRODKOWA (neuroplastyczność pnia/móżdżku). [H10][H11]
+  // Po ostrym UVH mózg odtwarza SYMETRIĘ SPOCZYNKOWĄ (kompensacja STATYCZNA) dwutorowo:
+  //   • CLAMP MÓŻDŻKOWY — kłaczek/robak gwałtownie HAMUJE zdrowe jądro (obniża VN_zdrowe); szybki,
+  //     dominuje we WCZESNEJ fazie (małe c), słabnie gdy przejmuje pacemaker.
+  //   • PACEMAKER WŁASNY — odnerwione jądro chore uwrażliwia się (upregulacja) i generuje AUTONOMICZNY
+  //     rytm spoczynkowy (podnosi VN_chore); późny i TRWAŁY.
+  // c∈[0,1]: 0=faza ostra (pełna asymetria → oczopląs samoistny), 1=pełna kompensacja (symetria, oczopląs znika).
+  // clamp + pacemaker sumują się DOKŁADNIE do zniesionej asymetrii (restored=c·gap) → BEZ przeregulowania.
+  // pacemakerBias (Hz, sticky): zatrzaśnięty ładunek pacemakera NIEZALEŻNY od bieżącego tonu — nośnik
+  //   „naładowania" umożliwiający oczopląs POWROTNY (Bechterewa), gdy błędnik odzyska funkcję (etap 6b).
+  // Zwraca aktywność JĄDER przedsionkowych (VN) — to ją, nie surowy błędnik, „widzi" push-pull (etap 1).
+  const CLAMP_TAU = 0.32;    // rozkład udziału clampu w c: exp(−c/τ) — 1 przy c→0, ~0.04 przy c=1 (clamp ustępuje pacemakerowi)
+  function compensate(p){
+    const c = Math.max(0, Math.min(1, p.comp||0));
+    const bias = p.pacemakerBias||0;                         // sticky ładunek pacemakera (Hz)
+    const rL = afferent(p.toneL,0), rR = afferent(p.toneR,0);// surowy błędnik po rektyfikacji (Ewald)
+    const lesion = p.lesionEar || (rL<rR ? "L" : rR<rL ? "P" : null);   // strona chora = słabszy błędnik
+    let vnL=rL, vnR=rR, clampAmt=0, paceAmt=0;
+    if(c>0 && lesion){
+      const intactRate = lesion==="L" ? rR : rL, lesionRate = lesion==="L" ? rL : rR;
+      const gap = Math.max(0, intactRate - lesionRate);      // asymetria ostra do zniesienia
+      const restored = c*gap;                                // ile asymetrii już zniesiono (0→gap)
+      const clampShare = Math.exp(-c/CLAMP_TAU);             // udział clampu (wczesny) vs pacemakera (późny)
+      clampAmt = restored*clampShare;                        // obniżenie zdrowego jądra (przejściowe)
+      paceAmt  = restored*(1-clampShare);                    // podniesienie chorego jądra (trwałe)
+      if(lesion==="L"){ vnL = lesionRate+paceAmt; vnR = intactRate-clampAmt; }
+      else            { vnR = lesionRate+paceAmt; vnL = intactRate-clampAmt; }
+    }
+    if(bias && lesion){ if(lesion==="L") vnL += bias; else vnR += bias; }   // sticky pacemaker (Bechterew)
+    return { vnL, vnR, c, lesionEar:lesion, clampAmt, paceAmt, pacemakerBias:bias };
+  }
 
   // ETAP 1 — Oczopląs SAMOISTNY z asymetrii tonicznej (push-pull). [H1][H2]
   // Mózg szacuje prędkość głowy z różnicy aferentów pary poziomej: Ω_est ∝ (rateL − rateR)
@@ -572,19 +614,24 @@ const NeuroVOR = (()=>{
   //   udaje stały obrót: faza WOLNA ku błędnikowi słabszemu, faza SZYBKA (widoczny beat) ku
   //   silniejszemu (zdrowemu). Kierunek stały niezależnie od spojrzenia — cecha OBWODOWA.
   function spontaneous(p){
-    const rL=afferent(p.toneL,0), rR=afferent(p.toneR,0);
+    const cmp = compensate(p);                     // aktywność JĄDER przedsionkowych po kompensacji (etap 6)
+    const rL = cmp.vnL, rR = cmp.vnR;              // c=0 i bias=0 → rL=afferent(toneL,0) itd. (dokładny no-op)
     const imbalance = rL - rR;                     // >0 ⇒ pozorny obrót w lewo ⇒ faza wolna w prawo ⇒ bije w LEWO
     const asym = Math.min(1, Math.abs(imbalance)/R0);
     const spv = SPV_MAX*asym;                      // °/s — surowa faza wolna (bez fiksacji)
     const beatSign = -Math.sign(imbalance) || 0;   // head-frame: +1 ku P, −1 ku L (ku silniejszemu uchu)
-    const beatEar   = beatSign>0 ? "P" : beatSign<0 ? "L" : null;   // ucho silniejsze/zdrowe
-    const lesionEar = imbalance>0 ? "P" : imbalance<0 ? "L" : null; // ucho słabsze (jeśli obniżone)
+    const beatEar   = beatSign>0 ? "P" : beatSign<0 ? "L" : null;   // ucho z wyższą aktywnością jądra (kierunek bicia)
+    const lesionEar = imbalance>0 ? "P" : imbalance<0 ? "L" : null; // ucho z niższą aktywnością jądra
+    // Bechterew: bicie ku uchu PIERWOTNIE choremu (błędnik wrócił, pacemaker wciąż naładowany) — etap 6b.
+    const bechterew = !!(cmp.lesionEar && beatEar===cmp.lesionEar && asym>0);
     // składowe head-frame: poziom ku silniejszemu uchu + śladowy skręt (biegun górny ku niemu); pion ≈0.
     const h=beatSign, t=beatSign*TORS_FRAC, v=0;
     return { kind:"horizontalTorsional", h, v, t,
       dir:  Math.sign(h*camRx()) || 0,             // znak EKRANOWY poziomu (jak nysFromDyn)
       tdir: Math.sign(t*camRx()) || 0,             // znak EKRANOWY skrętu
-      vdir: 1, strength: asym, spv, beatEar, lesionEar };
+      vdir: 1, strength: asym, spv, beatEar, lesionEar,
+      comp: cmp.c, trueLesionEar: cmp.lesionEar, bechterew,   // etap 6: stan kompensacji
+      clampAmt: cmp.clampAmt, paceAmt: cmp.paceAmt, vnL:rL, vnR:rR };
   }
 
   // ETAP 2 — SUPRESJA FIKSACJI (kłaczek / parakłaczek). [H3]
@@ -618,6 +665,35 @@ const NeuroVOR = (()=>{
   //   OŚRODEK (udar): kanały zdrowe (gain≈1) → HIT PRAWIDŁOWY (brak sakady) = zły znak (nie uspokaja).
   const S_HZ = 0.8;          // czułość aferentu (Hz na °/s) — kalibracja: obcięcie hamowania ~tone/S ≈112°/s < prędkości vHIT
   const VIS_THRESH = 2;      // próg widoczności klinicznej oczopląsu (°/s) — poniżej: brak jawnego oczopląsu
+
+  // ETAP 6c — KOMPENSACJA DYNAMICZNA: fuzja sensoryczna + velocity storage. [H12][H13][H14]
+  // Wysokich częstotliwości VOR (vHIT) NIE da się naprawić (gain trwa). Ośrodek kompensuje inaczej:
+  //  (1) FUZJA WAŻONA WIARYGODNOŚCIĄ (precision-weighted / komplementarny filtr — model optymalnego
+  //      estymatora). Kanał przedsionkowy niesie estymatę prędkości z wagą = jego WIARYGODNOŚĆ. Przy
+  //      dużej prędkości wiarygodność KANAŁU załamuje się (kanał hamowany wyzerowany, pobudzany nasyca)
+  //      i spada z gain → estymator PRZEŁĄCZA się na PROPRIOCEPCJĘ SZYI / efference-copy (COR); waga
+  //      w_szyja rośnie z kompensacją c. „Przełącznik" NIE jest zaprogramowany — WYNIKA z wag.
+  //  (2) VELOCITY STORAGE — kompensacja „otwiera zawór" integratora prędkości → krótsza stała czasowa →
+  //      oczopląs po obrocie szybciej gaśnie. To OSOBNY układ od integratora utrzymania spojrzenia
+  //      (etap 4a): kompensacja skraca velocity storage, a NIE gaze-holding (inaczej fałsz. objaw ośrodkowy).
+  const DVS_FRAC = 0.67;     // maks. skrócenie velocity storage przez pełną kompensację (τ 15 s → ~5 s)
+  function fusionWeights(p, headVel, toSide){
+    const c = Math.max(0, Math.min(1, p.comp||0)), Ohm = headVel||200;
+    const gEx = toSide==="P" ? p.gainR : p.gainL;            // kanał pobudzany (ipsilateralny) niesie sygnał w HIT
+    const toneEx = toSide==="P" ? p.toneR : p.toneL;
+    const rateEx = afferent(toneEx, +gEx*S_HZ*Ohm);
+    const headroom = Math.max(0, (R_SAT - rateEx)/R_SAT);   // zapas do nasycenia: 1=pełny, 0=nasycony (utrata informacji)
+    const canalRel = Math.max(0, Math.min(1, gEx)) * (0.5 + 0.5*headroom);  // wiarygodność kanału (gain × zapas)
+    const neckRel  = c*(1 - canalRel);                       // propriocepcja/efference: rośnie z c, celuje w „martwe pole" kanału
+    const sum = canalRel + neckRel || 1;
+    return { wCanal: canalRel/sum, wNeck: neckRel/sum, canalRel, neckRel };
+  }
+  // Wygaszanie oczopląsu po stymulacji obrotowej (velocity storage). Kompensacja skraca stałą czasową.
+  function postRotational(p){
+    const c = Math.max(0, Math.min(1, p.comp||0)), base = Math.max(1, p.tauVS||15);
+    return { tauBase: base, tau: base*(1 - DVS_FRAC*c), c, shortened: c>0 };
+  }
+
   function headImpulse(p, toSide, opts){
     opts = opts||{};
     const Ohm = opts.headVel||200, amp = opts.headAmp||15;   // szczyt prędkości (°/s) i amplituda (°) pchnięcia
@@ -632,14 +708,25 @@ const NeuroVOR = (()=>{
     // gain = modulacja pobudzana / modulacja idealna (gEx=1 bez nasycenia → gain 1).
     const gain = Math.max(0, Math.min(1.25, modEx/(S_HZ*Ohm)));
     const deficit = Math.max(0, 1-gain);
-    const saccadeAmp = deficit*amp;                          // niedomiar rotacji oka → wielkość sakady korygującej
-    const overt = saccadeAmp >= 2.5;                         // sakada widoczna gołym okiem (≈ gain<0.83 przy amp 15°)
+    const saccadeAmp = deficit*amp;                          // CAŁKOWity niedomiar rotacji oka → sakada korygująca (gain nienaprawialny)
+    const abnormal = saccadeAmp >= 2.5;                      // vHIT PATOLOGICZNY (deficyt gain) — NIEZALEŻNY od kompensacji
+    // KOMPENSACJA DYNAMICZNA: całość korekty stała, ale przesuwa się w czasie z sakady JAWNEJ (overt —
+    // spóźnionej, po pchnięciu, napędzanej ślizgiem) na UKRYTĄ (covert — predykcyjnej, w trakcie pchnięcia,
+    // z fuzji szyjno-ocznej/efference). Udział covert = KOMPLETNOŚĆ kompensacji c (przy pełnej kompensacji
+    // korekta jest w całości predykcyjna). fusionWeights (fw) = MECHANIZM: przy prędkości vHIT kanał
+    // niewiarygodny → układ opiera się na propriocepcji szyi (wNeck rośnie), co UMOŻLIWIA sakadę ukrytą. [H12][H13][H14]
+    const fw = fusionWeights(p, Ohm, toSide);
+    const covertFrac = Math.max(0, Math.min(1, p.comp||0));  // predykcyjny udział → sakada ukryta (0 gdy niekompensowany, 1 przy pełnej)
+    const covertAmp = saccadeAmp*covertFrac, overtAmp = saccadeAmp*(1-covertFrac);
+    const overt  = overtAmp  >= 2.5;                         // JAWNA sakada — widoczna gołym okiem (bedside HIT)
+    const covert = covertAmp >= 1.0;                         // UKRYTA sakada — wykrywalna tylko w vHIT (goggles)
     return {
       toSide, headVel:Ohm, headAmp:amp, gain, deficit,
       rateEx, rateIn, modEx, modIn, inhibitedFloored: rateIn<=0,
-      saccadePresent: overt, saccadeAmp,
+      saccadeAmp, covertAmp, overtAmp, covertFrac, fusion: fw,
+      saccadePresent: overt, overtSaccade: overt, covertSaccade: covert,
       saccadeToSide: toSide==="P" ? "L" : "P",               // catch-up przeciwnie do pchnięcia (ku celowi/linii środkowej)
-      abnormal: overt                                        // patologiczny HIT = obecna sakada korygująca
+      abnormal                                               // patologiczny HIT (deficyt gain); jawność bedside = saccadePresent/overt
     };
   }
 
@@ -737,8 +824,8 @@ const NeuroVOR = (()=>{
     };
   }
 
-  return { R0, R_SAT, SPV_MAX, VIS_THRESH, afferent, makePatient, spontaneous, suppressionFactor, observe,
-           headImpulse, gazeEvoked, nystagmusAtGaze, directionChanging, skew,
+  return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, afferent, makePatient, compensate, spontaneous, suppressionFactor, observe,
+           headImpulse, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew,
            SCENARIOS, scenario, hints };
 })();
 
@@ -1208,6 +1295,7 @@ const state={
   autoAdvance:false, sound:true, autostart:false,
   // HINTS / różnicowanie (etap: silnik NeuroVOR)
   hintsScenario:"neuritisR", hintsFix:false, hintsGaze:0,   // scenariusz · fiksacja(true=światło/false=Frenzel) · spojrzenie(-1/0/+1)
+  hintsComp:0, hintsRecovery:false, hintsHitSide:null,       // kompensacja ośrodkowa c(0..1) · regeneracja (Bechterew) · ostatnio pchnięte ucho — etap 6
 };
 
 /* ============ rAF rejestr ============ */
@@ -2056,46 +2144,43 @@ function hintsVerdictHTML(H){
 }
 function renderHints(){
   const key=state.hintsScenario||"neuritisR";
-  const p=NeuroVOR.scenario(key);
+  const p=hintsCompPatient(key);                   // scenariusz + kompensacja ośrodkowa (etap 6)
   const fixOn=!!state.hintsFix;                    // true=światło/fiksacja · false=Frenzel/ciemność
   const gaze=state.hintsGaze||0, gazeDeg=gaze*20;  // -1/0/+1 → -20/0/+20°
   const nys=NeuroVOR.nystagmusAtGaze(p, gazeDeg, fixOn);
-  const H=NeuroVOR.hints(p);
+  const H=NeuroVOR.hints(p), sp=NeuroVOR.spontaneous(p);
+  const lastHi = state.hintsHitSide ? NeuroVOR.headImpulse(p, state.hintsHitSide) : null;   // odtwórz opis dla ostatnio pchniętego ucha
   const scDesc={normal:"prawidłowy VOR", neuritisR:"obwód — ucho P", neuritisL:"obwód — ucho L", strokeCentral:"ośrodek (AVS)"};
   const scBtn=k=>`<button class="opt" aria-pressed="${key===k}" onclick="setHintsScenario('${k}')" style="min-height:auto;padding:10px 11px;font-size:12.5px">${NeuroVOR.SCENARIOS[k].label}<small>${scDesc[k]}</small></button>`;
   const gazeBtn=(g,lbl)=>`<button aria-pressed="${gaze===g}" onclick="setHintsGaze(${g})">${lbl}</button>`;
   const fixBtn=(v,lbl)=>`<button aria-pressed="${fixOn===v}" onclick="setHintsFix(${v})">${lbl}</button>`;
-  const suppl = H.ny.hasSpontaneous
-    ? (fixOn ? (H.ny.suppresses ? "Z fiksacją oczopląs OBWODOWY słabnie (kłaczek tłumi dryf)."
-                                : "Mimo fiksacji oczopląs NIE słabnie — cecha OŚRODKOWA.")
-             : "Bez fiksacji (gogle Frenzla / ciemność) oczopląs bije z pełną siłą.")
-    : "Brak oczopląsu samoistnego w tym scenariuszu.";
-  const dcNote = H.ny.directionChanging ? " Zmienia kierunek ze spojrzeniem → OŚRODEK." : "";
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>Różnicowanie — HINTS</b><span>ośrodek ↔ obwód · silnik z pierwszych zasad</span></div></div>
     <div class="group" style="margin-top:4px"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">zmienia tylko parametry fizjologii</span></div>
       <div class="seg two">${["normal","neuritisR","neuritisL","strokeCentral"].map(scBtn).join("")}</div></div>
-    ${hintsVerdictHTML(H)}
+    ${hintsCompPanel(key)}
+    <div data-verdict>${hintsVerdictHTML(H)}</div>
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Oczopląs samoistny — widok frontalny</h4>
       <div class="hint-eyes ${fixOn?'':'dark'}">
         <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-neuronys>${eyesSVG()}</div><span class="emk">L</span></div>
         ${fixOn?"":'<div class="frenzel-tag">◌ gogle Frenzla — fiksacja zniesiona</div>'}
       </div>
-      ${hintsNysLabel(nys)}
+      <div data-nyslabel>${hintsNysLabel(nys)}</div>
       <div class="hctrl"><span class="lbl">Fiksacja</span>
         <div class="pillseg">${fixBtn(false,"Frenzel")}${fixBtn(true,"Światło")}</div></div>
       <div class="hctrl"><span class="lbl">Spojrzenie</span>
         <div class="pillseg">${gazeBtn(-1,"◀ lewo")}${gazeBtn(0,"środek")}${gazeBtn(1,"prawo ▶")}</div></div>
-      <div class="note">${suppl}${dcNote}</div>
+      <div class="note" data-supplnote>${hintsSupplHTML(H,fixOn,sp)}</div>
     </div>
     <div class="panelbox hpanel" style="margin-top:12px">
-      <h4>Test pchnięcia głowy (vHIT) — obserwuj cel ○</h4>
-      <div data-hit>${hitSVG()}</div>
-      <div class="hctrl" style="justify-content:center"><span class="lbl">Pchnij</span>
-        <div class="pillseg"><button onclick="hintsHIT('L')">◀ w lewo (L)</button><button onclick="hintsHIT('P')">w prawo (P) ▶</button></div></div>
-      <div class="note" data-hitlabel>Kliknij stronę, aby wykonać szybkie pchnięcie głowy. Oczy powinny zostać na celu; sakada korygująca = kanał chory po tej stronie.</div>
+      <h4>Test pchnięcia głowy (HIT) — obserwuj cel ○</h4>
+      <div class="viewpoint">widok badającego (naprzeciw pacjenta) — P = ucho prawe pacjenta, L = ucho lewe</div>
+      <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-hit>${hitSVG()}</div><span class="emk">L</span></div>
+      <div class="hctrl" style="justify-content:center"><span class="lbl">Pchnij ku uchu</span>
+        <div class="pillseg"><button data-hitbtn="P" aria-pressed="${state.hintsHitSide==='P'}" onclick="hintsHIT('P')">prawemu (P)</button><button data-hitbtn="L" aria-pressed="${state.hintsHitSide==='L'}" onclick="hintsHIT('L')">lewemu (L)</button></div></div>
+      <div class="note" data-hitlabel>${lastHi ? hitLabel(lastHi) : "Kliknij stronę (ucho pacjenta), aby wykonać szybkie pchnięcie głowy. Oczy powinny zostać na celu; sakada korygująca = kanał chory po tej stronie."}</div>
     </div>
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Odchylenie skośne — naprzemienne zasłanianie</h4>
@@ -2108,37 +2193,109 @@ function renderHints(){
     const sk=$('[data-skew]'); if(sk) startSkew(sk, H.ts);
   });
 }
-// Ciągły oczopląs poziomo-skrętny + odchylenie spojrzenia (bez tEnd — trwa aż do zmiany warunków).
+// Pacjent = scenariusz + KOMPENSACJA ośrodkowa (tylko obwód). Regeneracja błędnika → sticky pacemaker (Bechterew).
+function hintsCompPatient(key){
+  const p=NeuroVOR.scenario(key), base=NeuroVOR.SCENARIOS[key];
+  if(key!=="neuritisR" && key!=="neuritisL") return p;         // kompensujemy tylko uszkodzenie OBWODOWE
+  p.comp=Math.max(0,Math.min(1,state.hintsComp||0));
+  if(state.hintsRecovery && base.side){
+    const ear=base.side, acute = ear==="P" ? (base.params.toneR??NeuroVOR.R0) : (base.params.toneL??NeuroVOR.R0);
+    if(ear==="P") p.toneR=85; else p.toneL=85;                 // błędnik regeneruje (ton wraca ~do normy)
+    p.lesionEar=ear;                                            // historia: która strona była chora
+    p.pacemakerBias=0.7*p.comp*(NeuroVOR.R0-acute);            // sticky ładunek pacemakera — Bechterew ∝ c
+  }
+  return p;
+}
+const compStage=c=> c<0.05?"Faza ostra" : c<0.4?"Podostra" : c<0.85?"Zaawansowana" : "Pełna kompensacja";
+const compRowHTML=(sp,pr)=>`<span>Clamp móżdżkowy <b>−${(sp.clampAmt||0).toFixed(0)} Hz</b></span><span>Pacemaker <b>+${(sp.paceAmt||0).toFixed(0)} Hz</b></span><span>Velocity storage <b>${pr.tau.toFixed(1)} s</b></span>`;
+function compNoteHTML(c,rec,sp){
+  const t = rec ? "Błędnik odzyskuje funkcję. Jeśli pacemaker zdążył się naładować (wyższa kompensacja) — pojawia się oczopląs powrotny."
+    : c<0.05 ? "Faza ostra: pełna asymetria toniczna → silny oczopląs samoistny; w vHIT sakady JAWNE (overt, spóźnione)."
+    : c<0.85 ? "Kompensacja statyczna znosi asymetrię spoczynkową (oczopląs słabnie). Dynamika (gain vHIT) trwa — sakady przechodzą w UKRYTE (covert)."
+    : "Pełna kompensacja: brak oczopląsu samoistnego, velocity storage skrócone. vHIT nadal ujawnia deficyt (sakady ukryte) — dynamiki NIE da się naprawić.";
+  const bech = sp&&sp.bechterew ? `<div style="color:#ffcf8f;margin-top:6px">Oczopląs POWROTNY (Bechterewa): błędnik wrócił, a pacemaker wciąż naładowany → bije ku uchu <b>wcześniej choremu</b>.</div>` : "";
+  return t+bech;
+}
+// Panel kompensacji — tylko dla scenariuszy obwodowych (neuronitis). „Jeden suwak" steruje całą fizjologią.
+function hintsCompPanel(key){
+  if(key!=="neuritisR" && key!=="neuritisL") return "";
+  const c=state.hintsComp||0, pct=Math.round(c*100), rec=!!state.hintsRecovery;
+  const p=hintsCompPatient(key), sp=NeuroVOR.spontaneous(p), pr=NeuroVOR.postRotational(p);
+  const recBtn=(v,lbl)=>`<button aria-pressed="${rec===v}" onclick="setHintsRecovery(${v})">${lbl}</button>`;
+  return `<div class="panelbox hpanel" data-comppanel style="margin-top:12px">
+    <h4>Kompensacja ośrodkowa<span class="comptag" data-comptag>${pct}% · ${compStage(c)}</span></h4>
+    <input type="range" class="comprange" min="0" max="100" value="${pct}" oninput="setHintsComp(this.value)" onchange="rerunHintsHIT()" aria-label="Poziom kompensacji ośrodkowej">
+    <div class="comprow" data-comprow>${compRowHTML(sp,pr)}</div>
+    <div class="hctrl"><span class="lbl">Błędnik</span>
+      <div class="pillseg">${recBtn(false,"nieczynny")}${recBtn(true,"regeneracja")}</div></div>
+    <div class="note" data-compnote>${compNoteHTML(c,rec,sp)}</div>
+  </div>`;
+}
+// Opis oczopląsu samoistnego pod panelem (fiksacja / kierunek / Bechterew) — współdzielony z odświeżaniem suwaka.
+function hintsSupplHTML(H,fixOn,sp){
+  const suppl = H.ny.hasSpontaneous
+    ? (fixOn ? (H.ny.suppresses ? "Z fiksacją oczopląs OBWODOWY słabnie (kłaczek tłumi dryf)."
+                                : "Mimo fiksacji oczopląs NIE słabnie — cecha OŚRODKOWA.")
+             : "Bez fiksacji (gogle Frenzla / ciemność) oczopląs bije z pełną siłą.")
+    : "Brak oczopląsu samoistnego w tym scenariuszu.";
+  const dc = H.ny.directionChanging ? " Zmienia kierunek ze spojrzeniem → OŚRODEK." : "";
+  const be = sp&&sp.bechterew ? " Kierunek ODWRÓCONY (oczopląs powrotny Bechterewa)." : "";
+  return suppl+dc+be;
+}
+// Lekkie odświeżenie przy przeciąganiu suwaka: aktualizuje odczyty/werdykt/animację bez przebudowy DOM (płynnie).
+function refreshHintsComp(){
+  const key=state.hintsScenario||"neuritisR", p=hintsCompPatient(key);
+  const fixOn=!!state.hintsFix, gazeDeg=(state.hintsGaze||0)*20;
+  const nys=NeuroVOR.nystagmusAtGaze(p,gazeDeg,fixOn);
+  const H=NeuroVOR.hints(p), sp=NeuroVOR.spontaneous(p), pr=NeuroVOR.postRotational(p);
+  const c=state.hintsComp||0, set=(sel,html)=>{const el=$(sel); if(el) el.innerHTML=html;};
+  set('[data-comptag]', `${Math.round(c*100)}% · ${compStage(c)}`);
+  set('[data-comprow]', compRowHTML(sp,pr));
+  set('[data-compnote]', compNoteHTML(c,state.hintsRecovery,sp));
+  set('[data-verdict]', hintsVerdictHTML(H));
+  set('[data-nyslabel]', hintsNysLabel(nys));
+  set('[data-supplnote]', hintsSupplHTML(H,fixOn,sp));
+  if(state.hintsHitSide) set('[data-hitlabel]', hitLabel(NeuroVOR.headImpulse(p, state.hintsHitSide)));  // opis vHIT: JAWNA↔UKRYTA na żywo
+  const cont=$('[data-neuronys]'); if(cont) startNeuroNys(cont, nys, gazeDeg);   // płynna zmiana amplitudy
+}
+// Parametry animacji oczopląsu (amplituda/kierunek) — odczytywane na żywo z pętli (płynny suwak kompensacji).
+function neuroNysParams(nys, gazeDeg){
+  const camRx=Scene3D.CAMERAS.frontal.right[0], strength=Math.max(0,Math.min(1,nys.strength||0));
+  return { gazePx:(gazeDeg||0)*camRx*0.5, Ah:7*strength, At:8*strength, hDir:nys.dir||0, tDir:nys.tdir||nys.dir||0 };
+}
+// Ciągły oczopląs poziomo-skrętny + odchylenie spojrzenia. Parametry aktualizowalne bez restartu FAZY:
+// ponowne wywołanie tylko podmienia __nnParams (suwak kompensacji zmienia amplitudę płynnie).
 function startNeuroNys(container, nys, gazeDeg){
   const irises=[...container.querySelectorAll(".iris")]; if(!irises.length) return;
-  const token=(container.__nnTok=(container.__nnTok||0)+1);
-  const camRx=Scene3D.CAMERAS.frontal.right[0];
-  const gazePx=(gazeDeg||0)*camRx*0.5;             // odchylenie spojrzenia (mirror kamery) ~0.5px/°
-  const strength=Math.max(0,Math.min(1,nys.strength||0));
-  const Ah=7*strength, At=8*strength;              // amplituda pozioma (px) · skrętna (deg)
-  const hDir=nys.dir||0, tDir=nys.tdir||hDir;
+  container.__nnParams = neuroNysParams(nys, gazeDeg);
+  if(container.__nnRunning) return;                // pętla już działa → sama odczyta nowe __nnParams
+  container.__nnRunning = true;
   const T=780, fast=0.17, start=performance.now();
-  if(Ah<0.2 && At<0.2){ for(const g of irises){ g.setAttribute("transform",`translate(${gazePx.toFixed(2)} 0) rotate(0 ${g.dataset.cx} ${g.dataset.cy})`);} return; }
   loopRAF((now)=>{
-    if(container.__nnTok!==token || !document.body.contains(container)) return false;
-    const ph=((now-start)%T)/T, o=nysOffset(ph,fast);
-    const x=gazePx + o*Ah*hDir, rot=o*At*tDir;
+    if(!document.body.contains(container)){ container.__nnRunning=false; return false; }
+    const P=container.__nnParams, ph=((now-start)%T)/T, o=nysOffset(ph,fast);
+    const x=P.gazePx + o*P.Ah*P.hDir, rot=o*P.At*P.tDir;
     for(const g of irises){ const cx=+g.dataset.cx, cy=+g.dataset.cy;
       g.setAttribute("transform",`translate(${x.toFixed(2)} 0) rotate(${rot.toFixed(2)} ${cx} ${cy})`); }
-    return true;                                    // ciągły — do zmiany warunków (fiksacja/spojrzenie/scenariusz)
+    return true;                                    // ciągły — do usunięcia kontenera (zmiana warunków/render)
   });
 }
 
-/* --- Test pchnięcia głowy (vHIT): głowa przesuwa się, oczy kompensują wg VOR gain, sakada korygująca gdy niedomiar --- */
+/* --- Test pchnięcia głowy (HIT): WIDOK FRONTALNY (badający naprzeciw pacjenta, lustro: P=ekran-lewo,
+   L=ekran-prawo). Głowa yaw ku pchniętemu uchu (translacja poglądowa), oczy kompensują wg VOR gain;
+   sakada korygująca gdy niedomiar — JAWNA (po ruchu) vs UKRYTA (w trakcie, tylko vHIT). --- */
 function hitSVG(){
-  const eye=(cx)=>`<ellipse cx="${cx}" cy="62" rx="32" ry="25" fill="#EEF3F7" stroke="var(--line)" stroke-width="2"/>
-    <g class="hiris"><circle cx="${cx}" cy="62" r="14" fill="#3A6B86"/><circle cx="${cx}" cy="62" r="6.5" fill="#0b1118"/></g>`;
-  return `<svg viewBox="0 0 240 132" class="eyes" role="img" aria-label="Test pchnięcia głowy">
-    <line x1="120" y1="4" x2="120" y2="18" stroke="var(--faint)" stroke-width="2"/><circle cx="120" cy="24" r="4" fill="none" stroke="var(--faint)" stroke-width="2"/>
+  const eye=(cx)=>`<ellipse cx="${cx}" cy="66" rx="27" ry="21" fill="#EEF3F7" stroke="var(--line)" stroke-width="2"/>
+    <g class="hiris"><circle cx="${cx}" cy="66" r="12.5" fill="#3A6B86"/><circle cx="${cx}" cy="66" r="6" fill="#0b1118"/></g>`;
+  return `<svg viewBox="0 0 240 150" class="eyes" role="img" aria-label="Test pchnięcia głowy — widok frontalny (badający naprzeciw pacjenta)">
+    <line x1="120" y1="2" x2="120" y2="15" stroke="var(--faint)" stroke-width="2"/><circle cx="120" cy="21" r="4" fill="none" stroke="var(--faint)" stroke-width="2"/>
     <g id="hithead">
-      <rect x="30" y="20" width="180" height="96" rx="44" fill="#16222c" stroke="#2b3e4b" stroke-width="2"/>
-      ${eye(88)}${eye(152)}
-      <path d="M120 80 l-6 13 h12 Z" fill="#22303d" stroke="#33404d" stroke-width="1.4"/>
+      <ellipse cx="47" cy="88" rx="9" ry="15" fill="#16222c" stroke="#2b3e4b" stroke-width="2"/>
+      <ellipse cx="193" cy="88" rx="9" ry="15" fill="#16222c" stroke="#2b3e4b" stroke-width="2"/>
+      <rect x="53" y="40" width="134" height="96" rx="42" fill="#16222c" stroke="#2b3e4b" stroke-width="2"/>
+      ${eye(95)}${eye(145)}
+      <path d="M120 80 l-6 15 h12 Z" fill="#22303d" stroke="#33404d" stroke-width="1.4"/>
+      <path d="M103 111 q17 11 34 0" fill="none" stroke="#33404d" stroke-width="2.2" stroke-linecap="round"/>
     </g>
   </svg>`;
 }
@@ -2149,17 +2306,24 @@ function startHIT(container, hi){
   const token=(container.__hitTok=(container.__hitTok||0)+1);
   const camRx=Scene3D.CAMERAS.frontal.right[0];
   const dir=Math.sign((hi.toSide==="P"?1:-1)*camRx);      // ekranowy kierunek pchnięcia (lustro)
-  const HEADPX=30, gain=Math.max(0,Math.min(1.2,hi.gain));
-  const T_IMP=200, T_HOLD=140, T_SAC=90, T_RET=420, T_END=T_IMP+T_HOLD+T_SAC+T_RET;
+  const HEADPX=30, gain=Math.max(0,Math.min(1.2,hi.gain)), errMax=Math.max(0,1-gain);  // niedomiar rotacji oka (frakcja HEADPX)
+  const covFrac=Math.max(0,Math.min(1,hi.covertFrac||0)); // udział sakady UKRYTEJ (predykcyjnej) z fuzji szyjno-ocznej
+  const T_IMP=200, T_COV=110, T_HOLD=150, T_SAC=90, T_RET=420, T_END=T_IMP+T_HOLD+T_SAC+T_RET;
+  // frakcja niedomiaru już skorygowana: sakada UKRYTA podczas pchnięcia (T_COV..T_IMP), JAWNA po (T_SAC)
+  const corr=t=> t<T_COV ? 0
+    : t<T_IMP ? covFrac*((t-T_COV)/(T_IMP-T_COV))
+    : t<T_IMP+T_HOLD ? covFrac
+    : t<T_IMP+T_HOLD+T_SAC ? covFrac+(1-covFrac)*((t-T_IMP-T_HOLD)/T_SAC)
+    : 1;
   const start=performance.now();
   loopRAF((now)=>{
     if(container.__hitTok!==token || !document.body.contains(container)) return false;
-    const t=now-start; let headX, gaze;               // gaze = błąd fiksacji (pozycja oka w przestrzeni, cel=0)
-    if(t<T_IMP){ const u=easeInOut(t/T_IMP); headX=dir*HEADPX*u; gaze=dir*HEADPX*(1-gain)*u; }        // pchnięcie: oko nie nadąża o (1-gain)
-    else if(t<T_IMP+T_HOLD){ headX=dir*HEADPX; gaze=dir*HEADPX*(1-gain); }                            // utrzymanie — błąd widoczny
-    else if(t<T_IMP+T_HOLD+T_SAC){ const u=(t-T_IMP-T_HOLD)/T_SAC; headX=dir*HEADPX; gaze=dir*HEADPX*(1-gain)*(1-u); } // SAKADA korygująca → cel
-    else if(t<T_END){ const u=easeInOut((t-T_IMP-T_HOLD-T_SAC)/T_RET); headX=dir*HEADPX*(1-u); gaze=0; } // głowa wraca, oczy na celu
+    const t=now-start; let headX, raw;                // raw = magnituda niedomiaru zanim skoryguje (frakcja)
+    if(t<T_IMP){ const u=easeInOut(t/T_IMP); headX=dir*HEADPX*u; raw=u; }              // pchnięcie: oko nie nadąża o (1-gain)
+    else if(t<T_IMP+T_HOLD+T_SAC){ headX=dir*HEADPX; raw=1; }                          // utrzymanie + sakada korygująca
+    else if(t<T_END){ const u=easeInOut((t-T_IMP-T_HOLD-T_SAC)/T_RET); headX=dir*HEADPX*(1-u); raw=0; } // głowa wraca, oczy na celu
     else { head.setAttribute('transform','translate(0 0)'); for(const g of irises) g.setAttribute('transform','translate(0 0)'); return false; }
+    const gaze=dir*HEADPX*errMax*Math.max(0, raw-corr(t));   // pozostały błąd fiksacji (covert znosi część JUŻ w trakcie ruchu)
     head.setAttribute('transform',`translate(${headX.toFixed(2)} 0)`);
     const local=gaze-headX;                            // iris jest dzieckiem głowy → absolut = headX+local = gaze
     for(const g of irises) g.setAttribute('transform',`translate(${local.toFixed(2)} 0)`);
@@ -2167,16 +2331,23 @@ function startHIT(container, hi){
   });
 }
 function hitLabel(hi){
-  const s=hi.toSide==="P"?"w prawo (kanał P)":"w lewo (kanał L)", g=hi.gain.toFixed(2);
-  return hi.saccadePresent
-    ? `<b style="color:#ff9bab">Pchnięcie ${s}: sakada korygująca OBECNA</b> · VOR gain ${g} → HIT patologiczny po stronie chorej — wzorzec OBWODOWY.`
-    : `<b style="color:#7fe3c4">Pchnięcie ${s}: bez sakady</b> · VOR gain ${g} → HIT prawidłowy.`;
+  const ear=hi.toSide==="P"?"prawemu (P)":"lewemu (L)", g=hi.gain.toFixed(2);
+  const vhitOnly = ` <b style="color:#ffcf8f">Sakada UKRYTA (covert) — rejestrowana tylko w vHIT (video), niewidoczna gołym okiem.</b>`;
+  if(!hi.abnormal) return `<b style="color:#7fe3c4">Pchnięcie ku uchu ${ear}: bez sakady</b> · VOR gain ${g} → HIT prawidłowy.`;
+  if(hi.overtSaccade && hi.covertSaccade) return `<b style="color:#ffbf8f">Pchnięcie ku uchu ${ear}: sakada JAWNA + UKRYTA</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>częściowo skompensowany</b>.${vhitOnly}`;
+  if(hi.overtSaccade)  return `<b style="color:#ff9bab">Pchnięcie ku uchu ${ear}: sakada JAWNA (overt)</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>nieskompensowany</b> — widoczna gołym okiem (bedside).`;
+  if(hi.covertSaccade) return `<b style="color:#ffcf8f">Pchnięcie ku uchu ${ear}: sakada UKRYTA (covert)</b> · gain ${g} wciąż niski, korekta W TRAKCIE ruchu → <b>bedside HIT „prawidłowy"</b>, deficyt widoczny TYLKO w vHIT (video). Deficyt skompensowany.`;
+  return `<b style="color:#7fe3c4">Pchnięcie ku uchu ${ear}: bez jawnej sakady</b> · VOR gain ${g}.`;
 }
 function hintsHIT(side){
-  const hi=NeuroVOR.headImpulse(NeuroVOR.scenario(state.hintsScenario), side);
+  state.hintsHitSide=side;
+  const hi=NeuroVOR.headImpulse(hintsCompPatient(state.hintsScenario), side);   // z kompensacją (overt→covert)
   const c=$('[data-hit]'); if(c) startHIT(c, hi);
   const lab=$('[data-hitlabel]'); if(lab) lab.innerHTML=hitLabel(hi);
+  document.querySelectorAll('[data-hitbtn]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.hitbtn===side)));
 }
+// Ponowne pchnięcie ostatnio wybranego ucha — po zmianie kompensacji suwakiem (pokazuje przejście overt→covert).
+function rerunHintsHIT(){ if(state.hintsHitSide) hintsHIT(state.hintsHitSide); }
 
 /* --- Test odchylenia skośnego: naprzemienne zasłanianie → pionowa sakada korygująca gdy skew obecny --- */
 function skewSVG(){
@@ -2216,10 +2387,12 @@ function skewLabel(sk){
 
 /* ============ Akcje ============ */
 function setMode(m){ state.mode=m; render(); }
-function openHints(key){ state.hintsScenario=key; state.hintsFix=false; state.hintsGaze=0; state.screen="hints"; render(); }
-function setHintsScenario(key){ state.hintsScenario=key; render(); }
+function openHints(key){ state.hintsScenario=key; state.hintsFix=false; state.hintsGaze=0; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; state.screen="hints"; render(); }
+function setHintsScenario(key){ state.hintsScenario=key; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; render(); }  // nowy scenariusz → reset kompensacji i pchnięcia
 function setHintsFix(v){ state.hintsFix=!!v; render(); }
 function setHintsGaze(g){ state.hintsGaze=g; render(); }
+function setHintsComp(v){ state.hintsComp=Math.max(0,Math.min(1,(+v||0)/100)); refreshHintsComp(); }   // suwak (oninput) → lekkie odświeżenie
+function setHintsRecovery(v){ state.hintsRecovery=!!v; render(); }
 function pickSide(s){ state.side=s; render(); }
 function pickCanal(k){ state.canal=k; const keys=CANALS[k].maneuvers; if(!keys.includes(state.maneuverKey)) state.maneuverKey=keys.length===1?keys[0]:null; render(); }
 function pickMan(k){ state.maneuverKey=k; render(); }

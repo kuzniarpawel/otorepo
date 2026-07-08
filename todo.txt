@@ -2,7 +2,7 @@
  OTOREPO — lista zadań (todo)
  Aplikacja: repozycja otolitów (BPPV) + diagnostyka, single-file HTML/JS
  Pliki: otorepo.html (apka) · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
- Ostatnia aktualizacja: 2026-07-07
+ Ostatnia aktualizacja: 2026-07-08 (kompensacja ośrodkowa — etap 6)
 ==========================================================================
 
 Konwencje techniczne:
@@ -30,9 +30,12 @@ RÓŻNICOWANIE OŚRODEK↔OBWÓD (moduł NeuroVOR — rozszerzenia):
  [ ] „MATEMATYCZNY PACJENT": tryb WŁASNYCH PARAMETRÓW — suwaki toneL/R, gainL/R, fixationGain,
         integratorTau, skewTone/otrTorsion → ręczne tworzenie przypadków MIESZANYCH (obwód+ośrodek),
         z werdyktem HINTS liczonym na żywo. Cel: eksperymentowanie z trudnymi/nakładającymi się patologiami.
+ [ ] „MATEMATYCZNY PACJENT": tryb WŁASNYCH PARAMETRÓW (suwaki toneL/R, gainL/R, fixationGain,
+        integratorTau, skewTone/otrTorsion, comp) — patrz wyżej; pozostaje otwarte.
  [ ] (opc.) HINTS „plus" — ubytek słuchu (AICA) jako dodatkowy parametr różnicujący.
- [ ] (opc.) vHIT: sakady COVERT vs OVERT (obecnie tylko overt) + krzywa prędkości oka.
+ [→] (opc.) vHIT: sakady COVERT vs OVERT — ZROBIONE 2026-07-08 (kompensacja dynamiczna; podział czasowy sakady).
  [ ] (opc.) Rebound nystagmus i asymetria integratora (pion/poziom).
+ [ ] (opc.) Head-shaking nystagmus — demaskowanie utajonej asymetrii velocity storage po kompensacji.
 
 WALIDACJA / modelowanie kliniczne (otwarte):
  [ ] Epley "front-loaded": cząstka osiąga wyjście (φ=178°) już w KROKU 2 → oczopląs w krokach 4/5 pod-reprezentowany.
@@ -87,6 +90,21 @@ UI RÓŻNICOWANIE — zakładka „HINTS" (2026-07-07, walidacja w przeglądarce
  [x] Panel vHIT (startHIT): pchnięcie L/P, głowa rusza, oczy kompensują wg gain, sakada korygująca gdy niedomiar.
  [x] Panel skew (startSkew): naprzemienne zasłanianie z pionową sakadą korygującą gdy skew obecny.
         Literatura wpisana inline w silniku [H1]-[H8] i w engine_doc/view_doc. [view_doc: HINTS]
+
+KOMPENSACJA OŚRODKOWA — etap 6 (2026-07-08, offline 178/178 node t1-t8, walidacja w przeglądarce):
+ [x] Silnik STATYCZNY: parametr comp c∈[0,1] + compensate(p) — clamp móżdżkowy (obniża zdrowe jądro,
+        wczesny) + pacemaker własny (podnosi chore, późny) jako czyste funkcje c; suma = c·gap → symetria
+        przy c=1 bez przeregulowania; c=0 = dokładny no-op. Wpięte w spontaneous (VN zamiast surowego błędnika). [H10][H11]
+ [x] Silnik BECHTEREW: sticky pacemakerBias (nośnik historii) → gdy błędnik regeneruje, jądro chore
+        dominuje → oczopląs POWROTNY ku uchu wcześniej choremu (flaga bechterew). [H11]
+ [x] Silnik DYNAMICZNY: vHIT covert/overt (gain NIENAPRAWIALNY, całość sakady stała, udział covert = waga
+        fuzji) + fusionWeights (kanał↔propriocepcja szyi, ważona wiarygodnością) + postRotational (velocity
+        storage 15→~5 s, OSOBNY od integratora spojrzenia). [H12][H13][H14]
+ [x] UI: panel „Kompensacja ośrodkowa" (suwak c + odczyty clamp/pacemaker/velocity storage + toggle
+        regeneracja/Bechterew), płynne odświeżanie suwaka (refreshHintsComp, __nnParams w pętli), sakada
+        UKRYTA w trakcie pchnięcia (startHIT+covertFrac). Tylko scenariusze obwodowe. [view_doc: PANEL KOMPENSACJI]
+ [x] Fuzja danych (odpowiedź na pytanie): precision-weighted / komplementarny filtr — waga kanału ∝ wiarygodność
+        (spada przy nasyceniu/obcięciu), waga szyi ∝ c; „przełącznik" WYNIKA z wag (bez skryptu). [H13][H14]
 
 SILNIK (Vestibular, czysty moduł, zwalidowany offline):
  [x] Rozmiar/gęstość cząstki jako parametr skalujący (size small/medium/big; medium=r1=baza). r → tauP∝r⁻²

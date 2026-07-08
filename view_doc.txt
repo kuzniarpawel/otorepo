@@ -45,14 +45,34 @@ Trzecia zakładka (obok Repozycji i Diagnostyki). state.screen==="hints"; render
    NeuroVOR.nystagmusAtGaze(p,gazeDeg,fixOn). Odchylenie spojrzenia = translate x (mirror kamery ~0.5 px/°).
    Bez tEnd (trwa aż do zmiany warunków). Tło „.dark" = tryb Frenzel/ciemność. Przełączniki: fiksacja
    (Frenzel/światło) + spojrzenie (L/środek/P) → re-render.
- - PANEL vHIT: hitSVG (głowa-slab z oczami + cel ○). startHIT(hi): oś czasu pchnięcie→utrzymanie→SAKADA
-   korygująca→powrót. Głowa = translate x; tęczówki lokalnie = (błąd_fiksacji − translate_głowy), więc
-   oko-w-przestrzeni = (1−gain)·amplituda podczas pchnięcia, potem sakada do celu. gain 1 → oczy „zamknięte" na celu.
+ - PANEL HIT (nie „vHIT" — V=video; sakada ukryta widoczna tylko w vHIT): hitSVG = WIDOK FRONTALNY twarzy
+   (głowa z uszami + oczy + nos, cel ○ nad głową). Znaczniki stron PACJENTA (emk P/L) wokół głowy, lustro:
+   P=ekran-lewo, L=ekran-prawo. Przyciski „Pchnij ku uchu prawemu (P)/lewemu (L)" — strony PACJENTA, nie ekranu.
+   startHIT(hi): oś czasu pchnięcie→utrzymanie→SAKADA korygująca→powrót. Głowa = translate x (yaw poglądowo);
+   tęczówki lokalnie = (błąd_fiksacji − translate_głowy), oko-w-przestrzeni = (1−gain)·amplituda; corr(t) znosi
+   część niedomiaru: sakada UKRYTA (covert) w trakcie pchnięcia (T_COV..T_IMP), JAWNA (overt) po (T_SAC). gain 1 → oczy na celu.
  - PANEL SKEW: skewSVG (oczy P/L + zasłona) + startSkew: naprzemienne przesuwanie zasłony; odsłonięte oko
    robi PIONOWĄ sakadę dev→0; oko pod zasłoną dryfuje do rozjazdu (±skewDeg·4 px). Brak skew → oczy w linii.
 Wszystkie pętle przez loopRAF (sprzątane cancelAnims przy re-render). CSS: .tabs.three, .pillseg, .hint-eyes,
 .hverdict.{peripheral|central|normal}, .hrow .tag.{ok|bad}. Kolor: obwód=zielony (uspokajający), ośrodek=czerwony.
 Fizyka i literatura: engine_doc „MODUŁ NeuroVOR" [H1]-[H8].
+
+--- PANEL KOMPENSACJI OŚRODKOWEJ (etap 6, 2026-07-08; tylko scenariusze obwodowe neuritisR/L) ---
+hintsCompPanel(key) → suwak <input.comprange> „jeden suwak" c∈[0..1] + odczyty (clamp −Hz / pacemaker +Hz /
+velocity storage s z NeuroVOR.postRotational) + toggle Błędnik nieczynny/regeneracja (Bechterew) + nota.
+Pacjent = hintsCompPatient(key): scenariusz + p.comp; regeneracja ustawia toneR/L≈85, lesionEar, sticky
+p.pacemakerBias = 0.7·c·(R0−tonOstry). Widoczny tylko dla obwodu (normal/udar → panel „").
+PŁYNNOŚĆ SUWAKA: oninput → setHintsComp → refreshHintsComp() — LEKKIE odświeżenie (bez przebudowy DOM):
+podmienia tekst [data-comptag/comprow/compnote/verdict/nyslabel/supplnote] i parametry animacji. startNeuroNys
+przepisane na __nnParams odczytywane W PĘTLI (ponowne wywołanie NIE restartuje fazy) → amplituda zmienia się
+płynnie przy przeciąganiu. Suwak też odświeża OPIS HIT dla ostatnio pchniętego ucha (state.hintsHitSide):
+oninput → refreshHintsComp aktualizuje [data-hitlabel] na żywo (JAWNA↔UKRYTA); onchange (puszczenie) →
+rerunHintsHIT() odtwarza animację dla tego ucha (widać przejście overt→covert). setHintsRecovery/scenariusz →
+pełny render (reset kompensacji i hintsHitSide przy zmianie scenariusza; opis HIT odtwarzany z lastHi).
+HIT z kompensacją: covertFrac = c (kompletność kompensacji) → c=1 sakada w CAŁOŚCI ukryta (overt znika);
+corr(t) znosi część niedomiaru W TRAKCIE pchnięcia (T_COV..T_IMP), reszta JAWNA po (T_SAC). gain nienaprawialny.
+hitLabel: bez sakady / JAWNA (nieskomp.) / JAWNA+UKRYTA (częśc.) / UKRYTA (skomp. — bedside „prawidłowy", tylko vHIT).
+Fizyka i literatura: engine_doc „MODUŁ NeuroVOR / ETAP 6" [H10]-[H14].
 
 --------------------------------------------------------------------------
  Scene3D  (etap A)
