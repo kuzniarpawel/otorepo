@@ -328,6 +328,9 @@ const yawToA = side => side==="L" ? -45 : 45;   // obrót KU uchu choremu: L=w l
 const Vestibular = (()=>{
   // Prawo Ewalda II/III: który kierunek przepływu pobudza dany kanał
   function isExcitatory(canal, flow){
+    reqCanalName(canal, "isExcitatory");   // bez tego każdy canal!=="horizontal" (też literówka) udawał kanał pionowy
+    if(flow!=="ampullopetal" && flow!=="ampullofugal")   // bez tego literówka/zły przepływ cicho zwracała false (jakby hamujący)
+      throw new TypeError('isExcitatory: nieznany przepływ "'+flow+'" (dozwolone: "ampullopetal"|"ampullofugal")');
     return canal==="horizontal" ? flow==="ampullopetal"   // Ewald II — kanał poziomy
                                 : flow==="ampullofugal";   // Ewald III — kanały pionowe
   }
@@ -347,9 +350,12 @@ const Vestibular = (()=>{
     horizontal:{ P:[-0.017,-0.299, 0.954], L:[ 0.025,-0.279, 0.960] }
   };
   // WALIDACJA WEJŚCIA — jasny błąd zamiast wyjątku „undefined" lub niemego złego wyniku (np. literówka w side
-  // dawała cichy dryf ipsi=-1). Kanały: klucze CANAL_NORMALS. Strona: "L"|"P".
-  function reqCanal(canal, ear, where){
+  // dawała cichy dryf ipsi=-1; literówka w canal udawała kanał pionowy w isExcitatory). Kanały: klucze CANAL_NORMALS. Strona: "L"|"P".
+  function reqCanalName(canal, where){   // sam kanał (bez strony) — dla wejść przyjmujących tylko canal, np. isExcitatory
     if(!CANAL_NORMALS[canal]) throw new TypeError(where+': nieznany kanał "'+canal+'" (dozwolone: horizontal|anterior|posterior)');
+  }
+  function reqCanal(canal, ear, where){
+    reqCanalName(canal, where);
     if(ear!=="L" && ear!=="P") throw new TypeError(where+': nieprawidłowa strona "'+ear+'" (dozwolone: "L"|"P")');
   }
   // magnitudy {v,h,t} z normalnej, znormalizowane do max=1
@@ -448,7 +454,23 @@ const Vestibular = (()=>{
   // Efekt kliniczny: DUŻA cząstka = krótsza latencja, silniejszy i szybszy oczopląs, szybsze wyjście;
   //   MAŁA = długa latencja, słaby i wolny przebieg (por. „extremely long-latency BPPV", ref [11]).
   const SIZE_R={small:0.78, medium:1.0, big:1.35};
-  const sizeR=size=>(typeof size==="number")?size:(SIZE_R[size]!==undefined?SIZE_R[size]:1);
+  // size liczbowy = mnożnik promienia r; MUSI być > 0. Ujemny/zero odwracał znak gc∝r³ i adh∝r (niefizjologiczny
+  // ujemny xi przy prowokacji) lub dawał tauP=∞ (r=0) — rozmiar cząstki NIE zmienia kierunku fizyki. Walidacja jak dt.
+  const sizeR=size=>{
+    if(typeof size==="number"){
+      if(!(size>0) || !isFinite(size)) throw new RangeError("size: rozmiar liczbowy musi być > 0 (podano "+size+")");
+      return size;
+    }
+    return SIZE_R[size]!==undefined ? SIZE_R[size] : 1;   // preset (small/medium/big) lub domyślnie medium (r=1)
+  };
+  // walidacja pojedynczego segmentu timeline {q, tTrans, tHold} — jasny błąd ZE WSKAZANIEM indeksu (zamiast
+  // ogólnego „Cannot read properties of null/undefined" przy segmencie null lub braku q). Zwraca q znormalizowane.
+  function reqSegment(seg, i, where){
+    if(!seg || typeof seg!=="object") throw new TypeError(where+": timeline["+i+"] musi być obiektem {q, tTrans, tHold}");
+    for(const k of ["tTrans","tHold"])
+      if(seg[k]!=null && (!(seg[k]>=0) || !isFinite(seg[k]))) throw new RangeError(where+": timeline["+i+"]."+k+" musi być liczbą ≥ 0 (podano "+seg[k]+")");
+    return reqQuat(seg.q, where+" timeline["+i+"]");
+  }
   // symulacja kanalolitiazy: timeline = [{q, tTrans, tHold}, ...]
   // MODEL FENOMENOLOGICZNY/EDUKACYJNY (nie pełna hydrodynamika — brak ciśnienia transkupularnego, zmiennej
   //   średnicy przewodu, bezwładności płynu, wielu cząstek; pełny model: Squires/Hain/Stone). Szczegóły → engine_doc.txt.
@@ -465,9 +487,9 @@ const Vestibular = (()=>{
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D;
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
-    let phi=90*D, xi=0, t=0, exited=false, stuck=true, bond=adh, qPrev=reqQuat(timeline[0].q,"simulateCanalith"); const out=[];
-    for(const seg of timeline){
-      const sq=reqQuat(seg.q,"simulateCanalith");        // znormalizuj raz na segment (slerpQ też zakłada q jednostkowe)
+    let phi=90*D, xi=0, t=0, exited=false, stuck=true, bond=adh, qPrev=reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    for(const [si,seg] of timeline.entries()){
+      const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
@@ -508,9 +530,9 @@ const Vestibular = (()=>{
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCupulolith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCupulolith: dt musi być liczbą > 0 (podano "+dt+")");
     gain=gain*Math.pow(sizeR(size),3);   // cięższy klaster otoconiów → silniejsze wychylenie osklepka (gain ∝ r³); latencji brak (tauCup bez zmian)
-    let xi=0, t=0, qPrev=reqQuat(timeline[0].q,"simulateCupulolith"); const out=[];
-    for(const seg of timeline){
-      const sq=reqQuat(seg.q,"simulateCupulolith");      // znormalizuj raz na segment (slerpQ zakłada q jednostkowe)
+    let xi=0, t=0, qPrev=reqSegment(timeline[0],0,"simulateCupulolith"); const out=[];
+    for(const [si,seg] of timeline.entries()){
+      const sq=reqSegment(seg,si,"simulateCupulolith");  // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
