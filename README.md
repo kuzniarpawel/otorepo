@@ -49,7 +49,12 @@ Jedno źródło prawdy 3D (układ głowy: `x = prawo, y = góra/czaszka, z = prz
   **kompensację ośrodkową** (jeden suwak `c`): clamp móżdżkowy + własny pacemaker znoszą oczopląs samoistny
   (statyczna), regeneracja błędnika → **oczopląs powrotny Bechterewa**; vHIT nienaprawialny (sakady jawne→ukryte
   przez fuzję ważoną wiarygodnością: kanały ↔ propriocepcja szyi); velocity storage 15→~5 s. Patologia i zdrowienie
-  emergują ze zmiany parametrów. Dokumentacja: [`engine_doc.txt`](engine_doc.txt) (sekcja „MODUŁ NeuroVOR", [H1]–[H14]).
+  emergują ze zmiany parametrów. **Warstwa neuroanatomiczna (silnik):** model uogólniono z kanału poziomego na
+  **6 kanałów** per strona — gałęzie nerwu przedsionkowego (górna/dolna), vHIT w płaszczyznach **RALP/LARP**, próba
+  **kaloryczna** (CP/DP wg Jongkeesa, dysocjacja nisko-/wysokoczęstotliwościowa) oraz patologie **SCDS/Tullio,
+  choroba Ménière'a i obustronna westybulopatia (BVH)**, ze **syntezą kliniczną** (`clinicalReadout`); interaktywny
+  tryb „matematycznego pacjenta" (własne parametry, suwaki) — **w przygotowaniu**. Dokumentacja:
+  [`engine_doc.txt`](engine_doc.txt) (sekcja „MODUŁ NeuroVOR", [H1]–[H21]).
 - **Wizualizacja `Scene3D` (2.5D)** — matematyka 3D (kwaterniony, FK szkieletu) rzutowana ortograficznie
   do schematycznego SVG; kamera = obserwator (lekarz). Dokumentacja: [`view_doc.txt`](view_doc.txt).
 
@@ -74,7 +79,7 @@ prędkość ∝ 1/r² (Stokes). Zakładka Diagnostyki pozostaje przy `medium`.
 
 | Plik | Zawartość |
 |------|-----------|
-| `otorepo.html`   | cała aplikacja (silnik `Vestibular`, `Scene3D`, UI) |
+| `otorepo.html`   | cała aplikacja (silniki `Vestibular` + `NeuroVOR`, `Scene3D`, UI) |
 | `engine_doc.txt` | dokumentacja silnika fizyki (API, konwencje, kalibracja, bibliografia) |
 | `view_doc.txt`   | dokumentacja warstwy wizualizacji 2.5D |
 | `todo.txt`       | lista zadań (otwarte / zrobione, kamienie milowe) |
@@ -92,7 +97,7 @@ Silnik jest zredukowaną, fenomenologiczną implementacją uznanych modeli biome
 - Ewald (1892) — prawa Ewalda I/II/III.
 - Wu i wsp. (2021); Della Santina i wsp. (2005) — orientacje płaszczyzn kanałów.
 
-Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS, kompensacja) — pełne odnośniki [H1]–[H14] w `engine_doc.txt`:
+Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS, kompensacja, neuroanatomia) — pełne odnośniki [H1]–[H21] w `engine_doc.txt`:
 
 - Goldberg & Fernández (1971) — spoczynkowa aktywność aferentów kanałowych (~90/s).
 - Halmagyi & Curthoys (1988); Weber i wsp. (2008) — test pchnięcia głowy (vHIT), sakady korygujące.
@@ -103,6 +108,12 @@ Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS, kompensacja) — pełne odno
 - Curthoys & Halmagyi (1995); Smith & Curthoys (1989) — kompensacja przedsionkowa (clamp, pacemaker, Bechterew).
 - Sadeghi, Minor & Cullen (2012); Cullen (2012) — substytucja sensoryczna, sakady covert, fuzja szyjno-oczna.
 - Laurens & Angelaki (2011) — model wewnętrzny / velocity storage (podstawa fuzji ważonej wiarygodnością).
+- Fetter & Dichgans (1996) — neuronitis oszczędza nerw dolny (mapa gałąź nerwu → kanały, wzorzec vHIT).
+- Aw, Halmagyi, Curthoys i wsp. (1996) — analiza wektorowa 3D VOR (vHIT per kanał, płaszczyzny RALP/LARP).
+- Minor (2000) — zespół dehiscencji kanału górnego (SCDS / fenomen Tullio, „trzecie okno").
+- Strupp i wsp. (2017, Bárány Society) — kryteria obustronnej westybulopatii (BVH).
+- Lopez-Escamez i wsp. (2015, Bárány/AAO-HNS) — kryteria choroby Ménière'a.
+- Jongkees, Maas, Philipszoon (1962) — próba kaloryczna bitermalna, wzór CP/DP.
 
 ## Licencja
 
