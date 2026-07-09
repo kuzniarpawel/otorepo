@@ -479,7 +479,7 @@ const Vestibular = (()=>{
   //   gc=1.6 — wzmocnienie; phiExit=178 — odnoga wspólna;
   //   fStat/adh — adhezja otolitu (zrywana utrzymaną siłą styczną → latencja; silniejsza
   //   prowokacja = krótsza latencja). Kupulolitiaza nie ma adhezji/latencji (osobna funkcja).
-  function simulateCanalith({canal, side, timeline, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}){
+  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}){
     reqCanal(canal, side, "simulateCanalith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCanalith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCanalith: dt musi być liczbą > 0 (podano "+dt+")");   // dt<=0 → nieskończona pętla
@@ -487,7 +487,9 @@ const Vestibular = (()=>{
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D;
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
-    let phi=90*D, xi=0, t=0, exited=false, stuck=true, bond=adh, qPrev=reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
+    // 1. segment = pozycja startowa, a jego tTrans to czas W tej pozycji (NIE przejście z neutralnej). Wsteczna zgodność.
+    let phi=90*D, xi=0, t=0, exited=false, stuck=true, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
@@ -525,12 +527,13 @@ const Vestibular = (()=>{
   // symulacja KUPULOLITIAZY: otolity na osklepku → ciężki osklepek odchylany WPROST grawitacją.
   // Brak cząstki w świetle kanału → brak latencji i uporczywość (trzyma się, dopóki pozycja utrzymana).
   // ξ relaksuje do celu statycznego (rzut grawitacji, znak z reguły Ewalda) z krótką stałą tauCup.
-  function simulateCupulolith({canal, side, timeline, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}){
+  function simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}){
     reqCanal(canal, side, "simulateCupulolith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCupulolith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCupulolith: dt musi być liczbą > 0 (podano "+dt+")");
     gain=gain*Math.pow(sizeR(size),3);   // cięższy klaster otoconiów → silniejsze wychylenie osklepka (gain ∝ r³); latencji brak (tauCup bez zmian)
-    let xi=0, t=0, qPrev=reqSegment(timeline[0],0,"simulateCupulolith"); const out=[];
+    // pozycja startowa: jak w simulateCanalith — jawne q0 lub domyślnie (null) pierwszy q (wsteczna zgodność).
+    let xi=0, t=0, qPrev=q0!=null?reqQuat(q0,"simulateCupulolith q0"):reqSegment(timeline[0],0,"simulateCupulolith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCupulolith");  // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
@@ -1227,7 +1230,7 @@ const NeuroVOR = (()=>{
   return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, afferent, makePatient, compensate, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
            headImpulse, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, caloric, caloricBattery,
            CANAL_PARAM, NERVE_CANALS, nerveBranchLesion, bilateralLoss, meniere,
-           COPLANAR, PLANE_CANALS, canalSpec, canalPlane, vhitPlane,
+           COPLANAR, PLANE_CANALS, canalSpec, canalPlane, qpFull, vhitPlane,
            SCENARIOS, scenario, hints, PARAM_SPEC, clinicalReadout };
 })();
 

@@ -62,6 +62,12 @@ quickPhase(canal, ear) -> {h, v, t}
    poziomy bez skrętu). PEŁNA geometria (skręt przedniego ZACHOWANY, do lateralizacji) → NeuroVOR.qpFull()
    / Vestibular.nysMag(); używa jej warstwa HINTS (sakada vHIT / verticalBeat / SCDS). Zob. sekcja „MASKA KLINICZNA".
 
+nysMag(canal, ear) -> {h, v, t}
+   Pełne proporcje geometryczne oczopląsu z REALNYCH normalnych kanałów (CANAL_NORMALS), znormalizowane
+   do max=1. NIE stosuje maski klinicznej NYS_SHOW (skręt kanału przedniego ZACHOWANY) — por. quickPhase
+   (ta sama geometria, zamaskowana do konwencji BPPV). Źródło pełnej geometrii dla NeuroVOR
+   (qpFull → sakada vHIT / verticalBeat / pressureStimulus-SCDS). ear: "L"|"P".
+
 nystagmus({canal, ear, excited=true}) -> {h, v, t}
    Szybka faza dla zadanego, pobudzonego/hamowanego kanału.
    Hamowanie (excited=false) odwraca znak wszystkich składowych.
@@ -95,7 +101,7 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — ETAP 2 (dynamika cząstki) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}) -> [{t, xi, phi, exited}, ...]
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
    [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
     oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
@@ -103,6 +109,11 @@ simulateCanalith({canal, side, timeline, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiE
        q      — orientacja docelowa (kwaternion)
        tTrans — czas przejścia do q [s] (interpolacja slerp od poprzedniego q)
        tHold  — czas utrzymania w q [s]
+   q0 — orientacja STARTOWA (kwaternion); domyślnie null = q PIERWSZEGO segmentu (wsteczna zgodność).
+       UWAGA (semantyka 1. segmentu): przy q0=null pierwszy segment NIE interpoluje z pozycji neutralnej —
+       jego tTrans to czas JUŻ W pozycji startowej, NIE przejście z siadu. Aby wymusić przejście z danej
+       orientacji do 1. q, podaj q0 (np. [1,0,0,0] = głowa neutralna). Konwencja UI: 1. segment ma tTrans:0,
+       a przejście realizuje NASTĘPNY segment (maneuverTimeline: tTrans:0.8 per krok). Analogicznie simulateCupulolith.
    Model:
        φ — kąt łuku cząstki (ampułka φ=0, ujście/odnoga wspólna φ≈180°); dolne ograniczenie 3°.
        Ruch przetłumiony (opór Stokesa, bez bezwładności):
@@ -560,6 +571,11 @@ API PUBLICZNE (zwracane z modułu)
    HINTS (dla CIĄGŁEGO AVS) czyta „Impulse-Normal" = pozornie OŚRODEK; Ménière jest NAPADOWY → HINTS nie stosuje
    się (oflaguje clinicalReadout E5). NIE dodano do SCENARIOS (werdykt mylący bez kontekstu — do U6 z zastrzeżeniem).
 
+ qpFull(canal, ear) -> {h, v, t}                                                                 [E5-fix]
+   PEŁNA (NIEmaskowana) oś szybkiej fazy POBUDZONEGO kanału, ze znakiem (ipsi = ear==="P"?+1:−1):
+   poziomy {ipsi·h, 0, 0}; przedni {0, −v, ipsi·t} (downbeat + skręt kanału przedniego, który quickPhase
+   MASKUJE dla BPPV); tylny {0, +v, ipsi·t} (upbeat + skręt). Magnitudy z Vestibular.nysMag(). PUBLICZNE
+   źródło pełnej geometrii (sakada vHIT / verticalBeat / pressureStimulus mają spójny skręt przedniego).
  canalPlane(canal,ear) -> "HC"|"RALP"|"LARP"                                                     [H16][H17]
  vhitPlane(p, plane) -> {plane, tests[2], abnormal, abnormalCanals}
    E2 — pary WSPÓŁPŁASZCZYZNOWE: HC-P↔HC-L; RALP = przedni P ∥ tylny L; LARP = przedni L ∥ tylny P (RA∥LP,
@@ -619,11 +635,14 @@ API PUBLICZNE (zwracane z modułu)
    BVH/wodniak/ośrodkowa); `ambiguities` = PUŁAPKI: dysocjacja→Ménière napadowy (HINTS n/d), drażnienie mylące
    „ośrodek", BVH (HINTS zakłada jednostronny AVS), neuronitis DOLNY (kaloryka ślepa). Narzędzie DYDAKTYCZNE.
 
-STAŁE (nieeksportowane): R0=90 (spoczynek), R_SAT=300 (nasycenie), SPV_MAX=12 (°/s przy pełnej
-   asymetrii), TORS_FRAC=0.5 (udział skrętu), S_HZ=0.8 (czułość aferentu Hz/°·s⁻¹), VIS_THRESH=2 (°/s),
-   CLAMP_TAU=0.32 (rozkład udziału clampu w c), DVS_FRAC=0.67 (maks. skrócenie velocity storage),
-   CAL_NORMAL=20 (°/s norma irygacji), CAL_BILAT=6 (°/s próg obustronny/ucho), CP_THRESH=25%, DP_THRESH=30%,
-   SKEW_CENTRAL=2.5 (° — próg skew dla flagi OŚRODKOWEJ; mały skew < progu = obwodowy, np. łagiewka n. górnego).
+STAŁE EKSPORTOWANE (w publicznym obiekcie NeuroVOR — używane też przez UI, np. R0, VIS_THRESH): R0=90
+   (spoczynek), R_SAT=300 (nasycenie), SPV_MAX=12 (°/s przy pełnej asymetrii), VIS_THRESH=2 (°/s — próg
+   widoczności oczopląsu), CLAMP_TAU=0.32 (rozkład udziału clampu w c), DVS_FRAC=0.67 (maks. skrócenie
+   velocity storage).
+STAŁE WEWNĘTRZNE (nieeksportowane): TORS_FRAC=0.5 (udział skrętu poziomo-skrętnego), S_HZ=0.8 (czułość
+   aferentu Hz/°·s⁻¹), CAL_NORMAL=20 (°/s norma irygacji), CAL_BILAT=6 (°/s próg obustronny/ucho),
+   CP_THRESH=25%, DP_THRESH=30%, SKEW_CENTRAL=2.5 (° — próg skew dla flagi OŚRODKOWEJ; mały skew < progu =
+   obwodowy, np. łagiewka n. górnego).
 
 STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+Scene3D+NeuroVOR z HTML):
  [x] Etap 1: symetria→0; wypadnięcie P→bije w lewo (ekran +1), spv 12; L→lustro; liniowość z asymetrią;
