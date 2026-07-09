@@ -2,7 +2,7 @@
    Aplikacja to jeden samowystarczalny plik (otorepo.html z wklejonymi czcionkami),
    więc cache'ujemy powłokę i serwujemy cache-first → działa bez internetu.
    AKTUALIZACJA: po zmianie otorepo.html podbij numer CACHE (np. v2), aby wymusić odświeżenie. */
-const CACHE = 'otorepo-v6';
+const CACHE = 'otorepo-v7';
 const ASSETS = [
   'otorepo.html',
   'manifest.json',
