@@ -346,8 +346,15 @@ const Vestibular = (()=>{
     anterior:  { P:[ 0.749, 0.577, 0.324], L:[-0.739, 0.588, 0.329] },
     horizontal:{ P:[-0.017,-0.299, 0.954], L:[ 0.025,-0.279, 0.960] }
   };
+  // WALIDACJA WEJŚCIA — jasny błąd zamiast wyjątku „undefined" lub niemego złego wyniku (np. literówka w side
+  // dawała cichy dryf ipsi=-1). Kanały: klucze CANAL_NORMALS. Strona: "L"|"P".
+  function reqCanal(canal, ear, where){
+    if(!CANAL_NORMALS[canal]) throw new TypeError(where+': nieznany kanał "'+canal+'" (dozwolone: horizontal|anterior|posterior)');
+    if(ear!=="L" && ear!=="P") throw new TypeError(where+': nieprawidłowa strona "'+ear+'" (dozwolone: "L"|"P")');
+  }
   // magnitudy {v,h,t} z normalnej, znormalizowane do max=1
   function nysMag(canal, ear){
+    reqCanal(canal, ear, "nysMag");
     const n=CANAL_NORMALS[canal][ear], v=Math.abs(n[0]), h=Math.abs(n[2]), t=Math.abs(n[1]);
     const m=Math.max(v,h,t)||1; return {v:v/m, h:h/m, t:t/m};
   }
@@ -382,8 +389,16 @@ const Vestibular = (()=>{
   const rotv=(q,v)=>{const r=qmul(qmul(q,[0,v[0],v[1],v[2]]),qconj(q));return [r[1],r[2],r[3]];};
   const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
   const nrm3=v=>{const n=Math.hypot(v[0],v[1],v[2])||1;return [v[0]/n,v[1]/n,v[2]/n];};
+  const nrm4=q=>{const n=Math.hypot(q[0],q[1],q[2],q[3])||1;return [q[0]/n,q[1]/n,q[2]/n,q[3]/n];};
+  // walidacja + normalizacja kwaternionu na publicznych wejściach: rotv(q,·) skaluje wektor o |q|²,
+  // więc q≠jednostkowy psuje normę grawitacji (rzut → mag → cała dynamika). Zwraca q znormalizowane.
+  function reqQuat(q, where){
+    if(!Array.isArray(q) || q.length!==4 || q.some(x=>!Number.isFinite(x)))
+      throw new TypeError(where+": q musi być skończonym kwaternionem [w,x,y,z]");
+    return nrm4(q);
+  }
   // q obraca wektory głowy → świata; grawitacja świata = (0,-1,0)
-  const gHead=q=>rotv(qconj(q),[0,-1,0]);
+  const gHead=q=>rotv(qconj(reqQuat(q,"gHead")),[0,-1,0]);
   const Q_SUPINE=qaxis([1,0,0],-100);                   // supine head-hanging
   const qSupineYaw=deg=>qmul(Q_SUPINE, qaxis([0,1,0],deg)); // skręt wokół osi czaszki
   const qPitch=deg=>qaxis([1,0,0],deg);                  // +deg = skłon (bow), -deg = odchylenie (lean)
@@ -394,6 +409,9 @@ const Vestibular = (()=>{
   const CK={posterior:{P:"RP",L:"LP"}, anterior:{P:"RA",L:"LA"}};
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
+    reqCanal(canal, side, "position");
+    if(variant!=null && variant!=="cupulo" && variant!=="canalo") throw new TypeError('position: nieznany variant "'+variant+'" (dozwolone: "cupulo"|"canalo"|brak)');
+    q=reqQuat(q, "position");            // waliduje (skończony, dł. 4) i normalizuje
     const g=gHead(q); let proj, excited;
     if(canal==="horizontal"){
       proj=dot3(g, uHC(side));                           // międzyuszna + przednio-tylna
@@ -415,7 +433,6 @@ const Vestibular = (()=>{
     if(d>0.9995){return nrm4([a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1]),a[2]+t*(b[2]-a[2]),a[3]+t*(b[3]-a[3])]);}
     const th=Math.acos(d),s=Math.sin(th),w0=Math.sin((1-t)*th)/s,w1=Math.sin(t*th)/s;
     return [w0*a[0]+w1*b[0],w0*a[1]+w1*b[1],w0*a[2]+w1*b[2],w0*a[3]+w1*b[3]];}
-  const nrm4=q=>{const n=Math.hypot(q[0],q[1],q[2],q[3])||1;return [q[0]/n,q[1]/n,q[2]/n,q[3]/n];};
   // geometria łuku kanału (płaszczyzna e1,e2); e1 = kierunek ampułki (φ=0); exc = znak pobudzenia
   // exc=+1: kanały pionowe — pobudza przepływ ampullofugalny (+dφ/dt, Ewald III)
   // exc=-1: kanał poziomy — pobudza przepływ ampullopetalny (Ewald II)
@@ -433,22 +450,28 @@ const Vestibular = (()=>{
   const SIZE_R={small:0.78, medium:1.0, big:1.35};
   const sizeR=size=>(typeof size==="number")?size:(SIZE_R[size]!==undefined?SIZE_R[size]:1);
   // symulacja kanalolitiazy: timeline = [{q, tTrans, tHold}, ...]
+  // MODEL FENOMENOLOGICZNY/EDUKACYJNY (nie pełna hydrodynamika — brak ciśnienia transkupularnego, zmiennej
+  //   średnicy przewodu, bezwładności płynu, wielu cząstek; pełny model: Squires/Hain/Stone). Szczegóły → engine_doc.txt.
   // Stałe skalibrowane do literatury (kanał tylny): latencja ~1–3 s, szczyt ~7–9 s, trwanie ~25 s.
   //   tauP=6.5  — cząstka (opór); tauC=5 — osklepek (długa stała kanału ~4–6 s);
   //   gc=1.6 — wzmocnienie; phiExit=178 — odnoga wspólna;
   //   fStat/adh — adhezja otolitu (zrywana utrzymaną siłą styczną → latencja; silniejsza
   //   prowokacja = krótsza latencja). Kupulolitiaza nie ma adhezji/latencji (osobna funkcja).
   function simulateCanalith({canal, side, timeline, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}){
+    reqCanal(canal, side, "simulateCanalith");
+    if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCanalith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
+    if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCanalith: dt musi być liczbą > 0 (podano "+dt+")");   // dt<=0 → nieskończona pętla
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r; adh=adh*r;   // skalowanie rozmiarem cząstki (patrz SIZE_R)
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D;
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
-    let phi=90*D, xi=0, t=0, exited=false, stuck=true, bond=adh, qPrev=timeline[0].q; const out=[];
+    let phi=90*D, xi=0, t=0, exited=false, stuck=true, bond=adh, qPrev=reqQuat(timeline[0].q,"simulateCanalith"); const out=[];
     for(const seg of timeline){
+      const sq=reqQuat(seg.q,"simulateCanalith");        // znormalizuj raz na segment (slerpQ też zakłada q jednostkowe)
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
-        const g=gHead(slerpQ(qPrev,seg.q,u));
+        const g=gHead(slerpQ(qPrev,sq,u));
         let dphi=0, flow=0;
         if(!exited){
           const drive=dot3(g,tang(phi))/tauP;                  // prędkość potencjalna (overdamped)
@@ -465,7 +488,7 @@ const Vestibular = (()=>{
         xi+=dt*(-xi/tauC + flow); t+=dt;
         out.push({t, xi, phi:phi/D, exited});
       }
-      qPrev=seg.q;
+      qPrev=sq;
     }
     return out;
   }
@@ -481,24 +504,28 @@ const Vestibular = (()=>{
   // Brak cząstki w świetle kanału → brak latencji i uporczywość (trzyma się, dopóki pozycja utrzymana).
   // ξ relaksuje do celu statycznego (rzut grawitacji, znak z reguły Ewalda) z krótką stałą tauCup.
   function simulateCupulolith({canal, side, timeline, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}){
+    reqCanal(canal, side, "simulateCupulolith");
+    if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCupulolith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
+    if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCupulolith: dt musi być liczbą > 0 (podano "+dt+")");
     gain=gain*Math.pow(sizeR(size),3);   // cięższy klaster otoconiów → silniejsze wychylenie osklepka (gain ∝ r³); latencji brak (tauCup bez zmian)
-    let xi=0, t=0, qPrev=timeline[0].q; const out=[];
+    let xi=0, t=0, qPrev=reqQuat(timeline[0].q,"simulateCupulolith"); const out=[];
     for(const seg of timeline){
+      const sq=reqQuat(seg.q,"simulateCupulolith");      // znormalizuj raz na segment (slerpQ zakłada q jednostkowe)
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
-        const p=position({canal, side, variant:"cupulo", q:slerpQ(qPrev,seg.q,u)});
+        const p=position({canal, side, variant:"cupulo", q:slerpQ(qPrev,sq,u)});
         const target=gain*p.mag*(p.excited?1:-1);     // cel statyczny ważony grawitacją (ξ>0 = pobudzenie)
         xi += dt*(target-xi)/tauCup;                   // szybka relaksacja: bez latencji, uporczywy
         t+=dt; out.push({t, xi, target});
       }
-      qPrev=seg.q;
+      qPrev=sq;
     }
     return out;
   }
-  return {isExcitatory, quickPhase, nystagmus, gHead, qSupineYaw, qPitch, position,
+  return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
           simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase,
-          qmul, qconj, qaxis, rotate:rotv};
+          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS};
 })();
 
 /* ============ Rdzeń wizualizacji 2.5D — etap A ============
@@ -562,19 +589,125 @@ const NeuroVOR = (()=>{
   // Wspólny prymityw: spoczynek (drive=0) i pchnięcie głowy (drive≠0, etap 3). drive w Hz-równoważnych.
   function afferent(tone, drive){ return Math.max(0, Math.min(R_SAT, tone + drive)); }
 
+  // Pełny (NIEmaskowany) kierunek szybkiej fazy kanału z geometrii Vestibular.nysMag — skręt kanału PRZEDNIEGO
+  // ZACHOWANY (maska kliniczna quickPhase zeruje go dla BPPV). Wspólne źródło dla: sakady korygującej vHIT,
+  // składowej pionowo-skrętnej i napędu SCDS → spójny skręt przedniego we wszystkich trzech. [E5-fix]
+  function qpFull(canal, ear){
+    const m = Vestibular.nysMag(canal, ear), ipsi = ear==="P" ? +1 : -1;
+    if(canal==="horizontal") return { h: ipsi*m.h, v:0, t:0 };      // poziomy: konwencja czysto pozioma
+    if(canal==="anterior")   return { h:0, v:-m.v, t: ipsi*m.t };   // downbeat + skręt (PEŁNY)
+    return { h:0, v:+m.v, t: ipsi*m.t };                            // tylny: upbeat + skręt
+  }
+
   // Kanoniczny „pacjent": globalne parametry fizjologii. Patologię tworzy zmiana kilku liczb;
   // zachowanie gałek wynika z modelu. Pola dynamiczne wykorzystywane w kolejnych etapach.
   function makePatient(o){ return Object.assign({
     toneL:R0, toneR:R0,      // spoczynkowa aktywność błędnika L/P (Hz) — hipofunkcja obniża
-    gainL:1.0, gainR:1.0,    // wzmocnienie VOR kanału poziomego L/P (0..~1.1) — vHIT (etap 3)
+    gainL:1.0, gainR:1.0,    // wzmocnienie VOR kanału poziomego L/P (0..~1.1) — vHIT = WYSOKA częstotl. ~5 Hz (etap 3)
+    caloricGainL:1.0, caloricGainR:1.0,  // gain NISKOczęstotliwościowy HC L/P — PRÓBA KALORYCZNA ~0.003 Hz (etap 7/E4.5)
     fixationGain:0.9,        // zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0 (etap 2)
     integratorTau:25,        // stała czasowa integratora UTRZYMANIA SPOJRZENIA (s); ośrodek „leaky" → krótka (etap 4)
     skewTone:0, otrTorsion:0,// grawiceptywna asymetria / OTR (etap 4)
     comp:0,                  // poziom KOMPENSACJI ośrodkowej c∈[0,1]: 0=faza ostra, 1=pełna symetria spoczynkowa (etap 6)
     pacemakerBias:0,         // TRWAŁY (sticky) ładunek pacemakera jądra chorego (Hz) → oczopląs powrotny Bechterewa (etap 6b)
     lesionEar:null,          // jawna strona chora dla kompensacji (null → wykrywana ze słabszego błędnika)
-    tauVS:15                 // stała czasowa VELOCITY STORAGE (s) — wygaszanie po obrocie; kompensacja skraca (etap 6c)
+    tauVS:15,                // stała czasowa VELOCITY STORAGE (s) — wygaszanie po obrocie; kompensacja skraca (etap 6c)
+    // ETAP 7 — NEUROANATOMIA (per-kanał). Kanał POZIOMY (HC) = toneL/R, gainL/R powyżej. Kanały PIONOWE (domyślnie zdrowe):
+    toneAcL:R0, toneAcR:R0, gainAcL:1.0, gainAcR:1.0,   // kanał PRZEDNI (anterior, „górny") L/P — n. GÓRNY (superior)
+    tonePcL:R0, tonePcR:R0, gainPcL:1.0, gainPcR:1.0,   // kanał TYLNY  (posterior)              L/P — n. DOLNY  (inferior)
+    dehiscence:null          // SCDS: dehiscencja kanału GÓRNEGO/przedniego — null | "L" | "P" (trzecie okno, etap 7)
   }, o||{}); }
+
+  // ETAP 7 — NEUROANATOMIA: mapa NERW przedsionkowy → kanały. [H15][H16]
+  // n. GÓRNY (superior): kanał poziomy + przedni + łagiewka (utriculus). n. DOLNY (inferior): kanał tylny +
+  // woreczek (sacculus; głównie cVEMP, znikomy sygnał okoruchowy). Neuronitis zwykle dotyczy n. GÓRNEGO
+  // (dłuższy, wąski kanał kostny → podatność na obrzęk/niedokrwienie). Pełne wypadnięcie → ton 0, gain ~0.35.
+  const CANAL_PARAM = {
+    horizontal:{ L:{tone:"toneL",  gain:"gainL"},   P:{tone:"toneR",  gain:"gainR"}   },
+    anterior:  { L:{tone:"toneAcL",gain:"gainAcL"}, P:{tone:"toneAcR",gain:"gainAcR"} },
+    posterior: { L:{tone:"tonePcL",gain:"gainPcL"}, P:{tone:"tonePcR",gain:"gainPcR"} }
+  };
+  const NERVE_CANALS = { superior:["horizontal","anterior"], inferior:["posterior"] };
+  // Override'y makePatient dla wypadnięcia gałęzi nerwu (ear "L"/"P", branch "superior"/"inferior", sev 0..1).
+  function nerveBranchLesion(ear, branch, sev){
+    sev = Math.max(0, Math.min(1, sev==null?1:sev));
+    const o = {};
+    for(const canal of (NERVE_CANALS[branch]||[])){
+      const pk = CANAL_PARAM[canal] && CANAL_PARAM[canal][ear]; if(!pk) continue;
+      o[pk.tone] = R0*(1-sev);                            // hipofunkcja tonu (0 przy pełnym)
+      o[pk.gain] = 1 - sev*0.65;                          // gain → ~0.35 przy pełnym (jak preset neuritis)
+    }
+    if(branch==="superior"){
+      o.skewTone = (ear==="P"?1:-1)*1.5*sev;                       // łagiewka (utriculus) → MAŁY skew (obwodowy, < próg ośrodkowy SKEW_CENTRAL)
+      o[ear==="P"?"caloricGainR":"caloricGainL"] = 1-sev;           // HC = nerw GÓRNY → kaloryka osłabiona (zgodnie z vHIT)
+    }                                                                // n. DOLNY: HC oszczędzony → kaloryka PRAWIDŁOWA (emergent)
+    return o;
+  }
+
+  // ETAP 7 (E4) — BVH / obustronna westybulopatia (otoksyczność, np. gentamycyna): SYMETRYCZNY spadek
+  // tonu i gain OBU błędników we wszystkich 6 kanałach. EMERGENTNIE: symetria → imbalance push-pull = 0
+  // → BRAK oczopląsu samoistnego (odróżnia BVH od jednostronnego UVH!), a mimo to vHIT PATOLOGICZNY
+  // OBUSTRONNIE (każdy kanał badany osobno). Kompensacja bezczynna (compensate: brak strony chorej). [H19]
+  function bilateralLoss(sev){
+    sev = Math.max(0, Math.min(1, sev==null?1:sev));
+    const tone = R0*(1-sev), gain = 1 - sev*0.65;            // jak ubytek jednostronny, lecz OBUSTRONNIE + wszystkie kanały
+    return { toneL:tone, toneR:tone, gainL:gain, gainR:gain,
+             toneAcL:tone, toneAcR:tone, gainAcL:gain, gainAcR:gain,
+             tonePcL:tone, tonePcR:tone, gainPcL:gain, gainPcR:gain,
+             caloricGainL:1-sev, caloricGainR:1-sev };            // kaloryka OBUSTRONNIE osłabiona (LF) → suma odpowiedzi ↓
+  }
+
+  // ETAP 7 (E4) — CHOROBA MÉNIÈRE'A / wodniak endolimfatyczny: NAPADOWE wahania tonu ucha CHOREGO.
+  // Napad przemiata ton błędnika chorego: DRAŻNIENIE (nadczynność, ~150 Hz > bazowej) → PUNKT ZEROWY
+  // (~90, symetria) → PORAŻENIE (niedoczynność, →0). Kierunek oczopląsu ODWRACA SIĘ SAM z push-pull:
+  // drażnienie → bije KU choremu (irritative); porażenie → bije KU zdrowemu (jak ostry UVH). Międzynapadowo
+  // powrót do normy (wczesna choroba). Dominuje kanał POZIOMY (oczopląs poziomo-skrętny). UWAGA DYDAKTYCZNA:
+  // w drażnieniu gain zachowany → vHIT bywa PRAWIDŁOWY mimo oczopląsu; HINTS (dla CIĄGŁEGO AVS) może tu mylić
+  // (pozorny objaw ośrodkowy) — to pułapka, bo Ménière jest NAPADOWY; oznaczyć w clinicalReadout (E5). [H20]
+  const MENIERE_PHASE = {
+    irritative: { tone:150,  gain:1.0 },   // drażnienie: oczopląs KU choremu, vHIT ~prawidłowy (cecha odróżniająca)
+    nullpoint:  { tone:R0,   gain:1.0 },   // punkt zerowy: symetria → brak oczopląsu
+    paretic:    { tone:0,    gain:0.5 },   // porażenie: oczopląs KU zdrowemu (jak ostry UVH), vHIT osłabiony
+    interictal: { tone:R0,   gain:1.0 }    // międzynapadowo: powrót do normy
+  };
+  function meniere(ear, opts){
+    opts = opts||{};
+    const ph = MENIERE_PHASE[opts.phase] || MENIERE_PHASE.irritative;
+    const tone = opts.tone!=null ? opts.tone : ph.tone;      // można podać surowy ton (płynne przemiatanie napadu)
+    const gain = opts.gain!=null ? opts.gain : ph.gain;
+    const pk = CANAL_PARAM.horizontal[ear==="L"?"L":"P"];    // kanał poziomy ucha chorego
+    const cLoss = opts.caloricLoss!=null ? Math.max(0,Math.min(1,opts.caloricLoss)) : 0.55;  // PRZEWLEKŁY ubytek LF (0 = wczesny Ménière)
+    const o = {}; o[pk.tone] = tone; o[pk.gain] = gain;
+    o[ear==="L"?"caloricGainL":"caloricGainR"] = 1-cLoss;    // gain HF (vHIT) zachowany + kaloryka osłabiona = DYSOCJACJA
+    return o;
+  }
+
+  // ETAP 7 — vHIT PER-KANAŁOWY: pary WSPÓŁPŁASZCZYZNOWE. Szybkie pchnięcie w płaszczyźnie kanału POBUDZA
+  // jeden kanał (przepływ ampullopetalny, Ewald II) i HAMUJE koplanarny z drugiej strony (obcięcie na 0 →
+  // wypada z estymaty prędkości). Pary: HC-P↔HC-L; RALP = prawy PRZEDNI ∥ lewy TYLNY; LARP = lewy PRZEDNI ∥
+  // prawy TYLNY (RA∥LP, LA∥RP — koplanarność z CANAL_NORMALS). Bada się kanał POBUDZANY (ipsilateralny). [H15][H17]
+  const COPLANAR = {
+    horizontal:{ P:{canal:"horizontal", ear:"L"}, L:{canal:"horizontal", ear:"P"} },
+    anterior:  { P:{canal:"posterior",  ear:"L"}, L:{canal:"posterior",  ear:"P"} },   // RA∥LP, LA∥RP
+    posterior: { P:{canal:"anterior",   ear:"L"}, L:{canal:"anterior",   ear:"P"} }
+  };
+  const PLANE_CANALS = {   // dwa pobudzeniowe pchnięcia płaszczyzny — każde bada JEDEN kanał pary (kanał pobudzany)
+    HC:   [{canal:"horizontal", ear:"P"}, {canal:"horizontal", ear:"L"}],
+    RALP: [{canal:"anterior",   ear:"P"}, {canal:"posterior",  ear:"L"}],   // prawy przedni + lewy tylny
+    LARP: [{canal:"anterior",   ear:"L"}, {canal:"posterior",  ear:"P"}]    // lewy przedni + prawy tylny
+  };
+  const canalSpec = spec => {
+    const s = (typeof spec==="string") ? {canal:"horizontal", ear:spec}
+                                       : {canal:(spec&&spec.canal)||"horizontal", ear:spec&&spec.ear};
+    if(!CANAL_PARAM[s.canal]) throw new TypeError('canalSpec: nieznany kanał "'+s.canal+'" (horizontal|anterior|posterior)');
+    if(s.ear!=="L" && s.ear!=="P") throw new TypeError('canalSpec: nieprawidłowa strona "'+s.ear+'" (L|P)');
+    return s;
+  };
+  function canalPlane(canal, ear){
+    if(canal==="horizontal") return "HC";
+    const ralp = (canal==="anterior" && ear==="P") || (canal==="posterior" && ear==="L");
+    return ralp ? "RALP" : "LARP";     // RALP = prawy przedni / lewy tylny; LARP = lewy przedni / prawy tylny
+  }
 
   // ETAP 6 — KOMPENSACJA OŚRODKOWA (neuroplastyczność pnia/móżdżku). [H10][H11]
   // Po ostrym UVH mózg odtwarza SYMETRIĘ SPOCZYNKOWĄ (kompensacja STATYCZNA) dwutorowo:
@@ -608,6 +741,56 @@ const NeuroVOR = (()=>{
     return { vnL, vnR, c, lesionEar:lesion, clampAmt, paceAmt, pacemakerBias:bias };
   }
 
+  // ETAP 7 (E3/E4) — składowa PIONOWO-SKRĘTNA oczopląsu z PAR WSPÓŁPŁASZCZYZNOWYCH kanałów pionowych.
+  // Push-pull per PŁASZCZYZNA: LARP = przedni-L ∥ tylny-P, RALP = przedni-P ∥ tylny-L. Imbalans pary
+  // imb = (aktywność PRZEDNIEGO − aktywność TYLNEGO)/R0 udaje obrót w tej płaszczyźnie: przedni aktywniejszy
+  // → faza szybka DOWNBEAT (v:−1) + skręt (LARP ku L, RALP ku P); tylny aktywniejszy → UPBEAT + skręt odwrotny.
+  // KLUCZ: SYMETRYCZNY ubytek pary (oba kanały równo) → imb=0 → BRAK oczopląsu — istotne dla BVH (E4);
+  // sumowanie PER-PARA (a nie per-kanał) gwarantuje to zniesienie mimo różnych magnitud AC/PC.
+  // W spoczynku wszystkie = R0 → wektor ZERO (czysto poziomy przypadek bez zmian, backward compat). [H15]
+  const TORS_V = 0.8;    // udział skrętu wzgl. pionu w oczopląsie kanałów pionowych (poglądowo; geom. ~0.78–1.0)
+  const VERT_PAIRS = [
+    { ac:"toneAcL", pc:"tonePcR", tSign:-1 },   // LARP: przedni LEWY ∥ tylny PRAWY → skręt ku L (−)
+    { ac:"toneAcR", pc:"tonePcL", tSign:+1 }    // RALP: przedni PRAWY ∥ tylny LEWY → skręt ku P (+)
+  ];
+  function verticalBeat(p){
+    let v=0, t=0;
+    for(const pr of VERT_PAIRS){
+      const imb = (afferent(p[pr.ac],0) - afferent(p[pr.pc],0))/R0;  // przewaga przedniego(+)/tylnego(−) w płaszczyźnie
+      if(!imb) continue;
+      v += imb*(-1);                 // przedni aktywniejszy → downbeat; tylny aktywniejszy → upbeat
+      t += imb*pr.tSign*TORS_V;      // skręt zależny od płaszczyzny (LARP ku L, RALP ku P)
+    }
+    const mag = Math.hypot(v, t), spvV = SPV_MAX*Math.min(1, mag);
+    return { v, t, mag, spvV, present: spvV >= VIS_THRESH };
+  }
+
+  // ETAP 7 (E4) — SCDS / fenomen TULLIO: dehiscencja kanału GÓRNEGO (przedniego) = TRZECIE OKNO ruchome.
+  // Pozwala, by DŹWIĘK lub CIŚNIENIE (Valsalva, Hennebert, ucisk skrawka) odchyliły osklepek kanału górnego
+  // BEZ ruchu głową → oczopląs w płaszczyźnie tego kanału (PIONOWO-SKRĘTNY). Bodziec POBUDZAJĄCY (głośny
+  // dźwięk, dodatnie ciśnienie, Valsalva na zaciśnięte nozdrza) → przepływ ampullofugalny → faza WOLNA ku
+  // GÓRZE i skrętnie (biegun górny OD ucha chorego); zatem faza SZYBKA w DÓŁ i skrętnie KU uchu choremu
+  // (= szybka faza pobudzonego kanału przedniego). Bodziec HAMUJĄCY (podciśnienie) → kierunek odwrotny.
+  // Reużywa PEŁNEJ geometrii (Vestibular.nysMag), bo skręt kanału przedniego jest znakiem rozpoznawczym
+  // SCDS (maska kliniczna quickPhase zeruje go dla BPPV — tu potrzebny). W spoczynku (bez bodźca) cisza. [H18]
+  const PRESSURE_EXC = { sound:+1, valsalva:+1, pressure:+1, hennebert:+1 };  // domyślny znak: +pobudzenie
+  function pressureStimulus(p, opts){
+    opts = opts||{};
+    const ear = p.dehiscence, type = opts.type||"sound";
+    const intensity = opts.intensity==null ? 1 : Math.max(0, Math.min(1, opts.intensity));
+    const sign = opts.sign!=null ? (Math.sign(opts.sign)||1) : (PRESSURE_EXC[type]||1);  // + pobudzenie / − hamowanie
+    if(!ear || !intensity)                                     // brak dehiscencji lub brak bodźca → brak odpowiedzi
+      return { present:false, ear:ear||null, type, sign, intensity:0, h:0, v:0, t:0, dir:0, tdir:0, vdir:1, spv:0, strength:0, kind:"none" };
+    const q = qpFull("anterior", ear);                        // wspólne, niemaskowane źródło (jak sakada vHIT / pion)
+    let hh=q.h, vv=q.v, tt=q.t;                                // szybka faza pobudzonego kanału przedniego: downbeat + skręt ku uchu chorego
+    const n = Math.hypot(hh, vv, tt) || 1;
+    hh = sign*hh/n; vv = sign*vv/n; tt = sign*tt/n;           // znak bodźca (pobudzenie/hamowanie) × wektor jednostkowy
+    const spv = SPV_MAX*intensity;                            // faza wolna rośnie z natężeniem bodźca (BEZ ruchu głową)
+    return { present:true, ear, type, sign, intensity, h:hh, v:vv, t:tt,
+      dir: Math.sign(hh*camRx())||0, tdir: Math.sign(tt*camRx())||0, vdir: Math.sign(vv)||1,
+      spv, strength: intensity, kind:"verticalTorsional" };
+  }
+
   // ETAP 1 — Oczopląs SAMOISTNY z asymetrii tonicznej (push-pull). [H1][H2]
   // Mózg szacuje prędkość głowy z różnicy aferentów pary poziomej: Ω_est ∝ (rateL − rateR)
   //   (obrót w LEWO pobudza lewy kanał → rateL↑). W spoczynku rate=tone → asymetria toniczna
@@ -624,12 +807,19 @@ const NeuroVOR = (()=>{
     const lesionEar = imbalance>0 ? "P" : imbalance<0 ? "L" : null; // ucho z niższą aktywnością jądra
     // Bechterew: bicie ku uchu PIERWOTNIE choremu (błędnik wrócił, pacemaker wciąż naładowany) — etap 6b.
     const bechterew = !!(cmp.lesionEar && beatEar===cmp.lesionEar && asym>0);
-    // składowe head-frame: poziom ku silniejszemu uchu + śladowy skręt (biegun górny ku niemu); pion ≈0.
-    const h=beatSign, t=beatSign*TORS_FRAC, v=0;
-    return { kind:"horizontalTorsional", h, v, t,
+    // składowe head-frame: poziom ku silniejszemu uchu + śladowy skręt (biegun górny ku niemu).
+    // PION/SKRĘT z kanałów pionowych (E3) sumują się wektorowo; kompensacja ośrodkowa znosi je tak samo
+    // jak poziom (skala 1−c → przy pełnej kompensacji cały oczopląs samoistny znika, także pionowo-skrętny).
+    const vb = verticalBeat(p), compFac = 1 - Math.max(0, Math.min(1, p.comp||0));
+    const h=beatSign, tH=beatSign*TORS_FRAC;                  // poziomo-skrętna składowa (bez zmian → backward compat)
+    const v=vb.v*compFac, tV=vb.t*compFac, t=tH+tV, spvV=vb.spvV*compFac;
+    const strengthV=Math.min(1, spvV/SPV_MAX);
+    const kind=(strengthV>0 && Math.abs(v)>Math.abs(h)) ? "verticalTorsional" : "horizontalTorsional";
+    return { kind, h, v, t, tH, tV,
       dir:  Math.sign(h*camRx()) || 0,             // znak EKRANOWY poziomu (jak nysFromDyn)
-      tdir: Math.sign(t*camRx()) || 0,             // znak EKRANOWY skrętu
-      vdir: 1, strength: asym, spv, beatEar, lesionEar,
+      tdir: Math.sign(t*camRx()) || 0,             // znak EKRANOWY skrętu (poziomy + pionowy)
+      vdir: Math.sign(v) || 1,                     // + = upbeat (frontal nie odwraca pionu)
+      strength: asym, strengthV, spv, spvV, beatEar, lesionEar,
       comp: cmp.c, trueLesionEar: cmp.lesionEar, bechterew,   // etap 6: stan kompensacji
       clampAmt: cmp.clampAmt, paceAmt: cmp.paceAmt, vnL:rL, vnR:rR };
   }
@@ -651,7 +841,8 @@ const NeuroVOR = (()=>{
     return Object.assign({}, s, {
       spv: spvRaw*f, spvRaw, fixation: !!fixOn, suppressionFactor: f,
       suppressed: spvRaw>0.5 && f<=0.5,                     // klinicznie „tłumi się fiksacją" (≥50% redukcji)
-      strength: spvRaw>0 ? s.strength*f : 0                 // amplituda renderera skaluje się z WIDOCZNĄ fazą wolną
+      strength: spvRaw>0 ? s.strength*f : 0,                // amplituda renderera skaluje się z WIDOCZNĄ fazą wolną
+      spvV: (s.spvV||0)*f, strengthV: (s.strengthV||0)*f    // E3: pionowo-skrętna też tłumiona fiksacją (obwód)
     });
   }
 
@@ -677,10 +868,10 @@ const NeuroVOR = (()=>{
   //      oczopląs po obrocie szybciej gaśnie. To OSOBNY układ od integratora utrzymania spojrzenia
   //      (etap 4a): kompensacja skraca velocity storage, a NIE gaze-holding (inaczej fałsz. objaw ośrodkowy).
   const DVS_FRAC = 0.67;     // maks. skrócenie velocity storage przez pełną kompensację (τ 15 s → ~5 s)
-  function fusionWeights(p, headVel, toSide){
+  function fusionWeights(p, headVel, spec){
     const c = Math.max(0, Math.min(1, p.comp||0)), Ohm = headVel||200;
-    const gEx = toSide==="P" ? p.gainR : p.gainL;            // kanał pobudzany (ipsilateralny) niesie sygnał w HIT
-    const toneEx = toSide==="P" ? p.toneR : p.toneL;
+    const ex = canalSpec(spec), pk = CANAL_PARAM[ex.canal][ex.ear];   // kanał POBUDZANY (dowolny z 6) niesie sygnał w HIT
+    const gEx = p[pk.gain], toneEx = p[pk.tone];             // horizontal 'P'/'L' → gainR/gainL, toneR/toneL (bez zmian)
     const rateEx = afferent(toneEx, +gEx*S_HZ*Ohm);
     const headroom = Math.max(0, (R_SAT - rateEx)/R_SAT);   // zapas do nasycenia: 1=pełny, 0=nasycony (utrata informacji)
     const canalRel = Math.max(0, Math.min(1, gEx)) * (0.5 + 0.5*headroom);  // wiarygodność kanału (gain × zapas)
@@ -694,13 +885,15 @@ const NeuroVOR = (()=>{
     return { tauBase: base, tau: base*(1 - DVS_FRAC*c), c, shortened: c>0 };
   }
 
-  function headImpulse(p, toSide, opts){
+  // spec: 'P'/'L' (poziomy, zgodność wsteczna) LUB {canal,ear} — dowolny z 6 kanałów (HC/przedni/tylny × L/P).
+  function headImpulse(p, spec, opts){
     opts = opts||{};
     const Ohm = opts.headVel||200, amp = opts.headAmp||15;   // szczyt prędkości (°/s) i amplituda (°) pchnięcia
-    const gEx = toSide==="P" ? p.gainR : p.gainL;            // kanał POBUDZANY = ipsilateralny do pchnięcia
-    const gIn = toSide==="P" ? p.gainL : p.gainR;            // kanał HAMOWANY = przeciwny
-    const toneEx = toSide==="P" ? p.toneR : p.toneL;
-    const toneIn = toSide==="P" ? p.toneL : p.toneR;
+    const ex = canalSpec(spec), toSide = ex.ear;             // kanał POBUDZANY = testowany; strona pchnięcia = jego ucho
+    const inh = COPLANAR[ex.canal][ex.ear];                  // kanał HAMOWANY = współpłaszczyznowy z DRUGIEJ strony
+    const pkEx = CANAL_PARAM[ex.canal][ex.ear], pkIn = CANAL_PARAM[inh.canal][inh.ear];
+    const gEx = p[pkEx.gain], gIn = p[pkIn.gain];            // horizontal 'P' → gainR/gainL (bez zmian numerycznych)
+    const toneEx = p[pkEx.tone], toneIn = p[pkIn.tone];
     const rateEx = afferent(toneEx, +gEx*S_HZ*Ohm);          // pobudzany (może nasycać ≤R_SAT)
     const rateIn = afferent(toneIn, -gIn*S_HZ*Ohm);          // hamowany (obcięcie na 0)
     const modEx = rateEx - toneEx, modIn = rateIn - toneIn;  // modulacje względem spoczynku (+ / −)
@@ -715,19 +908,36 @@ const NeuroVOR = (()=>{
     // z fuzji szyjno-ocznej/efference). Udział covert = KOMPLETNOŚĆ kompensacji c (przy pełnej kompensacji
     // korekta jest w całości predykcyjna). fusionWeights (fw) = MECHANIZM: przy prędkości vHIT kanał
     // niewiarygodny → układ opiera się na propriocepcji szyi (wNeck rośnie), co UMOŻLIWIA sakadę ukrytą. [H12][H13][H14]
-    const fw = fusionWeights(p, Ohm, toSide);
+    const fw = fusionWeights(p, Ohm, ex);
     const covertFrac = Math.max(0, Math.min(1, p.comp||0));  // predykcyjny udział → sakada ukryta (0 gdy niekompensowany, 1 przy pełnej)
     const covertAmp = saccadeAmp*covertFrac, overtAmp = saccadeAmp*(1-covertFrac);
     const overt  = overtAmp  >= 2.5;                         // JAWNA sakada — widoczna gołym okiem (bedside HIT)
     const covert = covertAmp >= 1.0;                         // UKRYTA sakada — wykrywalna tylko w vHIT (goggles)
+    const plane = canalPlane(ex.canal, ex.ear);
+    // Kierunek SAKADY KORYGUJĄCEJ = faza WOLNA VOR (przeciwna do szybkiej fazy POBUDZANEGO kanału),
+    // znormalizowana {h,v,t}. Poziomy → czysto poziomy (ku linii środkowej); przedni → pionowy w górę;
+    // tylny → pionowo-skrętny (płaszczyzny RALP/LARP). Reuse geometrii kanałów (Vestibular.quickPhase).
+    const q = qpFull(ex.canal, ex.ear), qn = Math.hypot(q.h, q.v, q.t)||1;   // pełna geometria (skręt przedniego zachowany)
+    const saccade = { h:-q.h/qn, v:-q.v/qn, t:-q.t/qn };
     return {
-      toSide, headVel:Ohm, headAmp:amp, gain, deficit,
+      toSide, canal:ex.canal, ear:ex.ear, plane, coplanar:inh, saccade,
+      headVel:Ohm, headAmp:amp, gain, deficit,
       rateEx, rateIn, modEx, modIn, inhibitedFloored: rateIn<=0,
       saccadeAmp, covertAmp, overtAmp, covertFrac, fusion: fw,
       saccadePresent: overt, overtSaccade: overt, covertSaccade: covert,
-      saccadeToSide: toSide==="P" ? "L" : "P",               // catch-up przeciwnie do pchnięcia (ku celowi/linii środkowej)
+      saccadeToSide: toSide==="P" ? "L" : "P",               // catch-up przeciwnie do pchnięcia (poziomy: ku linii środkowej)
       abnormal                                               // patologiczny HIT (deficyt gain); jawność bedside = saccadePresent/overt
     };
+  }
+
+  // vHIT całej PŁASZCZYZNY (HC/RALP/LARP): dwa pobudzeniowe pchnięcia — po jednym na każdy kanał pary.
+  // Wzorzec nerwu GÓRNEGO (neuronitis superior): HC + PRZEDNI patologiczne, TYLNY prawidłowy (n. dolny sprawny). [H15]
+  function vhitPlane(p, plane){
+    const list = PLANE_CANALS[plane==null ? "HC" : plane];   // brak płaszczyzny → HC; literówka → jasny błąd (nie ciche HC)
+    if(!list) throw new TypeError('vhitPlane: nieznana płaszczyzna "'+plane+'" (dozwolone: HC|RALP|LARP)');
+    const tests = list.map(spec => headImpulse(p, spec));
+    return { plane, tests, abnormal: tests.some(t=>t.abnormal),
+             abnormalCanals: tests.filter(t=>t.abnormal).map(t=>({canal:t.canal, ear:t.ear})) };
   }
 
   // ETAP 4a — INTEGRATOR NERWOWY „leaky" → oczopląs SPOJRZENIOWY (gaze-evoked). [H6]
@@ -750,8 +960,9 @@ const NeuroVOR = (()=>{
     const Vnet = Vspont + Vge;                               // wypadkowa prędkość bicia
     const beatHead = Math.sign(Vnet)||0, spv = Math.abs(Vnet);
     return { gazeDeg, beatHead, spv, strength: Math.min(1, spv/SPV_MAX),
-      dir: Math.sign(beatHead*camRx())||0, tdir: sp.tdir, t: sp.t, vdir:1,
-      kind:"horizontalTorsional", components:{Vspont, Vge} };
+      dir: Math.sign(beatHead*camRx())||0, tdir: sp.tdir, t: sp.t,
+      v: sp.v||0, vdir: sp.vdir||1, strengthV: sp.strengthV||0,   // E3: pionowo-skrętna składowa niesiona z samoistnego
+      kind: sp.kind||"horizontalTorsional", components:{Vspont, Vge} };
   }
   // Czy oczopląs ZMIENIA KIERUNEK ze spojrzeniem (cecha OŚRODKOWA)? Próbkujemy skrajne spojrzenia.
   // Wymóg: oczopląs KLINICZNIE WIDOCZNY (≥próg) po OBU stronach i przeciwne kierunki bicia. Silny
@@ -769,11 +980,64 @@ const NeuroVOR = (()=>{
   // Test naprzemiennego zasłaniania (cover): odsłonięte oko łapie fiksację PIONOWĄ SAKADĄ korygującą
   //   → widoczny rozjazd pionowy = TS DODATNI = objaw OŚRODKOWY (w kontekście AVS).
   //   skewTone (°, ze znakiem): + = oko PRAWE wyżej / lewe niżej; − = odwrotnie. 0 = oczy w linii.
+  const SKEW_CENTRAL = 2.5;   // próg skew dla flagi OŚRODKOWEJ (INFARCT). Poniżej: skew MAŁY — może być OBWODOWY
+                              // (łagiewka, n. górny) → NIE liczony jako cecha ośrodkowa (unika fałszywego „udaru").
   function skew(p){
     const st = p.skewTone||0, mag = Math.abs(st);
-    return { present: mag>=1, skewDeg: mag, sign: Math.sign(st)||0,
+    return { present: mag>=1, central: mag>=SKEW_CENTRAL, skewDeg: mag, sign: Math.sign(st)||0,
       hyperSide: st>0?"P":st<0?"L":null,                     // oko wyżej (hipertropijne)
       torsionDeg: p.otrTorsion||0 };                         // torsja OTR (bieguny górne ku oku niższemu)
+  }
+
+  // ETAP 7 (E4.5) — PRÓBA KALORYCZNA (bitermalna, wzór Jongkeesa). [H21]
+  // Kaloryka = NISKOczęstotliwościowy (~0.003 Hz) test kanału POZIOMEGO — drugi koniec charakterystyki
+  // przenoszenia względem vHIT (~5 Hz). Dlatego skaluje się OSOBNYM gainem (caloricGain), nie `gain` (HF):
+  // to umożliwia DYSOCJACJĘ kaloryka↔vHIT (Ménière: kaloryka↓, vHIT prawidłowy). Bodziec = jednostronny
+  // drive termiczny na HC drażnionego ucha: CIEPŁA pobudza (bije KU niemu), ZIMNA hamuje (przeciwnie) = COWS.
+  // Oczopląs samoistny (ciemność) NAKŁADA się → przewaga kierunkowa (DP). Skala CAL_NORMAL nieistotna dla
+  // CP/DP (to STOSUNKI), istotna dla sumy bezwzględnej (osłabienie obustronne). caloricGain jest OBWODOWY →
+  // niezależny od kompensacji ośrodkowej: kaloryka ODSŁANIA skompensowany ubytek (CP trwa, gdy oczopląs znikł).
+  const CAL_NORMAL = 20;   // °/s — prawidłowa szczytowa SPV pojedynczej irygacji przy caloricGain=1
+  const CAL_BILAT  = 6;    // °/s — próg (kryt. Bárány): suma ciepła+zimna DANEGO ucha < CAL_BILAT → osłabienie
+  const CP_THRESH  = 25;   // % — istotny niedowład kanału (unilateral weakness)
+  const DP_THRESH  = 30;   // % — istotna przewaga kierunkowa
+  function caloricGainOf(p, ear){ const g = ear==="P" ? p.caloricGainR : p.caloricGainL; return Math.max(0, g==null?1:g); }
+  function caloricDir(ear, temp){ return (temp==="cold"?-1:1) * (ear==="P"?+1:-1); }   // head-frame +=ku P; COWS
+  function caloric(p, o){
+    o = o||{};
+    const ear = o.ear==="L" ? "L" : "P", temp = o.temp==="cold" ? "cold" : "warm";
+    const cg = caloricGainOf(p, ear);
+    const Vcal = CAL_NORMAL * cg * caloricDir(ear, temp);    // składowa kaloryczna (∝ gain NISKOczęstotliwościowy)
+    const sp = observe(p, false);                            // oczopląs samoistny (ciemność) — nakłada się → DP
+    const Vsp = (sp.h||0) * sp.spv;                          // head-frame signed (+ ku P)
+    const Vtot = Vcal + Vsp, spv = Math.abs(Vtot), beatSign = Math.sign(Vtot)||0;
+    const fix = suppressionFactor(p, true);                  // indeks fiksacji = supresja fiksacją (kłaczek)
+    return { ear, temp, spv, spvFix: spv*fix, fixationIndex: fix, failsSuppression: fix>0.5,
+      beatSign, beatEar: beatSign>0?"P":beatSign<0?"L":null, dir: Math.sign(beatSign*camRx())||0,
+      caloricGain: cg, Vcal, Vsp };
+  }
+  // Bateria bitermalna: 4 irygacje → CP (niedowład kanału, LOKALIZUJE) + DP (przewaga kierunkowa) wzorem Jongkeesa.
+  function caloricBattery(p){
+    const rw=caloric(p,{ear:"P",temp:"warm"}), rc=caloric(p,{ear:"P",temp:"cold"}),
+          lw=caloric(p,{ear:"L",temp:"warm"}), lc=caloric(p,{ear:"L",temp:"cold"});
+    const RW=rw.spv, RC=rc.spv, LW=lw.spv, LC=lc.spv;
+    const rightSum=RW+RC, leftSum=LW+LC, total=rightSum+leftSum;
+    const CP = total>0 ? (rightSum-leftSum)/total*100 : 0;   // SUROWY (raw): <0 = PRAWE słabsze; >0 = LEWE słabsze
+    const DP = total>0 ? ((RW+LC)-(LW+RC))/total*100 : 0;    // >0 = przewaga bicia ku P; <0 = ku L
+    // CP KORYGOWANY o tło (E5): z samej składowej kalorycznej |Vcal| — odjęty nałożony oczopląs samoistny,
+    // który MASKUJE niedowład (surowy CP zaniża przy ostrym oczoplątem). Skorygowany = prawdziwa asymetria. [H21]
+    const cR=Math.abs(rw.Vcal)+Math.abs(rc.Vcal), cL=Math.abs(lw.Vcal)+Math.abs(lc.Vcal), cT=cR+cL;
+    const CPcorrected = cT>0 ? (cR-cL)/cT*100 : 0;
+    const bilateralWeak = rightSum<CAL_BILAT && leftSum<CAL_BILAT;   // UWAGA: przy symetrii CP≈0 mimo obustronnego ubytku!
+    const fixationIndex = suppressionFactor(p, true);
+    const hcHIT = vhitPlane(p,"HC").abnormal;               // vHIT poziomego (HF) — do porównania dysocjacyjnego
+    const caloricWeak = Math.abs(CPcorrected)>=CP_THRESH || bilateralWeak;   // skorygowany = odporny na maskowanie
+    return { RW, RC, LW, LC, rightSum, leftSum, total,
+      CP, CPcorrected, DP, weakEar: Math.abs(CPcorrected)>=CP_THRESH ? (CPcorrected<0?"P":"L") : null,
+      dpSide: Math.abs(DP)>=DP_THRESH ? (DP>0?"P":"L") : null,
+      bilateralWeak, fixationIndex, failsSuppression: fixationIndex>0.5,
+      vHITabnormal: hcHIT, caloricWeak, dissociation: caloricWeak && !hcHIT,   // kaloryka+ / vHIT− = wzorzec Ménière
+      reverseDissociation: hcHIT && !caloricWeak && !bilateralWeak };          // vHIT+ / kaloryka− = ubytek WYSOKOczęstotliwościowy
   }
 
   // ETAP 5 — SCENARIUSZE (presety) i SYNTEZA HINTS. [H8]
@@ -785,13 +1049,17 @@ const NeuroVOR = (()=>{
     normal:       { label:"Zdrowy / równowaga", side:null,
       params:{} },
     neuritisR:    { label:"Neuronitis przedsionkowy — ucho P (OBWÓD)", side:"P",
-      params:{ toneR:5, gainR:0.35, fixationGain:0.9, integratorTau:25, skewTone:0 } },
+      params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0.9, integratorTau:25, skewTone:0 } },
     neuritisL:    { label:"Neuronitis przedsionkowy — ucho L (OBWÓD)", side:"L",
-      params:{ toneL:5, gainL:0.35, fixationGain:0.9, integratorTau:25, skewTone:0 } },
+      params:{ toneL:5, gainL:0.35, caloricGainL:0.3, fixationGain:0.9, integratorTau:25, skewTone:0 } },
     strokeCentral:{ label:"Udar móżdżku / pnia (OŚRODEK)", side:"P",
       // kanały SPRAWNE (gain≈1 → HIT prawidłowy), łagodny ton asymetryczny ośrodkowy (oczopląs samoistny),
       // integrator „leaky" (oczopląs zmienny kierunkowo), asymetria grawiceptywna (skew + torsja).
       params:{ toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:3, otrTorsion:4 } },
+    bvh:          { label:"Obustronna westybulopatia / otoksyczność (BVH)", side:null,
+      // SYMETRYCZNY ubytek OBU błędników → brak oczopląsu samoistnego (symetria!), ale vHIT patologiczny
+      // OBUSTRONNIE we wszystkich płaszczyznach. Objawy: oscylopsja przy ruchu głowy, chód po ciemku (nie okoruch).
+      params: bilateralLoss(1) },
   };
   function scenario(key){ const s = SCENARIOS[key]||SCENARIOS.normal; return makePatient(s.params); }
 
@@ -811,7 +1079,7 @@ const NeuroVOR = (()=>{
     const centralSigns = [];
     if(impulseNormalDanger) centralSigns.push("HIT prawidłowy mimo oczopląsu samoistnego (Impulse Normal)");
     if(dirChanging)         centralSigns.push("oczopląs zmienny kierunkowo (Fast-phase Alternating)");
-    if(ts.present)          centralSigns.push("dodatni Test of Skew — pionowa sakada przy odsłanianiu (Refixation on Cover Test)");
+    if(ts.central)          centralSigns.push("dodatni Test of Skew — pionowa sakada przy odsłanianiu (Refixation on Cover Test)");   // tylko ZNACZĄCY skew (mały = obwodowy)
     const verdict = !anyFinding ? "normal" : (centralSigns.length ? "central" : "peripheral");
     return {
       verdict,
@@ -819,14 +1087,126 @@ const NeuroVOR = (()=>{
       ny: { pattern:nyPattern, hasSpontaneous:hasSpont, directionChanging:dirChanging,
             suppresses:lit.suppressed, dark, lit },
       ts,
-      infarct: { impulseNormal:impulseNormalDanger, fastAlternating:dirChanging, refixationCover:ts.present },
+      infarct: { impulseNormal:impulseNormalDanger, fastAlternating:dirChanging, refixationCover:ts.central },
       centralSigns
     };
   }
 
-  return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, afferent, makePatient, compensate, spontaneous, suppressionFactor, observe,
-           headImpulse, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew,
-           SCENARIOS, scenario, hints };
+  // ETAP 7 (E5) — PARAM_SPEC: metadane parametrów dla UI „matematycznego pacjenta" (suwaki/selektory).
+  // group: „basic" widoczne od razu, „advanced" zwijane. Każdy: key, label, min/max/step/unit/def LUB type:"select".
+  const PARAM_SPEC = [
+    { group:"Kanał poziomy (HC)", tier:"basic", help:"Ton = spoczynek (→ oczopląs samoistny); gain = vHIT wysokiej częstotliwości.", params:[
+      { key:"toneL", label:"Ton HC lewy",  min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"toneR", label:"Ton HC prawy", min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"gainL", label:"Gain HC lewy (vHIT)",  min:0, max:1.2, step:0.05, unit:"", def:1 },
+      { key:"gainR", label:"Gain HC prawy (vHIT)", min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
+    { group:"Kaloryka (niska częstotliwość)", tier:"basic", help:"Osobna oś od vHIT → dysocjacja LF/HF (Ménière).", params:[
+      { key:"caloricGainL", label:"Kaloryczny gain lewy",  min:0, max:1.2, step:0.05, unit:"", def:1 },
+      { key:"caloricGainR", label:"Kaloryczny gain prawy", min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
+    { group:"Kanał przedni (nerw górny)", tier:"advanced", help:"Płaszczyzny RALP/LARP; nerw górny = HC+przedni+łagiewka.", params:[
+      { key:"toneAcL", label:"Ton AC lewy",  min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"toneAcR", label:"Ton AC prawy", min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"gainAcL", label:"Gain AC lewy",  min:0, max:1.2, step:0.05, unit:"", def:1 },
+      { key:"gainAcR", label:"Gain AC prawy", min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
+    { group:"Kanał tylny (nerw dolny)", tier:"advanced", help:"Nerw dolny = tylny+woreczek; kaloryka go NIE bada.", params:[
+      { key:"tonePcL", label:"Ton PC lewy",  min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"tonePcR", label:"Ton PC prawy", min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"gainPcL", label:"Gain PC lewy",  min:0, max:1.2, step:0.05, unit:"", def:1 },
+      { key:"gainPcR", label:"Gain PC prawy", min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
+    { group:"Przetwarzanie ośrodkowe", tier:"advanced", help:"Kłaczek (fiksacja), integrator (spojrzeniowy), otolity (skew).", params:[
+      { key:"fixationGain",  label:"Supresja fiksacji", min:-0.5, max:1, step:0.05, unit:"", def:0.9 },
+      { key:"integratorTau", label:"Integrator (τ spojrzenia)", min:0.5, max:30, step:0.5, unit:"s", def:25 },
+      { key:"skewTone",      label:"Asymetria grawiceptywna (skew)", min:-6, max:6, step:0.5, unit:"°", def:0 },
+      { key:"otrTorsion",    label:"Torsja OTR", min:0, max:10, step:0.5, unit:"°", def:0 } ]},
+    { group:"Kompensacja ośrodkowa", tier:"advanced", help:"Neuroplastyka: znosi oczopląs, ale NIE kalorykę.", params:[
+      { key:"comp",          label:"Poziom kompensacji", min:0, max:1, step:0.05, unit:"", def:0 },
+      { key:"pacemakerBias", label:"Ładunek pacemakera (Bechterew)", min:0, max:40, step:1, unit:"Hz", def:0 },
+      { key:"tauVS",         label:"Velocity storage (τ)", min:1, max:20, step:0.5, unit:"s", def:15 },
+      { key:"lesionEar", label:"Strona chora (kompensacja)", type:"select", def:null,
+        options:[ {v:null,l:"auto"}, {v:"L",l:"lewa"}, {v:"P",l:"prawa"} ] } ]},
+    { group:"Trzecie okno (SCDS)", tier:"advanced", help:"Dehiscencja kan. górnego → objaw Tullio/Hennebert.", params:[
+      { key:"dehiscence", label:"Dehiscencja kan. górnego", type:"select", def:null,
+        options:[ {v:null,l:"brak"}, {v:"L",l:"lewa"}, {v:"P",l:"prawa"} ] } ]}
+  ];
+
+  // ETAP 7 (E5) — SYNTEZA KLINICZNA: pełny odczyt z parametrów (objawy + sygnały obwód/ośrodek +
+  // niejednoznaczności + lokalizacja). Reużywa hints/caloricBattery/vhitPlane/observe/skew/pressureStimulus.
+  // Narzędzie DYDAKTYCZNE, nie diagnostyczne. [H8][H21]
+  function clinicalReadout(p){
+    const R1 = x => Math.round(x*10)/10;
+    const side = e => e==="P" ? "prawej" : e==="L" ? "lewej" : null;
+    const h = hints(p), cal = caloricBattery(p);
+    const dark = h.ny.dark, lit = h.ny.lit, sk = h.ts;         // Fix7: reuse z hints (bez ponownego observe/skew)
+    const hc = { plane:"HC", tests:[h.hi.right, h.hi.left], abnormal:h.hi.abnormal };  // HC = te same pchnięcia co w hints
+    const ralp = vhitPlane(p,"RALP"), larp = vhitPlane(p,"LARP");  // płaszczyzny pionowe — liczone raz
+    const scds = p.dehiscence ? pressureStimulus(p,{type:"sound"}) : null;
+    const findings = [], peripheralSigns = [], centralSigns = [], ambiguities = [];
+
+    // oczopląs samoistny (POZIOMY i/lub PIONOWO-SKRĘTNY) + fiksacja + spojrzeniowy
+    const hSpont = dark.spv >= VIS_THRESH, vSpont = (dark.spvV||0) >= VIS_THRESH;
+    if(hSpont || vSpont){
+      const parts = [];
+      if(hSpont) parts.push(`poziomo-skrętny ku stronie ${side(dark.beatEar)} (${R1(dark.spv)}°/s)`);
+      if(vSpont) parts.push(`pionowo-skrętny ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`);
+      const f = lit.suppressionFactor, supp = f<=0.5 && (dark.spv>0.5 || (dark.spvV||0)>0.5);  // supresja poziomu LUB pionu
+      findings.push(`Oczopląs samoistny: ${parts.join(" + ")}; ${supp?"tłumiony":"NIEtłumiony"} fiksacją.`);
+      (supp ? peripheralSigns : centralSigns).push(supp ? "oczopląs tłumiony fiksacją" : "oczopląs NIEtłumiony fiksacją");
+      if(vSpont && !hSpont) centralSigns.push("izolowany oczopląs pionowo-skrętny (klasycznie podejrzany o ośrodek)");
+    } else findings.push("Brak oczopląsu samoistnego w spoczynku.");
+    if(h.ny.directionChanging){ findings.push("Oczopląs zmienia kierunek ze spojrzeniem (spojrzeniowy)."); centralSigns.push("oczopląs zmienny kierunkowo"); }
+
+    // vHIT płaszczyzn
+    const planes = [];
+    if(hc.abnormal)   planes.push("poziomej");
+    if(ralp.abnormal) planes.push("RALP (przedni P / tylny L)");
+    if(larp.abnormal) planes.push("LARP (przedni L / tylny P)");
+    if(planes.length){ findings.push(`vHIT patologiczny w płaszczyźnie: ${planes.join(", ")}.`); peripheralSigns.push("patologiczny vHIT (ubytek obwodowy)"); }
+    else findings.push("vHIT prawidłowy we wszystkich płaszczyznach.");
+
+    // skew — cecha OŚRODKOWA tylko gdy ZNACZĄCY (sk.central); mały skew może być obwodowy (łagiewka)
+    if(sk.present){
+      findings.push(`Odchylenie skośne: oko ${sk.hyperSide==="P"?"prawe":"lewe"} wyżej (${R1(sk.skewDeg)}°)${sk.central?"":" — małe, może być obwodowe (łagiewka)"}.`);
+      if(sk.central) centralSigns.push("dodatni test odchylenia skośnego (znaczący)");
+    }
+
+    // kaloryka
+    if(cal.bilateralWeak) findings.push("Kaloryka: OBUSTRONNE osłabienie (suma odpowiedzi poniżej progu) — CP≈0 mimo ubytku.");
+    else if(cal.weakEar)  findings.push(`Kaloryka: niedowład kanału po stronie ${side(cal.weakEar)} (CP skoryg. ${R1(Math.abs(cal.CPcorrected))}%).`);
+    else findings.push("Kaloryka: prawidłowa (brak istotnego niedowładu).");
+    if(Math.abs(cal.DP) >= DP_THRESH) findings.push(`Przewaga kierunkowa ku stronie ${side(cal.dpSide)} (DP ${R1(Math.abs(cal.DP))}%).`);
+
+    // SCDS
+    if(scds && scds.present){ findings.push(`SCDS: dźwięk/ciśnienie wyzwala oczopląs pionowo-skrętny (dehiscencja po stronie ${side(p.dehiscence)}), bez ruchu głową.`); peripheralSigns.push("dodatni objaw Tullio/Hennebert (trzecie okno)"); }
+
+    // lokalizacja (z wzorca vHIT + kaloryki)
+    const lesSide = cal.weakEar || h.hi.side;
+    let localization;
+    if(cal.bilateralWeak && hc.abnormal)                              localization = "obustronna westybulopatia (BVH)";
+    else if(hc.abnormal && ralp.abnormal && larp.abnormal)           localization = `pełny ubytek błędnika po stronie ${side(lesSide)}`;
+    else if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar) localization = "nerw DOLNY (kanał tylny) — kaloryka i HC prawidłowe";
+    else if(cal.dissociation && cal.weakEar && !hc.abnormal)          localization = `ubytek NISKOczęstotliwościowy (wodniak / Ménière?) po stronie ${side(cal.weakEar)}`;
+    else if((hc.abnormal||cal.weakEar) && !ralp.abnormal && !larp.abnormal) localization = `nerw GÓRNY po stronie ${side(lesSide)} (poziomy + przedni)`;
+    else if(h.verdict==="central")                                    localization = "ośrodkowa (pień/móżdżek)";
+    else if(scds && scds.present)                                     localization = `SCDS / trzecie okno po stronie ${side(p.dehiscence)}`;
+    else if(!h.ny.hasSpontaneous && !cal.caloricWeak && !planes.length && !(sk.present)) localization = "brak lokalizacji (obraz prawidłowy)";
+    else                                                              localization = "nieokreślona";
+
+    // niejednoznaczności / pułapki
+    if(cal.dissociation) ambiguities.push("Dysocjacja kaloryka↔vHIT (LF osłabiona, HF prawidłowy): wodniak/Ménière lub ubytek niskoczęstotliwościowy. Obraz często NAPADOWY → HINTS (dla ciągłego AVS) nie ma zastosowania.");
+    if(h.infarct.impulseNormal && cal.weakEar) ambiguities.push("HIT prawidłowy mimo oczopląsu, ale kaloryka lokalizuje ubytek OBWODOWY — rozważ fazę DRAŻNIENIA Ménière (napadowy) zamiast udaru.");
+    if(cal.bilateralWeak) ambiguities.push("HINTS zakłada jednostronny AVS — przy obustronnym ubytku (BVH) nie różnicuje; kieruj się sumą kaloryczną i obustronnym vHIT.");
+    if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar) ambiguities.push("Kaloryka i vHIT poziomy prawidłowe, lecz vHIT kanału tylnego patologiczny — neuronitis nerwu DOLNEGO (kaloryka go NIE wykrywa).");
+    if(cal.reverseDissociation) ambiguities.push("Odwrotna dysocjacja: vHIT poziomy patologiczny przy PRAWIDŁOWEJ kalorycе — ubytek WYSOKOczęstotliwościowy (lub wczesna/częściowo skompensowana faza).");
+
+    return { verdict:h.verdict, localization, findings, peripheralSigns, centralSigns, ambiguities,
+      hints:h, caloric:cal, vhit:{ HC:hc, RALP:ralp, LARP:larp }, spontaneous:dark, skew:sk, scds };
+  }
+
+  return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, afferent, makePatient, compensate, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
+           headImpulse, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, caloric, caloricBattery,
+           CANAL_PARAM, NERVE_CANALS, nerveBranchLesion, bilateralLoss, meniere,
+           COPLANAR, PLANE_CANALS, canalSpec, canalPlane, vhitPlane,
+           SCENARIOS, scenario, hints, PARAM_SPEC, clinicalReadout };
 })();
 
 /* Źródło orientacji głowy (pluggable) — etap A: ręczne; później: żyroskop / DeviceOrientation / replay.

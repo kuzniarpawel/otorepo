@@ -2,7 +2,7 @@
  OTOREPO — lista zadań (todo)
  Aplikacja: repozycja otolitów (BPPV) + diagnostyka, single-file HTML/JS
  Pliki: otorepo.html (apka) · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
- Ostatnia aktualizacja: 2026-07-08 (kompensacja ośrodkowa — etap 6)
+ Ostatnia aktualizacja: 2026-07-09 (ROZBUDOWA W TRAKCIE: „matematyczny pacjent" + neuroanatomia — E1-E4 + E4.5 kaloryka zrobione + engine_doc zsynchronizowany, wznów od E5)
 ==========================================================================
 
 Konwencje techniczne:
@@ -27,11 +27,112 @@ SILNIK (fizyka) — rozszerzenia wg korzyść/koszt:
         ZROBIONE 2026-07-07 jako moduł NeuroVOR (patrz ZROBIONE / engine_doc „MODUŁ NeuroVOR").
 
 RÓŻNICOWANIE OŚRODEK↔OBWÓD (moduł NeuroVOR — rozszerzenia):
- [ ] „MATEMATYCZNY PACJENT": tryb WŁASNYCH PARAMETRÓW — suwaki toneL/R, gainL/R, fixationGain,
-        integratorTau, skewTone/otrTorsion → ręczne tworzenie przypadków MIESZANYCH (obwód+ośrodek),
-        z werdyktem HINTS liczonym na żywo. Cel: eksperymentowanie z trudnymi/nakładającymi się patologiami.
- [ ] „MATEMATYCZNY PACJENT": tryb WŁASNYCH PARAMETRÓW (suwaki toneL/R, gainL/R, fixationGain,
-        integratorTau, skewTone/otrTorsion, comp) — patrz wyżej; pozostaje otwarte.
+
+============================================================================
+ >>> ROZBUDOWA W TRAKCIE <<<  „MATEMATYCZNY PACJENT" + NEUROANATOMIA  (od 2026-07-08)
+ Wznów od: FAZA SILNIK / E4 (E1-E3 zrobione). Reguła: budować lokalnie, push tylko na wyraźną komendę.
+============================================================================
+Cel: tryb WŁASNYCH PARAMETRÓW w zakładce HINTS — ustawiasz surową fizjologię (suwaki), a cały obraz
+kliniczny (oczopląs samoistny, zależność od fiksacji/spojrzenia, vHIT, skew, kompensacja, werdykt HINTS)
+WYNIKA SAM. Rozszerzony o NEUROANATOMIĘ (gałęzie nerwu, vHIT RALP/LARP) i patologie (BVH, Meniere, SCDS).
+
+DECYZJE (zatwierdzone 2026-07-08):
+ - Wejście: 4. przycisk „Własny" w selektorze scenariuszy HINTS (obok Zdrowy/Neuronitis/Udar).
+ - Parametry: podstawowe widoczne + zaawansowane (zwijane).
+ - Zakres v1 PEŁNY: wczytaj-scenariusz-do-własnego + podsumowanie obwód/ośrodek + niejednoznaczność
+   + losowy pacjent (quiz) + zapis/udostępnienie (hash URL / localStorage, dane tylko lokalnie).
+ - KOLEJNOŚĆ: najpierw cały SILNIK per-kanałowy (neuroanatomia), potem całe UI naraz.
+
+FAZA SILNIK (walidacja offline node; wstecznie zgodna — HC = toneL/R,gainL/R; reuse geometrii Vestibular):
+ [x] E1 — architektura per-kanałowa: parametry kanałów pionowych (toneAcL/R, gainAcL/R, tonePcL/R, gainPcL/R),
+        dehiscence; mapa NERW→kanały (superior=poziomy+przedni+łagiewka; inferior=tylny+woreczek) +
+        nerveBranchLesion(ucho,gałąź,sev). ZROBIONE 2026-07-08 (t9; łącznie 213/213). [task #15]
+ [x] E2 — headImpulse z płaszczyzną (HC/RALP/LARP): pary współpłaszczyznowe (RALP: AC-P∥PC-L; LARP: AC-L∥PC-P),
+        per-kanałowa sakada korygująca; wzorzec vHIT neuronitis Superior = HC+AC(RA/LA) patologiczne, PC prawidłowy.
+        headImpulse(p,{canal,ear}) — zgodne wstecznie z 'P'/'L'; COPLANAR/PLANE_CANALS/canalPlane/vhitPlane;
+        sakada {h,v,t} z Vestibular.quickPhase (AC=w górę, PC=dół+skręt). ZROBIONE 2026-07-09 (t10; łącznie 264/264,
+        + smoke-test w przeglądarce). [#19]
+ [x] E3 — wektor oczopląsu 3D (pionowo-skrętny): suma par współpłaszczyznowych (Vestibular.quickPhase);
+        czysto pozioma zmiana = jak teraz (backward compat). Umożliwia SCDS (czysto AC pionowo-skrętny).
+        verticalBeat(p) sumuje 4 kanały pionowe (dev tonu × quickPhase); spontaneous scala poziom+pion,
+        kompensacja znosi pion tą samą skalą 1−c; kind verticalTorsional, pola v/vdir/tV/spvV/strengthV;
+        observe+nystagmusAtGaze niosą pion. Neuronitis dolny = czysty downbeat torsyjny (spv poziomy=0).
+        UWAGA: renderer HINTS (neuroNysParams) rysuje na razie tylko poziom+skręt — PION dorobić w fazie UI/U3.
+        ZROBIONE 2026-07-09 (t11; łącznie 302/302 + smoke-test w przeglądarce). [#20]
+ [x] E4 — patologie (pod-kroki; kolejność wg użytkownika: Tullio → BVH → Menière). KOMPLETNE 2026-07-09.
+        [x] SCDS/Tullio — dehiscence + pressureStimulus(p,{type,intensity,sign}) napędza kanał GÓRNY
+            (Vestibular.nysMag = PEŁNY skręt, nie maska) → pionowo-skrętny oczopląs BEZ ruchu głową;
+            cisza w spoczynku (dehiscence ≠ hipofunkcja, vHIT AC prawidłowy); pobudzenie(dźwięk/Valsalva/
+            Hennebert)=downbeat+skręt KU choremu, hamowanie(podciśnienie)=odwrotnie (upbeat). nysMag
+            wyeksportowany z Vestibular. ZROBIONE 2026-07-09 (t12; łącznie 331/331 + smoke przeglądarka).
+        [x] MENIERE — meniere(ear,{phase|tone,gain}); fazy irritative(150)/nullpoint(90)/paretic(0,gain0.5)/
+            interictal; ton POZIOMY ucha chorego; kierunek ODWRACA SIĘ sam z push-pull (drażnienie KU choremu,
+            porażenie KU zdrowemu). Pułapka HINTS odnotowana (drażnienie=oczopląs+HIT prawidłowy→„ośrodek";
+            napadowy≠AVS; oflaguje clinicalReadout E5). NIE w SCENARIOS (mylący werdykt→U6 z zastrzeżeniem).
+            ZROBIONE 2026-07-09 (t14; łącznie 392/392 + smoke przeglądarka). [#21]
+        [x] BVH/otoksyczność — bilateralLoss(sev) = symetryczny spadek tonu+gain wszystkich 6 kanałów;
+            EMERGENTNIE: brak oczopląsu samoistnego (symetria) + vHIT patologiczny OBUSTRONNIE (wszystkie
+            płaszczyzny); werdykt peripheral (bez fałszywego udaru). Preset SCENARIOS.bvh. PRZY OKAZJI
+            przepisano verticalBeat E3 na PARY współpłaszczyznowe (imbalans przedni−tylny) — naprawia
+            zerowanie przy symetrii i dodaje realny skręt kanału przedniego (superior neuronitis torsyjny).
+            ZROBIONE 2026-07-09 (t13; łącznie 362/362 + smoke przeglądarka). [#21]
+ [x] E4.5 — PRÓBA KALORYCZNA (Wariant A: osobna oś caloricGainL/R = gain NISKOczęstotliwościowy HC, obok
+        gain HF/vHIT). caloric(p,{ear,temp}) + caloricBattery(p) → CP/DP (Jongkees), suma bezwzględna,
+        indeks fiksacji. Napęd = jednostronny drive termiczny (COWS), oczopląs samoistny nakłada się (DP).
+        Generatory patologii dostrojone: neuronitis+superior → caloricGain↓ (zgodnie z gain); Ménière →
+        caloricGain↓ przy gain HF prawidłowym (DYSOCJACJA); bilateralLoss → oba↓; inferior/SCDS → nietknięte.
+        EMERGENTY: CP lokalizuje stronę; dysocjacja kaloryka↔vHIT (Ménière); kaloryka ODSŁANIA kompensację
+        (CP trwa gdy oczopląs znikł — oś obwodowa); BVH pułapka (bilat. słaby, CP≈0); nerw dolny „niewidzialny";
+        udar = kaloryka prawidłowa + brak supresji fiksacji. UWAGA: ostry oczopląs samoistny zaniża surowy CP
+        (korekta o tło → E5). engine_doc zsynchronizowany ([H21]). ZROBIONE 2026-07-09 (t15; 433/433 + przeglądarka). [#23]
+ [x] E5 — PARAM_SPEC (7 grup, tiery basic/advanced, pełne pokrycie kluczy makePatient, min/max/step/unit/def
+        lub type:select) + clinicalReadout(p) (findings PL + peripheralSigns/centralSigns + ambiguities/pułapki
+        + localization: nerw górny/dolny/pełny/BVH/wodniak/ośrodek) + CPcorrected (kaloryka: CP korygowany o tło,
+        odsłania niedowład maskowany ostrym oczoplątem) + hardening (parametry skrajne/ujemne/1e6 → skończone,
+        bez wyjątków). engine_doc zsynchronizowany. ZROBIONE 2026-07-09 (t16; 481/481 + przeglądarka). SILNIK
+        KOMPLETNY (E1–E5 + E4.5). [#22]
+ [x] PRZEGLĄD SILNIKA (2026-07-09) — poprawki po pełnym code-review: #1 SKEW_CENTRAL=2.5 (mały skew łagiewkowy
+        n. górnego nie fałszuje „ośrodka"; nerveBranchLesion skew 3°→1.5°; hints/readout: skew ośrodkowy tylko
+        gdy ≥próg) → neuronitis górny = peripheral; #2 clinicalReadout wykrywa pionowo-skrętny oczopląs samoistny
+        (neuronitis dolny ≠ „brak oczopląsu"); #3 SCDS w lokalizacji; #5 qpFull = wspólna niemaskowana geometria
+        (sakada vHIT przedniego/pion/SCDS mają spójny skręt); #6 reverseDissociation (vHIT+/kaloryka− = ubytek HF);
+        #7 readout reużywa hints (bez podwójnego observe/skew/HC). #4 (ton→vHIT przy R_SAT) ŚWIADOMIE zostawione
+        (nasycenie realne; do decyzji). t17 (27); ŁĄCZNIE 511/511 + przeglądarka.
+ [x] PRZEGLĄD DOKUMENTACJI + HIGIENA (2026-07-09) — naprawione rozjazdy dok↔kod (tabele zbiorcze nieaktualne
+        mimo poprawnego changelogu): GEXC przednie (RA/LA = -e1), quickPhase anterior API ({0,-1,0}, torsja→qpFull),
+        REALNE PROPORCJE tylny (v0.93:t1.00), opis sakady (qpFull+skręt), sygnatury skew(central)/caloricBattery
+        (reverseDissociation), zachowanie kaloryczne generatorów. + WALIDACJA WEJŚCIA (finding #4 użytk.): reqCanal
+        w nysMag/position/simulate*, canalSpec/vhitPlane w NeuroVOR — zły canal/side/variant/timeline/dt → jasny
+        błąd; dt<=0 nie zawiesza. + TEST doc↔kod (t18: parsuje GEXC/CANAL_NORMALS z engine_doc, porównuje z
+        eksportem) — łapie przyszły rozjazd. t18(15)+t19(24); ŁĄCZNIE 550/550 + przeglądarka.
+ [x] ETYKIETA MODELU (finding #5 użytk. — nie bug): jawna etykieta „CHARAKTER MODELU: fenomenologiczny/
+        EDUKACYJNY, kalibrowany do dynamiki klinicznej, NIE predykcyjny model hydrodynamiczny pacjenta"
+        wyeksponowana w nagłówku engine_doc (była zakopana w bibliografii); + wskaźnik przy ETAP 2 (dynamika)
+        + komentarz w kodzie przy simulateCanalith. Pełny model = Squires/Hain/Stone [1] (już cytowany).
+ [x] BUGFIX KRYTYCZNY (2026-07-09, regresja z walidacji): walidacja `variant` w position() dopuszczała
+        "cupulo"|"canalith" — a aplikacja/dok. używają "canalo" → nysFromGeom(...,"canalo") RZUCAŁO przy
+        renderowaniu diagnostyki (Dix-Hallpike itd.). Naprawione: "canalith"→"canalo". Luka: t19 testował
+        tylko "cupulo" jako poprawny — DODANO strażnik "canalo" VALID. 552/552 + zweryfikowane w UI (diagnostyka
+        renderuje 9 SVG, 0 błędów). LEKCJA: dodając walidację, sprawdź FAKTYCZNE konwencje wartości w kodzie.
+
+FAZA UI (po silniku, budowana raz z pełnym zakresem):
+ [ ] U1 — stan state.hintsCustom + 4. przycisk „Własny" (patient=makePatient(overrides)); default łagodny neuronitis. [#16]
+ [ ] U2 — panel suwaków sterowany PARAM_SPEC: grupy Błędnik / Kanały-vHIT / Ośrodek / Otolity + zwijane
+        zaawansowane; selektor NERWU (Superior/Inferior/cały → ustawia gainy kanałów) + przełącznik dehiscencji. [#17]
+        >>> DECYZJA #4 (z przeglądu silnika): suwak TONU uwidacznia sprzężenie ton→vHIT przez R_SAT (ton >~170
+        → vHIT „patologiczny" mimo gain=1.0; ton 150 Ménière bezpieczny). Wybrać przy budowie suwaka:
+        (1) zostawić + notka w readout, (2) rozprzęgać gain=modEx/modEx(gain=1 przy tym tonie), (3) ograniczyć suwak ~160. <<<
+ [ ] U3 — vHIT RALP/LARP: selektor płaszczyzny + animacja sakady pionowo-skośnej.
+ [ ] U4 — SCDS: przycisk „Bodziec dźwiękowy 100 dB / Valsalva" → wymuszony pionowo-skrętny oczopląs + odchył w dół.
+ [ ] U5 — sprzężenie na żywo (rozszerzenie refreshHintsComp — bez przebudowy DOM, płynne suwaki). [#18]
+ [ ] U6 — dydaktyka: wczytaj-scenariusz-do-własnego + presety (neuronitis Superior/Inferior, BVH, Meniere, SCDS)
+        + podsumowanie obwód/ośrodek + niejednoznaczność + losowy pacjent (quiz).
+ [ ] U7 — zapis/udostępnienie: kod pacjenta w hashu URL / localStorage (dane tylko lokalnie).
+ [ ] U8 — dokumentacja (engine_doc/view_doc/README) + literatura [H15]+ (Fetter&Dichgans 1996 — superior VN;
+        Aw/Halmagyi/Curthoys 1996 — vHIT 3D RALP/LARP; Minor 2000 — SCDS/Tullio; przegląd BVH/otoksyczność)
+        + walidacja przeglądarkowa + oznaczyć „matematyczny pacjent" (#9) jako ZROBIONE.
+============================================================================
+
  [ ] (opc.) HINTS „plus" — ubytek słuchu (AICA) jako dodatkowy parametr różnicujący.
  [→] (opc.) vHIT: sakady COVERT vs OVERT — ZROBIONE 2026-07-08 (kompensacja dynamiczna; podział czasowy sakady).
  [ ] (opc.) Rebound nystagmus i asymetria integratora (pion/poziom).

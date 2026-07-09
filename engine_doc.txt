@@ -2,10 +2,19 @@
  OTOREPO — DOKUMENTACJA SILNIKA (moduły `Vestibular` + `NeuroVOR`)
  Plik: otorepo.html  |  Moduły: const Vestibular = (()=>{...})()  ·  const NeuroVOR = (()=>{...})()
  Charakter: czyste moduły BEZ DOM (testowalne offline w node)
- Ostatnia aktualizacja: 2026-07-07
+ Ostatnia aktualizacja: 2026-07-09
  Uwaga: `Vestibular` = fizyka BPPV (złóg otolitowy w kanale). `NeuroVOR` = warstwa
         toniczna/ośrodkowa (VOR, fiksacja, vHIT, oczopląs spojrzeniowy, skew, HINTS) —
         patrz sekcja „MODUŁ NeuroVOR" na końcu pliku.
+
+ >>> CHARAKTER MODELU (WAŻNE): model FENOMENOLOGICZNY / EDUKACYJNY. Silnik jest ZREDUKOWANĄ implementacją
+     uznanych modeli, KALIBROWANĄ do oczekiwanej dynamiki KLINICZNEJ — NIE jest predykcyjnym modelem
+     hydrodynamicznym konkretnego pacjenta. simulateCanalith modeluje cząstkę na łuku (ruch przetłumiony
+     Stokesa + relaksacja osklepka 1. rzędu), BEZ pełnej geometrii przewodu o zmiennej średnicy, lepkości
+     endolimfy, ciśnienia transkupularnego, bezwładności płynu, rozkładu WIELU cząstek i osobniczej anatomii
+     (pełny model: Squires/Hain/Stone [1]). Odtwarza OCZEKIWANE zachowanie kliniczne, nie przewiduje pacjenta.
+     Szczegóły → „BIBLIOGRAFIA I ZGODNOŚĆ MODELU" + „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI". Narzędzie
+     DYDAKTYCZNE, nie diagnostyczne. <<<
 ==========================================================================
 
 Dokument opisuje API publiczne i wewnętrzne pomocnicze silnika oraz przyjęte
@@ -46,9 +55,12 @@ isExcitatory(canal, flow) -> bool
 quickPhase(canal, ear) -> {h, v, t}
    Oś szybkiej fazy dla POBUDZENIA kanału, ipsiwersyjnie do ucha (Ewald I).
    ear: "L"|"P". (ipsi = ear==="P" ? +1 : -1)
-   horizontal → {h:ipsi, v:0,  t:0}      (poziomy ku pobudzonemu uchu)
-   posterior  → {h:0,    v:+1, t:ipsi}   (ku górze + skrętny ku uchu)
-   anterior   → {h:0,    v:-1, t:ipsi}   (w dół + skrętny ku uchu)
+   horizontal → {h:ipsi, v:0,    t:0}      (poziomy ku pobudzonemu uchu; skręt maskowany)
+   posterior  → {h:0,    v:+0.93,t:ipsi}   (upbeat + skręt ku uchu; realne v:t≈0.93:1)
+   anterior   → {h:0,    v:-1,   t:0}      (CZYSTY downbeat; skręt geom. ~0.78 ZAMASKOWANY — NYS_SHOW.anterior.t=false)
+   UWAGA — MASKA KLINICZNA (NYS_SHOW): quickPhase zwraca konwencję UI dla BPPV (przedni = czysty downbeat,
+   poziomy bez skrętu). PEŁNA geometria (skręt przedniego ZACHOWANY, do lateralizacji) → NeuroVOR.qpFull()
+   / Vestibular.nysMag(); używa jej warstwa HINTS (sakada vHIT / verticalBeat / SCDS). Zob. sekcja „MASKA KLINICZNA".
 
 nystagmus({canal, ear, excited=true}) -> {h, v, t}
    Szybka faza dla zadanego, pobudzonego/hamowanego kanału.
@@ -85,6 +97,8 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 simulateCanalith({canal, side, timeline, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}) -> [{t, xi, phi, exited}, ...]
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
+   [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
+    oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
    timeline: tablica segmentów [{q, tTrans, tHold}, ...]
        q      — orientacja docelowa (kwaternion)
        tTrans — czas przejścia do q [s] (interpolacja slerp od poprzedniego q)
@@ -158,8 +172,8 @@ qmul, qconj, qaxis(ax,deg), rotv(q,v), dot3, nrm3, nrm4 — algebra wektorów/kw
 slerpQ(a,b,t) — interpolacja sferyczna kwaternionów (z obsługą półkuli i przypadku bliskiego).
 Q_SUPINE = qaxis([1,0,0],-100) — baza orientacji supine head-hanging.
 
-GEXC — osie pobudzenia kanałów PIONOWYCH (w płaszczyźnie kanału; g·GEXC>0 = ampullofugalny):
-   RP: norm(1,0,-1)  LP: norm(-1,0,-1)  RA: norm(1,0,1)  LA: norm(-1,0,1)
+GEXC — osie pobudzenia kanałów PIONOWYCH (w płaszczyźnie kanału; g·GEXC>0 = ampullofugalny; oś = -e1):
+   RP: norm(1,0,-1)  LP: norm(-1,0,-1)  RA: norm(-1,0,-1)  LA: norm(1,0,-1)   (przednie = -e1, spójne z CANAL_GEOM/poprawką ROZWIĄZANE niżej)
 uHC(side) — oś ampullopetalna kanału POZIOMEGO (międzyuszna + przednio-tylna):
    P: norm(0.87,0,0.5)   L: norm(-0.87,0,0.5)
 CK — mapowanie {canal,side} → klucz GEXC dla kanałów pionowych.
@@ -355,7 +369,7 @@ MAPOWANIE NA MAGNITUDY (biorę |składowe| — znak osi Wu nieistotny dla propor
 z konwencji klinicznej w quickPhase): PION ∝ |x|(międzyuszna), POZIOM ∝ |z|(czaszkowa),
 SKRĘT ∝ |y|(nosowo-potyliczna). nysMag() normalizuje do max=1.
 
-REALNE PROPORCJE (max=1):  tylny v1.00:h0.41:t0.99 · przedni v1.00:h0.44:t0.78 · poziomy v0.02:h1.00:t0.29
+REALNE PROPORCJE (max=1):  tylny v0.93:h0.41:t1.00 · przedni v1.00:h0.44:t0.78 · poziomy v0.02:h1.00:t0.29
 
 MASKA KLINICZNA (stała NYS_SHOW) — geometria daje magnitudy, ale konwencja kliniczna decyduje,
 KTÓRE składowe wyrażamy (każdą można odsłonić flagą true):
@@ -368,12 +382,27 @@ KTÓRE składowe wyrażamy (każdą można odsłonić flagą true):
 Znaki bicia i maski zweryfikowane: tylny upbeat+skręt ipsi, przedni downbeat t=0, poziomy ku uchu.
 Jedyna od razu widoczna zmiana vs poprzednio: tylny v:t = 0.93:1 (realne) zamiast 1:1.
 
+DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09):
+  PROBLEM: fenomen Tullio (dehiscencja kanału GÓRNEGO/przedniego) daje oczopląs PIONOWO-SKRĘTNY,
+  w którym SKRĘT kanału przedniego jest ZNAKIEM ROZPOZNAWCZYM (identyfikuje płaszczyznę kanału).
+  Maska kliniczna „przedni = czysty downbeat" (anterior.t=false) — słuszna dla BPPV — tu ZEROWAŁABY
+  ten diagnostyczny skręt.
+  ROZWAŻONE i ODRZUCONE: globalne odsłonięcie anterior.t (=true). Zmieniłoby renderowanie i geometrię
+  BPPV kanału przedniego → ryzyko REGRESJI zwalidowanych testów (t1–t5 + ścieżka BPPV) i zmiana
+  utrwalonej konwencji klinicznej „czysty downbeat".
+  WYBRANE: nysMag() WYEKSPORTOWANO z modułu Vestibular; NeuroVOR.pressureStimulus() buduje wektor
+  Tullio z PEŁNEJ geometrii (nysMag: przedni v1.00 : t0.78), OMIJAJĄC maskę — LOKALNIE, tylko dla SCDS.
+  Maska NYS_SHOW pozostaje globalnie w mocy (BPPV bez zmian). Skręt kanału przedniego jest więc
+  „ukryty" dla renderowania BPPV, ale DOSTĘPNY przez surową geometrię dla ścieżki ciśnieniowej.
+  → patrz MODUŁ NeuroVOR / ETAP 7 · pressureStimulus() (Minor 2000, [H18]).
+
 
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)
  Plik: otorepo.html  |  Moduł: const NeuroVOR = (()=>{ ... })()
  Charakter: czysty moduł BEZ DOM (testowalny offline w node)
- Dodano: 2026-07-07  |  Rozszerzenie: KOMPENSACJA ośrodkowa (etap 6/6b/6c) 2026-07-08
+ Dodano: 2026-07-07  |  Rozszerzenia: KOMPENSACJA ośrodkowa (etap 6/6b/6c) 2026-07-08 ·
+ NEUROANATOMIA (etap 7: E1 per-kanał · E2 vHIT płaszczyzn · E3 wektor 3D · E4 patologie) 2026-07-09 [w toku]
 ==========================================================================
 
 CEL I FILOZOFIA („od pierwszych zasad")
@@ -394,7 +423,9 @@ KONWENCJE
 
 „PACJENT" — makePatient(overrides) -> obiekt parametrów
    toneL, toneR   : spoczynkowa aktywność błędnika L/P [Hz], zdrowy = 90. Hipofunkcja obniża. [H1]
-   gainL, gainR   : wzmocnienie VOR kanału poziomego L/P (0..~1.1), zdrowy = 1.0.            [H4][H5]
+   gainL, gainR   : wzmocnienie VOR kanału poziomego L/P (0..~1.1), zdrowy = 1.0 — WYSOKA częstotl. (vHIT). [H4][H5]
+   caloricGainL/R : gain NISKOczęstotliwościowy HC L/P, zdrowy = 1.0 — PRÓBA KALORYCZNA (~0.003 Hz).      [H21]
+                    OSOBNA oś od `gain` (HF) → umożliwia dysocjację kaloryka↔vHIT (etap 7/E4.5).
    fixationGain   : zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0.              [H3]
    integratorTau  : stała czasowa integratora nerwowego [s]; zdrowy ~25, ośrodek „leaky" ~1–3. [H6]
    skewTone       : grawiceptywna asymetria pionowa [°, ze znakiem]; + = oko P wyżej.          [H7]
@@ -403,6 +434,10 @@ KONWENCJE
    pacemakerBias  : trwały (sticky) ładunek pacemakera jądra chorego [Hz] → oczopląs Bechterewa. [H11]
    lesionEar      : jawna strona chora dla kompensacji ("P"/"L"/null=auto ze słabszego błędnika).
    tauVS          : stała czasowa VELOCITY STORAGE [s] (wygaszanie po obrocie); zdrowy ~15.     [H14]
+   --- ETAP 7 (neuroanatomia): kanały PIONOWE per strona; zdrowe = jak poziome (ton R0, gain 1.0) ---
+   toneAcL/R, gainAcL/R : kanał PRZEDNI (anterior/„górny") L/P — nerw GÓRNY (superior).          [H15]
+   tonePcL/R, gainPcL/R : kanał TYLNY  (posterior)          L/P — nerw DOLNY  (inferior).         [H15]
+   dehiscence     : SCDS — dehiscencja kanału GÓRNEGO: null | "L" | "P" (trzecie okno ruchome).   [H18]
 
 API PUBLICZNE (zwracane z modułu)
 
@@ -414,8 +449,11 @@ API PUBLICZNE (zwracane z modułu)
    ETAP 1 — oczopląs SAMOISTNY z asymetrii tonicznej (push-pull). Mózg szacuje prędkość głowy
    z różnicy aferentów pary poziomej: Ω_est ∝ (rateL − rateR). Asymetria toniczna udaje stały
    obrót → faza WOLNA ku błędnikowi słabszemu, faza SZYBKA (widoczny beat) ku silniejszemu.
-   spv = SPV_MAX·|toneL−toneR|/R0 (SPV_MAX=12°/s, R0=90). Oczopląs poziomo-skrętny (t = 0.5·h).
+   spv = SPV_MAX·|toneL−toneR|/R0 (SPV_MAX=12°/s, R0=90). Oczopląs poziomo-skrętny (tH = 0.5·h).
    Kierunek STAŁY niezależnie od spojrzenia — cecha OBWODOWA.
+   ETAP 7 (E3): do poziomej dochodzi składowa PIONOWO-SKRĘTNA z par kanałów pionowych (verticalBeat) —
+   pola v/vdir, tV, t=tH+tV, spvV/strengthV; kind="verticalTorsional" gdy pion dominuje. Kanały pionowe
+   zdrowe → v=0, spvV=0 (poziomy przypadek bez zmian). Zob. verticalBeat (ETAP 7).
 
  suppressionFactor(p, fixOn) -> [0..~1.5]                                                       [H3]
  observe(p, fixOn) -> spontaneous(p) z nałożoną supresją {spv,spvRaw,suppressionFactor,suppressed,...}
@@ -430,6 +468,8 @@ API PUBLICZNE (zwracane z modułu)
    (ipsilateralny). gain = modulacja pobudzana / idealna. deficit → SAKADA korygująca (overt gdy
    ≥2.5° ≈ gain<0.83), skierowana przeciwnie do pchnięcia (`saccadeToSide`). OŚRODEK: gainy≈1 →
    HIT prawidłowy (groźny). Kalibracja S_HZ=0.8 → obcięcie ~tone/S≈112°/s < prędkości vHIT.
+   ETAP 7 (E2): drugi argument POLIMORFICZNY — 'P'/'L' (poziomy, jw., liczbowo bez zmian) LUB {canal,ear}
+   (dowolny z 6 kanałów; płaszczyzny HC/RALP/LARP). Zwraca też canal/ear/plane/coplanar/saccade{h,v,t}. Zob. vhitPlane.
 
  gazeEvoked(p, gazeDeg) -> {tau,spv,beatSign,driftVel,present}                                  [H6]
  nystagmusAtGaze(p, gazeDeg, fixOn) -> wypadkowy oczopląs {beatHead,spv,dir,strength,components}
@@ -440,8 +480,10 @@ API PUBLICZNE (zwracane z modułu)
    directionChanging wymaga widoczności ≥VIS_THRESH(2°/s) PO OBU stronach i przeciwnych kierunków
    (silny oczopląs samoistny może zdominować dryf → pozostaje jednokierunkowy — realistyczne).
 
- skew(p) -> {present,skewDeg,sign,hyperSide,torsionDeg}                                          [H7]
+ skew(p) -> {present,central,skewDeg,sign,hyperSide,torsionDeg}                                  [H7]
    ETAP 4b — odchylenie skośne / OTR z asymetrii grawiceptywnej (otolity + MLF). present gdy |skewTone|≥1°.
+   central gdy |skewTone|≥SKEW_CENTRAL(2.5°) — dopiero ZNACZĄCY skew liczony jako cecha OŚRODKOWA (INFARCT);
+   mały skew (np. łagiewka n. górnego) present, ale NIE central (unika fałszywego „udaru" — poprawka z przeglądu).
    Test naprzemiennego zasłaniania: odsłonięte oko łapie fiksację PIONOWĄ SAKADĄ = TS dodatni = ośrodek.
 
  SCENARIOS, scenario(key) -> patient                                                            [H8]
@@ -489,9 +531,99 @@ API PUBLICZNE (zwracane z modułu)
    abnormal = deficyt INSTRUMENTALNY (niezależny od kompensacji); saccadePresent/overtSaccade = jawność
    bedside (znika przy kompensacji). [H5][H12][H13]
 
+ --- ETAP 7: NEUROANATOMIA (dodano 2026-07-09) — per-kanał (E1) · vHIT płaszczyzn (E2) · wektor 3D (E3) ·
+     patologie (E4: SCDS ✓, BVH ✓, Menière ✓) · próba KALORYCZNA (E4.5 ✓) · synteza clinicalReadout (E5 ✓).
+     Uogólnia model poziomy → 6 KANAŁÓW. SILNIK KOMPLETNY — pozostaje faza UI (U1–U8).
+     WSTECZNIE ZGODNE: kanały pionowe domyślnie zdrowe → etapy 1–8 liczbowo bez zmian. Reużywa geometrii
+     Vestibular (quickPhase/nysMag/CANAL_NORMALS). E5 dołoży PARAM_SPEC + clinicalReadout + hardening. ---
+
+ CANAL_PARAM, NERVE_CANALS — mapy: kanał→nazwy param (toneXx/gainXx); nerw→kanały: superior={poziomy,
+     przedni,łagiewka}, inferior={tylny,woreczek}. Neuronitis zwykle nerwu GÓRNEGO (dłuższy kanał kostny). [H15]
+
+ nerveBranchLesion(ear, branch, sev) -> overrides do makePatient                                 [H15]
+   E1 — wypadnięcie GAŁĘZI nerwu (branch "superior"/"inferior", sev 0..1): ton→R0·(1−sev), gain→1−0.65·sev
+   kanałów gałęzi; superior dokłada MAŁY skewTone (1.5·sev, łagiewka — < próg ośrodkowy) + caloricGain↓ (1−sev;
+   HC=nerw górny). Inferior NIE rusza kaloryki (HC oszczędzony). SUPERIOR → oczopląs + patolog. vHIT poziomego
+   I przedniego + kaloryka↓, TYLNY prawidłowy; INFERIOR → tylko TYLNY (downbeat torsyjny, HC/kaloryka prawidłowe).
+
+ bilateralLoss(sev) -> overrides do makePatient                                                  [H19]
+   E4 — BVH/otoksyczność: SYMETRYCZNY spadek tonu+gain wszystkich 6 kanałów + caloricGain↓ obustronnie. EMERGENTNIE: symetria → BRAK
+   oczopląsu samoistnego (odróżnia od jednostronnego UVH!), lecz vHIT patolog. OBUSTRONNIE (wszystkie
+   płaszczyzny); werdykt peripheral (bez fałszywego udaru). Kompensacja bezczynna. Preset SCENARIOS.bvh.
+
+ meniere(ear, {phase | tone, gain}) -> overrides do makePatient                                  [H20]
+   E4 — MÉNIÈRE / wodniak: NAPADOWE wahania tonu poziomego ucha chorego + PRZEWLEKŁY caloricGain↓ (opts.caloricLoss
+   dom. 0.55) przy gain HF (vHIT) zachowanym = DYSOCJACJA kaloryka/vHIT. Fazy: irritative (ton 150, gain 1 →
+   oczopląs KU choremu, vHIT ~prawidłowy) · nullpoint (90 → brak) · paretic (0, gain 0.5 → KU zdrowemu, vHIT
+   osłabiony) · interictal (90 → norma). Można podać surowy `tone` (płynne przemiatanie). KIERUNEK ODWRACA
+   SIĘ SAM z push-pull (150→90→0 = P→brak→L dla ucha P). PUŁAPKA: drażnienie = oczopląs + prawidłowy HIT →
+   HINTS (dla CIĄGŁEGO AVS) czyta „Impulse-Normal" = pozornie OŚRODEK; Ménière jest NAPADOWY → HINTS nie stosuje
+   się (oflaguje clinicalReadout E5). NIE dodano do SCENARIOS (werdykt mylący bez kontekstu — do U6 z zastrzeżeniem).
+
+ canalPlane(canal,ear) -> "HC"|"RALP"|"LARP"                                                     [H16][H17]
+ vhitPlane(p, plane) -> {plane, tests[2], abnormal, abnormalCanals}
+   E2 — pary WSPÓŁPŁASZCZYZNOWE: HC-P↔HC-L; RALP = przedni P ∥ tylny L; LARP = przedni L ∥ tylny P (RA∥LP,
+   LA∥RP). vhitPlane odpala oba pobudzeniowe pchnięcia płaszczyzny. Sakada korygująca per kanał (headImpulse
+   .saccade{h,v,t} z NeuroVOR.qpFull — pełna geometria): poziomy ku linii środkowej, przedni w GÓRĘ + skręt, tylny w DÓŁ + skręt.
+
+ verticalBeat(p) -> {v, t, mag, spvV, present}                                                   [H15][H16]
+   E3 — składowa PIONOWO-SKRĘTNA oczopląsu samoistnego z PAR kanałów pionowych. imb = (aktywność PRZEDNIEGO −
+   TYLNEGO)/R0 per płaszczyzna (LARP, RALP): przedni aktywniejszy → downbeat + skręt (LARP ku L, RALP ku P);
+   tylny → upbeat + skręt odwrotny. Sumowanie PER-PARA gwarantuje ZNIESIENIE przy symetrii (BVH → wektor 0)
+   mimo różnych magnitud AC/PC. Kompensacja skraca tak samo jak poziom (skala 1−c). Scalane w spontaneous.
+   (TORS_V=0.8 — uproszczony udział skrętu; realna geometria ~0.78–1.0.)
+
+ pressureStimulus(p, {type, intensity, sign}) -> {present, ear, kind, h, v, t, dir, tdir, vdir, spv, strength}  [H18]
+   ETAP 7 (E4) — SCDS / fenomen TULLIO. Dehiscencja kanału GÓRNEGO (p.dehiscence = "L"/"P") = TRZECIE OKNO
+   ruchome: dźwięk/ciśnienie (type: sound|valsalva|hennebert|pressure) odchyla osklepek kanału górnego
+   BEZ ruchu głową → oczopląs PIONOWO-SKRĘTNY. sign: + POBUDZENIE (domyślnie wg PRESSURE_EXC; downbeat +
+   skręt KU uchu choremu) / − HAMOWANIE (podciśnienie; odwrócenie na upbeat). intensity∈[0,1] skaluje fazę
+   wolną (spv = SPV_MAX·intensity), wektor kierunku znormalizowany. W SPOCZYNKU CISZA: dehiscencja ≠
+   hipofunkcja (tony/gainy prawidłowe → brak oczopląsu samoistnego, vHIT kanału PRAWIDŁOWY) — objaw pojawia
+   się DOPIERO przy bodźcu. To odróżnia SCDS od neuronitu (tam ubytek toniczny/gain).
+   DECYZJA PROJEKTOWA (skręt kanału przedniego vs maska NYS_SHOW): skręt przedniego jest ZNAKIEM
+   ROZPOZNAWCZYM SCDS, ale quickPhase maskuje go do 0 (konwencja „czysty downbeat" dla BPPV). Aby NIE
+   naruszyć globalnej maski (regresja renderowania/testów BPPV), wektor Tullio budowany jest z PEŁNEJ
+   geometrii Vestibular.nysMag (wyeksportowanej w tym celu), z LOKALNYM pominięciem maski. Maska pozostaje
+   globalnie w mocy. (szczegóły i alternatywy → sekcja „MASKA KLINICZNA" na początku pliku).
+
+ caloric(p, {ear, temp}) -> {ear, temp, spv, beatEar, dir, fixationIndex, failsSuppression, caloricGain, Vcal, Vsp}  [H21]
+   ETAP 7 (E4.5) — pojedyncza irygacja. Kaloryka = NISKOczęstotliwościowy (~0.003 Hz) test HC, drugi koniec
+   charakterystyki względem vHIT (~5 Hz); skaluje się OSOBNYM `caloricGain` (nie `gain` HF) → to daje DYSOCJACJĘ.
+   Bodziec = drive termiczny na HC drażnionego ucha: CIEPŁA pobudza (bije KU niemu), ZIMNA hamuje (COWS).
+   Oczopląs samoistny (ciemność) NAKŁADA się (→ DP). Indeks fiksacji = supresja fiksacją (kłaczek → ośrodek).
+
+ caloricBattery(p) -> {RW,RC,LW,LC, rightSum,leftSum,total, CP,CPcorrected,DP, weakEar,dpSide,
+                       bilateralWeak, fixationIndex,failsSuppression, vHITabnormal, caloricWeak,
+                       dissociation, reverseDissociation}                                                 [H21]
+   ETAP 7 (E4.5) — bateria bitermalna (4 irygacje) + wzór Jongkeesa. CP% = niedowład kanału (LOKALIZUJE
+   słabsze ucho; <0 = prawe), DP% = przewaga kierunkowa (z nałożonego oczopląsu samoistnego). CP/DP to
+   STOSUNKI (niezależne od skali CAL_NORMAL); `total`/`bilateralWeak` = wartości bezwzględne. EMERGENTY:
+   dysocjacja kaloryka↔vHIT (Ménière: caloricGain↓, gain HF prawidłowy) · reverseDissociation (vHIT+ / kaloryka− =
+   ubytek WYSOKOczęstotliwościowy) · kaloryka ODSŁANIA skompensowany
+   ubytek (CP trwa, gdy oczopląs znikł — caloricGain obwodowy, niezależny od `comp`) · BVH: bilateralWeak
+   przy CP≈0 (PUŁAPKA stosunku) · nerw DOLNY: kaloryka prawidłowa (HC=nerw górny) · udar: kaloryka prawidłowa
+   lecz failsSuppression (kłaczek). CPcorrected (E5): CP z SAMEJ składowej kalorycznej |Vcal| — odporny na
+   MASKOWANIE przez ostry oczopląs samoistny (surowy CP zaniża, np. −25% dla pełnego UVH); weakEar/caloricWeak
+   liczone ze skorygowanego. Surowy CP zachowany do pokazania efektu maskowania.
+
+ PARAM_SPEC -> [ {group, tier:"basic"|"advanced", help, params:[{key,label,min,max,step,unit,def} | {key,label,type:"select",options,def}]} ]  [E5]
+   ETAP 7 (E5) — metadane WSZYSTKICH parametrów pacjenta dla UI „matematycznego pacjenta" (suwaki + selektory).
+   7 grup: HC + kaloryka = „basic" (widoczne); AC/PC/ośrodkowe/kompensacja/SCDS = „advanced" (zwijane). Pokrywa
+   pełny komplet kluczy makePatient. Nie zawiera logiki — czysta tabela do wygenerowania panelu (faza UI/U2).
+
+ clinicalReadout(p) -> {verdict, localization, findings[], peripheralSigns[], centralSigns[], ambiguities[],
+                        hints, caloric, vhit, spontaneous, skew, scds}                                    [H8][H21]
+   ETAP 7 (E5) — SYNTEZA: pełny odczyt kliniczny z parametrów. Reużywa hints/caloricBattery/vhitPlane/observe/
+   skew/pressureStimulus. `findings` = zdania PL; `localization` z wzorca vHIT+kaloryki (nerw górny/dolny/pełny/
+   BVH/wodniak/ośrodkowa); `ambiguities` = PUŁAPKI: dysocjacja→Ménière napadowy (HINTS n/d), drażnienie mylące
+   „ośrodek", BVH (HINTS zakłada jednostronny AVS), neuronitis DOLNY (kaloryka ślepa). Narzędzie DYDAKTYCZNE.
+
 STAŁE (nieeksportowane): R0=90 (spoczynek), R_SAT=300 (nasycenie), SPV_MAX=12 (°/s przy pełnej
    asymetrii), TORS_FRAC=0.5 (udział skrętu), S_HZ=0.8 (czułość aferentu Hz/°·s⁻¹), VIS_THRESH=2 (°/s),
-   CLAMP_TAU=0.32 (rozkład udziału clampu w c), DVS_FRAC=0.67 (maks. skrócenie velocity storage).
+   CLAMP_TAU=0.32 (rozkład udziału clampu w c), DVS_FRAC=0.67 (maks. skrócenie velocity storage),
+   CAL_NORMAL=20 (°/s norma irygacji), CAL_BILAT=6 (°/s próg obustronny/ucho), CP_THRESH=25%, DP_THRESH=30%,
+   SKEW_CENTRAL=2.5 (° — próg skew dla flagi OŚRODKOWEJ; mały skew < progu = obwodowy, np. łagiewka n. górnego).
 
 STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+Scene3D+NeuroVOR z HTML):
  [x] Etap 1: symetria→0; wypadnięcie P→bije w lewo (ekran +1), spv 12; L→lustro; liniowość z asymetrią;
@@ -509,10 +641,48 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      mały ładunek nie odwraca; skala rośnie z ładunkiem; pełna regeneracja tonu wciąż odwraca (historia w latch). (17)
  [x] Etap 8: kompensacja DYNAMICZNA — gain vHIT niezależny od c; overt→covert (suma stała); fuzja przełącza
      kanał→szyja z c i prędkością; velocity storage 15→~5 s; integrator gaze-holding NIETKNIĘTY. (26)
-     ŁĄCZNIE 178/178 asercji (harness node: t1–t8; etapy 6–8 = 76 nowych asercji).
+     Podsuma etapów 1–8: 178/178 asercji (t1–t8; etapy 6–8 = 76 nowych).
+ [x] Etap 9 (E1 — per-kanał): parametry pionowe zdrowe (backward compat); nerveBranchLesion superior→jak
+     neuritisR (poziomy+przedni), inferior→tylko tylny; mapy nerw→kanał. (t9: 32)
+ [x] Etap 10 (E2 — vHIT płaszczyzn): 'P'/'L' liczbowo bez zmian; pary współpłaszczyznowe; sakada per kanał;
+     wzorzec SUPERIOR (poziomy+przedni patolog., tylny prawidłowy) vs INFERIOR (tylko tylny). (t10: 51)
+ [x] Etap 11 (E3 — wektor 3D): pary; SYMETRIA→0; superior upbeat+skręt, inferior downbeat; kompensacja znosi
+     pion skalą 1−c; observe/nystagmusAtGaze niosą pion; scenariusze poziome bez zmian. (t11: 38)
+ [x] Etap 12 (E4-SCDS): pressureStimulus — CISZA w spoczynku, dźwięk/ciśnienie→pionowo-skrętny BEZ ruchu
+     głową; pobudzenie/hamowanie odwraca kierunek; brak dehiscencji→brak odpowiedzi; vHIT kanału prawidłowy. (t12: 29)
+ [x] Etap 13 (E4-BVH): bilateralLoss — SYMETRIA→brak oczopląsu + vHIT OBUSTRONNY wszystkich płaszczyzn;
+     werdykt peripheral; kompensacja bezczynna; preset bvh; naprawa zniesienia par w verticalBeat. (t13: 31)
+ [x] Etap 14 (E4-Menière): meniere — przemiatanie tonu 150→90→0 ODWRACA kierunek (drażnienie KU choremu →
+     porażenie KU zdrowemu, punkt zerowy cichy); drażnienie vHIT prawidłowy / porażenie osłabiony;
+     odnotowana PUŁAPKA HINTS (drażnienie czyta „ośrodek" — napadowy, nie AVS); lustro L/P. (t14: 30)
+ [x] Etap 15 (E4.5 — kaloryka): caloric/caloricBattery — COWS; CP lokalizuje słabsze ucho; DYSOCJACJA
+     Ménière (CP+, vHIT−); kaloryka ODSŁANIA kompensację (CP trwa, DP→0); BVH pułapka (bilat. słaby, CP≈0);
+     nerw dolny „niewidzialny" dla kaloryki; udar = kaloryka prawidłowa + brak supresji fiksacji. (t15: 41)
+ [x] Etap 16 (E5 — synteza): PARAM_SPEC (pokrycie kluczy makePatient, tiery basic/advanced) + clinicalReadout
+     (werdykt, lokalizacja nerw górny/dolny/pełny/BVH/wodniak/ośrodek, sygnały obwód/ośrodek, PUŁAPKI) +
+     CPcorrected (odsłania CP maskowany oczoplątem) + HARDENING (parametry skrajne/ujemne/1e6 → wszystko
+     skończone, brak wyjątków). (t16: 48)
+     ŁĄCZNIE 481/481 asercji (harness node: t1–t16; etapy 9–16 / E1–E5 = 300 nowych asercji). SILNIK KOMPLETNY.
+ [x] PRZEGLĄD (t17): poprawki po przeglądzie całego silnika — #1 próg SKEW_CENTRAL (mały skew łagiewkowy n. górnego
+     NIE fałszuje „ośrodka"; neuronitis górny przez nerveBranchLesion → verdykt peripheral), #2 clinicalReadout
+     wykrywa PIONOWO-SKRĘTNY oczopląs samoistny (neuronitis dolny nie jest już „brak oczopląsu"), #3 SCDS w
+     lokalizacji, #5 sakada vHIT przedniego ze skrętem (qpFull = wspólna niemaskowana geometria: sakada/pion/SCDS),
+     #6 flaga reverseDissociation (vHIT+ / kaloryka− = ubytek HF), #7 readout reużywa hints (bez podwójnego liczenia).
+ [x] HIGIENA (t18 doc↔kod, t19 walidacja wejścia): t18 PARSUJE tabele geometrii z engine_doc (GEXC, CANAL_NORMALS)
+     i porównuje z wyeksportowanym kodem (Vestibular.GEXC/CANAL_NORMALS) — łapie „rozjazd tabeli vs kod"; t19:
+     zły canal/side/variant/timeline/dt → JASNY błąd (reqCanal/reqCanal w nysMag/position/simulate*; canalSpec/
+     vhitPlane w NeuroVOR); dt<=0 nie zawiesza (RangeError). UWAGA: walidacja `variant` w position() musi
+     dopuszczać KONWENCJĘ APLIKACJI "canalo"|"cupulo" (nie "canalith"!) — inaczej łamie diagnostykę (nysFromGeom
+     woła position z state.variant="canalo"). t19 pilnuje "canalo" jako POPRAWNEGO. ŁĄCZNIE 552/552 (t1–t19).
+     ŁĄCZNIE 511/511 (t1–t17). [#4 sprzężenie ton→vHIT przy nasyceniu R_SAT (ton >~170 → gain vHIT zaniżony
+     mimo gain=1.0; ton 150 Ménière bezpieczny, gain 0.94) — świadomie ZOSTAWIONE do decyzji przy suwaku tonu
+     w fazie UI/U2 (patrz todo.txt, blok U2). Nasycenie jest fizjologiczne; to trade-off dydaktyka↔fizjologia.]
  [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; suwak kompensacji steruje CAŁĄ
      fizjologią na żywo (oczopląs SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain nienaprawialny,
      sakada UKRYTA w trakcie pchnięcia (błąd śródpchnięciowy 18→10 px), regeneracja→Bechterew; werdykt spójny.
+     E1–E4 potwierdzone też w przeglądarce (silnik w konsoli): wzorce superior/inferior/BVH, Tullio, brak
+     regresji scenariuszy — 0 błędów konsoli. RENDERER: pion oczopląsu na razie NIE rysowany (neuroNysParams
+     = poziom+skręt); rysowanie pionowo-skrętne + UI płaszczyzn/SCDS → faza UI (U3/U4).
 
 ZALEŻNOŚCI: NeuroVOR używa Scene3D.CAMERAS.frontal.right[0] (odbicie) oraz konwencji stron; NIE zależy od
    simulateCanalith. UI (poza modułem): renderHints/startNeuroNys/startHIT/startSkew + karta werdyktu.
@@ -568,10 +738,38 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
 [H14] Laurens J, Angelaki DE (2011). "The functional significance of velocity storage and its dependence on
       gravity." Exp Brain Res 210(3–4):407–422.
       → model wewnętrzny / estymacja optymalna prędkości głowy i velocity storage → postRotational, waga fuzji.
+[H15] Fetter M, Dichgans J (1996). "Vestibular neuritis spares the inferior division of the vestibular nerve."
+      Brain 119(3):755–763.
+      → neuronitis zwykle nerwu GÓRNEGO (poziomy+przedni+łagiewka), oszczędza TYLNY → nerveBranchLesion / NERVE_CANALS.
+[H16] Aw ST, Halmagyi GM, Haslwanter T, Curthoys IS, Yavor RA, Todd MJ (1996). "Three-dimensional vector
+      analysis of the human vestibulo-ocular reflex in response to high-acceleration head rotations. I–II."
+      J Neurophysiol 76(6):4009–4034.
+      → 3D VOR i deficyt per pojedynczy kanał → headImpulse płaszczyzn (RALP/LARP), sakada wektorowa, verticalBeat.
+[H17] Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP (2005). "Orientation of human
+      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res Otolaryngol
+      6(3):191–206. → koplanarność RA∥LP, LA∥RP i orientacje kanałów → COPLANAR / PLANE_CANALS (RALP/LARP).
+[H18] Minor LB (2000). "Superior canal dehiscence syndrome." Am J Otol 21(1):9–19; oraz Minor LB, Solomon D,
+      Zinreich JS, Zee DS (1998), Arch Otolaryngol Head Neck Surg 124(3):249–258.
+      → SCDS / trzecie okno; oczopląs pionowo-skrętny wyzwalany dźwiękiem (Tullio) i ciśnieniem (Hennebert),
+        w płaszczyźnie kanału górnego → pressureStimulus() (napęd bez ruchu głową; kierunek pobudzenie/hamowanie).
+[H19] Strupp M, Kim JS, Murofushi T, Straumann D, Jen JC, Rosengren SM, Della Santina CC, Kingma H (2017).
+      "Bilateral vestibulopathy: Diagnostic criteria — Consensus document of the Bárány Society." J Vestib
+      Res 27(4):177–189.
+      → BVH: obustronny ubytek → oscylopsja/niestabilność, BRAK oczopląsu samoistnego, vHIT OBUSTRONNY → bilateralLoss.
+[H20] Lopez-Escamez JA, Carey J, Chung WH, et al. (2015). "Diagnostic criteria for Menière's disease —
+      Consensus of the Bárány/AAO-HNS/EAONO/JSER/KBS." J Vestib Res 25(1):1–7; oraz McClure JA, Copp JC,
+      Lycett P (1981), "Recovery nystagmus in Ménière's disease." Laryngoscope 91(10):1727–1737.
+      → wodniak, napadowe fazy oczopląsu (drażnienie→porażenie→powrotny), odwracanie kierunku → meniere().
+[H21] Jongkees LBW, Maas JPM, Philipszoon AJ (1962). "Clinical nystagmography." Pract Otorhinolaryngol
+      24:65–93; oraz Baloh RW, Honrubia V, "Clinical Neurophysiology of the Vestibular System" (kaloryka,
+      dysocjacja kaloryka/vHIT); Halmagyi GM et al. (2017), "The video head impulse test," Front Neurol 8:258.
+      → próba kaloryczna bitermalna, wzór CP/DP (niedowład kanału, przewaga kierunkowa), rozprzężenie
+        nisko-/wysokoczęstotliwościowe (kaloryka vs vHIT) → caloric()/caloricBattery().
 
 UPROSZCZENIA / ZASTRZEŻENIA:
-  - oczopląs poziomo-skrętny UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo, bez
-    pełnego składania trzech kanałów;
+  - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE
+    (etap 7/E3) składane realnie PER PARA współpłaszczyznowa (verticalBeat), lecz z uproszczonym TORS_V=0.8;
+    RENDERER HINTS rysuje na razie tylko poziom+skręt — pionowo-skrętny wektor liczony, ale nierysowany (→ UI/U3);
   - vHIT: pojedyncza wartość gain (kanał pobudzany); sakady covert/overt jako PODZIAŁ czasowy całkowitej
     korekty (udział z fuzji szyjno-ocznej), bez pełnej dynamiki prędkości gałki;
   - integrator liniowy (dryf θ/τ) bez asymetrii poziom/pion i bez rebound nystagmus;
