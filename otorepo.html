@@ -567,15 +567,23 @@ const Scene3D = (()=>{
     earR:[1,0,0], earL:[-1,0,0], occiput:[0,0,-1],
     eyeR:[0.4,0.15,0.85], eyeL:[-0.4,0.15,0.85]
   };
-  // Kamera ortograficzna: right=świat→ekran+x, up=świat→"góra ekranu"; fwd=kierunek patrzenia.
-  // SVG ma y w dół, więc współrzędna ekranowa y = -(p·up).
+  // Widoki ortograficzne (bazy right/up/fwd — jednostkowe i wzajemnie ortogonalne): right=świat→ekran+x,
+  // up=świat→„góra ekranu", fwd=kierunek patrzenia (depth=p·fwd, większe=dalej). SVG ma y w dół → ekran y=-(p·up).
+  // SKRĘTNOŚĆ BAZY (audyt #7) — det = right·(up×fwd):
+  //   det=+1 (OBRÓT WŁAŚCIWY): frontal, behind, sideRight, sideLeft. „frontal" jest obrócony NAPRZECIW pacjenta,
+  //     więc klinicznie zamienia lewo/prawo (right=-x, „lustro") — ale to nadal poprawny obrót, nie odbicie bazy.
+  //   det=-1 (baza LEWOSKRĘTNA = ODBICIE): topDownBehind, topDownFront — jedyne widoki z realnym odbiciem bazy
+  //     (nieosiągalne samym obrotem). Wystarczają do obecnego dialu „z góry", lecz łamią jedną spójną konwencję.
+  //   KONSEKWENCJA: znak przeniesienia poziomu/skrętu bierzemy PER-WIDOK (camRx = frontal.right[0] = -1;
+  //     flip = cam.up[2]<0 w startDialNys), a NIE z jednej globalnej reguły. Dodając nowy widok / wyprowadzając
+  //     skrętność — uwzględnij det tego widoku (obiekty to „widoki", nie czyste kamery-obroty).
   const CAMERAS = {
-    topDownBehind:{right:[1,0,0],  up:[0,0,-1], fwd:[0,-1,0]}, // nad głową, od tyłu (obecny dial)
-    topDownFront: {right:[-1,0,0], up:[0,0,1],  fwd:[0,-1,0]}, // nad głową, od przodu
-    frontal:      {right:[-1,0,0], up:[0,1,0],  fwd:[0,0,-1]}, // naprzeciw pacjenta (oczy — lustro)
-    behind:       {right:[1,0,0],  up:[0,1,0],  fwd:[0,0,1]},  // za głową
-    sideRight:    {right:[0,0,-1], up:[0,1,0],  fwd:[1,0,0]},  // z prawego boku
-    sideLeft:     {right:[0,0,1],  up:[0,1,0],  fwd:[-1,0,0]}  // z lewego boku
+    topDownBehind:{right:[1,0,0],  up:[0,0,-1], fwd:[0,-1,0]}, // nad głową, od tyłu (obecny dial) — det=-1 (odbicie)
+    topDownFront: {right:[-1,0,0], up:[0,0,1],  fwd:[0,-1,0]}, // nad głową, od przodu — det=-1 (odbicie)
+    frontal:      {right:[-1,0,0], up:[0,1,0],  fwd:[0,0,-1]}, // naprzeciw pacjenta (oczy — lustro) — det=+1 (obrót)
+    behind:       {right:[1,0,0],  up:[0,1,0],  fwd:[0,0,1]},  // za głową — det=+1
+    sideRight:    {right:[0,0,-1], up:[0,1,0],  fwd:[1,0,0]},  // z prawego boku — det=+1
+    sideLeft:     {right:[0,0,1],  up:[0,1,0],  fwd:[-1,0,0]}  // z lewego boku — det=+1
   };
   // rzut punktu głowy (po obrocie głowy qHead) przez kamerę → ekran {x,y,depth}
   function project(pHead, qHead, cam){
@@ -1237,12 +1245,20 @@ const NeuroVOR = (()=>{
 /* Źródło orientacji głowy (pluggable) — etap A: ręczne; później: żyroskop / DeviceOrientation / replay.
    Zwraca kwaternion orientacji głowy (układ głowy → świat) w konwencji silnika. */
 function makeManualOrientation(){
+  // walidacja + normalizacja wejścia (sensor/użytkownik): kwaternion niejednostkowy skalowałby rzuty o |q|²,
+  // a przechowywanie/oddawanie referencji pozwalałoby mutować stan spoza API. Zwracamy KOPIE. [audyt #4]
+  const normQuat = nq => {
+    if(!Array.isArray(nq) || nq.length!==4 || nq.some(v=>!Number.isFinite(v)))
+      throw new TypeError("makeManualOrientation: kwaternion musi być [w,x,y,z] o skończonych składowych");
+    const n=Math.hypot(nq[0],nq[1],nq[2],nq[3]); if(n<1e-12) throw new RangeError("makeManualOrientation: kwaternion zerowy");
+    return [nq[0]/n, nq[1]/n, nq[2]/n, nq[3]/n];
+  };
   let q=[1,0,0,0];
   const api = {
-    setQuat(nq){ q=nq; return api; },
-    // yaw = obrót wokół osi czaszki (y); znak zgodny z dialem (yaw>0 = obrót w lewo)
+    setQuat(nq){ q=normQuat(nq); return api; },                 // waliduje + normalizuje + kopiuje
+    // yaw = obrót wokół osi czaszki (y); znak zgodny z dialem/qaxis (yaw>0 = obrót w PRAWO — audyt #5)
     setYaw(yawDeg){ q = Vestibular.qaxis([0,1,0], yawDeg); return api; },
-    get(){ return q; }
+    get(){ return q.slice(); }                                  // kopia — chroni stan wewnętrzny przed mutacją
   };
   return api;
 }
@@ -1252,7 +1268,7 @@ function makeManualOrientation(){
 function epley(side){
   const A=side,H=otherSide(side),aY=yawToA(A),hY=-aY;
   const sideH=H==="L"?"sideL":"sideR";
-  return {name:"Manewr Epleya",canal:"posterior",side,headView:"behindHead",dialSwap:true,steps:[
+  return {name:"Manewr Epleya",canal:"posterior",side,headCamera:"topDownBehind",steps:[
     {title:"Pozycja wyjściowa",body:"sit",yaw:aY,face:"fwd",seconds:null,progress:0.02,
      headSlot:{kind:"backTurn",dir:A}, headText:`Stań za pacjentem i skręć głowę ${A==="L"?"w lewo":"w prawo"}.`,
      instr:`Pacjent siada na kozetce. Obróć jego głowę o 45° w stronę chorą (${SIDE[A]}).`},
@@ -1286,7 +1302,7 @@ function semont(side){
 function lempert(side){
   const A=side,H=otherSide(side),aY=yawToA(A),yawH=A==="L"?-90:90;
   const sideH=H==="L"?"sideL":"sideR",sideA=A==="L"?"sideL":"sideR";
-  return {name:"Manewr Lemperta (rolka BBQ)",canal:"horizontal",side,headView:"behindHead",dialSwap:true,steps:[
+  return {name:"Manewr Lemperta (rolka BBQ)",canal:"horizontal",side,headCamera:"topDownBehind",steps:[
     {title:"Na plecach, głowa ku choremu",body:"supineFlat",yaw:yawH,face:"up",seconds:30,progress:0.08,
      instr:`Pacjent leży na plecach. Obróć głowę o 90° w stronę chorą (${SIDE[A]}). Utrzymaj.`},
     {title:"Głowa twarzą do sufitu",body:"supineFlat",yaw:0,face:"up",seconds:30,progress:0.30,
@@ -1302,7 +1318,7 @@ function lempert(side){
   ]};
 }
 function yacovino(side){
-  return {name:"Głębokie odchylenie głowy (Yacovino)",canal:"anterior",side,headView:"behindHead",steps:[
+  return {name:"Głębokie odchylenie głowy (Yacovino)",canal:"anterior",side,headCamera:"topDownBehind",steps:[
     {title:"Pozycja wyjściowa",body:"sit",yaw:0,face:"fwd",seconds:null,progress:0.02,
      instr:`Pacjent siada na środku kozetki, głowa prosto.`},
     {title:"Głębokie odchylenie głowy",body:"supineHang",yaw:0,face:"up",seconds:30,progress:0.30,
@@ -1315,7 +1331,7 @@ function yacovino(side){
 }
 function gufoniGeo(side){
   const A=side,H=otherSide(side), onH=H==="L"?"sideL":"sideR";
-  return {name:"Manewr Gufoniego (geotropowy)",canal:"horizontal",side,headView:"behindHead",dialSwap:true,steps:[
+  return {name:"Manewr Gufoniego (geotropowy)",canal:"horizontal",side,headCamera:"topDownBehind",steps:[
     {title:"Pozycja wyjściowa",body:"sit",yaw:0,face:"fwd",seconds:null,progress:0.05,
      instr:`Pacjent siedzi wyprostowany na brzegu kozetki, głowa prosto.`},
     {title:"Szybko na bok zdrowy",body:onH,yaw:0,face:"fwd",seconds:60,progress:0.32,
@@ -1328,7 +1344,7 @@ function gufoniGeo(side){
 }
 function gufoniApo(side){
   const A=side, H=otherSide(side), onA=A==="L"?"sideL":"sideR";
-  return {name:"Manewr Gufoniego (apogeotropowy)",canal:"horizontal",side,headView:"behindHead",dialSwap:true,steps:[
+  return {name:"Manewr Gufoniego (apogeotropowy)",canal:"horizontal",side,headCamera:"topDownBehind",steps:[
     {title:"Pozycja wyjściowa",body:"sit",yaw:0,face:"fwd",seconds:null,progress:0.05,
      instr:`Pacjent siedzi wyprostowany, głowa prosto.`},
     {title:"Szybko na bok chory",body:onA,yaw:0,face:"fwd",seconds:60,progress:0.30,
@@ -1471,7 +1487,7 @@ function stepHeadQ(body, yaw, face){                  // orientacja głowy (head
 const BODY_Q = {                                     // orientacja głowy (head→świat) przy neutralnej twarzy, yaw=0
   sit:[1,0,0,0], sitFront:[1,0,0,0],
   sideL:Vestibular.qaxis([0,0,1],90), sideR:Vestibular.qaxis([0,0,1],-90),
-  prone:Vestibular.qmul(Vestibular.qaxis([0,0,1],180),Vestibular.qaxis([1,0,0],-107.5))   // twarz w dół, głowa po tej samej stronie co supine (nie odwrócona)
+  prone:Vestibular.qmul(Vestibular.qaxis([0,0,1],180),Vestibular.qaxis([1,0,0], Math.atan2(-BASE_G["prone|down"][2],BASE_G["prone|down"][1])*180/Math.PI))   // twarz w dół; pitch WYPROWADZONY z BASE_G["prone|down"] → gHead(composeHead)==stepGravity (było -107.5°, rozjazd 35° — audyt #1)
 };
 const BODY_NEUTRAL = { sit:"fwd", sitFront:"fwd", sideL:"fwd", sideR:"fwd", prone:"down" };
 function qFromToVec(a,b){                             // najkrótsza rotacja wektora a→b (samo normalizuje wejście)
@@ -1491,9 +1507,9 @@ function headPitchQ(body,face){                      // pitch szyi: neutral→fa
 }
 function composeHead(body,yaw,face){                 // orientacja głowy (head→świat) z ciała+pitch+szyi
   if(body.startsWith("supine")) return Vestibular.qSupineYaw(yaw);              // = qSupineYaw (dokładnie)
-  if(body==="leanL"||body==="leanR"){                                          // Semont: głowa = tułów-na-boku ∘ skręt 45°
-    const sgn=(body==="leanL"?-1:1)*(face==="up"?1:-1);                         // up→nos ku sufitowi (twarz), down→ku podłodze (tył)
-    return Vestibular.qmul(TORSO_Q[body], Vestibular.qaxis([0,1,0], sgn*45));
+  if(body==="leanL"||body==="leanR"){                                          // Semont: głowa leżąca na boku; grawitacja = LEAN_G (źródło prawdy silnika)
+    const T=TORSO_Q[body], g=LEAN_G[body+"|"+face]||[0,-1,0];                   // roll z tułowia-na-boku + minimalna korekta orientacji do grawitacji kroku
+    return Vestibular.qmul(T, qFromToVec(g, Vestibular.gHead(T)));              // gHead(composeHead)==LEAN_G z konstrukcji (było skręt 45°, rozjazd 17.6°/59.9° — audyt #1)
   }
   const B=BODY_Q[body]||[1,0,0,0];
   return Vestibular.qmul(Vestibular.qmul(B, headPitchQ(body,face)), Vestibular.qaxis([0,1,0],yaw));
@@ -1732,9 +1748,9 @@ function syncWake(){ if(state.running) acquireWake(); else releaseWake(); }   //
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && state.running) acquireWake(); });
 
 /* ============ SVG: głowa z góry ============ */
-function headDial(yaw,face,headView,nys,swap){
-  // obserwator jako KAMERA (zamiast flag behind/swap): obecny dial = "z góry, od tyłu"
-  const cam = headView==="behindHead" ? Scene3D.CAMERAS.topDownBehind : Scene3D.CAMERAS.topDownFront;
+function headDial(yaw,face,headCamera,nys){
+  // obserwator jako KAMERA: plan podaje wprost klucz kamery (headCamera), domyślnie widok od przodu-z-góry (audyt #6)
+  const cam = Scene3D.CAMERAS[headCamera] || Scene3D.CAMERAS.topDownFront;
   const qH = Vestibular.qaxis([0,1,0], yaw);                       // orientacja głowy z yaw
   const rot = Scene3D.screenAngleCW(Scene3D.project(Scene3D.HEAD_POINTS.nose, qH, cam));  // obrót schematu = kąt nosa
   const el = Scene3D.project(Scene3D.HEAD_POINTS.earL, [1,0,0,0], cam);   // strony z rzutu uszu (niezależne od yaw)
@@ -1814,7 +1830,7 @@ function startDialNys(nys,plan,envOv){
   const a = nys.anat || {h:0,v:0,t:0};                  // kierunek Z FIZYKI (dynNystagmus), nie z annotacji
   // znak przeniesienia do ramki schematu wynika z KAMERY: obserwator z tyłu (nos ku dołowi
   // ekranu, up·nos<0) odbija składową poziomą i skrętną.
-  const cam = plan.headView==="behindHead" ? Scene3D.CAMERAS.topDownBehind : Scene3D.CAMERAS.topDownFront;
+  const cam = Scene3D.CAMERAS[plan.headCamera] || Scene3D.CAMERAS.topDownFront;
   const flip = cam.up[2] < 0 ? -1 : 1, cH=flip, cT=flip;
   const amp = envOv ? 1 : (nys.strength||1);            // env historyczny niesie intensywność
   const hx=a.h*cH*2.2*amp, upY=a.v*2*amp, rot=a.t*cT*12*amp;  // pozioma / pionowa / skrętna
@@ -2006,7 +2022,8 @@ function labyrinth(canal){
   return `<svg viewBox="0 0 250 175" role="img" aria-label="Kanały półkoliste, aktywny: ${CANALS[canal].label}">
     <ellipse cx="150" cy="100" rx="20" ry="15" fill="#22303D" stroke="var(--line)" stroke-width="1.5"/>
     <text x="150" y="103" text-anchor="middle" fill="var(--faint)" font-size="8">łagiewka</text>
-    ${loops}<circle id="otolith" r="6" fill="#fff" stroke="${active}" stroke-width="2"/></svg>`;
+    ${loops}<circle id="otolith" r="6" fill="#fff" stroke="${active}" stroke-width="2"/></svg>
+    <div class="viewpoint">schemat wędrówki — położenie poglądowe; czas i skuteczność z fizyki</div>`;
 }
 function placeOtolith(canal,p,exitBlend){
   const path=$("#path-"+canal),dot=$("#otolith"); if(!path||!dot) return false;
@@ -2126,8 +2143,10 @@ const fmt=s=>{const m=Math.floor(s/60),x=s%60; return m>0?`${m}:${String(x).padS
 const fmtClock=s=>{const m=Math.floor(s/60),x=s%60; return `${m}:${String(x).padStart(2,"0")}`;};
 
 /* ============ Licznik + płynny otolit ============ */
-/* φ(t) z symulacji manewru steruje cząstką w labiryncie (zamiast interpolacji 'progress').
-   maneuverSim liczone raz na (manewr×strona) i cache'owane; φ=178°(odnoga wspólna)→koniec ścieżki. */
+/* Fizyka (simulateCanalith) dostarcza CZAS wędrówki (tEnd per krok, zależny od rozmiaru) i WALIDUJE
+   skuteczność (man.exited → krok kuracyjny). POŁOŻENIE cząstki na ścieżce jest jednak SCHEMATYCZNE (audyt #3):
+   dla manewrów skutecznych to monotoniczna rampa 0.15→1.0 (patrz manFractions), realne φ(t) tylko dla
+   KONWERSJI (Gufoni apo). maneuverSim liczone raz na (manewr×strona×rozmiar×czasy kroków) i cache'owane. */
 function computeManSim(plan, size="medium"){
   const tl = maneuverTimeline(plan, size);
   const sim = Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, timeline:tl, size});
@@ -2138,7 +2157,7 @@ function computeManSim(plan, size="medium"){
 }
 // symulacja manewru z cache; klucz zawiera rozmiar → zmiana rozmiaru unieważnia cache i przelicza dynamikę.
 function currentManSim(){
-  const key=state.plan.name+"|"+state.plan.side+"|"+state.size;
+  const key=state.plan.name+"|"+state.plan.side+"|"+state.size+"|"+state.plan.steps.map(s=>s.seconds==null?"_":s.seconds).join(",");   // czasy kroków (st.seconds → tHold) wpływają na dynamikę → muszą być w kluczu (audyt #8: małe złogi cap=20 s, ręczne skrócenie zmienia φ(t))
   if(state._manKey!==key){ state._manKey=key; state._manSim=computeManSim(state.plan, state.size); }
   return state._manSim;
 }
@@ -2384,7 +2403,7 @@ function renderGuide(){
       ? `<div class="panelbox"><h4>Głowa</h4><div class="headnote">${st.headText}</div></div>`
     : st.headSlot && st.headSlot.kind==="backTurn"
       ? `<div class="panelbox"><h4>Głowa</h4><div data-backhead>${backHeadSVG()}</div><div class="headnote">${st.headText}</div></div>`
-      : `<div class="panelbox"><h4>Głowa (z góry)</h4>${headDial(st.yaw,st.face,p.headView,gn,p.dialSwap)}</div>`;
+      : `<div class="panelbox"><h4>Głowa (z góry)</h4>${headDial(st.yaw,st.face,p.headCamera,gn)}</div>`;
   const gufoniNote = state.maneuverKey==="gufoniApo"
     ? `<div class="note">Manewr <b>konwersji</b>: złóg nie opuszcza kanału — celem jest przekształcenie postaci apogeotropowej w geotropową. Po nim wykonaj ponowny Roll test i lecz postać geotropową (Lempert / Gufoni geotropowy).</div>` : "";
   $("#app").innerHTML=`
@@ -2450,7 +2469,7 @@ function renderDiag(){
   const phaseInner=(ph,i)=>`
       <div class="ptitle">${ph.ptitle}</div><div class="ppos">${ph.ppos}</div>
       <div class="minihead"><div class="panelbox"><h4>Ułożenie</h4>${posture(ph.body,ph.face,ph.yaw,A)}</div>
-        <div class="panelbox"><h4>Głowa (z góry)</h4><div data-dialnys="${i}">${headDial(ph.yaw,ph.face,"behindHead")}</div></div></div>
+        <div class="panelbox"><h4>Głowa (z góry)</h4><div data-dialnys="${i}">${headDial(ph.yaw,ph.face,"topDownBehind")}</div></div></div>
       <div class="panelbox" style="margin-top:10px"><h4>Widok frontalny</h4>
         <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div><span class="emk">L</span></div>
         <div class="nyslabel"><span class="arrow">${arrowGlyph(ph.nys)}</span><span>${ph.label}${ph.nys.persistent?" · uporczywy":" · przemijający"}</span></div>
