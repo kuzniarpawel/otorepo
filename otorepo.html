@@ -1467,9 +1467,12 @@ const BASE_G={ "sit|fwd":[0,-1,0], "sit|down":[0,0.9,0.45], "sit|up":[0,-0.5,-0.
   "prone|down":[0,0.3,0.95], "sideL|fwd":[-1,0,0], "sideR|fwd":[1,0,0],
   "sideL|down":[-0.5,0.6,0.6], "sideR|down":[0.5,0.6,0.6], "sideL|up":[-0.6,-0.5,-0.6], "sideR|up":[0.6,-0.5,-0.6],
   "sitFront|fwd":[0,-1,0] };
-// Semont (rzuty boczne leanL/leanR) — gHead KOŃCOWE (skręt szyi wbudowany), lustro wg strony
+// Semont (rzuty boczne leanL/leanR) — gHead KOŃCOWE (skręt szyi wbudowany), lustro wg strony.
+// |down: nos ~46° POD poziomem (składowa nosa 0.72) — twarz wyraźnie ku podłodze/materacowi (rzut skośny
+// pokazuje wtedy tył/czubek głowy). Zweryfikowane: Semont dalej CZYŚCI L i P (φ→178); audyt #1 zachowany
+// (composeHead czerpie z LEAN_G → gHead(composeHead)==stepGravity). Było [±0.4,0.85,0.3] (nos ~18°, mylący profil w górę).
 const LEAN_G={ "leanL|up":[0.5,-0.2,-0.8], "leanR|up":[-0.5,-0.2,-0.8],
-  "leanR|down":[-0.4,0.85,0.3], "leanL|down":[0.4,0.85,0.3] };
+  "leanR|down":[-0.35,0.6,0.72], "leanL|down":[0.35,0.6,0.72] };
 // Yacovino krok 3: leżenie supine + DOGIĘCIE głowy do przodu (broda do klatki) — osobna orientacja,
 // nie generyczne supine. Ta sama q dla stepHeadQ (fizyka) i composeHead (render) → zero rozjazdu (audyt #1).
 const SUPINE_PITCH={ supineChin:-75 };   // ° doginania wokół osi ucha: −75° = z ~30° odgięcia (deep-hang) do ~45° przygięcia; gHead≈[0,1,−0.09], czyści anterior
@@ -1574,8 +1577,8 @@ function bodyJoints(body,face){                       // pozycje 3D stawów po o
   if(nd) pose.neckBase=Vestibular.qaxis([1,0,0], nd);
   if(body==="leanL"||body==="leanR"){                  // Semont: z czysto odgórnej kamery L/R kończyny rzutują się NA SIEBIE
     const up=body==="leanL"?"L":"R";                    // (ten sam ekranowy x,y, różni je tylko głębia) — bez tego nie widać,
-    pose["sh"+up]=Vestibular.qaxis([1,0,0],-100);        // który bok leży na dole. Górną (widoczną) rękę wychylamy na klatkę
-  }                                                     // piersiową (jak w rzeczywistej pozycji Semonta) — dolna zostaje prosta/schowana.
+    pose["sh"+up]=Vestibular.qaxis([1,0,0], face==="down"?100:-100);  // który bok leży na dole. Górną (widoczną) rękę wychylamy:
+  }                                                     // krok 2 (nos w górę) KU GÓRZE, krok 3 (nos w dół/twarz w materac) W DÓŁ; dolna prosta/schowana.
   const local=fkJoints(pose), TQ=TORSO_Q[body]||[1,0,0,0], out={};
   for(const k in local) out[k]=Vestibular.rotate(TQ, local[k]);
   return out;
