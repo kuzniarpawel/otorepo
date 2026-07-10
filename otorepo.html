@@ -1323,10 +1323,10 @@ function yacovino(side){
      instr:`Pacjent siada na środku kozetki, głowa prosto.`},
     {title:"Głębokie odchylenie głowy",body:"supineHang",yaw:0,face:"up",seconds:30,progress:0.30,
      instr:`Szybko połóż pacjenta na plecach z głową głęboko odchyloną w dół (znacznie poniżej poziomu). Utrzymaj.`},
-    {title:"Przygięcie brody do klatki",body:"sit",yaw:0,face:"down",seconds:30,progress:0.70,
-     instr:`Przygnij głowę pacjenta do przodu (broda do klatki). Utrzymaj.`},
-    {title:"Powrót do siadu",body:"sit",yaw:0,face:"fwd",seconds:null,progress:1.0,
-     instr:`Powoli posadź pacjenta i wyprostuj głowę. Koniec serii.`},
+    {title:"Przygięcie brody do klatki (leżąc)",body:"supineChin",yaw:0,face:"up",seconds:30,progress:0.70,
+     instr:`NIE sadzając pacjenta, przygnij jego głowę do przodu — broda do klatki (~45°). Pacjent nadal leży. Utrzymaj.`},
+    {title:"Powrót do siadu",body:"sit",yaw:0,face:"down",seconds:null,progress:1.0,
+     instr:`Posadź pacjenta, utrzymując brodę przy klatce, i dopiero na końcu wyprostuj głowę. Koniec serii.`},
   ]};
 }
 function gufoniGeo(side){
@@ -1470,15 +1470,22 @@ const BASE_G={ "sit|fwd":[0,-1,0], "sit|down":[0,0.9,0.45], "sit|up":[0,-0.5,-0.
 // Semont (rzuty boczne leanL/leanR) — gHead KOŃCOWE (skręt szyi wbudowany), lustro wg strony
 const LEAN_G={ "leanL|up":[0.5,-0.2,-0.8], "leanR|up":[-0.5,-0.2,-0.8],
   "leanR|down":[-0.4,0.85,0.3], "leanL|down":[0.4,0.85,0.3] };
+// Yacovino krok 3: leżenie supine + DOGIĘCIE głowy do przodu (broda do klatki) — osobna orientacja,
+// nie generyczne supine. Ta sama q dla stepHeadQ (fizyka) i composeHead (render) → zero rozjazdu (audyt #1).
+const SUPINE_PITCH={ supineChin:-75 };   // ° doginania wokół osi ucha: −75° = z ~30° odgięcia (deep-hang) do ~45° przygięcia; gHead≈[0,1,−0.09], czyści anterior
+function supineHeadQ(body, yaw){          // orientacja głowy dla póz supine (opcjonalny pitch brody)
+  const q=Vestibular.qSupineYaw(yaw), p=SUPINE_PITCH[body];
+  return p ? Vestibular.qmul(q, Vestibular.qaxis([1,0,0], p)) : q;
+}
 function stepGravity(body, yaw, face){               // gHead dla kroku manewru
-  if(body.startsWith("supine")) return Vestibular.rotate(Vestibular.qconj(Vestibular.qSupineYaw(yaw)), [0,-1,0]);  // supineHang/Flex/Flat
+  if(body.startsWith("supine")) return Vestibular.rotate(Vestibular.qconj(supineHeadQ(body,yaw)), [0,-1,0]);  // supineHang/Flex/Flat/Chin
   const key=body+"|"+face;
   if(body==="leanL"||body==="leanR") return LEAN_G[key]||[0,-1,0];   // yaw wbudowany
   const g=BASE_G[key]||BASE_G[body+"|fwd"]||[0,-1,0];
   return rotYg(g, -yaw);
 }
 function stepHeadQ(body, yaw, face){                  // orientacja głowy (head→świat) dla kroku
-  return body.startsWith("supine") ? Vestibular.qSupineYaw(yaw) : qFromG(stepGravity(body,yaw,face));
+  return body.startsWith("supine") ? supineHeadQ(body,yaw) : qFromG(stepGravity(body,yaw,face));
 }
 // ===== MODEL 3D — Krok 1: orientacja CIAŁA + złożenie głowy = ciało ∘ pitch(twarz) ∘ skręt szyi(yaw) =====
 // Zgodne z silnikiem: gHead(composeHead) == stepGravity (zweryfikowane offline dla wszystkich kombinacji).
@@ -1506,7 +1513,7 @@ function headPitchQ(body,face){                      // pitch szyi: neutral→fa
   return Vestibular.qconj(qFromToVec(g0, gf));
 }
 function composeHead(body,yaw,face){                 // orientacja głowy (head→świat) z ciała+pitch+szyi
-  if(body.startsWith("supine")) return Vestibular.qSupineYaw(yaw);              // = qSupineYaw (dokładnie)
+  if(body.startsWith("supine")) return supineHeadQ(body,yaw);                   // = qSupineYaw (+ pitch brody dla supineChin)
   if(body==="leanL"||body==="leanR"){                                          // Semont: głowa leżąca na boku; grawitacja = LEAN_G (źródło prawdy silnika)
     const T=TORSO_Q[body], g=LEAN_G[body+"|"+face]||[0,-1,0];                   // roll z tułowia-na-boku + minimalna korekta orientacji do grawitacji kroku
     return Vestibular.qmul(T, qFromToVec(g, Vestibular.gHead(T)));              // gHead(composeHead)==LEAN_G z konstrukcji (było skręt 45°, rozjazd 17.6°/59.9° — audyt #1)
@@ -1553,12 +1560,12 @@ const TORSO_Q={
   sideL:Vestibular.qmul(Vestibular.qaxis([0,0,1],90), Vestibular.qaxis([1,0,0],-90)),   // na boku: supine + roll wokół osi długiej
   sideR:Vestibular.qmul(Vestibular.qaxis([0,0,1],-90),Vestibular.qaxis([1,0,0],-90)),
   prone:Vestibular.qmul(Vestibular.qaxis([0,0,1],180),Vestibular.qaxis([1,0,0],-90)),   // na brzuchu = supine + obrót 180° wokół osi długiej: twarz w dół, głowa NIE odwrócona
-  supineHang:Vestibular.qaxis([1,0,0],-90), supineFlex:Vestibular.qaxis([1,0,0],-90), supineFlat:Vestibular.qaxis([1,0,0],-90),
+  supineHang:Vestibular.qaxis([1,0,0],-90), supineFlex:Vestibular.qaxis([1,0,0],-90), supineFlat:Vestibular.qaxis([1,0,0],-90), supineChin:Vestibular.qaxis([1,0,0],-90),
   leanL:Vestibular.qaxis([0,0,1],-90), leanR:Vestibular.qaxis([0,0,1],90)   // Semont: POZIOME leżenie na boku (widok odgórny); leanL=prawy bok w dół, leanR=lewy bok w dół
 };
 // kąt szyi per ciało (stopnie, wokół osi usznej x): <0 = wyprost (głowa do tyłu/zwis), >0 = zgięcie (broda do mostka).
 // Wszystkie supine* mają identyczny gHead (silnik ich nie różnicuje) → różnica Hang/Flex/Flat jest TU, w pozie szyi.
-const NECK_DEG={ supineHang:-34, supineFlex:28, supineFlat:12 };
+const NECK_DEG={ supineHang:-34, supineFlex:28, supineFlat:12, supineChin:45 };   // supineChin: kark mocno przygięty do przodu (broda do klatki)
 function bodyClass(b){ return b.startsWith("supine")?"supine":(b==="sideL"||b==="sideR")?"side":(b==="leanL"||b==="leanR")?"lean":b; }
 function bodyJoints(body,face){                       // pozycje 3D stawów po orientacji w przestrzeni (pre-kamera)
   const pose=Object.assign({}, POSE3D[bodyClass(body)]||{});
@@ -1997,7 +2004,7 @@ function posture(body,face,yaw,viewSide){
     couch=`<rect x="14" y="118" width="172" height="10" rx="3" fill="${P}"/>
       <rect x="14" y="128" width="8" height="20" fill="#1c2935"/><rect x="178" y="128" width="8" height="20" fill="#1c2935"/>`;
   }
-  const label={sit:"Siad",supineHang:"Na plecach, głowa w dół",supineFlex:"Na plecach, głowa przygięta ~30°",supineFlat:"Na plecach, głowa płasko",prone:"Na brzuchu",sideL:"Na boku lewym",sideR:"Na boku prawym"}[body]||"";
+  const label={sit:"Siad",supineHang:"Na plecach, głowa w dół",supineFlex:"Na plecach, głowa przygięta ~30°",supineFlat:"Na plecach, głowa płasko",supineChin:"Na plecach, broda do klatki",prone:"Na brzuchu",sideL:"Na boku lewym",sideR:"Na boku prawym"}[body]||"";
   const viewLbl=viewSide?`◉ widok od strony ${SIDE[viewSide]} (chora)`:"";
   return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: ${label}, ${viewLbl}">
     <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${viewLbl}</text>
