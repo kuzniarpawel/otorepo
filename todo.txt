@@ -179,9 +179,25 @@ SENSORY / KAMERA (przyszłość, po wizualizacji):
     Zastrzeżenia kliniczne: RGB ~30 fps != VNG/Frenzel (IR, wysokie fps, brak fiksacji); żyro dryfuje; magnetometr
     zaszumiony w pomieszczeniach; MediaPipe nie testowany na chorobach oczu. Narzędzie dydaktyczne, nie pomiar SPV.
 
-MIGRACJA 3D (K4, odłożone jako projekt na przyszłość — patrz migracja_3d.txt):
- [ ] Ścieżka B: Three.js single-file inline, geometria proceduralna, offline zachowany. Etap 0 czeka na dostarczenie
-        three.min.js. Fundament (FK+kwaterniony czyste, DOM-free) już gotowy pod tę migrację. Nie priorytet.
+MIGRACJA 3D → MODULARIZACJA + Three.js/GLB (AKTYWNA; zastępuje Ścieżkę B z migracja_3d.txt):
+ [x] Etap 0 (2026-07-11): Vite + harness złotego snapshotu (tools/snapshot.mjs, golden 434 scenariusze;
+        --check bramkuje exit 1; czuły — mutacja SPV_MAX wykryta). otorepo.html nietknięty. commit fc70a46.
+ [x] Etap 1a (2026-07-11): index.html + src/main.js (moduł ES) + wydzielony silnik src/engine/{vestibular,
+        scene3d,neuro-vor}.js; seam window (151 fn) + __OTOREPO_TEST__; harness --src (esbuild IIFE→jsdom).
+        Golden zielony (monolit i moduły). commit 7543a2c.
+ [x] Etap 1b (2026-07-11): pełny carve widoku — src/pose/maneuvers.js (czyste), src/app/{state,actions}.js,
+        src/runtime/registry.js, src/render/svg-screens.js, main.js=boot. 9 modułów; golden zielony;
+        browser-verified (Epley, strona L, HINTS Własny, suwak). commit 2e4a27c.
+ [x] Etap 1c (2026-07-11): build produkcyjny z modułów — `npm run build` = vite build + tools/build-dist.mjs
+        (statyki PWA, alias otorepo.html dla starych instalacji, GENEROWANY sw.js: precache z zawartości dist/,
+        nazwa cache = hash → koniec ręcznych bumpów vN). copy:web/sync z dist/ (Capacitor). vite-ignore na
+        manifest/apple-touch-icon (względne start_url/icons wymagają manifestu w rootcie). Zweryfikowane
+        vite preview: SW zarejestrowany, precache wypełniony, alias działa, 0 błędów konsoli.
+        UWAGA WDROŻENIOWA: GH Pages nadal serwuje ROOT maina (monolit otorepo.html) — przełączenie
+        wdrożenia na dist/ = osobna decyzja (Actions vs docs/). Monolit = źródło goldenu, zamrożony.
+ [ ] Etap 2: kanoniczny PoseSpec (jedno źródło pozy dla SVG i przyszłego Three) — domyka rozjazd z audytu 2.5D.
+ [ ] Etap 3: ThreePatientRenderer obok SVG (Epley P + Roll, GLB przez ?url, kozetka; most osi wg migracja_3d.txt
+        sekcja MOST — weryfikacja 21 kombinacji vs gHead). Etap 4: pełne manewry. Etap 5: Three domyślny, SVG fallback.
 
 ==========================================================================
  ZROBIONE (kamienie milowe)

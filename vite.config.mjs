@@ -1,19 +1,19 @@
 import { defineConfig } from 'vite';
 
-// OTOREPO — konfiguracja Vite.
+// OTOREPO — konfiguracja Vite (Etap 1: moduły ES).
 //
-// ETAP 0 (obecny): Vite pełni rolę serwera deweloperskiego dla NIEZMIENIONEGO
-// otorepo.html (klasyczny <script>, brak modułów ES). `base:'./'` jest wymagane
-// dla OBU celów wdrożenia: GitHub Pages (podścieżka projektu) oraz Capacitor
-// (origin natywny) — ścieżki zasobów muszą być względne.
+// Wejście: index.html → src/main.js (9 modułów: engine/pose/app/runtime/render).
+// `npm run build` = `vite build` + tools/build-dist.mjs (statyki PWA, alias
+// otorepo.html, GENEROWANY sw.js z precache i hashem zawartości jako nazwą cache).
+// `base:'./'` jest wymagane dla OBU celów wdrożenia: GitHub Pages (podścieżka
+// projektu) oraz Capacitor (origin natywny) — ścieżki zasobów muszą być względne.
+// Manifest/ikona mają w index.html atrybut vite-ignore (muszą zostać w rootcie —
+// względne start_url/icons rozwiązują się względem URL-a manifestu).
 //
-// PRAWDZIWE bundlowanie modułów włącza ETAP 1: pojawi się wejście
-// index.html → src/main.js, a skrypt `build` przejdzie na `vite build`.
-// Do tego czasu `npm run build` = tools/build-dist.mjs (kopia 1:1 zestawu PWA do dist/),
-// bo dziś nie ma modułowego wejścia, a wymuszanie transformacji ręcznie tworzonego
-// otorepo.html hashowałoby manifest/ikony i zmieniało zachowanie.
+// Monolityczny otorepo.html pozostaje w repo jako źródło złotego snapshotu
+// (tools/snapshot.mjs); rozwój odbywa się w src/.
 //
-// Siatka bezpieczeństwa: `npm run snapshot` (zapis) / `npm run snapshot:check` (porównanie).
+// Siatka bezpieczeństwa: `npm run snapshot:check` (monolit) i `snapshot:check:src` (moduły).
 
 export default defineConfig({
   base: './',

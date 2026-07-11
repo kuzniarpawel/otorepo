@@ -5,13 +5,16 @@
 
 <title>Repozycja otolitów — asystent manewrów</title>
 
-<!-- PWA: instalacja na ekranie początkowym + działanie offline (iPhone/iPad/Android) -->
-<link rel="manifest" href="manifest.json">
+<!-- PWA: instalacja na ekranie początkowym + działanie offline (iPhone/iPad/Android).
+     vite-ignore: manifest i ikona NIE mogą być hashowane do assets/ — względne start_url/icons
+     w manifeście rozwiązują się względem URL-a manifestu, więc musi on zostać w rootcie
+     (dostarcza go tools/build-dist.mjs po `vite build`). -->
+<link rel="manifest" href="manifest.json" vite-ignore>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OTOREPO">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" vite-ignore>
 
 <style>
 /* IBM Plex Sans — tylko latin + latin-ext (polski), woff2 wklejone inline, wagi 400-800.

@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "node tools/build-dist.mjs",
+    "build": "vite build && node tools/build-dist.mjs",
+    "preview": "vite preview",
     "snapshot": "node tools/snapshot.mjs",
     "snapshot:check": "node tools/snapshot.mjs --check",
     "snapshot:check:src": "node tools/snapshot.mjs --check --src src/main.js",
-    "copy:web": "node -e \"require('fs').copyFileSync('otorepo.html','www/index.html')\"",
-    "sync": "npm run copy:web && cap sync",
+    "copy:web": "node -e \"const fs=require('fs');fs.rmSync('www',{recursive:true,force:true});fs.cpSync('dist','www',{recursive:true})\"",
+    "sync": "npm run build && npm run copy:web && cap sync",
     "open": "cap open android"
   },
   "repository": {
