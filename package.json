@@ -4,6 +4,10 @@
   "description": "Jednoplikowa aplikacja HTML/JS wspomagająca **diagnostykę i leczenie łagodnych położeniowych zawrotów głowy (BPPV)** — repozycję otolitów. Narzędzie **dydaktyczne / wspomagające dla personelu medycznego**: modeluje fizykę złogu otolitowego w kanałach półkolistych i wyprowadza kierunek oraz dynamikę oczopląsu wyłącznie z praw Ewalda i symulacji cząstki (bez ręcznych adnotacji).",
   "main": "index.js",
   "scripts": {
+    "dev": "vite",
+    "build": "node tools/build-dist.mjs",
+    "snapshot": "node tools/snapshot.mjs",
+    "snapshot:check": "node tools/snapshot.mjs --check",
     "copy:web": "node -e \"require('fs').copyFileSync('otorepo.html','www/index.html')\"",
     "sync": "npm run copy:web && cap sync",
     "open": "cap open android"
@@ -24,5 +28,9 @@
     "@capacitor/android": "^8.4.1",
     "@capacitor/cli": "^8.4.1",
     "@capacitor/core": "^8.4.1"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "vite": "^8.1.4"
   }
 }

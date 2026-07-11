@@ -1,4 +1,18 @@
-PLAN MIGRACJI 3D — ŚCIEŻKA B
+════════════════════════════════════════════════════════════════════
+UWAGA (2026-07-11): TEN PLAN (ŚCIEŻKA B) JEST ZASTĄPIONY.
+Aktualna migracja = modularizacja src/ (Vite + moduły ES) + Three.js z modelem GLB.
+Opis: zadania „Etap 0–5" + pamięć [[otorepo-modularization-migration]].
+Różnice vs poniższa ŚCIEŻKA B:
+  • NIE jeden plik z inline three.min.js — wiele modułów src/ bundlowanych Vite → dist/ (offline zachowany).
+  • Model z GLB (GLTFLoader), nie tylko geometria proceduralna.
+  • Asystent MA teraz podgląd 3D (Browser pane) — ocenia wygląd samodzielnie.
+NADAL AKTUALNE (przeniesione do Etapu 3 — adapter renderera Three):
+  • sekcja „UKŁADY WSPÓŁRZĘDNYCH — MOST" poniżej. Nasz świat z=PRZÓD vs Three z=TYŁ =
+    odbicie skrętności; NIE ufać gotowemu wzorowi — budować orientację z wektorów bazowych
+    (nos/wierzchołek/grawitacja) i weryfikować względem gHead dla wszystkich 21 kombinacji pozycja×twarz.
+════════════════════════════════════════════════════════════════════
+
+PLAN MIGRACJI 3D — ŚCIEŻKA B  [ZASTĄPIONY — patrz banner wyżej]
 (Three.js w jednym pliku HTML, geometria proceduralna, offline zachowany)
 otorepo.html — kontynuacja. Silnik Vestibular przenosimy 1:1.
 

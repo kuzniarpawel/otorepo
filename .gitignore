@@ -8,8 +8,11 @@
 proto_ui.html
 semont_2d.html
 
-# --- Node / Capacitor ---
+# --- Node / Capacitor / Vite ---
 node_modules/
+
+# Vite build output (generated from otorepo.html / późniejsze src/)
+dist/
 
 # generated web root — copied from otorepo.html by `npm run copy:web`
 www/
