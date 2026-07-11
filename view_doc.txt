@@ -358,9 +358,19 @@ Szkielet 3D (FK): układ ciała x=prawo,y=góra(czaszka),z=przód(nos). SKEL = d
   tułowia per klasa ciała. bodyJoints(body,face): FK(POSE3D)∘TORSO_Q → pozycje 3D stawów (+ dynamiczny kark,
   patrz PODSUMOWANIE SESJI).
 
-figProj(body,yaw,face,obsCam,opt): rzut szkieletu przez kamerę obserwatora → {fig, headC}.
-  - bodyJoints → Scene3D.project(staw,I,obsCam) → {x,y,depth}; kapsuły sortowane wg głębi (dalej→bliżej).
-  - GŁOWA: koło w pos.head; twarz/profil/tył z rzutu nosa+czaszki (composeHead), BEZ osobnej faceAngle:
+PoseSpec (Etap 2 modularizacji, 2026-07-11): kanoniczny opis pozy kroku/fazy — JEDNO źródło dla
+  wszystkich rendererów (SVG dziś, Three.js od Etapu 3). Producent: pose/maneuvers.js →
+  poseSpec({body,yaw,face}) = { body,yaw,face, headQ:composeHead(...), stepQ:stepHeadQ(...),
+  gravity:stepGravity(...), joints:bodyJoints(...) }. Renderer NIE wyprowadza pozy sam (domknięcie
+  rozjazdu silnik↔widok z audytu 2.5D): figProj czyta spec.joints/spec.headQ, gravArrowFor czyta
+  spec.gravity, headDial czyta spec.yaw/face. Fizyka złogu (maneuverTimeline) używa stepQ; rysowanie
+  głowy headQ; inwariant: gHead(headQ)==gravity==gHead(stepQ). Konsumenci: posture(spec,viewSide),
+  figProj(spec,obsCam,opt), headDial(spec,headCamera,nys), gravArrowFor(spec). Kamera/przejścia
+  ŚWIADOMIE poza spec (decyzje widoku, plan.headCamera) — Etap 3 rozszerzy spec, gdy Three tego wymaga.
+
+figProj(spec,obsCam,opt): rzut szkieletu przez kamerę obserwatora → {fig, headC}.
+  - spec.joints → Scene3D.project(staw,I,obsCam) → {x,y,depth}; kapsuły sortowane wg głębi (dalej→bliżej).
+  - GŁOWA: koło w pos.head; twarz/profil/tył z rzutu nosa+czaszki (spec.headQ), BEZ osobnej faceAngle:
       |nose.depth|≤0.4 → profil (profileMarks); nose.depth<0 → twarz (frontFace); >0 → tył; plus reguła
       ekranowa „nos prosto w dół → tył" (patrz sekcja Lempert KROK 5 niżej) dla widoków z boku.
   - opt.bedY: kotwiczenie CAŁEJ grupy do kozetki (patrz PODSUMOWANIE SESJI, błąd „pływający pacjent").

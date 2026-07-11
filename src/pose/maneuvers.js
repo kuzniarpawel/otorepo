@@ -357,9 +357,24 @@ function bodyJoints(body,face){                       // pozycje 3D stawów po o
   for(const k in local) out[k]=Vestibular.rotate(TQ, local[k]);
   return out;
 }
+/* ============ PoseSpec — kanoniczny opis pozy kroku (Etap 2) ============
+   JEDNO źródło pozy dla wszystkich rendererów (SVG dziś, Three.js od Etapu 3):
+   renderer NIE wyprowadza pozy sam (audyt 2.5D — rozjazd silnik↔widok), tylko
+   czyta gotowe pola. Fizyka złogu (maneuverTimeline) używa stepQ; rysowanie
+   głowy używa headQ (FK: tułów+szyja+yaw). Inwariant (audyt #1):
+   gHead(headQ) == gravity == gHead(stepQ) dla każdego kroku/fazy. */
+function poseSpec(st){                                // st: {body,yaw,face} — krok manewru lub faza testu
+  return {
+    body: st.body, yaw: st.yaw, face: st.face,        // surowa trójka (etykiety, warianty kozetki, kamery)
+    headQ: composeHead(st.body, st.yaw, st.face),     // orientacja głowy head→świat (rysowanie, przyszły rig 3D)
+    stepQ: stepHeadQ(st.body, st.yaw, st.face),       // orientacja kanoniczna kroku (fizyka złogu)
+    gravity: stepGravity(st.body, st.yaw, st.face),   // gHead — grawitacja w układzie głowy
+    joints: bodyJoints(st.body, st.face),             // stawy szkieletu 3D (pre-kamera)
+  };
+}
 // Strzałka „do ziemi": rzut grawitacji kroku na ekran widoku frontalnego (right=-x, up=y → SVG y w dół)
-function gravArrowFor(body, yaw, face){
-  const g = stepGravity(body, yaw, face);
+function gravArrowFor(spec){
+  const g = spec.gravity;
   const dx = -g[0], dy = -g[1], mag = Math.hypot(dx, dy);
   if(mag <= 0.15) return "";                          // grawitacja niemal wzdłuż osi nos-potylica → brak kierunku w płaszczyźnie
   const ang = (Math.atan2(dy, dx)*180/Math.PI).toFixed(1);
@@ -485,7 +500,7 @@ function recommend(testKey,variant){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, CANAL_OF };
+export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 Object.assign(window, { makeManualOrientation, epley, semont, lempert, yacovino, gufoniGeo, gufoniApo, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, supineHeadQ, stepGravity, stepHeadQ, qFromToVec, headPitchQ, composeHead, fkJoints, bodyClass, bodyJoints, gravArrowFor, sizedSeconds, maneuverTimeline, maneuverSim, variantLabels, recommend });

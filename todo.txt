@@ -195,7 +195,12 @@ MIGRACJA 3D → MODULARIZACJA + Three.js/GLB (AKTYWNA; zastępuje Ścieżkę B z
         vite preview: SW zarejestrowany, precache wypełniony, alias działa, 0 błędów konsoli.
         UWAGA WDROŻENIOWA: GH Pages nadal serwuje ROOT maina (monolit otorepo.html) — przełączenie
         wdrożenia na dist/ = osobna decyzja (Actions vs docs/). Monolit = źródło goldenu, zamrożony.
- [ ] Etap 2: kanoniczny PoseSpec (jedno źródło pozy dla SVG i przyszłego Three) — domyka rozjazd z audytu 2.5D.
+ [x] Etap 2 (2026-07-11): kanoniczny PoseSpec — pose/maneuvers.js:poseSpec({body,yaw,face}) →
+        {body,yaw,face, headQ, stepQ, gravity, joints}; renderer NIE wyprowadza pozy sam: figProj(spec,…),
+        posture(spec,…), headDial(spec,…), gravArrowFor(spec) czytają wyłącznie spec (domyka rozjazd
+        silnik↔widok z audytu 2.5D). Kamera świadomie poza spec (plan.headCamera — decyzja widoku; Etap 3
+        rozszerzy). Golden bajt-w-bajt zielony; browser: Epley 5/5, Semont 4/4, diag 4/4, 0 błędów.
+        [view_doc: sekcja PoseSpec przed ARCHITEKTURA figProj]
  [ ] Etap 3: ThreePatientRenderer obok SVG (Epley P + Roll, GLB przez ?url, kozetka; most osi wg migracja_3d.txt
         sekcja MOST — weryfikacja 21 kombinacji vs gHead). Etap 4: pełne manewry. Etap 5: Three domyślny, SVG fallback.
 

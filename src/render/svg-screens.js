@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, composeHead, bodyJoints, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -15,10 +15,11 @@ const SIZE_NOTE={small:"drobne/wolno osiadające", medium:"typowe", big:"duże/c
 let _otoStart=null;   // start animacji wędrówki otolitu (moduł, by dało się ją zrestartować przy flipie karty)
 
 /* ============ SVG: głowa z góry ============ */
-function headDial(yaw,face,headCamera,nys){
+function headDial(spec,headCamera,nys){               // spec: PoseSpec (schemat czyta yaw/face)
   // obserwator jako KAMERA: plan podaje wprost klucz kamery (headCamera), domyślnie widok od przodu-z-góry (audyt #6)
+  const {yaw, face} = spec;
   const cam = Scene3D.CAMERAS[headCamera] || Scene3D.CAMERAS.topDownFront;
-  const qH = Vestibular.qaxis([0,1,0], yaw);                       // orientacja głowy z yaw
+  const qH = Vestibular.qaxis([0,1,0], yaw);                       // schemat odgórny: tylko składowa yaw (stylizacja, nie poza świata)
   const rot = Scene3D.screenAngleCW(Scene3D.project(Scene3D.HEAD_POINTS.nose, qH, cam));  // obrót schematu = kąt nosa
   const el = Scene3D.project(Scene3D.HEAD_POINTS.earL, [1,0,0,0], cam);   // strony z rzutu uszu (niezależne od yaw)
   const er = Scene3D.project(Scene3D.HEAD_POINTS.earR, [1,0,0,0], cam);
@@ -177,9 +178,9 @@ function frontFace(cx,cy,r,angle,dx,faceUp){
 // ===== MODEL 3D — Krok 3: renderer rzutowy (rzut szkieletu 3D przez kamerę obserwatora) =====
 // Zastąpi figSide/POSE. Stawy z bodyJoints → rzut przez obsCam → kapsuły (sort głębią). Głowa w pos.head;
 // twarz/profil/tył liczone z rzutu osi nosa+czaszki (composeHead) — bez ręcznego faceAngle. opt.s = skala.
-function figProj(body,yaw,face,obsCam,opt){
+function figProj(spec,obsCam,opt){                     // spec: PoseSpec — sylwetka NIE wyprowadza pozy sama (Etap 2)
   opt=opt||{}; const HEAD="#4FC9E8", LIMB="#7E94A6", TORSO="#90A6B8", R=15;
-  const J=bodyJoints(body,face), I=[1,0,0,0], P={};
+  const J=spec.joints, I=[1,0,0,0], P={};
   for(const k in J) P[k]=Scene3D.project(J[k], I, obsCam);
   const s=opt.s||1, names=Object.keys(P);
   let cx=0,cy=0; for(const n of names){cx+=P[n].x;cy+=P[n].y;} cx/=names.length; cy/=names.length;
@@ -205,8 +206,8 @@ function figProj(body,yaw,face,obsCam,opt){
   // --- kotwiczenie do blatu (opt.bedY): najniższy punkt CIAŁA-NA-KOZETCE siada na bedY; transformacja na CAŁEJ grupie ---
   let offY=0;
   if(opt.bedY!=null){
-    const excl = body==="supineHang" ? {neck:1,head:1}                             // Dix-Hallpike: głowa+szyja zwisają poza krawędź
-               : body==="sit"        ? {ankL:1,ankR:1,toeL:1,toeR:1}               // siad na krawędzi: podudzia/stopy zwisają
+    const excl = spec.body==="supineHang" ? {neck:1,head:1}                        // Dix-Hallpike: głowa+szyja zwisają poza krawędź
+               : spec.body==="sit"        ? {ankL:1,ankR:1,toeL:1,toeR:1}          // siad na krawędzi: podudzia/stopy zwisają
                : {};
     let bot=-Infinity;
     for(const g of SEGS){ const [a,b,w]=g; if(excl[a]||excl[b]) continue;
@@ -214,7 +215,7 @@ function figProj(body,yaw,face,obsCam,opt){
     if(!excl.head) bot=Math.max(bot, SY(P.head.y)+R);
     offY=+(opt.bedY-bot).toFixed(1);
   }
-  const hq=composeHead(body,yaw,face);
+  const hq=spec.headQ;                                 // orientacja głowy z PoseSpec (nie re-derywowana — audyt 2.5D)
   const noseP=Scene3D.project(Scene3D.HEAD_POINTS.nose, hq, obsCam);
   const topP =Scene3D.project(Scene3D.HEAD_POINTS.top,  hq, obsCam);
   const hx=SX(P.head.x), hy=SY(P.head.y);
@@ -235,11 +236,12 @@ function figProj(body,yaw,face,obsCam,opt){
   if(offY) fig=`<g transform="translate(0 ${offY})">${fig}</g>`;   // transformacja korzenia na całą grupę
   return {fig, headC:[hx,hy+offY], offY};
 }
-function posture(body,face,yaw,viewSide){
+function posture(spec,viewSide){                       // spec: PoseSpec (jedno źródło pozy — Etap 2)
+  const {body,face}=spec;
   if(body==="sitFront"||body==="leanL"||body==="leanR"){   // Semont — model rzutowy 2.5D (figProj) + depth cueing
     const front=body==="sitFront";
     const cam=front?Scene3D.CAMERAS.frontal:Scene3D.CAMERAS.topDownFront;   // Semont: obserwator NA WPROST pacjenta — leżenie widok odgórny-od-przodu (pac.-lewo = ekran-prawo, spójnie z siadem)
-    const {fig}=figProj(body,yaw,face,cam,{ax:100, ay:front?95:96, s:front?0.85:1});
+    const {fig}=figProj(spec,cam,{ax:100, ay:front?95:96, s:front?0.85:1});
     const Pc="#2C3D4C";
     const couch=front
       ? `<rect x="34" y="106" width="132" height="9" rx="3" fill="${Pc}"/><rect x="50" y="114" width="8" height="26" fill="#1c2935"/><rect x="142" y="114" width="8" height="26" fill="#1c2935"/>`
@@ -254,7 +256,7 @@ function posture(body,face,yaw,viewSide){
   }
   const P="#2C3D4C";
   const obsCam=Scene3D.CAMERAS[viewSide==="L"?"sideRight":"sideLeft"];   // patrzymy od strony chorej
-  const {fig,headC}=figProj(body,yaw,face,obsCam,{ax:100, ay:80, s:1, bedY:118});
+  const {fig,headC}=figProj(spec,obsCam,{ax:100, ay:80, s:1, bedY:118});
   let couch;
   if(body==="supineHang"){                              // kozetka krótsza — luka po stronie ZWISAJĄCEJ głowy
     const cw=130, x0=headC[0]>100 ? 14 : 200-14-cw;
@@ -626,10 +628,11 @@ function renderSetup(){
 
 function renderGuide(){
   const p=state.plan, st=p.steps[state.step], n=p.steps.length;
+  const ps=poseSpec(st);                                   // kanoniczna poza kroku (Etap 2) — jedyne źródło dla sylwetki/dialu/strzałki
   const _man = currentManSim();
   const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step, state.size));
   const gn = (_gn && _gn.strength >= 0.10) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
-  const gravArrow = gn ? gravArrowFor(st.body, st.yaw, st.face) : "";
+  const gravArrow = gn ? gravArrowFor(ps) : "";
   const dots=p.steps.map((_,i)=>`<i class="${i<state.step?'done':i===state.step?'cur':''}"></i>`).join("");
   const tgIcons = `<div class="tg">
       <button class="ic" role="switch" aria-checked="${state.autoAdvance}" aria-label="Auto‑przejście po odliczeniu" title="Auto‑przejście" onclick="toggleAuto(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M5 5l10 7-10 7V5z" fill="currentColor"/><path d="M18.6 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
@@ -659,7 +662,7 @@ function renderGuide(){
       ? `<div class="panelbox"><h4>Głowa</h4><div class="headnote">${st.headText}</div></div>`
     : st.headSlot && st.headSlot.kind==="backTurn"
       ? `<div class="panelbox"><h4>Głowa</h4><div data-backhead>${backHeadSVG()}</div><div class="headnote">${st.headText}</div></div>`
-      : `<div class="panelbox"><h4>Głowa (z góry)</h4>${headDial(st.yaw,st.face,p.headCamera,gn)}</div>`;
+      : `<div class="panelbox"><h4>Głowa (z góry)</h4>${headDial(ps,p.headCamera,gn)}</div>`;
   const gufoniNote = state.maneuverKey==="gufoniApo"
     ? `<div class="note">Manewr <b>konwersji</b>: złóg nie opuszcza kanału — celem jest przekształcenie postaci apogeotropowej w geotropową. Po nim wykonaj ponowny Roll test i lecz postać geotropową (Lempert / Gufoni geotropowy).</div>` : "";
   $("#app").innerHTML=`
@@ -672,7 +675,7 @@ function renderGuide(){
     ${state.size==="small"
       ? `<div class="note">Drobny/wolno osiadający złóg — <b>wydłużono zalecany czas utrzymania pozycji</b> (wolniejsze osiadanie otoconiów; por. uzasadnienie ~30 s holdów w CRP: Hain, Squires &amp; Stone 2005). Oczopląs słabszy i o dłuższej latencji.</div>`
       : ""}
-    <div class="viz"><div class="panelbox"><h4>Ułożenie pacjenta</h4>${posture(st.body,st.face,st.yaw,p.side)}</div>
+    <div class="viz"><div class="panelbox"><h4>Ułożenie pacjenta</h4>${posture(ps,p.side)}</div>
       ${headPanel}</div>
     ${gn
       ? `<div class="flipwrap"><div class="flip" id="flip" role="button" tabindex="0" aria-label="Odwróć kartę: widok frontalny albo wędrówka otolitów" onclick="flipGuide()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipGuide();}">
@@ -722,15 +725,17 @@ function renderDiag(){
   const mechNote = v==="canalo"
     ? "Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji."
     : "Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.";
-  const phaseInner=(ph,i)=>`
+  const phaseInner=(ph,i)=>{
+    const phs=poseSpec(ph);                              // kanoniczna poza fazy testu (Etap 2)
+    return `
       <div class="ptitle">${ph.ptitle}</div><div class="ppos">${ph.ppos}</div>
-      <div class="minihead"><div class="panelbox"><h4>Ułożenie</h4>${posture(ph.body,ph.face,ph.yaw,A)}</div>
-        <div class="panelbox"><h4>Głowa (z góry)</h4><div data-dialnys="${i}">${headDial(ph.yaw,ph.face,"topDownBehind")}</div></div></div>
+      <div class="minihead"><div class="panelbox"><h4>Ułożenie</h4>${posture(phs,A)}</div>
+        <div class="panelbox"><h4>Głowa (z góry)</h4><div data-dialnys="${i}">${headDial(phs,"topDownBehind")}</div></div></div>
       <div class="panelbox" style="margin-top:10px"><h4>Widok frontalny</h4>
         <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div><span class="emk">L</span></div>
         <div class="nyslabel"><span class="arrow">${arrowGlyph(ph.nys)}</span><span>${ph.label}${ph.nys.persistent?" · uporczywy":" · przemijający"}</span></div>
-        ${gravArrowFor(ph.body, ph.yaw, ph.face)}</div>
-      <div class="note">${ph.note}</div>`;
+        ${gravArrowFor(phs)}</div>
+      <div class="note">${ph.note}</div>`;};
   const phaseHTML = phases.length===2
     ? `<div class="flipwrap" style="margin-top:6px"><div class="flip" id="phaseflip" style="min-height:470px" role="button" tabindex="0" aria-label="Odwróć: ${phases[0].ptitle} albo ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
         <div class="face front phaseface">${phaseInner(phases[0],0)}<div class="fliphint">${FLIP_ICO} ${phases[1].ptitle}</div></div>
