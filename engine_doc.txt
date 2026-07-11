@@ -441,6 +441,8 @@ KONWENCJE
    integratorTau  : stała czasowa integratora nerwowego [s]; zdrowy ~25, ośrodek „leaky" ~1–3. [H6]
    skewTone       : grawiceptywna asymetria pionowa [°, ze znakiem]; + = oko P wyżej.          [H7]
    otrTorsion     : torsja OTR [°] (bieguny górne ku oku niższemu).                            [H7]
+   sacculeL/R     : funkcja WORECZKA (0..1, zdrowy=1) → cVEMP; n. DOLNY.                       [H22]
+   utricleL/R     : funkcja ŁAGIEWKI (0..1, zdrowy=1) → oVEMP + współtworzy SVV; n. GÓRNY.     [H22]
    comp           : poziom KOMPENSACJI ośrodkowej c∈[0,1]; 0=faza ostra, 1=pełna symetria.     [H10][H11]
    pacemakerBias  : trwały (sticky) ładunek pacemakera jądra chorego [Hz] → oczopląs Bechterewa. [H11]
    lesionEar      : jawna strona chora dla kompensacji ("P"/"L"/null=auto ze słabszego błędnika).
@@ -496,6 +498,15 @@ API PUBLICZNE (zwracane z modułu)
    central gdy |skewTone|≥SKEW_CENTRAL(2.5°) — dopiero ZNACZĄCY skew liczony jako cecha OŚRODKOWA (INFARCT);
    mały skew (np. łagiewka n. górnego) present, ale NIE central (unika fałszywego „udaru" — poprawka z przeglądu).
    Test naprzemiennego zasłaniania: odsłonięte oko łapie fiksację PIONOWĄ SAKADĄ = TS dodatni = ośrodek.
+ svv(p) -> {tiltSide, deg, abnormal}                                                             [H22]
+   ETAP 7 — SUBIEKTYWNA PIONOWA (SVV): grawiceptywny przechył = f(łagiewka utricle + kanały PIONOWE AC/PC).
+   Pion przechyla się KU STRONIE CHOREJ (słabszej grawiceptywnie). CZULSZY niż odchylenie skośne: neuronitis
+   DOLNY daje ~2.5° przechyłu MIMO prawidłowego skew (skew z łagiewki=0). Symetria (BVH)→0. abnormal gdy ≥2°.
+   NIE wpływa na werdykt HINTS (odczyt uzupełniający).
+ vemp(p) -> {cVEMP:{L,R,ampL,ampR,asym,weakEar,organ,nerve}, oVEMP:{...}}                         [H22]
+   ETAP 7 — VEMP: cVEMP(szyjny)≈WORECZEK→n.DOLNY (ipsi); oVEMP(oczny)≈ŁAGIEWKA→n.GÓRNY. Amplituda z funkcji
+   narządu (sacculeL/R, utricleL/R ∈0..1). Status: ≥0.65 prawidłowy / ≥0.3 obniżony / <0.3 zniesiony. Rozdziela
+   gałęzie: neuronitis DOLNY→cVEMP↓+oVEMP norma; GÓRNY→odwrotnie; BVH→oba obustronnie. weakEar = ucho słabsze.
 
  SCENARIOS, scenario(key) -> patient                                                            [H8]
    Presety: normal · neuritisR/neuritisL (OBWÓD: tone↓ + gain↓ chorego kanału, kłaczek sprawny,
@@ -554,8 +565,9 @@ API PUBLICZNE (zwracane z modułu)
  nerveBranchLesion(ear, branch, sev) -> overrides do makePatient                                 [H15]
    E1 — wypadnięcie GAŁĘZI nerwu (branch "superior"/"inferior", sev 0..1): ton→R0·(1−sev), gain→1−0.65·sev
    kanałów gałęzi; superior dokłada MAŁY skewTone (1.5·sev, łagiewka — < próg ośrodkowy) + caloricGain↓ (1−sev;
-   HC=nerw górny). Inferior NIE rusza kaloryki (HC oszczędzony). SUPERIOR → oczopląs + patolog. vHIT poziomego
-   I przedniego + kaloryka↓, TYLNY prawidłowy; INFERIOR → tylko TYLNY (downbeat torsyjny, HC/kaloryka prawidłowe).
+   HC=nerw górny) + utricle↓ (oVEMP); inferior dokłada saccule↓ (cVEMP) — NIE rusza kaloryki (HC oszczędzony).
+   SUPERIOR → oczopląs + patolog. vHIT poziomego I przedniego + kaloryka↓ + oVEMP↓ + SVV↑, TYLNY/cVEMP prawidłowe;
+   INFERIOR → tylko TYLNY (downbeat torsyjny) + cVEMP↓ + mały przechył SVV, HC/kaloryka/oVEMP/skew-dewiacja prawidłowe. [H22]
 
  bilateralLoss(sev) -> overrides do makePatient                                                  [H19]
    E4 — BVH/otoksyczność: SYMETRYCZNY spadek tonu+gain wszystkich 6 kanałów + caloricGain↓ obustronnie. EMERGENTNIE: symetria → BRAK
@@ -634,6 +646,12 @@ API PUBLICZNE (zwracane z modułu)
    skew/pressureStimulus. `findings` = zdania PL; `localization` z wzorca vHIT+kaloryki (nerw górny/dolny/pełny/
    BVH/wodniak/ośrodkowa); `ambiguities` = PUŁAPKI: dysocjacja→Ménière napadowy (HINTS n/d), drażnienie mylące
    „ośrodek", BVH (HINTS zakłada jednostronny AVS), neuronitis DOLNY (kaloryka ślepa). Narzędzie DYDAKTYCZNE.
+   LOKALIZACJA nerwu GÓRNEGO (popr. 2026-07-10, ujawnione przez UI): nerw górny ucha E = kanał poziomy-E +
+   przedni-E; przedni-P leży w płaszczyźnie RALP, przedni-L w LARP (tylny-E = nerw dolny — oszczędzony). Stąd
+   wzorzec „nerw górny" = HC patologiczny + JEDNA skośna (od strony chorej: supObl) patologiczna, druga (othObl)
+   prawidłowa — a nie „obie skośne prawidłowe" (to dałoby się tylko przy izolowanym HC). Osobna gałąź „kanał
+   poziomy" gdy obie skośne prawidłowe (izolowany HC). Bez tej gałęzi najczęstszy neuronitis górny wpadał w
+   „nieokreślona".
 
 STAŁE EKSPORTOWANE (w publicznym obiekcie NeuroVOR — używane też przez UI, np. R0, VIS_THRESH): R0=90
    (spoczynek), R_SAT=300 (nasycenie), SPV_MAX=12 (°/s przy pełnej asymetrii), VIS_THRESH=2 (°/s — próg
@@ -784,11 +802,24 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
       dysocjacja kaloryka/vHIT); Halmagyi GM et al. (2017), "The video head impulse test," Front Neurol 8:258.
       → próba kaloryczna bitermalna, wzór CP/DP (niedowład kanału, przewaga kierunkowa), rozprzężenie
         nisko-/wysokoczęstotliwościowe (kaloryka vs vHIT) → caloric()/caloricBattery().
+[H22] Musat GC, Preda MA, Tanase I, et al. (2025). "Inferior Vestibular Neuritis: Diagnostic Criteria,
+      Clinical Features, and Prognosis — A Focused Review." Medicina (Kaunas) 61(2):361. doi:10.3390/medicina61020361.
+      → NEURONITIS n. DOLNEGO (nerveBranchLesion(ear,"inferior")). ZGODNOŚĆ z silnikiem: (a) oczopląs
+        SKRĘTNO-DOWNBEAT, kierunkowo stały, tłumiony fiksacją, skręt KU ZDROWEMU uchu (verticalBeat: v<0,
+        t ku zdrowemu; bez składowej poziomej); (b) vHIT — kanał TYLNY patologiczny (LARP/RALP), poziomy i
+        przedni PRAWIDŁOWE; (c) kaloryka PRAWIDŁOWA (HC = n. górny); (d) SVV — przechył KU stronie chorej
+        (svv(): łagiewka + kanały pionowe → ~2.5° dla dolnego, MIMO prawidłowego odchylenia skośnego = skew
+        tylko z łagiewki); (e) VEMP — cVEMP obniżony (woreczek, ipsi) / oVEMP prawidłowy (vemp(): cVEMP↓ n.
+        dolny, oVEMP↓ n. górny). Dodano po walidacji 2026-07-10: parametry sacculeL/R, utricleL/R + funkcje
+        svv()/vemp() (patrz ETAP 7 API). UWAGA: standardowy HINTS = „normal" (test poziomy/łagiewkowy jest
+        ŚLEPY na izolowany IVN — zgodne z artykułem; lokalizację łapie dopiero vHIT kanału tylnego + cVEMP).
 
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE
     (etap 7/E3) składane realnie PER PARA współpłaszczyznowa (verticalBeat), lecz z uproszczonym TORS_V=0.8;
-    RENDERER HINTS rysuje na razie tylko poziom+skręt — pionowo-skrętny wektor liczony, ale nierysowany (→ UI/U3);
+    RENDERER HINTS rysuje poziom + PION + skręt (dodane w U4: neuroNysParams Av/vDir; downbeat n. dolnego widoczny);
+    animacja BRAMKOWANA progiem widoczności (strength < VIS_THRESH/SPV_MAX → 0), by nie pokazywać sub-progowego
+    dryfu spojrzeniowego zdrowego (τ=25 → 0.8°/s) — spójne z etykietą (spv<VIS_THRESH = „brak oczopląsu");
   - vHIT: pojedyncza wartość gain (kanał pobudzany); sakady covert/overt jako PODZIAŁ czasowy całkowitej
     korekty (udział z fuzji szyjno-ocznej), bez pełnej dynamiki prędkości gałki;
   - integrator liniowy (dryf θ/τ) bez asymetrii poziom/pion i bez rebound nystagmus;

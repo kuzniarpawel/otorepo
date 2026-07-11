@@ -74,6 +74,37 @@ corr(t) znosi część niedomiaru W TRAKCIE pchnięcia (T_COV..T_IMP), reszta JA
 hitLabel: bez sakady / JAWNA (nieskomp.) / JAWNA+UKRYTA (częśc.) / UKRYTA (skomp. — bedside „prawidłowy", tylko vHIT).
 Fizyka i literatura: engine_doc „MODUŁ NeuroVOR / ETAP 6" [H10]-[H14].
 
+--- „MATEMATYCZNY PACJENT" — tryb WŁASNYCH PARAMETRÓW (etap 7 / UI, 2026-07-10) ---
+4. przycisk „Własny" w selektorze HINTS (seg four) + wejście z ekranu setup. state.hintsCustom = PEŁNY obiekt
+NeuroVOR.makePatient (null → tryb scenariuszowy). hintsActivePatient() godzi oba tryby (używane też w renderHints,
+hintsHIT, refreshHints*). Wejście domyślne: łagodny neuronitis górny P (nerveBranchLesion('P','superior',0.6)).
+ • hintsCustomPanel() — sterowany NeuroVOR.PARAM_SPEC: grupy basic zawsze widoczne, tier „advanced" w <details>.
+   Wiersz suwaka = <input.comprange.prange> (oninput→setHintsParam: liczba→refreshHintsCustom, select→render;
+   onchange→rerunHintsHIT) + [data-pval] na żywo. Presety scenariuszowe (HINTS_PRESETS: Zdrowy/BVH/Ménière L·P/SCDS L·P/Udar) → loadHintsPreset = pełny
+   makePatient (suwaki mają wartości). NEURONITIS = osobny przycisk-tryb (loadHintsNeuritis, state.hintsPreset=
+   "neuritis") — NIE ma osobnych przycisków górny/dolny/pełny×L/P (byłyby duplikatem ramki). Ramka „Wypadnięcie
+   gałęzi nerwu" (Ucho + Gałąź Górny/Dolny/Cały + Nasilenie) pojawia się TYLKO w trybie neuritis (dynamicznie wg
+   aktywnego presetu) + żywe podsumowanie nerveLesionSummary() [data-nervesummary]. applyHintsNerve RESETUJE
+   kanały obwodowe do zdrowia (HINTS_CANAL_KEYS), potem nakłada nerveBranchLesion (ośrodek/kompensacja ZACHOWANE).
+   openHintsCustom inicjuje domyślny neuronitis TYLKO gdy brak pacjenta (spójność ramka↔suwaki). Dehiscencja=select;
+   aktywny preset podświetlony (.preset[aria-pressed]).
+ • hintsReadoutHTML(p) = NeuroVOR.clinicalReadout: lista findings + chipy .rchip.per/.cen (obwód/ośrodek) + pułapki
+   + LOKALIZACJA. W trybie quiz (state.hintsQuiz && !reveal) lokalizacja/werdykt/parametry UKRYTE → banner
+   hintsQuizBanner + [Odsłoń]. hintsRandomPatient() = 7 archetypów (zdrowy/neuronitis górny·dolny/BVH/Ménière/SCDS/udar).
+ • vHIT RALP/LARP (U3): selektor płaszczyzny (HC/RALP/LARP) → przyciski pchnięcia per kanał (NeuroVOR.PLANE_CANALS).
+   hintsHIT(canal,ear) wstecznie zgodne z hintsHIT('P'). startHIT UOGÓLNIONY: głowa+źrenica przesuwają się wzdłuż
+   ekranowego wektora sakady hi.saccade {h,v,t} (skala −camRx w x, −v w y) + rotacja torsyjna źrenic; HC ma v=0,t=0 →
+   rotate(0)=no-op = zachowanie bez zmian. hitSaccadeDir opisuje kierunek (pozioma / ku górze·dołowi + skręt).
+ • SCDS (U4): gdy p.dehiscence → przyciski „🔊 Dźwięk/Valsalva" (pobudzenie) i „Podciśnienie" (hamowanie) →
+   hintsSCDSStim → NeuroVOR.pressureStimulus → startNeuroNys pionowo-skrętny na [data-neuronys]; po ~4.2 s powrót
+   do spoczynku (SCDS nie ma oczopląsu spoczynkowego). RENDERER OCZOPLĄSU dorobiony o PION: neuroNysParams zwraca
+   Av/vDir (siła pionowo-skrętna = strengthV lub strength gdy dir=0) + torsja = 8·max(siłaH,siłaV); startNeuroNys
+   dokłada translację y=−o·Av·vDir (dokończenie odkładanego E3 — neuronitis DOLNY rysuje downbeat torsyjny).
+ • Zapis/link (U7): hintsCustomDiff (różnica od normy) → base64(UTF-8 JSON) w #p=… + localStorage; loadHintsFromHash
+   na starcie → tryb „Własny". Dane TYLKO lokalnie. Werdykt/skew: tsRow i skewLabel rozróżniają ts.central —
+   śladowy skew łagiewkowy (<SKEW_CENTRAL, nerw górny) pokazywany jako OBWODOWY, nie „ośrodek".
+Fizyka i literatura: engine_doc „ETAP 7 / NEUROANATOMIA" [H15]-[H21].
+
 --------------------------------------------------------------------------
  Scene3D  (etap A)
 --------------------------------------------------------------------------

@@ -287,6 +287,39 @@
   .comprange::-moz-range-thumb{width:19px;height:19px;border-radius:50%;background:var(--primary);border:2px solid var(--ink);cursor:pointer}
   .comprow{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin:3px 0 5px}
   .comprow b{color:var(--text);font-weight:700}
+  /* --- Matematyczny pacjent (własne parametry) --- */
+  .seg.four{grid-template-columns:1fr 1fr}
+  .custompanel .presets{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}
+  .preset{appearance:none;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);
+    font-weight:700;font-size:12px;padding:7px 11px;border-radius:999px;transition:background .15s,border-color .15s}
+  .preset:hover{border-color:var(--primary)}
+  .preset[aria-pressed="true"]{border-color:var(--primary);color:var(--primary);background:rgba(79,210,238,.12)}
+  .pgroup{margin:10px 0 4px;padding-top:8px;border-top:1px solid var(--line)}
+  .pgtitle{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:4px}
+  .pghelp{display:block;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted);font-weight:500;margin-top:2px}
+  .prow{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .prow .plabel{flex:0 0 40%;font-size:12.5px;color:var(--text)}
+  .prow .prange{flex:1 1 auto;margin:0}
+  .prow .pval{flex:0 0 60px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:var(--primary);font-weight:700}
+  .pillseg.small button{padding:6px 10px;min-height:30px;font-size:11.5px}
+  .advbox{margin-top:8px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:var(--panel2)}
+  .advbox summary{cursor:pointer;padding:11px 2px;font-size:12.5px;font-weight:700;color:var(--text);list-style:none}
+  .advbox summary::-webkit-details-marker{display:none}
+  .advbox summary::before{content:"▸ ";color:var(--primary)}
+  .advbox[open] summary::before{content:"▾ "}
+  .advbox[open]{padding-bottom:10px}
+  .readout{margin-top:12px;border-radius:var(--r);padding:14px 15px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+  .readout h4{margin:0 0 8px;font-family:var(--display);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:var(--faint)}
+  .readout .rfind{margin:0 0 10px;padding-left:18px;font-size:13px;line-height:1.5}
+  .readout .rfind li{margin:3px 0}
+  .rloc{font-size:14px;margin:4px 0 8px}
+  .rloc .eyebrow{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:4px}
+  .rsigns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .rchip{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+  .rchip.per{background:rgba(63,209,158,.14);color:#7fe3c4;border-color:#2f7f68}
+  .rchip.cen{background:rgba(217,87,107,.14);color:#ff9bab;border-color:#d9576b}
+  .rsub{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+  .rsub ul{margin:4px 0 0;padding-left:18px}.rsub li{margin:3px 0}
 </style>
 
 </head><body><div class="wrap" id="app">
@@ -648,6 +681,9 @@ const NeuroVOR = (()=>{
     // ETAP 7 — NEUROANATOMIA (per-kanał). Kanał POZIOMY (HC) = toneL/R, gainL/R powyżej. Kanały PIONOWE (domyślnie zdrowe):
     toneAcL:R0, toneAcR:R0, gainAcL:1.0, gainAcR:1.0,   // kanał PRZEDNI (anterior, „górny") L/P — n. GÓRNY (superior)
     tonePcL:R0, tonePcR:R0, gainPcL:1.0, gainPcR:1.0,   // kanał TYLNY  (posterior)              L/P — n. DOLNY  (inferior)
+    // NARZĄDY OTOLITOWE (funkcja 0..1, zdrowy=1) — badane przez VEMP + współtworzą SVV (etap 7, [H22]):
+    sacculeL:1.0, sacculeR:1.0,   // WORECZEK L/P → cVEMP (n. DOLNY, ipsilateralnie)
+    utricleL:1.0, utricleR:1.0,   // ŁAGIEWKA L/P → oVEMP (n. GÓRNY) + grawiceptywny przechył SVV
     dehiscence:null          // SCDS: dehiscencja kanału GÓRNEGO/przedniego — null | "L" | "P" (trzecie okno, etap 7)
   }, o||{}); }
 
@@ -673,7 +709,11 @@ const NeuroVOR = (()=>{
     if(branch==="superior"){
       o.skewTone = (ear==="P"?1:-1)*1.5*sev;                       // łagiewka (utriculus) → MAŁY skew (obwodowy, < próg ośrodkowy SKEW_CENTRAL)
       o[ear==="P"?"caloricGainR":"caloricGainL"] = 1-sev;           // HC = nerw GÓRNY → kaloryka osłabiona (zgodnie z vHIT)
+      o[ear==="P"?"utricleR":"utricleL"] = 1-sev;                   // ŁAGIEWKA → oVEMP osłabiony (n. górny); cVEMP zachowany [H22]
     }                                                                // n. DOLNY: HC oszczędzony → kaloryka PRAWIDŁOWA (emergent)
+    if(branch==="inferior"){
+      o[ear==="P"?"sacculeR":"sacculeL"] = 1-sev;                   // WORECZEK → cVEMP osłabiony (n. dolny); oVEMP zachowany [H22]
+    }
     return o;
   }
 
@@ -687,7 +727,8 @@ const NeuroVOR = (()=>{
     return { toneL:tone, toneR:tone, gainL:gain, gainR:gain,
              toneAcL:tone, toneAcR:tone, gainAcL:gain, gainAcR:gain,
              tonePcL:tone, tonePcR:tone, gainPcL:gain, gainPcR:gain,
-             caloricGainL:1-sev, caloricGainR:1-sev };            // kaloryka OBUSTRONNIE osłabiona (LF) → suma odpowiedzi ↓
+             caloricGainL:1-sev, caloricGainR:1-sev,              // kaloryka OBUSTRONNIE osłabiona (LF) → suma odpowiedzi ↓
+             sacculeL:1-sev, sacculeR:1-sev, utricleL:1-sev, utricleR:1-sev };   // otoksyczność → VEMP obustronnie osłabiony (SYMETRYCZNIE → SVV=0)
   }
 
   // ETAP 7 (E4) — CHOROBA MÉNIÈRE'A / wodniak endolimfatyczny: NAPADOWE wahania tonu ucha CHOREGO.
@@ -1022,6 +1063,37 @@ const NeuroVOR = (()=>{
       torsionDeg: p.otrTorsion||0 };                         // torsja OTR (bieguny górne ku oku niższemu)
   }
 
+  // ETAP 7 ([H22]) — SVV / GRAWICEPTYWNY PRZECHYŁ PIONU (subiektywna pionowa). Osobny, CZULSZY pomiar niż
+  // odchylenie skośne: łączy ŁAGIEWKĘ (utricle) i kanały PIONOWE (przedni+tylny). W ostrym ubytku OBWODOWYM
+  // pion przechyla się KU STRONIE CHOREJ (ipsiwersyjnie). Neuronitis DOLNY (utrata tylnego) daje MAŁY przechył
+  // ku choremu, mimo prawidłowego odchylenia skośnego (skew z łagiewki = 0) — zgodne z Musat 2025. Symetria
+  // (BVH) → 0. NIE wpływa na werdykt HINTS (to odczyt uzupełniający, nie składowa INFARCT).
+  const SVV_MAX=12, SVV_UTRICLE=1.5, SVV_VCANAL=1.0, SVV_GAIN=5, SVV_THRESH=2;
+  function svv(p){
+    const g = e => Math.max(0,Math.min(1,p["utricle"+e]))*SVV_UTRICLE
+      + ((afferent(p["toneAc"+e],0)+afferent(p["tonePc"+e],0))/(2*R0))*SVV_VCANAL;   // grawiceptywna „siła" ucha
+    const gR=g("R"), gL=g("L"), imb=gR-gL;                   // >0 prawa mocniejsza → pion ku LEWEJ (słabszej/chorej)
+    const tiltSide = imb>1e-6?"L" : imb<-1e-6?"P" : null;    // KU STRONIE CHOREJ (słabszej grawiceptywnie)
+    const deg = Math.min(SVV_MAX, Math.abs(imb)*SVV_GAIN);
+    return { tiltSide, deg, abnormal: deg>=SVV_THRESH };
+  }
+
+  // ETAP 7 ([H22]) — VEMP: przedsionkowe miogenne potencjały wywołane. cVEMP (szyjny) ≈ WORECZEK (n. DOLNY),
+  // ipsilateralnie; oVEMP (oczny) ≈ ŁAGIEWKA (n. GÓRNY). Rozdziela gałęzie nerwu: neuronitis DOLNY → cVEMP↓ +
+  // oVEMP prawidłowy; GÓRNY → odwrotnie. Amplituda z funkcji narządu (0..1). AR% = asymetria międzyuszna.
+  const VEMP_THRESH=0.3;    // amplituda < 0.3 → „zniesiony"; 0.3..0.65 → „obniżony"; ≥0.65 → „prawidłowy"
+  function vemp(p){
+    const clamp = x => Math.max(0, Math.min(1, x));
+    const stat = a => a>=0.65 ? "prawidłowy" : a>=VEMP_THRESH ? "obniżony" : "zniesiony";
+    const asym = (L,R) => (L+R)>0 ? Math.abs(L-R)/(L+R) : 0;                     // AR% (0..1)
+    const weak = (L,R) => Math.abs(L-R)<0.1 ? null : (L<R?"L":"P");
+    const cL=clamp(p.sacculeL), cR=clamp(p.sacculeR), oL=clamp(p.utricleL), oR=clamp(p.utricleR);
+    return {
+      cVEMP:{ organ:"woreczek", nerve:"dolny", L:stat(cL), R:stat(cR), ampL:cL, ampR:cR, asym:asym(cL,cR), weakEar:weak(cL,cR) },
+      oVEMP:{ organ:"łagiewka", nerve:"górny", L:stat(oL), R:stat(oR), ampL:oL, ampR:oR, asym:asym(oL,oR), weakEar:weak(oL,oR) }
+    };
+  }
+
   // ETAP 7 (E4.5) — PRÓBA KALORYCZNA (bitermalna, wzór Jongkeesa). [H21]
   // Kaloryka = NISKOczęstotliwościowy (~0.003 Hz) test kanału POZIOMEGO — drugi koniec charakterystyki
   // przenoszenia względem vHIT (~5 Hz). Dlatego skaluje się OSOBNYM gainem (caloricGain), nie `gain` (HF):
@@ -1157,6 +1229,11 @@ const NeuroVOR = (()=>{
       { key:"tauVS",         label:"Velocity storage (τ)", min:1, max:20, step:0.5, unit:"s", def:15 },
       { key:"lesionEar", label:"Strona chora (kompensacja)", type:"select", def:null,
         options:[ {v:null,l:"auto"}, {v:"L",l:"lewa"}, {v:"P",l:"prawa"} ] } ]},
+    { group:"Otolity (VEMP / SVV)", tier:"advanced", help:"Woreczek→cVEMP (n. dolny); łagiewka→oVEMP (n. górny). Współtworzą przechył SVV.", params:[
+      { key:"sacculeL", label:"Woreczek lewy (cVEMP)",  min:0, max:1, step:0.05, unit:"", def:1 },
+      { key:"sacculeR", label:"Woreczek prawy (cVEMP)", min:0, max:1, step:0.05, unit:"", def:1 },
+      { key:"utricleL", label:"Łagiewka lewa (oVEMP)",  min:0, max:1, step:0.05, unit:"", def:1 },
+      { key:"utricleR", label:"Łagiewka prawa (oVEMP)", min:0, max:1, step:0.05, unit:"", def:1 } ]},
     { group:"Trzecie okno (SCDS)", tier:"advanced", help:"Dehiscencja kan. górnego → objaw Tullio/Hennebert.", params:[
       { key:"dehiscence", label:"Dehiscencja kan. górnego", type:"select", def:null,
         options:[ {v:null,l:"brak"}, {v:"L",l:"lewa"}, {v:"P",l:"prawa"} ] } ]}
@@ -1211,17 +1288,33 @@ const NeuroVOR = (()=>{
     // SCDS
     if(scds && scds.present){ findings.push(`SCDS: dźwięk/ciśnienie wyzwala oczopląs pionowo-skrętny (dehiscencja po stronie ${side(p.dehiscence)}), bez ruchu głową.`); peripheralSigns.push("dodatni objaw Tullio/Hennebert (trzecie okno)"); }
 
-    // lokalizacja (z wzorca vHIT + kaloryki)
+    // SVV / przechył pionu — grawiceptywny (łagiewka + kanały pionowe); OBWODOWY, ku stronie chorej. Czulszy niż
+    // odchylenie skośne: neuronitis DOLNY daje mały przechył SVV mimo prawidłowego skew (skew z łagiewki=0). [H22]
+    const sv = svv(p);
+    if(sv.abnormal){ findings.push(`SVV: przechył pionu ku stronie ${side(sv.tiltSide)} (${R1(sv.deg)}°) — grawiceptywny, obwodowy${sk.present?"":" (odchylenie skośne prawidłowe)"}.`); peripheralSigns.push("przechył SVV ku stronie chorej"); }
+
+    // VEMP — cVEMP ≈ WORECZEK (n. DOLNY), oVEMP ≈ ŁAGIEWKA (n. GÓRNY): rozdziela gałęzie nerwu. [H22]
+    const ve = vemp(p);
+    if(ve.cVEMP.weakEar){ findings.push(`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.cVEMP.weakEar)} — woreczek (nerw DOLNY).`); peripheralSigns.push("cVEMP obniżony (woreczek — n. dolny)"); }
+    if(ve.oVEMP.weakEar){ findings.push(`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.oVEMP.weakEar)} — łagiewka (nerw GÓRNY).`); peripheralSigns.push("oVEMP obniżony (łagiewka — n. górny)"); }
+
+    // lokalizacja (z wzorca vHIT + kaloryki). Nerw GÓRNY (ucho E) = kanał poziomy-E + przedni-E; przedni-P leży
+    // w płaszczyźnie RALP, przedni-L w LARP (tylny-E — nerw DOLNY — oszczędzony). Stąd wzorzec superior =
+    // HC patologiczny + JEDNA płaszczyzna skośna (od strony chorej) patologiczna, druga prawidłowa.
     const lesSide = cal.weakEar || h.hi.side;
+    const supObl = lesSide==="P" ? ralp.abnormal : lesSide==="L" ? larp.abnormal : false;   // płaszczyzna z przednim kanałem ucha chorego
+    const othObl = lesSide==="P" ? larp.abnormal : lesSide==="L" ? ralp.abnormal : false;   // druga skośna (kanał tylny — nerw dolny)
     let localization;
     if(cal.bilateralWeak && hc.abnormal)                              localization = "obustronna westybulopatia (BVH)";
     else if(hc.abnormal && ralp.abnormal && larp.abnormal)           localization = `pełny ubytek błędnika po stronie ${side(lesSide)}`;
-    else if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar) localization = "nerw DOLNY (kanał tylny) — kaloryka i HC prawidłowe";
+    else if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar){ const pcS=ralp.abnormal?"L":"P"; localization = `nerw DOLNY (kanał tylny) po stronie ${side(pcS)}${ve.cVEMP.weakEar===pcS?" + cVEMP↓ (woreczek)":""} — kaloryka i HC prawidłowe`; }   // RALP zawiera tylny-L, LARP tylny-P
     else if(cal.dissociation && cal.weakEar && !hc.abnormal)          localization = `ubytek NISKOczęstotliwościowy (wodniak / Ménière?) po stronie ${side(cal.weakEar)}`;
-    else if((hc.abnormal||cal.weakEar) && !ralp.abnormal && !larp.abnormal) localization = `nerw GÓRNY po stronie ${side(lesSide)} (poziomy + przedni)`;
+    else if((hc.abnormal||cal.weakEar) && supObl && !othObl)          localization = `nerw GÓRNY po stronie ${side(lesSide)} (poziomy + przedni)${ve.oVEMP.weakEar===lesSide?" + oVEMP↓ (łagiewka)":""}`;
+    else if((hc.abnormal||cal.weakEar) && !ralp.abnormal && !larp.abnormal) localization = `nerw GÓRNY po stronie ${side(lesSide)} (kanał poziomy)`;
+    else if(ve.cVEMP.weakEar && !ve.oVEMP.weakEar && !planes.length && !cal.weakEar) localization = `nerw DOLNY (woreczek) po stronie ${side(ve.cVEMP.weakEar)} — izolowany ubytek otolitowy (cVEMP↓, oVEMP prawidłowy)`;
     else if(h.verdict==="central")                                    localization = "ośrodkowa (pień/móżdżek)";
     else if(scds && scds.present)                                     localization = `SCDS / trzecie okno po stronie ${side(p.dehiscence)}`;
-    else if(!h.ny.hasSpontaneous && !cal.caloricWeak && !planes.length && !(sk.present)) localization = "brak lokalizacji (obraz prawidłowy)";
+    else if(!h.ny.hasSpontaneous && !cal.caloricWeak && !planes.length && !(sk.present) && !sv.abnormal && !ve.cVEMP.weakEar && !ve.oVEMP.weakEar) localization = "brak lokalizacji (obraz prawidłowy)";
     else                                                              localization = "nieokreślona";
 
     // niejednoznaczności / pułapki
@@ -1232,11 +1325,11 @@ const NeuroVOR = (()=>{
     if(cal.reverseDissociation) ambiguities.push("Odwrotna dysocjacja: vHIT poziomy patologiczny przy PRAWIDŁOWEJ kalorycе — ubytek WYSOKOczęstotliwościowy (lub wczesna/częściowo skompensowana faza).");
 
     return { verdict:h.verdict, localization, findings, peripheralSigns, centralSigns, ambiguities,
-      hints:h, caloric:cal, vhit:{ HC:hc, RALP:ralp, LARP:larp }, spontaneous:dark, skew:sk, scds };
+      hints:h, caloric:cal, vhit:{ HC:hc, RALP:ralp, LARP:larp }, spontaneous:dark, skew:sk, scds, svv:sv, vemp:ve };
   }
 
   return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, afferent, makePatient, compensate, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
-           headImpulse, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, caloric, caloricBattery,
+           headImpulse, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, svv, vemp, caloric, caloricBattery,
            CANAL_PARAM, NERVE_CANALS, nerveBranchLesion, bilateralLoss, meniere,
            COPLANAR, PLANE_CANALS, canalSpec, canalPlane, qpFull, vhitPlane,
            SCENARIOS, scenario, hints, PARAM_SPEC, clinicalReadout };
@@ -1727,6 +1820,12 @@ const state={
   // HINTS / różnicowanie (etap: silnik NeuroVOR)
   hintsScenario:"neuritisR", hintsSide:"P", hintsFix:false, hintsGaze:0,   // scenariusz(engine key) · ucho zajęte neuronitis(L/P) · fiksacja · spojrzenie(-1/0/+1)
   hintsComp:0, hintsRecovery:false, hintsHitSide:null,       // kompensacja ośrodkowa c(0..1) · regeneracja (Bechterew) · ostatnio pchnięte ucho — etap 6
+  // „Matematyczny pacjent" (etap 7 / faza UI). hintsCustom = pełny obiekt makePatient (null → tryb scenariuszowy).
+  hintsCustom:null, hintsAdvanced:false, hintsQuiz:false, hintsQuizReveal:false,
+  hintsNerveEar:"P", hintsNerveBranch:"superior", hintsNerveSev:0.6,   // szybki selektor wypadnięcia gałęzi nerwu
+  hintsPreset:null,                                // aktywny preset/tryb (klucz HINTS_PRESETS lub "neuritis") — podświetlenie + dynamiczna ramka
+  hintsPlane:"HC", hintsHitCanal:"horizontal",     // vHIT: wybrana płaszczyzna (HC/RALP/LARP) · kanał ostatniego pchnięcia
+  hintsSCDS:null,                                  // SCDS: ostatni bodziec (obiekt pressureStimulus) lub null
 };
 
 /* ============ rAF rejestr ============ */
@@ -2356,8 +2455,9 @@ function renderSetup(){
     const scDesc={normal:"prawidłowy VOR — bez oczopląsu", neuritis:"obwód — wypadnięcie błędnika", stroke:"ośrodek — objaw groźny (AVS)"};
     const scOpt=(f,key,lbl)=>`<button class="opt" aria-pressed="${curFam===f}" onclick="openHints('${key}')">${lbl}<small>${scDesc[f]}</small></button>`;
     body=`<div class="group"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">obwód ↔ ośrodek</span></div>
-        <div class="seg three">${scOpt('normal','normal','Zdrowy / równowaga')}${scOpt('neuritis','neuritisR','Neuronitis przedsionkowy')}${scOpt('stroke','strokeCentral','Udar móżdżku / pnia')}</div></div>
-      <div class="note" style="margin-top:14px">Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz (przy neuronitis stronę ucha ustawisz przełącznikiem na karcie HINTS).</div>`;
+        <div class="seg three">${scOpt('normal','normal','Zdrowy / równowaga')}${scOpt('neuritis','neuritisR','Neuronitis przedsionkowy')}${scOpt('stroke','strokeCentral','Udar móżdżku / pnia')}</div>
+        <button class="opt" style="margin-top:8px" onclick="openHintsCustom()"><b>Własny — matematyczny pacjent</b><small>ustaw surową fizjologię (suwaki); cały obraz kliniczny wynika sam</small></button></div>
+      <div class="note" style="margin-top:14px">Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz (przy neuronitis stronę ucha ustawisz przełącznikiem na karcie HINTS) albo tryb „Własny", by sterować każdym parametrem.</div>`;
   } else {
     const testOpt=k=>`<button class="opt" aria-pressed="${state.testKey===k}" onclick="openTest('${k}')">${DIAG[k].name}<small>${DIAG[k].tests}</small></button>`;
     body=`<div class="group"><div class="label"><span class="eyebrow">Test diagnostyczny</span><span class="hint">stronę ustalisz na karcie testu</span></div>
@@ -2565,7 +2665,9 @@ function hintsVerdictHTML(H){
       ? [tag("ok","N"), `Oczopląs: jednokierunkowy${H.ny.suppresses?", tłumiony fiksacją":""} — <b>obwodowy</b>.`]
       : [tag("","N"), `Oczopląs: brak samoistnego.`];
   const tsRow = H.ts.present
-    ? [tag("bad","TS"), `Test of Skew: dodatni (rozjazd pionowy) — <b>ośrodek</b>.`]
+    ? (H.ts.central
+        ? [tag("bad","TS"), `Test of Skew: dodatni (rozjazd pionowy) — <b>ośrodek</b>.`]
+        : [tag("ok","TS"), `Test of Skew: śladowy skew (${H.ts.skewDeg}°, łagiewka) — <b>obwodowy</b>, poniżej progu ośrodkowego.`])
     : [tag("ok","TS"), `Test of Skew: ujemny (oczy w linii).`];
   const vText = v==="central"?"Wzorzec OŚRODKOWY — groźny" : v==="peripheral"?"Wzorzec OBWODOWY — uspokajający" : "Bez cech ostrego zespołu przedsionkowego";
   const foot = v==="central"
@@ -2579,14 +2681,15 @@ function hintsVerdictHTML(H){
 }
 function renderHints(){
   const key=state.hintsScenario||"neuritisR";
-  const p=hintsCompPatient(key);                   // scenariusz + kompensacja ośrodkowa (etap 6)
+  const custom=!!state.hintsCustom;                // tryb „matematycznego pacjenta"
+  const p=hintsActivePatient();                    // scenariusz+kompensacja LUB własne parametry
   const fixOn=!!state.hintsFix;                    // true=światło/fiksacja · false=Frenzel/ciemność
   const gaze=state.hintsGaze||0, gazeDeg=gaze*20;  // -1/0/+1 → -20/0/+20°
   const nys=NeuroVOR.nystagmusAtGaze(p, gazeDeg, fixOn);
   const H=NeuroVOR.hints(p), sp=NeuroVOR.spontaneous(p);
-  const lastHi = state.hintsHitSide ? NeuroVOR.headImpulse(p, state.hintsHitSide) : null;   // odtwórz opis dla ostatnio pchniętego ucha
-  const fam = key==="normal" ? "normal" : key==="strokeCentral" ? "stroke" : "neuritis";   // 3 scenariusze; strona neuronitis osobno
-  const famBtn=(f,lbl,desc)=>`<button class="opt" aria-pressed="${fam===f}" onclick="setHintsDx('${f}')" style="min-height:auto;padding:10px 11px;font-size:12.5px">${lbl}<small>${desc}</small></button>`;
+  const lastHi = hintsHitSpecOf() ? NeuroVOR.headImpulse(p, hintsHitSpecOf()) : null;   // odtwórz opis dla ostatnio pchniętego kanału
+  const fam = custom ? "custom" : key==="normal" ? "normal" : key==="strokeCentral" ? "stroke" : "neuritis";
+  const famBtn=(f,lbl,desc,on)=>`<button class="opt" aria-pressed="${fam===f}" onclick="${on}" style="min-height:auto;padding:10px 11px;font-size:12.5px">${lbl}<small>${desc}</small></button>`;
   const gazeBtn=(g,lbl)=>`<button aria-pressed="${gaze===g}" onclick="setHintsGaze(${g})">${lbl}</button>`;
   const fixBtn=(v,lbl)=>`<button aria-pressed="${fixOn===v}" onclick="setHintsFix(${v})">${lbl}</button>`;
   $("#app").innerHTML=`
@@ -2594,9 +2697,9 @@ function renderHints(){
       <div class="ttl"><b>Różnicowanie — HINTS</b><span>ośrodek ↔ obwód · silnik z pierwszych zasad</span></div>
       ${fam==="neuritis" ? `<div class="sidewrap"><em>strona</em><div class="sidepill"><button data-s="L" aria-pressed="${state.hintsSide==='L'}" onclick="setHintsNeuritisSide('L')">L</button><button data-s="P" aria-pressed="${state.hintsSide==='P'}" onclick="setHintsNeuritisSide('P')">P</button></div></div>` : ""}</div>
     <div class="group" style="margin-top:4px"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">zmienia tylko parametry fizjologii</span></div>
-      <div class="seg three">${famBtn('normal','Zdrowy','prawidłowy VOR')}${famBtn('neuritis','Neuronitis','obwód')}${famBtn('stroke','Udar móżdżku','ośrodek (AVS)')}</div></div>
-    ${hintsCompPanel(key)}
-    <div data-verdict>${hintsVerdictHTML(H)}</div>
+      <div class="seg four">${famBtn('normal','Zdrowy','prawidłowy VOR',"setHintsDx('normal')")}${famBtn('neuritis','Neuronitis','obwód',"setHintsDx('neuritis')")}${famBtn('stroke','Udar','ośrodek (AVS)',"setHintsDx('stroke')")}${famBtn('custom','Własny','matematyczny pacjent',"openHintsCustom()")}</div></div>
+    <div data-verdict>${hintsVerdictBlock(H)}</div>
+    ${custom ? (state.hintsQuiz && !state.hintsQuizReveal ? hintsQuizBanner() : hintsCustomPanel()) : hintsCompPanel(key)}
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Oczopląs samoistny — widok frontalny</h4>
       <div class="hint-eyes ${fixOn?'':'dark'}">
@@ -2608,21 +2711,27 @@ function renderHints(){
         <div class="pillseg">${fixBtn(false,"Frenzel")}${fixBtn(true,"Światło")}</div></div>
       <div class="hctrl"><span class="lbl">Spojrzenie</span>
         <div class="pillseg">${gazeBtn(-1,"◀ lewo")}${gazeBtn(0,"środek")}${gazeBtn(1,"prawo ▶")}</div></div>
+      ${p.dehiscence ? `<div class="hctrl"><span class="lbl">SCDS · bodziec</span>
+        <div class="pillseg"><button onclick="hintsSCDSStim('sound')">🔊 Dźwięk / Valsalva</button><button onclick="hintsSCDSStim('suction')">Podciśnienie</button></div></div>
+      <div class="note" data-scdsnote>${scdsRestNote(p)}</div>` : ""}
       <div class="note" data-supplnote>${hintsSupplHTML(H,fixOn,sp)}</div>
     </div>
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Test pchnięcia głowy (HIT) — obserwuj cel ○</h4>
       <div class="viewpoint">widok badającego (naprzeciw pacjenta) — P = ucho prawe pacjenta, L = ucho lewe</div>
       <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-hit>${hitSVG()}</div><span class="emk">L</span></div>
-      <div class="hctrl" style="justify-content:center"><span class="lbl">Pchnij ku uchu</span>
-        <div class="pillseg"><button data-hitbtn="P" aria-pressed="${state.hintsHitSide==='P'}" onclick="hintsHIT('P')">prawemu (P)</button><button data-hitbtn="L" aria-pressed="${state.hintsHitSide==='L'}" onclick="hintsHIT('L')">lewemu (L)</button></div></div>
-      <div class="note" data-hitlabel>${lastHi ? hitLabel(lastHi) : "Kliknij stronę (ucho pacjenta), aby wykonać szybkie pchnięcie głowy. Oczy powinny zostać na celu; sakada korygująca = kanał chory po tej stronie."}</div>
+      <div class="hctrl" style="justify-content:center"><span class="lbl">Płaszczyzna</span>
+        <div class="pillseg">${["HC","RALP","LARP"].map(pl=>`<button aria-pressed="${(state.hintsPlane||'HC')===pl}" onclick="setHintsPlane('${pl}')">${pl==='HC'?'HC poziomy':pl}</button>`).join("")}</div></div>
+      <div class="hctrl" style="justify-content:center"><span class="lbl">Pchnij</span>
+        <div class="pillseg">${(NeuroVOR.PLANE_CANALS[state.hintsPlane||'HC']).map(s=>`<button data-hitbtn="${s.canal}-${s.ear}" aria-pressed="${state.hintsHitSide===s.ear && (state.hintsHitCanal||'horizontal')===s.canal}" onclick="hintsHIT('${s.canal}','${s.ear}')">${hitPushLabel(s.canal,s.ear)}</button>`).join("")}</div></div>
+      <div class="note" data-hitlabel>${lastHi ? hitLabel(lastHi) : ((state.hintsPlane||'HC')==='HC' ? "Kliknij stronę (ucho pacjenta), aby wykonać szybkie pchnięcie głowy. Oczy powinny zostać na celu; sakada korygująca = kanał chory po tej stronie." : "Płaszczyzny skośne RALP/LARP badają kanały PIONOWE (przedni/tylny). Sakada korygująca jest pionowo-skrętna. Wybierz kanał do pchnięcia.")}</div>
     </div>
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Odchylenie skośne — naprzemienne zasłanianie</h4>
       <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-skew>${skewSVG()}</div><span class="emk">L</span></div>
       <div class="note">${skewLabel(H.ts)}</div>
     </div>
+    ${custom ? `<div data-readout>${hintsReadoutHTML(p)}</div>` : ""}
     <p class="footnote">Wzorce poglądowe — narzędzie dydaktyczne, nie urządzenie diagnostyczne. Interpretuj klinicznie.</p>`;
   requestAnimationFrame(()=>{
     const c=$('[data-neuronys]'); if(c) startNeuroNys(c, nys, gazeDeg);
@@ -2691,13 +2800,23 @@ function refreshHintsComp(){
   set('[data-verdict]', hintsVerdictHTML(H));
   set('[data-nyslabel]', hintsNysLabel(nys));
   set('[data-supplnote]', hintsSupplHTML(H,fixOn,sp));
-  if(state.hintsHitSide) set('[data-hitlabel]', hitLabel(NeuroVOR.headImpulse(p, state.hintsHitSide)));  // opis vHIT: JAWNA↔UKRYTA na żywo
+  if(hintsHitSpecOf()) set('[data-hitlabel]', hitLabel(NeuroVOR.headImpulse(p, hintsHitSpecOf())));  // opis vHIT: JAWNA↔UKRYTA na żywo
   const cont=$('[data-neuronys]'); if(cont) startNeuroNys(cont, nys, gazeDeg);   // płynna zmiana amplitudy
 }
 // Parametry animacji oczopląsu (amplituda/kierunek) — odczytywane na żywo z pętli (płynny suwak kompensacji).
+// Składowe poziomą, PIONOWĄ i skrętną (E3/SCDS): torsja i pion napędzane siłą pionowo-skrętną, gdy poziom=0
+// (neuronitis dolny, SCDS = czysto pionowo-skrętny). Poziom nadal z nys.strength (wstecznie zgodne).
+// PRÓG WIDOCZNOŚCI: nie animujemy oczopląsu poniżej VIS_THRESH (jak etykieta) — inaczej zdrowy/BVH/SCDS-w-spoczynku
+// pokazywałyby drobny sub-progowy DRYF SPOJRZENIOWY (np. τ=25 → 0.8°/s, klinicznie niewidoczny). [Fix 2026-07-10]
 function neuroNysParams(nys, gazeDeg){
-  const camRx=Scene3D.CAMERAS.frontal.right[0], strength=Math.max(0,Math.min(1,nys.strength||0));
-  return { gazePx:(gazeDeg||0)*camRx*0.5, Ah:7*strength, At:8*strength, hDir:nys.dir||0, tDir:nys.tdir||nys.dir||0 };
+  const camRx=Scene3D.CAMERAS.frontal.right[0];
+  const VISFRAC=(NeuroVOR.VIS_THRESH||2)/(NeuroVOR.SPV_MAX||12);           // próg widoczności przeniesiony na strength (~0.17)
+  let sH=Math.max(0,Math.min(1,nys.strength||0));                          // siła składowej POZIOMEJ
+  let sV=Math.max(0,Math.min(1, nys.strengthV!=null ? nys.strengthV : (nys.dir?0:nys.strength)||0));  // PIONOWO-skrętnej
+  if(sH<VISFRAC) sH=0;                                                     // poniżej progu → nie animuj (spójne z etykietą)
+  if(sV<VISFRAC) sV=0;
+  return { gazePx:(gazeDeg||0)*camRx*0.5, Ah:7*sH, Av:6*sV, At:8*Math.max(sH,sV),
+           hDir:nys.dir||0, vDir:nys.vdir||0, tDir:nys.tdir||nys.dir||0 };
 }
 // Ciągły oczopląs poziomo-skrętny + odchylenie spojrzenia. Parametry aktualizowalne bez restartu FAZY:
 // ponowne wywołanie tylko podmienia __nnParams (suwak kompensacji zmienia amplitudę płynnie).
@@ -2710,9 +2829,9 @@ function startNeuroNys(container, nys, gazeDeg){
   loopRAF((now)=>{
     if(!document.body.contains(container)){ container.__nnRunning=false; return false; }
     const P=container.__nnParams, ph=((now-start)%T)/T, o=nysOffset(ph,fast);
-    const x=P.gazePx + o*P.Ah*P.hDir, rot=o*P.At*P.tDir;
+    const x=P.gazePx + o*P.Ah*P.hDir, y=-o*(P.Av||0)*(P.vDir||0), rot=o*P.At*P.tDir;   // y: ekran w dół = +, vdir<0 downbeat → +y
     for(const g of irises){ const cx=+g.dataset.cx, cy=+g.dataset.cy;
-      g.setAttribute("transform",`translate(${x.toFixed(2)} 0) rotate(${rot.toFixed(2)} ${cx} ${cy})`); }
+      g.setAttribute("transform",`translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rot.toFixed(2)} ${cx} ${cy})`); }
     return true;                                    // ciągły — do usunięcia kontenera (zmiana warunków/render)
   });
 }
@@ -2735,18 +2854,26 @@ function hitSVG(){
     </g>
   </svg>`;
 }
+// vHIT: pchnięcie GENERALNE (płaszczyzny HC/RALP/LARP). Głowa przesuwa się w kierunku ekranowym sakady
+// korygującej (dla HC czysto poziomo — jak dotąd), oczy nadążają wg gain, a niedomiar → sakada w tym kierunku
+// (+ skręt dla kanałów pionowych). Wektor {h,v,t} z silnika (Ewald/quickPhase). HC bez zmian numerycznych.
 function startHIT(container, hi){
   const head=container.querySelector('#hithead');
   const irises=[...container.querySelectorAll('.hiris')];
   if(!head||!irises.length) return;
   const token=(container.__hitTok=(container.__hitTok||0)+1);
   const camRx=Scene3D.CAMERAS.frontal.right[0];
-  const dir=Math.sign((hi.toSide==="P"?1:-1)*camRx);      // ekranowy kierunek pchnięcia (lustro)
-  const HEADPX=15, IRIS_MAX=15;                           // skok głowy = zakres obrotu oka (oko rx27, źrenica r10 → źrenica NIE wychodzi poza obrys)
-  const gain=Math.max(0,Math.min(1.2,hi.gain)), errMax=Math.max(0,1-gain);  // niedomiar rotacji oka (frakcja HEADPX)
-  const covFrac=Math.max(0,Math.min(1,hi.covertFrac||0)); // udział sakady UKRYTEJ (predykcyjnej) z fuzji szyjno-ocznej
+  const sx=hi.saccade.h*(-camRx), sy=-hi.saccade.v;       // ekran: x=prawo, y=dół (v „w górę" → −y). HC: sy=0
+  const mag=Math.hypot(sx,sy)||1, ux=sx/mag, uy=sy/mag;   // jednostkowy kierunek pchnięcia = kierunek sakady korygującej
+  const tor=hi.saccade.t*Math.sign(camRx||1);             // znak torsji w widoku lustrzanym badającego
+  // Skok ANIZOTROPOWY: oko to elipsa rx27×ry21, źrenica r10 → poziomo mieści się ±17, PIONOWO tylko ±11.
+  // Amplitudy dobrane na ~2 px marginesu (jak w poziomie): pozioma 15 (27−10−2), pionowa 9 (21−10−2);
+  // |local| ≤ amplituda także przy pełnej kompensacji → źrenica NIE wychodzi poza obrys w żadnej płaszczyźnie.
+  const HEADPX=15, HEADPY=9, IRIS_X=17, IRIS_Y=11, TOR_MAX=9;    // HC bez zmian (uy=0); RALP/LARP używają osi pionowej
+  const gain=Math.max(0,Math.min(1.2,hi.gain)), errMax=Math.max(0,1-gain);  // niedomiar rotacji oka
+  const covFrac=Math.max(0,Math.min(1,hi.covertFrac||0)); // udział sakady UKRYTEJ (predykcyjnej)
+  const cen=irises.map(g=>{const c=g.querySelector('circle');return {cx:+c.getAttribute('cx'),cy:+c.getAttribute('cy')};});
   const T_IMP=200, T_COV=110, T_HOLD=150, T_SAC=90, T_RET=420, T_END=T_IMP+T_HOLD+T_SAC+T_RET;
-  // frakcja niedomiaru już skorygowana: sakada UKRYTA podczas pchnięcia (T_COV..T_IMP), JAWNA po (T_SAC)
   const corr=t=> t<T_COV ? 0
     : t<T_IMP ? covFrac*((t-T_COV)/(T_IMP-T_COV))
     : t<T_IMP+T_HOLD ? covFrac
@@ -2755,36 +2882,62 @@ function startHIT(container, hi){
   const start=performance.now();
   loopRAF((now)=>{
     if(container.__hitTok!==token || !document.body.contains(container)) return false;
-    const t=now-start; let headX, raw;                // raw = magnituda niedomiaru zanim skoryguje (frakcja)
-    if(t<T_IMP){ const u=easeInOut(t/T_IMP); headX=dir*HEADPX*u; raw=u; }              // pchnięcie: oko nie nadąża o (1-gain)
-    else if(t<T_IMP+T_HOLD+T_SAC){ headX=dir*HEADPX; raw=1; }                          // utrzymanie + sakada korygująca
-    else if(t<T_END){ const u=easeInOut((t-T_IMP-T_HOLD-T_SAC)/T_RET); headX=dir*HEADPX*(1-u); raw=0; } // głowa wraca, oczy na celu
-    else { head.setAttribute('transform','translate(0 0)'); for(const g of irises) g.setAttribute('transform','translate(0 0)'); return false; }
-    const gaze=dir*HEADPX*errMax*Math.max(0, raw-corr(t));   // pozostały błąd fiksacji (covert znosi część JUŻ w trakcie ruchu)
-    head.setAttribute('transform',`translate(${headX.toFixed(2)} 0)`);
-    const local=Math.max(-IRIS_MAX, Math.min(IRIS_MAX, gaze-headX));   // źrenica jako dziecko głowy; klamrowana do obrysu oka
-    for(const g of irises) g.setAttribute('transform',`translate(${local.toFixed(2)} 0)`);
+    const t=now-start; let prof, raw;                     // prof = profil skoku głowy (0..1), raw = niedomiar zanim skoryguje
+    if(t<T_IMP){ prof=easeInOut(t/T_IMP); raw=prof; }                                    // pchnięcie
+    else if(t<T_IMP+T_HOLD+T_SAC){ prof=1; raw=1; }                                      // utrzymanie + sakada korygująca
+    else if(t<T_END){ prof=1-easeInOut((t-T_IMP-T_HOLD-T_SAC)/T_RET); raw=0; }           // powrót
+    else { head.setAttribute('transform','translate(0 0)'); irises.forEach(g=>g.setAttribute('transform','translate(0 0)')); return false; }
+    const hX=ux*HEADPX*prof, hY=uy*HEADPY*prof;                                          // pozycja głowy (ekran; pion mniejszy — krótsza oś oka)
+    const err=errMax*Math.max(0, raw-corr(t));            // pozostały błąd fiksacji (covert znosi część już w ruchu)
+    const gX=ux*HEADPX*err, gY=uy*HEADPY*err, rot=tor*TOR_MAX*err;
+    head.setAttribute('transform',`translate(${hX.toFixed(2)} ${hY.toFixed(2)})`);
+    const lX=Math.max(-IRIS_X,Math.min(IRIS_X,gX-hX)), lY=Math.max(-IRIS_Y,Math.min(IRIS_Y,gY-hY));  // źrenica = dziecko głowy; klamra per oś (obrys elipsy)
+    irises.forEach((g,i)=>g.setAttribute('transform',`translate(${lX.toFixed(2)} ${lY.toFixed(2)}) rotate(${rot.toFixed(2)} ${cen[i].cx} ${cen[i].cy})`));
     return true;
   });
 }
-function hitLabel(hi){
-  const ear=hi.toSide==="P"?"prawemu (P)":"lewemu (L)", g=hi.gain.toFixed(2);
-  const vhitOnly = ` <b style="color:#ffcf8f">Sakada UKRYTA (covert) — rejestrowana tylko w vHIT (video), niewidoczna gołym okiem.</b>`;
-  if(!hi.abnormal) return `<b style="color:#7fe3c4">Pchnięcie ku uchu ${ear}: bez sakady</b> · VOR gain ${g} → HIT prawidłowy.`;
-  if(hi.overtSaccade && hi.covertSaccade) return `<b style="color:#ffbf8f">Pchnięcie ku uchu ${ear}: sakada JAWNA + UKRYTA</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>częściowo skompensowany</b>.${vhitOnly}`;
-  if(hi.overtSaccade)  return `<b style="color:#ff9bab">Pchnięcie ku uchu ${ear}: sakada JAWNA (overt)</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>nieskompensowany</b> — widoczna gołym okiem (bedside).`;
-  if(hi.covertSaccade) return `<b style="color:#ffcf8f">Pchnięcie ku uchu ${ear}: sakada UKRYTA (covert)</b> · gain ${g} wciąż niski, korekta W TRAKCIE ruchu → <b>bedside HIT „prawidłowy"</b>, deficyt widoczny TYLKO w vHIT (video). Deficyt skompensowany.`;
-  return `<b style="color:#7fe3c4">Pchnięcie ku uchu ${ear}: bez jawnej sakady</b> · VOR gain ${g}.`;
+// Kierunek sakady korygującej (opis) — pozioma (HC) lub pionowo-skrętna (kanały przednie/tylne).
+function hitSaccadeDir(hi){
+  if(hi.plane==="HC") return "pozioma, ku linii środkowej";
+  const v = hi.saccade.v>0 ? "ku górze" : "ku dołowi";
+  const t = Math.abs(hi.saccade.t)>0.15 ? ` + skrętna (bieguny górne ${hi.saccade.t>0?"w prawo":"w lewo"})` : "";
+  return v+t;
 }
-function hintsHIT(side){
-  state.hintsHitSide=side;
-  const hi=NeuroVOR.headImpulse(hintsCompPatient(state.hintsScenario), side);   // z kompensacją (overt→covert)
+function hitPushLabel(canal, ear){
+  if(canal==="horizontal") return ear==="P"?"prawemu (P)":"lewemu (L)";
+  return `${ear==="P"?"prawy":"lewy"} ${canal==="anterior"?"przedni":"tylny"}`;
+}
+// Spec ostatnio pchniętego kanału (string dla HC, {canal,ear} dla pionowych) — do odtworzenia opisu przy suwakach.
+function hintsHitSpecOf(){
+  if(state.hintsHitSide==null) return null;
+  const canal=state.hintsHitCanal||"horizontal";
+  return canal==="horizontal" ? state.hintsHitSide : {canal, ear:state.hintsHitSide};
+}
+function hitLabel(hi){
+  const g=hi.gain.toFixed(2);
+  const what = hi.plane==="HC" ? `Pchnięcie ku uchu ${hi.toSide==="P"?"prawemu (P)":"lewemu (L)"}`
+             : `Pchnięcie w płaszczyźnie ${hi.plane} (kanał ${hi.canal==="anterior"?"przedni":"tylny"} ${hi.ear==="P"?"prawy":"lewy"})`;
+  const dir = ` Sakada korygująca: ${hitSaccadeDir(hi)}.`;
+  const vhitOnly = ` <b style="color:#ffcf8f">Sakada UKRYTA (covert) — rejestrowana tylko w vHIT (video), niewidoczna gołym okiem.</b>`;
+  if(!hi.abnormal) return `<b style="color:#7fe3c4">${what}: bez sakady</b> · VOR gain ${g} → HIT prawidłowy.`;
+  if(hi.overtSaccade && hi.covertSaccade) return `<b style="color:#ffbf8f">${what}: sakada JAWNA + UKRYTA</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>częściowo skompensowany</b>.${dir}${vhitOnly}`;
+  if(hi.overtSaccade)  return `<b style="color:#ff9bab">${what}: sakada JAWNA (overt)</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>nieskompensowany</b> — widoczna gołym okiem (bedside).${dir}`;
+  if(hi.covertSaccade) return `<b style="color:#ffcf8f">${what}: sakada UKRYTA (covert)</b> · gain ${g} wciąż niski, korekta W TRAKCIE ruchu → <b>bedside HIT „prawidłowy"</b>, deficyt widoczny TYLKO w vHIT (video).${dir}`;
+  return `<b style="color:#7fe3c4">${what}: bez jawnej sakady</b> · VOR gain ${g}.`;
+}
+function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
+function hintsHIT(canal, ear){
+  if(ear===undefined){ ear=canal; canal="horizontal"; }        // wstecznie: hintsHIT('P') = HC
+  state.hintsHitCanal=canal; state.hintsHitSide=ear;
+  const spec = canal==="horizontal" ? ear : {canal, ear};
+  const hi=NeuroVOR.headImpulse(hintsActivePatient(), spec);    // scenariusz+kompensacja LUB własne parametry
   const c=$('[data-hit]'); if(c) startHIT(c, hi);
   const lab=$('[data-hitlabel]'); if(lab) lab.innerHTML=hitLabel(hi);
-  document.querySelectorAll('[data-hitbtn]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.hitbtn===side)));
+  const id=canal+"-"+ear;
+  document.querySelectorAll('[data-hitbtn]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.hitbtn===id)));
 }
-// Ponowne pchnięcie ostatnio wybranego ucha — po zmianie kompensacji suwakiem (pokazuje przejście overt→covert).
-function rerunHintsHIT(){ if(state.hintsHitSide) hintsHIT(state.hintsHitSide); }
+// Ponowne pchnięcie ostatniego kanału — po zmianie suwaka (pokazuje przejście overt→covert / zmianę gain).
+function rerunHintsHIT(){ if(state.hintsHitSide) hintsHIT(state.hintsHitCanal||"horizontal", state.hintsHitSide); }
 
 /* --- Test odchylenia skośnego: naprzemienne zasłanianie → pionowa sakada korygująca gdy skew obecny --- */
 function skewSVG(){
@@ -2817,16 +2970,19 @@ function startSkew(container, sk){
   });
 }
 function skewLabel(sk){
-  return sk.present
-    ? `<b style="color:#ff9bab">Skew OBECNY (~${sk.skewDeg}°${sk.hyperSide?`, oko ${sk.hyperSide==="P"?"prawe":"lewe"} wyżej`:""})</b> — pionowa sakada przy odsłanianiu = objaw OŚRODKOWY.`
-    : `<b style="color:#7fe3c4">Skew nieobecny</b> — oczy pozostają w linii pionowej przy naprzemiennym zasłanianiu.`;
+  if(!sk.present) return `<b style="color:#7fe3c4">Skew nieobecny</b> — oczy pozostają w linii pionowej przy naprzemiennym zasłanianiu.`;
+  const who = sk.hyperSide?`, oko ${sk.hyperSide==="P"?"prawe":"lewe"} wyżej`:"";
+  return sk.central
+    ? `<b style="color:#ff9bab">Skew OBECNY (~${sk.skewDeg}°${who})</b> — pionowa sakada przy odsłanianiu = objaw OŚRODKOWY.`
+    : `<b style="color:#ffd9a0">Śladowy skew (~${sk.skewDeg}°${who})</b> — poniżej progu ośrodkowego; drobny rozjazd łagiewkowy (obwodowy, np. nerw górny).`;
 }
 
 /* ============ Akcje ============ */
 function setMode(m){ state.mode=m; render(); }
-function openHints(key){ state.hintsScenario=key||"neuritisR"; state.hintsSide = key==="neuritisL"?"L":"P"; state.hintsFix=false; state.hintsGaze=0; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; state.screen="hints"; render(); }
+function openHints(key){ state.hintsCustom=null; state.hintsScenario=key||"neuritisR"; state.hintsSide = key==="neuritisL"?"L":"P"; state.hintsFix=false; state.hintsGaze=0; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; state.screen="hints"; render(); }
 // 3 scenariusze: zdrowy / neuronitis / udar (strona neuronitis osobnym przełącznikiem L/P jak w manewrach)
 function setHintsDx(fam){
+  state.hintsCustom=null; state.hintsQuiz=false;    // wyjście z trybu „Własny"
   state.hintsScenario = fam==="normal" ? "normal" : fam==="stroke" ? "strokeCentral" : (state.hintsSide==="L"?"neuritisL":"neuritisR");
   state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; render();
 }
@@ -2837,6 +2993,278 @@ function setHintsFix(v){ state.hintsFix=!!v; render(); }
 function setHintsGaze(g){ state.hintsGaze=g; render(); }
 function setHintsComp(v){ state.hintsComp=Math.max(0,Math.min(1,(+v||0)/100)); refreshHintsComp(); }   // suwak (oninput) → lekkie odświeżenie
 function setHintsRecovery(v){ state.hintsRecovery=!!v; render(); }
+
+/* ============ „Matematyczny pacjent" — tryb własnych parametrów (etap 7 / UI) ============ */
+// Pacjent aktywny: własne parametry (pełny obiekt makePatient) LUB scenariusz+kompensacja.
+function hintsActivePatient(){
+  return state.hintsCustom ? NeuroVOR.makePatient(state.hintsCustom)
+                           : hintsCompPatient(state.hintsScenario||"neuritisR");
+}
+// Werdykt HINTS z zasłoną w trybie quiz (zanim odsłonisz rozpoznanie).
+function hintsVerdictBlock(H){
+  if(state.hintsCustom && state.hintsQuiz && !state.hintsQuizReveal)
+    return `<div class="hverdict"><h4>Werdykt HINTS</h4><div class="vv">Quiz — ukryto werdykt</div>
+      <div class="note" style="margin-top:6px">Zbadaj pacjenta (oczopląs + fiksacja, HIT, skew), postaw rozpoznanie, a potem odsłoń.</div></div>`;
+  return hintsVerdictHTML(H);
+}
+// Presety scenariuszowe (obok trybu NEURONITIS, który steruje ramką „Wypadnięcie gałęzi nerwu").
+// Neuronitis (górny/dolny/cały × L/P × nasilenie) NIE ma osobnych przycisków — konfiguruje się w ramce nerwu.
+const HINTS_PRESETS = {
+  healthy: { label:"Zdrowy",              make:()=>({}) },
+  bvh:     { label:"BVH (obustronny)",    make:()=>NeuroVOR.bilateralLoss(1) },
+  meniereP:{ label:"Ménière — drażnienie P", make:()=>NeuroVOR.meniere("P",{phase:"irritative"}) },
+  meniereL:{ label:"Ménière — drażnienie L", make:()=>NeuroVOR.meniere("L",{phase:"irritative"}) },
+  scdsP:   { label:"SCDS P",              make:()=>({dehiscence:"P"}) },
+  scdsL:   { label:"SCDS L",              make:()=>({dehiscence:"L"}) },
+  stroke:  { label:"Udar (ośrodek)",      make:()=>({toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:3, otrTorsion:4}) }
+};
+function loadHintsPreset(k){
+  const pr=HINTS_PRESETS[k]; if(!pr) return;
+  state.hintsCustom=NeuroVOR.makePatient(pr.make());
+  state.hintsPreset=k;                                            // aktywny preset (podświetlenie + dynamiczna ramka)
+  state.hintsHitSide=null; state.hintsQuiz=false; state.hintsQuizReveal=false; render();
+}
+// „Neuronitis" = wejście do konfiguratora gałęzi nerwu (ramka Ucho/Gałąź/Nasilenie), bez duplikowania przycisków.
+function loadHintsNeuritis(){
+  if(state.hintsNerveEar==null) state.hintsNerveEar="P";
+  if(state.hintsNerveBranch==null) state.hintsNerveBranch="superior";
+  if(state.hintsNerveSev==null) state.hintsNerveSev=1;            // domyślnie pełny neuronitis (jak dawny preset)
+  state.hintsQuiz=false; state.hintsQuizReveal=false;
+  applyHintsNerve();                                             // buduje hintsCustom + render (ustawi hintsPreset="neuritis")
+}
+// Wejście do trybu własnego (domyślnie łagodny neuronitis nerwu górnego P).
+function openHintsCustom(){
+  if(!state.hintsCustom){                                       // świeże wejście → domyślny łagodny neuronitis górny P
+    state.hintsNerveEar="P"; state.hintsNerveBranch="superior"; state.hintsNerveSev=0.6;
+    state.hintsCustom=NeuroVOR.makePatient(NeuroVOR.nerveBranchLesion("P","superior",0.6));
+    state.hintsPreset="neuritis";                               // ramka nerwu = spójna z pacjentem
+  }                                                             // jeśli pacjent już istnieje — NIE nadpisuj (ramka i suwaki zgodne)
+  state.hintsHitSide=null; state.hintsQuiz=false; state.hintsQuizReveal=false; state.screen="hints"; render();
+}
+function exitHintsCustom(){ state.hintsCustom=null; state.hintsPreset=null; state.hintsQuiz=false; state.hintsQuizReveal=false; state.hintsHitSide=null; render(); }
+function setHintsAdvanced(open){ state.hintsAdvanced=!!open; }   // details rozwija się sam, bez re-render
+
+function findParamSpec(key){ for(const g of NeuroVOR.PARAM_SPEC) for(const pm of g.params) if(pm.key===key) return pm; return null; }
+function fmtParamVal(v,spec){
+  if(spec.type==="select"){ const o=(spec.options||[]).find(o=>String(o.v)===String(v)); return o?o.l:String(v); }
+  const s=spec.step||1, dec = s>=1?0 : s>=0.1?1 : 2;
+  return (dec? (+v).toFixed(dec) : String(Math.round(+v))) + (spec.unit?` ${spec.unit}`:"");
+}
+// Suwak/selektor pojedynczego parametru → aktualizacja na żywo (bez przebudowy DOM).
+function setHintsParam(key,value){
+  if(!state.hintsCustom) state.hintsCustom=NeuroVOR.makePatient({});
+  const spec=findParamSpec(key);
+  state.hintsCustom[key] = (spec && spec.type==="select") ? (value==="null"?null:value) : +value;
+  const pv=$(`[data-pval="${key}"]`); if(pv&&spec) pv.textContent=fmtParamVal(state.hintsCustom[key],spec);
+  if(spec && spec.type==="select"){ render(); return; }          // selektor zmienia layout (aria-pressed) → pełny render
+  refreshHintsCustom();
+}
+// Szybki selektor wypadnięcia gałęzi nerwu (neuroanatomia): definiuje JEDNĄ zmianę obwodową — zeruje kanały
+// (tony/gainy/kaloryka/łagiewkowy skew) do zdrowia, po czym nakłada ubytek gałęzi. Zachowuje parametry
+// OŚRODKOWE i kompensację (kłaczek, integrator, OTR, comp, dehiscencja), by selektor był przewidywalny.
+const HINTS_CANAL_KEYS=['toneL','toneR','gainL','gainR','caloricGainL','caloricGainR',
+  'toneAcL','toneAcR','gainAcL','gainAcR','tonePcL','tonePcR','gainPcL','gainPcR','skewTone',
+  'sacculeL','sacculeR','utricleL','utricleR'];   // otolity (VEMP) też resetowane przez selektor nerwu
+function applyHintsNerve(){
+  const ear=state.hintsNerveEar||"P", branch=state.hintsNerveBranch||"superior", sev=state.hintsNerveSev==null?1:state.hintsNerveSev;
+  const o = branch==="full"
+    ? Object.assign(NeuroVOR.nerveBranchLesion(ear,"superior",sev), NeuroVOR.nerveBranchLesion(ear,"inferior",sev))
+    : NeuroVOR.nerveBranchLesion(ear,branch,sev);
+  const base=state.hintsCustom||NeuroVOR.makePatient({}), healthy=NeuroVOR.makePatient({});
+  HINTS_CANAL_KEYS.forEach(k=>{ base[k]=healthy[k]; });        // reset kanałów obwodowych do zdrowia
+  state.hintsCustom = Object.assign(base, o);                  // nałóż ubytek gałęzi (ośrodek/kompensacja zachowane)
+  state.hintsPreset="neuritis";                                // ramka nerwu = aktywny „Neuronitis"
+  state.hintsHitSide=null; render();
+}
+// Dynamiczne podsumowanie ustawionej gałęzi nerwu (aktualizuje się z wyborem Ucho/Gałąź/Nasilenie).
+function nerveLesionSummary(){
+  const ear=state.hintsNerveEar||"P", branch=state.hintsNerveBranch||"superior", sev=state.hintsNerveSev==null?1:state.hintsNerveSev;
+  const earW = ear==="P"?"prawe (P)":"lewe (L)";
+  const brW = branch==="superior" ? "nerw GÓRNY (poziomy + przedni + łagiewka)"
+            : branch==="inferior" ? "nerw DOLNY (tylny + woreczek)"
+            : "CAŁY nerw (górny + dolny)";
+  const exp = branch==="superior" ? "oczopląs poziomo-skrętny (bije ku zdrowemu), vHIT HC + przedni ↓, kaloryka ↓, oVEMP ↓, mały skew"
+            : branch==="inferior" ? "oczopląs skrętno-DOWNBEAT (ku zdrowemu), vHIT tylny ↓, kaloryka + HC prawidłowe, cVEMP ↓, przechył SVV ku choremu"
+            : "pełny ubytek: vHIT wszystkich płaszczyzn ↓, kaloryka ↓, oba VEMP ↓";
+  return `<b>Neuronitis</b> — ${brW}, ucho ${earW}, nasilenie <b>${Math.round(sev*100)}%</b>.<br>Spodziewany obraz: ${exp}.`;
+}
+function setHintsNerveEar(e){ state.hintsNerveEar=e; applyHintsNerve(); }
+function setHintsNerveBranch(b){ state.hintsNerveBranch=b; applyHintsNerve(); }
+function setHintsNerveSev(v){ state.hintsNerveSev=Math.max(0,Math.min(1,+v||0));
+  const pv=$('[data-nervesev]'); if(pv) pv.textContent=`${Math.round(state.hintsNerveSev*100)}%`;
+  const su=$('[data-nervesummary]'); if(su) su.innerHTML=nerveLesionSummary();   // dynamiczne podsumowanie na żywo
+}
+// Losowy pacjent (quiz): archetyp patologii z losowymi parametrami; werdykt/lokalizacja ukryte do odsłonięcia.
+function hintsRandomPatient(){
+  const ear=()=>Math.random()<0.5?"L":"P", r=(a,b)=>a+Math.random()*(b-a);
+  const archetypes=[
+    ()=>({}),                                                             // zdrowy
+    ()=>NeuroVOR.nerveBranchLesion(ear(),"superior", r(0.55,1)),          // neuronitis górny
+    ()=>NeuroVOR.nerveBranchLesion(ear(),"inferior", r(0.6,1)),           // neuronitis dolny
+    ()=>NeuroVOR.bilateralLoss(r(0.6,1)),                                 // BVH
+    ()=>NeuroVOR.meniere(ear(),{phase: Math.random()<0.5?"irritative":"paretic"}),  // Ménière
+    ()=>({dehiscence:ear()}),                                            // SCDS
+    ()=>({toneR:r(60,80), gainL:1, gainR:1, fixationGain:0, integratorTau:r(1.8,3), skewTone:r(2,5), otrTorsion:r(2,5)})  // udar
+  ];
+  state.hintsCustom=NeuroVOR.makePatient(archetypes[Math.floor(Math.random()*archetypes.length)]());
+  state.hintsPreset=null; state.hintsHitSide=null; state.hintsQuiz=true; state.hintsQuizReveal=false; render();
+}
+function revealHintsQuiz(){ state.hintsQuizReveal=true; render(); }
+
+// Panel sterowania parametrami (PARAM_SPEC): presety + selektor nerwu + suwaki basic + zaawansowane (zwijane).
+function hintsCustomPanel(){
+  const p=state.hintsCustom||NeuroVOR.makePatient({}), active=state.hintsPreset;
+  const presetBtn=k=>`<button class="preset" aria-pressed="${active===k}" onclick="loadHintsPreset('${k}')">${HINTS_PRESETS[k].label}</button>`;
+  const presets = presetBtn("healthy")
+    + `<button class="preset" aria-pressed="${active==='neuritis'}" onclick="loadHintsNeuritis()">Neuronitis</button>`
+    + ["bvh","meniereP","meniereL","scdsP","scdsL","stroke"].map(presetBtn).join("");
+  const ear=state.hintsNerveEar||"P", branch=state.hintsNerveBranch||"superior", sev=state.hintsNerveSev==null?1:state.hintsNerveSev;
+  const ne=(e)=>`<button aria-pressed="${ear===e}" onclick="setHintsNerveEar('${e}')">${e}</button>`;
+  const nb=(b,l)=>`<button aria-pressed="${branch===b}" onclick="setHintsNerveBranch('${b}')">${l}</button>`;
+  // Ramka „Wypadnięcie gałęzi nerwu" = konfigurator NEURONITIS; widoczna tylko dla trybu neuronitis (bez duplikacji).
+  const nerveBox = active==="neuritis" ? `<div class="pgroup"><div class="pgtitle">Neuronitis — wypadnięcie gałęzi nerwu <span class="pghelp">górny = poziomy + przedni + łagiewka; dolny = tylny. Ustawia gainy/tony kanałów.</span></div>
+      <div class="hctrl"><span class="lbl">Ucho</span><div class="pillseg">${ne("L")}${ne("P")}</div>
+        <span class="lbl">Gałąź</span><div class="pillseg">${nb("superior","Górny")}${nb("inferior","Dolny")}${nb("full","Cały")}</div></div>
+      <label class="prow"><span class="plabel">Nasilenie</span>
+        <input type="range" class="comprange prange" min="0" max="1" step="0.05" value="${sev}" oninput="setHintsNerveSev(this.value)" onchange="applyHintsNerve()">
+        <span class="pval" data-nervesev>${Math.round(sev*100)}%</span></label>
+      <div class="note" data-nervesummary>${nerveLesionSummary()}</div></div>` : "";
+  const rowFor=(pm)=>{
+    if(pm.type==="select"){
+      const cur=p[pm.key];
+      const opts=pm.options.map(o=>`<button aria-pressed="${String(cur)===String(o.v)}" onclick="setHintsParam('${pm.key}','${o.v}')">${o.l}</button>`).join("");
+      return `<div class="prow"><span class="plabel">${pm.label}</span><div class="pillseg small">${opts}</div></div>`;
+    }
+    const val=p[pm.key];
+    return `<label class="prow"><span class="plabel">${pm.label}</span>
+      <input type="range" class="comprange prange" min="${pm.min}" max="${pm.max}" step="${pm.step}" value="${val}"
+        oninput="setHintsParam('${pm.key}',this.value)" onchange="rerunHintsHIT()">
+      <span class="pval" data-pval="${pm.key}">${fmtParamVal(val,pm)}</span></label>`;
+  };
+  const groupHTML=(g)=>`<div class="pgroup"><div class="pgtitle">${g.group}${g.help?`<span class="pghelp">${g.help}</span>`:""}</div>${g.params.map(rowFor).join("")}</div>`;
+  const basic=NeuroVOR.PARAM_SPEC.filter(g=>g.tier==="basic").map(groupHTML).join("");
+  const adv=NeuroVOR.PARAM_SPEC.filter(g=>g.tier==="advanced").map(groupHTML).join("");
+  return `<div class="panelbox hpanel custompanel" style="margin-top:12px">
+    <h4>Matematyczny pacjent — parametry fizjologii</h4>
+    <div class="presets">${presets}</div>
+    ${nerveBox}
+    ${basic}
+    <details class="advbox" ${state.hintsAdvanced?"open":""} ontoggle="setHintsAdvanced(this.open)">
+      <summary>Parametry zaawansowane — ośrodek, kompensacja, kanały pionowe, SCDS</summary>
+      ${adv}
+    </details>
+    <div class="hctrl" style="margin-top:12px">
+      <button class="preset" onclick="hintsRandomPatient()">🎲 Losowy pacjent (quiz)</button>
+      <button class="preset" onclick="saveShareHints()">🔗 Zapisz / udostępnij</button>
+      <button class="preset" onclick="exitHintsCustom()">Wróć do scenariuszy</button></div>
+    <div class="note" data-sharenote style="margin-top:6px">Link koduje parametry w adresie (dane tylko lokalnie — nic nie jest wysyłane).</div>
+  </div>`;
+}
+// Banner trybu quiz (parametry ukryte do odsłonięcia).
+function hintsQuizBanner(){
+  return `<div class="panelbox hpanel" style="margin-top:12px">
+    <h4>Tryb quiz — nieznany pacjent</h4>
+    <div class="note">Wykonaj badania poniżej (oczopląs samoistny + fiksacja, test pchnięcia głowy, odchylenie skośne), postaw rozpoznanie, a potem odsłoń parametry i odczyt kliniczny.</div>
+    <div class="hctrl"><button class="preset" onclick="hintsRandomPatient()">🎲 Nowy losowy pacjent</button>
+      <button class="preset" onclick="revealHintsQuiz()">Odsłoń rozpoznanie</button>
+      <button class="preset" onclick="exitHintsCustom()">Wyjdź z quizu</button></div>
+  </div>`;
+}
+// Synteza kliniczna (clinicalReadout): objawy + sygnały obwód/ośrodek + niejednoznaczności + lokalizacja.
+function hintsReadoutHTML(p){
+  const r=NeuroVOR.clinicalReadout(p);
+  const hidden = state.hintsQuiz && !state.hintsQuizReveal;
+  const chip=(cls,t)=>`<span class="rchip ${cls}">${t}</span>`;
+  const findings=r.findings.map(f=>`<li>${f}</li>`).join("");
+  const per=r.peripheralSigns.map(s=>chip("per",s)).join("");
+  const cen=r.centralSigns.map(s=>chip("cen",s)).join("");
+  const amb=r.ambiguities.length
+    ? `<div class="rsub"><b>Pułapki / niejednoznaczności:</b><ul>${r.ambiguities.map(a=>`<li>${a}</li>`).join("")}</ul></div>` : "";
+  const body = hidden
+    ? `<button class="preset" onclick="revealHintsQuiz()">Odsłoń rozpoznanie i parametry</button>`
+    : `<div class="rloc"><span class="eyebrow">Lokalizacja</span><b>${r.localization}</b></div>
+       <div class="rsigns">${per}${cen||'<span class="rchip">brak jawnych cech ośrodkowych</span>'}</div>${amb}`;
+  return `<div class="readout">
+    <h4>Odczyt kliniczny — matematyczny pacjent${hidden?" · QUIZ":""}</h4>
+    <ul class="rfind">${findings}</ul>
+    ${body}
+    <div class="note" style="margin-top:8px">Narzędzie dydaktyczne — synteza z parametrów fizjologii, nie rozpoznanie kliniczne.</div>
+  </div>`;
+}
+// Lekkie odświeżenie trybu własnego przy przeciąganiu suwaka (bez przebudowy DOM).
+function refreshHintsCustom(){
+  const p=hintsActivePatient();
+  const fixOn=!!state.hintsFix, gazeDeg=(state.hintsGaze||0)*20;
+  const nys=NeuroVOR.nystagmusAtGaze(p,gazeDeg,fixOn);
+  const H=NeuroVOR.hints(p), sp=NeuroVOR.spontaneous(p);
+  const set=(sel,html)=>{const el=$(sel); if(el) el.innerHTML=html;};
+  set('[data-verdict]', hintsVerdictBlock(H));
+  set('[data-nyslabel]', hintsNysLabel(nys));
+  set('[data-supplnote]', hintsSupplHTML(H,fixOn,sp));
+  set('[data-readout]', hintsReadoutHTML(p));
+  if(hintsHitSpecOf()) set('[data-hitlabel]', hitLabel(NeuroVOR.headImpulse(p, hintsHitSpecOf())));
+  const cont=$('[data-neuronys]'); if(cont) startNeuroNys(cont, nys, gazeDeg);   // płynna zmiana amplitudy
+  const skc=$('[data-skew]'); if(skc) startSkew(skc, H.ts);                       // restart animacji skew (token)
+}
+
+/* --- U4: SCDS / trzecie okno — bodziec dźwiękowy/ciśnieniowy (objaw Tullio/Hennebert) --- */
+// W spoczynku brak oczopląsu (dehiscencja ≠ hipofunkcja); bodziec napędza kanał GÓRNY → pionowo-skrętny
+// oczopląs BEZ ruchu głową. Pobudzenie (dźwięk/Valsalva) = downbeat + skręt ku choremu; podciśnienie = odwrotnie.
+function scdsRestNote(p){
+  return p.dehiscence
+    ? `Dehiscencja kan. górnego po stronie ${p.dehiscence==="P"?"prawej":"lewej"}. W spoczynku oczy spokojne — kliknij bodziec, by wywołać oczopląs pionowo-skrętny (objaw Tullio/Hennebert).`
+    : "";
+}
+function scdsLabel(ps){
+  if(!ps||!ps.present) return "Brak dehiscencji — bodziec bez efektu.";
+  const v = ps.vdir<0 ? "downbeat (ku dołowi)" : "upbeat (ku górze)";
+  const tor = ps.tdir<0 ? "bieguny górne w lewo" : "bieguny górne w prawo";
+  return `<b style="color:#ffcf8f">Bodziec (${ps.type}) → oczopląs pionowo-skrętny: ${v} + skręt (${tor})</b> · faza wolna ${(ps.spv||0).toFixed(1)}°/s. BEZ ruchu głową — patognomoniczne dla trzeciego okna.`;
+}
+function hintsSCDSStim(type){
+  const p=hintsActivePatient(); if(!p.dehiscence) return;
+  const sign = type==="suction" ? -1 : 1;                        // podciśnienie = hamujące (odwrócony kierunek)
+  const ps=NeuroVOR.pressureStimulus(p,{type:type==="suction"?"pressure":type, sign});
+  const gazeDeg=(state.hintsGaze||0)*20;
+  const cont=$('[data-neuronys]'); if(cont) startNeuroNys(cont, ps, gazeDeg);
+  const lab=$('[data-nyslabel]'); if(lab) lab.innerHTML=scdsLabel(ps);
+  const note=$('[data-scdsnote]'); if(note) note.innerHTML="Bodziec działa — oczopląs pionowo-skrętny. Wygaśnie po chwili (jak po ustaniu dźwięku/Valsalvy).";
+  clearTimeout(state._scdsTO);
+  state._scdsTO=setTimeout(()=>{                                 // powrót do spoczynku (SCDS nie ma oczopląsu spoczynkowego)
+    const p2=hintsActivePatient(), rest=NeuroVOR.nystagmusAtGaze(p2,gazeDeg,!!state.hintsFix);
+    const c2=$('[data-neuronys]'); if(c2) startNeuroNys(c2, rest, gazeDeg);
+    const l2=$('[data-nyslabel]'); if(l2) l2.innerHTML=hintsNysLabel(rest);
+    const n2=$('[data-scdsnote]'); if(n2) n2.innerHTML=scdsRestNote(p2);
+  }, 4200);
+}
+
+/* --- U7: zapis / udostępnienie pacjenta (hash URL + localStorage; dane tylko lokalnie) --- */
+// Kodujemy TYLKO parametry różne od zdrowej normy (krótki link). base64(UTF-8(JSON)).
+function hintsCustomDiff(){
+  const base=NeuroVOR.makePatient({}), cur=state.hintsCustom||base, o={};
+  Object.keys(base).forEach(k=>{ if(cur[k]!==base[k]) o[k]=cur[k]; });   // dehiscence/lesionEar: null==null → pomijane
+  return o;
+}
+function hintsEncode(o){ return btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
+function hintsDecode(s){ return JSON.parse(decodeURIComponent(escape(atob(s)))); }
+function saveShareHints(){
+  const o=hintsCustomDiff(), code=hintsEncode(o);
+  try{ localStorage.setItem('otorepo_hints_patient', JSON.stringify(o)); }catch(e){}
+  try{ history.replaceState(null,"","#p="+code); }catch(e){ location.hash="p="+code; }
+  const url=location.origin+location.pathname+"#p="+code;
+  const done=(msg)=>{ const n=$('[data-sharenote]'); if(n) n.textContent=msg; };
+  if(navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(url).then(()=>done("✓ Skopiowano link do pacjenta (zapisano też lokalnie)."), ()=>done("Link w pasku adresu (zapisano lokalnie)."));
+  else done("Link zapisany w pasku adresu (i lokalnie).");
+}
+function loadHintsFromHash(){
+  const m=(location.hash||"").match(/p=([^&]+)/); if(!m) return false;
+  try{ state.hintsCustom=NeuroVOR.makePatient(hintsDecode(m[1])); return true; }catch(e){ return false; }
+}
+function loadHintsFromStore(){
+  try{ const s=localStorage.getItem('otorepo_hints_patient'); if(!s) return false;
+    state.hintsCustom=NeuroVOR.makePatient(JSON.parse(s)); return true; }catch(e){ return false; }
+}
 function pickSide(s){ state.side=s; render(); }
 function pickCanal(k){ state.canal=k; const keys=CANALS[k].maneuvers; if(!keys.includes(state.maneuverKey)) state.maneuverKey=keys.length===1?keys[0]:null; render(); }
 function pickMan(k){ state.maneuverKey=k; render(); }
@@ -2894,6 +3322,8 @@ function goStep(i,autostart){ const n=state.plan.steps.length; if(i<0||i>=n) ret
 function toggleAuto(el){ state.autoAdvance=!state.autoAdvance; el.setAttribute("aria-checked",state.autoAdvance); }
 function toggleSound(el){ state.sound=!state.sound; el.setAttribute("aria-checked",state.sound); if(state.sound)beep(); }
 
+// U7: pacjent z linku (hash #p=…) na starcie → tryb HINTS „Własny" (dane tylko lokalnie).
+if(/[#&]p=/.test(location.hash) && loadHintsFromHash()){ state.mode="hints"; state.screen="hints"; state.hintsQuiz=false; state.hintsQuizReveal=false; }
 render();
 </script>
 <!-- Rejestracja service workera (PWA offline). WYŁĄCZONA w natywnej apce Capacitor

@@ -2,7 +2,7 @@
  OTOREPO — lista zadań (todo)
  Aplikacja: repozycja otolitów (BPPV) + diagnostyka, single-file HTML/JS
  Pliki: otorepo.html (apka) · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
- Ostatnia aktualizacja: 2026-07-09 (ROZBUDOWA W TRAKCIE: „matematyczny pacjent" + neuroanatomia — E1-E4 + E4.5 kaloryka zrobione + engine_doc zsynchronizowany, wznów od E5)
+ Ostatnia aktualizacja: 2026-07-10 („matematyczny pacjent" + neuroanatomia — SILNIK (E1-E5+kaloryka) ORAZ UI (U1-U8) UKOŃCZONE; tryb „Własny" w HINTS działa)
 ==========================================================================
 
 Konwencje techniczne:
@@ -29,8 +29,8 @@ SILNIK (fizyka) — rozszerzenia wg korzyść/koszt:
 RÓŻNICOWANIE OŚRODEK↔OBWÓD (moduł NeuroVOR — rozszerzenia):
 
 ============================================================================
- >>> ROZBUDOWA W TRAKCIE <<<  „MATEMATYCZNY PACJENT" + NEUROANATOMIA  (od 2026-07-08)
- Wznów od: FAZA SILNIK / E4 (E1-E3 zrobione). Reguła: budować lokalnie, push tylko na wyraźną komendę.
+ >>> „MATEMATYCZNY PACJENT" + NEUROANATOMIA — UKOŃCZONE (silnik 2026-07-09, UI 2026-07-10) <<<
+ Silnik E1-E5+kaloryka ORAZ UI U1-U8 zrobione. Reguła: budować lokalnie, push tylko na wyraźną komendę.
 ============================================================================
 Cel: tryb WŁASNYCH PARAMETRÓW w zakładce HINTS — ustawiasz surową fizjologię (suwaki), a cały obraz
 kliniczny (oczopląs samoistny, zależność od fiksacji/spojrzenia, vHIT, skew, kompensacja, werdykt HINTS)
@@ -115,22 +115,38 @@ FAZA SILNIK (walidacja offline node; wstecznie zgodna — HC = toneL/R,gainL/R; 
         tylko "cupulo" jako poprawny — DODANO strażnik "canalo" VALID. 552/552 + zweryfikowane w UI (diagnostyka
         renderuje 9 SVG, 0 błędów). LEKCJA: dodając walidację, sprawdź FAKTYCZNE konwencje wartości w kodzie.
 
-FAZA UI (po silniku, budowana raz z pełnym zakresem):
- [ ] U1 — stan state.hintsCustom + 4. przycisk „Własny" (patient=makePatient(overrides)); default łagodny neuronitis. [#16]
- [ ] U2 — panel suwaków sterowany PARAM_SPEC: grupy Błędnik / Kanały-vHIT / Ośrodek / Otolity + zwijane
-        zaawansowane; selektor NERWU (Superior/Inferior/cały → ustawia gainy kanałów) + przełącznik dehiscencji. [#17]
-        >>> DECYZJA #4 (z przeglądu silnika): suwak TONU uwidacznia sprzężenie ton→vHIT przez R_SAT (ton >~170
-        → vHIT „patologiczny" mimo gain=1.0; ton 150 Ménière bezpieczny). Wybrać przy budowie suwaka:
-        (1) zostawić + notka w readout, (2) rozprzęgać gain=modEx/modEx(gain=1 przy tym tonie), (3) ograniczyć suwak ~160. <<<
- [ ] U3 — vHIT RALP/LARP: selektor płaszczyzny + animacja sakady pionowo-skośnej.
- [ ] U4 — SCDS: przycisk „Bodziec dźwiękowy 100 dB / Valsalva" → wymuszony pionowo-skrętny oczopląs + odchył w dół.
- [ ] U5 — sprzężenie na żywo (rozszerzenie refreshHintsComp — bez przebudowy DOM, płynne suwaki). [#18]
- [ ] U6 — dydaktyka: wczytaj-scenariusz-do-własnego + presety (neuronitis Superior/Inferior, BVH, Meniere, SCDS)
-        + podsumowanie obwód/ośrodek + niejednoznaczność + losowy pacjent (quiz).
- [ ] U7 — zapis/udostępnienie: kod pacjenta w hashu URL / localStorage (dane tylko lokalnie).
- [ ] U8 — dokumentacja (engine_doc/view_doc/README) + literatura [H15]+ (Fetter&Dichgans 1996 — superior VN;
-        Aw/Halmagyi/Curthoys 1996 — vHIT 3D RALP/LARP; Minor 2000 — SCDS/Tullio; przegląd BVH/otoksyczność)
-        + walidacja przeglądarkowa + oznaczyć „matematyczny pacjent" (#9) jako ZROBIONE.
+FAZA UI (po silniku, budowana raz z pełnym zakresem) — ZROBIONE 2026-07-10 (t20; przeglądarka: 0 błędów,
+ pełny sweep presety×płaszczyzny×suwaki + regresja trybu scenariuszowego/treat/diag):
+ [x] U1 — state.hintsCustom (pełny obiekt makePatient) + 4. przycisk „Własny" w selektorze HINTS (renderHints
+        seg four + wejście z setup); hintsActivePatient() godzi tryb scenariuszowy i własny. Default = łagodny
+        neuronitis górny P (nerveBranchLesion 0.6). [#16]
+ [x] U2 — panel suwaków sterowany PARAM_SPEC (basic widoczne + zaawansowane w <details>); selektor NERWU
+        (Górny/Dolny/Cały + ucho + nasilenie → applyHintsNerve: RESET kanałów do zdrowia, potem nałożenie
+        gałęzi, ośrodek zachowany) + przełącznik dehiscencji (select). setHintsParam: select→render, liczba→
+        refreshHintsCustom. [#17]
+        >>> DECYZJA #4: wybrano (1) — zakres tonu bez zmian (max 200); sprzężenie ton→vHIT (R_SAT) już
+        objaśnia ambiguity `reverseDissociation` w clinicalReadout. <<<
+ [x] U3 — vHIT RALP/LARP: selektor płaszczyzny (HC/RALP/LARP) + przyciski pchnięcia per kanał (PLANE_CANALS);
+        startHIT UOGÓLNIONY na 2D + torsję z wektora hi.saccade {h,v,t} (HC bez zmian: uy=0,tor=0→rotate(0)=no-op);
+        hitLabel opisuje kierunek sakady (pozioma / ku górze/dołowi + skręt). hintsHIT(canal,ear) wstecznie zgodne.
+ [x] U4 — SCDS: przyciski „🔊 Dźwięk/Valsalva" i „Podciśnienie" (gdy dehiscence) → pressureStimulus napędza
+        pionowo-skrętny oczopląs (Tullio/Hennebert), po ~4.2 s powrót do spoczynku. PRZY OKAZJI: renderer
+        oczopląsu (neuroNysParams/startNeuroNys) dorobiony o PION (Av/vDir) + torsja z max(siłaH, siłaV) →
+        naprawia odkładane w E3 rysowanie pionu (neuronitis DOLNY = widoczny downbeat torsyjny).
+ [x] U5 — sprzężenie na żywo: refreshHintsCustom (werdykt/nys/readout/HIT/skew + amplituda oczopląsu) bez
+        przebudowy DOM; suwaki oninput→refresh, onchange→rerunHintsHIT. [#18]
+ [x] U6 — dydaktyka: presety scenariuszowe (Zdrowy / BVH / Ménière drażn. L·P / SCDS L·P / udar) + osobny TRYB
+        NEURONITIS (przycisk → ramka Ucho/Gałąź górny·dolny·cały/Nasilenie z żywym podsumowaniem; bez duplikowania
+        przycisków górny/dolny/pełny×L/P); clinicalReadout (objawy + chipy obwód/ośrodek +
+        pułapki + lokalizacja); LOSOWY PACJENT (quiz): werdykt+lokalizacja+parametry ukryte do „Odsłoń".
+ [x] U7 — zapis/udostępnienie: diff od normy → base64(UTF-8 JSON) w hashu #p=… + localStorage; wczytanie z
+        hasha na starcie → tryb „Własny". Dane TYLKO lokalnie (nic nie wysyłane). Round-trip zweryfikowany.
+ [x] U8 — dokumentacja (todo/engine_doc/view_doc) + oznaczenie #9 ZROBIONE. Literatura już w engine_doc [H15]-[H21].
+ [x] POPRAWKI SILNIKA/UI ujawnione przez UI (t20): (a) clinicalReadout LOKALIZACJA — dodana gałąź „nerw GÓRNY
+        (poziomy + przedni)” = HC patologiczny + JEDNA skośna od strony chorej (przedni-P→RALP / przedni-L→LARP),
+        druga prawidłowa; wcześniej najczęstszy neuronitis górny wpadał w „nieokreślona”. (b) hintsVerdictHTML
+        tsRow + skewLabel rozróżniają ts.central: śladowy skew łagiewkowy (<2.5°, nerw górny) = OBWODOWY (było
+        twardo „ośrodek” pod zielonym werdyktem — sprzeczność).
 ============================================================================
 
  [ ] (opc.) HINTS „plus" — ubytek słuchu (AICA) jako dodatkowy parametr różnicujący.
@@ -170,6 +186,14 @@ MIGRACJA 3D (K4, odłożone jako projekt na przyszłość — patrz migracja_3d.
 ==========================================================================
  ZROBIONE (kamienie milowe)
 ==========================================================================
+
+MATEMATYCZNY PACJENT + NEUROANATOMIA (#9) — ZROBIONE (silnik 2026-07-09 481/481+przegląd; UI 2026-07-10):
+ [x] SILNIK per-kanałowy E1-E5 + kaloryka: 6 kanałów, gałęzie nerwu (górny/dolny), vHIT RALP/LARP, spontaneous
+        3D (pionowo-skrętny), SCDS/BVH/Ménière, próba kaloryczna (dysocjacja LF/HF), PARAM_SPEC + clinicalReadout.
+ [x] UI „Własny" w zakładce HINTS (U1-U8): panel PARAM_SPEC (basic + zaawansowane), selektor nerwu, presety,
+        odczyt kliniczny, quiz losowego pacjenta, vHIT RALP/LARP z sakadą pionowo-skośną, bodziec SCDS, zapis/link.
+        Renderer oczopląsu rozszerzony o PION (dokończenie odkładanego E3). Walidacja przeglądarkowa: 0 błędów.
+        Szczegóły + poprawki (lokalizacja nerwu górnego, tsRow/skew obwodowy) w bloku „MATEMATYCZNY PACJENT — UKOŃCZONE".
 
 SILNIK NeuroVOR — warstwa toniczna/ośrodkowa „od pierwszych zasad" (2026-07-07, offline 102/102, node):
  [x] Push-pull + spoczynkowa aktywność błędników (~90 Hz) + rektyfikator Ewalda (OBCIĘCIE HAMOWANIA) →
