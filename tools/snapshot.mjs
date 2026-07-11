@@ -23,33 +23,61 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { JSDOM, VirtualConsole } from 'jsdom';
+import { build as esbuild } from 'esbuild';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GOLDEN = resolve(ROOT, 'tools', 'golden', 'snapshot.json');
 
 const argv = process.argv.slice(2);
 const CHECK = argv.includes('--check');
-const targetArg = (argv.find(a => a.startsWith('--target=')) || '').split('=')[1];
-const targetIdx = argv.indexOf('--target');
-const TARGET = resolve(ROOT, targetArg || (targetIdx >= 0 ? argv[targetIdx + 1] : 'otorepo.html'));
+const optVal = (name) => {
+  const eq = argv.find(a => a.startsWith(name + '='));
+  if (eq) return eq.slice(name.length + 1);
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+};
+const SRC = optVal('--src');                         // np. src/main.js → bundluj esbuild IIFE (moduły ES)
+const HTML = optVal('--html') || 'index.html';       // markup dla trybu --src
+const TARGET = resolve(ROOT, optVal('--target') || 'otorepo.html');  // monolit (klasyczny <script>)
 
 // ---- load app in jsdom, neuter animation for determinism ----------------------
-function loadApp(htmlPath) {
-  const html = readFileSync(htmlPath, 'utf8');
+function mkJsdom(htmlStr) {
   const errs = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', e => errs.push(String(e && (e.detail?.message || e.message) || e)));
-  const dom = new JSDOM(html, {
+  const dom = new JSDOM(htmlStr, {
     runScripts: 'dangerously',
     pretendToBeVisual: true,
     url: 'http://localhost:8777/otorepo.html',
     virtualConsole: vc,
   });
-  const win = dom.window;
+  return { dom, win: dom.window, errs };
+}
+function neuter(win) {
   win.requestAnimationFrame = () => 0;   // no animation callbacks → static frame only
   win.cancelAnimationFrame = () => {};
   try { win.cancelAnims && win.cancelAnims(); } catch {}
-  return { dom, win, errs };
+}
+async function loadApp() {
+  if (SRC) {
+    // tryb modularny: bundluj moduły ES do IIFE (jsdom nie uruchamia <script type=module>)
+    // i wstrzyknij jako klasyczny skrypt do markupu z index.html.
+    const htmlStr = readFileSync(resolve(ROOT, HTML), 'utf8');
+    const { outputFiles } = await esbuild({
+      entryPoints: [resolve(ROOT, SRC)], bundle: true, format: 'iife',
+      write: false, platform: 'browser', target: 'es2020', logLevel: 'silent',
+    });
+    const { win, errs } = mkJsdom(htmlStr);          // <script type=module> w markupie NIE odpala
+    const s = win.document.createElement('script');
+    s.textContent = outputFiles[0].text;
+    win.document.body.appendChild(s);                // odpala IIFE synchronicznie (render + seam)
+    neuter(win);
+    return { win, errs, label: SRC + ' (esbuild IIFE)' };
+  }
+  // tryb monolitu: klasyczny <script> odpala się podczas budowy jsdom
+  const { win, errs } = mkJsdom(readFileSync(TARGET, 'utf8'));
+  neuter(win);
+  return { win, errs, label: TARGET.replace(ROOT + '\\', '').replace(ROOT + '/', '') };
 }
 
 // ---- build the access handle (Etap 1 seam OR Etap 0 eval synthesis) -----------
@@ -230,8 +258,8 @@ function domOracle(h, win) {
 }
 
 // ---- collect all ------------------------------------------------------------
-function collect() {
-  const { win, errs } = loadApp(TARGET);
+async function collect() {
+  const { win, errs, label } = await loadApp();
   const h = makeHandle(win);
   const missing = HANDLE_NAMES.filter(n => !(n in h));
   // engine/pose first (pure, before we mutate state), then dom
@@ -239,6 +267,7 @@ function collect() {
   const pose = poseOracle(h);
   const dom = domOracle(h, win);
   const meta = {
+    target: label,
     loadErrors: errs,
     handleMissing: missing,
     counts: {
@@ -272,8 +301,8 @@ function diffKeys(aObj, bObj, prefix, sink) {
   }
 }
 
-const snap = collect();
-console.log('target        :', TARGET.replace(ROOT + '\\', '').replace(ROOT + '/', ''));
+const snap = await collect();
+console.log('target        :', snap._meta.target);
 console.log('load errors   :', snap._meta.loadErrors.length, snap._meta.loadErrors.slice(0, 3));
 console.log('handle missing:', snap._meta.handleMissing);
 console.log('counts        :', JSON.stringify(snap._meta.counts));
