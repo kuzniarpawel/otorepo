@@ -112,7 +112,8 @@ function createPatientRenderer() {
     const dy = sitFront ? FRAME.cy - (minY + maxY) / 2 : -minY;   // centrowanie vs najniższy punkt na blat y=0
     body.position.y = dy;
     if (sitFront) {
-      const wC = Math.max(96, maxX - minX + 56), dC = 56, cx = (minX + maxX) / 2, cz = -(dC / 2) - 8;
+      // ława ZA pacjentem: nasz tył = -z OTOREPO = +z three (kamera frontalna stoi przy three -z, od strony twarzy)
+      const wC = Math.max(96, maxX - minX + 56), dC = 56, cx = (minX + maxX) / 2, cz = +(dC / 2) + 8;
       couchTop.scale.set(wC, 8, dC); couchTop.position.set(cx, dy - 4, cz);   // blat pod miednicą (pelvis y=0 → dy)
       const lx = wC / 2 - 7, lz = dC / 2 - 7;
       legs[0].position.set(cx - lx, dy - 20, cz - lz); legs[1].position.set(cx + lx, dy - 20, cz - lz);
