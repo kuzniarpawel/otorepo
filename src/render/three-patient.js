@@ -206,10 +206,10 @@ export async function mountPatient3D(key, container, spec, side) {
     r.initialize(container);
     r.show(spec, side);
   } catch (e) {
-    console.error('mountPatient3D:', e);                  // diagnoza w konsoli; UI dostaje czytelny fallback
-    container.textContent = '3D niedostępne (WebGL)';
+    console.error('mountPatient3D:', e);                  // diagnoza w konsoli
     try { r.dispose(); } catch {}
     pool.delete(key);
+    throw e;                                              // Etap 5: sygnalizuj błąd → mount3D przełącza kartę na SVG (fallback)
   }
 }
 export { createPatientRenderer };

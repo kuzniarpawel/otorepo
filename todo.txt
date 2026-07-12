@@ -306,4 +306,15 @@ MIGRACJA MODUŁOWA + 3D:
        pacjentem); kotwiczenie czubka nosa (prone). WYROCZNIA WIDOKU tools/view-check.mjs (npm run view:check):
        kierunki ekranowe tułów/kolana(chiralność)/nos SVG↔3D, 78 póz, maks. 17.7° @ próg 25°; lustro potwierdzone
        też pikselowo (centroid głowy leanL/leanR). Pomiar pikselowy: edge=0 wszędzie.
- [ ] Etap 5: 3D domyślny + SVG fallback (webglAvailable, porównanie wydajności na telefonie, decyzja GLB).
+ [x] Etap 5: 3D DOMYŚLNY + SVG fallback. webglAvailable() (svg-screens, cache) — main.js na boot ustawia
+       state.view3d=true gdy WebGL. Literał state.view3d=false ZOSTAJE (jsdom/harness bez WebGL → SVG →
+       golden bez zmian, potwierdzone: snapshot:check identyczny). Fallback DWUścieżkowy: (a) brak WebGL →
+       webglAvailable=false → domyślnie SVG (przycisk „3D" nadal jest, can3d=true — golden stabilny);
+       (b) błąd montażu w runtime → mountPatient3D rzuca → mount3D.catch: state.view3d=false + render() → SVG
+       (bez pętli). Weryfikacja w przeglądarce: 3D od razu w Epley/Roll bez klikania; toggle 3D↔2D; złamanie
+       getContext→null → płynny SVG, karta krok działa. Wydajność (DESKTOP, telefonu brak w środowisku):
+       zimny montaż 92 ms, przejścia w budżecie 620 ms, +1.4 MB / 25 zmian manewru, 1 canvas (pula ≤3 kontekstów).
+       Offline: chunk three (assets/three-patient-*.js, ~516 KB, lazy) W PRECACHE dist/sw.js; hash cache zmieniony.
+ [ ] (PRZYSZŁOŚĆ) Model GLB zamiast proceduralnego rigu — użytkownik wybrał proceduralny; adapter kości
+       gotowy (mount przez PoseSpec). Wymiana = ten sam interfejs show(spec,side).
+ [ ] (PRZYSZŁOŚĆ) Pomiar wydajności 3D na realnym telefonie (środowisko dev było desktopowe).

@@ -669,3 +669,26 @@ POPRAWKA (tylko poza/czas Yacovino — NIE tknięto geometrii kanału / nystagmu
 WERYFIKACJA: φ→178 exited dla P/L × small/medium/big; pozostałe manewry bez zmian (gufoniApo φ=69 exited=false
   = poprawne, to konwersja bez ewakuacji); bridge/view/golden zielone; wizualnie 4 kroki zgodne z markerami.
 INWARIANT audyt #1 zachowany: gHead(headQ)==gravity == 2.5e-16 dla wszystkich kroków.
+
+===== Etap 5: 3D DOMYŚLNY renderer + SVG fallback (finał migracji) =====
+webglAvailable() [svg-screens.js, cache _webglOK]: tworzy canvas, próbuje getContext('webgl'/'experimental-webgl'),
+  try/catch. main.js na boot: `if(webglAvailable()) state.view3d=true` PRZED render(). KLUCZOWE dla goldenu:
+  literał state.view3d=false ZOSTAJE w state.js — jsdom/harness nie ma WebGL → webglAvailable()=false → view3d
+  zostaje false → karta „Ułożenie" renderuje SVG → snapshot:check IDENTYCZNY (zero rebaseline). To zarazem DOWÓD
+  ścieżki „brak WebGL → SVG domyślnie": przechodzący golden = środowisko bez WebGL pokazujące SVG.
+PRZYCISK „3D" zostaje bezwarunkowy (can3d=true w renderGuide/renderDiag) — NIE zależy od webglAvailable, żeby DOM
+  w jsdom był identyczny (button obecny w 50 scenariuszach jak w Etapie 4). Na realnym urządzeniu bez WebGL button
+  jest, ale domyślnie SVG; klik → próba montażu → fallback (niżej).
+FALLBACK runtime: mountPatient3D (three-patient.js) przy błędzie NIE wpisuje już tekstu do slotu, tylko RZUCA (throw e
+  po dispose+pool.delete). mount3D.catch: `if(state.view3d){ state.view3d=false; render() }` → karta wraca na SVG.
+  Bez pętli: po view3d=false renderGuide/renderDiag nie wołają mount3D (gate `can3d && state.view3d`).
+WERYFIKACJA (przeglądarka, WebGL): boot view3d=true; Epley/Roll 3D BEZ klikania; toggle 3D↔2D↔3D; złamanie
+  HTMLCanvasElement.getContext→null (po boocie, pula pusta) → wejście w manewr → WebGLRenderer rzuca → SVG posture,
+  krok działa, brak zawieszenia; świeże ładowanie: żywy kontekst webgl2/webgl na canvasie (466×372).
+WYDAJNOŚĆ (DESKTOP — telefonu brak w środowisku dev): zimny montaż (import chunku three + WebGLRenderer + 1 klatka)
+  92 ms; przejścia kroków w budżecie DUR=620 ms (płynne, stałe); +1.4 MB usedJSHeapSize po 25 zmianach manewru;
+  1 canvas na stronie (pula ≤3 kontekstów WebGL, brak akumulacji). Uwaga: rAF wstrzymany w panelu podglądu — do
+  pomiarów podmieniano window.requestAnimationFrame na setTimeout(16).
+OFFLINE/BUILD: vite build code-splituje three do assets/three-patient-*.js (~516 KB, lazy — index ~124 KB); chunk
+  jest w precache dist/sw.js (3D działa offline po instalacji PWA); hash nazwy cache zmienia się z zawartością.
+GLB: NIE wdrożone (decyzja użytkownika: model proceduralny). Adapter kości gotowy — wymiana = ten sam show(spec,side).
