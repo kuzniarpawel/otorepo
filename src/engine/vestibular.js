@@ -168,7 +168,7 @@ export const Vestibular = (()=>{
   //   średnicy przewodu, bezwładności płynu, wielu cząstek; pełny model: Squires/Hain/Stone). Szczegóły → engine_doc.txt.
   // Stałe skalibrowane do literatury (kanał tylny): latencja ~1–3 s, szczyt ~7–9 s, trwanie ~25 s.
   //   tauP=6.5  — cząstka (opór); tauC=5 — osklepek (długa stała kanału ~4–6 s);
-  //   gc=1.6 — wzmocnienie; phiExit=178 — odnoga wspólna;
+  //   gc=1.6 — wzmocnienie; phiExit=178 — koniec nieampułkowy = wyjście do ŁAGIEWKI (kan. pionowe: odnoga wspólna; poziomy: wprost);
   //   fStat/adh — adhezja otolitu (zrywana utrzymaną siłą styczną → latencja; silniejsza
   //   prowokacja = krótsza latencja). Kupulolitiaza nie ma adhezji/latencji (osobna funkcja).
   function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06}){
@@ -196,7 +196,7 @@ export const Vestibular = (()=>{
           }
           if(!stuck){
             dphi=drive; let nphi=phi+dphi*dt;
-            if(nphi>=pex){nphi=pex; exited=true;}              // odnoga wspólna → woreczek (jednokierunkowo)
+            if(nphi>=pex){nphi=pex; exited=true;}              // koniec nieampułkowy → ŁAGIEWKA (utricle): kanały pionowe przez odnogę wspólną, poziomy wprost; jednokierunkowo
             if(nphi<3*D){nphi=3*D; dphi=0;}                    // nie przechodzi przez osklepek
             phi=nphi; flow=gc*G.exc*dphi;                      // ruch wsteczny → przepływ odwrócony → ξ<0
           }

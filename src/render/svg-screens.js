@@ -380,7 +380,7 @@ function startDiagOtolith(container,variant,canal,side){
     cuptip.style.display="none";                 // złóg swobodny w świetle kanału
     cupula.setAttribute("transform","rotate(0 62 96)");
     // REALNE φ(t) z silnika (simulateCanalith): po latencji cząstka wędruje wg grawitacji
-    // i zatrzymuje się (wyjście do woreczka / spoczynek). Bez sztucznej pętli.
+    // i zatrzymuje się (wyjście do ŁAGIEWKI / spoczynek). Bez sztucznej pętli.
     const sim = engineXi(canal, side, false, provokeQ(canal, side));   // [{t,xi,phi,exited}], phi w stopniach
     const dt = sim.length>1?(sim[1].t-sim[0].t):0.05;
     const lastT = sim.length?sim[sim.length-1].t:0;
