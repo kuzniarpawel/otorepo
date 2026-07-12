@@ -1,15 +1,20 @@
 ==========================================================================
  OTOREPO — lista zadań (todo)
- Aplikacja: repozycja otolitów (BPPV) + diagnostyka, single-file HTML/JS
- Pliki: otorepo.html (apka) · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
- Ostatnia aktualizacja: 2026-07-10 („matematyczny pacjent" + neuroanatomia — SILNIK (E1-E5+kaloryka) ORAZ UI (U1-U8) UKOŃCZONE; tryb „Własny" w HINTS działa)
+ Aplikacja: repozycja otolitów (BPPV) + diagnostyka; MODULARNA (Vite + src/ moduły ES, PWA)
+ Pliki: index.html + src/ (9 modułów) · otorepo.html (monolit = źródło złotego snapshotu, zamrożony)
+        · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
+ Ostatnia aktualizacja: 2026-07-12 (migracja modułowa + 3D Etapy 0-5 UKOŃCZONE i wypushowane; manewr Bascule
+        dla kupulolitiazy k. tylnego dodany; męczliwość oczopląsu w silniku)
 ==========================================================================
 
 Konwencje techniczne:
-- Walidacja składni po każdej zmianie:
-    awk '/<script>/{f=1;next} /<\/script>/{f=0} f' otorepo.html > app.js && node --check app.js
-- Silniki = moduły `Vestibular` (BPPV) i `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS) — czyste, BEZ DOM,
-    testowane offline w node przed podłączeniem (harness wyodrębnia IIFE z HTML: scratchpad vlab.mjs).
+- Walidacja po każdej zmianie: 3 WYROCZNIE muszą być zielone —
+    npm run snapshot:check  (golden DOM/engine/pose w jsdom) ·
+    npm run bridge:check    (most kwaternionów OTOREPO↔Three) ·
+    npm run view:check      (kierunki ekranowe SVG↔3D).
+    Build: npm run build (Vite + tools/build-dist.mjs → dist/ + sw.js z hashem cache).
+- Silniki = moduły `src/engine/{vestibular,neuro-vor}.js` (BPPV / VOR toniczny/ośrodkowy, HINTS) — czyste,
+    BEZ DOM, importowalne w czystym node (harness offline .mjs); golden snapshot zastąpił dawny vlab.mjs.
 - Układ głowy: x=prawo, y=góra(czaszka), z=przód(nos). Strony: L=lewa, P=prawa. yaw>0 = w prawo.
 - Składowe oczopląsu (anat.): h:+prawo/-lewo, v:+góra/-dół, t:+górne bieguny w prawo/-w lewo.
 
@@ -18,7 +23,15 @@ Konwencje techniczne:
 ==========================================================================
 
 SILNIK (fizyka) — rozszerzenia wg korzyść/koszt:
- [ ] Męczliwość oczopląsu (rozproszenie otolitów przy powtórzeniach) — ŚREDNIA-WYSOKA (kryterium różnicujące).
+ [x] Męczliwość oczopląsu (rozproszenie otolitów przy powtórzeniach) — ŚREDNIA-WYSOKA (kryterium różnicujące).
+        ZROBIONE 2026-07-12: Vestibular.fatigueFactor(rep,{fatTau,fatFloor}) + parametr rep w simulateCanalith
+        (skaluje gc → amplituda ξ maleje z powtórzeniami; rep=0 = wstecznie zgodne). Kupulolitiaza BEZ rep
+        (nie męczy się → różnicowanie emergentne). Walidacja offline (szczyt ξ 0.81→0.15 dla rep 0..4,
+        monotonicznie; 3 wyrocznie zielone). engine_doc [12]. UI PODŁĄCZONE: panel „Powtarzalność prowokacji"
+        w Dix-Hallpike (przycisk „Powtórz prowokację" → rep++, pasek amplitudy, oczopląs oczu+dialu słabnie
+        przez nys.fatigue; kupulolitiaza zostaje 100% — kontrast wprost na fliperze mechanizmu). state.dixRep +
+        repeatDixProvoke/resetDixProvoke; reset przy zmianie testu/strony/obserwacji. Golden: tylko diag/dix.
+        [engine_doc: simulateCanalith → MĘCZLIWOŚĆ / fatigueFactor]
  [ ] Latencja przez wąski przewód gc(φ) — główny literaturowy mechanizm (mógłby zastąpić adhezję). ŚREDNI.
  [ ] Kupulolitiaza słabsza od kanalolitiazy (~1 współczynnik) — NISKA-ŚREDNIA, tania korekta.
  [ ] Pełne ΔP_c / hydrodynamika ścianek — NISKA korzyść, ryzyko fałszywej precyzji → odłożyć/pominąć.
@@ -26,7 +39,8 @@ SILNIK (fizyka) — rozszerzenia wg korzyść/koszt:
  [→] Inne stany (push-pull / excited:false): jednostronna westybulopatia + oczopląs OŚRODKOWY —
         ZROBIONE 2026-07-07 jako moduł NeuroVOR (patrz ZROBIONE / engine_doc „MODUŁ NeuroVOR").
 
-RÓŻNICOWANIE OŚRODEK↔OBWÓD (moduł NeuroVOR — rozszerzenia):
+RÓŻNICOWANIE OŚRODEK↔OBWÓD (moduł NeuroVOR — rozszerzenia): rdzeń UKOŃCZONY (blok niżej); pozostały tylko
+ pozycje OPCJONALNE (HINTS „plus"/AICA, rebound, head-shaking) — patrz sekcja „(opc.)" po bloku poniżej.
 
 ============================================================================
  >>> „MATEMATYCZNY PACJENT" + NEUROANATOMIA — UKOŃCZONE (silnik 2026-07-09, UI 2026-07-10) <<<
@@ -179,7 +193,8 @@ SENSORY / KAMERA (przyszłość, po wizualizacji):
     Zastrzeżenia kliniczne: RGB ~30 fps != VNG/Frenzel (IR, wysokie fps, brak fiksacji); żyro dryfuje; magnetometr
     zaszumiony w pomieszczeniach; MediaPipe nie testowany na chorobach oczu. Narzędzie dydaktyczne, nie pomiar SPV.
 
-MIGRACJA 3D → MODULARIZACJA + Three.js/GLB (AKTYWNA; zastępuje Ścieżkę B z migracja_3d.txt):
+MIGRACJA 3D → MODULARIZACJA + Three.js/GLB (UKOŃCZONA — Etapy 0-5 zrobione i wypushowane; szczegóły w sekcji
+ ZROBIONE poniżej. Zastąpiła Ścieżkę B z migracja_3d.txt):
  [x] Etap 0 (2026-07-11): Vite + harness złotego snapshotu (tools/snapshot.mjs, golden 434 scenariusze;
         --check bramkuje exit 1; czuły — mutacja SPV_MAX wykryta). otorepo.html nietknięty. commit fc70a46.
  [x] Etap 1a (2026-07-11): index.html + src/main.js (moduł ES) + wydzielony silnik src/engine/{vestibular,
@@ -201,12 +216,24 @@ MIGRACJA 3D → MODULARIZACJA + Three.js/GLB (AKTYWNA; zastępuje Ścieżkę B z
         silnik↔widok z audytu 2.5D). Kamera świadomie poza spec (plan.headCamera — decyzja widoku; Etap 3
         rozszerzy). Golden bajt-w-bajt zielony; browser: Epley 5/5, Semont 4/4, diag 4/4, 0 błędów.
         [view_doc: sekcja PoseSpec przed ARCHITEKTURA figProj]
- [ ] Etap 3: ThreePatientRenderer obok SVG (Epley P + Roll, GLB przez ?url, kozetka; most osi wg migracja_3d.txt
-        sekcja MOST — weryfikacja 21 kombinacji vs gHead). Etap 4: pełne manewry. Etap 5: Three domyślny, SVG fallback.
+ [x] Etap 3/4/5 (2026-07-11..12): ThreePatientRenderer (src/render/three-patient.js) obok SVG → pełne mapowanie
+        WSZYSTKICH manewrów i testów → 3D DOMYŚLNY + SVG fallback. Most osi (three-bridge.js, bridge:check) +
+        wyrocznia widoku (view:check). Golden na src. PEŁNE DETALE w sekcji ZROBIONE → „MIGRACJA MODUŁOWA + 3D".
+        Pozostały tylko 2 zadania PRZYSZŁOŚĆ (model GLB, pomiar wydajności na telefonie) — patrz ZROBIONE.
 
 ==========================================================================
  ZROBIONE (kamienie milowe)
 ==========================================================================
+
+MANEWR BASCULE (kupulolitiaza kanału tylnego) — ZROBIONE 2026-07-12 (wypushowane b98bd8b):
+ [x] Nowy manewr UWALNIAJĄCY: rytmiczne bujanie bok-bok (pozy leanL/leanR jak Semont), mechanism:"cupulo";
+        w CANALS.posterior / MANEUVERS / CANAL_OF. Geometria = te same pozy co Semont (bez nowej geometrii 3D).
+ [x] Link w Dix-Hallpike „Sugerowane leczenie" przy kupulolitiazie (recommend dix+cupulo → primary Semont,
+        alt Bascule+Epley); sekcja aktualizuje się po przełączeniu karty mechanizmu (flipDiagMech → variant+render).
+ [x] Karta „wędrówka otolitów" DOMYŚLNA dla manewrów kupulolitycznych (flipped) + animacja: przyleganie złogu do
+        osklepka → odklejanie (osklepek prostuje się) → wędrówka wzdłuż kanału → wyjście do łagiewki
+        (manFractions mechanism:"cupulo"; osklepek dorysowany w labiryncie). 3 wyrocznie zielone (golden bascule-only).
+ [x] Setup HINTS: selektor scenariuszy przerobiony na wygląd selektora wewnątrz HINTS (seg four 2×2, zwarte karty).
 
 MATEMATYCZNY PACJENT + NEUROANATOMIA (#9) — ZROBIONE (silnik 2026-07-09 481/481+przegląd; UI 2026-07-10):
  [x] SILNIK per-kanałowy E1-E5 + kaloryka: 6 kanałów, gałęzie nerwu (górny/dolny), vHIT RALP/LARP, spontaneous

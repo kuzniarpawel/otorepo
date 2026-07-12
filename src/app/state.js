@@ -6,7 +6,7 @@ import { HINTS_PRESETS } from './actions.js';
 /* ============ Stan ============ */
 const state={
   mode:"treat", screen:"setup",
-  side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:"post",
+  side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:"post", dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
   size:"medium",                                   // rozmiar/gęstość złogu otoconiów (small|medium|big) → dynamika + holdy + animacja
   plan:null, step:0,
   total:0, elapsedMs:0, running:false,

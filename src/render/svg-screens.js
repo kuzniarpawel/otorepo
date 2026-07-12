@@ -79,7 +79,7 @@ function startDialNysIn(container, nys){
   const irises=[...container.querySelectorAll(".dial-iris")]; if(!irises.length) return;
   const token=(container.__dialTok=(container.__dialTok||0)+1);   // restart: starsza pętla się zakończy
   const cam=Scene3D.CAMERAS.topDownBehind, flip=cam.up[2]<0?-1:1;
-  const a=nys.anat||{h:0,v:0,t:0}, amp=nys.strength||1;
+  const a=nys.anat||{h:0,v:0,t:0}, amp=(nys.strength||1)*(nys.fatigue==null?1:nys.fatigue);   // fatigue: męczliwość przy powtórzeniach (Dix-Hallpike)
   const hx=a.h*flip*2.2*amp, upY=a.v*2*amp, rot=a.t*flip*12*amp;   // poziom (odbity) / pion / skręt (odbity)
   const fast=0.17, T=720, start=performance.now();
   const {env, tEnd} = xiEnvelope(engineXi(nys.canal, nys.side, nys.persistent, nys.q));
@@ -321,9 +321,10 @@ function nysOffset(p,fast){ if(p<fast){const t=p/fast; return -1+2*(1-Math.pow(1
 function startNys(container,nys,envOv){
   const irises=[...container.querySelectorAll(".iris")]; if(!irises.length) return;
   const token=(container.__nysTok=(container.__nysTok||0)+1);   // restart: starsza pętla się zakończy
-  const A=(nys.kind==="horizontal"?6:0)*(envOv?1:nys.strength);  // env historyczny NIESIE intensywność (bez podwójnego skalowania)
-  const Aup=nys.kind==="upbeatTorsional"?5:0;
-  const tors=nys.kind==="upbeatTorsional"?9:0;          // skrętność zmniejszona (było 15) — bliżej realnej
+  const fat=(nys.fatigue==null?1:nys.fatigue);          // męczliwość: ortogonalny mnożnik amplitudy (diagnostyka Dix-Hallpike, powtórzenia)
+  const A=(nys.kind==="horizontal"?6:0)*(envOv?1:nys.strength)*fat;  // env historyczny NIESIE intensywność (bez podwójnego skalowania)
+  const Aup=(nys.kind==="upbeatTorsional"?5:0)*fat;
+  const tors=(nys.kind==="upbeatTorsional"?9:0)*fat;    // skrętność zmniejszona (było 15) — bliżej realnej
   const vdir=(nys.vdir==null?1:nys.vdir);               // +góra / -dół (kanał przedni = downbeat)
   const T=nys.kind==="upbeatTorsional"?720:760, fast=0.17, start=performance.now();
   // OBWIEDNIA CZASOWA Z SILNIKA: ξ(t) z simulateCanalith/Cupulolith.
@@ -632,11 +633,11 @@ function renderSetup(){
   } else if(state.mode==="hints"){
     const famOf=k=> k==="normal"?"normal": k==="strokeCentral"?"stroke":"neuritis";
     const curFam=famOf(state.hintsScenario);
-    const scDesc={normal:"prawidłowy VOR — bez oczopląsu", neuritis:"obwód — wypadnięcie błędnika", stroke:"ośrodek — objaw groźny (AVS)"};
-    const scOpt=(f,key,lbl)=>`<button class="opt" aria-pressed="${curFam===f}" onclick="openHints('${key}')">${lbl}<small>${scDesc[f]}</small></button>`;
+    const scDesc={normal:"prawidłowy VOR", neuritis:"obwód", stroke:"ośrodek (AVS)"};
+    const scSt="min-height:auto;padding:10px 11px;font-size:12.5px";   // zwarte karty 2×2 jak selektor scenariusza wewnątrz HINTS (seg four)
+    const scOpt=(f,key,lbl)=>`<button class="opt" aria-pressed="${curFam===f}" onclick="openHints('${key}')" style="${scSt}">${lbl}<small>${scDesc[f]}</small></button>`;
     body=`<div class="group"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">obwód ↔ ośrodek</span></div>
-        <div class="seg three">${scOpt('normal','normal','Zdrowy / równowaga')}${scOpt('neuritis','neuritisR','Neuronitis przedsionkowy')}${scOpt('stroke','strokeCentral','Udar móżdżku / pnia')}</div>
-        <button class="opt" style="margin-top:8px" onclick="openHintsCustom()"><b>Własny — matematyczny pacjent</b><small>ustaw surową fizjologię (suwaki); cały obraz kliniczny wynika sam</small></button></div>
+        <div class="seg four">${scOpt('normal','normal','Zdrowy')}${scOpt('neuritis','neuritisR','Neuronitis')}${scOpt('stroke','strokeCentral','Udar')}<button class="opt" aria-pressed="false" onclick="openHintsCustom()" style="${scSt}">Własny<small>matematyczny pacjent</small></button></div>
       <div class="note" style="margin-top:14px">Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz (przy neuronitis stronę ucha ustawisz przełącznikiem na karcie HINTS) albo tryb „Własny", by sterować każdym parametrem.</div>`;
   } else {
     const testOpt=k=>`<button class="opt" aria-pressed="${state.testKey===k}" onclick="openTest('${k}')">${DIAG[k].name}<small>${DIAG[k].tests}</small></button>`;
@@ -785,6 +786,11 @@ function renderDiag(){
         label: "ku dołowi — czysty downbeat (kanał przedni)",
         note: `To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.` }
     : ph);
+  // MĘCZLIWOŚĆ: przy powtórzeniach prowokacji Dix-Hallpike kanalolitiaza SŁABNIE, kupulolitiaza NIE (różnicowanie).
+  // fatigue = ortogonalny mnożnik amplitudy (startNys/startDialNysIn); kupulo = 1 (nie wyczerpuje się).
+  const dixRep = (isDix && !antMode) ? (state.dixRep||0) : 0;
+  const fatFactor = v==="cupulo" ? 1 : Vestibular.fatigueFactor(dixRep);
+  phases.forEach(ph=>{ if(ph.nys) ph.nys.fatigue = fatFactor; });
   state._diagPhaseNys = phases.map(p=>p.nys);   // do restartu animacji przy odwracaniu kart pozycji
   const vl=variantLabels(t.canal);
   const mechNote = v==="canalo"
@@ -808,6 +814,29 @@ function renderDiag(){
         <div class="face back phaseface">${phaseInner(phases[1],1)}<div class="fliphint">${FLIP_ICO} ${phases[0].ptitle}</div></div>
       </div></div>`
     : phases.map((ph,i)=>`<div class="phase">${phaseInner(ph,i)}</div>`).join("");
+  // Panel MĘCZLIWOŚCI (tylko Dix-Hallpike, tryb kanału tylnego): powtarzaj prowokację → kanalolitiaza słabnie,
+  // kupulolitiaza nie (różnicowanie wprost). Amplituda z Vestibular.fatigueFactor(rep).
+  const fatPanel = (isDix && !antMode) ? (()=>{
+    const rep=state.dixRep||0, cupulo=(v==="cupulo"), pct=Math.round((cupulo?1:Vestibular.fatigueFactor(rep))*100);
+    const barCol = cupulo ? "#3a8f6f" : (pct<40 ? "var(--ant)" : "var(--primary)");
+    const note = cupulo
+      ? "Kupulolitiaza: oczopląs NIE wyczerpuje się przy powtórzeniach — złóg przylega do osklepka."
+      : rep===0
+        ? "Powtórz prowokację kilka razy: w kanalolitiazie oczopląs SŁABNIE z każdym razem (rozproszenie złogu) — to odróżnia ją od kupulolitiazy."
+        : `Osłabienie po ${rep} ${rep===1?"powtórzeniu":"powtórzeniach"}: amplituda oczopląsu ~${pct}% wartości wyjściowej.`;
+    return `<div class="card" style="margin-bottom:4px">
+      <div class="obslabel" style="margin-bottom:4px">Powtarzalność prowokacji — męczliwość oczopląsu</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center" onclick="repeatDixProvoke()">↻ Powtórz prowokację</button>
+        <span class="mono" style="color:var(--muted);font-size:13px">Prowokacja #${rep+1}</span>
+        ${rep>0?`<button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center;opacity:.85" onclick="resetDixProvoke()">Reset</button>`:""}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;height:8px;border-radius:4px;background:var(--panel2);overflow:hidden"><div style="height:100%;width:${pct}%;background:${barCol};transition:width .35s"></div></div>
+        <span style="font-size:12px;color:var(--muted);min-width:84px;text-align:right">amplituda ${pct}%</span>
+      </div>
+      <div class="note">${note}</div></div>`;
+  })() : "";
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${t.name}</b><span>${t.tests}</span></div>
@@ -818,7 +847,7 @@ function renderDiag(){
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + skrętny</b><small>kanał tylny (ucho dolne) — typowy</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>kanał przedni (rzadki, ucho przeciwne)</small></button>
       </div></div>` : ""}
-    ${phaseHTML}
+    ${phaseHTML}${fatPanel}
     ${(()=>{
       const interp = v0 => antMode
         ? `Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`

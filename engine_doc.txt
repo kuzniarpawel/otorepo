@@ -101,7 +101,7 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — ETAP 2 (dynamika cząstki) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06}) -> [{t, xi, phi, exited}, ...]
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
    [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
     oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
@@ -143,6 +143,19 @@ simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=
        manewru (np. Semont/Yacovino) — spójne z uzasadnieniem holdów ~30 s dla wolno osiadających
        odłamków (Hain [2]) oraz z „extremely long-latency BPPV" [11]. Adresuje uproszczenie
        „brak wpływu rozmiaru cząstki" z sekcji UPROSZCZENIA.
+   MĘCZLIWOŚĆ / FATIGABILITY (rep) — kryterium RÓŻNICUJĄCE kanalolitiaza↔kupulolitiaza [12].
+       rep = numer powtórzenia prowokacji w tej samej sesji (0 = pierwsza = pełna odpowiedź). Mechanizm:
+       zbity klaster otoconiów ROZPRASZA SIĘ przy powtórzeniach (seryjny Dix–Hallpike) na mniejsze, mniej
+       spójne fragmenty → słabsze zbiorcze wychylenie osklepka. Czynnik fatigueFactor(rep,{fatTau,fatFloor})
+       skaluje gc → maleje AMPLITUDA ξ (i oczopląsu) liniowo; GEOMETRIA/LATENCJA BEZ ZMIAN (dominujący,
+       bezsporny efekt kliniczny to spadek amplitudy). Domyślnie fatTau=2.0, fatFloor=0.06; rep=0 → czynnik 1
+       → wynik IDENTYCZNY (wsteczna zgodność). Przykład (kanał tylny): szczyt ξ 0.81→0.51→0.33→0.22→0.15 dla
+       rep 0..4. KUPULOLITIAZA (simulateCupulolith) NIE ma rep — złóg przylega do osklepka, nie rozprasza się
+       → NIE męczy się; różnica jest emergentną cechą różnicującą.
+
+fatigueFactor(rep=0, {fatTau=2.0, fatFloor=0.06}) -> czynnik ∈ [fatFloor, 1]
+   Czysty czynnik męczliwości: fatFloor + (1−fatFloor)·exp(−rep/fatTau); rep 0/ujemny/NaN → 1; monotoniczny
+   zanik do fatFloor; fatTau≤0 → RangeError. Eksportowany do UI/diagnostyki (seryjny Dix–Hallpike).
 
 nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
    Klasyfikacja fazy względem kierunku prowokującego:
@@ -295,6 +308,11 @@ biomechanicznych BPPV — nie zawiera nowych hipotez naukowych. Mapowanie:
 [11] "Extremely Long Latency BPPV" (Res Vestib Sci, 2017) — bardzo długie latencje
      przypisane PRZYLEGANIU otolitów i ich rozmiarowi. Podstawa hipotezy adhezji
      (nasza latencja) jako mechanizmu mniejszościowego.
+
+[12] Dix MR, Hallpike CS (1952) — pierwotny opis pozycyjnego oczopląsu BPPV i jego
+     MĘCZLIWOŚCI (wygasanie/osłabienie przy powtórzeniach prowokacji). Mechanizm dyspersji
+     zbitego złogu: Brandt & Steddin (1993, [7]). Podstawa czynnika fatigueFactor (rep):
+     kanalolitiaza męczy się, kupulolitiaza (złóg na osklepku) — nie.
 
 ADNOTACJA — LATENCJA (świadomy wybór modelowy):
   Nasza latencja wynika z ADHEZJI otolitu (wiązanie zrywane utrzymaną siłą

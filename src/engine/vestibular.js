@@ -137,6 +137,20 @@ export const Vestibular = (()=>{
     }
     return SIZE_R[size]!==undefined ? SIZE_R[size] : 1;   // preset (small/medium/big) lub domyślnie medium (r=1)
   };
+  // MĘCZLIWOŚĆ (fatigability) oczopląsu — kryterium RÓŻNICUJĄCE kanalolitiaza↔kupulolitiaza.
+  //   Przy POWTÓRZENIACH prowokacji w tej samej sesji (seryjny Dix–Hallpike) zbity klaster otoconiów ROZPRASZA
+  //   SIĘ na mniejsze, mniej spójne fragmenty → słabsze zbiorcze wychylenie osklepka → oczopląs SŁABNIE z każdym
+  //   powtórzeniem (klasyczny objaw KANALOLITIAZY). KUPULOLITIAZA (złóg przylega do osklepka, nie rozprasza się)
+  //   NIE męczy się — dlatego simulateCupulolith NIE ma tego czynnika, a różnica jest emergentną cechą różnicującą.
+  //   rep = numer powtórzenia (0 = pierwsza prowokacja = pełna odpowiedź). Czynnik ∈ [fatFloor,1] skaluje gc
+  //   (wzmocnienie wychylenia osklepka) → maleje AMPLITUDA ξ i oczopląsu; geometria/latencja BEZ ZMIAN (dominujący,
+  //   bezsporny efekt kliniczny to spadek amplitudy). fatTau = skala zaniku (w powtórzeniach), fatFloor = resztka.
+  function fatigueFactor(rep=0, {fatTau=2.0, fatFloor=0.06}={}){
+    if(!(fatTau>0) || !isFinite(fatTau)) throw new RangeError("fatigueFactor: fatTau musi być liczbą > 0 (podano "+fatTau+")");
+    const n = (Number.isFinite(rep) && rep>0) ? rep : 0;   // rep 0 / ujemny / NaN = brak męczliwości (czynnik = 1)
+    const fl = Math.min(1, Math.max(0, fatFloor));         // podłoga (resztkowa amplituda) w [0,1]
+    return fl + (1-fl)*Math.exp(-n/fatTau);                // rep=0 → 1; monotoniczny zanik do fl
+  }
   // walidacja pojedynczego segmentu timeline {q, tTrans, tHold} — jasny błąd ZE WSKAZANIEM indeksu (zamiast
   // ogólnego „Cannot read properties of null/undefined" przy segmencie null lub braku q). Zwraca q znormalizowane.
   function reqSegment(seg, i, where){
@@ -153,11 +167,11 @@ export const Vestibular = (()=>{
   //   gc=1.6 — wzmocnienie; phiExit=178 — odnoga wspólna;
   //   fStat/adh — adhezja otolitu (zrywana utrzymaną siłą styczną → latencja; silniejsza
   //   prowokacja = krótsza latencja). Kupulolitiaza nie ma adhezji/latencji (osobna funkcja).
-  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium"}){
+  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06}){
     reqCanal(canal, side, "simulateCanalith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCanalith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCanalith: dt musi być liczbą > 0 (podano "+dt+")");   // dt<=0 → nieskończona pętla
-    const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r; adh=adh*r;   // skalowanie rozmiarem cząstki (patrz SIZE_R)
+    const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D;
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
@@ -223,7 +237,7 @@ export const Vestibular = (()=>{
     return out;
   }
   return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
-          simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase,
+          simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
           qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS};
 })();
 
