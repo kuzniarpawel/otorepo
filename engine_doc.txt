@@ -102,7 +102,7 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — ETAP 2 (dynamika cząstki) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145}) -> [{t, xi, phi, exited}, ...]
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
    [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
     oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
@@ -125,9 +125,26 @@ simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=
        Otolit początkowo przyklejony; wiązanie (adh) zrywane przez utrzymaną siłę styczną
        powyżej progu fStat → opóźnienie startu = LATENCJA. Silniejsza prowokacja = krótsza
        latencja (zgodnie z kliniką). Po zerwaniu otolit już się nie przykleja w tej sesji.
-   WYJŚCIE OTOLITU (efekty zależne od historii):
-       phiExit [°]: po dotarciu φ≥phiExit otolit wchodzi do woreczka JEDNOKIERUNKOWO (exited)
-       → wyleczenie blokuje fazę odwróconą. Ruch wsteczny (dφ/dt<0) → ξ<0 → oczopląs ODWRÓCONY.
+   KOMORA ODNOGI WSPÓLNEJ + EKSPULSJA DO ŁAGIEWKI (kanały PIONOWE: tylny+przedni; poziomy NIE ma odnogi):
+       Anatomicznie „dotarcie do końca łuku" (φ=phiExit) ≠ „wpadnięcie do łagiewki" — to DWA zdarzenia.
+       • KANAŁ POZIOMY: brak odnogi wspólnej → koniec nieampułkowy uchodzi WPROST do łagiewki: po φ≥phiExit
+         otolit wchodzi do łagiewki JEDNOKIERUNKOWO (exited). (Bez zmian względem poprzedniej wersji.)
+       • KANAŁY PIONOWE (crusArc/crusGrav/crusFling): po dojściu do odnogi (φ≥phiExit−crusArc) otolit WCHODZI
+         DO KOMORY ODNOGI i PARKUJE — opuszcza czuły kanał, osklepek relaksuje (ξ→0, brak oczopląsu), czeka na
+         ekspulsję do łagiewki. Dwie fizjologiczne drogi ekspulsji z odnogi:
+           – GRAWITACYJNA (wolna): przy głowie PIONOWEJ (siad) łagiewka jest pod odnogą → złóg wpada. Warunek
+             −gHead_y > crusGrav (rzut grawitacji na oś odnoga→łagiewka ≈ [0,−1,0]). Daje ekspulsję Epleya PRZY
+             SIADZIE (krok 5) + oczopląs LIBERACYJNY tam, gdzie klinicznie występuje.
+           – BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut o duży kąt (Semont ~180°) wyrzuca złóg z odnogi siłami
+             bezwładności niezależnie od grawitacji. Proxy: kąt przejścia segmentu > crusFling (przy ~jednolitym
+             czasie przejścia duży kąt ≈ duża prędkość kątowa). Utrzymuje ekspulsję Semonta PRZY RZUCIE (krok 3).
+         Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w ~EXPEL_DUR(1.2 s) → TRANSJENT oczopląsu ampullofugalny
+         (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. exited=true jednokierunkowo (blokuje fazę odwróconą).
+       Ruch wsteczny w świetle kanału (dφ/dt<0, przed odnogą) → ξ<0 → oczopląs ODWRÓCONY.
+       WALIDACJA (offline, realne plany gen, obie strony): Epley ekspulsja/liberacyjny w KROKU 5 (siad, ξ~0.31);
+       Semont w KROKU 3 (rzut); Yacovino w KROKU 3 (broda do klatki); kanał poziomy (Lempert/Gufoni) BEZ ZMIAN;
+       Gufoni apo dalej nie czyści (konwersja). Diagnostyka (pojedyncza pozycja leżąca): złóg parkuje w odnodze
+       bez ekspulsji → oczopląs crescendo→decrescendo (wygasa), złóg NIE „znika" (bardziej fizjologiczne).
    STAŁE SKALIBROWANE DO LITERATURY (kanał tylny, kanalolitiaza):
        latencja ~1–3 s, czas do szczytu ~7–9 s, czas trwania napadu ~25 s;
        tauC=5 s odpowiada długiej stałej osklepka/kanału (~4–6 s).

@@ -169,8 +169,14 @@ FAZA UI (po silniku, budowana raz z pełnym zakresem) — ZROBIONE 2026-07-10 (t
  [ ] (opc.) Head-shaking nystagmus — demaskowanie utajonej asymetrii velocity storage po kompensacji.
 
 WALIDACJA / modelowanie kliniczne (otwarte):
- [ ] Epley "front-loaded": cząstka osiąga wyjście (φ=178°) już w KROKU 2 → oczopląs w krokach 4/5 pod-reprezentowany.
-        Naprawa = korekta dynamiki φ w silniku (osobne zadanie).
+ [x] Epley "front-loaded": cząstka osiągała wyjście za wcześnie → oczopląs liberacyjny w krokach 4/5 pod-reprezentowany.
+        ZROBIONE (model KOMORY ODNOGI WSPÓLNEJ + geometria łagiewki): kanały pionowe parkują złóg w odnodze
+        (φ≥phiExit−crusArc), ekspulsja do łagiewki DWIEMA drogami — grawitacyjna (siad, −gHead_y>crusGrav → Epley
+        krok 5) i bezwładnościowa (przerzut, kąt>crusFling → Semont krok 3). Transjent ekspulsji = oczopląs
+        liberacyjny (ampullofugalny, ten sam znak co pierwotny). Yacovino → krok 3 (broda). Poziomy (bez odnogi)
+        BEZ ZMIAN. Renderer manFractions: krok zrzutu z FIZYKI dla pionowych (Epley zrzut w kroku 5). 3 wyrocznie
+        zielone (golden: tylko Epley P/L step3/4 — oczopląs przeniesiony k4→k5); przeglądarka: liberacyjny w siadzie
+        + otolit w łagiewce. Przy okazji: 2× korekta anatomiczna woreczek→ŁAGIEWKA. [engine_doc: KOMORA ODNOGI WSPÓLNEJ]
  [ ] Re-prowokacja per obrót (Lempert poziomy): model nie re-prowokuje na przejściach; obecnie łatane świeżym
         provoke z faktycznej orientacji kroku (stepXiPeak). Pełne rozwiązanie = prowokacja na każdym przejściu head-Q.
 

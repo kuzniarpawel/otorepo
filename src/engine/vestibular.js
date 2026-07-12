@@ -171,34 +171,61 @@ export const Vestibular = (()=>{
   //   gc=1.6 — wzmocnienie; phiExit=178 — koniec nieampułkowy = wyjście do ŁAGIEWKI (kan. pionowe: odnoga wspólna; poziomy: wprost);
   //   fStat/adh — adhezja otolitu (zrywana utrzymaną siłą styczną → latencja; silniejsza
   //   prowokacja = krótsza latencja). Kupulolitiaza nie ma adhezji/latencji (osobna funkcja).
-  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06}){
+  // KOMORA ODNOGI WSPÓLNEJ + ŁAGIEWKA (kanały PIONOWE: tylny+przedni; poziomy NIE ma odnogi → wyjście wprost).
+  //   Anatomicznie „dotarcie do końca łuku" (φ=phiExit) ≠ „wpadnięcie do łagiewki" — to DWA zdarzenia. Złóg po
+  //   dojściu do odnogi (φ≥phiExit−crusArc) WCHODZI DO KOMORY ODNOGI i PARKUJE: opuszcza czuły kanał, osklepek
+  //   relaksuje (brak oczopląsu), czeka na ekspulsję do łagiewki. Ekspulsja ma DWIE fizjologiczne drogi:
+  //     • GRAWITACYJNA (wolna): przy głowie pionowej (siad) łagiewka jest POD odnogą → złóg wpada. Warunek
+  //       −gHead_y > crusGrav (gHead·[0,−1,0]). To daje ekspulsję Epleya PRZY SIADZIE + oczopląs liberacyjny.
+  //     • BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut o duży kąt (Semont ~180°) wyrzuca złóg z odnogi siłami
+  //       bezwładności, niezależnie od grawitacji. Proxy: kąt przejścia segmentu > crusFling (przy ~jednolitym
+  //       czasie przejścia duży kąt = duża prędkość kątowa). To utrzymuje ekspulsję Semonta PRZY RZUCIE.
+  //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
+  //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
+  //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
+  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145}){
     reqCanal(canal, side, "simulateCanalith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCanalith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCanalith: dt musi być liczbą > 0 (podano "+dt+")");   // dt<=0 → nieskończona pętla
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)
-    const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D;
+    const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D, pcrus=(phiExit-crusArc)*D;
+    const crusGate=(canal==="posterior"||canal==="anterior");   // odnoga wspólna TYLKO dla kanałów pionowych; poziomy → wyjście wprost
+    const EXPEL_DUR=1.2, expelRate=(pex-pcrus)/EXPEL_DUR;        // tempo ekspulsji odnoga→łagiewka (transjent liberacyjny)
+    const q4dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];  // do kąta przejścia (bezwładność)
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
     // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
     // 1. segment = pozycja startowa, a jego tTrans to czas W tej pozycji (NIE przejście z neutralnej). Wsteczna zgodność.
-    let phi=90*D, xi=0, t=0, exited=false, stuck=true, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    let phi=90*D, xi=0, t=0, exited=false, stuck=true, inCrus=false, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
+      const flingDeg = 2*Math.acos(Math.min(1,Math.abs(q4dot(qPrev,sq))))*180/Math.PI;   // kąt przejścia INTO tego segmentu (proxy prędkości kątowej → bezwładność)
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
         const g=gHead(slerpQ(qPrev,sq,u));
         let dphi=0, flow=0;
         if(!exited){
-          const drive=dot3(g,tang(phi))/tauP;                  // prędkość potencjalna (overdamped)
-          if(stuck && Math.abs(drive)>fStat){                  // adhezja: zrywanie utrzymaną siłą
-            bond-=(Math.abs(drive)-fStat)*dt; if(bond<=0) stuck=false;
-          }
-          if(!stuck){
-            dphi=drive; let nphi=phi+dphi*dt;
-            if(nphi>=pex){nphi=pex; exited=true;}              // koniec nieampułkowy → ŁAGIEWKA (utricle): kanały pionowe przez odnogę wspólną, poziomy wprost; jednokierunkowo
-            if(nphi<3*D){nphi=3*D; dphi=0;}                    // nie przechodzi przez osklepek
-            phi=nphi; flow=gc*G.exc*dphi;                      // ruch wsteczny → przepływ odwrócony → ξ<0
+          if(crusGate && inCrus){
+            // złóg w KOMORZE ODNOGI WSPÓLNEJ — poza czułym kanałem (osklepek relaksuje). Czeka na ekspulsję do łagiewki.
+            if(!expelling && (-g[1] > crusGrav || flingDeg > crusFling)) expelling=true;   // GRAWITACYJNA (siad: łagiewka pod odnogą) LUB BEZWŁADNOŚCIOWA (szybki przerzut, np. Semont)
+            if(expelling){                                     // transjent ekspulsji: φ pcrus→pex → oczopląs liberacyjny (ampullofugalny, TEN SAM znak co pierwotny)
+              dphi=expelRate; let nphi=phi+dphi*dt;
+              if(nphi>=pex){nphi=pex; exited=true; expelling=false;}   // wpadł do łagiewki (jednokierunkowo)
+              phi=nphi; flow=gc*G.exc*dphi;
+            }
+          } else {
+            const drive=dot3(g,tang(phi))/tauP;                // prędkość potencjalna (overdamped) — wędrówka w świetle kanału
+            if(stuck && Math.abs(drive)>fStat){                // adhezja: zrywanie utrzymaną siłą
+              bond-=(Math.abs(drive)-fStat)*dt; if(bond<=0) stuck=false;
+            }
+            if(!stuck){
+              dphi=drive; let nphi=phi+dphi*dt;
+              if(crusGate){ if(nphi>=pcrus){ dphi=Math.max(0,pcrus-phi)/dt; nphi=pcrus; inCrus=true; } }   // dotarł do odnogi → PARKUJE (opuszcza czuły kanał); dphi = realny dojazd
+              else if(nphi>=pex){ nphi=pex; exited=true; }     // POZIOMY: brak odnogi — wyjście wprost do łagiewki
+              if(nphi<3*D){nphi=3*D; dphi=0;}                  // nie przechodzi przez osklepek
+              phi=nphi; flow=gc*G.exc*dphi;                    // ruch wsteczny → przepływ odwrócony → ξ<0
+            }
           }
         }
         xi+=dt*(-xi/tauC + flow); t+=dt;

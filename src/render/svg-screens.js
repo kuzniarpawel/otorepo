@@ -475,20 +475,30 @@ function manPhi(man, step, frac){                       // φ realne dla danego 
   return man.sim[i] ? man.sim[i].phi : 90;
 }
 const phiToFrac = phi => Math.max(0, Math.min(1, phi/178));   // φ→ułamek ścieżki (178°=wyjście)
+// krok pierwszej ekspulsji do łagiewki wg FIZYKI (man.sim.exited) → indeks segmentu zawierającego ten czas.
+// Dla kanałów PIONOWYCH model komory odnogi daje teraz czysty, klinicznie właściwy krok wyjścia
+// (Epley = siad; Semont = rzut; Yacovino = broda do klatki). -1 gdy brak ekspulsji / brak danych.
+function manExitStep(man){
+  if(!man || !man.exited || !man.segs) return -1;
+  let tExit=null; for(const s of man.sim){ if(s.exited){ tExit=s.t; break; } }
+  if(tExit==null) return -1;
+  for(let i=0;i<man.segs.length;i++){ const sg=man.segs[i]; if(tExit <= sg.t0+sg.dur+1e-9) return i; }
+  return man.segs.length-1;
+}
 // harmonogram ułamków ścieżki per krok.
 // Silnik WALIDUJE, że manewr czyści (man.exited) i wskazuje krok kuracyjny; wędrówkę pokazujemy jako
-// czystą, monotoniczną progresję 0.15→1.0 (wyjście) dokładnie w kroku kuracyjnym = ostatnim repozycyjnym
-// (przedostatni krok, przed powrotem do siadu). Surowe φ z silnika jest „front-loaded" (nasyca się ~krok 2)
-// i dla kanału poziomego idzie ku bańce — nie daje czytelnej wędrówki przez wszystkie kroki, stąd schemat.
+// czystą, monotoniczną progresję 0.15→1.0 (wyjście). Krok kuracyjny:
+//  • kanały PIONOWE (model komory odnogi) → REALNY krok ekspulsji z fizyki (manExitStep): Epley = SIAD (k5),
+//    Semont = rzut (k3), Yacovino = broda (k3). Spójne z oczoplątem liberacyjnym generowanym w tym kroku.
+//  • kanał POZIOMY (bez odnogi, φ front-loaded ku bańce) i KUPULO (Bascule) → schemat n-2 (przedostatni krok).
 function manFractions(man, plan){
   const n=plan.steps.length;
   if(!man.exited && plan.mechanism!=="cupulo"){          // konwersja (Gufoni apo) — ruch ku bańce wg silnika, bez wyjścia
     return {fr: plan.steps.map((_,i)=>phiToFrac(manPhi(man,i,1))), exitStep:-1};
   }
-  // Wyjście do łagiewki: kanalityczny zweryfikowany fizyką (man.exited) LUB uwalniający KUPULOLITYCZNY (Bascule) —
-  // dla kupulolitiazy model kanalityczny nie jest właściwą fizyką, więc wyjście wynika z KLINICZNEJ natury
-  // manewru (mechanism:"cupulo"), nie z walidacji cząstki. Czas kroków (tEnd) dalej z silnika.
-  const cure=Math.max(1, n-2), s0=0.15;                  // krok kuracyjny; pozycja spoczynkowa złogu (blisko bańki)
+  const vertical = plan.canal!=="horizontal" && plan.mechanism!=="cupulo";
+  const physExit = vertical ? manExitStep(man) : -1;     // pionowy: realny krok ekspulsji; poziomy/kupulo: schemat
+  const cure=Math.max(1, physExit>=1 ? physExit : n-2), s0=0.15;   // krok kuracyjny; pozycja spoczynkowa złogu (blisko bańki)
   const fr=[];
   for(let i=0;i<n;i++) fr.push(i<=cure ? s0+(1-s0)*(i/cure) : 1);   // ramp do 1.0 w kroku kuracyjnym, potem łagiewka
   return {fr, exitStep:cure};
