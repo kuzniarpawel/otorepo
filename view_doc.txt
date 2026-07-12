@@ -646,3 +646,26 @@ WYROCZNIA WIDOKU tools/view-check.mjs (npm run view:check): dla 78 póz (wszystk
   odbija dopiero obraz; przy pomiarach pikselowych odbicie trzeba nałożyć ręcznie).
 Przejścia: zmiana klucza kamery (Semont frontal->topDown) = przeskok bez tweena (lastCam=camKey); w obrębie tej samej
   kamery slerp+lerp ~620 ms jak dotąd.
+
+===== YACOVINO — twarz kroku 3/4 + ukryty błąd fizyki anterior (zgłoszenie z markerami) =====
+OBJAW: w 2.5D (i potem 3D) twarz w kroku 3 (supineChin) i 4 (sit/down) była zwrócona odwrotnie niż anatomicznie.
+PRZYCZYNA (nie-do-zdebugowania wcześniej): audyt #1 wiąże twarz z gHead (jedno źródło: composeHead==stepGravity).
+  Stary silnik „czyścił" kanał przedni TYLKO przy anatomicznie ODWROTNEJ pozie: supineChin miał SUPINE_PITCH=-75
+  (gHead≈[0,+1,-0.09], grawitacja KU CZUBKOWI = głowa nadal odgięta w tył, nie „broda do klatki"), a krok 4 był
+  sit/down (głęboki skłon, jak Bow&Lean). Renderer WIERNIE pokazywał tę błędną fizyczną pozę. Twarz i fizyka to
+  ten sam kwaternion — nie da się poprawić jednego bez drugiego.
+DIAGNOZA: symulacja φ(t) złogu w kanale przednim. Sam głęboki zwis (izolowany) czyści anterior (φ→178 exited),
+  ale wspólny z Epley/Dix supineHang jest PŁYTKI (~10° poniżej poziomu, φ utyka na 173) i za krótko trzymany
+  (cap dynamiki 12 s). Broda-do-klatki (anatomicznie poprawna) przy niedokończonym zwisie COFA złóg (φ 145->118->82).
+POPRAWKA (tylko poza/czas Yacovino — NIE tknięto geometrii kanału / nystagmusu / HINTS):
+  • nowe ciało supineDeepHang (SUPINE_PITCH=-30, gHead≈[0,0.64,-0.77], nos w górę-i-w-tył = GŁĘBOKI zwis);
+    NECK_DEG=-52, TORSO_Q + BED_EXCL (głowa+szyja zwisają) jak supineHang.
+  • krok 2 body=supineDeepHang + dynHold=22: override czasu DYNAMIKI kroku, skalowany jak cap (dynHold·cap/12 →
+    small ~37 s, medium 22 s), by złóg zdążył opuścić kanał W TRAKCIE zwisu. exited zostaje na kroki 3-4.
+  • krok 3 supineChin: SUPINE_PITCH +75 (broda do klatki: nos w górę-ku-stopom [0,0.42,0.91]).
+  • krok 4: face „chin" (nowy) zamiast „down"; BASE_G["sit|chin"]=[0,-0.64,0.77] (broda do klatki na siedząco,
+    nos w dół-do-przodu [0,-0.77,0.64]) — NIE głęboki skłon „down". NECK_DEG sit: face=="chin" → +45° zgięcia.
+  • etykieta faceLabel: „broda przy klatce".
+WERYFIKACJA: φ→178 exited dla P/L × small/medium/big; pozostałe manewry bez zmian (gufoniApo φ=69 exited=false
+  = poprawne, to konwersja bez ewakuacji); bridge/view/golden zielone; wizualnie 4 kroki zgodne z markerami.
+INWARIANT audyt #1 zachowany: gHead(headQ)==gravity == 2.5e-16 dla wszystkich kroków.

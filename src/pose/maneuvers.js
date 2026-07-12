@@ -95,11 +95,11 @@ function yacovino(side){
   return {name:"Głębokie odchylenie głowy (Yacovino)",canal:"anterior",side,headCamera:"topDownBehind",steps:[
     {title:"Pozycja wyjściowa",body:"sit",yaw:0,face:"fwd",seconds:null,progress:0.02,
      instr:`Pacjent siada na środku kozetki, głowa prosto.`},
-    {title:"Głębokie odchylenie głowy",body:"supineHang",yaw:0,face:"up",seconds:30,progress:0.30,
-     instr:`Szybko połóż pacjenta na plecach z głową głęboko odchyloną w dół (znacznie poniżej poziomu). Utrzymaj.`},
+    {title:"Głębokie odchylenie głowy",body:"supineDeepHang",yaw:0,face:"up",seconds:30,dynHold:22,progress:0.30,
+     instr:`Szybko połóż pacjenta na plecach z głową głęboko odchyloną w dół (znacznie poniżej poziomu). Utrzymaj — złóg opuszcza kanał w tej pozycji.`},
     {title:"Przygięcie brody do klatki (leżąc)",body:"supineChin",yaw:0,face:"up",seconds:30,progress:0.70,
      instr:`NIE sadzając pacjenta, przygnij jego głowę do przodu — broda do klatki (~45°). Pacjent nadal leży. Utrzymaj.`},
-    {title:"Powrót do siadu",body:"sit",yaw:0,face:"down",seconds:null,progress:1.0,
+    {title:"Powrót do siadu",body:"sit",yaw:0,face:"chin",seconds:null,progress:1.0,
      instr:`Posadź pacjenta, utrzymując brodę przy klatce, i dopiero na końcu wyprostuj głowę. Koniec serii.`},
   ]};
 }
@@ -238,6 +238,7 @@ const rotYg=(g,deg)=>{ const r=deg*Math.PI/180, c=Math.cos(r), s=Math.sin(r); //
   return [g[0]*c+g[2]*s, g[1], -g[0]*s+g[2]*c]; };
 // grawitacja w ramce głowy dla yaw=0 (skręt nakładany osobno)
 const BASE_G={ "sit|fwd":[0,-1,0], "sit|down":[0,0.9,0.45], "sit|up":[0,-0.5,-0.85],
+  "sit|chin":[0,-0.64,0.77],   // broda przy klatce (~50° przygięcia; Yacovino krok 4) — NIE głęboki skłon „down" (Bow&Lean)
   "prone|down":[0,0.3,0.95], "sideL|fwd":[-1,0,0], "sideR|fwd":[1,0,0],
   "sideL|down":[-0.5,0.6,0.6], "sideR|down":[0.5,0.6,0.6], "sideL|up":[-0.6,-0.5,-0.6], "sideR|up":[0.6,-0.5,-0.6],
   "sitFront|fwd":[0,-1,0] };
@@ -247,9 +248,16 @@ const BASE_G={ "sit|fwd":[0,-1,0], "sit|down":[0,0.9,0.45], "sit|up":[0,-0.5,-0.
 // (composeHead czerpie z LEAN_G → gHead(composeHead)==stepGravity). Było [±0.4,0.85,0.3] (nos ~18°, mylący profil w górę).
 const LEAN_G={ "leanL|up":[0.5,-0.2,-0.8], "leanR|up":[-0.5,-0.2,-0.8],
   "leanR|down":[-0.35,0.6,0.72], "leanL|down":[0.35,0.6,0.72] };
-// Yacovino krok 3: leżenie supine + DOGIĘCIE głowy do przodu (broda do klatki) — osobna orientacja,
-// nie generyczne supine. Ta sama q dla stepHeadQ (fizyka) i composeHead (render) → zero rozjazdu (audyt #1).
-const SUPINE_PITCH={ supineChin:-75 };   // ° doginania wokół osi ucha: −75° = z ~30° odgięcia (deep-hang) do ~45° przygięcia; gHead≈[0,1,−0.09], czyści anterior
+// Pochylenie głowy wokół osi ucha dla póz supine (° do qSupineYaw). Ta sama q dla stepHeadQ (fizyka)
+// i composeHead (render) → zero rozjazdu (audyt #1). ZGŁOSZENIE Yacovino (screeny z markerami):
+//   • supineChin (krok 3): −75° dawało nos POZIOMO KU ŚCIANIE za głową (czubek w materac) — absurd
+//     anatomiczny. +75° = broda do klatki: nos w górę-ku-stopom (nos_świat≈[0,0.42,0.90]).
+//   • supineDeepHang (krok 2): −30° = GŁĘBOKI zwis (nos ku górze-i-w-tył, gHead≈[0,0.64,−0.77]),
+//     głębszy niż wspólny supineHang (Epley/Dix, ~10° poniżej poziomu). To ODSŁONIŁO ukryty błąd:
+//     stary silnik „czyścił" anterior tylko przy anatomicznie ODWROTNEJ pozie (grawitacja ku czubkowi).
+//     Poprawka: głęboki zwis czyści kanał W TRAKCIE zwisu (φ→178 przy holdzie dynamiki ~22 s — dynHold
+//     na kroku), a broda/siad już tylko wyprowadzają (exited zostaje). NIE tknięto geometrii kanału.
+const SUPINE_PITCH={ supineChin:+75, supineDeepHang:-30 };
 function supineHeadQ(body, yaw){          // orientacja głowy dla póz supine (opcjonalny pitch brody)
   const q=Vestibular.qSupineYaw(yaw), p=SUPINE_PITCH[body];
   return p ? Vestibular.qmul(q, Vestibular.qaxis([1,0,0], p)) : q;
@@ -337,17 +345,17 @@ const TORSO_Q={
   sideL:Vestibular.qmul(Vestibular.qaxis([0,0,1],90), Vestibular.qaxis([1,0,0],-90)),   // na boku: supine + roll wokół osi długiej
   sideR:Vestibular.qmul(Vestibular.qaxis([0,0,1],-90),Vestibular.qaxis([1,0,0],-90)),
   prone:Vestibular.qmul(Vestibular.qaxis([0,0,1],180),Vestibular.qaxis([1,0,0],-90)),   // na brzuchu = supine + obrót 180° wokół osi długiej: twarz w dół, głowa NIE odwrócona
-  supineHang:Vestibular.qaxis([1,0,0],-90), supineFlex:Vestibular.qaxis([1,0,0],-90), supineFlat:Vestibular.qaxis([1,0,0],-90), supineChin:Vestibular.qaxis([1,0,0],-90),
+  supineHang:Vestibular.qaxis([1,0,0],-90), supineDeepHang:Vestibular.qaxis([1,0,0],-90), supineFlex:Vestibular.qaxis([1,0,0],-90), supineFlat:Vestibular.qaxis([1,0,0],-90), supineChin:Vestibular.qaxis([1,0,0],-90),
   leanL:Vestibular.qaxis([0,0,1],-90), leanR:Vestibular.qaxis([0,0,1],90)   // Semont: POZIOME leżenie na boku (widok odgórny); leanL=prawy bok w dół, leanR=lewy bok w dół
 };
 // kąt szyi per ciało (stopnie, wokół osi usznej x): <0 = wyprost (głowa do tyłu/zwis), >0 = zgięcie (broda do mostka).
 // Wszystkie supine* mają identyczny gHead (silnik ich nie różnicuje) → różnica Hang/Flex/Flat jest TU, w pozie szyi.
-const NECK_DEG={ supineHang:-34, supineFlex:28, supineFlat:12, supineChin:45 };   // supineChin: kark mocno przygięty do przodu (broda do klatki)
+const NECK_DEG={ supineHang:-34, supineDeepHang:-52, supineFlex:28, supineFlat:12, supineChin:45 };   // supineChin: kark mocno przygięty (broda do klatki); supineDeepHang: głębszy wyprost niż zwykły zwis (Yacovino)
 function bodyClass(b){ return b.startsWith("supine")?"supine":(b==="sideL"||b==="sideR")?"side":(b==="leanL"||b==="leanR")?"lean":b; }
 function bodyJoints(body,face){                       // pozycje 3D stawów po orientacji w przestrzeni (pre-kamera)
   const pose=Object.assign({}, POSE3D[bodyClass(body)]||{});
   let nd=(NECK_DEG[body]||0);                          // wyprost/zgięcie szyi (<0 wyprost, >0 zgięcie do klatki)
-  if(body==="sit"){ if(face==="down") nd+=30; else if(face==="up") nd-=30; }   // dynamiczny kark (Yacovino): broda do klatki / odchylenie
+  if(body==="sit"){ if(face==="down") nd+=30; else if(face==="up") nd-=30; else if(face==="chin") nd+=45; }   // dynamiczny kark: skłon (bow) / odchylenie / broda do klatki (Yacovino)
   if(nd) pose.neckBase=Vestibular.qaxis([1,0,0], nd);
   if(body==="leanL"||body==="leanR"){                  // Semont: z czysto odgórnej kamery L/R kończyny rzutują się NA SIEBIE
     const up=body==="leanL"?"L":"R";                    // (ten sam ekranowy x,y, różni je tylko głębia) — bez tego nie widać,
@@ -391,7 +399,11 @@ function maneuverTimeline(plan, size="medium"){
   return plan.steps.map(st=>({
     q: stepHeadQ(st.body, st.yaw, st.face),
     tTrans: 0.8,
-    tHold: Math.max(6, Math.min(cap, st.seconds!=null ? st.seconds : 6))   // ograniczone do dynamiki (cząstka i tak osiada)
+    // dynHold: override czasu DYNAMIKI dla pojedynczego kroku (Yacovino: głęboki zwis czyści anterior
+    // dopiero po ~22 s — dłużej niż domyślny cap; NIE zmienia to innych manewrów). Skalujemy tak jak cap
+    // (małe złogi osiadają wolniej → cap=12/r², medium/big=12): dynHold·(cap/12) — small ~37 s, medium 22 s;
+    // sprawdzone: φ→178 exited dla small/medium/big. Timer wyświetlany (st.seconds) niezależny.
+    tHold: st.dynHold!=null ? st.dynHold * (cap/12) : Math.max(6, Math.min(cap, st.seconds!=null ? st.seconds : 6))
   }));
 }
 // pełna symulacja manewru → φ(t) cząstki w kanale (dynamika repozycji)

@@ -28,7 +28,7 @@ const SEGS = [
 ];
 const HEAD_R = 15;
 // wykluczenia kotwiczenia do blatu — te same co bedY w figProj
-const BED_EXCL = { supineHang: { neck:1, head:1 }, sit: { ankL:1, ankR:1, toeL:1, toeR:1 } };
+const BED_EXCL = { supineHang: { neck:1, head:1 }, supineDeepHang: { neck:1, head:1 }, sit: { ankL:1, ankR:1, toeL:1, toeR:1 } };
 
 const jointR = {};                                        // promień stawu = najgrubszy przyległy segment
 for (const [a, b, w] of SEGS) { jointR[a] = Math.max(jointR[a] || 0, w / 2); jointR[b] = Math.max(jointR[b] || 0, w / 2); }

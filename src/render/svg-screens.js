@@ -27,7 +27,7 @@ function headDial(spec,headCamera,nys){               // spec: PoseSpec (schemat
   const rightLab = el.x < er.x ? "P" : "L";
   const ring=face==="down"?"#FF9FBD":"#9FE3F6";
   const feat="#CFEFFB";
-  const faceLabel=face==="up"?"nos ku górze":face==="down"?"nos ku podłodze":"nos do przodu";
+  const faceLabel=face==="up"?"nos ku górze":face==="down"?"nos ku podłodze":face==="chin"?"broda przy klatce":"nos do przodu";
   const turnLabel=yaw>0?"obrót w prawo":yaw<0?"obrót w lewo":"na wprost";
   let nysNote="", h=180;
   if(nys){
@@ -206,7 +206,7 @@ function figProj(spec,obsCam,opt){                     // spec: PoseSpec — syl
   // --- kotwiczenie do blatu (opt.bedY): najniższy punkt CIAŁA-NA-KOZETCE siada na bedY; transformacja na CAŁEJ grupie ---
   let offY=0;
   if(opt.bedY!=null){
-    const excl = spec.body==="supineHang" ? {neck:1,head:1}                        // Dix-Hallpike: głowa+szyja zwisają poza krawędź
+    const excl = (spec.body==="supineHang"||spec.body==="supineDeepHang") ? {neck:1,head:1}   // Dix-Hallpike / Yacovino: głowa+szyja zwisają poza krawędź
                : spec.body==="sit"        ? {ankL:1,ankR:1,toeL:1,toeR:1}          // siad na krawędzi: podudzia/stopy zwisają
                : {};
     let bot=-Infinity;
