@@ -357,10 +357,8 @@ function bodyJoints(body,face){                       // pozycje 3D stawów po o
   let nd=(NECK_DEG[body]||0);                          // wyprost/zgięcie szyi (<0 wyprost, >0 zgięcie do klatki)
   if(body==="sit"){ if(face==="down") nd+=30; else if(face==="up") nd-=30; else if(face==="chin") nd+=45; }   // dynamiczny kark: skłon (bow) / odchylenie / broda do klatki (Yacovino)
   if(nd) pose.neckBase=Vestibular.qaxis([1,0,0], nd);
-  if(body==="leanL"||body==="leanR"){                  // Semont: z czysto odgórnej kamery L/R kończyny rzutują się NA SIEBIE
-    const up=body==="leanL"?"L":"R";                    // (ten sam ekranowy x,y, różni je tylko głębia) — bez tego nie widać,
-    pose["sh"+up]=Vestibular.qaxis([1,0,0], face==="down"?100:-100);  // który bok leży na dole. Górną (widoczną) rękę wychylamy:
-  }                                                     // krok 2 (nos w górę) KU GÓRZE, krok 3 (nos w dół/twarz w materac) W DÓŁ; dolna prosta/schowana.
+  // (leanL/leanR: dawny hack unoszący górną rękę był potrzebny TYLKO dla kamery odgórnej, gdzie kończyny
+  //  obu boków rzutowały się na siebie. Widok frontalny rozdziela barki po ekranowym Y → ręce proste.)
   const local=fkJoints(pose), TQ=TORSO_Q[body]||[1,0,0,0], out={};
   for(const k in local) out[k]=Vestibular.rotate(TQ, local[k]);
   return out;

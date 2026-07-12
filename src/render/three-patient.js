@@ -47,8 +47,7 @@ const ALL = [...JOINTS, 'head'];                          // wszystkie punkty po
 export const FRAME = { halfH: 94, cy: 24, fov: 30 };
 export function camKeyFor(spec, viewSide) {
   const b = spec.body;
-  if (b === 'sitFront') return 'frontal';
-  if (b === 'leanL' || b === 'leanR') return 'topDownFront';
+  if (b === 'sitFront' || b === 'leanL' || b === 'leanR') return 'frontal';   // Semont: widok od przodu przez cały manewr (siad + leżenie na boku)
   return viewSide === 'L' ? 'sideRight' : 'sideLeft';
 }
 export function cameraDef(camKey) {

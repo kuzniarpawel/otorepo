@@ -240,15 +240,15 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
   const {body,face}=spec;
   if(body==="sitFront"||body==="leanL"||body==="leanR"){   // Semont — model rzutowy 2.5D (figProj) + depth cueing
     const front=body==="sitFront";
-    const cam=front?Scene3D.CAMERAS.frontal:Scene3D.CAMERAS.topDownFront;   // Semont: obserwator NA WPROST pacjenta — leżenie widok odgórny-od-przodu (pac.-lewo = ekran-prawo, spójnie z siadem)
-    const {fig}=figProj(spec,cam,{ax:100, ay:front?95:96, s:front?0.85:1});
+    const cam=Scene3D.CAMERAS.frontal;   // Semont: obserwator NA WPROST przez CAŁY manewr (siad i leżenie na boku) — jeden spójny widok od przodu
+    const {fig}=figProj(spec,cam,front?{ax:100, ay:95, s:0.85}:{ax:100, ay:82, s:0.82, bedY:120});
     const Pc="#2C3D4C";
     const couch=front
       ? `<rect x="34" y="106" width="132" height="9" rx="3" fill="${Pc}"/><rect x="50" y="114" width="8" height="26" fill="#1c2935"/><rect x="142" y="114" width="8" height="26" fill="#1c2935"/>`
       : `<rect x="14" y="120" width="172" height="10" rx="3" fill="${Pc}"/><rect x="22" y="130" width="8" height="20" fill="#1c2935"/><rect x="172" y="130" width="8" height="20" fill="#1c2935"/>`;
     const label=front?"Siad — twarzą do badającego"
       :(face==="up"?"Na boku — nos ku sufitowi (pozycja wyjściowa)":"Na boku — nos ku podłodze (przerzut)");
-    const view=front?"widok od przodu — na wprost pacjenta":"widok z góry — nad kozetką";
+    const view="widok od przodu — na wprost pacjenta";
     return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: ${label}">
       <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${view}</text>
       ${couch}${fig}

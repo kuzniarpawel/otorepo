@@ -624,9 +624,16 @@ MOST OTOREPO<->Three (src/render/three-bridge.js): nasz świat z=PRZÓD (nos), t
   3D vs SVG — głowa zwisa po tej samej (lewej) stronie, widok od strony chorej, zgodne.
 
 ===== Etap 4: pełne mapowanie w 3D (wszystkie manewry + testy) =====
-Dobór widoku 3D = TA SAMA reguła co posture(): sitFront->frontal; leanL/R (Semont)->topDownFront; reszta -> bok od
-  strony chorej. Wspólne źródło: three-patient.js eksportuje FRAME/camKeyFor/cameraDef — używa ich renderer ORAZ
-  wyrocznia widoku.
+Dobór widoku 3D = TA SAMA reguła co posture(): sitFront->frontal; leanL/R (Semont)->frontal [ZMIENIONE — patrz niżej];
+  reszta -> bok od strony chorej. Wspólne źródło: three-patient.js eksportuje FRAME/camKeyFor/cameraDef — używa ich
+  renderer ORAZ wyrocznia widoku.
+POPRAWKA (feedback): Semont krok 2/3 (leany) był z widoku ODGÓRNEGO (topDownFront) — na życzenie zmieniony na FRONTAL
+  (obserwator na wprost przez CAŁY manewr, spójnie z krokami 1/4). W obu rendererach naraz (posture() i camKeyFor) +
+  usunięto hack unoszący górną rękę z bodyJoints (był potrzebny tylko dla kamery odgórnej, gdzie barki rzutowały się
+  na siebie; frontal rozdziela je po ekranowym Y). Czytelność nos↑ vs nos↓ zostaje wysoka: krok 2 pokazuje TWARZ
+  (nos ku sufitowi), krok 3 POTYLICĘ (twarz w materac) — standardowa lustrzana ilustracja Semonta (głowa po przeciwnych
+  końcach = dwie pozycje lustrzane względem siadu). camKeyFor już NIE zwraca topDownFront (cameraDef go zachowuje,
+  nieużywany). Golden przebazowany: 60 pozycji siatki leanL/leanR (bez hacka ręki) + 4 dom (semont P/L krok1/2).
 LUSTRO topDownFront: baza SVG ma det=-1 (audyt #7 — odbicie, nieosiągalne obrotem kamery). Fizyczna kamera three
   renderuje bez lustra, a odbicie robimy NA OBRAZIE: canvas.style.transform=scaleX(-1) (mirrorX w cameraDef).
   Po lustrze osie ekranu = dokładnie baza SVG (ekran-x=-x świata, ekran-góra=+z/przód). frontal ma det=+1 -> zwykła
