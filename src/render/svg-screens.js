@@ -279,7 +279,8 @@ const CANAL_PATHS={
   horizontal:"M150 96 C150 150, 70 156, 52 116 C40 90, 78 78, 110 92",
   anterior:"M150 96 C150 44, 200 36, 214 70 C226 100, 196 126, 160 116",
 };
-function labyrinth(canal){
+function labyrinth(canal, opts){
+  opts=opts||{};
   const colors={posterior:"var(--post)",horizontal:"var(--horiz)",anterior:"var(--ant)"};
   const active=colors[canal];
   let loops="";
@@ -288,10 +289,15 @@ function labyrinth(canal){
     loops+=`<path id="path-${k}" d="${CANAL_PATHS[k]}" fill="none" stroke="${on?active:"#33404D"}"
       stroke-width="${on?9:6}" stroke-linecap="round" opacity="${on?1:.5}"/>`;
   }
+  // Osklepek (cupula) przy bańce kanału tylnego — TYLKO dla manewrów na KUPULOLITIAZĘ (Bascule). Błona
+  // spoczywa neutralnie; animacja (setupGuideAnim, krok 1) odgina ją w fazie przylegania i prostuje przy odklejaniu.
+  const cupula = opts.cupula
+    ? `<g id="labcupula" transform="rotate(0 150 96)"><path d="M143 86 Q150 69 157 86 Z" fill="#CFE3EE" opacity=".16"/><path d="M143 86 Q150 69 157 86" fill="none" stroke="#CFE3EE" stroke-width="3" stroke-linecap="round" opacity=".92"/></g>`
+    : "";
   return `<svg viewBox="0 0 250 175" role="img" aria-label="Kanały półkoliste, aktywny: ${CANALS[canal].label}">
     <ellipse cx="150" cy="100" rx="20" ry="15" fill="#22303D" stroke="var(--line)" stroke-width="1.5"/>
     <text x="150" y="103" text-anchor="middle" fill="var(--faint)" font-size="8">łagiewka</text>
-    ${loops}<circle id="otolith" r="6" fill="#fff" stroke="${active}" stroke-width="2"/></svg>
+    ${loops}${cupula}<circle id="otolith" r="6" fill="#fff" stroke="${active}" stroke-width="2"/></svg>
     <div class="viewpoint">schemat wędrówki — położenie poglądowe; czas i skuteczność z fizyki</div>`;
 }
 function placeOtolith(canal,p,exitBlend){
@@ -475,9 +481,12 @@ const phiToFrac = phi => Math.max(0, Math.min(1, phi/178));   // φ→ułamek ś
 // i dla kanału poziomego idzie ku bańce — nie daje czytelnej wędrówki przez wszystkie kroki, stąd schemat.
 function manFractions(man, plan){
   const n=plan.steps.length;
-  if(!man.exited){                                       // konwersja (Gufoni apo) — ruch ku bańce wg silnika, bez wyjścia
+  if(!man.exited && plan.mechanism!=="cupulo"){          // konwersja (Gufoni apo) — ruch ku bańce wg silnika, bez wyjścia
     return {fr: plan.steps.map((_,i)=>phiToFrac(manPhi(man,i,1))), exitStep:-1};
   }
+  // Wyjście do łagiewki: kanalityczny zweryfikowany fizyką (man.exited) LUB uwalniający KUPULOLITYCZNY (Bascule) —
+  // dla kupulolitiazy model kanalityczny nie jest właściwą fizyką, więc wyjście wynika z KLINICZNEJ natury
+  // manewru (mechanism:"cupulo"), nie z walidacji cząstki. Czas kroków (tEnd) dalej z silnika.
   const cure=Math.max(1, n-2), s0=0.15;                  // krok kuracyjny; pozycja spoczynkowa złogu (blisko bańki)
   const fr=[];
   for(let i=0;i<n;i++) fr.push(i<=cure ? s0+(1-s0)*(i/cure) : 1);   // ramp do 1.0 w kroku kuracyjnym, potem łagiewka
@@ -500,7 +509,11 @@ function setupGuideAnim(){
   const fTo=fr[state.step], fFrom=state.step>0?fr[state.step-1]:fTo;
   const exited = sched.exitStep>=0 && state.step>=sched.exitStep;        // cząstka już w łagiewce?
   const blendOnly = exited && state.step>sched.exitStep;                  // krok po wyjściu — spoczynek w łagiewce
-  if(blendOnly) placeOtolith(canal, 1, 1); else placeOtolith(canal, fFrom, 0);
+  // KUPULOLITIAZA (mechanism:"cupulo"): 1. krok = etap przylegania/odklejania złogu od osklepka, potem zwykła wędrówka.
+  const cupuloAdh = state.plan.mechanism==="cupulo" && state.step===0;
+  const EA=0.09, CUP_ANG=17;                                             // pozycja złogu na osklepku (ułamek ścieżki) + kąt odgięcia błony
+  if(cupuloAdh){ placeOtolith(canal, EA, 0); const c0=document.getElementById("labcupula"); if(c0) c0.setAttribute("transform",`rotate(${CUP_ANG} 150 96)`); }
+  else if(blendOnly) placeOtolith(canal, 1, 1); else placeOtolith(canal, fFrom, 0);
   if(state.autostart && total>0){ state.running=true; }
   state.autostart=false; syncWake();
 
@@ -510,7 +523,8 @@ function setupGuideAnim(){
   // (mniejsza cząstka → wolniejsze osiadanie → dłuższe ξ(t) → dłuższa wędrówka). Widełki chronią skrajności.
   const nysSec=guideNysSeconds(state.plan, man, state.step, state.size);
   const rSize=sizeRadius(state.size);
-  const DUR = nysSec!=null
+  const DUR = cupuloAdh ? 3600                                              // Bascule krok 1: przyleganie → odklejanie → start wędrówki (jedno ciągłe okno)
+    : nysSec!=null
     ? Math.max(1200, Math.min(24000, Math.round(nysSec*1000)))              // krok z oczopląsem → zsynchronizowany z ξ(t)
     : Math.max(800,  Math.min(3000,  Math.round(1600/(rSize*rSize))));      // krok bez oczopląsu → fallback wg rozmiaru (osiadanie ∝ 1/r²)
   loopRAF((now)=>{
@@ -519,7 +533,25 @@ function setupGuideAnim(){
     // ANIMACJA OTOLITU: przejście fFrom→fTo na wejściu w krok, niezależnie od timera (ruch przy repozycji)
     if(_otoStart===null) _otoStart=now;
     const ot=Math.min(1,(now-_otoStart)/DUR);
-    if(blendOnly){ placeOtolith(canal, 1, 1); }
+    if(cupuloAdh){
+      const cup=document.getElementById("labcupula"), oto=document.getElementById("otolith");
+      const AD=0.42, DET=0.58;                                    // fazy: [0,AD]=przyleganie · [AD,DET]=odklejanie · [DET,1]=start wędrówki
+      if(ot<AD){                                                  // PRZYLEGANIE: osklepek odgięty, złóg drży „przyklejony"
+        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG+Math.sin(now/85)*2.5).toFixed(2)} 150 96)`);
+        placeOtolith(canal, EA, 0);
+        if(oto) oto.setAttribute("r",(6.4+Math.sin(now/85)*0.5).toFixed(2));
+      } else if(ot<DET){                                          // ODKLEJANIE: osklepek prostuje się, złóg pulsuje i uwalnia
+        const u=easeInOut((ot-AD)/(DET-AD));
+        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG*(1-u)).toFixed(2)} 150 96)`);
+        placeOtolith(canal, EA, 0);
+        if(oto) oto.setAttribute("r",(6.4+3.4*Math.sin(u*Math.PI)).toFixed(2));
+      } else {                                                    // START WĘDRÓWKI: od osklepka na ścieżkę do pozycji spoczynkowej
+        if(cup) cup.setAttribute("transform","rotate(0 150 96)");
+        if(oto) oto.setAttribute("r",6);
+        placeOtolith(canal, EA+(fTo-EA)*easeInOut((ot-DET)/(1-DET)), 0);
+      }
+    }
+    else if(blendOnly){ placeOtolith(canal, 1, 1); }
     else if(exited && state.step===sched.exitStep){
       // najpierw dojazd po ścieżce do wyjścia (0–0.65), potem wpadnięcie do łagiewki (0.65–1)
       if(ot<0.65){ placeOtolith(canal, fFrom+(1-fFrom)*easeInOut(ot/0.65), 0); }
@@ -692,6 +724,11 @@ function renderGuide(){
       : `<div class="panelbox"><h4>Głowa (z góry)</h4>${headDial(ps,p.headCamera,gn)}</div>`;
   const gufoniNote = state.maneuverKey==="gufoniApo"
     ? `<div class="note">Manewr <b>konwersji</b>: złóg nie opuszcza kanału — celem jest przekształcenie postaci apogeotropowej w geotropową. Po nim wykonaj ponowny Roll test i lecz postać geotropową (Lempert / Gufoni geotropowy).</div>` : "";
+  const basculeNote = state.maneuverKey==="bascule"
+    ? `<div class="note">Manewr <b>uwalniający</b> dla <b>kupulolitiazy</b>: rytmiczne bujanie bok–bok wytwarza siły bezwładności, które odrywają złóg przylegający do osklepka (cupula) i przenoszą go do łagiewki. Powtarzaj przerzuty do 5 serii; po manewrze wykonaj ponowny Dix–Hallpike.</div>` : "";
+  // Manewr na KUPULOLITIAZĘ (mechanism:"cupulo", np. Bascule): karta „wędrówka otolitów" domyślnie NA WIERZCHU
+  // (flipped) — pokazuje przyleganie/odklejanie od osklepka; osklepek dorysowany w labiryncie (opts.cupula).
+  const cupuloMech = p.mechanism==="cupulo";
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${p.name}</b><span>${CANALS[p.canal].label}</span></div>
@@ -705,16 +742,16 @@ function renderGuide(){
     <div class="viz"><div class="panelbox"><h4>Ułożenie pacjenta${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("guide"):posture(ps,p.side)}</div>
       ${headPanel}</div>
     ${gn
-      ? `<div class="flipwrap"><div class="flip" id="flip" role="button" tabindex="0" aria-label="Odwróć kartę: widok frontalny albo wędrówka otolitów" onclick="flipGuide()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipGuide();}">
+      ? `<div class="flipwrap"><div class="flip${cupuloMech?' flipped':''}" id="flip" role="button" tabindex="0" aria-label="Odwróć kartę: widok frontalny albo wędrówka otolitów" onclick="flipGuide()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipGuide();}">
           <div class="face front panelbox"><h4>Widok frontalny</h4>
             <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-nys-guide>${eyesSVG()}</div><span class="emk">L</span></div>
             <div class="nyslabel"><span class="arrow">${arrowGlyph(gn)}</span><span>${gn.label}</span></div>
             ${gravArrow}
             <div class="fliphint">${FLIP_ICO} wędrówka otolitów</div></div>
-          <div class="face back panelbox"><h4>Wędrówka otolitów — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal)}${gufoniNote}
+          <div class="face back panelbox"><h4>Wędrówka otolitów — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}
             <div class="fliphint">${FLIP_ICO} widok frontalny</div></div>
         </div></div>`
-      : `<div class="panelbox" style="margin-bottom:12px"><h4>Wędrówka otolitów — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal)}${gufoniNote}</div>`}
+      : `<div class="panelbox" style="margin-bottom:12px"><h4>Wędrówka otolitów — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}</div>`}
     <div class="card stepcard">
       <div class="stephead">
         <button class="stepnav" ${state.step===0?"disabled":""} onclick="goStep(${state.step-1})" aria-label="Poprzedni krok"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>

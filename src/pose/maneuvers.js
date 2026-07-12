@@ -73,6 +73,28 @@ function semont(side){
      instr:`Powoli posadź pacjenta, nie zmieniając pozycji badającego, a następnie wyprostuj głowę. Koniec serii.`},
   ]};
 }
+function bascule(side){
+  const A=side,H=otherSide(side),hY=-yawToA(A);
+  // Bascule (fr. „huśtawka”) — manewr UWALNIAJĄCY dla KUPULOLITIAZY kanału tylnego (oraz opornych,
+  // atypowych postaci; rzadziej kanał przedni). Pacjent rytmicznie BUJA się bok–bok: siły bezwładności
+  // odrywają złóg przylegający do osklepka (cupula) i przenoszą go do łagiewki. Głowa 45° w stronę
+  // ZDROWĄ przez cały manewr (jak Semont). leanA=bok chory w dół, leanH=bok zdrowy w dół — te same pozy
+  // leanL/leanR co Semont (LEAN_G dostarcza gHead „nos w dół/górę”); różni się KOLEJNOŚĆ i powtarzalność.
+  const leanA=A==="L"?"leanR":"leanL";
+  const leanH=A==="L"?"leanL":"leanR";
+  return {name:"Manewr Bascule",canal:"posterior",side,mechanism:"cupulo",steps:[   // mechanism:"cupulo" → wędrówka pokazuje przyleganie/odklejanie od osklepka i wyjście do łagiewki
+    {title:"Pozycja wyjściowa",body:"sitFront",yaw:hY,face:"fwd",seconds:null,progress:0.02,
+     instr:`Pacjent siedzi na środku kozetki, twarzą do badającego. Obróć jego głowę o 45° w stronę zdrową (${SIDE[H]}) i utrzymuj ten skręt przez cały manewr.`},
+    {title:"Szybko na bok zdrowy — nos w dół",body:leanH,yaw:hY,face:"down",seconds:30,progress:0.28,
+     instr:`Szybko połóż pacjenta na bok zdrowy (${SIDE[H]}); głowa wciąż obrócona, nos skierowany ku podłodze. Utrzymaj 15–30 s.`},
+    {title:"Przerzut na bok chory — nos w górę",body:leanA,yaw:hY,face:"up",seconds:30,progress:0.52,
+     instr:`Szybkim ruchem przerzuć głowę i tułów RAZEM o 180° na bok chory (${SIDE[A]}) — nos ku sufitowi. Utrzymaj 15–30 s.`},
+    {title:"Powrót na bok zdrowy — nos w dół",body:leanH,yaw:hY,face:"down",seconds:30,progress:0.78,
+     instr:`Szybko przerzuć pacjenta o 180° z powrotem na bok zdrowy (${SIDE[H]}) — nos ku podłodze. To jedna „huśtawka”; powtarzaj przerzuty bok–bok do 5 serii, aż oczopląs i zawroty wygasną.`},
+    {title:"Powrót do siadu",body:"sitFront",yaw:hY,face:"fwd",seconds:null,progress:1.0,
+     instr:`Po ostatniej serii powoli posadź pacjenta, nie zmieniając pozycji badającego, i dopiero na końcu wyprostuj głowę. Po manewrze wykonaj ponowny Dix–Hallpike. Koniec.`},
+  ]};
+}
 function lempert(side){
   const A=side,H=otherSide(side),aY=yawToA(A),yawH=A==="L"?-90:90;
   const sideH=H==="L"?"sideL":"sideR",sideA=A==="L"?"sideL":"sideR";
@@ -132,13 +154,14 @@ function gufoniApo(side){
 const MANEUVERS={
   epley:{label:"Epley",desc:"kanał tylny",gen:epley},
   semont:{label:"Semont",desc:"kanał tylny",gen:semont},
+  bascule:{label:"Bascule",desc:"kupulolitiaza (k. tylny)",gen:bascule},
   lempert:{label:"Lempert (BBQ)",desc:"kanał poziomy",gen:lempert},
   gufoniGeo:{label:"Gufoni (geotropowy)",desc:"kanał poziomy",gen:gufoniGeo},
   gufoniApo:{label:"Gufoni (apogeotropowy)",desc:"kanał poziomy",gen:gufoniApo},
   yacovino:{label:"Yacovino",desc:"kanał przedni",gen:yacovino},
 };
 const CANALS={
-  posterior:{label:"Kanał tylny",note:"najczęstszy (~85%)",color:"var(--post)",maneuvers:["epley","semont"]},
+  posterior:{label:"Kanał tylny",note:"najczęstszy (~85%)",color:"var(--post)",maneuvers:["epley","semont","bascule"]},
   horizontal:{label:"Kanał poziomy",note:"~10%",color:"var(--horiz)",maneuvers:["lempert","gufoniGeo","gufoniApo"]},
   anterior:{label:"Kanał przedni",note:"rzadki (~1–2%)",color:"var(--ant)",maneuvers:["yacovino"]},
 };
@@ -496,7 +519,7 @@ function recommend(testKey,variant){
   if(testKey==="dix"){
     return variant==="canalo"
       ? {primary:"epley",alts:["semont"],note:"Kanalolitiaza kanału tylnego — preferowany manewr Epleya; alternatywnie Semont."}
-      : {primary:"semont",alts:["epley"],note:"Kupulolitiaza kanału tylnego (rzadka) — preferowany manewr uwalniający Semonta."};
+      : {primary:"semont",alts:["bascule","epley"],note:"Kupulolitiaza kanału tylnego (rzadka) — preferowany manewr uwalniający Semonta. W postaciach opornych/atypowych rozważ manewr Bascule („huśtawka” bok–bok odrywa złóg od osklepka). Epley służy głównie kanalolitiazie."};
   }
   if(testKey==="headhang"){
     return variant==="canalo"
@@ -508,10 +531,10 @@ function recommend(testKey,variant){
     ? {primary:"lempert",alts:["gufoniGeo"],note:"Geotropowy (kanalolitiaza) kanału poziomego — rolka Lemperta ku stronie zdrowej lub manewr Gufoniego (geotropowy)."}
     : {primary:"gufoniApo",alts:["lempert"],note:"Apogeotropowy (kupulolitiaza) — manewr Gufoniego (apogeotropowy) przekształca postać w geotropową; następnie ponowny test i leczenie postaci geotropowej."};
 }
-const CANAL_OF={epley:"posterior",semont:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
+const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, CANAL_OF };
+export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { makeManualOrientation, epley, semont, lempert, yacovino, gufoniGeo, gufoniApo, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, supineHeadQ, stepGravity, stepHeadQ, qFromToVec, headPitchQ, composeHead, fkJoints, bodyClass, bodyJoints, gravArrowFor, sizedSeconds, maneuverTimeline, maneuverSim, variantLabels, recommend });
+Object.assign(window, { makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, supineHeadQ, stepGravity, stepHeadQ, qFromToVec, headPitchQ, composeHead, fkJoints, bodyClass, bodyJoints, gravArrowFor, sizedSeconds, maneuverTimeline, maneuverSim, variantLabels, recommend });
