@@ -120,6 +120,10 @@
   .steps-dots i.done{background:var(--primary)} .steps-dots i.cur{background:var(--timer); box-shadow:0 0 10px rgba(255,197,61,.5)}
 
   .viz{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; align-items:start}   /* start: karta „Ułożenie" NIE rozciąga się do sąsiada → stała wysokość między krokami (2D i 3D) */
+  /* Stała wysokość OBU kart (Ułożenie + Głowa/Głowa z góry) we wszystkich krokach/pozycjach:
+     wzorzec = karta „Głowa (z góry)" z Epley 2/5 (najwyższa treść: dial + 2 linie etykiet) = 392 px
+     przy szerokości 259 px. Treść krótsza → pusta przestrzeń u dołu; wysokość nie skacze. */
+  .viz .panelbox, .minihead .panelbox{ aspect-ratio: 259/392 }
   .panelbox{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:12px; box-shadow:var(--shadow)}
   .headnote{font-size:13px;color:var(--text);text-align:center;padding:8px 4px 2px;line-height:1.45}
   .panelbox h4{margin:0 0 8px; font-family:var(--display); font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--faint); font-weight:700}
