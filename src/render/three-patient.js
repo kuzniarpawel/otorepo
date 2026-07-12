@@ -35,6 +35,30 @@ for (const [a, b, w] of SEGS) { jointR[a] = Math.max(jointR[a] || 0, w / 2); joi
 const JOINTS = Object.keys(jointR);                       // stawy z kulami (bez głowy — zakrywa ją czaszka)
 const ALL = [...JOINTS, 'head'];                          // wszystkie punkty pozy: pozycje, bbox kozetki, przejścia
 
+/* ── Widoki (wspólne dla renderera i wyroczni tools/view-check.mjs) ──────────────
+   KADR STAŁY, niezależny od pozy: unia póz z SKEL — leżąca długość pelvis±87 + nos
+   wzdłuż osi ciała ≈111 (pomiar pikselowy), siedząca wysokość ~100, zwis głowy ~-42
+   → półwysokość 94 @ środek y=24, półszerokość 94·5/4=117,5.
+   Dobór widoku = TA SAMA reguła co SVG posture(): sitFront → frontal; leanL/R (Semont)
+   → topDownFront; reszta → bok od strony chorej (nazwy jak Scene3D.CAMERAS: P → „sideLeft").
+   topDownFront w Scene3D to baza LEWOSKRĘTNA (det=-1, audyt #7) — fizyczna kamera nie
+   renderuje odbicia, więc lustro = scaleX(-1) na OBRAZIE (mirrorX). Wtedy osie ekranu
+   = dokładnie baza SVG. „frontal" ma det=+1 → zwykła kamera naprzeciw pacjenta. */
+export const FRAME = { halfH: 94, cy: 24, fov: 30 };
+export function camKeyFor(spec, viewSide) {
+  const b = spec.body;
+  if (b === 'sitFront') return 'frontal';
+  if (b === 'leanL' || b === 'leanR') return 'topDownFront';
+  return viewSide === 'L' ? 'sideRight' : 'sideLeft';
+}
+export function cameraDef(camKey) {
+  const D = FRAME.halfH / Math.tan((FRAME.fov / 2) * Math.PI / 180);   // ≈351 — dystans z kadru, nie „na oko"
+  if (camKey === 'frontal') return { position: [0, FRAME.cy, -D], up: [0, 1, 0], target: [0, FRAME.cy, 0], mirrorX: false };
+  if (camKey === 'topDownFront') return { position: [0, D, 0], up: [0, 0, -1], target: [0, 0, 0], mirrorX: true };
+  const x = camKey === 'sideRight' ? -D : D;               // sideLeft = kamera od PRAWEJ pacjenta (three +x)
+  return { position: [x, FRAME.cy, 0], up: [0, 1, 0], target: [0, FRAME.cy, 0], mirrorX: false };
+}
+
 function createPatientRenderer() {
   const scene = new Scene();
   scene.add(new AmbientLight(0xffffff, 0.85));
@@ -60,24 +84,40 @@ function createPatientRenderer() {
   body.add(head);
 
   const couchTop = new Mesh(unitBox, mat(COUCH)); scene.add(couchTop);
-  const legs = [0, 1, 2, 3].map(() => { const m = new Mesh(unitBox, mat(LEG)); m.scale.set(8, 34, 8); scene.add(m); return m; });
+  const legs = [0, 1, 2, 3].map(() => { const m = new Mesh(unitBox, mat(LEG)); m.scale.set(8, 24, 8); scene.add(m); return m; });   // 24: w widoku frontalnym (sitFront) bliższe nogi są powiększone perspektywą — 34 wystawało poza kadr
 
   let renderer = null, canvas = null, lastSpec = null, lastSide = null;
 
   // ── jedna klatka z danych pozy (surowe stawy OTOREPO + headQ) ────────────────
   function applyFrame(J3, headQ3, bodyTag) {
     const excl = BED_EXCL[bodyTag] || {};
-    let minY = Infinity, minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    let minY = Infinity, maxY = -Infinity, minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
     for (const j of ALL) {
       const p = J3[j], r = j === 'head' ? HEAD_R : jointR[j];
       if (!excl[j]) {
-        minY = Math.min(minY, p.y - r);
+        minY = Math.min(minY, p.y - r); maxY = Math.max(maxY, p.y + r);
         minX = Math.min(minX, p.x - r); maxX = Math.max(maxX, p.x + r);
         minZ = Math.min(minZ, p.z - r); maxZ = Math.max(maxZ, p.z + r);
       }
     }
-    const dy = -minY;                                      // najniższy WŁĄCZONY punkt siada na blacie y=0
+    if (!excl.head) {                                      // czubek nosa (three-lokalnie -z): przy twarzy w dół (prone,
+      T2.set(0, -1.5, -(HEAD_R + 9)).applyQuaternion(headQ3).add(J3.head);   // Semont krok 3) nos nie może przenikać blatu
+      minY = Math.min(minY, T2.y - 4.6);
+      minX = Math.min(minX, T2.x - 4.6); maxX = Math.max(maxX, T2.x + 4.6);
+      minZ = Math.min(minZ, T2.z - 4.6); maxZ = Math.max(maxZ, T2.z + 4.6);
+    }
+    // sitFront (Semont, widok frontalny): nogi proste w dół — jak w SVG NIE kotwiczymy do blatu
+    // (postawiłoby to pacjenta NA kozetce), tylko centrujemy pionowo; kozetka = ławka ZA pacjentem.
+    const sitFront = bodyTag === 'sitFront';
+    const dy = sitFront ? FRAME.cy - (minY + maxY) / 2 : -minY;   // centrowanie vs najniższy punkt na blat y=0
     body.position.y = dy;
+    if (sitFront) {
+      const wC = Math.max(96, maxX - minX + 56), dC = 56, cx = (minX + maxX) / 2, cz = -(dC / 2) - 8;
+      couchTop.scale.set(wC, 8, dC); couchTop.position.set(cx, dy - 4, cz);   // blat pod miednicą (pelvis y=0 → dy)
+      const lx = wC / 2 - 7, lz = dC / 2 - 7;
+      legs[0].position.set(cx - lx, dy - 20, cz - lz); legs[1].position.set(cx + lx, dy - 20, cz - lz);
+      legs[2].position.set(cx - lx, dy - 20, cz + lz); legs[3].position.set(cx + lx, dy - 20, cz + lz);
+    }
     for (let i = 0; i < SEGS.length; i++) {
       const [a, b, w] = SEGS[i], A = J3[a], B = J3[b], m = segMesh[i];
       const len = A.distanceTo(B) || 0.001;
@@ -89,27 +129,25 @@ function createPatientRenderer() {
     head.position.copy(J3.head);
     head.quaternion.copy(headQ3);
     // kozetka pod poziomym zasięgiem WŁĄCZONYCH stawów (wykluczenia → luka przy zwisie/siadzie)
-    const w = Math.max(60, maxX - minX + 26), d = Math.max(56, maxZ - minZ + 26);
-    const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
-    couchTop.scale.set(w, 8, d); couchTop.position.set(cx, -4, cz);
-    const lx = w / 2 - 7, lz = d / 2 - 7;
-    legs[0].position.set(cx - lx, -25, cz - lz); legs[1].position.set(cx + lx, -25, cz - lz);
-    legs[2].position.set(cx - lx, -25, cz + lz); legs[3].position.set(cx + lx, -25, cz + lz);
+    if (!sitFront) {
+      const w = Math.max(60, maxX - minX + 26), d = Math.max(56, maxZ - minZ + 26);
+      const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
+      couchTop.scale.set(w, 8, d); couchTop.position.set(cx, -4, cz);
+      const lx = w / 2 - 7, lz = d / 2 - 7;
+      legs[0].position.set(cx - lx, -20, cz - lz); legs[1].position.set(cx + lx, -20, cz - lz);
+      legs[2].position.set(cx - lx, -20, cz + lz); legs[3].position.set(cx + lx, -20, cz + lz);
+    }
     renderer.render(scene, camera);
   }
-  const UP = new Vector3(0, 1, 0), T1 = new Vector3();
+  const UP = new Vector3(0, 1, 0), T1 = new Vector3(), T2 = new Vector3();
 
   const jointsToThree = spec => { const o = {}; for (const j of ALL) o[j] = toThreeVec(spec.joints[j]); return o; };
-  // KADR STAŁY, niezależny od pozy (feedback: okno nie może „skakać" między krokami, nic nie ucinać).
-  // Unia póz z SKEL: leżąca długość pelvis±87 + NOS wzdłuż osi ciała w sideL (~101; pomiar pikselowy
-  // wykrył ucięcie przy 100), siedząca wysokość ~100, zwis głowy poniżej blatu ~-42
-  // → półwysokość 94 @ środek y=24 (zakres -70…118), półszerokość 94·5/4=117,5
-  // (pomiar pikselowy: skrajny punkt sideL/Roll ≈111 j. — nos wzdłuż osi ciała — zapas ~6 j.).
-  const FRAME_HALF_H = 94, FRAME_CY = 24, FOV = 30;
-  function setCamera(side) {
-    const D = FRAME_HALF_H / Math.tan((FOV / 2) * Math.PI / 180);   // ≈299 — dystans z kadru, nie „na oko"
-    camera.position.set(side === 'L' ? -D : D, FRAME_CY, 0);        // strona P = kamera od strony PRAWEJ pacjenta (three +x)
-    camera.lookAt(0, FRAME_CY, 0);                                  // poziomy widok: pion bez zniekształceń perspektywy
+  function setCamera(camKey) {
+    const d = cameraDef(camKey);
+    camera.up.set(...d.up);
+    camera.position.set(...d.position);
+    camera.lookAt(...d.target);
+    if (canvas) canvas.style.transform = d.mirrorX ? 'scaleX(-1)' : '';   // lustro widoku topDownFront (det=-1 w SVG)
   }
 
   return {
@@ -127,12 +165,13 @@ function createPatientRenderer() {
     },
     // show: statycznie lub z przejściem od poprzedniej pozy (render na żądanie — pętla kończy się z t=1)
     show(spec, side) {
-      setCamera(side);
+      const camKey = camKeyFor(spec, side);
+      setCamera(camKey);
       const to = { J: jointsToThree(spec), Q: toThreeQuat(spec.headQ) };
       const from = lastSpec;
       const changed = from && (from.spec.body !== spec.body || from.spec.yaw !== spec.yaw || from.spec.face !== spec.face);
-      const sameCam = lastSide === side;
-      lastSpec = { spec, ...to }; lastSide = side;
+      const sameCam = lastSide === camKey;                 // zmiana widoku (np. Semont frontal→topDown) → bez przejścia
+      lastSpec = { spec, ...to }; lastSide = camKey;
       if (!from || !changed || !sameCam) { applyFrame(to.J, to.Q, spec.body); return; }
       const t0 = performance.now(), DUR = 620;
       const Ji = {}, Qi = new Quaternion();

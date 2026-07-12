@@ -300,4 +300,10 @@ MIGRACJA MODUŁOWA + 3D:
        sylwetka+kozetka w WebGL, render na żądanie, three code-split (ładowany dopiero przy 3D). Most osi
        OTOREPO(z=przód)<->Three(z=tył) z wektorów bazowych (three-bridge.js), zweryfikowany 408 póz @1e-15
        (npm run bridge:check) + wizualnie SVG<->3D (głowa/strony L/P zgodne). Golden przebazowany na src.
- [ ] Etap 4: pełne mapowanie manewrów w 3D (Semont/Lempert/Gufoni/Yacovino/Dix/Bow&Lean).  [ ] Etap 5: 3D domyślny + SVG fallback.
+ [x] Etap 4: pełne mapowanie w 3D — WSZYSTKIE manewry (Semont/Lempert/Gufoni geo+apo/Yacovino + Epley) i testy
+       (Dix/Roll/Bow&Lean/head-hang). Kamery wg reguł posture(): bok/frontal/topDownFront; topDownFront = baza
+       lustrzana SVG (det=-1) → lustro obrazu scaleX(-1). sitFront bez kotwicy (centrowanie jak SVG, ławka za
+       pacjentem); kotwiczenie czubka nosa (prone). WYROCZNIA WIDOKU tools/view-check.mjs (npm run view:check):
+       kierunki ekranowe tułów/kolana(chiralność)/nos SVG↔3D, 78 póz, maks. 17.7° @ próg 25°; lustro potwierdzone
+       też pikselowo (centroid głowy leanL/leanR). Pomiar pikselowy: edge=0 wszędzie.
+ [ ] Etap 5: 3D domyślny + SVG fallback (webglAvailable, porównanie wydajności na telefonie, decyzja GLB).

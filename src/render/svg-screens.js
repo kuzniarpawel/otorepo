@@ -644,7 +644,7 @@ function mount3D(key, spec, side){
 function renderGuide(){
   const p=state.plan, st=p.steps[state.step], n=p.steps.length;
   const ps=poseSpec(st);                                   // kanoniczna poza kroku (Etap 2) — jedyne źródło dla sylwetki/dialu/strzałki
-  const can3d = state.maneuverKey==="epley";               // Etap 3: wąski zakres (pełne mapowanie manewrów = Etap 4)
+  const can3d = true;                                      // Etap 4: 3D dla WSZYSTKICH manewrów (kamera wg reguł posture: bok/frontal/topDown)
   const _man = currentManSim();
   const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step, state.size));
   const gn = (_gn && _gn.strength >= 0.10) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
@@ -742,7 +742,7 @@ function renderDiag(){
   const mechNote = v==="canalo"
     ? "Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji."
     : "Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.";
-  const can3d = state.testKey==="roll";                  // Etap 3: wąski zakres (pozostałe testy = Etap 4)
+  const can3d = true;                                    // Etap 4: 3D dla wszystkich testów pozycyjnych (dix/roll/bowlean/headhang)
   const phaseInner=(ph,i)=>{
     const phs=poseSpec(ph);                              // kanoniczna poza fazy testu (Etap 2)
     return `
