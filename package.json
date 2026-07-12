@@ -1,8 +1,8 @@
 {
   "name": "files",
   "version": "1.0.0",
-  "description": "Jednoplikowa aplikacja HTML/JS wspomagająca **diagnostykę i leczenie łagodnych położeniowych zawrotów głowy (BPPV)** — repozycję otolitów. Narzędzie **dydaktyczne / wspomagające dla personelu medycznego**: modeluje fizykę złogu otolitowego w kanałach półkolistych i wyprowadza kierunek oraz dynamikę oczopląsu wyłącznie z praw Ewalda i symulacji cząstki (bez ręcznych adnotacji).",
-  "main": "index.js",
+  "description": "Modularna aplikacja (Vite + moduły ES, PWA + Capacitor/Android) wspomagająca **diagnostykę i leczenie łagodnych położeniowych zawrotów głowy (BPPV)** — repozycję otolitów. Narzędzie **dydaktyczne / wspomagające dla personelu medycznego**: modeluje fizykę złogu otolitowego w kanałach półkolistych i wyprowadza kierunek oraz dynamikę oczopląsu wyłącznie z praw Ewalda i symulacji cząstki (bez ręcznych adnotacji).",
+  "main": "src/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build && node tools/build-dist.mjs",

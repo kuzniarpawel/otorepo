@@ -1,10 +1,13 @@
 ==========================================================================
- OTOREPO — DOKUMENTACJA WIZUALIZACJI (2.5D)
- Plik: otorepo.html  |  Moduły: Scene3D, makeManualOrientation
- Charakter: matematyka 3D (czysta) → schematyczne SVG przez rzut ortograficzny.
- Zasada: BEZ three.js (offline); styl schematyczny; jedno źródło prawdy 3D
-         wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
- Ostatnia aktualizacja: 2026-07-07
+ OTOREPO — DOKUMENTACJA WIZUALIZACJI (2.5D + 3D)
+ Pliki: src/engine/scene3d.js (Scene3D) · src/render/svg-screens.js (renderer SVG) ·
+        src/render/three-patient.js + three-bridge.js (renderer 3D/WebGL) · src/pose/maneuvers.js
+        (poseSpec, makeManualOrientation).  (monolit otorepo.html = zamrożone źródło snapshotu)
+ Charakter: matematyka 3D (czysta) → schematyczne SVG (rzut ortograficzny) LUB sylwetka WebGL.
+ Zasada: jedno źródło prawdy 3D wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
+         Ścieżka SVG jest w pełni offline (bez three.js); ścieżka 3D dokłada three.js jako
+         leniwie ładowany chunk (Etap 3–5) — DOMYŚLNA gdy WebGL dostępny, SVG = fallback.
+ Ostatnia aktualizacja: 2026-07-12 (migracja modułowa + renderer 3D Etapy 0–5)
 ==========================================================================
 
 GŁÓWNA IDEA

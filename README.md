@@ -1,30 +1,49 @@
 # OTOREPO — asystent repozycji i diagnostyki otolitów (BPPV)
 
-Jednoplikowa aplikacja HTML/JS wspomagająca **diagnostykę i leczenie łagodnych położeniowych zawrotów głowy (BPPV)** — repozycję otolitów. Narzędzie **dydaktyczne / wspomagające dla personelu medycznego**: modeluje fizykę złogu otolitowego w kanałach półkolistych i wyprowadza kierunek oraz dynamikę oczopląsu wyłącznie z praw Ewalda i symulacji cząstki (bez ręcznych adnotacji).
+Aplikacja wspomagająca **diagnostykę i leczenie łagodnych położeniowych zawrotów głowy (BPPV)** — repozycję otolitów. Narzędzie **dydaktyczne / wspomagające dla personelu medycznego**: modeluje fizykę złogu otolitowego w kanałach półkolistych i wyprowadza kierunek oraz dynamikę oczopląsu wyłącznie z praw Ewalda i symulacji cząstki (bez ręcznych adnotacji).
+
+Aplikacja jest **modularna** (Vite + moduły ES w `src/`) i wydawana na dwóch kanałach: **PWA** (GitHub Pages, instalowalna offline) oraz **Android** (Capacitor). Monolit `otorepo.html` jest zamrożony i służy wyłącznie jako źródło złotego snapshotu w testach.
 
 > ⚠️ **Zastrzeżenie kliniczne.** Prototyp poglądowy. Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są przybliżone (wariant kanalitiazy/geotropowy). Zweryfikuj z własnym protokołem. Brak gromadzenia danych.
 
 ## Uruchomienie
 
-Brak kroku budowania i brak zależności — cała aplikacja to jeden plik `otorepo.html`.
+Wymaga Node.js. Instalacja zależności i tryb deweloperski:
 
-- **Najprościej:** otwórz `otorepo.html` bezpośrednio w przeglądarce (działa też z `file://`).
-- **Przez serwer statyczny** (dowolny), np.:
-  - `python -m http.server 8000` → http://localhost:8000/otorepo.html
-  - `npx serve` (Node)
-  - dowolny inny serwer plików statycznych
+```bash
+npm install
+npm run dev       # serwer Vite (http://localhost:5178)
+npm run build     # produkcja: vite build + tools/build-dist.mjs → dist/ (manifest + sw.js z hashem cache + ikony)
+npm run preview   # podgląd zbudowanego dist/
+```
 
-Aplikacja jest w pełni offline (brak three.js / CDN); wizualizacja to schematyczne SVG z rzutu 3D.
+Walidacja (3 wyrocznie — wszystkie muszą być zielone przed commitem):
+
+```bash
+npm run snapshot:check   # złoty snapshot DOM/silnika/pozy (jsdom)
+npm run bridge:check     # most kwaternionów OTOREPO ↔ Three.js
+npm run view:check       # zgodność kierunków ekranowych SVG ↔ 3D
+```
+
+Wizualizacja ma **dwie ścieżki**: schematyczne SVG (rzut ortograficzny 3D, w pełni offline, bez three.js)
+oraz sylwetkę WebGL (three.js jako leniwie ładowany chunk) — 3D jest domyślne tam, gdzie działa WebGL,
+a SVG stanowi fallback. Zbudowana aplikacja działa **offline** dzięki service workerowi PWA
+(precache z zawartości `dist/`, nazwa cache = hash treści → brak ręcznych bumpów).
 
 ## Co robi
 
 Trzy zakładki:
 
 - **Repozycja** — wybór zajętego kanału (tylny ~85% / poziomy ~10% / przedni ~1–2%), dobór manewru
-  (Epley, Semont, Lempert/BBQ, Gufoni geo/apo, Yacovino), przewodnik krok-po-kroku z licznikiem,
-  schematem głowy z góry, animacją wędrówki otolitu w labiryncie oraz kartą frontalną oczopląsu.
+  (Epley, Semont, **Bascule** — manewr uwalniający dla kupulolitiazy k. tylnego, Lempert/BBQ,
+  Gufoni geo/apo, Yacovino), przewodnik krok-po-kroku z licznikiem, sylwetką pacjenta (3D/SVG),
+  animacją wędrówki otolitu w labiryncie oraz kartą frontalną oczopląsu. Rozmiar/gęstość złogu
+  (`small`/`medium`/`big`) skaluje dynamikę i zalecane czasy utrzymania pozycji.
 - **Diagnostyka** — Dix–Hallpike (tylny/przedni), Roll test (geo/apo), Bow & Lean, deep head-hang;
-  predykcja oczopląsu (oczy + dial), mechanizm otolitu (kanalo-/kupulolitiaza), karta zalecanego leczenia.
+  predykcja oczopląsu (oczy + dial), mechanizm otolitu (kanalo-/kupulolitiaza), karta zalecanego
+  leczenia (aktualizuje się po przełączeniu mechanizmu). Panel **„Powtarzalność prowokacji"** pokazuje
+  męczliwość oczopląsu: przy powtarzanym Dix–Hallpike kanalolitiaza słabnie, a kupulolitiaza nie —
+  kryterium różnicujące wyprowadzone z fizyki (`fatigueFactor`).
 - **HINTS (różnicowanie ośrodek↔obwód)** — model **„od pierwszych zasad"** (silnik `NeuroVOR`): zmieniasz
   fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs
   samoistny, jego zależność od fiksacji/spojrzenia, wynik pchnięcia głowy (vHIT) i odchylenie skośne
@@ -53,10 +72,17 @@ Jedno źródło prawdy 3D (układ głowy: `x = prawo, y = góra/czaszka, z = prz
   **6 kanałów** per strona — gałęzie nerwu przedsionkowego (górna/dolna), vHIT w płaszczyznach **RALP/LARP**, próba
   **kaloryczna** (CP/DP wg Jongkeesa, dysocjacja nisko-/wysokoczęstotliwościowa) oraz patologie **SCDS/Tullio,
   choroba Ménière'a i obustronna westybulopatia (BVH)**, ze **syntezą kliniczną** (`clinicalReadout`); interaktywny
-  tryb „matematycznego pacjenta" (własne parametry, suwaki) — **w przygotowaniu**. Dokumentacja:
-  [`engine_doc.txt`](engine_doc.txt) (sekcja „MODUŁ NeuroVOR", [H1]–[H21]).
-- **Wizualizacja `Scene3D` (2.5D)** — matematyka 3D (kwaterniony, FK szkieletu) rzutowana ortograficznie
-  do schematycznego SVG; kamera = obserwator (lekarz). Dokumentacja: [`view_doc.txt`](view_doc.txt).
+  tryb **„matematycznego pacjenta"** (własne parametry, suwaki, presety, quiz losowego pacjenta, zapis/link)
+  jest **gotowy i podłączony do UI**. Dokumentacja: [`engine_doc.txt`](engine_doc.txt)
+  (sekcja „MODUŁ NeuroVOR", odnośniki [H1]–[H22]).
+- **Wizualizacja** — jedno źródło pozy (`poseSpec` w `src/pose/maneuvers.js`) zasila dwa renderery:
+  `Scene3D` + `src/render/svg-screens.js` rzutują matematykę 3D (kwaterniony, FK szkieletu) ortograficznie
+  do schematycznego SVG, a `src/render/three-patient.js` rysuje sylwetkę w WebGL (three.js). Most osi
+  OTOREPO↔Three (`three-bridge.js`) jest zweryfikowany liczbowo. Kamera = obserwator (lekarz).
+  Dokumentacja: [`view_doc.txt`](view_doc.txt).
+- **Walidacja** — trzy wyrocznie offline strzegą spójności: złoty snapshot DOM/silnika/pozy
+  (`snapshot:check`), most kwaternionów (`bridge:check`) i zgodność kierunków ekranowych SVG↔3D
+  (`view:check`). Silniki są czyste (bez DOM) i importowalne w Node.
 
 ### Rozmiar/gęstość złogu (parametr `size`)
 
@@ -77,13 +103,23 @@ prędkość ∝ 1/r² (Stokes). Zakładka Diagnostyki pozostaje przy `medium`.
 
 ## Mapa plików
 
-| Plik | Zawartość |
-|------|-----------|
-| `otorepo.html`   | cała aplikacja (silniki `Vestibular` + `NeuroVOR`, `Scene3D`, UI) |
-| `engine_doc.txt` | dokumentacja silnika fizyki (API, konwencje, kalibracja, bibliografia) |
-| `view_doc.txt`   | dokumentacja warstwy wizualizacji 2.5D |
-| `todo.txt`       | lista zadań (otwarte / zrobione, kamienie milowe) |
-| `migracja_3d.txt`| notatki nt. ewentualnej migracji do 3D (Three.js) — projekt na przyszłość |
+| Ścieżka | Zawartość |
+|---------|-----------|
+| `index.html` + `src/main.js`        | punkt wejścia (boot: pacjent z linku, pierwszy render, uchwyt testów) |
+| `src/engine/vestibular.js`          | silnik fizyki BPPV (`Vestibular`) — prawa Ewalda, dynamika kanalo-/kupulolitiazy |
+| `src/engine/neuro-vor.js`           | silnik toniczny/ośrodkowy (`NeuroVOR`) — VOR, vHIT, HINTS, kaloryka, kompensacja |
+| `src/engine/scene3d.js`             | `Scene3D` — kamery i rzut ortograficzny (wspólne źródło prawdy 3D) |
+| `src/pose/maneuvers.js`             | domena manewrów/testów + `poseSpec` (jedno źródło pozy) |
+| `src/render/svg-screens.js`         | renderer SVG (wszystkie ekrany) |
+| `src/render/three-patient.js` + `three-bridge.js` | renderer 3D/WebGL + most osi OTOREPO↔Three |
+| `src/app/{state,actions}.js`, `src/runtime/registry.js` | stan, akcje UI, infrastruktura (rAF, wake lock, dźwięk) |
+| `tools/{snapshot,bridge-check,view-check}.mjs` | 3 wyrocznie offline · `tools/build-dist.mjs` — statyki PWA + `sw.js` |
+| `android/`                          | wrapper Capacitor (Android) |
+| `otorepo.html`                      | monolit — **zamrożone** źródło złotego snapshotu (nie edytować) |
+| `engine_doc.txt`                    | dokumentacja silników (API, konwencje, kalibracja, bibliografia [H1]–[H22]) |
+| `view_doc.txt`                      | dokumentacja warstwy wizualizacji (2.5D SVG + 3D) |
+| `todo.txt`                          | lista zadań (otwarte / zrobione, kamienie milowe) |
+| `migracja_3d.txt`                   | notatki historyczne nt. migracji 3D (Three.js) |
 
 ## Bibliografia (wybór)
 
@@ -97,7 +133,7 @@ Silnik jest zredukowaną, fenomenologiczną implementacją uznanych modeli biome
 - Ewald (1892) — prawa Ewalda I/II/III.
 - Wu i wsp. (2021); Della Santina i wsp. (2005) — orientacje płaszczyzn kanałów.
 
-Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS, kompensacja, neuroanatomia) — pełne odnośniki [H1]–[H21] w `engine_doc.txt`:
+Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS, kompensacja, neuroanatomia) — pełne odnośniki [H1]–[H22] w `engine_doc.txt`:
 
 - Goldberg & Fernández (1971) — spoczynkowa aktywność aferentów kanałowych (~90/s).
 - Halmagyi & Curthoys (1988); Weber i wsp. (2008) — test pchnięcia głowy (vHIT), sakady korygujące.
@@ -114,6 +150,7 @@ Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS, kompensacja, neuroanatomia) 
 - Strupp i wsp. (2017, Bárány Society) — kryteria obustronnej westybulopatii (BVH).
 - Lopez-Escamez i wsp. (2015, Bárány/AAO-HNS) — kryteria choroby Ménière'a.
 - Jongkees, Maas, Philipszoon (1962) — próba kaloryczna bitermalna, wzór CP/DP.
+- Musat i wsp. (2025) — neuronitis nerwu dolnego (SVV, VEMP: woreczek/łagiewka, wzorzec vHIT kanału tylnego).
 
 ## Licencja
 

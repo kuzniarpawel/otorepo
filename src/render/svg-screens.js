@@ -1343,8 +1343,11 @@ function scdsLabel(ps){
 // Diagnostyka: karta „Mechanizm" jako flip kanalolitiaza⇄kupulolitiaza. Animacja wizualna, a po jej
 // zakończeniu re-render z nowym wariantem (spójne fazy/oczopląs/zalecenie).
 function flipDiagMech(){
+  if(state._mechTO) return;                                // debounce: ignoruj ponowne kliknięcia w trakcie 500 ms animacji (bez nakładania timerów / desyncu wariantu)
   const c=$("#mechflip"); if(c) c.classList.toggle("flipped");
-  setTimeout(()=>{ state.variant = state.variant==="canalo"?"cupulo":"canalo"; render(); }, 500);
+  state._mechTO=setTimeout(()=>{ state._mechTO=null;
+    if(state.screen!=="diag") return;                      // użytkownik opuścił diagnostykę (Wróć / zmiana ekranu) → nie wymuszaj zmiany wariantu ani re-renderu
+    state.variant = state.variant==="canalo"?"cupulo":"canalo"; render(); }, 500);
 }
 // Diagnostyka: para pozycji (Roll: ucho L/P w dole; Bow-Lean: skłon/odchylenie) jako flip — czysto wizualny
 // (obie pozycje stale w DOM, animacje per-indeks działają niezależnie).

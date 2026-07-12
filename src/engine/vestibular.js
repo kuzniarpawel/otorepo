@@ -75,6 +75,10 @@ export const Vestibular = (()=>{
   function reqQuat(q, where){
     if(!Array.isArray(q) || q.length!==4 || q.some(x=>!Number.isFinite(x)))
       throw new TypeError(where+": q musi być skończonym kwaternionem [w,x,y,z]");
+    // kwaternion zerowy przechodzi test skończoności, ale nrm4 dzieli przez n||1=1 → zwraca [0,0,0,0]
+    // (NIE-jednostkowy) i po cichu fałszuje gHead (rzut grawitacji = 0). Jasny błąd zamiast cichego zera.
+    if(Math.hypot(q[0],q[1],q[2],q[3]) < 1e-12)
+      throw new RangeError(where+": kwaternion zerowy (norma ≈ 0) nie definiuje orientacji");
     return nrm4(q);
   }
   // q obraca wektory głowy → świata; grawitacja świata = (0,-1,0)

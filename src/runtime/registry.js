@@ -7,9 +7,13 @@ const $ = (s,r=document)=>r.querySelector(s);
 let animFrames=[];
 function cancelAnims(){ animFrames.forEach(id=>cancelAnimationFrame(id)); animFrames=[]; }
 function loopRAF(fn){ // fn(now) -> true aby kontynuować
-  const idx=animFrames.length;
-  const tick=(now)=>{ if(fn(now)){ animFrames[idx]=requestAnimationFrame(tick); } };
-  animFrames.push(requestAnimationFrame(tick));
+  const myFrames=animFrames;                       // rejestr aktywny w chwili startu pętli
+  const idx=myFrames.length;
+  // Gdy fn(now) samo wywoła render() (np. auto-advance: goStep→render→cancelAnims), animFrames zostaje
+  // PODMIENIONY na nowy rejestr, a render restartuje potrzebne pętle. Ta (już nieaktualna) pętla NIE może
+  // się wtedy przeplanować — inaczej zostaje „zombie" liczący np. elapsedMs równolegle z nową pętlą (2× tempo).
+  const tick=(now)=>{ if(animFrames===myFrames && fn(now) && animFrames===myFrames){ animFrames[idx]=requestAnimationFrame(tick); } };
+  myFrames.push(requestAnimationFrame(tick));
 }
 const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 const lerp=(a,b,t)=>a+(b-a)*t;

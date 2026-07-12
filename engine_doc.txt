@@ -1,8 +1,9 @@
 ==========================================================================
  OTOREPO — DOKUMENTACJA SILNIKA (moduły `Vestibular` + `NeuroVOR`)
- Plik: otorepo.html  |  Moduły: const Vestibular = (()=>{...})()  ·  const NeuroVOR = (()=>{...})()
- Charakter: czyste moduły BEZ DOM (testowalne offline w node)
- Ostatnia aktualizacja: 2026-07-09
+ Pliki: src/engine/vestibular.js (Vestibular) · src/engine/neuro-vor.js (NeuroVOR)
+        (monolit otorepo.html = zamrożone źródło złotego snapshotu — te same IIFE)
+ Charakter: czyste moduły ES BEZ DOM (testowalne offline w node; importowalne w .mjs)
+ Ostatnia aktualizacja: 2026-07-12 (dodano męczliwość oczopląsu: fatigueFactor + parametr rep)
  Uwaga: `Vestibular` = fizyka BPPV (złóg otolitowy w kanale). `NeuroVOR` = warstwa
         toniczna/ośrodkowa (VOR, fiksacja, vHIT, oczopląs spojrzeniowy, skew, HINTS) —
         patrz sekcja „MODUŁ NeuroVOR" na końcu pliku.
@@ -329,7 +330,9 @@ UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI:
   - rozmiar cząstki: OBSŁUGIWANY jako parametr skalujący (size → tauP∝r⁻², gc∝r³, adh∝r);
     nadal brak oddziaływań ze ściankami i magazynowania prędkości;
   - kupulolitiaza i kanalolitiaza o porównywalnej sile (wg [1] kupulo jest słabsza);
-  - brak modelu męczliwości (rozproszenia wielu otolitów przy powtórzeniach).
+  - męczliwość (rozproszenie zbitego złogu przy powtórzeniach) MODELOWANA jako czynnik skalujący
+    amplitudę (fatigueFactor / parametr rep w simulateCanalith) — NIE jako jawna symulacja wielu
+    cząstek o różnych trajektoriach; kupulolitiaza celowo bez męczliwości (cecha różnicująca) [12].
 
 
 === MANEWRY JAKO OSIE CZASU KWATERNIONÓW (wejście do dynamiki) ===
@@ -428,8 +431,8 @@ DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09)
 
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)
- Plik: otorepo.html  |  Moduł: const NeuroVOR = (()=>{ ... })()
- Charakter: czysty moduł BEZ DOM (testowalny offline w node)
+ Plik: src/engine/neuro-vor.js  |  Moduł: export const NeuroVOR = (()=>{ ... })()
+ Charakter: czysty moduł ES BEZ DOM (testowalny offline w node)
  Dodano: 2026-07-07  |  Rozszerzenia: KOMPENSACJA ośrodkowa (etap 6/6b/6c) 2026-07-08 ·
  NEUROANATOMIA (etap 7: E1 per-kanał · E2 vHIT płaszczyzn · E3 wektor 3D · E4 patologie) 2026-07-09 [w toku]
 ==========================================================================
