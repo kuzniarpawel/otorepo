@@ -119,7 +119,7 @@
   .steps-dots i{height:5px; flex:1; border-radius:4px; background:var(--line); transition:background .25s}
   .steps-dots i.done{background:var(--primary)} .steps-dots i.cur{background:var(--timer); box-shadow:0 0 10px rgba(255,197,61,.5)}
 
-  .viz{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px}
+  .viz{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; align-items:start}   /* start: karta „Ułożenie" NIE rozciąga się do sąsiada → stała wysokość między krokami (2D i 3D) */
   .panelbox{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:12px; box-shadow:var(--shadow)}
   .headnote{font-size:13px;color:var(--text);text-align:center;padding:8px 4px 2px;line-height:1.45}
   .panelbox h4{margin:0 0 8px; font-family:var(--display); font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--faint); font-weight:700}
@@ -197,7 +197,7 @@
   .recobtns .recoprimary{background:var(--primary);color:var(--ink);border:none;box-shadow:0 8px 20px -10px rgba(79,210,238,.6)}
   .recobtns .recoalt{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
   .recobtns button:active{transform:scale(.99)}
-  .minihead{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .minihead{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;align-items:start}
 
   .footnote{margin-top:20px; font-size:11px; color:var(--faint); text-align:center; line-height:1.5}
   .hidden{display:none !important}

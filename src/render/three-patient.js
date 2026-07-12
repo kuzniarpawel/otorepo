@@ -100,10 +100,16 @@ function createPatientRenderer() {
   const UP = new Vector3(0, 1, 0), T1 = new Vector3();
 
   const jointsToThree = spec => { const o = {}; for (const j of ALL) o[j] = toThreeVec(spec.joints[j]); return o; };
+  // KADR STAŁY, niezależny od pozy (feedback: okno nie może „skakać" między krokami, nic nie ucinać).
+  // Unia póz z SKEL: leżąca długość pelvis±87 + NOS wzdłuż osi ciała w sideL (~101; pomiar pikselowy
+  // wykrył ucięcie przy 100), siedząca wysokość ~100, zwis głowy poniżej blatu ~-42
+  // → półwysokość 94 @ środek y=24 (zakres -70…118), półszerokość 94·5/4=117,5
+  // (pomiar pikselowy: skrajny punkt sideL/Roll ≈111 j. — nos wzdłuż osi ciała — zapas ~6 j.).
+  const FRAME_HALF_H = 94, FRAME_CY = 24, FOV = 30;
   function setCamera(side) {
-    const D = 235, H = 62;                                 // strona P = kamera od strony PRAWEJ pacjenta (three +x)
-    if (side === 'L') camera.position.set(-D, H, 0); else camera.position.set(D, H, 0);
-    camera.lookAt(0, 30, 0);
+    const D = FRAME_HALF_H / Math.tan((FOV / 2) * Math.PI / 180);   // ≈299 — dystans z kadru, nie „na oko"
+    camera.position.set(side === 'L' ? -D : D, FRAME_CY, 0);        // strona P = kamera od strony PRAWEJ pacjenta (three +x)
+    camera.lookAt(0, FRAME_CY, 0);                                  // poziomy widok: pion bez zniekształceń perspektywy
   }
 
   return {
