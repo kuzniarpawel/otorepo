@@ -21,6 +21,7 @@ const state={
   hintsPreset:null,                                // aktywny preset/tryb (klucz HINTS_PRESETS lub "neuritis") — podświetlenie + dynamiczna ramka
   hintsPlane:"HC", hintsHitCanal:"horizontal",     // vHIT: wybrana płaszczyzna (HC/RALP/LARP) · kanał ostatniego pchnięcia
   hintsSCDS:null,                                  // SCDS: ostatni bodziec (obiekt pressureStimulus) lub null
+  view3d:false,                                    // Etap 3: karta „Ułożenie" w Three.js (WebGL) zamiast SVG — tam, gdzie wdrożone (Epley, Roll)
 };
 
 export { state };

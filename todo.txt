@@ -292,3 +292,12 @@ DIAGNOSTYKA I UI:
         schemat głowy z góry + karta frontalna "Oczopląs", nawigacja kroków w karcie.
  [x] Magnitudy {h,v,t} z normalnych (Wu 2021/Della Santina 2005); override'y: przedni czysty downbeat, poziomy czysto
         poziomy (maska NYS_SHOW). Kanał przedni GEXC=-e1 (naprawiony znak), zgodność position<->dynamika 24/24.
+
+MIGRACJA MODUŁOWA + 3D:
+ [x] Etap 0: Vite + harness złotego snapshotu (tools/snapshot.mjs).  [x] Etap 1: 9 modułów ES (src/).
+       [x] Etap 2: kanoniczny PoseSpec (pose/maneuvers.js:poseSpec) — jedno źródło pozy dla rendererów.
+ [x] Etap 3: ThreePatientRenderer (src/render/three-patient.js) OBOK SVG, wąsko (Epley + Roll): przełącznik 2D/3D,
+       sylwetka+kozetka w WebGL, render na żądanie, three code-split (ładowany dopiero przy 3D). Most osi
+       OTOREPO(z=przód)<->Three(z=tył) z wektorów bazowych (three-bridge.js), zweryfikowany 408 póz @1e-15
+       (npm run bridge:check) + wizualnie SVG<->3D (głowa/strony L/P zgodne). Golden przebazowany na src.
+ [ ] Etap 4: pełne mapowanie manewrów w 3D (Semont/Lempert/Gufoni/Yacovino/Dix/Bow&Lean).  [ ] Etap 5: 3D domyślny + SVG fallback.

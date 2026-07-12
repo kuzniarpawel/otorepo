@@ -609,3 +609,16 @@ Zgłoszenie: Lempert KROK 5 (bok chory, ~270°→360°) pokazywał TYŁ głowy, 
 Poprawka (figProj): noseDown = noseP.y>0.5 && |noseP.x| < 0.6·noseP.y (RZUT EKRANOWY — tył tylko gdy nos celuje prawie
   PROSTO w dół ekranu). Weryfikacja: Epley4=TYŁ, prone=TYŁ (zachowane); Lempert KROK 5 i 3 = profil (twarz z boku,
   naprawione); Dix-Hallpike=TWARZ, Semont Initial=TWARZ, Maneuver=TYŁ (zachowane).
+
+===== PoseSpec -> Three.js (Etap 3) =====
+Renderer 3D (src/render/three-patient.js) czyta TE SAME dane pozy co SVG: spec.joints (stawy/segmenty jak figProj) +
+  spec.headQ przez most osi. Zakres 3D = TYLKO sylwetka ciała/głowy; oczopląs/oczy/HIT/dial(głowa z góry)/błędnik zostają SVG.
+MOST OTOREPO<->Three (src/render/three-bridge.js): nasz świat z=PRZÓD (nos), three z=TYŁ -> mapa M:(x,y,z)->(x,y,-z)
+  (odbicie osi z = zmiana skrętności, dotyczy tak samo świata i lokalnych). toThreeQuat budowany z WEKTORÓW BAZOWYCH
+  (obrazy lokalnego prawo/czubek/tył w świecie), NIE z gotowego wzoru — zasada z migracja_3d.txt. Wzór-kandydat
+  (-x,-y,z,w) potwierdzony liczbowo. WYROCZNIA tools/bridge-check.mjs (npm run bridge:check): 408 póz
+  (siatka pozycja×twarz×yaw + kroki wszystkich manewrów + fazy testów), próg 1e-6, faktyczny maks. błąd 1.37e-15;
+  sprawdza wektory bazowe, grawitację (gHead kierunkowo) i |Q3|=1. Render NA ŻĄDANIE: klatka po zmianie pozy, pętla
+  loopRAF (rejestr rAF) tylko podczas przejścia slerp+lerp (~620 ms) i staje. Kotwiczenie do blatu = wykluczenia jak
+  figProj bedY (supineHang: głowa+szyja zwisają; sit: podudzia/stopy). Weryfikacja wizualna: Epley P krok1 supineHang
+  3D vs SVG — głowa zwisa po tej samej (lewej) stronie, widok od strony chorej, zgodne.

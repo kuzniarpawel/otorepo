@@ -626,9 +626,25 @@ function renderSetup(){
     <p class="footnote">Prototyp poglądowy. Brak gromadzenia danych.</p>`;
 }
 
+/* ── Etap 3: karta „Ułożenie" w Three.js OBOK SVG (wąski zakres: Epley + Roll) ──
+   Przełącznik 2D/3D w nagłówku karty; canvas montowany PO wstawieniu innerHTML
+   (dynamiczny import → chunk three ładowany dopiero przy pierwszym użyciu 3D).
+   Renderer czyta wyłącznie PoseSpec (most osi zweryfikowany: npm run bridge:check). */
+function view3dToggle(){
+  return `<button class="mini3d" aria-pressed="${!!state.view3d}" onclick="setView3d(${!state.view3d})" title="Widok przestrzenny (WebGL) — sylwetka wg PoseSpec">3D</button>`;
+}
+function threeSlot(key){ return `<div class="threewrap" data-three3d="${key}">ładowanie 3D…</div>`; }
+function mount3D(key, spec, side){
+  const el=$(`[data-three3d="${key}"]`); if(!el) return;
+  import('./three-patient.js')
+    .then(m=>m.mountPatient3D(key, el, spec, side))
+    .catch(()=>{ el.textContent="3D niedostępne (WebGL)"; });
+}
+
 function renderGuide(){
   const p=state.plan, st=p.steps[state.step], n=p.steps.length;
   const ps=poseSpec(st);                                   // kanoniczna poza kroku (Etap 2) — jedyne źródło dla sylwetki/dialu/strzałki
+  const can3d = state.maneuverKey==="epley";               // Etap 3: wąski zakres (pełne mapowanie manewrów = Etap 4)
   const _man = currentManSim();
   const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step, state.size));
   const gn = (_gn && _gn.strength >= 0.10) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
@@ -675,7 +691,7 @@ function renderGuide(){
     ${state.size==="small"
       ? `<div class="note">Drobny/wolno osiadający złóg — <b>wydłużono zalecany czas utrzymania pozycji</b> (wolniejsze osiadanie otoconiów; por. uzasadnienie ~30 s holdów w CRP: Hain, Squires &amp; Stone 2005). Oczopląs słabszy i o dłuższej latencji.</div>`
       : ""}
-    <div class="viz"><div class="panelbox"><h4>Ułożenie pacjenta</h4>${posture(ps,p.side)}</div>
+    <div class="viz"><div class="panelbox"><h4>Ułożenie pacjenta${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("guide"):posture(ps,p.side)}</div>
       ${headPanel}</div>
     ${gn
       ? `<div class="flipwrap"><div class="flip" id="flip" role="button" tabindex="0" aria-label="Odwróć kartę: widok frontalny albo wędrówka otolitów" onclick="flipGuide()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipGuide();}">
@@ -700,6 +716,7 @@ function renderGuide(){
       <div class="instr">${st.instr}</div></div>
     ${timerBlock}
     <p class="footnote">Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.</p>`;
+  if(can3d && state.view3d) mount3D("guide", ps, p.side);
   requestAnimationFrame(setupGuideAnim);
   requestAnimationFrame(initGuideSlider);
   if(gn) requestAnimationFrame(()=>sizeFlip("flip"));
@@ -725,11 +742,12 @@ function renderDiag(){
   const mechNote = v==="canalo"
     ? "Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji."
     : "Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.";
+  const can3d = state.testKey==="roll";                  // Etap 3: wąski zakres (pozostałe testy = Etap 4)
   const phaseInner=(ph,i)=>{
     const phs=poseSpec(ph);                              // kanoniczna poza fazy testu (Etap 2)
     return `
       <div class="ptitle">${ph.ptitle}</div><div class="ppos">${ph.ppos}</div>
-      <div class="minihead"><div class="panelbox"><h4>Ułożenie</h4>${posture(phs,A)}</div>
+      <div class="minihead"><div class="panelbox"><h4>Ułożenie${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("diag"+i):posture(phs,A)}</div>
         <div class="panelbox"><h4>Głowa (z góry)</h4><div data-dialnys="${i}">${headDial(phs,"topDownBehind")}</div></div></div>
       <div class="panelbox" style="margin-top:10px"><h4>Widok frontalny</h4>
         <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div><span class="emk">L</span></div>
@@ -780,6 +798,7 @@ function renderDiag(){
         <div class="note">Leczenie dla strony <b>${SIDE[effSide]}</b>. ${antMode?"Strona kanału przedniego niepewna — potwierdź deep head-hangiem i dopiero po wykluczeniu przyczyny ośrodkowej.":"Potwierdź stronę regułą lateralizacji powyżej, zanim rozpoczniesz manewr."}</div>
         <div class="recobtns">${btns}</div></div>`; })()}
     <p class="footnote">Wzorce poglądowe. Interpretuj w kontekście klinicznym.</p>`;
+  if(can3d && state.view3d) phases.forEach((ph,i)=>mount3D("diag"+i, poseSpec(ph), A));
   requestAnimationFrame(()=>{
     phases.forEach((ph,i)=>{
       const c=$(`[data-nys="${i}"]`); if(c) startNys(c,ph.nys);
@@ -1270,4 +1289,5 @@ function sideSel(current, fn, lbl){
 export { FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
+if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
 Object.assign(window, { headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });

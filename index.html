@@ -323,6 +323,13 @@
   .rchip.cen{background:rgba(217,87,107,.14);color:#ff9bab;border-color:#d9576b}
   .rsub{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
   .rsub ul{margin:4px 0 0;padding-left:18px}.rsub li{margin:3px 0}
+
+  /* Etap 3: przełącznik 2D/3D na karcie „Ułożenie" + kontener canvasa Three.js */
+  .mini3d{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.4px;padding:2px 9px;border-radius:8px;
+    border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;vertical-align:2px}
+  .mini3d[aria-pressed="true"]{border-color:var(--primary);color:var(--primary);background:rgba(79,210,238,.12)}
+  .threewrap{width:100%;aspect-ratio:5/4;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:11px}
+  .threewrap canvas{width:100%!important;height:auto!important;display:block;border-radius:8px}
 </style>
 
 </head><body><div class="wrap" id="app">

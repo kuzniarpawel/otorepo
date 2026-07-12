@@ -28,6 +28,7 @@ async function acquireWake(){
 }
 async function releaseWake(){ try{ const w=_wakeLock; _wakeLock=null; if(w) await w.release(); }catch(e){} }
 function syncWake(){ if(state.running) acquireWake(); else releaseWake(); }   // spina blokadę ze stanem licznika
+if (typeof document !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && state.running) acquireWake(); });
 
 /* ============ Dźwięk ============ */
@@ -45,4 +46,5 @@ function beep(){ if(!state.sound) return;
 export { $, animFrames, cancelAnims, loopRAF, easeInOut, lerp, _wakeLock, acquireWake, releaseWake, syncWake, audioCtx, beep };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
+if (typeof window !== "undefined")
 Object.assign(window, { cancelAnims, loopRAF, syncWake, beep });

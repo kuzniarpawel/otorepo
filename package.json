@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "vite build && node tools/build-dist.mjs",
     "preview": "vite preview",
-    "snapshot": "node tools/snapshot.mjs",
-    "snapshot:check": "node tools/snapshot.mjs --check",
+    "snapshot": "node tools/snapshot.mjs --src src/main.js",
+    "snapshot:check": "node tools/snapshot.mjs --check --src src/main.js",
     "snapshot:check:src": "node tools/snapshot.mjs --check --src src/main.js",
+    "snapshot:mono": "node tools/snapshot.mjs --check --target otorepo.html",
+    "bridge:check": "node tools/bridge-check.mjs",
     "copy:web": "node -e \"const fs=require('fs');fs.rmSync('www',{recursive:true,force:true});fs.cpSync('dist','www',{recursive:true})\"",
     "sync": "npm run build && npm run copy:web && cap sync",
     "open": "cap open android"
@@ -21,7 +23,7 @@
   "keywords": [],
   "author": "",
   "license": "GPL-3.0-only",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/kuzniarpawel/otorepo/issues"
   },
@@ -29,7 +31,8 @@
   "dependencies": {
     "@capacitor/android": "^8.4.1",
     "@capacitor/cli": "^8.4.1",
-    "@capacitor/core": "^8.4.1"
+    "@capacitor/core": "^8.4.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "esbuild": "^0.28.1",
