@@ -1,7 +1,7 @@
 {
-  "name": "OTOREPO — repozycja otolitów (BPPV)",
+  "name": "OTOREPO — asystent przedsionkowy",
   "short_name": "OTOREPO",
-  "description": "Asystent repozycji i diagnostyki otolitów (BPPV) — narzędzie dydaktyczne dla personelu medycznego.",
+  "description": "Asystent przedsionkowy — repozycja BPPV, testy pozycyjne i różnicowanie ośrodek/obwód (HINTS). Narzędzie dydaktyczne dla personelu medycznego.",
   "lang": "pl",
   "start_url": "otorepo.html",
   "scope": "./",
