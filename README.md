@@ -1,10 +1,10 @@
-# OTOREPO — asystent repozycji i diagnostyki otolitów (BPPV)
+# OTOREPO — asystent przedsionkowy (BPPV, testy pozycyjne, HINTS)
 
-Aplikacja wspomagająca **diagnostykę i leczenie łagodnych położeniowych zawrotów głowy (BPPV)** — repozycję otolitów. Narzędzie **dydaktyczne / wspomagające dla personelu medycznego**: modeluje fizykę złogu otolitowego w kanałach półkolistych i wyprowadza kierunek oraz dynamikę oczopląsu wyłącznie z praw Ewalda i symulacji cząstki (bez ręcznych adnotacji).
+Narzędzie **dydaktyczne / wspomagające dla personelu medycznego** obejmujące dwa filary przyłóżkowej oceny przedsionkowej: **łagodne położeniowe zawroty głowy (BPPV)** — diagnostyka pozycyjna i repozycja otolitów — oraz **różnicowanie ostrego zespołu przedsionkowego (HINTS, ośrodek↔obwód)**. Kierunek i dynamika oczopląsu wynikają wyłącznie z fizjologii (prawa Ewalda i symulacja cząstki złogu dla BPPV; toniczny/ośrodkowy VOR dla HINTS), bez ręcznych adnotacji.
 
 Aplikacja jest **modularna** (Vite + moduły ES w `src/`) i wydawana na dwóch kanałach: **PWA** (GitHub Pages, instalowalna offline) oraz **Android** (Capacitor). Monolit `otorepo.html` jest zamrożony i służy wyłącznie jako źródło złotego snapshotu w testach.
 
-> ⚠️ **Zastrzeżenie kliniczne.** Prototyp poglądowy. Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są przybliżone (wariant kanalitiazy/geotropowy). Zweryfikuj z własnym protokołem. Brak gromadzenia danych.
+> ⚠️ **Zastrzeżenie kliniczne.** Prototyp poglądowy. Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem. Brak gromadzenia danych.
 
 ## Uruchomienie
 
@@ -58,7 +58,7 @@ Jedno źródło prawdy 3D (układ głowy: `x = prawo, y = góra/czaszka, z = prz
 
 - **Silnik `Vestibular`** — czysty moduł **bez DOM** (testowalny offline). Prawa Ewalda (I/II/III),
   dynamika kanalolitiazy (otolit na łuku kanału, opór Stokesa, osklepek 1. rzędu → latencja / crescendo /
-  decrescendo / wygasanie / jednokierunkowe wyjście do woreczka) oraz kupulolitiazy (ciężki osklepek,
+  decrescendo / wygasanie / jednokierunkowe wyjście do łagiewki) oraz kupulolitiazy (ciężki osklepek,
   bez latencji, uporczywy). Kierunek, siła i odwrócenie oczopląsu wynikają **wyłącznie z fizyki**.
   Dokumentacja: [`engine_doc.txt`](engine_doc.txt).
 - **Silnik `NeuroVOR`** — druga czysta warstwa **bez DOM**: fizjologia toniczna/ośrodkowa VOR (spoczynkowa

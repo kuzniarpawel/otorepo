@@ -298,7 +298,7 @@ SILNIK (Vestibular, czysty moduł, zwalidowany offline):
         decrescendo/wygasanie) + simulateCupulolith (osklepek ciężki, bez latencji, uporczywy). Kalibracja do
         literatury (tauP=6.5, tauC=5, gc=1.6, adhezja). Wszystkie 6 kanałów zwalidowane.
  [x] dynNystagmus(canal,side,ξ): kierunek = quickPhase*sign(ξ), intensywność = |ξ|*(ξ>0?1:0.45) (rektyfikacja
-        Ewalda II). Oczopląs ODWRÓCONY automatycznie ze znaku ξ; jednokierunkowe wyjście do woreczka (exited).
+        Ewalda II). Oczopląs ODWRÓCONY automatycznie ze znaku ξ; jednokierunkowe wyjście do łagiewki (exited).
  [x] Manewry jako osie czasu kwaternionów: stepHeadQ / maneuverTimeline / simulateCanalith. Epley/Semont/Lempert/
         Yacovino/Gufoni geo+apo — 5/6 wychodzi obustronnie, apo=konwersja. Lempert KROK 1 yaw=90 (prowokacja poziomego).
 

@@ -727,7 +727,7 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      głową; pobudzenie/hamowanie odwraca kierunek; brak dehiscencji→brak odpowiedzi; vHIT kanału prawidłowy. (t12: 29)
  [x] Etap 13 (E4-BVH): bilateralLoss — SYMETRIA→brak oczopląsu + vHIT OBUSTRONNY wszystkich płaszczyzn;
      werdykt peripheral; kompensacja bezczynna; preset bvh; naprawa zniesienia par w verticalBeat. (t13: 31)
- [x] Etap 14 (E4-Menière): meniere — przemiatanie tonu 150→90→0 ODWRACA kierunek (drażnienie KU choremu →
+ [x] Etap 14 (E4-Ménière): meniere — przemiatanie tonu 150→90→0 ODWRACA kierunek (drażnienie KU choremu →
      porażenie KU zdrowemu, punkt zerowy cichy); drażnienie vHIT prawidłowy / porażenie osłabiony;
      odnotowana PUŁAPKA HINTS (drażnienie czyta „ośrodek" — napadowy, nie AVS); lustro L/P. (t14: 30)
  [x] Etap 15 (E4.5 — kaloryka): caloric/caloricBattery — COWS; CP lokalizuje słabsze ucho; DYSOCJACJA
