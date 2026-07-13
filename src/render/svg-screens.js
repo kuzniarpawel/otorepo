@@ -657,14 +657,14 @@ function renderSetup(){
   $("#app").innerHTML=`
     <div class="topbar">
       <div class="mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 13c0-5 4-8 7.5-8S20 7.5 20 11c0 3-2.5 4-2.5 6.5S16 21 14 21s-2-2-2-3.5S10.5 15 9 14s-4 .5-4-1Z" stroke="var(--primary)" stroke-width="1.6"/></svg></div>
-      <div><h1>BPPV — asystent</h1><div class="sub">Repozycja i diagnostyka otolitów — prototyp</div></div>
+      <div><h1>OTOREPO</h1><div class="sub">Asystent przedsionkowy — BPPV, testy pozycyjne, HINTS · narzędzie dydaktyczne</div></div>
     </div>
     <div class="tabs three" role="tablist">
       <button role="tab" aria-selected="${state.mode==='treat'}" onclick="setMode('treat')">Repozycja</button>
       <button role="tab" aria-selected="${state.mode==='diag'}" onclick="setMode('diag')">Diagnostyka</button>
       <button role="tab" aria-selected="${state.mode==='hints'}" onclick="setMode('hints')">HINTS</button>
     </div>
-    <div class="disclaimer"><b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe (wariant kanalitiazy/geotropowy) — zweryfikuj z własnym protokołem.</div>
+    <div class="disclaimer"><b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem.</div>
     ${body}
     <p class="footnote">Prototyp poglądowy. Brak gromadzenia danych.</p>`;
 }
