@@ -633,13 +633,11 @@ function renderSetup(){
     if(state.canal){const keys=CANALS[state.canal].maneuvers;
       man=`<div class="group"><div class="label"><span class="eyebrow">Manewr</span><span class="hint">dobrany do kanału</span></div>
         <div class="seg ${keys.length===2?'two':''}">${keys.map(k=>`<button class="opt" aria-pressed="${state.maneuverKey===k}" onclick="openMan('${k}')">${MANEUVERS[k].label}<small>${MANEUVERS[k].desc}</small></button>`).join("")}</div></div>`;}
-    const ready=state.canal&&state.maneuverKey;
-    const sizeOpt=k=>`<button class="opt" aria-pressed="${state.size===k}" onclick="pickSize('${k}')">Cząstka ${SIZE_LABELS[k]}<small>${SIZE_NOTE[k]}</small></button>`;
-    const sizeGroup=`<div class="group"><div class="label"><span class="eyebrow">Rozmiar złogu</span><span class="hint">latencja · siła · czas holdu</span></div>
-        <div class="seg three">${sizeOpt("small")}${sizeOpt("medium")}${sizeOpt("big")}</div></div>`;
+    // Rozmiar złogu ustawia się w PRZEWODNIKU manewru (renderGuide → .sizerow), w kontekście trwającej
+    // repozycji — nie na ekranie wyboru. Domyślnie state.size="medium" (genPlan przy starcie manewru).
     body=`<div class="group"><div class="label"><span class="eyebrow">Kanał półkolisty</span><span class="hint">zajęty kanał</span></div>
         <div class="seg three">${canalOpt("posterior")}${canalOpt("horizontal")}${canalOpt("anterior")}</div></div>
-      ${man}${sizeGroup}`;
+      ${man}`;
   } else if(state.mode==="hints"){
     const famOf=k=> k==="normal"?"normal": k==="strokeCentral"?"stroke":"neuritis";
     const curFam=famOf(state.hintsScenario);
