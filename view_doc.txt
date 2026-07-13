@@ -183,13 +183,16 @@ screenAngleCW(p) -> stopnie
      → ZROBIONE: maneuverTimeline/maneuverSim (engine_doc). 5/6 manewrów wyprowadza cząstkę obustronnie.
      ZROBIONE: setupGuideAnim → animacja otolitu jako PRZEJŚCIE na wejściu w krok (1.6s, ease), NIEZALEŻNE
      od timera (wcześniej ruch sprzężony z timerem = stał bez 'Start'). Ułamki z realnego φ (manFractions:
-     cummax dla czyszczących), placeOtolith(canal,p,exitBlend) wpada do łagiewki (150,100) przy wyjściu.
-     manFractions: silnik WALIDUJE wyjście (man.exited) i wskazuje krok kuracyjny = ostatni repozycyjny
-     (nSteps-2, przed powrotem do siadu); wędrówkę pokazujemy jako monotoniczną progresję 0.15→1.0 z
-     wyjściem w kroku kuracyjnym (ruch w KAŻDYM kroku repozycyjnym), potem spoczynek w łagiewce.
+     cummax dla czyszczących), placeOtolith(canal,p,exitBlend) wpada do łagiewki (LAB_UTR≈147,162) przy wyjściu.
+     manFractions: silnik WALIDUJE wyjście (man.exited) i wskazuje krok kuracyjny. Kanały PIONOWE = REALNY
+     krok ekspulsji z fizyki (manExitStep: Epley=siad k5, Semont=rzut, Yacovino=broda); poziomy/kupulo =
+     schemat (nSteps-2). Wędrówka = monotoniczna progresja 0.15→1.0 z wyjściem w kroku kuracyjnym, potem spoczynek.
      Surowe φ jest front-loaded i dla kanału poziomego idzie ku bańce → schemat zamiast surowego φ/krok.
      Gufoni-apo (brak wyjścia): ruch ku bańce wg silnika + notka 'konwersja'.
-     Ścieżki CANAL_PATHS startują przy łagiewce (M150 96)→odnoga wspólna; φ=90 apex≈0.51, φ=178≈1.0.
+     Ścieżki CANAL_PATHS: start = BAŃKA (φ≈0), koniec = WYJŚCIE (pionowe → odnoga wspólna→łagiewka; poziomy
+     → wprost do łagiewki), φ≈180≈1.0. Schemat anatomiczny: bańki z grzebieniami+kopuły, odnoga wspólna
+     (widełki kan. pionowych → pień do łagiewki), komora łagiewki. viewBox PRZYCIĘTY do treści (38 35 205 164,
+     bez pustych marginesów) + SVG skalowany do 80% (inline style width:80%, wyśrodkowany); stałe LAB_* w svg-screens.js.
      Gufoni-apo (brak wyjścia) → notka 'manewr konwersji' w panelu labiryntu (renderGuide).
  [x] ETAP C: pełne ciało (tułów+szyja+kończyny) jako rzut 3D — ZROBIONE (figProj/bodyJoints, patrz
         ARCHITEKTURA figProj niżej oraz PODSUMOWANIE SESJI 2026-07-02). Swobodny wybór kamery (K4) pozostaje

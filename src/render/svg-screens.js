@@ -273,38 +273,69 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
     ${couch}${fig}
     <text x="100" y="154" text-anchor="middle" fill="var(--muted)" font-size="11">${label}</text></svg>`;
 }
-/* ============ SVG: kanały + otolit ============ */
-const CANAL_PATHS={
-  posterior:"M150 96 C150 40, 96 26, 70 56 C44 86, 70 130, 110 118",
-  horizontal:"M150 96 C150 150, 70 156, 52 116 C40 90, 78 78, 110 92",
-  anterior:"M150 96 C150 44, 200 36, 214 70 C226 100, 196 126, 160 116",
+/* ============ SVG: błędnik (kanały + bańki z grzebieniami + odnoga wspólna + łagiewka) + otolit ============ */
+// JEDNO ŹRÓDŁO GEOMETRII — ten sam układ czytają SVG i pozycjonowanie otolitu (placeOtolith/setupGuideAnim).
+// Anatomia oddana schematycznie: każdy kanał zaczyna się BAŃKĄ z grzebieniem (crista, φ≈0), łukiem biegnie do
+// WYJŚCIA (φ≈180). Kanały PIONOWE (tylny+przedni) schodzą się w ODNOGĘ WSPÓLNĄ i wspólnym pniem wpadają do
+// ŁAGIEWKI; kanał POZIOMY wchodzi do łagiewki wprost (bez odnogi). Bańki rozłożone na obwodzie (osobna crista
+// dla każdego kanału), łagiewka + odnoga w centrum — złóg wędruje z obwodu (bańka) do środka (łagiewka).
+const LAB_UTR={cx:147,cy:162,rx:33,ry:16};                  // łagiewka (utricle) — wspólna komora
+const LAB_CRUS={fx:150,fy:120};                             // widełki odnogi wspólnej (zejście kan. PIONOWYCH tuż nad łagiewką)
+const LAB_AMP={ posterior:{x:84,y:150}, anterior:{x:214,y:120}, horizontal:{x:206,y:151} };  // środki baniek
+const LAB_PIVOT=`${LAB_AMP.posterior.x} ${LAB_AMP.posterior.y}`;   // środek obrotu osklepka (Bascule → bańka kanału tylnego)
+const CANAL_PATHS={                                         // OD bańki (start, φ≈0) DO wyjścia (koniec: widełki odnogi / łagiewka, φ≈180)
+  posterior:"M84 150 C46 146, 36 94, 60 68 C84 42, 134 58, 150 120",
+  anterior:"M214 120 C244 106, 242 56, 206 46 C166 35, 130 72, 150 120",
+  horizontal:"M206 151 C218 192, 116 202, 86 176 C64 158, 92 150, 118 162",
 };
+// Bańka (ampulla) = rozdęcie na końcu kanału; grzebień (crista) = wał czuciowy na dnie bańki; osklepek
+// (cupula) = galaretowata kopuła nad grzebieniem. Kopułę statyczną rysujemy przy aktywnym kanale (dome=true);
+// przy kupulolitiazie zastępuje ją RUCHOMA grupa #labcupula (patrz opts.cupula), więc wtedy dome=false.
+function ampullaGlyph(k,color,active,dome){
+  const a=LAB_AMP[k], sw=active?2.4:1.5;
+  return `<g transform="translate(${a.x} ${a.y})" opacity="${active?1:.5}">
+    <ellipse rx="11.5" ry="8.5" fill="#22303D" stroke="${color}" stroke-width="${sw}"/>
+    <path d="M-6 5 Q0 -6 6 5 Z" fill="var(--faint)" opacity="${active?.95:.6}"/>${dome
+      ? `<path d="M-7.5 4 Q0 -13 7.5 4 Z" fill="#CFE3EE" opacity=".13"/><path d="M-7.5 4 Q0 -13 7.5 4" fill="none" stroke="#CFE3EE" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>`
+      : ""}</g>`;
+}
 function labyrinth(canal, opts){
   opts=opts||{};
   const colors={posterior:"var(--post)",horizontal:"var(--horiz)",anterior:"var(--ant)"};
   const active=colors[canal];
+  const vertical = canal==="posterior"||canal==="anterior";
+  const order=["anterior","horizontal","posterior"].filter(k=>k!==canal).concat([canal]);   // aktywny rysowany NA WIERZCHU
+  // ODNOGA WSPÓLNA: pień łączący widełki kan. pionowych z łagiewką (wyraźny, gdy aktywny kanał pionowy)
+  const crus=`<path d="M${LAB_CRUS.fx} ${LAB_CRUS.fy} L${LAB_UTR.cx} ${LAB_UTR.cy-LAB_UTR.ry+2}" fill="none"
+    stroke="${vertical?active:"#33404D"}" stroke-width="${vertical?10:7}" stroke-linecap="round" opacity="${vertical?.9:.45}"/>`;
   let loops="";
-  for(const k of ["anterior","horizontal","posterior"]){
+  for(const k of order){
     const on=k===canal;
     loops+=`<path id="path-${k}" d="${CANAL_PATHS[k]}" fill="none" stroke="${on?active:"#33404D"}"
       stroke-width="${on?9:6}" stroke-linecap="round" opacity="${on?1:.5}"/>`;
   }
-  // Osklepek (cupula) przy bańce kanału tylnego — TYLKO dla manewrów na KUPULOLITIAZĘ (Bascule). Błona
-  // spoczywa neutralnie; animacja (setupGuideAnim, krok 1) odgina ją w fazie przylegania i prostuje przy odklejaniu.
+  // BAŃKI Z GRZEBIENIAMI — wszystkie trzy (kontekst dydaktyczny); aktywna z osklepkiem (chyba że kupulolitiaza)
+  let amps=""; for(const k of order) amps+=ampullaGlyph(k,colors[k],k===canal,k===canal&&!opts.cupula);
+  // Osklepek (cupula) przy bańce kanału TYLNEGO — TYLKO dla manewrów na KUPULOLITIAZĘ (Bascule). Ruchoma błona:
+  // animacja (setupGuideAnim, krok 1) odgina ją w fazie przylegania i prostuje przy odklejaniu (obrót wokół LAB_PIVOT).
+  const px=LAB_AMP.posterior.x, py=LAB_AMP.posterior.y;
   const cupula = opts.cupula
-    ? `<g id="labcupula" transform="rotate(0 150 96)"><path d="M143 86 Q150 69 157 86 Z" fill="#CFE3EE" opacity=".16"/><path d="M143 86 Q150 69 157 86" fill="none" stroke="#CFE3EE" stroke-width="3" stroke-linecap="round" opacity=".92"/></g>`
+    ? `<g id="labcupula" transform="rotate(0 ${LAB_PIVOT})"><path d="M${px-7.5} ${py+4} Q${px} ${py-13} ${px+7.5} ${py+4} Z" fill="#CFE3EE" opacity=".18"/><path d="M${px-7.5} ${py+4} Q${px} ${py-13} ${px+7.5} ${py+4}" fill="none" stroke="#CFE3EE" stroke-width="3" stroke-linecap="round" opacity=".92"/></g>`
     : "";
-  return `<svg viewBox="0 0 250 175" role="img" aria-label="Kanały półkoliste, aktywny: ${CANALS[canal].label}">
-    <ellipse cx="150" cy="100" rx="20" ry="15" fill="#22303D" stroke="var(--line)" stroke-width="1.5"/>
-    <text x="150" y="103" text-anchor="middle" fill="var(--faint)" font-size="8">łagiewka</text>
-    ${loops}${cupula}<circle id="otolith" r="6" fill="#fff" stroke="${active}" stroke-width="2"/></svg>
+  return `<svg viewBox="38 35 205 164" role="img" aria-label="Błędnik: kanały półkoliste z bańkami i grzebieniami, odnoga wspólna kanałów pionowych, łagiewka; aktywny: ${CANALS[canal].label}" style="width:80%;margin-inline:auto">
+    <ellipse cx="${LAB_UTR.cx}" cy="${LAB_UTR.cy}" rx="${LAB_UTR.rx}" ry="${LAB_UTR.ry}" fill="#22303D" stroke="var(--line)" stroke-width="1.5"/>
+    ${crus}${loops}${amps}${cupula}
+    <text x="${LAB_UTR.cx}" y="${LAB_UTR.cy+4}" text-anchor="middle" fill="var(--faint)" font-size="9">łagiewka</text>
+    <line x1="169" y1="116" x2="153" y2="130" stroke="var(--faint)" stroke-width="1" opacity=".6"/>
+    <text x="171" y="115" text-anchor="start" fill="var(--faint)" font-size="7.5">odnoga wspólna</text>
+    <circle id="otolith" r="6" fill="#fff" stroke="${active}" stroke-width="2"/></svg>
     <div class="viewpoint">schemat wędrówki — położenie poglądowe; czas i skuteczność z fizyki</div>`;
 }
 function placeOtolith(canal,p,exitBlend){
   const path=$("#path-"+canal),dot=$("#otolith"); if(!path||!dot) return false;
   const pt=path.getPointAtLength(Math.max(0,Math.min(1,p))*path.getTotalLength());
   let x=pt.x, y=pt.y;
-  if(exitBlend>0){ x=pt.x+(150-pt.x)*exitBlend; y=pt.y+(100-pt.y)*exitBlend; }  // wpadnięcie do łagiewki
+  if(exitBlend>0){ x=pt.x+(LAB_UTR.cx-pt.x)*exitBlend; y=pt.y+(LAB_UTR.cy-pt.y)*exitBlend; }  // osiadanie w łagiewce
   dot.setAttribute("cx",x); dot.setAttribute("cy",y); return true;
 }
 
@@ -522,8 +553,8 @@ function setupGuideAnim(){
   const blendOnly = exited && state.step>sched.exitStep;                  // krok po wyjściu — spoczynek w łagiewce
   // KUPULOLITIAZA (mechanism:"cupulo"): 1. krok = etap przylegania/odklejania złogu od osklepka, potem zwykła wędrówka.
   const cupuloAdh = state.plan.mechanism==="cupulo" && state.step===0;
-  const EA=0.09, CUP_ANG=17;                                             // pozycja złogu na osklepku (ułamek ścieżki) + kąt odgięcia błony
-  if(cupuloAdh){ placeOtolith(canal, EA, 0); const c0=document.getElementById("labcupula"); if(c0) c0.setAttribute("transform",`rotate(${CUP_ANG} 150 96)`); }
+  const EA=0.04, CUP_ANG=17;                                             // pozycja złogu na osklepku (ułamek ścieżki, tuż przy bańce/grzebieniu) + kąt odgięcia błony
+  if(cupuloAdh){ placeOtolith(canal, EA, 0); const c0=document.getElementById("labcupula"); if(c0) c0.setAttribute("transform",`rotate(${CUP_ANG} ${LAB_PIVOT})`); }
   else if(blendOnly) placeOtolith(canal, 1, 1); else placeOtolith(canal, fFrom, 0);
   if(state.autostart && total>0){ state.running=true; }
   state.autostart=false; syncWake();
@@ -548,16 +579,16 @@ function setupGuideAnim(){
       const cup=document.getElementById("labcupula"), oto=document.getElementById("otolith");
       const AD=0.42, DET=0.58;                                    // fazy: [0,AD]=przyleganie · [AD,DET]=odklejanie · [DET,1]=start wędrówki
       if(ot<AD){                                                  // PRZYLEGANIE: osklepek odgięty, złóg drży „przyklejony"
-        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG+Math.sin(now/85)*2.5).toFixed(2)} 150 96)`);
+        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG+Math.sin(now/85)*2.5).toFixed(2)} ${LAB_PIVOT})`);
         placeOtolith(canal, EA, 0);
         if(oto) oto.setAttribute("r",(6.4+Math.sin(now/85)*0.5).toFixed(2));
       } else if(ot<DET){                                          // ODKLEJANIE: osklepek prostuje się, złóg pulsuje i uwalnia
         const u=easeInOut((ot-AD)/(DET-AD));
-        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG*(1-u)).toFixed(2)} 150 96)`);
+        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG*(1-u)).toFixed(2)} ${LAB_PIVOT})`);
         placeOtolith(canal, EA, 0);
         if(oto) oto.setAttribute("r",(6.4+3.4*Math.sin(u*Math.PI)).toFixed(2));
       } else {                                                    // START WĘDRÓWKI: od osklepka na ścieżkę do pozycji spoczynkowej
-        if(cup) cup.setAttribute("transform","rotate(0 150 96)");
+        if(cup) cup.setAttribute("transform",`rotate(0 ${LAB_PIVOT})`);
         if(oto) oto.setAttribute("r",6);
         placeOtolith(canal, EA+(fTo-EA)*easeInOut((ot-DET)/(1-DET)), 0);
       }
