@@ -27,7 +27,7 @@ function headDial(spec,headCamera,nys){               // spec: PoseSpec (schemat
   const rightLab = el.x < er.x ? "P" : "L";
   const ring=face==="down"?"#FF9FBD":"#9FE3F6";
   const feat="#CFEFFB";
-  const faceLabel=face==="up"?"nos ku górze":face==="down"?"nos ku podłodze":face==="chin"?"broda przy klatce":face==="ceil"?"nos ku sufitowi":"nos do przodu";
+  const faceLabel=face==="up"?"nos ku górze":face==="down"?"nos ku podłodze":face==="chin"?"broda przy klatce":face==="ceil"?"nos ku sufitowi":face==="floor"?"nos ku podłodze":"nos do przodu";
   const turnLabel=yaw>0?"obrót w prawo":yaw<0?"obrót w lewo":"na wprost";
   let nysNote="", h=180;
   if(nys){
@@ -247,7 +247,7 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
       ? `<rect x="34" y="106" width="132" height="9" rx="3" fill="${Pc}"/><rect x="50" y="114" width="8" height="26" fill="#1c2935"/><rect x="142" y="114" width="8" height="26" fill="#1c2935"/>`
       : `<rect x="14" y="120" width="172" height="10" rx="3" fill="${Pc}"/><rect x="22" y="130" width="8" height="20" fill="#1c2935"/><rect x="172" y="130" width="8" height="20" fill="#1c2935"/>`;
     const label=front?"Siad — twarzą do badającego"
-      :(face==="up"?"Na boku — nos ku sufitowi (pozycja wyjściowa)":face==="down"?"Na boku — nos ku podłodze (przerzut)":face==="ceil"?"Na boku — nos ku sufitowi (głowa skręcona ~90°)":"Na boku — głowa w linii ciała");
+      :(face==="up"?"Na boku — nos ku sufitowi (pozycja wyjściowa)":face==="down"?"Na boku — nos ku podłodze (przerzut)":face==="ceil"?"Na boku — nos ku sufitowi (głowa skręcona ~90°)":face==="floor"?"Na boku — nos ku podłodze (głowa skręcona ~90°)":"Na boku — głowa w linii ciała");
     const view="widok od przodu — na wprost pacjenta";
     return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: ${label}">
       <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${view}</text>

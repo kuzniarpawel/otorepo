@@ -126,15 +126,15 @@ function yacovino(side){
   ]};
 }
 function gufoniGeo(side){
-  const A=side,H=otherSide(side), onH=H==="L"?"sideL":"sideR";
+  const A=side,H=otherSide(side), leanH=A==="L"?"leanL":"leanR";   // leanH: bok ZDROWY w dół, poza FRONTALNA (jak Gufoni apo); grawitacja = sideX|fwd/|down (fizyka bez zmian)
   return {name:"Manewr Gufoniego (geotropowy)",canal:"horizontal",side,headCamera:"topDownBehind",steps:[
     {title:"Pozycja wyjściowa",body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:0.05,   // jak Semont krok 1 (widok od przodu), tylko BEZ skrętu głowy 45°
      instr:`Pacjent siedzi na środku kozetki, twarzą do badającego, głowa prosto (bez skrętu).`},
-    {title:"Szybko na bok zdrowy",body:onH,yaw:0,face:"fwd",seconds:60,progress:0.32,
+    {title:"Szybko na bok zdrowy",body:leanH,yaw:0,face:"fwd",seconds:60,progress:0.32,   // bok ZDROWY w dół, widok od przodu; głowa w linii ciała (leanX|fwd = ta sama grawitacja co sideX|fwd)
      instr:`Szybko połóż pacjenta na bok zdrowy (${SIDE[H]}). Oczopląs geotropowy ku podłodze (ku uchu ${SIDE[H]}). Utrzymaj 1–2 min, do ustąpienia oczopląsu.`},
-    {title:"Obrót głowy nosem w dół",body:onH,yaw:0,face:"down",seconds:60,progress:0.78,
-     instr:`Szybko obróć głowę o 45° nosem ku podłodze. Możliwy krótki oczopląs liberacyjny ku podłodze. Utrzymaj 1–2 min.`},
-    {title:"Powrót do siadu",body:"sit",yaw:0,face:"fwd",seconds:null,progress:1.0,
+    {title:"Obrót głowy nosem ku podłodze",body:leanH,yaw:0,face:"floor",seconds:60,progress:0.78,   // głowa obrócona nosem w dół; widok od przodu (leanX|floor = ta sama grawitacja co sideX|down)
+     instr:`Nie zmieniając ułożenia ciała, obróć głowę tak, aby nos był skierowany ku podłodze. Możliwy krótki oczopląs liberacyjny ku podłodze. Utrzymaj 1–2 min.`},
+    {title:"Powrót do siadu",body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:1.0,   // siad frontalny, głowa wyprostowana
      instr:`Powoli posadź pacjenta i wyprostuj głowę. Koniec manewru.`},
   ]};
 }
@@ -286,7 +286,11 @@ const LEAN_G={ "leanL|up":[0.5,-0.2,-0.8], "leanR|up":[-0.5,-0.2,-0.8],
   // NOS KU SUFITOWI (Gufoni apo krok 3): pacjent na boku CHORYM skręca głowę ~90° tak, że nos celuje PROSTO
   // W GÓRĘ (∥ świat +y). Grawitacja w ramce głowy pada wtedy wzdłuż osi nosowo-potylicznej: gHead=[0,0,-1]
   // (identyczne dla obu boków — kierunek nosa nie zależy od rolla wokół osi nosa). Poza rzutowana FRONTALNIE.
-  "leanL|ceil":[0,0,-1], "leanR|ceil":[0,0,-1] };
+  "leanL|ceil":[0,0,-1], "leanR|ceil":[0,0,-1],
+  // NOS KU PODŁODZE (Gufoni geo krok 3): pacjent na boku ZDROWYM obraca głowę nosem w dół. Grawitacja MATCHUJE
+  // sideX|down — FIZYKA/oczopląs BEZ ZMIAN, zmienia się tylko KAMERA na frontalną (leanH leży na boku zdrowym:
+  // leanR↔sideL dla P, leanL↔sideR dla L → leanL|floor=sideR|down, leanR|floor=sideL|down).
+  "leanL|floor":[0.5,0.6,0.6], "leanR|floor":[-0.5,0.6,0.6] };
 // Pochylenie głowy wokół osi ucha dla póz supine (° do qSupineYaw). Ta sama q dla stepHeadQ (fizyka)
 // i composeHead (render) → zero rozjazdu (audyt #1). ZGŁOSZENIE Yacovino (screeny z markerami):
 //   • supineChin (krok 3): −75° dawało nos POZIOMO KU ŚCIANIE za głową (czubek w materac) — absurd
