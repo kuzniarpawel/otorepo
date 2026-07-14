@@ -185,13 +185,17 @@ simulateCupulolith({canal, side, timeline, dt=0.05, tauCup=0.8, gain=1.0, size="
    Symulacja KUPULOLITIAZY: otolity przyklejone do osklepka → ciężki osklepek odchylany
    WPROST grawitacją (rzut statyczny), bez wolnej cząstki w świetle kanału.
    Model:
-       target = gain · |proj| · (excited ? +1 : -1)
+       target = CUP_WEAK · gain · |proj| · (excited ? +1 : -1)
                 gdzie proj/excited z position({canal,side,variant:"cupulo",q}) (reguła Ewalda;
                 poziomy: apogeotropowy = odwrócony względem geotropowego)
+                CUP_WEAK=0.6 — KUPULOLITIAZA SŁABSZA OD KANALOLITIAZY [1] (złóg przyklejony do osklepka
+                odchyla go słabiej niż bolus swobodnych otoconiów napędzający kolumnę endolimfy). TEN SAM
+                współczynnik skaluje oczopląs diagnostyczny wariantu "cupulo" (nysFromGeom) — jedno źródło prawdy.
        dξ/dt = (target - ξ) / tauCup           (szybka relaksacja)
    Cechy emergentne (kontrast do kanalolitiazy):
        - BRAK LATENCJI (ξ podąża natychmiast za grawitacją; tauCup małe)
        - UPORCZYWOŚĆ (ξ trzyma się celu, dopóki pozycja utrzymana; brak wygasania)
+       - MNIEJSZA AMPLITUDA (CUP_WEAK): oczopląs mniej intensywny niż w kanalolitiazie [1]
        - płynne odwrócenie przy zmianie pozycji
    Zwraca: t [s], xi (znak = pobudzenie/hamowanie), target (cel statyczny).
    Parametry strojeniowe: tauCup, gain — DO KALIBRACJI.
@@ -346,7 +350,9 @@ UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI:
   - brak wzmocnienia w wąskim przewodzie (główny mechanizm latencji wg [1]);
   - rozmiar cząstki: OBSŁUGIWANY jako parametr skalujący (size → tauP∝r⁻², gc∝r³, adh∝r);
     nadal brak oddziaływań ze ściankami i magazynowania prędkości;
-  - kupulolitiaza i kanalolitiaza o porównywalnej sile (wg [1] kupulo jest słabsza);
+  - kupulolitiaza SŁABSZA od kanalolitiazy [1]: ZAMODELOWANA jednym współczynnikiem CUP_WEAK=0.6
+    (mnożnik amplitudy ξ w simulateCupulolith ORAZ oczopląsu diagnostycznego wariantu "cupulo" w nysFromGeom);
+    residualne uproszczenie: współczynnik GLOBALNY (nie per-kanał ani per-geometria), wartość kalibracyjna;
   - męczliwość (rozproszenie zbitego złogu przy powtórzeniach) MODELOWANA jako czynnik skalujący
     amplitudę (fatigueFactor / parametr rep w simulateCanalith) — NIE jako jawna symulacja wielu
     cząstek o różnych trajektoriach; kupulolitiaza celowo bez męczliwości (cecha różnicująca) [12].

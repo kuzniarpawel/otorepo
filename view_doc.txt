@@ -545,6 +545,10 @@ CO SPRAWDZONO I POTWIERDZONO:
    ampullofugal pobudza) — POPRAWNE. Znak ξ (flow=gc·G.exc·dφ) koduje pobudzenie/hamowanie spójnie.
 4. Asymetria Ewalda II (hamowanie ×0.45): wpięta w manStepEnv (magnituda oczopląsu manewru) ORAZ w diagnostyce
    (nysFromGeom tryb "asym"). dynNystagmus odwraca też KIERUNEK przy ξ<0 (reguła Ewalda — hamowanie odwraca).
+5. KUPULOLITIAZA słabsza od kanalolitiazy (Vestibular.CUP_WEAK=0.6): nysFromGeom mnoży `strength` wariantu "cupulo"
+   przez CUP_WEAK → oczy/dial na karcie mechanizmu (tył flipa #mechflip) biją z mniejszą amplitudą niż "canalo",
+   ale z flagą `persistent` (uporczywy). TEN SAM współczynnik skaluje ξ w simulateCupulolith (silnik). Golden
+   NIETKNIĘTY: diagnostyka snapszotowana przy variant=canalo (domyślny), więc ścieżka "cupulo" poza wzorcem.
 
 DWA POZIOMY WPIĘCIA (ważne rozróżnienie):
   • DIAGNOSTYKA: kierunek+pobudzenie+asymetria LICZONE Z SILNIKA (nysFromGeom → position() → rzut grawitacji na

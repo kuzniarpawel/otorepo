@@ -173,7 +173,10 @@ function nysFromGeom(canal, side, variant, q, strengthMode){
   const r = Vestibular.position({canal, side, variant, q});
   // 'asym' (Roll): amplituda lateralizuje (Ewald II — hamowanie słabsze);
   // 'flat' (Bow & Lean, Dix): lateralizacja przez kierunek
-  const strength = strengthMode==="asym" ? (r.excited?1:0.45) : 1;
+  // KUPULOLITIAZA słabsza od kanalolitiazy — ten sam współczynnik co w silniku (Vestibular.CUP_WEAK): oczopląs
+  //   wariantu „cupulo" mniej intensywny, lecz uporczywy (persistent niżej niesie brak wygasania).
+  const cupWeak = variant==="cupulo" ? Vestibular.CUP_WEAK : 1;
+  const strength = (strengthMode==="asym" ? (r.excited?1:0.45) : 1) * cupWeak;
   // kierunek NA EKRANIE z KAMERY obserwatora (diagnostyka: 'frontal' — lustro):
   // poziomy beat biegnie wzdłuż osi międzyusznej → ekran-x = h·cam.right[0];
   // skręt odbija się tak samo jak poziom (lustro horyzontalne).

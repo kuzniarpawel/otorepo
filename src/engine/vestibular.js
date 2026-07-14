@@ -243,6 +243,15 @@ export const Vestibular = (()=>{
   }
   // klasyfikacja fazy oczopląsu względem kierunku prowokującego (ξ>0 = pierwotny/liberatoryjny)
   function nystagmusPhase(xi, thr=0.05){ return xi>thr ? "primary" : xi<-thr ? "reversed" : "none"; }
+  // KUPULOLITIAZA SŁABSZA OD KANALOLITIAZY [1] — współczynnik amplitudy (cecha RÓŻNICUJĄCA obok latencji/uporczywości).
+  //   Złóg PRZYKLEJONY do osklepka odchyla go słabiej niż bolus swobodnych otoconiów, który przy kanalolitiazie
+  //   napędza całą kolumnę endolimfy (efekt „tłoka"). Klinicznie: oczopląs kupulolityczny jest MNIEJ intensywny,
+  //   lecz UPORCZYWY (bez wygasania) i NIEmęczliwy — uporczywość/niemęczliwość już modelujemy (tauCup, brak rep),
+  //   ten współczynnik domyka RÓŻNICĘ SIŁY. Skaluje ξ (simulateCupulolith) i oczopląs diagnostyczny wariantu
+  //   „cupulo" (nysFromGeom) — JEDNO źródło prawdy. Wartość = wybór KALIBRACYJNY (model fenomenologiczny), spójny
+  //   z „mniej intensywny, bardziej uporczywy" i z zakresem SPV apogeotropowy ≈ 0.4–0.7× geotropowy (kan. poziomy);
+  //   NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik (uproszczenie: nie per-kanał/per-geometria).
+  const CUP_WEAK=0.6;
   // symulacja KUPULOLITIAZY: otolity na osklepku → ciężki osklepek odchylany WPROST grawitacją.
   // Brak cząstki w świetle kanału → brak latencji i uporczywość (trzyma się, dopóki pozycja utrzymana).
   // ξ relaksuje do celu statycznego (rzut grawitacji, znak z reguły Ewalda) z krótką stałą tauCup.
@@ -259,7 +268,7 @@ export const Vestibular = (()=>{
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
         const p=position({canal, side, variant:"cupulo", q:slerpQ(qPrev,sq,u)});
-        const target=gain*p.mag*(p.excited?1:-1);     // cel statyczny ważony grawitacją (ξ>0 = pobudzenie)
+        const target=CUP_WEAK*gain*p.mag*(p.excited?1:-1);   // cel statyczny ważony grawitacją (ξ>0 = pobudzenie); CUP_WEAK: kupulo słabsza od kanalo [1]
         xi += dt*(target-xi)/tauCup;                   // szybka relaksacja: bez latencji, uporczywy
         t+=dt; out.push({t, xi, target});
       }
@@ -269,6 +278,6 @@ export const Vestibular = (()=>{
   }
   return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
           simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS};
+          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS, CUP_WEAK};
 })();
 

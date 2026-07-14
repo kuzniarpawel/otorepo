@@ -3,8 +3,8 @@
  Aplikacja: repozycja otolitów (BPPV) + diagnostyka; MODULARNA (Vite + src/ moduły ES, PWA)
  Pliki: index.html + src/ (9 modułów) · otorepo.html (monolit = źródło złotego snapshotu, zamrożony)
         · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
- Ostatnia aktualizacja: 2026-07-12 (migracja modułowa + 3D Etapy 0-5 UKOŃCZONE i wypushowane; manewr Bascule
-        dla kupulolitiazy k. tylnego dodany; męczliwość oczopląsu w silniku)
+ Ostatnia aktualizacja: 2026-07-14 (schemat „wędrówka otolitów": bańki z grzebieniami + odnoga wspólna + łagiewka,
+        karta skompaktowana; silnik: kupulolitiaza słabsza od kanalolitiazy — współczynnik CUP_WEAK)
 ==========================================================================
 
 Konwencje techniczne:
@@ -33,7 +33,12 @@ SILNIK (fizyka) — rozszerzenia wg korzyść/koszt:
         repeatDixProvoke/resetDixProvoke; reset przy zmianie testu/strony/obserwacji. Golden: tylko diag/dix.
         [engine_doc: simulateCanalith → MĘCZLIWOŚĆ / fatigueFactor]
  [ ] Latencja przez wąski przewód gc(φ) — główny literaturowy mechanizm (mógłby zastąpić adhezję). ŚREDNI.
- [ ] Kupulolitiaza słabsza od kanalolitiazy (~1 współczynnik) — NISKA-ŚREDNIA, tania korekta.
+ [x] Kupulolitiaza słabsza od kanalolitiazy — ZROBIONE 2026-07-14: współczynnik Vestibular.CUP_WEAK=0.6 (mnożnik
+        amplitudy) skaluje ξ w simulateCupulolith ORAZ oczopląs diagnostyczny wariantu "cupulo" w nysFromGeom —
+        JEDNO źródło prawdy. Emergentnie: kupulo MNIEJ intensywna (0.6× w karcie mechanizmu), lecz uporczywa i
+        niemęczliwa (bez zmian). Geometria/kierunki wstecznie zgodne. Golden NIETKNIĘTY (diag snapszotowana
+        @variant=canalo); 3 wyrocznie zielone; offline: cupulo<canalith (poziomy 0.99×, tylny 0.73×), ξ kupulo −40%.
+        [engine_doc [1] + UPROSZCZENIA→CUP_WEAK; view_doc pkt 5]
  [ ] Pełne ΔP_c / hydrodynamika ścianek — NISKA korzyść, ryzyko fałszywej precyzji → odłożyć/pominąć.
  [ ] Magazynowanie prędkości (velocity storage) — NISKA dla BPPV → nadal pominięte.
  [→] Inne stany (push-pull / excited:false): jednostronna westybulopatia + oczopląs OŚRODKOWY —
