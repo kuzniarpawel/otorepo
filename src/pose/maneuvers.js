@@ -128,8 +128,8 @@ function yacovino(side){
 function gufoniGeo(side){
   const A=side,H=otherSide(side), onH=H==="L"?"sideL":"sideR";
   return {name:"Manewr Gufoniego (geotropowy)",canal:"horizontal",side,headCamera:"topDownBehind",steps:[
-    {title:"Pozycja wyjściowa",body:"sit",yaw:0,face:"fwd",seconds:null,progress:0.05,
-     instr:`Pacjent siedzi wyprostowany na brzegu kozetki, głowa prosto.`},
+    {title:"Pozycja wyjściowa",body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:0.05,   // jak Semont krok 1 (widok od przodu), tylko BEZ skrętu głowy 45°
+     instr:`Pacjent siedzi na środku kozetki, twarzą do badającego, głowa prosto (bez skrętu).`},
     {title:"Szybko na bok zdrowy",body:onH,yaw:0,face:"fwd",seconds:60,progress:0.32,
      instr:`Szybko połóż pacjenta na bok zdrowy (${SIDE[H]}). Oczopląs geotropowy ku podłodze (ku uchu ${SIDE[H]}). Utrzymaj 1–2 min, do ustąpienia oczopląsu.`},
     {title:"Obrót głowy nosem w dół",body:onH,yaw:0,face:"down",seconds:60,progress:0.78,
@@ -139,16 +139,16 @@ function gufoniGeo(side){
   ]};
 }
 function gufoniApo(side){
-  const A=side, H=otherSide(side), onA=A==="L"?"sideL":"sideR";
-  return {name:"Manewr Gufoniego (apogeotropowy)",canal:"horizontal",side,headCamera:"topDownBehind",steps:[
-    {title:"Pozycja wyjściowa",body:"sit",yaw:0,face:"fwd",seconds:null,progress:0.05,
-     instr:`Pacjent siedzi wyprostowany, głowa prosto.`},
-    {title:"Szybko na bok chory",body:onA,yaw:0,face:"fwd",seconds:60,progress:0.30,
+  const A=side, H=otherSide(side), leanA=A==="L"?"leanR":"leanL";   // leanA: bok CHORY w dół, poza FRONTALNA (jak Semont); głowa neutralna (leanX|fwd) → nos ku sufitowi (leanX|ceil)
+  return {name:"Manewr Gufoniego (apogeotropowy)",canal:"horizontal",side,mechanism:"cupulo",headCamera:"topDownBehind",steps:[   // apogeotropowy HC-BPPV = KUPULOLITIAZA: złóg startuje WBITY w osklepek (krok 1)
+    {title:"Pozycja wyjściowa",body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:0.05,   // jak Semont krok 1 (widok od przodu), tylko BEZ skrętu głowy 45°
+     instr:`Pacjent siedzi na środku kozetki, twarzą do badającego, głowa prosto (bez skrętu).`},
+    {title:"Szybko na bok chory",body:leanA,yaw:0,face:"fwd",seconds:60,progress:0.30,   // bok CHORY w dół, widok od przodu; głowa w linii ciała (leanX|fwd → gHead ±x, ta sama fizyka co sideX|fwd)
      instr:`Szybko połóż pacjenta na bok chory (${SIDE[A]}). Oczopląs apogeotropowy ku górze (ku uchu ${SIDE[H]}). Utrzymaj 1–2 min.`},
-    {title:"Obrót głowy nosem w górę",body:onA,yaw:0,face:"up",seconds:60,progress:0.62,
-     instr:`Szybko obróć głowę o 45° nosem ku górze (ku sufitowi). Utrzymaj 1–2 min.`},
-    {title:"Powrót do siadu — kontrola",body:"sit",yaw:0,face:"fwd",seconds:null,progress:0.85,
-     instr:`Powoli posadź pacjenta. Cel: przekształcenie postaci apogeotropowej w geotropową. Wykonaj ponowny Roll test; jeśli potwierdzi postać geotropową, lecz odpowiednio (Lempert lub Gufoni geotropowy).`},
+    {title:"Obrót głowy nosem ku sufitowi",body:leanA,yaw:0,face:"ceil",seconds:60,progress:0.62,   // głowa skręcona ~90° = nos PROSTO W GÓRĘ; widok od przodu (leanX|ceil)
+     instr:`Nie zmieniając ułożenia ciała, obróć głowę o ~90° tak, aby nos był skierowany prosto ku górze (ku sufitowi). Utrzymaj 1–2 min.`},
+    {title:"Powrót do siadu — kontrola",body:"sitFront",yaw:A==="L"?90:-90,face:"fwd",seconds:null,progress:0.85,   // siad jak krok 1 (widok od przodu), ale GŁOWA POZOSTAJE skręcona ~90° (nie zmieniamy ustawienia z kroku 3): nos w bok — L→ekran-lewo, P→ekran-prawo (zweryfikowane rzutem nosa). Grawitacja [0,-1,0] niezmienna przy obrocie wokół pionu (fizyka bez zmian).
+     instr:`Posadź pacjenta, NIE zmieniając ustawienia głowy — pozostaje skręcona ~90° (nos skierowany w bok). Cel: przekształcenie postaci apogeotropowej w geotropową. Wykonaj ponowny Roll test; jeśli potwierdzi postać geotropową, lecz odpowiednio (Lempert lub Gufoni geotropowy).`},
   ]};
 }
 const MANEUVERS={
@@ -196,23 +196,28 @@ function nysFromGeom(canal, side, variant, q, strengthMode){
 // PEŁNE WYPROWADZENIE Z EWALDA: kierunek + intensywność + ODWRÓCENIE z dynNystagmus(canal, side, ξ).
 // ξ (ze znakiem) pochodzi z fizyki (ciągła symulacja / provoke) — NIE z ręcznej annotacji ear/intensity.
 // dynNystagmus: kierunek = quickPhase × sign(ξ) (ξ<0 = hamowanie → odwrócenie), intensywność = |ξ|·(ξ>0?1:0.45) (Ewald II).
-function nysFromDyn(canal, side, xiPeak){
+// apo=true (manewr KUPULOLITYCZNY, np. Gufoni apogeotropowy): oczopląs POZIOMY jest APOGEOTROPOWY — bije w stronę
+//   PRZECIWNĄ niż w kanalolitiazie (Ewald II, odwrócenie geo/apo). simulateCanalith daje kierunek GEOTROPOWY,
+//   więc dla kupulolitiazy odwracamy składową poziomą — jako odpowiedź PIERWOTNĄ (nie „hamowanie", pełna siła).
+function nysFromDyn(canal, side, xiPeak, apo){
   const N = Vestibular.dynNystagmus(canal, side, xiPeak);   // {excited, intensity, h, v, t}
   const camRx = Scene3D.CAMERAS.frontal.right[0];
   const horizontal = canal==="horizontal";
+  const as = (apo && horizontal) ? -1 : 1;                  // apogeotropowy = poziom odwrócony (tylko kanał poziomy)
+  const hAnat = (N.h||0)*as;
   const rev = !N.excited && Math.abs(xiPeak) > 0.03;        // hamowanie → oczopląs odwrócony
   const weak = N.intensity < 0.5;
-  const base = horizontal ? "oczopląs poziomy"
+  const base = horizontal ? (apo ? "oczopląs poziomy (apogeotropowy)" : "oczopląs poziomy")
              : canal==="anterior" ? "oczopląs ↓ (downbeat)" : "oczopląs ↑ + skrętny";
   const label = base + (rev ? " — ODWRÓCONY" : "") + (weak ? " (słaby)" : "");
   return {
     kind: horizontal ? "horizontal" : "upbeatTorsional",
-    dir:  horizontal ? Math.sign((N.h||0)*camRx) : Math.sign((N.t||0)*camRx),
+    dir:  horizontal ? Math.sign(hAnat*camRx) : Math.sign((N.t||0)*camRx),
     vdir: Math.sign(N.v||0) || 1,
     strength: N.intensity,                    // FIZYKA (nie annotacja)
-    excited: N.excited, reversed: rev,
+    excited: N.excited, reversed: rev, apo: (apo && horizontal) || false,   // apo: kupulolitiaza (etykieta „apogeotropowy" na dialu)
     persistent: false, canal, side,
-    anat: {h:N.h, v:N.v, t:N.t},              // do dialu (widok z góry)
+    anat: {h:hAnat, v:N.v, t:N.t},            // do dialu (widok z góry) — poziom już z odwróceniem apo
     label
   };
 }
@@ -273,7 +278,15 @@ const BASE_G={ "sit|fwd":[0,-1,0], "sit|down":[0,0.9,0.45], "sit|up":[0,-0.5,-0.
 // pokazuje wtedy tył/czubek głowy). Zweryfikowane: Semont dalej CZYŚCI L i P (φ→178); audyt #1 zachowany
 // (composeHead czerpie z LEAN_G → gHead(composeHead)==stepGravity). Było [±0.4,0.85,0.3] (nos ~18°, mylący profil w górę).
 const LEAN_G={ "leanL|up":[0.5,-0.2,-0.8], "leanR|up":[-0.5,-0.2,-0.8],
-  "leanR|down":[-0.35,0.6,0.72], "leanL|down":[0.35,0.6,0.72] };
+  "leanR|down":[-0.35,0.6,0.72], "leanL|down":[0.35,0.6,0.72],
+  // GŁOWA NEUTRALNA na boku (Gufoni: kładziemy na bok chory, głowa w linii ciała — NIE skręcona jak w Semoncie).
+  // Grawitacja czysto boczna: leanL = bok PRAWY w dół (gHead +x), leanR = bok LEWY w dół (gHead −x) — DOKŁADNIE
+  // ta sama fizyka co sideR|fwd / sideL|fwd (kanał poziomy prowokowany), ale poza rzutowana FRONTALNIE (jak Semont).
+  "leanL|fwd":[1,0,0], "leanR|fwd":[-1,0,0],
+  // NOS KU SUFITOWI (Gufoni apo krok 3): pacjent na boku CHORYM skręca głowę ~90° tak, że nos celuje PROSTO
+  // W GÓRĘ (∥ świat +y). Grawitacja w ramce głowy pada wtedy wzdłuż osi nosowo-potylicznej: gHead=[0,0,-1]
+  // (identyczne dla obu boków — kierunek nosa nie zależy od rolla wokół osi nosa). Poza rzutowana FRONTALNIE.
+  "leanL|ceil":[0,0,-1], "leanR|ceil":[0,0,-1] };
 // Pochylenie głowy wokół osi ucha dla póz supine (° do qSupineYaw). Ta sama q dla stepHeadQ (fizyka)
 // i composeHead (render) → zero rozjazdu (audyt #1). ZGŁOSZENIE Yacovino (screeny z markerami):
 //   • supineChin (krok 3): −75° dawało nos POZIOMO KU ŚCIANIE za głową (czubek w materac) — absurd

@@ -27,11 +27,11 @@ function headDial(spec,headCamera,nys){               // spec: PoseSpec (schemat
   const rightLab = el.x < er.x ? "P" : "L";
   const ring=face==="down"?"#FF9FBD":"#9FE3F6";
   const feat="#CFEFFB";
-  const faceLabel=face==="up"?"nos ku górze":face==="down"?"nos ku podłodze":face==="chin"?"broda przy klatce":"nos do przodu";
+  const faceLabel=face==="up"?"nos ku górze":face==="down"?"nos ku podłodze":face==="chin"?"broda przy klatce":face==="ceil"?"nos ku sufitowi":"nos do przodu";
   const turnLabel=yaw>0?"obrót w prawo":yaw<0?"obrót w lewo":"na wprost";
   let nysNote="", h=180;
   if(nys){
-    const strong=(nys.strength||0)>=0.5, revNote=nys.reversed?"(odwrócony — hamowanie)":"(geotropowy)";
+    const strong=(nys.strength||0)>=0.5, revNote=nys.reversed?"(odwrócony — hamowanie)":nys.apo?"(apogeotropowy)":"(geotropowy)";
     if(nys.canal==="horizontal"){
       nysNote = strong
         ? `<text x="70" y="186" text-anchor="middle" fill="var(--timer)" font-size="9" font-weight="600">oczopląs poziomy</text>
@@ -247,7 +247,7 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
       ? `<rect x="34" y="106" width="132" height="9" rx="3" fill="${Pc}"/><rect x="50" y="114" width="8" height="26" fill="#1c2935"/><rect x="142" y="114" width="8" height="26" fill="#1c2935"/>`
       : `<rect x="14" y="120" width="172" height="10" rx="3" fill="${Pc}"/><rect x="22" y="130" width="8" height="20" fill="#1c2935"/><rect x="172" y="130" width="8" height="20" fill="#1c2935"/>`;
     const label=front?"Siad — twarzą do badającego"
-      :(face==="up"?"Na boku — nos ku sufitowi (pozycja wyjściowa)":"Na boku — nos ku podłodze (przerzut)");
+      :(face==="up"?"Na boku — nos ku sufitowi (pozycja wyjściowa)":face==="down"?"Na boku — nos ku podłodze (przerzut)":face==="ceil"?"Na boku — nos ku sufitowi (głowa skręcona ~90°)":"Na boku — głowa w linii ciała");
     const view="widok od przodu — na wprost pacjenta";
     return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: ${label}">
       <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${view}</text>
@@ -318,9 +318,9 @@ function labyrinth(canal, opts){
   let amps=""; for(const k of order) amps+=ampullaGlyph(k,colors[k],k===canal,k===canal&&!opts.cupula);
   // Osklepek (cupula) przy bańce kanału TYLNEGO — TYLKO dla manewrów na KUPULOLITIAZĘ (Bascule). Ruchoma błona:
   // animacja (setupGuideAnim, krok 1) odgina ją w fazie przylegania i prostuje przy odklejaniu (obrót wokół LAB_PIVOT).
-  const px=LAB_AMP.posterior.x, py=LAB_AMP.posterior.y;
+  const cp=LAB_AMP[canal]||LAB_AMP.posterior, px=cp.x, py=cp.y;   // osklepek przy bańce AKTYWNEGO kanału (kupulolitiaza: tylny=Bascule / poziomy=Gufoni apo)
   const cupula = opts.cupula
-    ? `<g id="labcupula" transform="rotate(0 ${LAB_PIVOT})"><path d="M${px-7.5} ${py+4} Q${px} ${py-13} ${px+7.5} ${py+4} Z" fill="#CFE3EE" opacity=".18"/><path d="M${px-7.5} ${py+4} Q${px} ${py-13} ${px+7.5} ${py+4}" fill="none" stroke="#CFE3EE" stroke-width="3" stroke-linecap="round" opacity=".92"/></g>`
+    ? `<g id="labcupula" transform="rotate(0 ${px} ${py})"><path d="M${px-7.5} ${py+4} Q${px} ${py-13} ${px+7.5} ${py+4} Z" fill="#CFE3EE" opacity=".18"/><path d="M${px-7.5} ${py+4} Q${px} ${py-13} ${px+7.5} ${py+4}" fill="none" stroke="#CFE3EE" stroke-width="3" stroke-linecap="round" opacity=".92"/></g>`
     : "";
   return `<svg viewBox="38 35 205 164" role="img" aria-label="Błędnik: kanały półkoliste z bańkami i grzebieniami, odnoga wspólna kanałów pionowych, łagiewka; aktywny: ${CANALS[canal].label}" style="width:80%;margin-inline:auto">
     <ellipse cx="${LAB_UTR.cx}" cy="${LAB_UTR.cy}" rx="${LAB_UTR.rx}" ry="${LAB_UTR.ry}" fill="#22303D" stroke="var(--line)" stroke-width="1.5"/>
@@ -524,8 +524,11 @@ function manExitStep(man){
 //  • kanał POZIOMY (bez odnogi, φ front-loaded ku bańce) i KUPULO (Bascule) → schemat n-2 (przedostatni krok).
 function manFractions(man, plan){
   const n=plan.steps.length;
-  if(!man.exited && plan.mechanism!=="cupulo"){          // konwersja (Gufoni apo) — ruch ku bańce wg silnika, bez wyjścia
-    return {fr: plan.steps.map((_,i)=>phiToFrac(manPhi(man,i,1))), exitStep:-1};
+  if(plan.mechanism==="cupulo" && !man.exited){   // GUFONI APO (konwersja apo→geo): złóg WBITY w osklepek (krok1) → ODKLEJA się (krok2) →
+    return {fr: plan.steps.map((_,i)=> i===0?0.04 : i===1?0.34 : 0.72), exitStep:-1};   // WĘDRUJE do pozycji GEOTROPOWEJ w kanale (krok3) i tam zostaje (bez wyjścia do łagiewki).
+  }
+  if(!man.exited){          // KONWERSJA nie-kupulityczna: ruch wg φ z silnika, złóg NIE wychodzi do łagiewki.
+    return {fr: plan.steps.map((_,i)=>phiToFrac(manPhi(man,i,1))), exitStep:-1};   // Bascule (kupulo) WYCHODZI (man.exited) → nie tu, tylko rampa niżej.
   }
   const vertical = plan.canal!=="horizontal" && plan.mechanism!=="cupulo";
   const physExit = vertical ? manExitStep(man) : -1;     // pionowy: realny krok ekspulsji; poziomy/kupulo: schemat
@@ -538,7 +541,7 @@ function manFractions(man, plan){
 // startNys/startDialNys w renderGuide (envOv=manStepEnv(...) z fallbackiem na świeży xiEnvelope(engineXi(...))).
 // Zwraca sekundy albo null, gdy krok nie ma oczopląsu (sygnał < próg). Wędrówkę otolitu wiążemy z tą wartością.
 function guideNysSeconds(plan, man, step, size){
-  const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step, size));
+  const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step, size), plan.mechanism==="cupulo");
   if(!_gn || _gn.strength < 0.10) return null;
   const r = manStepEnv(man, step) || xiEnvelope(engineXi(_gn.canal, _gn.side, _gn.persistent, _gn.q));
   return r ? r.tEnd : null;
@@ -547,14 +550,18 @@ function setupGuideAnim(){
   const st=state.plan.steps[state.step], total=st.seconds||0;
   state.total=total; state.elapsedMs=0; state.running=false;
   const canal=state.plan.canal;
+  const cupPivot=(()=>{const a=LAB_AMP[canal]||LAB_AMP.posterior; return `${a.x} ${a.y}`;})();   // środek obrotu osklepka = bańka AKTYWNEGO kanału (Bascule=tylny / Gufoni apo=poziomy)
   const man=currentManSim(), sched=manFractions(man, state.plan), fr=sched.fr;
   const fTo=fr[state.step], fFrom=state.step>0?fr[state.step-1]:fTo;
   const exited = sched.exitStep>=0 && state.step>=sched.exitStep;        // cząstka już w łagiewce?
   const blendOnly = exited && state.step>sched.exitStep;                  // krok po wyjściu — spoczynek w łagiewce
   // KUPULOLITIAZA (mechanism:"cupulo"): 1. krok = etap przylegania/odklejania złogu od osklepka, potem zwykła wędrówka.
   const cupuloAdh = state.plan.mechanism==="cupulo" && state.step===0;
+  const holdAdh = cupuloAdh && !man.exited;   // KONWERSJA (Gufoni apo): krok 1 = złóg WBITY w osklepek — TRZYMA się (bez odklejania/wędrówki). Bascule (wychodzi) → pełna liberacja.
+  const cupuloDetach = state.plan.mechanism==="cupulo" && !man.exited && state.step===1;   // GUFONI APO krok 2: ODKLEJANIE od osklepka (błona prostuje się) + start wędrówki złogu w kanale.
   const EA=0.04, CUP_ANG=17;                                             // pozycja złogu na osklepku (ułamek ścieżki, tuż przy bańce/grzebieniu) + kąt odgięcia błony
-  if(cupuloAdh){ placeOtolith(canal, EA, 0); const c0=document.getElementById("labcupula"); if(c0) c0.setAttribute("transform",`rotate(${CUP_ANG} ${LAB_PIVOT})`); }
+  if(cupuloAdh){ placeOtolith(canal, EA, 0); const c0=document.getElementById("labcupula"); if(c0) c0.setAttribute("transform",`rotate(${CUP_ANG} ${cupPivot})`); }
+  else if(cupuloDetach){ placeOtolith(canal, EA, 0); const c1=document.getElementById("labcupula"); if(c1) c1.setAttribute("transform",`rotate(${CUP_ANG} ${cupPivot})`); }   // start kroku 2: złóg jeszcze na osklepku (odgiętym) — za moment się odkleja
   else if(blendOnly) placeOtolith(canal, 1, 1); else placeOtolith(canal, fFrom, 0);
   if(state.autostart && total>0){ state.running=true; }
   state.autostart=false; syncWake();
@@ -575,23 +582,35 @@ function setupGuideAnim(){
     // ANIMACJA OTOLITU: przejście fFrom→fTo na wejściu w krok, niezależnie od timera (ruch przy repozycji)
     if(_otoStart===null) _otoStart=now;
     const ot=Math.min(1,(now-_otoStart)/DUR);
-    if(cupuloAdh){
+    if(holdAdh){                                                 // GUFONI APO krok 1: złóg WBITY w osklepek = punkt startowy — trzyma się (delikatny „oddech", bez odklejania)
+      const cup=document.getElementById("labcupula"), oto=document.getElementById("otolith");
+      if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG+Math.sin(now/95)*2).toFixed(2)} ${cupPivot})`);
+      placeOtolith(canal, EA, 0);
+      if(oto) oto.setAttribute("r",(6.4+Math.sin(now/95)*0.5).toFixed(2));
+    }
+    else if(cupuloAdh){
       const cup=document.getElementById("labcupula"), oto=document.getElementById("otolith");
       const AD=0.42, DET=0.58;                                    // fazy: [0,AD]=przyleganie · [AD,DET]=odklejanie · [DET,1]=start wędrówki
       if(ot<AD){                                                  // PRZYLEGANIE: osklepek odgięty, złóg drży „przyklejony"
-        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG+Math.sin(now/85)*2.5).toFixed(2)} ${LAB_PIVOT})`);
+        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG+Math.sin(now/85)*2.5).toFixed(2)} ${cupPivot})`);
         placeOtolith(canal, EA, 0);
         if(oto) oto.setAttribute("r",(6.4+Math.sin(now/85)*0.5).toFixed(2));
       } else if(ot<DET){                                          // ODKLEJANIE: osklepek prostuje się, złóg pulsuje i uwalnia
         const u=easeInOut((ot-AD)/(DET-AD));
-        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG*(1-u)).toFixed(2)} ${LAB_PIVOT})`);
+        if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG*(1-u)).toFixed(2)} ${cupPivot})`);
         placeOtolith(canal, EA, 0);
         if(oto) oto.setAttribute("r",(6.4+3.4*Math.sin(u*Math.PI)).toFixed(2));
       } else {                                                    // START WĘDRÓWKI: od osklepka na ścieżkę do pozycji spoczynkowej
-        if(cup) cup.setAttribute("transform",`rotate(0 ${LAB_PIVOT})`);
+        if(cup) cup.setAttribute("transform",`rotate(0 ${cupPivot})`);
         if(oto) oto.setAttribute("r",6);
         placeOtolith(canal, EA+(fTo-EA)*easeInOut((ot-DET)/(1-DET)), 0);
       }
+    }
+    else if(cupuloDetach){                                        // GUFONI APO krok 2: osklepek PROSTUJE się (odklejanie), złóg rusza z osklepka i wędruje EA→fTo
+      const cup=document.getElementById("labcupula"), oto=document.getElementById("otolith");
+      if(cup) cup.setAttribute("transform",`rotate(${(CUP_ANG*Math.max(0,1-ot*2.2)).toFixed(2)} ${cupPivot})`);   // błona wraca do pionu w ~1. połowie kroku
+      if(oto) oto.setAttribute("r",(ot<0.28?6.4+2.6*Math.sin(easeInOut(ot/0.28)*Math.PI):6).toFixed(2));           // krótki „puls" uwolnienia
+      placeOtolith(canal, EA+(fTo-EA)*easeInOut(ot), 0);
     }
     else if(blendOnly){ placeOtolith(canal, 1, 1); }
     else if(exited && state.step===sched.exitStep){
@@ -729,7 +748,7 @@ function renderGuide(){
   const ps=poseSpec(st);                                   // kanoniczna poza kroku (Etap 2) — jedyne źródło dla sylwetki/dialu/strzałki
   const can3d = true;                                      // Etap 4: 3D dla WSZYSTKICH manewrów (kamera wg reguł posture: bok/frontal/topDown)
   const _man = currentManSim();
-  const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step, state.size));
+  const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step, state.size), p.mechanism==="cupulo");
   const gn = (_gn && _gn.strength >= 0.10) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
   const gravArrow = gn ? gravArrowFor(ps) : "";
   const dots=p.steps.map((_,i)=>`<i class="${i<state.step?'done':i===state.step?'cur':''}"></i>`).join("");
