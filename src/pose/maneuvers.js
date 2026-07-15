@@ -551,9 +551,35 @@ function recommend(testKey,variant){
     ? {primary:"lempert",alts:["gufoniGeo"],note:"Geotropowy (kanalolitiaza) kanału poziomego — rolka Lemperta ku stronie zdrowej lub manewr Gufoniego (geotropowy)."}
     : {primary:"gufoniApo",alts:["lempert"],note:"Apogeotropowy (kupulolitiaza) — manewr Gufoniego (apogeotropowy) przekształca postać w geotropową; następnie ponowny test i leczenie postaci geotropowej."};
 }
+// Klasyfikacja podtypu BPPV wg kryteriów Bárány Society (ICVD 2015): mapuje (kanał, wariant, strona, tryb downbeat)
+// na formalną etykietę + poziom pewności (established/emerging) + cechy różnicujące (latencja/czas/męczliwość/kierunek/
+// strona chora). Czysta funkcja kliniczna — jak recommend(); zasila kartę „Klasyfikacja" w diagnostyce. NIE zmienia
+// fizyki — synteza z konwencji już zakodowanych w DIAG (latNote/features). [engine_doc: KRYTERIA BARANY]
+function baranyClassify(canal, variant, side, antMode){
+  const S=SIDE[side];
+  const est={ tier:"established", tierLabel:"zespół ustalony" };
+  const emg={ tier:"emerging",    tierLabel:"zespół wyłaniający się / atypowy" };
+  if(antMode || canal==="anterior")
+    return { ...emg, subtype:"BPPV kanału przedniego",
+      crit:[["Latencja", variant==="cupulo"?"brak":"po latencji"],["Czas trwania", variant==="cupulo"?"uporczywy":"< 1 min"],
+            ["Męczliwość", variant==="cupulo"?"nie":"tak"],["Kierunek","czysty downbeat (± śladowa torsja)"],["Strona chora","niepewna z oczoplasu"]],
+      redflag:"Izolowany downbeat pozycyjny — WYKLUCZ przyczynę ośrodkową (móżdżek, pogranicze czaszkowo-szyjne) przed leczeniem." };
+  if(canal==="posterior")
+    return variant==="canalo"
+      ? { ...est, subtype:"BPPV kanału tylnego — kanalolitiaza",
+          crit:[["Latencja","1–kilka s"],["Czas trwania","< 1 min"],["Męczliwość","tak — złóg się rozprasza"],["Kierunek","upbeat + skrętny ku uchu dolnemu"],["Strona chora",`${S} (ucho zależne)`]] }
+      : { ...emg, subtype:"BPPV kanału tylnego — kupulolitiaza (atypowa)",
+          crit:[["Latencja","brak"],["Czas trwania","uporczywy (> 1 min)"],["Męczliwość","nie"],["Kierunek","upbeat-skrętny, uporczywy"],["Strona chora",S]] };
+  // kanał poziomy (roll / bow-lean)
+  return variant==="canalo"
+    ? { ...est, subtype:"BPPV kanału poziomego — kanalolitiaza (geotropowy)",
+        crit:[["Latencja","sekundy"],["Czas trwania","< 1 min"],["Męczliwość","tak"],["Kierunek","geotropowy (ku uchu w dole)"],["Strona chora",`${S} — SILNIEJSZA reakcja`]] }
+    : { ...est, subtype:"BPPV kanału poziomego — kupulolitiaza (apogeotropowy)",
+        crit:[["Latencja","brak / krótka"],["Czas trwania","uporczywy"],["Męczliwość","nie"],["Kierunek","apogeotropowy (ku uchu w górze)"],["Strona chora",`${S} — SŁABSZA reakcja`]] };
+}
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, CANAL_OF };
+export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

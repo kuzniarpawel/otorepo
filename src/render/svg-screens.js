@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -833,6 +833,45 @@ function renderGuide(){
   updateGoBtn();
 }
 
+// Karta klasyfikacji Bárány (ICVD) + różnicowanie OŚRODKOWE (CPN). Etykieta podtypu z baranyClassify();
+// przełącznik „obwodowy (BPPV) / ośrodkowy (CPN)" (state.diagCentral) ujawnia czerwone flagi + schemat
+// uporczywego downbeatu. Czysto widokowa — zero zmian fizyki; domyślnie „obwodowy" (golden deterministyczny).
+function diagClassifyCard(canal, v, side, antMode){
+  const central=!!state.diagCentral;
+  const cls=baranyClassify(canal, v, side, antMode);
+  const tierBg = cls.tier==="established" ? "rgba(127,227,196,.14)" : "rgba(255,207,143,.16)";
+  const tierFg = cls.tier==="established" ? "#7fe3c4" : "#ffcf8f";
+  const seg=`<div class="seg segobs" style="margin-bottom:10px">
+      <button class="opt" aria-pressed="${!central}" onclick="toggleDiagCentral(false)"><b>Obwodowy — BPPV</b><small>klasyfikacja Bárány</small></button>
+      <button class="opt" aria-pressed="${central}" onclick="toggleDiagCentral(true)"><b>Ośrodkowy — CPN</b><small>czerwone flagi</small></button>
+    </div>`;
+  const chip=([k,val])=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${val}</b></span>`;
+  const bppv=`
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <b style="font-size:14.5px">${cls.subtype}</b>
+        <span style="font-size:11px;padding:2px 9px;border-radius:10px;background:${tierBg};color:${tierFg};white-space:nowrap">${cls.tierLabel}</span></div>
+      <div style="margin-bottom:2px">${cls.crit.map(chip).join("")}</div>
+      ${cls.redflag?`<div class="note" style="color:var(--ant)"><b>⚠</b> ${cls.redflag}</div>`:""}
+      <div class="note">Kryteria Bárány Society (ICVD 2015). „Zespół ustalony" = pewny podtyp; „wyłaniający się/atypowy" = rzadszy lub kontrowersyjny — potwierdź i wyklucz przyczynę ośrodkową.</div>`;
+  const cpn=`
+      <div class="redflag" style="margin-top:0"><b>⚠ Ośrodkowy oczopląs pozycyjny (CPN) — to NIE BPPV.</b>
+        Rozpoznaj po cechach nietypowych dla złogu:
+        <ul style="margin:8px 0 0;padding-left:18px;line-height:1.5">
+          <li><b>Bez latencji</b> — pojawia się natychmiast po ułożeniu.</li>
+          <li><b>Uporczywy</b> — trwa, dopóki utrzymana jest pozycja (nie narasta i nie wygasa).</li>
+          <li><b>Niemęczliwy</b> — nie słabnie przy powtórzeniach prowokacji.</li>
+          <li><b>Czysto pionowy</b> (zwłaszcza <b>downbeat</b>) lub czysto skrętny; kierunek <b>niepasujący do żadnego kanału</b>.</li>
+          <li>Obecny w wielu pozycjach / w pozycji neutralnej; oczopląs bywa zmienny kierunkowo.</li>
+          <li>Objawy towarzyszące: dyzartria, ataksja, dwojenie, zaburzenia spojrzenia.</li>
+        </ul></div>
+      <div class="panelbox" style="margin-top:10px"><h4>Wzorzec: uporczywy downbeat (poglądowo)</h4>
+        <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-cpnnys>${eyesSVG()}</div><span class="emk">L</span></div>
+        <div class="nyslabel"><span class="arrow">↓</span><span>downbeat · uporczywy · bez latencji</span></div></div>
+      <div class="note" style="color:var(--text)"><b>Postępowanie:</b> NIE wykonuj repozycji. Skieruj na ocenę neurologiczną + MRI tylnego dołu (móżdżek, pogranicze szczytowo-potyliczne: malformacja Chiariego; SM; zmiany naczyniowe). Najczęstszy łagodny mimik: <b>migrena przedsionkowa</b> (ośrodkowy oczopląs pozycyjny w napadzie).</div>`;
+  return `<div class="card" style="margin-top:12px">
+      <div class="obslabel" style="margin-bottom:8px">Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe</div>
+      ${seg}${central?cpn:bppv}</div>`;
+}
 function renderDiag(){
   const t=DIAG[state.testKey], A=state.side, v=state.variant;
   const isDix = state.testKey==="dix";
@@ -923,8 +962,11 @@ function renderDiag(){
         <div class="face back panelbox">${face("cupulo")}<div class="fliphint">${FLIP_ICO} kanalolitiaza</div></div>
       </div></div>`;
     })()}
+    ${diagClassifyCard(effCanal, v, effSide, antMode)}
     ${antMode ? `<div class="redflag"><b>⚠ Czerwona flaga — wyklucz przyczynę OŚRODKOWĄ.</b> Downbeat, który jest <b>uporczywy, bez latencji i nie wyczerpuje się</b> przy powtórzeniach, występuje także w pozycji neutralnej (na wznak, głowa prosto), albo towarzyszą mu objawy neurologiczne (dyzartria, ataksja, zaburzenia spojrzenia, dwojenie) — przemawia za przyczyną OŚRODKOWĄ (móżdżek, pogranicze czaszkowo‑szyjne: malformacja Arnolda‑Chiariego, SM, zmiany naczyniowe). Wymaga oceny neurologicznej i MRI, nie manewru. Repozycję rozważ dopiero po wykluczeniu przyczyny ośrodkowej.</div>` : ""}
-    ${(()=>{ const rec = antMode
+    ${(()=>{ if(state.diagCentral) return `<div class="reco"><h4>Sugerowane leczenie</h4>
+        <div class="note" style="color:var(--ant)"><b>Repozycja niewskazana.</b> Przy podejrzeniu ośrodkowego oczoplasu pozycyjnego (CPN) nie wykonuj manewrów repozycyjnych — najpierw ocena neurologiczna i MRI tylnego dołu. Wróć do widoku „Obwodowy — BPPV", jeśli obraz jednak spełnia kryteria BPPV.</div></div>`;
+      const rec = antMode
         ? {primary:"yacovino", alts:[], note:`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`}
         : recommend(state.testKey,v);
       const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}')">${idx===0?'Rozpocznij: ':'Alternatywa: '}${MANEUVERS[k].label} — ${MANEUVERS[k].desc}</button>`).join("");
@@ -941,6 +983,7 @@ function renderDiag(){
     });
     const dcA=$('[data-diagcanal="canalo"]'); if(dcA) startDiagOtolith(dcA,"canalo",effCanal,effSide);
     const dcB=$('[data-diagcanal="cupulo"]'); if(dcB) startDiagOtolith(dcB,"cupulo",effCanal,effSide);
+    const cpn=$('[data-cpnnys]'); if(cpn) startNeuroNys(cpn, {strength:0, strengthV:1, dir:0, vdir:-1, tdir:0}, 0);  // CPN: uporczywy CZYSTY downbeat — pętla CIĄGŁA (nie wygasa; startNys z obwiednią ξ wyłączyłby się, a to ma być oczopląs UPORCZYWY)
     sizeFlip("mechflip"); sizeFlip("phaseflip");
   });
 }

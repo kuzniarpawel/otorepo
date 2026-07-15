@@ -7,7 +7,7 @@
  Zasada: jedno źródło prawdy 3D wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
          Ścieżka SVG jest w pełni offline (bez three.js); ścieżka 3D dokłada three.js jako
          leniwie ładowany chunk (Etap 3–5) — DOMYŚLNA gdy WebGL dostępny, SVG = fallback.
- Ostatnia aktualizacja: 2026-07-12 (migracja modułowa + renderer 3D Etapy 0–5)
+ Ostatnia aktualizacja: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN w diagnostyce)
 ==========================================================================
 
 GŁÓWNA IDEA
@@ -15,6 +15,21 @@ GŁÓWNA IDEA
  - obserwator (lekarz) = KAMERA (right/up/fwd w świecie)
  - każdy widok = rzut modelu głowy przez kamerę
  - zamiana stron L/P i lustro WYNIKAJĄ z kamery (koniec z flagami swap/behindHead)
+
+=== KLASYFIKACJA BÁRÁNY (ICVD) + RÓŻNICOWANIE OŚRODKOWE (CPN) — diagnostyka ===
+Karta w renderDiag (svg-screens.js), pod kartą mechanizmu, nad zaleceniem leczenia. Dwa widoki przełączane
+segmentem „Obwodowy (BPPV) ↔ Ośrodkowy (CPN)" (state.diagCentral, handler toggleDiagCentral; render pełny).
+ - OBWODOWY (domyślny): etykieta podtypu z pose/maneuvers.js:baranyClassify(kanał,wariant,strona,antMode) —
+   subtype + „zespół ustalony / wyłaniający się" (established/emerging) + chipy cech (Latencja / Czas trwania /
+   Męczliwość / Kierunek / Strona chora). Czysta funkcja kliniczna (jak recommend/variantLabels) — SYNTEZA konwencji
+   już zakodowanych w DIAG (latNote/features), ZERO wpływu na fizykę. Golden łapie ten widok (deterministyczny).
+ - OŚRODKOWY (po kliknięciu): blok .redflag z czerwonymi flagami CPN (bez latencji / uporczywy / niemęczliwy /
+   czysto pionowy — zwł. downbeat — lub czysto skrętny / kierunek spoza kanału / pozycja neutralna / objawy neuro),
+   schemat UPORCZYWEGO DOWNBEATU (data-cpnnys: startNys z nysFromGeom("anterior",strona,"cupulo",qSupineYaw(0)) i
+   NADPISANYM dir=0 → czysty downbeat bez torsji; persistent=true niesie uporczywą obwiednię), oraz zamiana karty
+   „Sugerowane leczenie" na „Repozycja niewskazana" (nie repozycjonuj → neuro + MRI tylnego dołu; mimik: migrena
+   przedsionkowa). Reset diagCentral→false przy openTest/pickTest (świeże wejście w test). Kryteria: pamięć
+   otoneurologiczna „BPPV — kryteria Bárány 2015".
 
 === ROZMIAR/GĘSTOŚĆ ZŁOGU — INTEGRACJA UI (Repozycja) ===
 Silnik przyjmuje `size` ("small"|"medium"|"big"; medium=r1=baza) skalujący dynamikę cząstki

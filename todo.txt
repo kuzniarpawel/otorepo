@@ -3,8 +3,8 @@
  Aplikacja: repozycja otolitów (BPPV) + diagnostyka; MODULARNA (Vite + src/ moduły ES, PWA)
  Pliki: index.html + src/ (9 modułów) · otorepo.html (monolit = źródło złotego snapshotu, zamrożony)
         · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
- Ostatnia aktualizacja: 2026-07-14 (schemat „wędrówka otolitów": bańki z grzebieniami + odnoga wspólna + łagiewka,
-        karta skompaktowana; silnik: kupulolitiaza słabsza od kanalolitiazy — współczynnik CUP_WEAK)
+ Ostatnia aktualizacja: 2026-07-15 (klasyfikacja Bárány/ICVD + różnicowanie ośrodkowe CPN w diagnostyce;
+        panel otolitowy SVV & VEMP w HINTS — wizualizacja gotowych NeuroVOR.svv/vemp)
 ==========================================================================
 
 Konwencje techniczne:
@@ -235,6 +235,20 @@ MIGRACJA 3D → MODULARIZACJA + Three.js/GLB (UKOŃCZONA — Etapy 0-5 zrobione 
 ==========================================================================
  ZROBIONE (kamienie milowe)
 ==========================================================================
+
+KLASYFIKACJA BÁRÁNY + RÓŻNICOWANIE OŚRODKOWE (CPN) — ZROBIONE 2026-07-15 (checkpoint git: tag pre-ext-cpn-svv):
+ [x] #1 Diagnostyka: karta „Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe" (renderDiag). Etykieta podtypu
+        z pose/maneuvers.js:baranyClassify(kanał,wariant,strona,antMode) → subtype + poziom (established/emerging) +
+        cechy (latencja/czas/męczliwość/kierunek/strona chora); czysta fn kliniczna jak recommend(), ZERO zmian fizyki
+        (synteza z konwencji DIAG/latNote). Przełącznik „Obwodowy (BPPV) ↔ Ośrodkowy (CPN)" (state.diagCentral,
+        toggleDiagCentral): widok CPN = czerwone flagi (bez latencji / uporczywy / niemęczliwy / czysto pionowy /
+        kierunek spoza kanału / objawy neuro) + schemat UPORCZYWEGO DOWNBEATU (pętla CIĄGŁA startNeuroNys, dir=0 →
+        czysty downbeat bez torsji, nie wygasa) + „Repozycja niewskazana" (blokada karty zalecenia). Domyślnie
+        obwodowy → golden deterministyczny.
+        [view_doc: KLASYFIKACJA BÁRÁNY / CPN; pełne kryteria Bárány 2015 (BPPV + CPN) = pamięć otoneurologiczna]
+ [x] Walidacja: 3 wyrocznie ZIELONE (golden PRZEBAZOWANY — różnice tylko DOM diagnostyki: 4 testy × 2 strony;
+        pose/neuro/plans bajt-w-bajt bez zmian). Przeglądarka: 0 błędów; klasyfikacja we wszystkich testach/wariantach
+        + toggle CPN (uporczywy downbeat = pętla ciągła, 41 klatek/1 s) zweryfikowane.
 
 MANEWR BASCULE (kupulolitiaza kanału tylnego) — ZROBIONE 2026-07-12 (wypushowane b98bd8b):
  [x] Nowy manewr UWALNIAJĄCY: rytmiczne bujanie bok-bok (pozy leanL/leanR jak Semont), mechanism:"cupulo";
