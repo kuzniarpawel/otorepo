@@ -1079,6 +1079,7 @@ function renderHints(){
       <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-skew>${skewSVG()}</div><span class="emk">L</span></div>
       <div class="note">${skewLabel(H.ts)}</div>
     </div>
+    ${otolithPanel(p)}
     ${custom ? `<div data-readout>${hintsReadoutHTML(p)}</div>` : ""}
     <p class="footnote">Wzorce poglądowe — narzędzie dydaktyczne, nie urządzenie diagnostyczne. Interpretuj klinicznie.</p>`;
   requestAnimationFrame(()=>{
@@ -1311,6 +1312,66 @@ function skewLabel(sk){
     ? `<b style="color:#ff9bab">Skew OBECNY (~${sk.skewDeg}°${who})</b> — pionowa sakada przy odsłanianiu = objaw OŚRODKOWY.`
     : `<b style="color:#ffd9a0">Śladowy skew (~${sk.skewDeg}°${who})</b> — poniżej progu ośrodkowego; drobny rozjazd łagiewkowy (obwodowy, np. nerw górny).`;
 }
+/* ============ Otolity — SVV (subiektywna pionowa) + VEMP (cVEMP/oVEMP) ============
+   Wizualizacja gotowych NeuroVOR.svv/vemp: linia SVV przechylona ku stronie chorej + słupki amplitud
+   cVEMP (woreczek/n. dolny) i oVEMP (łagiewka/n. górny) z progiem. Statyczne (bez animacji) → odświeżane
+   przez podmianę innerHTML w refreshHintsCustom/refreshHintsComp. Domyka mapę „narząd końcowy / gałąź nerwu". */
+function svvSVG(sv){
+  const cx=70, cy=60, R=46;
+  const deg = sv.abnormal ? Math.min(sv.deg, 20) : 0;      // wychylenie linii; prawidłowa → pion
+  const dir = sv.tiltSide==="P" ? -1 : 1;                  // konwencja paneli oczu: P=ekran-lewo, L=ekran-prawo; przechył KU stronie chorej
+  const ang = (-90 + dir*deg)*Math.PI/180;                // 0°→pion (górny koniec linii)
+  const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
+  const col = sv.abnormal ? "#ffcf8f" : "#7fe3c4";
+  return `<svg viewBox="0 0 140 126" role="img" aria-label="Subiektywna pionowa (SVV)" style="max-width:150px;width:100%">
+    <rect x="0" y="0" width="140" height="110" rx="8" fill="#0b1118"/>
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#22303d" stroke-width="1.5"/>
+    <line x1="${cx}" y1="${cy-R}" x2="${cx}" y2="${cy+R}" stroke="#33404d" stroke-width="1.4" stroke-dasharray="4 5"/>
+    <line x1="${(cx-dx).toFixed(1)}" y1="${(cy-dy).toFixed(1)}" x2="${(cx+dx).toFixed(1)}" y2="${(cy+dy).toFixed(1)}" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
+    <text x="8" y="123" fill="var(--muted)" font-size="10">P</text><text x="127" y="123" fill="var(--muted)" font-size="10">L</text>
+  </svg>`;
+}
+function otolithInner(p){
+  const sv=NeuroVOR.svv(p), ve=NeuroVOR.vemp(p);
+  const svLabel = sv.abnormal
+    ? `SVV: przechył pionu <b>${sv.deg.toFixed(1)}°</b> ku stronie <b>${SIDE[sv.tiltSide]}</b> — grawiceptywny, ipsiwersyjny (obwodowo ku stronie chorej).`
+    : `SVV prawidłowa (≤2°) — pion postrzegany zgodnie z grawitacją.`;
+  const vbar=(name,ear,amp,stat)=>{
+    const pct=Math.round(Math.max(0,Math.min(1,amp))*100);
+    const col= stat==="prawidłowy"?"#7fe3c4":stat==="obniżony"?"#ffcf8f":"#ff9bab";
+    return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+      <span style="min-width:82px;font-size:12px">${name} ${ear}</span>
+      <div style="flex:1;height:9px;border-radius:5px;background:var(--panel2);position:relative;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col};transition:width .3s"></div>
+        <div style="position:absolute;left:30%;top:0;bottom:0;width:1px;background:var(--line)" title="próg"></div></div>
+      <span style="min-width:74px;font-size:11px;color:${col};text-align:right">${stat}</span></div>`;
+  };
+  const c=ve.cVEMP, o=ve.oVEMP;
+  const vempNote=(()=>{ const parts=[];
+    if(c.weakEar) parts.push(`cVEMP obniżony po stronie ${SIDE[c.weakEar]} → <b>woreczek / nerw DOLNY</b>`);
+    if(o.weakEar) parts.push(`oVEMP obniżony po stronie ${SIDE[o.weakEar]} → <b>łagiewka / nerw GÓRNY</b>`);
+    return parts.length ? parts.join("; ")+"." : "VEMP symetryczne — funkcja otolitowa zachowana obustronnie.";
+  })();
+  const scdsNote = p.dehiscence ? `<div class="note">SCDS klinicznie: VEMP o <b>niskim progu / dużej amplitudzie</b> (trzecie okno). W tym modelu SCDS oddana jest oczoplasem trzeciego okna (panel „Oczopląs samoistny"), nie amplitudą VEMP.</div>` : "";
+  return `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:0 0 auto">${svvSVG(sv)}</div>
+      <div style="flex:1 1 160px;min-width:150px"><div class="note" style="margin-top:2px">${svLabel}</div>
+        <div class="note" style="color:var(--muted)">Subiektywna pionowa (grawiceptja: łagiewka + kanały pionowe). W ostrym uszkodzeniu obwodowym przechył <b>ku stronie chorej</b> — składowa reakcji przechyłu ocznego (OTR).</div></div>
+    </div>
+    <div style="margin-top:10px">
+      ${vbar("cVEMP","P",c.ampR,c.R)}${vbar("cVEMP","L",c.ampL,c.L)}
+      ${vbar("oVEMP","P",o.ampR,o.R)}${vbar("oVEMP","L",o.ampL,o.L)}
+    </div>
+    <div class="note" style="margin-top:6px"><b>cVEMP</b> ≈ woreczek → nerw DOLNY (ipsilat. mostkowo-obojczykowo-sutkowy) · <b>oVEMP</b> ≈ łagiewka → nerw GÓRNY (kontralat. m. skośny dolny). Pionowa kreska = próg. ${vempNote}</div>
+    ${scdsNote}`;
+}
+function otolithPanel(p){
+  return `<div class="panelbox hpanel" style="margin-top:12px">
+    <h4>Otolity — SVV &amp; VEMP</h4>
+    <div data-otolith>${otolithInner(p)}</div>
+  </div>`;
+}
 // Werdykt HINTS z zasłoną w trybie quiz (zanim odsłonisz rozpoznanie).
 function hintsVerdictBlock(H){
   if(state.hintsCustom && state.hintsQuiz && !state.hintsQuizReveal)
@@ -1422,6 +1483,7 @@ function refreshHintsCustom(){
   set('[data-nyslabel]', hintsNysLabel(nys));
   set('[data-supplnote]', hintsSupplHTML(H,fixOn,sp));
   set('[data-readout]', hintsReadoutHTML(p));
+  set('[data-otolith]', otolithInner(p));   // SVV/VEMP zależą od suwaków woreczek/łagiewka + selektora nerwu
   if(hintsHitSpecOf()) set('[data-hitlabel]', hitLabel(NeuroVOR.headImpulse(p, hintsHitSpecOf())));
   const cont=$('[data-neuronys]'); if(cont) startNeuroNys(cont, nys, gazeDeg);   // płynna zmiana amplitudy
   const skc=$('[data-skew]'); if(skc) startSkew(skc, H.ts);                       // restart animacji skew (token)

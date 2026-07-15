@@ -7,7 +7,8 @@
  Zasada: jedno źródło prawdy 3D wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
          Ścieżka SVG jest w pełni offline (bez three.js); ścieżka 3D dokłada three.js jako
          leniwie ładowany chunk (Etap 3–5) — DOMYŚLNA gdy WebGL dostępny, SVG = fallback.
- Ostatnia aktualizacja: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN w diagnostyce)
+ Ostatnia aktualizacja: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN;
+        panel otolitowy SVV & VEMP w HINTS)
 ==========================================================================
 
 GŁÓWNA IDEA
@@ -30,6 +31,19 @@ segmentem „Obwodowy (BPPV) ↔ Ośrodkowy (CPN)" (state.diagCentral, handler t
    „Sugerowane leczenie" na „Repozycja niewskazana" (nie repozycjonuj → neuro + MRI tylnego dołu; mimik: migrena
    przedsionkowa). Reset diagCentral→false przy openTest/pickTest (świeże wejście w test). Kryteria: pamięć
    otoneurologiczna „BPPV — kryteria Bárány 2015".
+
+=== PANEL OTOLITOWY — SVV & VEMP (HINTS) ===
+Panelbox w renderHints (po „Odchyleniu skośnym"), widoczny w KAŻDYM trybie (scenariusz + własny). Wizualizuje
+GOTOWE wyjścia silnika NeuroVOR.svv(p) i NeuroVOR.vemp(p) — bez nowej fizyki. Statyczny (bez rAF) → odświeżany
+podmianą innerHTML kontenera [data-otolith] w refreshHintsCustom (suwaki woreczek/łagiewka + selektor nerwu).
+ - SVV (svvSVG): ciemne koło z pionową kreską odniesienia (prawdziwy pion, dashed) + linią barwną przechyloną o
+   svv.deg KU stronie chorej (ipsiwersyjnie); konwencja jak panele oczu (P=ekran-lewo, L=ekran-prawo). Prawidłowa
+   (deg<próg) → pion. Podpis: „przechył pionu X° ku stronie …" + nota OTR.
+ - VEMP: 4 poziome słupki amplitud (0..1) z markerem progu (30%): cVEMP P/L (woreczek → n. DOLNY, ipsilat. SCM) i
+   oVEMP P/L (łagiewka → n. GÓRNY, kontralat. m. skośny dolny). Kolor wg statusu (prawidłowy/obniżony/zniesiony).
+   Nota lokalizuje słabą stronę na gałąź nerwu. SCDS: nota, że model oddaje trzecie okno oczoplasem, nie amplitudą.
+ Wzorce (zweryfikowane): n. GÓRNY → oVEMP↓ + SVV↑ ku choremu (cVEMP zachowany); n. DOLNY → cVEMP↓ (oVEMP zachowany).
+ Domyka wizualnie mapę „narząd końcowy / gałąź nerwu" obok vHIT (6 kanałów). [engine_doc: SVV/VEMP — H22]
 
 === ROZMIAR/GĘSTOŚĆ ZŁOGU — INTEGRACJA UI (Repozycja) ===
 Silnik przyjmuje `size` ("small"|"medium"|"big"; medium=r1=baza) skalujący dynamikę cząstki

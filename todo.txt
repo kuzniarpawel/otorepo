@@ -236,7 +236,7 @@ MIGRACJA 3D → MODULARIZACJA + Three.js/GLB (UKOŃCZONA — Etapy 0-5 zrobione 
  ZROBIONE (kamienie milowe)
 ==========================================================================
 
-KLASYFIKACJA BÁRÁNY + RÓŻNICOWANIE OŚRODKOWE (CPN) — ZROBIONE 2026-07-15 (checkpoint git: tag pre-ext-cpn-svv):
+KLASYFIKACJA BÁRÁNY (CPN) + PANEL SVV/VEMP — ZROBIONE 2026-07-15 (checkpoint git: tag pre-ext-cpn-svv; commity osobno #1/#2):
  [x] #1 Diagnostyka: karta „Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe" (renderDiag). Etykieta podtypu
         z pose/maneuvers.js:baranyClassify(kanał,wariant,strona,antMode) → subtype + poziom (established/emerging) +
         cechy (latencja/czas/męczliwość/kierunek/strona chora); czysta fn kliniczna jak recommend(), ZERO zmian fizyki
@@ -244,11 +244,16 @@ KLASYFIKACJA BÁRÁNY + RÓŻNICOWANIE OŚRODKOWE (CPN) — ZROBIONE 2026-07-15 
         toggleDiagCentral): widok CPN = czerwone flagi (bez latencji / uporczywy / niemęczliwy / czysto pionowy /
         kierunek spoza kanału / objawy neuro) + schemat UPORCZYWEGO DOWNBEATU (pętla CIĄGŁA startNeuroNys, dir=0 →
         czysty downbeat bez torsji, nie wygasa) + „Repozycja niewskazana" (blokada karty zalecenia). Domyślnie
-        obwodowy → golden deterministyczny.
+        obwodowy → golden deterministyczny. [commit #1]
         [view_doc: KLASYFIKACJA BÁRÁNY / CPN; pełne kryteria Bárány 2015 (BPPV + CPN) = pamięć otoneurologiczna]
- [x] Walidacja: 3 wyrocznie ZIELONE (golden PRZEBAZOWANY — różnice tylko DOM diagnostyki: 4 testy × 2 strony;
-        pose/neuro/plans bajt-w-bajt bez zmian). Przeglądarka: 0 błędów; klasyfikacja we wszystkich testach/wariantach
-        + toggle CPN (uporczywy downbeat = pętla ciągła, 41 klatek/1 s) zweryfikowane.
+ [x] #2 HINTS: panel „Otolity — SVV & VEMP" (renderHints, po odchyleniu skośnym). Wizualizacja gotowych
+        NeuroVOR.svv/vemp: linia SVV przechylona ku stronie chorej (ipsiwersyjnie, składowa OTR) + 4 słupki amplitud
+        z progiem (cVEMP P/L = woreczek → n. DOLNY; oVEMP P/L = łagiewka → n. GÓRNY). Statyczne; odświeżanie na żywo
+        (refreshHintsCustom → [data-otolith]) przy suwakach woreczek/łagiewka i selektorze nerwu. Domyka wizualnie
+        mapę „narząd końcowy / gałąź nerwu" (obok vHIT 6 kanałów). [commit #2] [view_doc: PANEL SVV/VEMP]
+ [x] Walidacja: 3 wyrocznie ZIELONE (golden przebazowany per commit — #1 tylko DOM diagnostyki, #2 dokłada DOM hints;
+        pose/neuro/plans bajt-w-bajt bez zmian). Przeglądarka: 0 błędów; oba widoki + toggle CPN + live-refresh
+        (n. górny→oVEMP↓ + SVV↑ ku choremu; n. dolny→cVEMP↓) zweryfikowane.
 
 MANEWR BASCULE (kupulolitiaza kanału tylnego) — ZROBIONE 2026-07-12 (wypushowane b98bd8b):
  [x] Nowy manewr UWALNIAJĄCY: rytmiczne bujanie bok-bok (pozy leanL/leanR jak Semont), mechanism:"cupulo";
