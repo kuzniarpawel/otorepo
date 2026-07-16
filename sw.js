@@ -1,33 +1,27 @@
-/* OTOREPO — service worker (PWA offline).
-   Aplikacja to jeden samowystarczalny plik (otorepo.html z wklejonymi czcionkami),
-   więc cache'ujemy powłokę i serwujemy cache-first → działa bez internetu.
-   AKTUALIZACJA: po zmianie otorepo.html podbij numer CACHE (np. v2), aby wymusić odświeżenie. */
-const CACHE = 'otorepo-v9';
-const ASSETS = [
-  'otorepo.html',
-  'manifest.json',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
-  'icons/apple-touch-icon.png'
-];
+/* OTOREPO — neutralizator starego service workera (TYLKO DEV).
+   Historia: dawniej ten plik cache'owal powloke monolitu (cache 'otorepo-v9', cache-first),
+   przez co serwer deweloperski (Vite, localhost:5178) serwowal NIEAKTUALNY kod mimo zmian
+   w src/ (rejestracja sw.js zostaje w index.html oraz w zamrozonym otorepo.html).
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
-});
+   Produkcja NIE uzywa tego pliku — tools/build-dist.mjs GENERUJE wlasny dist/sw.js z hashem
+   zawartosci jako nazwa cache (root sw.js jest jawnie pomijany w precache i nie trafia do dist/).
+
+   Ten worker niczego nie cache'uje. Przy aktywacji: czysci wszystkie cache PWA, wyrejestrowuje
+   sie i — jednorazowo, tylko gdy istnialy stare cache — przeladowuje otwarte karty. Dzieki temu
+   przegladarki z zainstalowanym starym workerem same sie "lecza", a kolejne wczytania w dev ida
+   prosto do sieci (swiezy kod). Brak handlera fetch => zero przechwytywania zadan. */
+self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.map((k) => (k === CACHE ? null : caches.delete(k)))))
-      .then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then((cached) =>
-      cached || fetch(e.request).catch(() => caches.match('otorepo.html'))
-    )
-  );
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    const hadOld = keys.length > 0;
+    await Promise.all(keys.map((k) => caches.delete(k)));
+    await self.registration.unregister();
+    // Przeladuj karty TYLKO gdy faktycznie usuwalismy stary cache. Po przeladowaniu
+    // keys=[] => hadOld=false => brak nawigacji => brak petli register->install->reload.
+    if (hadOld) {
+      for (const c of await self.clients.matchAll({ type: 'window' })) c.navigate(c.url);
+    }
+  })());
 });
