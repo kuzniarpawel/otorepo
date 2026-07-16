@@ -27,6 +27,7 @@ const SEGS = [
   ['pelvis','hipR',10],['hipR','kneeR',13],['kneeR','ankR',13],['ankR','toeR',10],
 ];
 const HEAD_R = 15;
+const SIT_COUCH_D = 46, SIT_COUCH_W = 64, SIT_SEAT_FWD = 6;   // siad na krawędzi: głębokość/szerokość ławki + nawis blatu pod pośladkami
 // wykluczenia kotwiczenia do blatu — te same co bedY w figProj
 const BED_EXCL = { supineHang: { neck:1, head:1 }, supineDeepHang: { neck:1, head:1 }, sit: { ankL:1, ankR:1, toeL:1, toeR:1 } };
 
@@ -108,8 +109,23 @@ function createPatientRenderer() {
     // sitFront (Semont, widok frontalny): nogi proste w dół — jak w SVG NIE kotwiczymy do blatu
     // (postawiłoby to pacjenta NA kozetce), tylko centrujemy pionowo; kozetka = ławka ZA pacjentem.
     const sitFront = bodyTag === 'sitFront';
-    const dy = sitFront ? FRAME.cy - (minY + maxY) / 2 : -minY;   // centrowanie vs najniższy punkt na blat y=0
-    body.position.y = dy;
+    const isSit = bodyTag === 'sit';
+    let dy, dz = 0;
+    if (isSit) {
+      // SIAD NA KRAWĘDZI KOZETKI: pośladki na blacie, nogi zwisają w przód, stopy na podłodze. Kotwiczymy do CAŁEJ
+      // sylwetki (a nie do „najniższego włączonego stawu" — przy skłonie ręce/tułów zwisają i psuły kotwiczenie).
+      let yLo = Infinity, yHi = -Infinity, zLo = Infinity, zHi = -Infinity;
+      for (const j of ALL) { const r = j === 'head' ? HEAD_R : jointR[j];
+        yLo = Math.min(yLo, J3[j].y - r); yHi = Math.max(yHi, J3[j].y + r);
+        zLo = Math.min(zLo, J3[j].z - r); zHi = Math.max(zHi, J3[j].z + r); }
+      dy = FRAME.cy - (yLo + yHi) / 2;                              // wyśrodkuj pionowo (stopy ↔ czubek)
+      const frontZ = J3.pelvis.z - SIT_SEAT_FWD, backZ = frontZ + SIT_COUCH_D;   // ława: krawędź przy pośladkach, rozciąga się KU TYŁOWI (+z three = plecy)
+      dz = -(Math.min(zLo, frontZ) + Math.max(zHi, backZ)) / 2;     // wyśrodkuj [przód sylwetki .. tył ławki] w poziomie
+    } else {
+      dy = sitFront ? FRAME.cy - (minY + maxY) / 2 : -minY;         // centrowanie vs najniższy punkt na blat y=0
+    }
+    body.position.set(0, dy, dz);
+    legs.forEach(m => m.scale.set(8, 24, 8));                       // domyślna długość nóg (siad ją nadpisze)
     if (sitFront) {
       // ława ZA pacjentem: nasz tył = -z OTOREPO = +z three (kamera frontalna stoi przy three -z, od strony twarzy)
       const wC = Math.max(96, maxX - minX + 56), dC = 56, cx = (minX + maxX) / 2, cz = +(dC / 2) + 8;
@@ -128,8 +144,22 @@ function createPatientRenderer() {
     for (const j of JOINTS) jntMesh[j].position.copy(J3[j]);
     head.position.copy(J3.head);
     head.quaternion.copy(headQ3);
-    // kozetka pod poziomym zasięgiem WŁĄCZONYCH stawów (wykluczenia → luka przy zwisie/siadzie)
-    if (!sitFront) {
+    // kozetka
+    if (isSit) {
+      // blat tuż pod pośladkami (poziom miednicy), rozciąga się ku tyłowi (+z); 4 nogi w dół do podłogi (poziom stóp)
+      const frontZ = J3.pelvis.z - SIT_SEAT_FWD, slabH = 8;
+      const czW = frontZ + SIT_COUCH_D / 2 + dz;                    // środek blatu w świecie (z przesunięciem dz)
+      const seatTopY = J3.pelvis.y + dy - jointR.pelvis;           // górna powierzchnia blatu tuż pod miednicą (świat)
+      const floorY = Math.min(J3.ankL.y, J3.ankR.y, J3.toeL.y, J3.toeR.y) + dy;   // podłoga = poziom stóp
+      couchTop.scale.set(SIT_COUCH_W, slabH, SIT_COUCH_D);
+      couchTop.position.set(0, seatTopY - slabH / 2, czW);
+      const legTopY = seatTopY - slabH, legLen = Math.max(8, legTopY - floorY);
+      legs.forEach(m => m.scale.set(8, legLen, 8));
+      const lx = SIT_COUCH_W / 2 - 7, lzc = SIT_COUCH_D / 2 - 7, legCY = floorY + legLen / 2;
+      legs[0].position.set(-lx, legCY, czW - lzc); legs[1].position.set(lx, legCY, czW - lzc);
+      legs[2].position.set(-lx, legCY, czW + lzc); legs[3].position.set(lx, legCY, czW + lzc);
+    } else if (!sitFront) {
+      // kozetka pod poziomym zasięgiem WŁĄCZONYCH stawów (wykluczenia → luka przy zwisie)
       const w = Math.max(60, maxX - minX + 26), d = Math.max(56, maxZ - minZ + 26);
       const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
       couchTop.scale.set(w, 8, d); couchTop.position.set(cx, -4, cz);

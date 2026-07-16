@@ -203,11 +203,17 @@ function figProj(spec,obsCam,opt){                     // spec: PoseSpec — syl
   const items=SEGS.map(g=>cap(g[0],g[1],g[2],g[3]));
   items.sort((u,v)=>v.d-u.d);                            // najdalej (max głębia) najpierw → bliższe na wierzchu
   let fig=items.map(i=>i.svg).join("");
-  // --- kotwiczenie do blatu (opt.bedY): najniższy punkt CIAŁA-NA-KOZETCE siada na bedY; transformacja na CAŁEJ grupie ---
+  // --- kotwiczenie pionowe CAŁEJ grupy ---
   let offY=0;
-  if(opt.bedY!=null){
+  if(opt.sitCenter!=null){                              // SIAD: wyśrodkuj CAŁĄ sylwetkę pionowo (stopy↔czubek); pośladki siądą na blacie, stopy niżej na podłodze
+    let lo=Infinity, hi=-Infinity;
+    for(const g of SEGS){ const [a,b,w]=g;
+      lo=Math.min(lo, SY(P[a].y)-w/2, SY(P[b].y)-w/2);
+      hi=Math.max(hi, SY(P[a].y)+w/2, SY(P[b].y)+w/2); }
+    lo=Math.min(lo, SY(P.head.y)-R); hi=Math.max(hi, SY(P.head.y)+R);
+    offY=+(opt.sitCenter-(lo+hi)/2).toFixed(1);
+  } else if(opt.bedY!=null){                            // reszta (supine/Semont): najniższy punkt CIAŁA-NA-KOZETCE siada na bedY
     const excl = (spec.body==="supineHang"||spec.body==="supineDeepHang") ? {neck:1,head:1}   // Dix-Hallpike / Yacovino: głowa+szyja zwisają poza krawędź
-               : spec.body==="sit"        ? {ankL:1,ankR:1,toeL:1,toeR:1}          // siad na krawędzi: podudzia/stopy zwisają
                : {};
     let bot=-Infinity;
     for(const g of SEGS){ const [a,b,w]=g; if(excl[a]||excl[b]) continue;
@@ -234,7 +240,11 @@ function figProj(spec,obsCam,opt){                     // spec: PoseSpec — syl
   }
   fig+=`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="${R}" fill="${HEAD}"/>${marks}`;
   if(offY) fig=`<g transform="translate(0 ${offY})">${fig}</g>`;   // transformacja korzenia na całą grupę
-  return {fig, headC:[hx,hy+offY], offY};
+  const fin = k => ({x:+SX(P[k].x).toFixed(1), y:+(SY(P[k].y)+offY).toFixed(1)});   // finalne pozycje ekranowe (po offY) — dla kozetki/podłogi siadu
+  let bx0=Infinity, bx1=-Infinity; for(const k in P){ const x=SX(P[k].x); if(x<bx0)bx0=x; if(x>bx1)bx1=x; }
+  return {fig, headC:[hx,hy+offY], offY,
+    seat:{pelvis:fin('pelvis'), hipL:fin('hipL'), hipR:fin('hipR'), ankL:fin('ankL'), ankR:fin('ankR'), toeL:fin('toeL'), toeR:fin('toeR')},
+    boxX:[+bx0.toFixed(1), +bx1.toFixed(1)]};
 }
 function posture(spec,viewSide){                       // spec: PoseSpec (jedno źródło pozy — Etap 2)
   const {body,face}=spec;
@@ -256,6 +266,25 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
   }
   const P="#2C3D4C";
   const obsCam=Scene3D.CAMERAS[viewSide==="L"?"sideRight":"sideLeft"];   // patrzymy od strony chorej
+  const viewLbl=viewSide?`◉ widok od strony ${SIDE[viewSide]} (chora)`:"";
+  if(body==="sit"){                                     // SIAD NA KRAWĘDZI KOZETKI: pośladki na blacie, nogi zwisają w przód, stopy na podłodze; kozetka (blat+nogi) ZA plecami
+    const {fig, seat, boxX}=figProj(spec,obsCam,{ax:100, ay:80, s:0.82, sitCenter:82});
+    const seatX=(seat.pelvis.x+seat.hipL.x+seat.hipR.x)/3;
+    const seatY=Math.max(seat.pelvis.y,seat.hipL.y,seat.hipR.y)+3;      // górna powierzchnia blatu tuż pod pośladkami
+    const feetX=(seat.ankL.x+seat.ankR.x)/2;
+    const floorY=Math.max(seat.ankL.y,seat.ankR.y,seat.toeL.y,seat.toeR.y)+2;   // podłoga = poziom stóp
+    const back=seatX<=feetX?-1:1;                                       // „tył" ławki = przeciwnie do stóp (nogi lecą w przód)
+    const CW=58, OVER=12, slabH=6, legW=7, legH=Math.max(6, floorY-(seatY+slabH));
+    const edgeF=seatX-back*OVER, edgeB=seatX+back*CW, x0=Math.min(edgeF,edgeB), x1=Math.max(edgeF,edgeB);
+    const couch=`<rect x="${x0.toFixed(1)}" y="${seatY.toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${slabH}" rx="2" fill="${P}"/>`
+      +`<rect x="${(x0+2).toFixed(1)}" y="${(seatY+slabH).toFixed(1)}" width="${legW}" height="${legH.toFixed(1)}" fill="#1c2935"/>`
+      +`<rect x="${(x1-2-legW).toFixed(1)}" y="${(seatY+slabH).toFixed(1)}" width="${legW}" height="${legH.toFixed(1)}" fill="#1c2935"/>`;
+    const compMinX=Math.min(x0,boxX[0]), compMaxX=Math.max(x1,boxX[1]), dx=+(100-(compMinX+compMaxX)/2).toFixed(1);
+    return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: Siad, ${viewLbl}">
+      <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${viewLbl}</text>
+      <g transform="translate(${dx} 0)">${couch}${fig}</g>
+      <text x="100" y="154" text-anchor="middle" fill="var(--muted)" font-size="11">Siad</text></svg>`;
+  }
   const {fig,headC}=figProj(spec,obsCam,{ax:100, ay:80, s:1, bedY:118});
   let couch;
   if(body==="supineHang"){                              // kozetka krótsza — luka po stronie ZWISAJĄCEJ głowy
@@ -266,8 +295,7 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
     couch=`<rect x="14" y="118" width="172" height="10" rx="3" fill="${P}"/>
       <rect x="14" y="128" width="8" height="20" fill="#1c2935"/><rect x="178" y="128" width="8" height="20" fill="#1c2935"/>`;
   }
-  const label={sit:"Siad",supineHang:"Na plecach, głowa w dół",supineFlex:"Na plecach, głowa przygięta ~30°",supineFlat:"Na plecach, głowa płasko",supineChin:"Na plecach, broda do klatki",prone:"Na brzuchu",sideL:"Na boku lewym",sideR:"Na boku prawym"}[body]||"";
-  const viewLbl=viewSide?`◉ widok od strony ${SIDE[viewSide]} (chora)`:"";
+  const label={supineHang:"Na plecach, głowa w dół",supineFlex:"Na plecach, głowa przygięta ~30°",supineFlat:"Na plecach, głowa płasko",supineChin:"Na plecach, broda do klatki",prone:"Na brzuchu",sideL:"Na boku lewym",sideR:"Na boku prawym"}[body]||"";
   return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: ${label}, ${viewLbl}">
     <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${viewLbl}</text>
     ${couch}${fig}

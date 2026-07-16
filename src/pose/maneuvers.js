@@ -400,6 +400,12 @@ function bodyJoints(body,face){                       // pozycje 3D stawów po o
   let nd=(NECK_DEG[body]||0);                          // wyprost/zgięcie szyi (<0 wyprost, >0 zgięcie do klatki)
   if(body==="sit"){ if(face==="down") nd+=30; else if(face==="up") nd-=30; else if(face==="chin") nd+=45; }   // dynamiczny kark: skłon (bow) / odchylenie / broda do klatki (Yacovino)
   if(nd) pose.neckBase=Vestibular.qaxis([1,0,0], nd);
+  if(body==="sit" && face==="down"){                    // Skłon w przód (Bow): ZAWIAS BIODROWY — cały tułów pada do przodu (~45°, nad uda),
+    const F=45;                                         // głowa dołem, nos ku podłodze. Same zgięcie karku nie oddaje tej pozy (patrz rycina Bow & Lean).
+    pose.pelvis=Vestibular.qaxis([1,0,0], F);            // tułów w przód (zawias w biodrach)
+    pose.hipL=Vestibular.qaxis([1,0,0], -90-F); pose.hipR=Vestibular.qaxis([1,0,0], -90-F);   // uda niezmienione — kontr-obrót znosi obrót miednicy (nogi zostają)
+    pose.shL=Vestibular.qaxis([1,0,0], -F); pose.shR=Vestibular.qaxis([1,0,0], -F);            // ramiona zwisają pionowo (kontr-obrót barków)
+  }
   // (leanL/leanR: dawny hack unoszący górną rękę był potrzebny TYLKO dla kamery odgórnej, gdzie kończyny
   //  obu boków rzutowały się na siebie. Widok frontalny rozdziela barki po ekranowym Y → ręce proste.)
   const local=fkJoints(pose), TQ=TORSO_Q[body]||[1,0,0,0], out={};
@@ -499,7 +505,7 @@ const DIAG={
       : `Apogeotropowy: kierunki odwrócone — skłon bije ku stronie zdrowej.`,
     phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
       return [
-        {ptitle:"Skłon w przód (bow)", ppos:"Siad, broda do klatki",
+        {ptitle:"Skłon w przód (bow)", ppos:"Siad, skłon tułowia w przód ~45°, nos ku podłodze",
          body:"sit", yaw:0, face:"down",
          nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(90), "flat"),
          label: geo?`bije ku stronie chorej (${SIDE[A]})`:`bije ku stronie zdrowej (${SIDE[H]})`,
