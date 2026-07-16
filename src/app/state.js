@@ -8,6 +8,7 @@ const state={
   mode:"treat", screen:"setup",
   side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:"post", dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
   diagCentral:false,   // przełącznik karty klasyfikacji: false=obwodowy (BPPV, klasyfikacja Bárány) · true=ośrodkowy (CPN)
+  diagPhaseFace:0,     // odsłonięta faza karty pozycji (Bow&Lean/Roll): 0=przód/bow · 1=tył/lean. W STANIE, by przetrwać re-render (np. przełącznik 3D nie przewraca karty)
   size:"medium",                                   // rozmiar/gęstość złogu otoconiów (small|medium|big) → dynamika + holdy + animacja
   plan:null, step:0,
   total:0, elapsedMs:0, running:false,

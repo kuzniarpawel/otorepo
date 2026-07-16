@@ -180,10 +180,10 @@ function loadHintsFromStore(){
 function pickSide(s){ state.side=s; render(); }
 function pickCanal(k){ state.canal=k; const keys=CANALS[k].maneuvers; if(!keys.includes(state.maneuverKey)) state.maneuverKey=keys.length===1?keys[0]:null; render(); }
 function pickMan(k){ state.maneuverKey=k; render(); }
-function pickTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; render(); }
+function pickTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.diagPhaseFace=0; render(); }
 // kliknięcie pozycji = od razu otwórz (bez osobnego przycisku CTA)
 function openMan(k){ state.maneuverKey=k; startPlan(); }
-function openTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.screen="diag"; render(); }
+function openTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.diagPhaseFace=0; state.screen="diag"; render(); }
 function setDixObs(o){ state.dixObs=o; state.dixRep=0; render(); }
 // Diagnostyka: przełącznik „obwodowy (BPPV) ↔ ośrodkowy (CPN)" w karcie klasyfikacji Bárány.
 function toggleDiagCentral(v){ state.diagCentral=!!v; render(); }

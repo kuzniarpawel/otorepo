@@ -722,7 +722,7 @@ function renderSetup(){
    (dynamiczny import → chunk three ładowany dopiero przy pierwszym użyciu 3D).
    Renderer czyta wyłącznie PoseSpec (most osi zweryfikowany: npm run bridge:check). */
 function view3dToggle(){
-  return `<button class="mini3d" aria-pressed="${!!state.view3d}" onclick="setView3d(${!state.view3d})" title="Widok przestrzenny (WebGL) — sylwetka wg PoseSpec">3D</button>`;
+  return `<button class="mini3d" aria-pressed="${!!state.view3d}" onclick="event.stopPropagation();setView3d(${!state.view3d})" title="Widok przestrzenny (WebGL) — sylwetka wg PoseSpec">3D</button>`;
 }
 function threeSlot(key){ return `<div class="threewrap" data-three3d="${key}">ładowanie 3D…</div>`; }
 // Etap 5: detekcja WebGL (raz, cache). Decyduje o domyślnym 3D (boot w main.js) i o fallbacku.
@@ -906,7 +906,7 @@ function renderDiag(){
         ${gravArrowFor(phs)}</div>
       <div class="note">${ph.note}</div>`;};
   const phaseHTML = phases.length===2
-    ? `<div class="flipwrap" style="margin-top:6px"><div class="flip" id="phaseflip" style="min-height:470px" role="button" tabindex="0" aria-label="Odwróć: ${phases[0].ptitle} albo ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
+    ? `<div class="flipwrap" style="margin-top:6px"><div class="flip${state.diagPhaseFace?' flipped':''}" id="phaseflip" style="min-height:470px" role="button" tabindex="0" aria-label="Odwróć: ${phases[0].ptitle} albo ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
         <div class="face front phaseface">${phaseInner(phases[0],0)}<div class="fliphint">${FLIP_ICO} ${phases[1].ptitle}</div></div>
         <div class="face back phaseface">${phaseInner(phases[1],1)}<div class="fliphint">${FLIP_ICO} ${phases[0].ptitle}</div></div>
       </div></div>`
@@ -1516,8 +1516,9 @@ function flipDiagMech(){
 // (obie pozycje stale w DOM, animacje per-indeks działają niezależnie).
 function flipPhases(){
   const c=$("#phaseflip"); if(!c) return;
-  c.classList.toggle("flipped");
-  const i = c.classList.contains("flipped") ? 1 : 0;          // odsłonięta pozycja (front=0 / back=1)
+  state.diagPhaseFace = state.diagPhaseFace ? 0 : 1;          // utrwal fazę w stanie → przetrwa re-render (przełącznik 3D nie przewraca karty)
+  c.classList.toggle("flipped", state.diagPhaseFace===1);     // klasa zgodna ze stanem (płynna animacja flip zostaje)
+  const i = state.diagPhaseFace;                              // odsłonięta pozycja (front=0 / back=1)
   const nys=(state._diagPhaseNys||[])[i]; if(!nys) return;
   // odwrócenie karty = zmiana pozycji pacjenta → odtwórz oczopląs od początku (latencja → narost → wygasanie)
   const fr=$(`[data-nys="${i}"]`); if(fr) startNys(fr, nys);
