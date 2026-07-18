@@ -53,6 +53,10 @@
   .eyebrow{font-family:var(--display); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); font-weight:700;}
   .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:16px; box-shadow:var(--shadow);}
   .topbar{display:flex; align-items:center; gap:12px; margin:4px 0 8px;}
+  /* i18n: przełącznik języka — statyczna powłoka POZA #app (nie rusza golden), zawsze widoczny */
+  .langbar{position:fixed; top:calc(6px + env(safe-area-inset-top)); right:10px; z-index:60; display:flex; gap:2px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:2px; box-shadow:0 2px 8px rgba(0,0,0,.28);}
+  .langbar button{appearance:none; -webkit-appearance:none; border:0; background:transparent; color:var(--muted); font:600 11px/1 inherit; letter-spacing:.05em; padding:5px 9px; border-radius:999px; cursor:pointer;}
+  .langbar button[aria-pressed="true"]{background:var(--primary); color:#06222c;}
   .topbar .mark{width:44px;height:44px;border-radius:14px;
     background:linear-gradient(160deg,#1E3540,#0E1822);
     border:1px solid #2E4757; display:grid; place-items:center; flex:0 0 auto;
@@ -336,7 +340,7 @@
   .threewrap canvas{width:100%!important;height:auto!important;display:block;border-radius:8px}
 </style>
 
-</head><body><div class="wrap" id="app">
+</head><body><div id="langbar" class="langbar" role="group" aria-label="Language / Język"><button type="button" data-lang="en" aria-pressed="false" onclick="setLangUI('en')">EN</button><button type="button" data-lang="pl" aria-pressed="false" onclick="setLangUI('pl')">PL</button></div><div class="wrap" id="app">
     <div class="topbar">
       <div class="mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 13c0-5 4-8 7.5-8S20 7.5 20 11c0 3-2.5 4-2.5 6.5S16 21 14 21s-2-2-2-3.5S10.5 15 9 14s-4 .5-4-1Z" stroke="var(--primary)" stroke-width="1.6"></path></svg></div>
       <div><h1>BPPV — asystent</h1><div class="sub">Repozycja i diagnostyka otolitów — prototyp</div></div>

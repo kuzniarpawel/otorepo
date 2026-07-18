@@ -262,6 +262,10 @@ async function collect() {
   const { win, errs, label } = await loadApp();
   const h = makeHandle(win);
   const missing = HANDLE_NAMES.filter(n => !(n in h));
+  // i18n: przypnij locale golden do PL (aplikacja domyślnie EN, ale wzorzec pozostaje POLSKI).
+  // W P2 bez efektu (żaden napis nie czyta jeszcze state.lang); od P4 gwarantuje stabilny DOM/engine
+  // niezależnie od navigator.language jsdom (które w jsdom domyślnie = "en-US").
+  try { if (h.state) h.state.lang = 'pl'; } catch { /* monolit / brak state → pomiń */ }
   // engine/pose first (pure, before we mutate state), then dom
   const engine = engineOracle(h);
   const pose = poseOracle(h);

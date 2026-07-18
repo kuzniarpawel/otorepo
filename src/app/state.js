@@ -24,6 +24,7 @@ const state={
   hintsPlane:"HC", hintsHitCanal:"horizontal",     // vHIT: wybrana płaszczyzna (HC/RALP/LARP) · kanał ostatniego pchnięcia
   hintsSCDS:null,                                  // SCDS: ostatni bodziec (obiekt pressureStimulus) lub null
   view3d:false,                                    // karta „Ułożenie": 3D (WebGL) vs SVG. Literał=false (golden bez WebGL); Etap 5: main.js ustawia true na boot gdy webglAvailable()
+  lang:"en",                                       // język UI: 'en' (domyślny) | 'pl'. Literał=EN; main.js initLang() ustawia wg locale/wyboru na boot. t(pl,en) w src/i18n.js czyta to pole (golden przypina 'pl' w snapshot.mjs)
 };
 
 export { state };
