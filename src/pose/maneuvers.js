@@ -3,6 +3,7 @@ import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { $ } from '../runtime/registry.js';
 import { render } from '../render/svg-screens.js';
+import { t } from '../i18n.js';
 
 const SIDE = {L:"lewa", P:"prawa"};
 const otherSide = s => s==="L" ? "P" : "L";
@@ -152,18 +153,18 @@ function gufoniApo(side){
   ]};
 }
 const MANEUVERS={
-  epley:{label:"Epley",desc:"kanał tylny",gen:epley},
-  semont:{label:"Semont",desc:"kanał tylny",gen:semont},
-  bascule:{label:"Bascule",desc:"kupulolitiaza (k. tylny)",gen:bascule},
-  lempert:{label:"Lempert (BBQ)",desc:"kanał poziomy",gen:lempert},
-  gufoniGeo:{label:"Gufoni (geotropowy)",desc:"kanał poziomy",gen:gufoniGeo},
-  gufoniApo:{label:"Gufoni (apogeotropowy)",desc:"kanał poziomy",gen:gufoniApo},
-  yacovino:{label:"Yacovino",desc:"kanał przedni",gen:yacovino},
+  epley:{label:"Epley", get desc(){return t("kanał tylny","posterior canal");}, gen:epley},
+  semont:{label:"Semont", get desc(){return t("kanał tylny","posterior canal");}, gen:semont},
+  bascule:{label:"Bascule", get desc(){return t("kupulolitiaza (k. tylny)","cupulolithiasis (post. canal)");}, gen:bascule},
+  lempert:{label:"Lempert (BBQ)", get desc(){return t("kanał poziomy","horizontal canal");}, gen:lempert},
+  gufoniGeo:{get label(){return t("Gufoni (geotropowy)","Gufoni (geotropic)");}, get desc(){return t("kanał poziomy","horizontal canal");}, gen:gufoniGeo},
+  gufoniApo:{get label(){return t("Gufoni (apogeotropowy)","Gufoni (apogeotropic)");}, get desc(){return t("kanał poziomy","horizontal canal");}, gen:gufoniApo},
+  yacovino:{label:"Yacovino", get desc(){return t("kanał przedni","anterior canal");}, gen:yacovino},
 };
 const CANALS={
-  posterior:{label:"Kanał tylny",note:"najczęstszy (~85%)",color:"var(--post)",maneuvers:["epley","semont","bascule"]},
-  horizontal:{label:"Kanał poziomy",note:"~10%",color:"var(--horiz)",maneuvers:["lempert","gufoniGeo","gufoniApo"]},
-  anterior:{label:"Kanał przedni",note:"rzadki (~1–2%)",color:"var(--ant)",maneuvers:["yacovino"]},
+  posterior:{get label(){return t("Kanał tylny","Posterior canal");}, get note(){return t("najczęstszy (~85%)","most common (~85%)");}, color:"var(--post)",maneuvers:["epley","semont","bascule"]},
+  horizontal:{get label(){return t("Kanał poziomy","Horizontal canal");}, note:"~10%", color:"var(--horiz)",maneuvers:["lempert","gufoniGeo","gufoniApo"]},
+  anterior:{get label(){return t("Kanał przedni","Anterior canal");}, get note(){return t("rzadki (~1–2%)","rare (~1–2%)");}, color:"var(--ant)",maneuvers:["yacovino"]},
 };
 
 /* ============ Testy diagnostyczne ============ */
@@ -463,7 +464,7 @@ const featsByVariant = v => v==="canalo"
   : ["Bez latencji","Uporczywy (>60 s)","Nie wyczerpuje się"];
 
 const DIAG={
-  dix:{ name:"Manewr Dix–Hallpike", tests:"kanał tylny", canal:"posterior",
+  dix:{ get name(){return t("Manewr Dix–Hallpike","Dix–Hallpike test");}, get tests(){return t("kanał tylny","posterior canal");}, canal:"posterior",
     intro:"Z siadu obróć głowę 45° w stronę badaną, połóż szybko na plecach z głową odchyloną ~20° poniżej poziomu.",
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
@@ -479,7 +480,7 @@ const DIAG={
         : "bez latencji, uporczywy, nie wyczerpuje się przy powtórzeniu."
     }]
   },
-  roll:{ name:"Test pozycyjny (Roll / Pagnini–McClure)", tests:"kanał poziomy", canal:"horizontal",
+  roll:{ get name(){return t("Test pozycyjny (Roll / Pagnini–McClure)","Positional test (Roll / Pagnini–McClure)");}, get tests(){return t("kanał poziomy","horizontal canal");}, canal:"horizontal",
     intro:"Pacjent na plecach, głowa zgięta ~30°. Obróć głowę szybko w jedną, potem w drugą stronę.",
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
@@ -497,7 +498,7 @@ const DIAG={
       return [mk(A), mk(H)];
     }
   },
-  bowlean:{ name:"Test Bow & Lean (skłon i odchylenie)", tests:"kanał poziomy — lateralizacja", canal:"horizontal",
+  bowlean:{ get name(){return t("Test Bow & Lean (skłon i odchylenie)","Bow & Lean test (bow and lean)");}, get tests(){return t("kanał poziomy — lateralizacja","horizontal canal — lateralization");}, canal:"horizontal",
     intro:"W siadzie wykonaj skłon głowy w przód (bow), następnie odchylenie do tyłu (lean).",
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
@@ -518,7 +519,7 @@ const DIAG={
       ];
     }
   },
-  headhang:{ name:"Test deep head-hang", tests:"kanał przedni", canal:"anterior",
+  headhang:{ get name(){return t("Test deep head-hang","Deep head-hang test");}, get tests(){return t("kanał przedni","anterior canal");}, canal:"anterior",
     intro:"Z siadu połóż pacjenta szybko na plecach z głową głęboko odchyloną w tył (~30° poniżej poziomu) — prosto, bez obrotu.",
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"

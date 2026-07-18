@@ -6,6 +6,7 @@ import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, n
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
+import { t } from '../i18n.js';
 
 // ikona „obróć kartę" (flip) — używana w Repozycji i Diagnostyce
 const FLIP_ICO = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 8a8 8 0 0 1 13-2.5M20 16a8 8 0 0 1-13 2.5M17 3v4h-4M7 21v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -709,40 +710,40 @@ function renderSetup(){
         <span class="canaldot" style="background:${c.color}"></span>${c.label}<small>${c.note}</small></button>`;};
     let man="";
     if(state.canal){const keys=CANALS[state.canal].maneuvers;
-      man=`<div class="group"><div class="label"><span class="eyebrow">Manewr</span><span class="hint">dobrany do kanału</span></div>
+      man=`<div class="group"><div class="label"><span class="eyebrow">${t("Manewr","Maneuver")}</span><span class="hint">${t("dobrany do kanału","matched to canal")}</span></div>
         <div class="seg ${keys.length===2?'two':''}">${keys.map(k=>`<button class="opt" aria-pressed="${state.maneuverKey===k}" onclick="openMan('${k}')">${MANEUVERS[k].label}<small>${MANEUVERS[k].desc}</small></button>`).join("")}</div></div>`;}
     // Rozmiar złogu ustawia się w PRZEWODNIKU manewru (renderGuide → .sizerow), w kontekście trwającej
     // repozycji — nie na ekranie wyboru. Domyślnie state.size="medium" (genPlan przy starcie manewru).
-    body=`<div class="group"><div class="label"><span class="eyebrow">Kanał półkolisty</span><span class="hint">zajęty kanał</span></div>
+    body=`<div class="group"><div class="label"><span class="eyebrow">${t("Kanał półkolisty","Semicircular canal")}</span><span class="hint">${t("zajęty kanał","affected canal")}</span></div>
         <div class="seg three">${canalOpt("posterior")}${canalOpt("horizontal")}${canalOpt("anterior")}</div></div>
       ${man}`;
   } else if(state.mode==="hints"){
     const famOf=k=> k==="normal"?"normal": k==="strokeCentral"?"stroke":"neuritis";
     const curFam=famOf(state.hintsScenario);
-    const scDesc={normal:"prawidłowy VOR", neuritis:"obwód", stroke:"ośrodek (AVS)"};
+    const scDesc={normal:t("prawidłowy VOR","normal VOR"), neuritis:t("obwód","peripheral"), stroke:t("ośrodek (AVS)","central (AVS)")};
     const scSt="min-height:auto;padding:10px 11px;font-size:12.5px";   // zwarte karty 2×2 jak selektor scenariusza wewnątrz HINTS (seg four)
     const scOpt=(f,key,lbl)=>`<button class="opt" aria-pressed="${curFam===f}" onclick="openHints('${key}')" style="${scSt}">${lbl}<small>${scDesc[f]}</small></button>`;
-    body=`<div class="group"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">obwód ↔ ośrodek</span></div>
-        <div class="seg four">${scOpt('normal','normal','Zdrowy')}${scOpt('neuritis','neuritisR','Neuronitis')}${scOpt('stroke','strokeCentral','Udar')}<button class="opt" aria-pressed="false" onclick="openHintsCustom()" style="${scSt}">Własny<small>matematyczny pacjent</small></button></div>
-      <div class="note" style="margin-top:14px">Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz (przy neuronitis stronę ucha ustawisz przełącznikiem na karcie HINTS) albo tryb „Własny", by sterować każdym parametrem.</div>`;
+    body=`<div class="group"><div class="label"><span class="eyebrow">${t("Scenariusz","Scenario")}</span><span class="hint">${t("obwód ↔ ośrodek","peripheral ↔ central")}</span></div>
+        <div class="seg four">${scOpt('normal','normal',t('Zdrowy','Healthy'))}${scOpt('neuritis','neuritisR',t('Neuronitis','Neuritis'))}${scOpt('stroke','strokeCentral',t('Udar','Stroke'))}<button class="opt" aria-pressed="false" onclick="openHintsCustom()" style="${scSt}">${t('Własny','Custom')}<small>${t('matematyczny pacjent','mathematical patient')}</small></button></div>
+      <div class="note" style="margin-top:14px">${t('Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz (przy neuronitis stronę ucha ustawisz przełącznikiem na karcie HINTS) albo tryb „Własny", by sterować każdym parametrem.','First-principles model: you change the physiology (resting labyrinth activity, canal gain, flocculus, integrator, otoliths), and spontaneous nystagmus, HIT and skew follow <b>on their own</b>. Choose a scenario (for neuritis, set the affected ear with the toggle on the HINTS card) or the Custom mode to control every parameter.')}</div>`;
   } else {
     const testOpt=k=>`<button class="opt" aria-pressed="${state.testKey===k}" onclick="openTest('${k}')">${DIAG[k].name}<small>${DIAG[k].tests}</small></button>`;
-    body=`<div class="group"><div class="label"><span class="eyebrow">Test diagnostyczny</span><span class="hint">stronę ustalisz na karcie testu</span></div>
+    body=`<div class="group"><div class="label"><span class="eyebrow">${t("Test diagnostyczny","Diagnostic test")}</span><span class="hint">${t("stronę ustalisz na karcie testu","set the side on the test card")}</span></div>
         <div class="seg">${testOpt("dix")}${testOpt("roll")}${testOpt("bowlean")}${testOpt("headhang")}</div></div>`;
   }
   $("#app").innerHTML=`
     <div class="topbar">
       <div class="mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 13c0-5 4-8 7.5-8S20 7.5 20 11c0 3-2.5 4-2.5 6.5S16 21 14 21s-2-2-2-3.5S10.5 15 9 14s-4 .5-4-1Z" stroke="var(--primary)" stroke-width="1.6"/></svg></div>
-      <div><h1>OTOREPO</h1><div class="sub">Asystent przedsionkowy — BPPV, testy pozycyjne, HINTS · narzędzie dydaktyczne</div></div>
+      <div><h1>OTOREPO</h1><div class="sub">${t("Asystent przedsionkowy — BPPV, testy pozycyjne, HINTS · narzędzie dydaktyczne","Vestibular assistant — BPPV, positional testing, HINTS · educational tool")}</div></div>
     </div>
     <div class="tabs three" role="tablist">
-      <button role="tab" aria-selected="${state.mode==='treat'}" onclick="setMode('treat')">Repozycja</button>
-      <button role="tab" aria-selected="${state.mode==='diag'}" onclick="setMode('diag')">Diagnostyka</button>
+      <button role="tab" aria-selected="${state.mode==='treat'}" onclick="setMode('treat')">${t("Repozycja","Repositioning")}</button>
+      <button role="tab" aria-selected="${state.mode==='diag'}" onclick="setMode('diag')">${t("Diagnostyka","Diagnostics")}</button>
       <button role="tab" aria-selected="${state.mode==='hints'}" onclick="setMode('hints')">HINTS</button>
     </div>
-    <div class="disclaimer"><b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem.</div>
+    <div class="disclaimer">${t('<b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem.','<b>Support tool for medical staff.</b> Does not replace examination, diagnosis, or clinician judgment. Nystagmus timings and patterns are illustrative — verify against your own protocol.')}</div>
     ${body}
-    <p class="footnote">Prototyp poglądowy. Brak gromadzenia danych.</p>`;
+    <p class="footnote">${t("Prototyp poglądowy. Brak gromadzenia danych.","Illustrative prototype. No data collection.")}</p>`;
 }
 
 /* ── Etap 3: karta „Ułożenie" w Three.js OBOK SVG (wąski zakres: Epley + Roll) ──
