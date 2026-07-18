@@ -11,8 +11,8 @@ import { t } from '../i18n.js';
 // ikona „obróć kartę" (flip) — używana w Repozycji i Diagnostyce
 const FLIP_ICO = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 8a8 8 0 0 1 13-2.5M20 16a8 8 0 0 1-13 2.5M17 3v4h-4M7 21v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 // ROZMIAR ZŁOGU (UI) — mnożnik promienia r, SPÓJNY z SIZE_R w module Vestibular.
-const SIZE_LABELS={small:"mała", medium:"średnia", big:"duża"};
-const SIZE_NOTE={small:"drobne/wolno osiadające", medium:"typowe", big:"duże/ciężkie"};
+const SIZE_LABELS={ get small(){return t("mała","small");}, get medium(){return t("średnia","medium");}, get big(){return t("duża","large");} };
+const SIZE_NOTE={ get small(){return t("drobne/wolno osiadające","fine/slow-settling");}, get medium(){return t("typowe","typical");}, get big(){return t("duże/ciężkie","large/heavy");} };
 let _otoStart=null;   // start animacji wędrówki otolitu (moduł, by dało się ją zrestartować przy flipie karty)
 
 /* ============ SVG: głowa z góry ============ */
@@ -24,31 +24,31 @@ function headDial(spec,headCamera,nys){               // spec: PoseSpec (schemat
   const rot = Scene3D.screenAngleCW(Scene3D.project(Scene3D.HEAD_POINTS.nose, qH, cam));  // obrót schematu = kąt nosa
   const el = Scene3D.project(Scene3D.HEAD_POINTS.earL, [1,0,0,0], cam);   // strony z rzutu uszu (niezależne od yaw)
   const er = Scene3D.project(Scene3D.HEAD_POINTS.earR, [1,0,0,0], cam);
-  const leftLab  = el.x < er.x ? "L" : "P";
-  const rightLab = el.x < er.x ? "P" : "L";
+  const leftLab  = el.x < er.x ? "L" : t("P","R");
+  const rightLab = el.x < er.x ? t("P","R") : "L";
   const ring=face==="down"?"#FF9FBD":"#9FE3F6";
   const feat="#CFEFFB";
-  const faceLabel=face==="up"?"nos ku górze":face==="down"?"nos ku podłodze":face==="chin"?"broda przy klatce":face==="ceil"?"nos ku sufitowi":face==="floor"?"nos ku podłodze":"nos do przodu";
-  const turnLabel=yaw>0?"obrót w prawo":yaw<0?"obrót w lewo":"na wprost";
+  const faceLabel=face==="up"?t("nos ku górze","nose up"):face==="down"?t("nos ku podłodze","nose down"):face==="chin"?t("broda przy klatce","chin to chest"):face==="ceil"?t("nos ku sufitowi","nose to ceiling"):face==="floor"?t("nos ku podłodze","nose down"):t("nos do przodu","nose forward");
+  const turnLabel=yaw>0?t("obrót w prawo","turn right"):yaw<0?t("obrót w lewo","turn left"):t("na wprost","straight ahead");
   let nysNote="", h=180;
   if(nys){
-    const strong=(nys.strength||0)>=0.5, revNote=nys.reversed?"(odwrócony — hamowanie)":nys.apo?"(apogeotropowy)":"(geotropowy)";
+    const strong=(nys.strength||0)>=0.5, revNote=nys.reversed?t("(odwrócony — hamowanie)","(reversed — inhibition)"):nys.apo?t("(apogeotropowy)","(apogeotropic)"):t("(geotropowy)","(geotropic)");
     if(nys.canal==="horizontal"){
       nysNote = strong
-        ? `<text x="70" y="186" text-anchor="middle" fill="var(--timer)" font-size="9" font-weight="600">oczopląs poziomy</text>
+        ? `<text x="70" y="186" text-anchor="middle" fill="var(--timer)" font-size="9" font-weight="600">${t("oczopląs poziomy","horizontal nystagmus")}</text>
            <text x="70" y="197" text-anchor="middle" fill="var(--muted)" font-size="8.5">${revNote}</text>`
-        : `<text x="70" y="188" text-anchor="middle" fill="var(--muted)" font-size="9">oczopląs poziomy słaby${nys.reversed?" ⟲":""}</text>`;
+        : `<text x="70" y="188" text-anchor="middle" fill="var(--muted)" font-size="9">${t("oczopląs poziomy słaby","weak horizontal nystagmus")}${nys.reversed?" ⟲":""}</text>`;
     } else {
       const arrow = nys.canal==="anterior" ? "↓" : "↑";
-      const tors = nys.canal==="anterior" ? "" : " + skrętny";   // kanał przedni: czysty downbeat
+      const tors = nys.canal==="anterior" ? "" : t(" + skrętny"," + torsional");   // kanał przedni: czysty downbeat
       nysNote = strong
-        ? `<text x="70" y="186" text-anchor="middle" fill="var(--timer)" font-size="9" font-weight="600">oczopląs ${arrow}${tors}</text>
-           <text x="70" y="197" text-anchor="middle" fill="var(--muted)" font-size="8.5">(najsilniejszy)</text>`
-        : `<text x="70" y="188" text-anchor="middle" fill="var(--muted)" font-size="9">oczopląs słaby / zanika</text>`;
+        ? `<text x="70" y="186" text-anchor="middle" fill="var(--timer)" font-size="9" font-weight="600">${t("oczopląs","nystagmus")} ${arrow}${tors}</text>
+           <text x="70" y="197" text-anchor="middle" fill="var(--muted)" font-size="8.5">${t("(najsilniejszy)","(strongest)")}</text>`
+        : `<text x="70" y="188" text-anchor="middle" fill="var(--muted)" font-size="9">${t("oczopląs słaby / zanika","weak nystagmus / fading")}</text>`;
     }
     h = strong?206:196;
   }
-  return `<svg viewBox="0 0 140 ${h}" role="img" aria-label="Głowa: ${turnLabel}, ${faceLabel}">
+  return `<svg viewBox="0 0 140 ${h}" role="img" aria-label="${t("Głowa","Head")}: ${turnLabel}, ${faceLabel}">
     <text x="12" y="20" fill="var(--faint)" font-size="10" font-weight="700">${leftLab}</text>
     <text x="122" y="20" fill="var(--faint)" font-size="10" font-weight="700">${rightLab}</text>
     <circle cx="70" cy="74" r="50" fill="none" stroke="var(--line)" stroke-width="1.5"/>
@@ -119,7 +119,7 @@ function startDialNys(nys,plan,envOv){
 /* ============ SVG: głowa od tyłu (slajd 1 Epleya) ============ */
 function backHeadSVG(){
   const HEAD="#22303D", line="#9FE3F6";
-  return `<svg viewBox="0 0 140 150" role="img" aria-label="Głowa od tyłu — obrót w stronę chorą">
+  return `<svg viewBox="0 0 140 150" role="img" aria-label="${t("Głowa od tyłu — obrót w stronę chorą","Head from behind — turn toward the affected side")}">
     <text x="12" y="18" fill="var(--faint)" font-size="10" font-weight="700">L</text>
     <text x="122" y="18" fill="var(--faint)" font-size="10" font-weight="700">P</text>
     <g id="backhead" transform="rotate(0 70 70)">
@@ -257,17 +257,17 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
     const couch=front
       ? `<rect x="34" y="106" width="132" height="9" rx="3" fill="${Pc}"/><rect x="50" y="114" width="8" height="26" fill="#1c2935"/><rect x="142" y="114" width="8" height="26" fill="#1c2935"/>`
       : `<rect x="14" y="120" width="172" height="10" rx="3" fill="${Pc}"/><rect x="22" y="130" width="8" height="20" fill="#1c2935"/><rect x="172" y="130" width="8" height="20" fill="#1c2935"/>`;
-    const label=front?"Siad — twarzą do badającego"
-      :(face==="up"?"Na boku — nos ku sufitowi (pozycja wyjściowa)":face==="down"?"Na boku — nos ku podłodze (przerzut)":face==="ceil"?"Na boku — nos ku sufitowi (głowa skręcona ~90°)":face==="floor"?"Na boku — nos ku podłodze (głowa skręcona ~90°)":"Na boku — głowa w linii ciała");
-    const view="widok od przodu — na wprost pacjenta";
-    return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: ${label}">
+    const label=front?t("Siad — twarzą do badającego","Sitting — facing the examiner")
+      :(face==="up"?t("Na boku — nos ku sufitowi (pozycja wyjściowa)","On the side — nose to ceiling (starting position)"):face==="down"?t("Na boku — nos ku podłodze (przerzut)","On the side — nose to floor (swing)"):face==="ceil"?t("Na boku — nos ku sufitowi (głowa skręcona ~90°)","On the side — nose to ceiling (head rotated ~90°)"):face==="floor"?t("Na boku — nos ku podłodze (głowa skręcona ~90°)","On the side — nose to floor (head rotated ~90°)"):t("Na boku — głowa w linii ciała","On the side — head in line with the body"));
+    const view=t("widok od przodu — na wprost pacjenta","front view — facing the patient");
+    return `<svg viewBox="0 0 200 160" role="img" aria-label="${t("Ułożenie","Position")}: ${label}">
       <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${view}</text>
       ${couch}${fig}
       <text x="100" y="154" text-anchor="middle" fill="var(--muted)" font-size="11">${label}</text></svg>`;
   }
   const P="#2C3D4C";
   const obsCam=Scene3D.CAMERAS[viewSide==="L"?"sideRight":"sideLeft"];   // patrzymy od strony chorej
-  const viewLbl=viewSide?`◉ widok od strony ${SIDE[viewSide]} (chora)`:"";
+  const viewLbl=viewSide?t(`◉ widok od strony ${SIDE[viewSide]} (chora)`,`◉ view from the ${viewSide==="L"?"left":"right"} side (affected)`):"";
   if(body==="sit"){                                     // SIAD NA KRAWĘDZI KOZETKI: pośladki na blacie, nogi zwisają w przód, stopy na podłodze; kozetka (blat+nogi) ZA plecami
     const {fig, seat, boxX}=figProj(spec,obsCam,{ax:100, ay:80, s:0.82, sitCenter:82});
     const seatX=(seat.pelvis.x+seat.hipL.x+seat.hipR.x)/3;
@@ -281,10 +281,10 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
       +`<rect x="${(x0+2).toFixed(1)}" y="${(seatY+slabH).toFixed(1)}" width="${legW}" height="${legH.toFixed(1)}" fill="#1c2935"/>`
       +`<rect x="${(x1-2-legW).toFixed(1)}" y="${(seatY+slabH).toFixed(1)}" width="${legW}" height="${legH.toFixed(1)}" fill="#1c2935"/>`;
     const compMinX=Math.min(x0,boxX[0]), compMaxX=Math.max(x1,boxX[1]), dx=+(100-(compMinX+compMaxX)/2).toFixed(1);
-    return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: Siad, ${viewLbl}">
+    return `<svg viewBox="0 0 200 160" role="img" aria-label="${t("Ułożenie","Position")}: ${t("Siad","Sitting")}, ${viewLbl}">
       <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${viewLbl}</text>
       <g transform="translate(${dx} 0)">${couch}${fig}</g>
-      <text x="100" y="154" text-anchor="middle" fill="var(--muted)" font-size="11">Siad</text></svg>`;
+      <text x="100" y="154" text-anchor="middle" fill="var(--muted)" font-size="11">${t("Siad","Sitting")}</text></svg>`;
   }
   const {fig,headC}=figProj(spec,obsCam,{ax:100, ay:80, s:1, bedY:118});
   let couch;
@@ -296,8 +296,8 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
     couch=`<rect x="14" y="118" width="172" height="10" rx="3" fill="${P}"/>
       <rect x="14" y="128" width="8" height="20" fill="#1c2935"/><rect x="178" y="128" width="8" height="20" fill="#1c2935"/>`;
   }
-  const label={supineHang:"Na plecach, głowa w dół",supineFlex:"Na plecach, głowa przygięta ~30°",supineFlat:"Na plecach, głowa płasko",supineChin:"Na plecach, broda do klatki",prone:"Na brzuchu",sideL:"Na boku lewym",sideR:"Na boku prawym"}[body]||"";
-  return `<svg viewBox="0 0 200 160" role="img" aria-label="Ułożenie: ${label}, ${viewLbl}">
+  const label={supineHang:t("Na plecach, głowa w dół","Supine, head down"),supineFlex:t("Na plecach, głowa przygięta ~30°","Supine, head flexed ~30°"),supineFlat:t("Na plecach, głowa płasko","Supine, head flat"),supineChin:t("Na plecach, broda do klatki","Supine, chin to chest"),prone:t("Na brzuchu","Prone"),sideL:t("Na boku lewym","On the left side"),sideR:t("Na boku prawym","On the right side")}[body]||"";
+  return `<svg viewBox="0 0 200 160" role="img" aria-label="${t("Ułożenie","Position")}: ${label}, ${viewLbl}">
     <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${viewLbl}</text>
     ${couch}${fig}
     <text x="100" y="154" text-anchor="middle" fill="var(--muted)" font-size="11">${label}</text></svg>`;
@@ -351,14 +351,14 @@ function labyrinth(canal, opts){
   const cupula = opts.cupula
     ? `<g id="labcupula" transform="rotate(0 ${px} ${py})"><path d="M${px-7.5} ${py+4} Q${px} ${py-13} ${px+7.5} ${py+4} Z" fill="#CFE3EE" opacity=".18"/><path d="M${px-7.5} ${py+4} Q${px} ${py-13} ${px+7.5} ${py+4}" fill="none" stroke="#CFE3EE" stroke-width="3" stroke-linecap="round" opacity=".92"/></g>`
     : "";
-  return `<svg viewBox="38 35 205 164" role="img" aria-label="Błędnik: kanały półkoliste z bańkami i grzebieniami, odnoga wspólna kanałów pionowych, łagiewka; aktywny: ${CANALS[canal].label}" style="width:80%;margin-inline:auto">
+  return `<svg viewBox="38 35 205 164" role="img" aria-label="${t("Błędnik: kanały półkoliste z bańkami i grzebieniami, odnoga wspólna kanałów pionowych, łagiewka; aktywny","Labyrinth: semicircular canals with ampullae and cristae, common crus of the vertical canals, utricle; active")}: ${CANALS[canal].label}" style="width:80%;margin-inline:auto">
     <ellipse cx="${LAB_UTR.cx}" cy="${LAB_UTR.cy}" rx="${LAB_UTR.rx}" ry="${LAB_UTR.ry}" fill="#22303D" stroke="var(--line)" stroke-width="1.5"/>
     ${crus}${loops}${amps}${cupula}
-    <text x="${LAB_UTR.cx}" y="${LAB_UTR.cy+4}" text-anchor="middle" fill="var(--faint)" font-size="9">łagiewka</text>
+    <text x="${LAB_UTR.cx}" y="${LAB_UTR.cy+4}" text-anchor="middle" fill="var(--faint)" font-size="9">${t("łagiewka","utricle")}</text>
     <line x1="169" y1="116" x2="153" y2="130" stroke="var(--faint)" stroke-width="1" opacity=".6"/>
-    <text x="171" y="115" text-anchor="start" fill="var(--faint)" font-size="7.5">odnoga wspólna</text>
+    <text x="171" y="115" text-anchor="start" fill="var(--faint)" font-size="7.5">${t("odnoga wspólna","common crus")}</text>
     <circle id="otolith" r="6" fill="#fff" stroke="${active}" stroke-width="2"/></svg>
-    <div class="viewpoint">schemat wędrówki — położenie poglądowe; czas i skuteczność z fizyki</div>`;
+    <div class="viewpoint">${t("schemat wędrówki — położenie poglądowe; czas i skuteczność z fizyki","migration diagram — illustrative position; timing and efficacy from the physics")}</div>`;
 }
 function placeOtolith(canal,p,exitBlend){
   const path=$("#path-"+canal),dot=$("#otolith"); if(!path||!dot) return false;
@@ -663,7 +663,7 @@ function setupGuideAnim(){
     return true;
   });
 }
-function updateGoBtn(){ const b=$("#btnGo"); if(b){ b.textContent=state.running?"Pauza":"Start"; b.classList.toggle("run",state.running);} syncWake(); }
+function updateGoBtn(){ const b=$("#btnGo"); if(b){ b.textContent=state.running?t("Pauza","Pause"):"Start"; b.classList.toggle("run",state.running);} syncWake(); }
 function toggleTimer(){ if(!state.running && state.elapsedMs/1000>=state.total) state.elapsedMs=0; state.running=!state.running; updateGoBtn(); }
 function resetTimer(){ state.elapsedMs=0; state.running=false; updateGoBtn(); }
 function adjust(d){ state.total=Math.max(5,state.total+d); const st=state.plan.steps[state.step]; st.seconds=state.total;
@@ -782,12 +782,12 @@ function renderGuide(){
   const gravArrow = gn ? gravArrowFor(ps) : "";
   const dots=p.steps.map((_,i)=>`<i class="${i<state.step?'done':i===state.step?'cur':''}"></i>`).join("");
   const tgIcons = `<div class="tg">
-      <button class="ic" role="switch" aria-checked="${state.autoAdvance}" aria-label="Auto‑przejście po odliczeniu" title="Auto‑przejście" onclick="toggleAuto(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M5 5l10 7-10 7V5z" fill="currentColor"/><path d="M18.6 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
-      <button class="ic" role="switch" aria-checked="${state.sound}" aria-label="Sygnał dźwiękowy i wibracja" title="Sygnał dźwiękowy" onclick="toggleSound(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M5 9v6h4l5 4V5L9 9H5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M17 9.5a4 4 0 0 1 0 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="ic" role="switch" aria-checked="${state.autoAdvance}" aria-label="${t("Auto‑przejście po odliczeniu","Auto-advance after countdown")}" title="${t("Auto‑przejście","Auto-advance")}" onclick="toggleAuto(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M5 5l10 7-10 7V5z" fill="currentColor"/><path d="M18.6 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+      <button class="ic" role="switch" aria-checked="${state.sound}" aria-label="${t("Sygnał dźwiękowy i wibracja","Sound signal and vibration")}" title="${t("Sygnał dźwiękowy","Sound signal")}" onclick="toggleSound(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M5 9v6h4l5 4V5L9 9H5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M17 9.5a4 4 0 0 1 0 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>`;
   const sp = Math.max(0, Math.min(100, ((st.seconds||0)/120)*100));
   const timerBlock=st.seconds==null
-    ? `<div class="tcard"><div class="trow1"><div class="nostimer-inline">Krok bez odliczania — wykonaj płynnie, bez przerwy.</div>${tgIcons}</div></div>`
+    ? `<div class="tcard"><div class="trow1"><div class="nostimer-inline">${t("Krok bez odliczania — wykonaj płynnie, bez przerwy.","Step without a timer — perform smoothly, without pausing.")}</div>${tgIcons}</div></div>`
     : `<div class="tcard">
         <div class="trow1">
           <button id="btnGo" class="go" onclick="toggleTimer()">Start</button>
@@ -806,52 +806,52 @@ function renderGuide(){
         </div>
       </div>`;
   const headPanel = st.headSlot && st.headSlot.kind==="textOnly"
-      ? `<div class="panelbox"><h4>Głowa</h4><div class="headnote">${st.headText}</div></div>`
+      ? `<div class="panelbox"><h4>${t("Głowa","Head")}</h4><div class="headnote">${st.headText}</div></div>`
     : st.headSlot && st.headSlot.kind==="backTurn"
-      ? `<div class="panelbox"><h4>Głowa</h4><div data-backhead>${backHeadSVG()}</div><div class="headnote">${st.headText}</div></div>`
-      : `<div class="panelbox"><h4>Głowa (z góry)</h4>${headDial(ps,p.headCamera,gn)}</div>`;
+      ? `<div class="panelbox"><h4>${t("Głowa","Head")}</h4><div data-backhead>${backHeadSVG()}</div><div class="headnote">${st.headText}</div></div>`
+      : `<div class="panelbox"><h4>${t("Głowa (z góry)","Head (top-down)")}</h4>${headDial(ps,p.headCamera,gn)}</div>`;
   const gufoniNote = state.maneuverKey==="gufoniApo"
-    ? `<div class="note">Manewr <b>konwersji</b>: złóg nie opuszcza kanału — celem jest przekształcenie postaci apogeotropowej w geotropową. Po nim wykonaj ponowny Roll test i lecz postać geotropową (Lempert / Gufoni geotropowy).</div>` : "";
+    ? `<div class="note">${t('Manewr <b>konwersji</b>: złóg nie opuszcza kanału — celem jest przekształcenie postaci apogeotropowej w geotropową. Po nim wykonaj ponowny Roll test i lecz postać geotropową (Lempert / Gufoni geotropowy).','<b>Conversion</b> maneuver: the debris does not leave the canal — the goal is to convert the apogeotropic form into the geotropic one. Afterward repeat the Roll test and treat the geotropic form (Lempert / Gufoni geotropic).')}</div>` : "";
   const basculeNote = state.maneuverKey==="bascule"
-    ? `<div class="note">Manewr <b>uwalniający</b> dla <b>kupulolitiazy</b>: rytmiczne bujanie bok–bok wytwarza siły bezwładności, które odrywają złóg przylegający do osklepka (cupula) i przenoszą go do łagiewki. Powtarzaj przerzuty do 5 serii; po manewrze wykonaj ponowny Dix–Hallpike.</div>` : "";
+    ? `<div class="note">${t('Manewr <b>uwalniający</b> dla <b>kupulolitiazy</b>: rytmiczne bujanie bok–bok wytwarza siły bezwładności, które odrywają złóg przylegający do osklepka (cupula) i przenoszą go do łagiewki. Powtarzaj przerzuty do 5 serii; po manewrze wykonaj ponowny Dix–Hallpike.','<b>Releasing</b> maneuver for <b>cupulolithiasis</b>: rhythmic side-to-side rocking generates inertial forces that detach debris adhering to the cupula and carry it into the utricle. Repeat the swings up to 5 series; after the maneuver repeat the Dix–Hallpike.')}</div>` : "";
   // Manewr na KUPULOLITIAZĘ (mechanism:"cupulo", np. Bascule): karta „wędrówka otolitów" domyślnie NA WIERZCHU
   // (flipped) — pokazuje przyleganie/odklejanie od osklepka; osklepek dorysowany w labiryncie (opts.cupula).
   const cupuloMech = p.mechanism==="cupulo";
   $("#app").innerHTML=`
-    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${p.name}</b><span>${CANALS[p.canal].label}</span></div>
-      <div class="sidewrap"><em>strona</em><div class="sidepill"><button data-s="L" aria-pressed="${p.side==='L'}" onclick="setGuideSide('L')">L</button><button data-s="P" aria-pressed="${p.side==='P'}" onclick="setGuideSide('P')">P</button></div></div></div>
+      <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${p.side==='L'}" onclick="setGuideSide('L')">L</button><button data-s="P" aria-pressed="${p.side==='P'}" onclick="setGuideSide('P')">${t("P","R")}</button></div></div></div>
     <div class="steps-dots">${dots}</div>
-    <div class="sizerow"><span class="lbl">Rozmiar złogu</span>
+    <div class="sizerow"><span class="lbl">${t("Rozmiar złogu","Debris size")}</span>
       <div class="sizepill">${["small","medium","big"].map(k=>`<button aria-pressed="${state.size===k}" onclick="pickSize('${k}')">${SIZE_LABELS[k]}</button>`).join("")}</div></div>
     ${state.size==="small"
-      ? `<div class="note">Drobny/wolno osiadający złóg — <b>wydłużono zalecany czas utrzymania pozycji</b> (wolniejsze osiadanie otoconiów; por. uzasadnienie ~30 s holdów w CRP: Hain, Squires &amp; Stone 2005). Oczopląs słabszy i o dłuższej latencji.</div>`
+      ? `<div class="note">${t('Drobny/wolno osiadający złóg — <b>wydłużono zalecany czas utrzymania pozycji</b> (wolniejsze osiadanie otoconiów; por. uzasadnienie ~30 s holdów w CRP: Hain, Squires &amp; Stone 2005). Oczopląs słabszy i o dłuższej latencji.','Fine/slow-settling debris — <b>the recommended hold time has been extended</b> (slower otoconia settling; cf. the rationale for ~30 s holds in CRP: Hain, Squires &amp; Stone 2005). Nystagmus is weaker and with a longer latency.')}</div>`
       : ""}
-    <div class="viz"><div class="panelbox"><h4>Ułożenie pacjenta${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("guide"):posture(ps,p.side)}</div>
+    <div class="viz"><div class="panelbox"><h4>${t("Ułożenie pacjenta","Patient position")}${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("guide"):posture(ps,p.side)}</div>
       ${headPanel}</div>
     ${gn
-      ? `<div class="flipwrap"><div class="flip${cupuloMech?' flipped':''}" id="flip" role="button" tabindex="0" aria-label="Odwróć kartę: widok frontalny albo wędrówka otolitów" onclick="flipGuide()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipGuide();}">
-          <div class="face front panelbox"><h4>Widok frontalny</h4>
-            <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-nys-guide>${eyesSVG()}</div><span class="emk">L</span></div>
+      ? `<div class="flipwrap"><div class="flip${cupuloMech?' flipped':''}" id="flip" role="button" tabindex="0" aria-label="${t('Odwróć kartę: widok frontalny albo wędrówka otolitów','Flip the card: frontal view or otolith migration')}" onclick="flipGuide()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipGuide();}">
+          <div class="face front panelbox"><h4>${t("Widok frontalny","Frontal view")}</h4>
+            <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-nys-guide>${eyesSVG()}</div><span class="emk">L</span></div>
             <div class="nyslabel"><span class="arrow">${arrowGlyph(gn)}</span><span>${gn.label}</span></div>
             ${gravArrow}
-            <div class="fliphint">${FLIP_ICO} wędrówka otolitów</div></div>
-          <div class="face back panelbox"><h4>Wędrówka otolitów — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}
-            <div class="fliphint">${FLIP_ICO} widok frontalny</div></div>
+            <div class="fliphint">${FLIP_ICO} ${t("wędrówka otolitów","otolith migration")}</div></div>
+          <div class="face back panelbox"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}
+            <div class="fliphint">${FLIP_ICO} ${t("widok frontalny","frontal view")}</div></div>
         </div></div>`
-      : `<div class="panelbox" style="margin-bottom:12px"><h4>Wędrówka otolitów — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}</div>`}
+      : `<div class="panelbox" style="margin-bottom:12px"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}</div>`}
     <div class="card stepcard">
       <div class="stephead">
-        <button class="stepnav" ${state.step===0?"disabled":""} onclick="goStep(${state.step-1})" aria-label="Poprzedni krok"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <div class="num">KROK ${state.step+1} / ${n}</div>
+        <button class="stepnav" ${state.step===0?"disabled":""} onclick="goStep(${state.step-1})" aria-label="${t("Poprzedni krok","Previous step")}"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="num">${t("KROK","STEP")} ${state.step+1} / ${n}</div>
         ${state.step<n-1
-          ? `<button class="stepnav" onclick="goStep(${state.step+1})" aria-label="Następny krok"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
-          : `<button class="stepnav fin" onclick="backToSetup()" aria-label="Zakończ serię"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
+          ? `<button class="stepnav" onclick="goStep(${state.step+1})" aria-label="${t("Następny krok","Next step")}"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
+          : `<button class="stepnav fin" onclick="backToSetup()" aria-label="${t("Zakończ serię","Finish series")}"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
       </div>
       <div class="title">${st.title}</div>
       <div class="instr">${st.instr}</div></div>
     ${timerBlock}
-    <p class="footnote">Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.</p>`;
+    <p class="footnote">${t("Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.","When finished, wait per protocol and consider repeating the positional test.")}</p>`;
   if(can3d && state.view3d) mount3D("guide", ps, p.side);
   requestAnimationFrame(setupGuideAnim);
   requestAnimationFrame(initGuideSlider);
@@ -894,7 +894,7 @@ function diagClassifyCard(canal, v, side, antMode){
           <li>Objawy towarzyszące: dyzartria, ataksja, dwojenie, zaburzenia spojrzenia.</li>
         </ul></div>
       <div class="panelbox" style="margin-top:10px"><h4>Wzorzec: uporczywy downbeat (poglądowo)</h4>
-        <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-cpnnys>${eyesSVG()}</div><span class="emk">L</span></div>
+        <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-cpnnys>${eyesSVG()}</div><span class="emk">L</span></div>
         <div class="nyslabel"><span class="arrow">↓</span><span>downbeat · uporczywy · bez latencji</span></div></div>
       <div class="note" style="color:var(--text)"><b>Postępowanie:</b> NIE wykonuj repozycji. Skieruj na ocenę neurologiczną + MRI tylnego dołu (móżdżek, pogranicze szczytowo-potyliczne: malformacja Chiariego; SM; zmiany naczyniowe). Najczęstszy łagodny mimik: <b>migrena przedsionkowa</b> (ośrodkowy oczopląs pozycyjny w napadzie).</div>`;
   return `<div class="card" style="margin-top:12px">
@@ -902,12 +902,12 @@ function diagClassifyCard(canal, v, side, antMode){
       ${seg}${central?cpn:bppv}</div>`;
 }
 function renderDiag(){
-  const t=DIAG[state.testKey], A=state.side, v=state.variant;
+  const D=DIAG[state.testKey], A=state.side, v=state.variant;   // D = obiekt testu (NIE koliduj z importem t = tlumaczenie)
   const isDix = state.testKey==="dix";
   const antMode = isDix && state.dixObs==="ant";          // zaobserwowano downbeat → kanał PRZEDNI
-  const effCanal = antMode ? "anterior" : t.canal;
+  const effCanal = antMode ? "anterior" : D.canal;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
-  const phases = t.phases(A,v).map(ph => antMode
+  const phases = D.phases(A,v).map(ph => antMode
     ? { ...ph, nys: nysFromGeom("anterior", effSide, v, Vestibular.qSupineYaw(A==="P"?45:-45)),
         label: "ku dołowi — czysty downbeat (kanał przedni)",
         note: `To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.` }
@@ -918,7 +918,7 @@ function renderDiag(){
   const fatFactor = v==="cupulo" ? 1 : Vestibular.fatigueFactor(dixRep);
   phases.forEach(ph=>{ if(ph.nys) ph.nys.fatigue = fatFactor; });
   state._diagPhaseNys = phases.map(p=>p.nys);   // do restartu animacji przy odwracaniu kart pozycji
-  const vl=variantLabels(t.canal);
+  const vl=variantLabels(D.canal);
   const mechNote = v==="canalo"
     ? "Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji."
     : "Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.";
@@ -928,9 +928,9 @@ function renderDiag(){
     return `
       <div class="ptitle">${ph.ptitle}</div><div class="ppos">${ph.ppos}</div>
       <div class="minihead"><div class="panelbox"><h4>Ułożenie${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("diag"+i):posture(phs,A)}</div>
-        <div class="panelbox"><h4>Głowa (z góry)</h4><div data-dialnys="${i}">${headDial(phs,"topDownBehind")}</div></div></div>
+        <div class="panelbox"><h4>${t("Głowa (z góry)","Head (top-down)")}</h4><div data-dialnys="${i}">${headDial(phs,"topDownBehind")}</div></div></div>
       <div class="panelbox" style="margin-top:10px"><h4>Widok frontalny</h4>
-        <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div><span class="emk">L</span></div>
+        <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div><span class="emk">L</span></div>
         <div class="nyslabel"><span class="arrow">${arrowGlyph(ph.nys)}</span><span>${ph.label}${ph.nys.persistent?" · uporczywy":" · przemijający"}</span></div>
         ${gravArrowFor(phs)}</div>
       <div class="note">${ph.note}</div>`;};
@@ -964,10 +964,10 @@ function renderDiag(){
       <div class="note">${note}</div></div>`;
   })() : "";
   $("#app").innerHTML=`
-    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="ttl"><b>${t.name}</b><span>${t.tests}</span></div>
-      <div class="sidewrap"><em>strona</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">P</button></div></div></div>
-    <div class="card" style="margin-bottom:4px"><div class="instr" style="font-size:14px;color:#D4DEE8">${t.intro}</div></div>
+    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
+      <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
+    <div class="card" style="margin-bottom:4px"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
     ${isDix ? `<div class="obsrow"><div class="obslabel">Zaobserwowany oczopląs w Dix-Hallpike:</div>
       <div class="seg segobs">
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + skrętny</b><small>kanał tylny (ucho dolne) — typowy</small></button>
@@ -977,13 +977,13 @@ function renderDiag(){
     ${(()=>{
       const interp = v0 => antMode
         ? `Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`
-        : t.latNote(A, v0);
+        : D.latNote(A, v0);
       const note = v0 => v0==="canalo"
         ? "Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji."
         : "Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.";
       const face = v0 => `<h4>Mechanizm — ${CANALS[effCanal].label} · ${v0==="canalo"?"kanalolitiaza":"kupulolitiaza"}</h4>
         <div data-diagcanal="${v0}">${diagCanalSVG(effCanal)}</div>
-        <div class="features">${t.features(v0).map(f=>`<span>${f}</span>`).join("")}</div>
+        <div class="features">${D.features(v0).map(f=>`<span>${f}</span>`).join("")}</div>
         <div class="note">${note(v0)}</div>
         <div class="note" style="color:var(--text)"><b>Interpretacja:</b> ${interp(v0)}</div>`;
       return `<div class="flipwrap" style="margin-top:12px"><div class="flip ${v==='cupulo'?'flipped':''}" id="mechflip" role="button" tabindex="0" aria-label="Odwróć kartę mechanizmu: kanalolitiaza albo kupulolitiaza" onclick="flipDiagMech()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipDiagMech();}">
@@ -1070,9 +1070,9 @@ function renderHints(){
   const gazeBtn=(g,lbl)=>`<button aria-pressed="${gaze===g}" onclick="setHintsGaze(${g})">${lbl}</button>`;
   const fixBtn=(v,lbl)=>`<button aria-pressed="${fixOn===v}" onclick="setHintsFix(${v})">${lbl}</button>`;
   $("#app").innerHTML=`
-    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="Wróć"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>Różnicowanie — HINTS</b><span>ośrodek ↔ obwód · silnik z pierwszych zasad</span></div>
-      ${fam==="neuritis" ? `<div class="sidewrap"><em>strona</em><div class="sidepill"><button data-s="L" aria-pressed="${state.hintsSide==='L'}" onclick="setHintsNeuritisSide('L')">L</button><button data-s="P" aria-pressed="${state.hintsSide==='P'}" onclick="setHintsNeuritisSide('P')">P</button></div></div>` : ""}</div>
+      ${fam==="neuritis" ? `<div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${state.hintsSide==='L'}" onclick="setHintsNeuritisSide('L')">L</button><button data-s="P" aria-pressed="${state.hintsSide==='P'}" onclick="setHintsNeuritisSide('P')">${t("P","R")}</button></div></div>` : ""}</div>
     <div class="group" style="margin-top:4px"><div class="label"><span class="eyebrow">Scenariusz</span><span class="hint">zmienia tylko parametry fizjologii</span></div>
       <div class="seg four">${famBtn('normal','Zdrowy','prawidłowy VOR',"setHintsDx('normal')")}${famBtn('neuritis','Neuronitis','obwód',"setHintsDx('neuritis')")}${famBtn('stroke','Udar','ośrodek (AVS)',"setHintsDx('stroke')")}${famBtn('custom','Własny','matematyczny pacjent',"openHintsCustom()")}</div></div>
     <div data-verdict>${hintsVerdictBlock(H)}</div>
@@ -1080,7 +1080,7 @@ function renderHints(){
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Oczopląs samoistny — widok frontalny</h4>
       <div class="hint-eyes ${fixOn?'':'dark'}">
-        <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-neuronys>${eyesSVG()}</div><span class="emk">L</span></div>
+        <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-neuronys>${eyesSVG()}</div><span class="emk">L</span></div>
         ${fixOn?"":'<div class="frenzel-tag">◌ gogle Frenzla — fiksacja zniesiona</div>'}
       </div>
       <div data-nyslabel>${hintsNysLabel(nys)}</div>
@@ -1096,7 +1096,7 @@ function renderHints(){
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Test pchnięcia głowy (HIT) — obserwuj cel ○</h4>
       <div class="viewpoint">widok badającego (naprzeciw pacjenta) — P = ucho prawe pacjenta, L = ucho lewe</div>
-      <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-hit>${hitSVG()}</div><span class="emk">L</span></div>
+      <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-hit>${hitSVG()}</div><span class="emk">L</span></div>
       <div class="hctrl" style="justify-content:center"><span class="lbl">Płaszczyzna</span>
         <div class="pillseg">${["HC","RALP","LARP"].map(pl=>`<button aria-pressed="${(state.hintsPlane||'HC')===pl}" onclick="setHintsPlane('${pl}')">${pl==='HC'?'HC poziomy':pl}</button>`).join("")}</div></div>
       <div class="hctrl" style="justify-content:center"><span class="lbl">Pchnij</span>
@@ -1105,7 +1105,7 @@ function renderHints(){
     </div>
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Odchylenie skośne — naprzemienne zasłanianie</h4>
-      <div class="eyesrow"><span class="emk">P</span><div class="eyeswrap" data-skew>${skewSVG()}</div><span class="emk">L</span></div>
+      <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-skew>${skewSVG()}</div><span class="emk">L</span></div>
       <div class="note">${skewLabel(H.ts)}</div>
     </div>
     ${otolithPanel(p)}
