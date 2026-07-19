@@ -416,7 +416,7 @@ function arrowGlyph(nys){
 function diagCanalSVG(canal){
   const color={posterior:"var(--post)",horizontal:"var(--horiz)",anterior:"var(--ant)"}[canal];
   const loop="M80 52 H172 A22 22 0 0 1 172 96 H80 A22 22 0 0 1 80 52 Z";
-  return `<svg viewBox="0 0 250 150" role="img" aria-label="Mechanizm przemieszczania otolitów">
+  return `<svg viewBox="0 0 250 150" role="img" aria-label="${t("Mechanizm przemieszczania otolitów","Otolith displacement mechanism")}">
     <path d="${loop}" fill="none" stroke="#33404D" stroke-width="15" stroke-linejoin="round"/>
     <path id="dpath" d="${loop}" fill="none" stroke="${color}" stroke-width="2" opacity=".55"/>
     <ellipse cx="62" cy="74" rx="22" ry="26" fill="#22303D" stroke="${color}" stroke-width="2"/>
