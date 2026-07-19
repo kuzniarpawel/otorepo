@@ -419,8 +419,8 @@ function diagCanalSVG(canal){
     <path d="${loop}" fill="none" stroke="#33404D" stroke-width="15" stroke-linejoin="round"/>
     <path id="dpath" d="${loop}" fill="none" stroke="${color}" stroke-width="2" opacity=".55"/>
     <ellipse cx="62" cy="74" rx="22" ry="26" fill="#22303D" stroke="${color}" stroke-width="2"/>
-    <text x="62" y="128" text-anchor="middle" fill="var(--faint)" font-size="9">bańka</text>
-    <text x="200" y="128" text-anchor="middle" fill="var(--faint)" font-size="9">ramię kanału</text>
+    <text x="62" y="128" text-anchor="middle" fill="var(--faint)" font-size="9">${t("bańka","ampulla")}</text>
+    <text x="200" y="128" text-anchor="middle" fill="var(--faint)" font-size="9">${t("ramię kanału","canal arm")}</text>
     <g id="cupula">
       <path d="M62 96 q11 -22 0 -44" stroke="#CFE3EE" stroke-width="4" fill="none" stroke-linecap="round" opacity=".9"/>
       <circle id="cuptip" cx="62" cy="52" r="6" fill="#fff" stroke="${color}" stroke-width="2"/>
@@ -871,8 +871,8 @@ function diagClassifyCard(canal, v, side, antMode){
   const tierBg = cls.tier==="established" ? "rgba(127,227,196,.14)" : "rgba(255,207,143,.16)";
   const tierFg = cls.tier==="established" ? "#7fe3c4" : "#ffcf8f";
   const seg=`<div class="seg segobs" style="margin-bottom:10px">
-      <button class="opt" aria-pressed="${!central}" onclick="toggleDiagCentral(false)"><b>Obwodowy — BPPV</b><small>klasyfikacja Bárány</small></button>
-      <button class="opt" aria-pressed="${central}" onclick="toggleDiagCentral(true)"><b>Ośrodkowy — CPN</b><small>czerwone flagi</small></button>
+      <button class="opt" aria-pressed="${!central}" onclick="toggleDiagCentral(false)"><b>${t("Obwodowy — BPPV","Peripheral — BPPV")}</b><small>${t("klasyfikacja Bárány","Bárány classification")}</small></button>
+      <button class="opt" aria-pressed="${central}" onclick="toggleDiagCentral(true)"><b>${t("Ośrodkowy — CPN","Central — CPN")}</b><small>${t("czerwone flagi","red flags")}</small></button>
     </div>`;
   const chip=([k,val])=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${val}</b></span>`;
   const bppv=`
@@ -881,24 +881,24 @@ function diagClassifyCard(canal, v, side, antMode){
         <span style="font-size:11px;padding:2px 9px;border-radius:10px;background:${tierBg};color:${tierFg};white-space:nowrap">${cls.tierLabel}</span></div>
       <div style="margin-bottom:2px">${cls.crit.map(chip).join("")}</div>
       ${cls.redflag?`<div class="note" style="color:var(--ant)"><b>⚠</b> ${cls.redflag}</div>`:""}
-      <div class="note">Kryteria Bárány Society (ICVD 2015). „Zespół ustalony" = pewny podtyp; „wyłaniający się/atypowy" = rzadszy lub kontrowersyjny — potwierdź i wyklucz przyczynę ośrodkową.</div>`;
+      <div class="note">${t('Kryteria Bárány Society (ICVD 2015). „Zespół ustalony" = pewny podtyp; „wyłaniający się/atypowy" = rzadszy lub kontrowersyjny — potwierdź i wyklucz przyczynę ośrodkową.','Bárány Society criteria (ICVD 2015). "Established syndrome" = confident subtype; "emerging/atypical" = rarer or controversial — confirm and rule out a central cause.')}</div>`;
   const cpn=`
-      <div class="redflag" style="margin-top:0"><b>⚠ Ośrodkowy oczopląs pozycyjny (CPN) — to NIE BPPV.</b>
-        Rozpoznaj po cechach nietypowych dla złogu:
+      <div class="redflag" style="margin-top:0"><b>${t("⚠ Ośrodkowy oczopląs pozycyjny (CPN) — to NIE BPPV.","⚠ Central positional nystagmus (CPN) — this is NOT BPPV.")}</b>
+        ${t("Rozpoznaj po cechach nietypowych dla złogu:","Recognize it by features atypical for debris:")}
         <ul style="margin:8px 0 0;padding-left:18px;line-height:1.5">
-          <li><b>Bez latencji</b> — pojawia się natychmiast po ułożeniu.</li>
-          <li><b>Uporczywy</b> — trwa, dopóki utrzymana jest pozycja (nie narasta i nie wygasa).</li>
-          <li><b>Niemęczliwy</b> — nie słabnie przy powtórzeniach prowokacji.</li>
-          <li><b>Czysto pionowy</b> (zwłaszcza <b>downbeat</b>) lub czysto skrętny; kierunek <b>niepasujący do żadnego kanału</b>.</li>
-          <li>Obecny w wielu pozycjach / w pozycji neutralnej; oczopląs bywa zmienny kierunkowo.</li>
-          <li>Objawy towarzyszące: dyzartria, ataksja, dwojenie, zaburzenia spojrzenia.</li>
+          <li>${t("<b>Bez latencji</b> — pojawia się natychmiast po ułożeniu.","<b>No latency</b> — appears immediately after positioning.")}</li>
+          <li>${t("<b>Uporczywy</b> — trwa, dopóki utrzymana jest pozycja (nie narasta i nie wygasa).","<b>Persistent</b> — lasts as long as the position is held (does not crescendo or fade).")}</li>
+          <li>${t("<b>Niemęczliwy</b> — nie słabnie przy powtórzeniach prowokacji.","<b>Non-fatiguing</b> — does not weaken on repeated provocations.")}</li>
+          <li>${t("<b>Czysto pionowy</b> (zwłaszcza <b>downbeat</b>) lub czysto skrętny; kierunek <b>niepasujący do żadnego kanału</b>.","<b>Purely vertical</b> (especially <b>downbeat</b>) or purely torsional; a direction <b>not matching any canal</b>.")}</li>
+          <li>${t("Obecny w wielu pozycjach / w pozycji neutralnej; oczopląs bywa zmienny kierunkowo.","Present in many positions / in the neutral position; the nystagmus may be direction-changing.")}</li>
+          <li>${t("Objawy towarzyszące: dyzartria, ataksja, dwojenie, zaburzenia spojrzenia.","Accompanying signs: dysarthria, ataxia, diplopia, gaze disturbances.")}</li>
         </ul></div>
-      <div class="panelbox" style="margin-top:10px"><h4>Wzorzec: uporczywy downbeat (poglądowo)</h4>
+      <div class="panelbox" style="margin-top:10px"><h4>${t("Wzorzec: uporczywy downbeat (poglądowo)","Pattern: persistent downbeat (illustrative)")}</h4>
         <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-cpnnys>${eyesSVG()}</div><span class="emk">L</span></div>
-        <div class="nyslabel"><span class="arrow">↓</span><span>downbeat · uporczywy · bez latencji</span></div></div>
-      <div class="note" style="color:var(--text)"><b>Postępowanie:</b> NIE wykonuj repozycji. Skieruj na ocenę neurologiczną + MRI tylnego dołu (móżdżek, pogranicze szczytowo-potyliczne: malformacja Chiariego; SM; zmiany naczyniowe). Najczęstszy łagodny mimik: <b>migrena przedsionkowa</b> (ośrodkowy oczopląs pozycyjny w napadzie).</div>`;
+        <div class="nyslabel"><span class="arrow">↓</span><span>${t("downbeat · uporczywy · bez latencji","downbeat · persistent · no latency")}</span></div></div>
+      <div class="note" style="color:var(--text)">${t('<b>Postępowanie:</b> NIE wykonuj repozycji. Skieruj na ocenę neurologiczną + MRI tylnego dołu (móżdżek, pogranicze szczytowo-potyliczne: malformacja Chiariego; SM; zmiany naczyniowe). Najczęstszy łagodny mimik: <b>migrena przedsionkowa</b> (ośrodkowy oczopląs pozycyjny w napadzie).','<b>Management:</b> Do NOT perform repositioning. Refer for neurological evaluation + MRI of the posterior fossa (cerebellum, craniocervical junction: Chiari malformation; MS; vascular lesions). The most common benign mimic: <b>vestibular migraine</b> (central positional nystagmus during an attack).')}</div>`;
   return `<div class="card" style="margin-top:12px">
-      <div class="obslabel" style="margin-bottom:8px">Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe</div>
+      <div class="obslabel" style="margin-bottom:8px">${t("Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe","Bárány classification (ICVD) and central differentiation")}</div>
       ${seg}${central?cpn:bppv}</div>`;
 }
 function renderDiag(){
@@ -909,8 +909,8 @@ function renderDiag(){
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
   const phases = D.phases(A,v).map(ph => antMode
     ? { ...ph, nys: nysFromGeom("anterior", effSide, v, Vestibular.qSupineYaw(A==="P"?45:-45)),
-        label: "ku dołowi — czysty downbeat (kanał przedni)",
-        note: `To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.` }
+        label: t("ku dołowi — czysty downbeat (kanał przedni)","downward — pure downbeat (anterior canal)"),
+        note: t(`To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.`,`This is NOT the posterior canal. Downbeat in the Dix-Hallpike indicates the ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}) — the same plane as the posterior canal of the lower ear (LARP/RALP). Head positioning unchanged; only the observed nystagmus differs.`) }
     : ph);
   // MĘCZLIWOŚĆ: przy powtórzeniach prowokacji Dix-Hallpike kanalolitiaza SŁABNIE, kupulolitiaza NIE (różnicowanie).
   // fatigue = ortogonalny mnożnik amplitudy (startNys/startDialNysIn); kupulo = 1 (nie wyczerpuje się).
@@ -920,22 +920,22 @@ function renderDiag(){
   state._diagPhaseNys = phases.map(p=>p.nys);   // do restartu animacji przy odwracaniu kart pozycji
   const vl=variantLabels(D.canal);
   const mechNote = v==="canalo"
-    ? "Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji."
-    : "Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.";
+    ? t("Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji.","Free-floating debris moves within the canal lumen under gravity.")
+    : t("Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.","Debris adheres to the cupula, which deflects — the cupula becomes gravity-sensitive.");
   const can3d = true;                                    // Etap 4: 3D dla wszystkich testów pozycyjnych (dix/roll/bowlean/headhang)
   const phaseInner=(ph,i)=>{
     const phs=poseSpec(ph);                              // kanoniczna poza fazy testu (Etap 2)
     return `
       <div class="ptitle">${ph.ptitle}</div><div class="ppos">${ph.ppos}</div>
-      <div class="minihead"><div class="panelbox"><h4>Ułożenie${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("diag"+i):posture(phs,A)}</div>
+      <div class="minihead"><div class="panelbox"><h4>${t("Ułożenie","Position")}${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("diag"+i):posture(phs,A)}</div>
         <div class="panelbox"><h4>${t("Głowa (z góry)","Head (top-down)")}</h4><div data-dialnys="${i}">${headDial(phs,"topDownBehind")}</div></div></div>
-      <div class="panelbox" style="margin-top:10px"><h4>Widok frontalny</h4>
+      <div class="panelbox" style="margin-top:10px"><h4>${t("Widok frontalny","Frontal view")}</h4>
         <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div><span class="emk">L</span></div>
-        <div class="nyslabel"><span class="arrow">${arrowGlyph(ph.nys)}</span><span>${ph.label}${ph.nys.persistent?" · uporczywy":" · przemijający"}</span></div>
+        <div class="nyslabel"><span class="arrow">${arrowGlyph(ph.nys)}</span><span>${ph.label}${ph.nys.persistent?t(" · uporczywy"," · persistent"):t(" · przemijający"," · transient")}</span></div>
         ${gravArrowFor(phs)}</div>
       <div class="note">${ph.note}</div>`;};
   const phaseHTML = phases.length===2
-    ? `<div class="flipwrap" style="margin-top:6px"><div class="flip${state.diagPhaseFace?' flipped':''}" id="phaseflip" style="min-height:470px" role="button" tabindex="0" aria-label="Odwróć: ${phases[0].ptitle} albo ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
+    ? `<div class="flipwrap" style="margin-top:6px"><div class="flip${state.diagPhaseFace?' flipped':''}" id="phaseflip" style="min-height:470px" role="button" tabindex="0" aria-label="${t("Odwróć","Flip")}: ${phases[0].ptitle} ${t("albo","or")} ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
         <div class="face front phaseface">${phaseInner(phases[0],0)}<div class="fliphint">${FLIP_ICO} ${phases[1].ptitle}</div></div>
         <div class="face back phaseface">${phaseInner(phases[1],1)}<div class="fliphint">${FLIP_ICO} ${phases[0].ptitle}</div></div>
       </div></div>`
@@ -946,20 +946,20 @@ function renderDiag(){
     const rep=state.dixRep||0, cupulo=(v==="cupulo"), pct=Math.round((cupulo?1:Vestibular.fatigueFactor(rep))*100);
     const barCol = cupulo ? "#3a8f6f" : (pct<40 ? "var(--ant)" : "var(--primary)");
     const note = cupulo
-      ? "Kupulolitiaza: oczopląs NIE wyczerpuje się przy powtórzeniach — złóg przylega do osklepka."
+      ? t("Kupulolitiaza: oczopląs NIE wyczerpuje się przy powtórzeniach — złóg przylega do osklepka.","Cupulolithiasis: the nystagmus does NOT fatigue on repetition — the debris adheres to the cupula.")
       : rep===0
-        ? "Powtórz prowokację kilka razy: w kanalolitiazie oczopląs SŁABNIE z każdym razem (rozproszenie złogu) — to odróżnia ją od kupulolitiazy."
-        : `Osłabienie po ${rep} ${rep===1?"powtórzeniu":"powtórzeniach"}: amplituda oczopląsu ~${pct}% wartości wyjściowej.`;
+        ? t("Powtórz prowokację kilka razy: w kanalolitiazie oczopląs SŁABNIE z każdym razem (rozproszenie złogu) — to odróżnia ją od kupulolitiazy.","Repeat the provocation several times: in canalithiasis the nystagmus WEAKENS each time (debris disperses) — this distinguishes it from cupulolithiasis.")
+        : t(`Osłabienie po ${rep} ${rep===1?"powtórzeniu":"powtórzeniach"}: amplituda oczopląsu ~${pct}% wartości wyjściowej.`,`Weakening after ${rep} ${rep===1?"repetition":"repetitions"}: nystagmus amplitude ~${pct}% of the initial value.`);
     return `<div class="card" style="margin-bottom:4px">
-      <div class="obslabel" style="margin-bottom:4px">Powtarzalność prowokacji — męczliwość oczopląsu</div>
+      <div class="obslabel" style="margin-bottom:4px">${t("Powtarzalność prowokacji — męczliwość oczopląsu","Provocation repeatability — nystagmus fatigability")}</div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-        <button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center" onclick="repeatDixProvoke()">↻ Powtórz prowokację</button>
-        <span class="mono" style="color:var(--muted);font-size:13px">Prowokacja #${rep+1}</span>
+        <button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center" onclick="repeatDixProvoke()">${t("↻ Powtórz prowokację","↻ Repeat provocation")}</button>
+        <span class="mono" style="color:var(--muted);font-size:13px">${t("Prowokacja","Provocation")} #${rep+1}</span>
         ${rep>0?`<button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center;opacity:.85" onclick="resetDixProvoke()">Reset</button>`:""}
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <div style="flex:1;height:8px;border-radius:4px;background:var(--panel2);overflow:hidden"><div style="height:100%;width:${pct}%;background:${barCol};transition:width .35s"></div></div>
-        <span style="font-size:12px;color:var(--muted);min-width:84px;text-align:right">amplituda ${pct}%</span>
+        <span style="font-size:12px;color:var(--muted);min-width:84px;text-align:right">${t("amplituda","amplitude")} ${pct}%</span>
       </div>
       <div class="note">${note}</div></div>`;
   })() : "";
@@ -968,42 +968,42 @@ function renderDiag(){
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
     <div class="card" style="margin-bottom:4px"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
-    ${isDix ? `<div class="obsrow"><div class="obslabel">Zaobserwowany oczopląs w Dix-Hallpike:</div>
+    ${isDix ? `<div class="obsrow"><div class="obslabel">${t("Zaobserwowany oczopląs w Dix-Hallpike:","Observed nystagmus in the Dix-Hallpike:")}</div>
       <div class="seg segobs">
-        <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + skrętny</b><small>kanał tylny (ucho dolne) — typowy</small></button>
-        <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>kanał przedni (rzadki, ucho przeciwne)</small></button>
+        <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
+        <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
       </div></div>` : ""}
     ${phaseHTML}${fatPanel}
     ${(()=>{
       const interp = v0 => antMode
-        ? `Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`
+        ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)
         : D.latNote(A, v0);
       const note = v0 => v0==="canalo"
-        ? "Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji."
-        : "Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.";
-      const face = v0 => `<h4>Mechanizm — ${CANALS[effCanal].label} · ${v0==="canalo"?"kanalolitiaza":"kupulolitiaza"}</h4>
+        ? t("Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji.","Free-floating debris moves within the canal lumen under gravity.")
+        : t("Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.","Debris adheres to the cupula, which deflects — the cupula becomes gravity-sensitive.");
+      const face = v0 => `<h4>${t("Mechanizm","Mechanism")} — ${CANALS[effCanal].label} · ${v0==="canalo"?t("kanalolitiaza","canalithiasis"):t("kupulolitiaza","cupulolithiasis")}</h4>
         <div data-diagcanal="${v0}">${diagCanalSVG(effCanal)}</div>
         <div class="features">${D.features(v0).map(f=>`<span>${f}</span>`).join("")}</div>
         <div class="note">${note(v0)}</div>
-        <div class="note" style="color:var(--text)"><b>Interpretacja:</b> ${interp(v0)}</div>`;
-      return `<div class="flipwrap" style="margin-top:12px"><div class="flip ${v==='cupulo'?'flipped':''}" id="mechflip" role="button" tabindex="0" aria-label="Odwróć kartę mechanizmu: kanalolitiaza albo kupulolitiaza" onclick="flipDiagMech()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipDiagMech();}">
-        <div class="face front panelbox">${face("canalo")}<div class="fliphint">${FLIP_ICO} kupulolitiaza</div></div>
-        <div class="face back panelbox">${face("cupulo")}<div class="fliphint">${FLIP_ICO} kanalolitiaza</div></div>
+        <div class="note" style="color:var(--text)"><b>${t("Interpretacja:","Interpretation:")}</b> ${interp(v0)}</div>`;
+      return `<div class="flipwrap" style="margin-top:12px"><div class="flip ${v==='cupulo'?'flipped':''}" id="mechflip" role="button" tabindex="0" aria-label="${t('Odwróć kartę mechanizmu: kanalolitiaza albo kupulolitiaza','Flip the mechanism card: canalithiasis or cupulolithiasis')}" onclick="flipDiagMech()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipDiagMech();}">
+        <div class="face front panelbox">${face("canalo")}<div class="fliphint">${FLIP_ICO} ${t("kupulolitiaza","cupulolithiasis")}</div></div>
+        <div class="face back panelbox">${face("cupulo")}<div class="fliphint">${FLIP_ICO} ${t("kanalolitiaza","canalithiasis")}</div></div>
       </div></div>`;
     })()}
     ${diagClassifyCard(effCanal, v, effSide, antMode)}
-    ${antMode ? `<div class="redflag"><b>⚠ Czerwona flaga — wyklucz przyczynę OŚRODKOWĄ.</b> Downbeat, który jest <b>uporczywy, bez latencji i nie wyczerpuje się</b> przy powtórzeniach, występuje także w pozycji neutralnej (na wznak, głowa prosto), albo towarzyszą mu objawy neurologiczne (dyzartria, ataksja, zaburzenia spojrzenia, dwojenie) — przemawia za przyczyną OŚRODKOWĄ (móżdżek, pogranicze czaszkowo‑szyjne: malformacja Arnolda‑Chiariego, SM, zmiany naczyniowe). Wymaga oceny neurologicznej i MRI, nie manewru. Repozycję rozważ dopiero po wykluczeniu przyczyny ośrodkowej.</div>` : ""}
-    ${(()=>{ if(state.diagCentral) return `<div class="reco"><h4>Sugerowane leczenie</h4>
-        <div class="note" style="color:var(--ant)"><b>Repozycja niewskazana.</b> Przy podejrzeniu ośrodkowego oczoplasu pozycyjnego (CPN) nie wykonuj manewrów repozycyjnych — najpierw ocena neurologiczna i MRI tylnego dołu. Wróć do widoku „Obwodowy — BPPV", jeśli obraz jednak spełnia kryteria BPPV.</div></div>`;
+    ${antMode ? `<div class="redflag">${t('<b>⚠ Czerwona flaga — wyklucz przyczynę OŚRODKOWĄ.</b> Downbeat, który jest <b>uporczywy, bez latencji i nie wyczerpuje się</b> przy powtórzeniach, występuje także w pozycji neutralnej (na wznak, głowa prosto), albo towarzyszą mu objawy neurologiczne (dyzartria, ataksja, zaburzenia spojrzenia, dwojenie) — przemawia za przyczyną OŚRODKOWĄ (móżdżek, pogranicze czaszkowo‑szyjne: malformacja Arnolda‑Chiariego, SM, zmiany naczyniowe). Wymaga oceny neurologicznej i MRI, nie manewru. Repozycję rozważ dopiero po wykluczeniu przyczyny ośrodkowej.','<b>⚠ Red flag — rule out a CENTRAL cause.</b> A downbeat that is <b>persistent, without latency and non-fatiguing</b> on repetition, is also present in the neutral position (supine, head straight), or is accompanied by neurological signs (dysarthria, ataxia, gaze disturbances, diplopia) — argues for a CENTRAL cause (cerebellum, craniocervical junction: Arnold-Chiari malformation, MS, vascular lesions). Requires neurological evaluation and MRI, not a maneuver. Consider repositioning only after ruling out a central cause.')}</div>` : ""}
+    ${(()=>{ if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
+        <div class="note" style="color:var(--ant)">${t('<b>Repozycja niewskazana.</b> Przy podejrzeniu ośrodkowego oczoplasu pozycyjnego (CPN) nie wykonuj manewrów repozycyjnych — najpierw ocena neurologiczna i MRI tylnego dołu. Wróć do widoku „Obwodowy — BPPV", jeśli obraz jednak spełnia kryteria BPPV.','<b>Repositioning is not indicated.</b> When central positional nystagmus (CPN) is suspected, do not perform repositioning maneuvers — first a neurological evaluation and MRI of the posterior fossa. Return to the "Peripheral — BPPV" view if the picture does meet BPPV criteria.')}</div></div>`;
       const rec = antMode
-        ? {primary:"yacovino", alts:[], note:`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`}
+        ? {primary:"yacovino", alts:[], note:t(`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`,`Downbeat in the Dix-Hallpike → ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}), LARP/RALP plane. Treatment: Yacovino (deep head-hang → quick chin-to-chest movement). Lateralization by nystagmus uncertain.`)}
         : recommend(state.testKey,v);
-      const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}')">${idx===0?'Rozpocznij: ':'Alternatywa: '}${MANEUVERS[k].label} — ${MANEUVERS[k].desc}</button>`).join("");
-      return `<div class="reco"><h4>Sugerowane leczenie</h4>
+      const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}')">${idx===0?t('Rozpocznij: ','Start: '):t('Alternatywa: ','Alternative: ')}${MANEUVERS[k].label} — ${MANEUVERS[k].desc}</button>`).join("");
+      return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--text)">${rec.note}</div>
-        <div class="note">Leczenie dla strony <b>${SIDE[effSide]}</b>. ${antMode?"Strona kanału przedniego niepewna — potwierdź deep head-hangiem i dopiero po wykluczeniu przyczyny ośrodkowej.":"Potwierdź stronę regułą lateralizacji powyżej, zanim rozpoczniesz manewr."}</div>
+        <div class="note">${t(`Leczenie dla strony <b>${SIDE[effSide]}</b>.`,`Treatment for the <b>${effSide==="L"?"left":"right"}</b> side.`)} ${antMode?t("Strona kanału przedniego niepewna — potwierdź deep head-hangiem i dopiero po wykluczeniu przyczyny ośrodkowej.","The anterior-canal side is uncertain — confirm with the deep head-hang and only after ruling out a central cause."):t("Potwierdź stronę regułą lateralizacji powyżej, zanim rozpoczniesz manewr.","Confirm the side with the lateralization rule above before starting the maneuver.")}</div>
         <div class="recobtns">${btns}</div></div>`; })()}
-    <p class="footnote">Wzorce poglądowe. Interpretuj w kontekście klinicznym.</p>`;
+    <p class="footnote">${t("Wzorce poglądowe. Interpretuj w kontekście klinicznym.","Illustrative patterns. Interpret in the clinical context.")}</p>`;
   if(can3d && state.view3d) phases.forEach((ph,i)=>mount3D("diag"+i, poseSpec(ph), A));
   requestAnimationFrame(()=>{
     phases.forEach((ph,i)=>{
