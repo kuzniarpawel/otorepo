@@ -574,43 +574,43 @@ export const NeuroVOR = (()=>{
   // ETAP 7 (E5) — PARAM_SPEC: metadane parametrów dla UI „matematycznego pacjenta" (suwaki/selektory).
   // group: „basic" widoczne od razu, „advanced" zwijane. Każdy: key, label, min/max/step/unit/def LUB type:"select".
   const PARAM_SPEC = [
-    { group:"Kanał poziomy (HC)", tier:"basic", help:"Ton = spoczynek (→ oczopląs samoistny); gain = vHIT wysokiej częstotliwości.", params:[
-      { key:"toneL", label:"Ton HC lewy",  min:0, max:200, step:1, unit:"Hz", def:R0 },
-      { key:"toneR", label:"Ton HC prawy", min:0, max:200, step:1, unit:"Hz", def:R0 },
-      { key:"gainL", label:"Gain HC lewy (vHIT)",  min:0, max:1.2, step:0.05, unit:"", def:1 },
-      { key:"gainR", label:"Gain HC prawy (vHIT)", min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
-    { group:"Kaloryka (niska częstotliwość)", tier:"basic", help:"Osobna oś od vHIT → dysocjacja LF/HF (Ménière).", params:[
-      { key:"caloricGainL", label:"Kaloryczny gain lewy",  min:0, max:1.2, step:0.05, unit:"", def:1 },
-      { key:"caloricGainR", label:"Kaloryczny gain prawy", min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
-    { group:"Kanał przedni (nerw górny)", tier:"advanced", help:"Płaszczyzny RALP/LARP; nerw górny = HC+przedni+łagiewka.", params:[
-      { key:"toneAcL", label:"Ton AC lewy",  min:0, max:200, step:1, unit:"Hz", def:R0 },
-      { key:"toneAcR", label:"Ton AC prawy", min:0, max:200, step:1, unit:"Hz", def:R0 },
-      { key:"gainAcL", label:"Gain AC lewy",  min:0, max:1.2, step:0.05, unit:"", def:1 },
-      { key:"gainAcR", label:"Gain AC prawy", min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
-    { group:"Kanał tylny (nerw dolny)", tier:"advanced", help:"Nerw dolny = tylny+woreczek; kaloryka go NIE bada.", params:[
-      { key:"tonePcL", label:"Ton PC lewy",  min:0, max:200, step:1, unit:"Hz", def:R0 },
-      { key:"tonePcR", label:"Ton PC prawy", min:0, max:200, step:1, unit:"Hz", def:R0 },
-      { key:"gainPcL", label:"Gain PC lewy",  min:0, max:1.2, step:0.05, unit:"", def:1 },
-      { key:"gainPcR", label:"Gain PC prawy", min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
-    { group:"Przetwarzanie ośrodkowe", tier:"advanced", help:"Kłaczek (fiksacja), integrator (spojrzeniowy), otolity (skew).", params:[
-      { key:"fixationGain",  label:"Supresja fiksacji", min:-0.5, max:1, step:0.05, unit:"", def:0.9 },
-      { key:"integratorTau", label:"Integrator (τ spojrzenia)", min:0.5, max:30, step:0.5, unit:"s", def:25 },
-      { key:"skewTone",      label:"Asymetria grawiceptywna (skew)", min:-6, max:6, step:0.5, unit:"°", def:0 },
-      { key:"otrTorsion",    label:"Torsja OTR", min:0, max:10, step:0.5, unit:"°", def:0 } ]},
-    { group:"Kompensacja ośrodkowa", tier:"advanced", help:"Neuroplastyka: znosi oczopląs, ale NIE kalorykę.", params:[
-      { key:"comp",          label:"Poziom kompensacji", min:0, max:1, step:0.05, unit:"", def:0 },
-      { key:"pacemakerBias", label:"Ładunek pacemakera (Bechterew)", min:0, max:40, step:1, unit:"Hz", def:0 },
+    { get group(){return tr("Kanał poziomy (HC)","Horizontal canal (HC)");}, tier:"basic", get help(){return tr("Ton = spoczynek (→ oczopląs samoistny); gain = vHIT wysokiej częstotliwości.","Tone = rest (→ spontaneous nystagmus); gain = high-frequency vHIT.");}, params:[
+      { key:"toneL", get label(){return tr("Ton HC lewy","HC tone left");},  min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"toneR", get label(){return tr("Ton HC prawy","HC tone right");}, min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"gainL", get label(){return tr("Gain HC lewy (vHIT)","HC gain left (vHIT)");},  min:0, max:1.2, step:0.05, unit:"", def:1 },
+      { key:"gainR", get label(){return tr("Gain HC prawy (vHIT)","HC gain right (vHIT)");}, min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
+    { get group(){return tr("Kaloryka (niska częstotliwość)","Caloric (low frequency)");}, tier:"basic", get help(){return tr("Osobna oś od vHIT → dysocjacja LF/HF (Ménière).","A separate axis from vHIT → LF/HF dissociation (Ménière).");}, params:[
+      { key:"caloricGainL", get label(){return tr("Kaloryczny gain lewy","Caloric gain left");},  min:0, max:1.2, step:0.05, unit:"", def:1 },
+      { key:"caloricGainR", get label(){return tr("Kaloryczny gain prawy","Caloric gain right");}, min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
+    { get group(){return tr("Kanał przedni (nerw górny)","Anterior canal (superior nerve)");}, tier:"advanced", get help(){return tr("Płaszczyzny RALP/LARP; nerw górny = HC+przedni+łagiewka.","RALP/LARP planes; superior nerve = HC + anterior + utricle.");}, params:[
+      { key:"toneAcL", get label(){return tr("Ton AC lewy","AC tone left");},  min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"toneAcR", get label(){return tr("Ton AC prawy","AC tone right");}, min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"gainAcL", get label(){return tr("Gain AC lewy","AC gain left");},  min:0, max:1.2, step:0.05, unit:"", def:1 },
+      { key:"gainAcR", get label(){return tr("Gain AC prawy","AC gain right");}, min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
+    { get group(){return tr("Kanał tylny (nerw dolny)","Posterior canal (inferior nerve)");}, tier:"advanced", get help(){return tr("Nerw dolny = tylny+woreczek; kaloryka go NIE bada.","Inferior nerve = posterior + saccule; caloric does NOT test it.");}, params:[
+      { key:"tonePcL", get label(){return tr("Ton PC lewy","PC tone left");},  min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"tonePcR", get label(){return tr("Ton PC prawy","PC tone right");}, min:0, max:200, step:1, unit:"Hz", def:R0 },
+      { key:"gainPcL", get label(){return tr("Gain PC lewy","PC gain left");},  min:0, max:1.2, step:0.05, unit:"", def:1 },
+      { key:"gainPcR", get label(){return tr("Gain PC prawy","PC gain right");}, min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
+    { get group(){return tr("Przetwarzanie ośrodkowe","Central processing");}, tier:"advanced", get help(){return tr("Kłaczek (fiksacja), integrator (spojrzeniowy), otolity (skew).","Flocculus (fixation), integrator (gaze), otoliths (skew).");}, params:[
+      { key:"fixationGain",  get label(){return tr("Supresja fiksacji","Fixation suppression");}, min:-0.5, max:1, step:0.05, unit:"", def:0.9 },
+      { key:"integratorTau", get label(){return tr("Integrator (τ spojrzenia)","Integrator (gaze τ)");}, min:0.5, max:30, step:0.5, unit:"s", def:25 },
+      { key:"skewTone",      get label(){return tr("Asymetria grawiceptywna (skew)","Graviceptive asymmetry (skew)");}, min:-6, max:6, step:0.5, unit:"°", def:0 },
+      { key:"otrTorsion",    get label(){return tr("Torsja OTR","OTR torsion");}, min:0, max:10, step:0.5, unit:"°", def:0 } ]},
+    { get group(){return tr("Kompensacja ośrodkowa","Central compensation");}, tier:"advanced", get help(){return tr("Neuroplastyka: znosi oczopląs, ale NIE kalorykę.","Neuroplasticity: abolishes nystagmus but NOT the caloric.");}, params:[
+      { key:"comp",          get label(){return tr("Poziom kompensacji","Compensation level");}, min:0, max:1, step:0.05, unit:"", def:0 },
+      { key:"pacemakerBias", get label(){return tr("Ładunek pacemakera (Bechterew)","Pacemaker charge (Bechterew)");}, min:0, max:40, step:1, unit:"Hz", def:0 },
       { key:"tauVS",         label:"Velocity storage (τ)", min:1, max:20, step:0.5, unit:"s", def:15 },
-      { key:"lesionEar", label:"Strona chora (kompensacja)", type:"select", def:null,
-        options:[ {v:null,l:"auto"}, {v:"L",l:"lewa"}, {v:"P",l:"prawa"} ] } ]},
-    { group:"Otolity (VEMP / SVV)", tier:"advanced", help:"Woreczek→cVEMP (n. dolny); łagiewka→oVEMP (n. górny). Współtworzą przechył SVV.", params:[
-      { key:"sacculeL", label:"Woreczek lewy (cVEMP)",  min:0, max:1, step:0.05, unit:"", def:1 },
-      { key:"sacculeR", label:"Woreczek prawy (cVEMP)", min:0, max:1, step:0.05, unit:"", def:1 },
-      { key:"utricleL", label:"Łagiewka lewa (oVEMP)",  min:0, max:1, step:0.05, unit:"", def:1 },
-      { key:"utricleR", label:"Łagiewka prawa (oVEMP)", min:0, max:1, step:0.05, unit:"", def:1 } ]},
-    { group:"Trzecie okno (SCDS)", tier:"advanced", help:"Dehiscencja kan. górnego → objaw Tullio/Hennebert.", params:[
-      { key:"dehiscence", label:"Dehiscencja kan. górnego", type:"select", def:null,
-        options:[ {v:null,l:"brak"}, {v:"L",l:"lewa"}, {v:"P",l:"prawa"} ] } ]}
+      { key:"lesionEar", get label(){return tr("Strona chora (kompensacja)","Affected side (compensation)");}, type:"select", def:null,
+        options:[ {v:null,l:"auto"}, {v:"L",get l(){return tr("lewa","left");}}, {v:"P",get l(){return tr("prawa","right");}} ] } ]},
+    { get group(){return tr("Otolity (VEMP / SVV)","Otoliths (VEMP / SVV)");}, tier:"advanced", get help(){return tr("Woreczek→cVEMP (n. dolny); łagiewka→oVEMP (n. górny). Współtworzą przechył SVV.","Saccule→cVEMP (inferior nerve); utricle→oVEMP (superior nerve). They contribute to SVV tilt.");}, params:[
+      { key:"sacculeL", get label(){return tr("Woreczek lewy (cVEMP)","Saccule left (cVEMP)");},  min:0, max:1, step:0.05, unit:"", def:1 },
+      { key:"sacculeR", get label(){return tr("Woreczek prawy (cVEMP)","Saccule right (cVEMP)");}, min:0, max:1, step:0.05, unit:"", def:1 },
+      { key:"utricleL", get label(){return tr("Łagiewka lewa (oVEMP)","Utricle left (oVEMP)");},  min:0, max:1, step:0.05, unit:"", def:1 },
+      { key:"utricleR", get label(){return tr("Łagiewka prawa (oVEMP)","Utricle right (oVEMP)");}, min:0, max:1, step:0.05, unit:"", def:1 } ]},
+    { get group(){return tr("Trzecie okno (SCDS)","Third window (SCDS)");}, tier:"advanced", get help(){return tr("Dehiscencja kan. górnego → objaw Tullio/Hennebert.","Superior canal dehiscence → Tullio/Hennebert sign.");}, params:[
+      { key:"dehiscence", get label(){return tr("Dehiscencja kan. górnego","Superior canal dehiscence");}, type:"select", def:null,
+        options:[ {v:null,get l(){return tr("brak","none");}}, {v:"L",get l(){return tr("lewa","left");}}, {v:"P",get l(){return tr("prawa","right");}} ] } ]}
   ];
 
   // ETAP 7 (E5) — SYNTEZA KLINICZNA: pełny odczyt z parametrów (objawy + sygnały obwód/ośrodek +

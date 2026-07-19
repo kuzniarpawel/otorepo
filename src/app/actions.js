@@ -4,7 +4,7 @@ import { MANEUVERS, CANALS, sizedSeconds, CANAL_OF } from '../pose/maneuvers.js'
 import { state } from './state.js';
 import { $, releaseWake, beep } from '../runtime/registry.js';
 import { render, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
-import { setLang } from '../i18n.js';
+import { setLang, t } from '../i18n.js';
 
 function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
 function hintsHIT(canal, ear){
@@ -46,13 +46,13 @@ function hintsActivePatient(){
 // Presety scenariuszowe (obok trybu NEURONITIS, który steruje ramką „Wypadnięcie gałęzi nerwu").
 // Neuronitis (górny/dolny/cały × L/P × nasilenie) NIE ma osobnych przycisków — konfiguruje się w ramce nerwu.
 const HINTS_PRESETS = {
-  healthy: { label:"Zdrowy",              make:()=>({}) },
-  bvh:     { label:"BVH (obustronny)",    make:()=>NeuroVOR.bilateralLoss(1) },
-  meniereP:{ label:"Ménière — drażnienie P", make:()=>NeuroVOR.meniere("P",{phase:"irritative"}) },
-  meniereL:{ label:"Ménière — drażnienie L", make:()=>NeuroVOR.meniere("L",{phase:"irritative"}) },
-  scdsP:   { label:"SCDS P",              make:()=>({dehiscence:"P"}) },
+  healthy: { get label(){return t("Zdrowy","Healthy");},              make:()=>({}) },
+  bvh:     { get label(){return t("BVH (obustronny)","BVH (bilateral)");},    make:()=>NeuroVOR.bilateralLoss(1) },
+  meniereP:{ get label(){return t("Ménière — drażnienie P","Ménière — irritative R");}, make:()=>NeuroVOR.meniere("P",{phase:"irritative"}) },
+  meniereL:{ get label(){return t("Ménière — drażnienie L","Ménière — irritative L");}, make:()=>NeuroVOR.meniere("L",{phase:"irritative"}) },
+  scdsP:   { get label(){return t("SCDS P","SCDS R");},              make:()=>({dehiscence:"P"}) },
   scdsL:   { label:"SCDS L",              make:()=>({dehiscence:"L"}) },
-  stroke:  { label:"Udar (ośrodek)",      make:()=>({toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:3, otrTorsion:4}) }
+  stroke:  { get label(){return t("Udar (ośrodek)","Stroke (central)");},      make:()=>({toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:3, otrTorsion:4}) }
 };
 function loadHintsPreset(k){
   const pr=HINTS_PRESETS[k]; if(!pr) return;
