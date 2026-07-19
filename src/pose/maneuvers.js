@@ -210,9 +210,9 @@ function nysFromDyn(canal, side, xiPeak, apo){
   const hAnat = (N.h||0)*as;
   const rev = !N.excited && Math.abs(xiPeak) > 0.03;        // hamowanie → oczopląs odwrócony
   const weak = N.intensity < 0.5;
-  const base = horizontal ? (apo ? "oczopląs poziomy (apogeotropowy)" : "oczopląs poziomy")
-             : canal==="anterior" ? "oczopląs ↓ (downbeat)" : "oczopląs ↑ + skrętny";
-  const label = base + (rev ? " — ODWRÓCONY" : "") + (weak ? " (słaby)" : "");
+  const base = horizontal ? (apo ? t("oczopląs poziomy (apogeotropowy)","horizontal nystagmus (apogeotropic)") : t("oczopląs poziomy","horizontal nystagmus"))
+             : canal==="anterior" ? t("oczopląs ↓ (downbeat)","nystagmus ↓ (downbeat)") : t("oczopląs ↑ + skrętny","nystagmus ↑ + torsional");
+  const label = base + (rev ? t(" — ODWRÓCONY"," — REVERSED") : "") + (weak ? t(" (słaby)"," (weak)") : "");
   return {
     kind: horizontal ? "horizontal" : "upbeatTorsional",
     dir:  horizontal ? Math.sign(hAnat*camRx) : Math.sign((N.t||0)*camRx),
@@ -462,129 +462,129 @@ function maneuverSim(plan, size="medium"){
 }
 // v: "canalo" (kanalolitiaza / geotropowy) | "cupulo" (kupulolitiaza / apogeotropowy)
 const featsByVariant = v => v==="canalo"
-  ? ["Latencja 1–5 s","Przemijający (<60 s)","Wyczerpuje się"]
-  : ["Bez latencji","Uporczywy (>60 s)","Nie wyczerpuje się"];
+  ? [t("Latencja 1–5 s","Latency 1–5 s"),t("Przemijający (<60 s)","Transient (<60 s)"),t("Wyczerpuje się","Fatigues")]
+  : [t("Bez latencji","No latency"),t("Uporczywy (>60 s)","Persistent (>60 s)"),t("Nie wyczerpuje się","Does not fatigue")];
 
 const DIAG={
   dix:{ get name(){return t("Manewr Dix–Hallpike","Dix–Hallpike test");}, get tests(){return t("kanał tylny","posterior canal");}, canal:"posterior",
-    intro:"Z siadu obróć głowę 45° w stronę badaną, połóż szybko na plecach z głową odchyloną ~20° poniżej poziomu.",
+    get intro(){return t("Z siadu obróć głowę 45° w stronę badaną, połóż szybko na plecach z głową odchyloną ~20° poniżej poziomu.","From sitting, turn the head 45° toward the tested side, then lay the patient supine quickly with the head extended ~20° below horizontal.");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? `Postać klasyczna (kanalolitiaza): złóg swobodny w kanale tylnym po stronie ${SIDE[A]}.`
-      : `Postać rzadka (kupulolitiaza): złóg na osklepku kanału tylnego — oczopląs uporczywy.`,
+      ? t(`Postać klasyczna (kanalolitiaza): złóg swobodny w kanale tylnym po stronie ${sideN(A)}.`,`Classic form (canalithiasis): free-floating debris in the posterior canal on the ${sideN(A)} side.`)
+      : t(`Postać rzadka (kupulolitiaza): złóg na osklepku kanału tylnego — oczopląs uporczywy.`,`Rare form (cupulolithiasis): debris on the cupula of the posterior canal — persistent nystagmus.`),
     phases:(A,v)=>[{
-      ptitle:"Strona chora w dole", ppos:"Na plecach, głowa 45° ku stronie chorej, ~20° poniżej poziomu",
+      ptitle:t("Strona chora w dole","Affected side down"), ppos:t("Na plecach, głowa 45° ku stronie chorej, ~20° poniżej poziomu","Supine, head 45° toward the affected side, ~20° below horizontal"),
       body:"supineHang", yaw:yawToA(A), face:"up",
       nys: nysFromGeom("posterior", A, v, Vestibular.qSupineYaw(A==="P"?45:-45)),
-      label:`ku górze + skrętny ku uchu choremu (${SIDE[A]})`,
+      label:t(`ku górze + skrętny ku uchu choremu (${sideN(A)})`,`upbeat + torsional toward the affected ear (${sideN(A)})`),
       note: v==="canalo"
-        ? "po latencji, narasta i wygasa; wyczerpuje się przy powtórzeniu."
-        : "bez latencji, uporczywy, nie wyczerpuje się przy powtórzeniu."
+        ? t("po latencji, narasta i wygasa; wyczerpuje się przy powtórzeniu.","after a latency, crescendos and fades; fatigues on repetition.")
+        : t("bez latencji, uporczywy, nie wyczerpuje się przy powtórzeniu.","no latency, persistent, does not fatigue on repetition.")
     }]
   },
   roll:{ get name(){return t("Test pozycyjny (Roll / Pagnini–McClure)","Positional test (Roll / Pagnini–McClure)");}, get tests(){return t("kanał poziomy","horizontal canal");}, canal:"horizontal",
-    intro:"Pacjent na plecach, głowa zgięta ~30°. Obróć głowę szybko w jedną, potem w drugą stronę.",
+    get intro(){return t("Pacjent na plecach, głowa zgięta ~30°. Obróć głowę szybko w jedną, potem w drugą stronę.","Patient supine, head flexed ~30°. Turn the head quickly to one side, then to the other.");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? `Geotropowy: strona chora = SILNIEJSZA reakcja → ${SIDE[A]}.`
-      : `Apogeotropowy: strona chora = SŁABSZA reakcja przy uchu w dole → ${SIDE[A]}.`,
+      ? t(`Geotropowy: strona chora = SILNIEJSZA reakcja → ${sideN(A)}.`,`Geotropic: affected side = STRONGER response → ${sideN(A)}.`)
+      : t(`Apogeotropowy: strona chora = SŁABSZA reakcja przy uchu w dole → ${sideN(A)}.`,`Apogeotropic: affected side = WEAKER response with that ear down → ${sideN(A)}.`),
     phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
       const mk=down=>{ const up=otherSide(down);
         const strong = geo ? (down===A) : (down===H);
-        return {ptitle:`Ucho ${down==="L"?"lewe":"prawe"} w dole`, ppos:`Głowa obrócona 90° ku stronie ${SIDE[down]}`,
+        return {ptitle:t(`Ucho ${down==="L"?"lewe":"prawe"} w dole`,`${down==="L"?"Left":"Right"} ear down`), ppos:t(`Głowa obrócona 90° ku stronie ${sideN(down)}`,`Head turned 90° toward the ${sideN(down)} side`),
           body:"supineFlex", yaw: down==="P"?90:-90, face:"up",
           nys: nysFromGeom("horizontal", A, v, Vestibular.qSupineYaw(down==="P"?90:-90), "asym"),
-          label: geo ? `geotropowy — ku uchu w dole (${SIDE[down]})` : `apogeotropowy — ku uchu w górze (${SIDE[up]})`,
-          note: strong ? "Reakcja silniejsza w tej pozycji." : "Reakcja słabsza w tej pozycji."};
+          label: geo ? t(`geotropowy — ku uchu w dole (${sideN(down)})`,`geotropic — toward the lower ear (${sideN(down)})`) : t(`apogeotropowy — ku uchu w górze (${sideN(up)})`,`apogeotropic — toward the upper ear (${sideN(up)})`),
+          note: strong ? t("Reakcja silniejsza w tej pozycji.","Stronger response in this position.") : t("Reakcja słabsza w tej pozycji.","Weaker response in this position.")};
       };
       return [mk(A), mk(H)];
     }
   },
   bowlean:{ get name(){return t("Test Bow & Lean (skłon i odchylenie)","Bow & Lean test (bow and lean)");}, get tests(){return t("kanał poziomy — lateralizacja","horizontal canal — lateralization");}, canal:"horizontal",
-    intro:"W siadzie wykonaj skłon głowy w przód (bow), następnie odchylenie do tyłu (lean).",
+    get intro(){return t("W siadzie wykonaj skłon głowy w przód (bow), następnie odchylenie do tyłu (lean).","While sitting, bend the head forward (bow), then tilt it back (lean).");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? `Geotropowy: skłon (bow) bije ku stronie chorej → ${SIDE[A]}.`
-      : `Apogeotropowy: kierunki odwrócone — skłon bije ku stronie zdrowej.`,
+      ? t(`Geotropowy: skłon (bow) bije ku stronie chorej → ${sideN(A)}.`,`Geotropic: the bow beats toward the affected side → ${sideN(A)}.`)
+      : t(`Apogeotropowy: kierunki odwrócone — skłon bije ku stronie zdrowej.`,`Apogeotropic: directions reversed — the bow beats toward the healthy side.`),
     phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
       return [
-        {ptitle:"Skłon w przód (bow)", ppos:"Siad, skłon tułowia w przód ~45°, nos ku podłodze",
+        {ptitle:t("Skłon w przód (bow)","Forward bend (bow)"), ppos:t("Siad, skłon tułowia w przód ~45°, nos ku podłodze","Sitting, trunk bent forward ~45°, nose toward the floor"),
          body:"sit", yaw:0, face:"down",
          nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(90), "flat"),
-         label: geo?`bije ku stronie chorej (${SIDE[A]})`:`bije ku stronie zdrowej (${SIDE[H]})`,
-         note: geo?"Geotropowy: skłon wskazuje stronę chorą.":"Apogeotropowy: kierunek odwrócony."},
-        {ptitle:"Odchylenie do tyłu (lean)", ppos:"Siad, głowa odchylona do tyłu",
+         label: geo?t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`):t(`bije ku stronie zdrowej (${sideN(H)})`,`beats toward the healthy side (${sideN(H)})`),
+         note: geo?t("Geotropowy: skłon wskazuje stronę chorą.","Geotropic: the bow indicates the affected side."):t("Apogeotropowy: kierunek odwrócony.","Apogeotropic: direction reversed.")},
+        {ptitle:t("Odchylenie do tyłu (lean)","Backward tilt (lean)"), ppos:t("Siad, głowa odchylona do tyłu","Sitting, head tilted back"),
          body:"sit", yaw:0, face:"up",
          nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(-90), "flat"),
-         label: geo?`bije ku stronie zdrowej (${SIDE[H]})`:`bije ku stronie chorej (${SIDE[A]})`,
-         note: geo?"Przy odchyleniu kierunek odwraca się (ku zdrowej).":"Apogeotropowy: odchylenie bije ku chorej."},
+         label: geo?t(`bije ku stronie zdrowej (${sideN(H)})`,`beats toward the healthy side (${sideN(H)})`):t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`),
+         note: geo?t("Przy odchyleniu kierunek odwraca się (ku zdrowej).","On leaning back, the direction reverses (toward the healthy side)."):t("Apogeotropowy: odchylenie bije ku chorej.","Apogeotropic: the lean beats toward the affected side.")},
       ];
     }
   },
   headhang:{ get name(){return t("Test deep head-hang","Deep head-hang test");}, get tests(){return t("kanał przedni","anterior canal");}, canal:"anterior",
-    intro:"Z siadu połóż pacjenta szybko na plecach z głową głęboko odchyloną w tył (~30° poniżej poziomu) — prosto, bez obrotu.",
+    get intro(){return t("Z siadu połóż pacjenta szybko na plecach z głową głęboko odchyloną w tył (~30° poniżej poziomu) — prosto, bez obrotu.","From sitting, lay the patient supine quickly with the head extended deeply back (~30° below horizontal) — straight, without rotation.");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? `Kanalolitiaza kanału przedniego: oczopląs ku dołowi — czysty downbeat. Lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa/nieobecna) — stronę różnicuj reakcją na manewr i kontekstem klinicznym.`
-      : `Kupulolitiaza kanału przedniego (bardzo rzadka): downbeat uporczywy, bez latencji. Strony nie da się pewnie ustalić oczopląsem.`,
+      ? t(`Kanalolitiaza kanału przedniego: oczopląs ku dołowi — czysty downbeat. Lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa/nieobecna) — stronę różnicuj reakcją na manewr i kontekstem klinicznym.`,`Anterior-canal canalithiasis: downward nystagmus — pure downbeat. Lateralization by nystagmus is UNRELIABLE (torsion trace/absent) — differentiate the side by the response to the maneuver and clinical context.`)
+      : t(`Kupulolitiaza kanału przedniego (bardzo rzadka): downbeat uporczywy, bez latencji. Strony nie da się pewnie ustalić oczopląsem.`,`Anterior-canal cupulolithiasis (very rare): persistent downbeat, no latency. The side cannot be reliably established by nystagmus.`),
     phases:(A,v)=>[{
-      ptitle:"Głowa głęboko w tył", ppos:"Na plecach, głowa prosto, głęboko odchylona (~30° poniżej poziomu)",
+      ptitle:t("Głowa głęboko w tył","Head deep back"), ppos:t("Na plecach, głowa prosto, głęboko odchylona (~30° poniżej poziomu)","Supine, head straight, extended deeply (~30° below horizontal)"),
       body:"supineHang", yaw:0, face:"up",
       nys: nysFromGeom("anterior", A, v, Vestibular.qSupineYaw(0)),
-      label:`ku dołowi — czysty downbeat (bez wyraźnej torsji)`,
+      label:t(`ku dołowi — czysty downbeat (bez wyraźnej torsji)`,`downward — pure downbeat (no clear torsion)`),
       note: v==="canalo"
-        ? "po latencji: czysty downbeat, narasta i wygasa, wyczerpuje się przy powtórzeniu. Oczopląsu nie używaj do ustalenia strony — torsja bywa śladowa/nieobecna."
-        : "bez latencji, downbeat, uporczywy, nie wyczerpuje się przy powtórzeniu."
+        ? t("po latencji: czysty downbeat, narasta i wygasa, wyczerpuje się przy powtórzeniu. Oczopląsu nie używaj do ustalenia strony — torsja bywa śladowa/nieobecna.","after a latency: pure downbeat, crescendos and fades, fatigues on repetition. Do not use the nystagmus to establish the side — torsion may be trace/absent.")
+        : t("bez latencji, downbeat, uporczywy, nie wyczerpuje się przy powtórzeniu.","no latency, downbeat, persistent, does not fatigue on repetition.")
     }]
   },
 };
 function variantLabels(canal){
   return canal==="horizontal"
-    ? {canalo:"Kanalolitiaza (geotropowy)", cupulo:"Kupulolitiaza (apogeotropowy)"}
-    : {canalo:"Kanalolitiaza", cupulo:"Kupulolitiaza (rzadko)"};
+    ? {canalo:t("Kanalolitiaza (geotropowy)","Canalithiasis (geotropic)"), cupulo:t("Kupulolitiaza (apogeotropowy)","Cupulolithiasis (apogeotropic)")}
+    : {canalo:t("Kanalolitiaza","Canalithiasis"), cupulo:t("Kupulolitiaza (rzadko)","Cupulolithiasis (rare)")};
 }
 // dobór manewru leczniczego na podstawie testu + wariantu
 function recommend(testKey,variant){
   if(testKey==="dix"){
     return variant==="canalo"
-      ? {primary:"epley",alts:["semont"],note:"Kanalolitiaza kanału tylnego — preferowany manewr Epleya; alternatywnie Semont."}
-      : {primary:"semont",alts:["bascule","epley"],note:"Kupulolitiaza kanału tylnego (rzadka) — preferowany manewr uwalniający Semonta. W postaciach opornych/atypowych rozważ manewr Bascule („huśtawka” bok–bok odrywa złóg od osklepka). Epley służy głównie kanalolitiazie."};
+      ? {primary:"epley",alts:["semont"],note:t("Kanalolitiaza kanału tylnego — preferowany manewr Epleya; alternatywnie Semont.","Posterior-canal canalithiasis — the Epley maneuver is preferred; Semont as an alternative.")}
+      : {primary:"semont",alts:["bascule","epley"],note:t("Kupulolitiaza kanału tylnego (rzadka) — preferowany manewr uwalniający Semonta. W postaciach opornych/atypowych rozważ manewr Bascule („huśtawka” bok–bok odrywa złóg od osklepka). Epley służy głównie kanalolitiazie.","Posterior-canal cupulolithiasis (rare) — the Semont liberatory maneuver is preferred. In resistant/atypical forms consider the Bascule maneuver (side-to-side 'rocking' detaches the debris from the cupula). Epley mainly serves canalithiasis.")};
   }
   if(testKey==="headhang"){
     return variant==="canalo"
-      ? {primary:"yacovino",alts:[],note:"Kanalolitiaza kanału przedniego — manewr Yacovino (deep head-hang → szybki ruch brody do klatki). Kanał przedni jest rzadki; oczopląs to czysty downbeat — strony nie ustalisz oczopląsem, różnicuj kontekstem i reakcją na manewr."}
-      : {primary:"yacovino",alts:[],note:"Kupulolitiaza kanału przedniego (bardzo rzadka) — postępowanie jak w kanalolitiazie; rozważ ponowną ocenę i wykluczenie przyczyny ośrodkowej (izolowany downbeat)."};
+      ? {primary:"yacovino",alts:[],note:t("Kanalolitiaza kanału przedniego — manewr Yacovino (deep head-hang → szybki ruch brody do klatki). Kanał przedni jest rzadki; oczopląs to czysty downbeat — strony nie ustalisz oczopląsem, różnicuj kontekstem i reakcją na manewr.","Anterior-canal canalithiasis — the Yacovino maneuver (deep head-hang → quick chin-to-chest movement). The anterior canal is rare; the nystagmus is a pure downbeat — you cannot establish the side by nystagmus, differentiate by context and response to the maneuver.")}
+      : {primary:"yacovino",alts:[],note:t("Kupulolitiaza kanału przedniego (bardzo rzadka) — postępowanie jak w kanalolitiazie; rozważ ponowną ocenę i wykluczenie przyczyny ośrodkowej (izolowany downbeat).","Anterior-canal cupulolithiasis (very rare) — manage as for canalithiasis; consider re-evaluation and ruling out a central cause (isolated downbeat).")};
   }
   // roll / bowlean → kanał poziomy
   return variant==="canalo"
-    ? {primary:"lempert",alts:["gufoniGeo"],note:"Geotropowy (kanalolitiaza) kanału poziomego — rolka Lemperta ku stronie zdrowej lub manewr Gufoniego (geotropowy)."}
-    : {primary:"gufoniApo",alts:["lempert"],note:"Apogeotropowy (kupulolitiaza) — manewr Gufoniego (apogeotropowy) przekształca postać w geotropową; następnie ponowny test i leczenie postaci geotropowej."};
+    ? {primary:"lempert",alts:["gufoniGeo"],note:t("Geotropowy (kanalolitiaza) kanału poziomego — rolka Lemperta ku stronie zdrowej lub manewr Gufoniego (geotropowy).","Geotropic (canalithiasis) of the horizontal canal — Lempert roll toward the healthy side or the Gufoni maneuver (geotropic).")}
+    : {primary:"gufoniApo",alts:["lempert"],note:t("Apogeotropowy (kupulolitiaza) — manewr Gufoniego (apogeotropowy) przekształca postać w geotropową; następnie ponowny test i leczenie postaci geotropowej.","Apogeotropic (cupulolithiasis) — the Gufoni maneuver (apogeotropic) converts the form into a geotropic one; then re-test and treat the geotropic form.")};
 }
 // Klasyfikacja podtypu BPPV wg kryteriów Bárány Society (ICVD 2015): mapuje (kanał, wariant, strona, tryb downbeat)
 // na formalną etykietę + poziom pewności (established/emerging) + cechy różnicujące (latencja/czas/męczliwość/kierunek/
 // strona chora). Czysta funkcja kliniczna — jak recommend(); zasila kartę „Klasyfikacja" w diagnostyce. NIE zmienia
 // fizyki — synteza z konwencji już zakodowanych w DIAG (latNote/features). [engine_doc: KRYTERIA BARANY]
 function baranyClassify(canal, variant, side, antMode){
-  const S=SIDE[side];
-  const est={ tier:"established", tierLabel:"zespół ustalony" };
-  const emg={ tier:"emerging",    tierLabel:"zespół wyłaniający się / atypowy" };
+  const S=sideN(side);
+  const est={ tier:"established", tierLabel:t("zespół ustalony","established syndrome") };
+  const emg={ tier:"emerging",    tierLabel:t("zespół wyłaniający się / atypowy","emerging / atypical syndrome") };
   if(antMode || canal==="anterior")
-    return { ...emg, subtype:"BPPV kanału przedniego",
-      crit:[["Latencja", variant==="cupulo"?"brak":"po latencji"],["Czas trwania", variant==="cupulo"?"uporczywy":"< 1 min"],
-            ["Męczliwość", variant==="cupulo"?"nie":"tak"],["Kierunek","czysty downbeat (± śladowa torsja)"],["Strona chora","niepewna z oczoplasu"]],
-      redflag:"Izolowany downbeat pozycyjny — WYKLUCZ przyczynę ośrodkową (móżdżek, pogranicze czaszkowo-szyjne) przed leczeniem." };
+    return { ...emg, subtype:t("BPPV kanału przedniego","Anterior-canal BPPV"),
+      crit:[[t("Latencja","Latency"), variant==="cupulo"?t("brak","none"):t("po latencji","after a latency")],[t("Czas trwania","Duration"), variant==="cupulo"?t("uporczywy","persistent"):"< 1 min"],
+            [t("Męczliwość","Fatigability"), variant==="cupulo"?t("nie","no"):t("tak","yes")],[t("Kierunek","Direction"),t("czysty downbeat (± śladowa torsja)","pure downbeat (± trace torsion)")],[t("Strona chora","Affected side"),t("niepewna z oczoplasu","uncertain from nystagmus")]],
+      redflag:t("Izolowany downbeat pozycyjny — WYKLUCZ przyczynę ośrodkową (móżdżek, pogranicze czaszkowo-szyjne) przed leczeniem.","Isolated positional downbeat — RULE OUT a central cause (cerebellum, craniocervical junction) before treatment.") };
   if(canal==="posterior")
     return variant==="canalo"
-      ? { ...est, subtype:"BPPV kanału tylnego — kanalolitiaza",
-          crit:[["Latencja","1–kilka s"],["Czas trwania","< 1 min"],["Męczliwość","tak — złóg się rozprasza"],["Kierunek","upbeat + skrętny ku uchu dolnemu"],["Strona chora",`${S} (ucho zależne)`]] }
-      : { ...emg, subtype:"BPPV kanału tylnego — kupulolitiaza (atypowa)",
-          crit:[["Latencja","brak"],["Czas trwania","uporczywy (> 1 min)"],["Męczliwość","nie"],["Kierunek","upbeat-skrętny, uporczywy"],["Strona chora",S]] };
+      ? { ...est, subtype:t("BPPV kanału tylnego — kanalolitiaza","Posterior-canal BPPV — canalithiasis"),
+          crit:[[t("Latencja","Latency"),t("1–kilka s","1–a few s")],[t("Czas trwania","Duration"),"< 1 min"],[t("Męczliwość","Fatigability"),t("tak — złóg się rozprasza","yes — the debris disperses")],[t("Kierunek","Direction"),t("upbeat + skrętny ku uchu dolnemu","upbeat + torsional toward the lower ear")],[t("Strona chora","Affected side"),`${S} ${t("(ucho zależne)","(dependent ear)")}`]] }
+      : { ...emg, subtype:t("BPPV kanału tylnego — kupulolitiaza (atypowa)","Posterior-canal BPPV — cupulolithiasis (atypical)"),
+          crit:[[t("Latencja","Latency"),t("brak","none")],[t("Czas trwania","Duration"),t("uporczywy (> 1 min)","persistent (> 1 min)")],[t("Męczliwość","Fatigability"),t("nie","no")],[t("Kierunek","Direction"),t("upbeat-skrętny, uporczywy","upbeat-torsional, persistent")],[t("Strona chora","Affected side"),S]] };
   // kanał poziomy (roll / bow-lean)
   return variant==="canalo"
-    ? { ...est, subtype:"BPPV kanału poziomego — kanalolitiaza (geotropowy)",
-        crit:[["Latencja","sekundy"],["Czas trwania","< 1 min"],["Męczliwość","tak"],["Kierunek","geotropowy (ku uchu w dole)"],["Strona chora",`${S} — SILNIEJSZA reakcja`]] }
-    : { ...est, subtype:"BPPV kanału poziomego — kupulolitiaza (apogeotropowy)",
-        crit:[["Latencja","brak / krótka"],["Czas trwania","uporczywy"],["Męczliwość","nie"],["Kierunek","apogeotropowy (ku uchu w górze)"],["Strona chora",`${S} — SŁABSZA reakcja`]] };
+    ? { ...est, subtype:t("BPPV kanału poziomego — kanalolitiaza (geotropowy)","Horizontal-canal BPPV — canalithiasis (geotropic)"),
+        crit:[[t("Latencja","Latency"),t("sekundy","seconds")],[t("Czas trwania","Duration"),"< 1 min"],[t("Męczliwość","Fatigability"),t("tak","yes")],[t("Kierunek","Direction"),t("geotropowy (ku uchu w dole)","geotropic (toward the lower ear)")],[t("Strona chora","Affected side"),`${S} — ${t("SILNIEJSZA reakcja","STRONGER response")}`]] }
+    : { ...est, subtype:t("BPPV kanału poziomego — kupulolitiaza (apogeotropowy)","Horizontal-canal BPPV — cupulolithiasis (apogeotropic)"),
+        crit:[[t("Latencja","Latency"),t("brak / krótka","none / brief")],[t("Czas trwania","Duration"),t("uporczywy","persistent")],[t("Męczliwość","Fatigability"),t("nie","no")],[t("Kierunek","Direction"),t("apogeotropowy (ku uchu w górze)","apogeotropic (toward the upper ear)")],[t("Strona chora","Affected side"),`${S} — ${t("SŁABSZA reakcja","WEAKER response")}`]] };
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
