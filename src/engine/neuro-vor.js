@@ -1,5 +1,6 @@
 import { Vestibular } from './vestibular.js';
 import { Scene3D } from './scene3d.js';
+import { t as tr } from '../i18n.js';   // alias 'tr' — lokalne 't' (param testu) NIE koliduje z tlumaczeniem
 
 /* ============ NeuroVOR — silnik toniczny/ośrodkowy (warstwa HINTS) ============
    Model „od pierwszych zasad": nie kodujemy wyglądu patologii, lecz fizjologię
@@ -457,13 +458,13 @@ export const NeuroVOR = (()=>{
   const VEMP_THRESH=0.3;    // amplituda < 0.3 → „zniesiony"; 0.3..0.65 → „obniżony"; ≥0.65 → „prawidłowy"
   function vemp(p){
     const clamp = x => Math.max(0, Math.min(1, x));
-    const stat = a => a>=0.65 ? "prawidłowy" : a>=VEMP_THRESH ? "obniżony" : "zniesiony";
+    const stat = a => a>=0.65 ? tr("prawidłowy","normal") : a>=VEMP_THRESH ? tr("obniżony","reduced") : tr("zniesiony","absent");
     const asym = (L,R) => (L+R)>0 ? Math.abs(L-R)/(L+R) : 0;                     // AR% (0..1)
     const weak = (L,R) => Math.abs(L-R)<0.1 ? null : (L<R?"L":"P");
     const cL=clamp(p.sacculeL), cR=clamp(p.sacculeR), oL=clamp(p.utricleL), oR=clamp(p.utricleR);
     return {
-      cVEMP:{ organ:"woreczek", nerve:"dolny", L:stat(cL), R:stat(cR), ampL:cL, ampR:cR, asym:asym(cL,cR), weakEar:weak(cL,cR) },
-      oVEMP:{ organ:"łagiewka", nerve:"górny", L:stat(oL), R:stat(oR), ampL:oL, ampR:oR, asym:asym(oL,oR), weakEar:weak(oL,oR) }
+      cVEMP:{ organ:tr("woreczek","saccule"), nerve:tr("dolny","inferior"), L:stat(cL), R:stat(cR), ampL:cL, ampR:cR, asym:asym(cL,cR), weakEar:weak(cL,cR) },
+      oVEMP:{ organ:tr("łagiewka","utricle"), nerve:tr("górny","superior"), L:stat(oL), R:stat(oR), ampL:oL, ampR:oR, asym:asym(oL,oR), weakEar:weak(oL,oR) }
     };
   }
 
@@ -524,17 +525,17 @@ export const NeuroVOR = (()=>{
   // samoistny przy PRAWIDŁOWYM HIT (rozprzężenie stat./dyn.), a obwód — oczopląs + patologiczny HIT
   // po tej samej stronie. Patologię tworzy zmiana kilku liczb; wynik HINTS wypada sam.
   const SCENARIOS = {
-    normal:       { label:"Zdrowy / równowaga", side:null,
+    normal:       { get label(){return tr("Zdrowy / równowaga","Healthy / balance");}, side:null,
       params:{} },
-    neuritisR:    { label:"Neuronitis przedsionkowy — ucho P (OBWÓD)", side:"P",
+    neuritisR:    { get label(){return tr("Neuronitis przedsionkowy — ucho P (OBWÓD)","Vestibular neuritis — R ear (PERIPHERAL)");}, side:"P",
       params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0.9, integratorTau:25, skewTone:0 } },
-    neuritisL:    { label:"Neuronitis przedsionkowy — ucho L (OBWÓD)", side:"L",
+    neuritisL:    { get label(){return tr("Neuronitis przedsionkowy — ucho L (OBWÓD)","Vestibular neuritis — L ear (PERIPHERAL)");}, side:"L",
       params:{ toneL:5, gainL:0.35, caloricGainL:0.3, fixationGain:0.9, integratorTau:25, skewTone:0 } },
-    strokeCentral:{ label:"Udar móżdżku / pnia (OŚRODEK)", side:"P",
+    strokeCentral:{ get label(){return tr("Udar móżdżku / pnia (OŚRODEK)","Cerebellar / brainstem stroke (CENTRAL)");}, side:"P",
       // kanały SPRAWNE (gain≈1 → HIT prawidłowy), łagodny ton asymetryczny ośrodkowy (oczopląs samoistny),
       // integrator „leaky" (oczopląs zmienny kierunkowo), asymetria grawiceptywna (skew + torsja).
       params:{ toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:3, otrTorsion:4 } },
-    bvh:          { label:"Obustronna westybulopatia / otoksyczność (BVH)", side:null,
+    bvh:          { get label(){return tr("Obustronna westybulopatia / otoksyczność (BVH)","Bilateral vestibulopathy / ototoxicity (BVH)");}, side:null,
       // SYMETRYCZNY ubytek OBU błędników → brak oczopląsu samoistnego (symetria!), ale vHIT patologiczny
       // OBUSTRONNIE we wszystkich płaszczyznach. Objawy: oscylopsja przy ruchu głowy, chód po ciemku (nie okoruch).
       params: bilateralLoss(1) },
@@ -555,9 +556,9 @@ export const NeuroVOR = (()=>{
     const impulseNormalDanger = hasSpont && !hiAbnormal;      // HIT prawidłowy MIMO oczopląsu = ośrodek
     const anyFinding = hasSpont || dirChanging || ts.present || hiAbnormal;
     const centralSigns = [];
-    if(impulseNormalDanger) centralSigns.push("HIT prawidłowy mimo oczopląsu samoistnego (Impulse Normal)");
-    if(dirChanging)         centralSigns.push("oczopląs zmienny kierunkowo (Fast-phase Alternating)");
-    if(ts.central)          centralSigns.push("dodatni Test of Skew — pionowa sakada przy odsłanianiu (Refixation on Cover Test)");   // tylko ZNACZĄCY skew (mały = obwodowy)
+    if(impulseNormalDanger) centralSigns.push(tr("HIT prawidłowy mimo oczopląsu samoistnego (Impulse Normal)","HIT normal despite spontaneous nystagmus (Impulse Normal)"));
+    if(dirChanging)         centralSigns.push(tr("oczopląs zmienny kierunkowo (Fast-phase Alternating)","direction-changing nystagmus (Fast-phase Alternating)"));
+    if(ts.central)          centralSigns.push(tr("dodatni Test of Skew — pionowa sakada przy odsłanianiu (Refixation on Cover Test)","positive Test of Skew — vertical saccade on uncovering (Refixation on Cover Test)"));   // tylko ZNACZĄCY skew (mały = obwodowy)
     const verdict = !anyFinding ? "normal" : (centralSigns.length ? "central" : "peripheral");
     return {
       verdict,
@@ -617,7 +618,7 @@ export const NeuroVOR = (()=>{
   // Narzędzie DYDAKTYCZNE, nie diagnostyczne. [H8][H21]
   function clinicalReadout(p){
     const R1 = x => Math.round(x*10)/10;
-    const side = e => e==="P" ? "prawej" : e==="L" ? "lewej" : null;
+    const side = e => e==="P" ? tr("prawej","right") : e==="L" ? tr("lewej","left") : null;
     const h = hints(p), cal = caloricBattery(p);
     const dark = h.ny.dark, lit = h.ny.lit, sk = h.ts;         // Fix7: reuse z hints (bez ponownego observe/skew)
     const hc = { plane:"HC", tests:[h.hi.right, h.hi.left], abnormal:h.hi.abnormal };  // HC = te same pchnięcia co w hints
@@ -629,47 +630,47 @@ export const NeuroVOR = (()=>{
     const hSpont = dark.spv >= VIS_THRESH, vSpont = (dark.spvV||0) >= VIS_THRESH;
     if(hSpont || vSpont){
       const parts = [];
-      if(hSpont) parts.push(`poziomo-skrętny ku stronie ${side(dark.beatEar)} (${R1(dark.spv)}°/s)`);
-      if(vSpont) parts.push(`pionowo-skrętny ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`);
+      if(hSpont) parts.push(tr(`poziomo-skrętny ku stronie ${side(dark.beatEar)} (${R1(dark.spv)}°/s)`,`horizontal-torsional toward the ${side(dark.beatEar)} side (${R1(dark.spv)}°/s)`));
+      if(vSpont) parts.push(tr(`pionowo-skrętny ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`,`vertical-torsional ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`));
       const f = lit.suppressionFactor, supp = f<=0.5 && (dark.spv>0.5 || (dark.spvV||0)>0.5);  // supresja poziomu LUB pionu
-      findings.push(`Oczopląs samoistny: ${parts.join(" + ")}; ${supp?"tłumiony":"NIEtłumiony"} fiksacją.`);
-      (supp ? peripheralSigns : centralSigns).push(supp ? "oczopląs tłumiony fiksacją" : "oczopląs NIEtłumiony fiksacją");
-      if(vSpont && !hSpont) centralSigns.push("izolowany oczopląs pionowo-skrętny (klasycznie podejrzany o ośrodek)");
-    } else findings.push("Brak oczopląsu samoistnego w spoczynku.");
-    if(h.ny.directionChanging){ findings.push("Oczopląs zmienia kierunek ze spojrzeniem (spojrzeniowy)."); centralSigns.push("oczopląs zmienny kierunkowo"); }
+      findings.push(tr(`Oczopląs samoistny: ${parts.join(" + ")}; ${supp?"tłumiony":"NIEtłumiony"} fiksacją.`,`Spontaneous nystagmus: ${parts.join(" + ")}; ${supp?"suppressed":"NOT suppressed"} by fixation.`));
+      (supp ? peripheralSigns : centralSigns).push(supp ? tr("oczopląs tłumiony fiksacją","nystagmus suppressed by fixation") : tr("oczopląs NIEtłumiony fiksacją","nystagmus NOT suppressed by fixation"));
+      if(vSpont && !hSpont) centralSigns.push(tr("izolowany oczopląs pionowo-skrętny (klasycznie podejrzany o ośrodek)","isolated vertical-torsional nystagmus (classically suspicious for a central cause)"));
+    } else findings.push(tr("Brak oczopląsu samoistnego w spoczynku.","No spontaneous nystagmus at rest."));
+    if(h.ny.directionChanging){ findings.push(tr("Oczopląs zmienia kierunek ze spojrzeniem (spojrzeniowy).","Nystagmus changes direction with gaze (gaze-evoked).")); centralSigns.push(tr("oczopląs zmienny kierunkowo","direction-changing nystagmus")); }
 
     // vHIT płaszczyzn
     const planes = [];
-    if(hc.abnormal)   planes.push("poziomej");
-    if(ralp.abnormal) planes.push("RALP (przedni P / tylny L)");
-    if(larp.abnormal) planes.push("LARP (przedni L / tylny P)");
-    if(planes.length){ findings.push(`vHIT patologiczny w płaszczyźnie: ${planes.join(", ")}.`); peripheralSigns.push("patologiczny vHIT (ubytek obwodowy)"); }
-    else findings.push("vHIT prawidłowy we wszystkich płaszczyznach.");
+    if(hc.abnormal)   planes.push(tr("poziomej","horizontal"));
+    if(ralp.abnormal) planes.push(tr("RALP (przedni P / tylny L)","RALP (anterior R / posterior L)"));
+    if(larp.abnormal) planes.push(tr("LARP (przedni L / tylny P)","LARP (anterior L / posterior R)"));
+    if(planes.length){ findings.push(tr(`vHIT patologiczny w płaszczyźnie: ${planes.join(", ")}.`,`Pathological vHIT in the plane: ${planes.join(", ")}.`)); peripheralSigns.push(tr("patologiczny vHIT (ubytek obwodowy)","pathological vHIT (peripheral deficit)")); }
+    else findings.push(tr("vHIT prawidłowy we wszystkich płaszczyznach.","vHIT normal in all planes."));
 
     // skew — cecha OŚRODKOWA tylko gdy ZNACZĄCY (sk.central); mały skew może być obwodowy (łagiewka)
     if(sk.present){
-      findings.push(`Odchylenie skośne: oko ${sk.hyperSide==="P"?"prawe":"lewe"} wyżej (${R1(sk.skewDeg)}°)${sk.central?"":" — małe, może być obwodowe (łagiewka)"}.`);
-      if(sk.central) centralSigns.push("dodatni test odchylenia skośnego (znaczący)");
+      findings.push(tr(`Odchylenie skośne: oko ${sk.hyperSide==="P"?"prawe":"lewe"} wyżej (${R1(sk.skewDeg)}°)${sk.central?"":" — małe, może być obwodowe (łagiewka)"}.`,`Skew deviation: ${sk.hyperSide==="P"?"right":"left"} eye higher (${R1(sk.skewDeg)}°)${sk.central?"":" — small, may be peripheral (utricle)"}.`));
+      if(sk.central) centralSigns.push(tr("dodatni test odchylenia skośnego (znaczący)","positive skew deviation test (significant)"));
     }
 
     // kaloryka
-    if(cal.bilateralWeak) findings.push("Kaloryka: OBUSTRONNE osłabienie (suma odpowiedzi poniżej progu) — CP≈0 mimo ubytku.");
-    else if(cal.weakEar)  findings.push(`Kaloryka: niedowład kanału po stronie ${side(cal.weakEar)} (CP skoryg. ${R1(Math.abs(cal.CPcorrected))}%).`);
-    else findings.push("Kaloryka: prawidłowa (brak istotnego niedowładu).");
-    if(Math.abs(cal.DP) >= DP_THRESH) findings.push(`Przewaga kierunkowa ku stronie ${side(cal.dpSide)} (DP ${R1(Math.abs(cal.DP))}%).`);
+    if(cal.bilateralWeak) findings.push(tr("Kaloryka: OBUSTRONNE osłabienie (suma odpowiedzi poniżej progu) — CP≈0 mimo ubytku.","Caloric: BILATERAL weakness (sum of responses below threshold) — CP≈0 despite the deficit."));
+    else if(cal.weakEar)  findings.push(tr(`Kaloryka: niedowład kanału po stronie ${side(cal.weakEar)} (CP skoryg. ${R1(Math.abs(cal.CPcorrected))}%).`,`Caloric: canal paresis on the ${side(cal.weakEar)} side (corrected CP ${R1(Math.abs(cal.CPcorrected))}%).`));
+    else findings.push(tr("Kaloryka: prawidłowa (brak istotnego niedowładu).","Caloric: normal (no significant paresis)."));
+    if(Math.abs(cal.DP) >= DP_THRESH) findings.push(tr(`Przewaga kierunkowa ku stronie ${side(cal.dpSide)} (DP ${R1(Math.abs(cal.DP))}%).`,`Directional preponderance toward the ${side(cal.dpSide)} side (DP ${R1(Math.abs(cal.DP))}%).`));
 
     // SCDS
-    if(scds && scds.present){ findings.push(`SCDS: dźwięk/ciśnienie wyzwala oczopląs pionowo-skrętny (dehiscencja po stronie ${side(p.dehiscence)}), bez ruchu głową.`); peripheralSigns.push("dodatni objaw Tullio/Hennebert (trzecie okno)"); }
+    if(scds && scds.present){ findings.push(tr(`SCDS: dźwięk/ciśnienie wyzwala oczopląs pionowo-skrętny (dehiscencja po stronie ${side(p.dehiscence)}), bez ruchu głową.`,`SCDS: sound/pressure triggers vertical-torsional nystagmus (dehiscence on the ${side(p.dehiscence)} side), without head movement.`)); peripheralSigns.push(tr("dodatni objaw Tullio/Hennebert (trzecie okno)","positive Tullio/Hennebert sign (third window)")); }
 
     // SVV / przechył pionu — grawiceptywny (łagiewka + kanały pionowe); OBWODOWY, ku stronie chorej. Czulszy niż
     // odchylenie skośne: neuronitis DOLNY daje mały przechył SVV mimo prawidłowego skew (skew z łagiewki=0). [H22]
     const sv = svv(p);
-    if(sv.abnormal){ findings.push(`SVV: przechył pionu ku stronie ${side(sv.tiltSide)} (${R1(sv.deg)}°) — grawiceptywny, obwodowy${sk.present?"":" (odchylenie skośne prawidłowe)"}.`); peripheralSigns.push("przechył SVV ku stronie chorej"); }
+    if(sv.abnormal){ findings.push(tr(`SVV: przechył pionu ku stronie ${side(sv.tiltSide)} (${R1(sv.deg)}°) — grawiceptywny, obwodowy${sk.present?"":" (odchylenie skośne prawidłowe)"}.`,`SVV: vertical tilt toward the ${side(sv.tiltSide)} side (${R1(sv.deg)}°) — graviceptive, peripheral${sk.present?"":" (skew deviation normal)"}.`)); peripheralSigns.push(tr("przechył SVV ku stronie chorej","SVV tilt toward the affected side")); }
 
     // VEMP — cVEMP ≈ WORECZEK (n. DOLNY), oVEMP ≈ ŁAGIEWKA (n. GÓRNY): rozdziela gałęzie nerwu. [H22]
     const ve = vemp(p);
-    if(ve.cVEMP.weakEar){ findings.push(`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.cVEMP.weakEar)} — woreczek (nerw DOLNY).`); peripheralSigns.push("cVEMP obniżony (woreczek — n. dolny)"); }
-    if(ve.oVEMP.weakEar){ findings.push(`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.oVEMP.weakEar)} — łagiewka (nerw GÓRNY).`); peripheralSigns.push("oVEMP obniżony (łagiewka — n. górny)"); }
+    if(ve.cVEMP.weakEar){ findings.push(tr(`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.cVEMP.weakEar)} — woreczek (nerw DOLNY).`,`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} on the ${side(ve.cVEMP.weakEar)} side — saccule (INFERIOR nerve).`)); peripheralSigns.push(tr("cVEMP obniżony (woreczek — n. dolny)","cVEMP reduced (saccule — inferior nerve)")); }
+    if(ve.oVEMP.weakEar){ findings.push(tr(`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.oVEMP.weakEar)} — łagiewka (nerw GÓRNY).`,`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} on the ${side(ve.oVEMP.weakEar)} side — utricle (SUPERIOR nerve).`)); peripheralSigns.push(tr("oVEMP obniżony (łagiewka — n. górny)","oVEMP reduced (utricle — superior nerve)")); }
 
     // lokalizacja (z wzorca vHIT + kaloryki). Nerw GÓRNY (ucho E) = kanał poziomy-E + przedni-E; przedni-P leży
     // w płaszczyźnie RALP, przedni-L w LARP (tylny-E — nerw DOLNY — oszczędzony). Stąd wzorzec superior =
@@ -678,24 +679,24 @@ export const NeuroVOR = (()=>{
     const supObl = lesSide==="P" ? ralp.abnormal : lesSide==="L" ? larp.abnormal : false;   // płaszczyzna z przednim kanałem ucha chorego
     const othObl = lesSide==="P" ? larp.abnormal : lesSide==="L" ? ralp.abnormal : false;   // druga skośna (kanał tylny — nerw dolny)
     let localization;
-    if(cal.bilateralWeak && hc.abnormal)                              localization = "obustronna westybulopatia (BVH)";
-    else if(hc.abnormal && ralp.abnormal && larp.abnormal)           localization = `pełny ubytek błędnika po stronie ${side(lesSide)}`;
-    else if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar){ const pcS=ralp.abnormal?"L":"P"; localization = `nerw DOLNY (kanał tylny) po stronie ${side(pcS)}${ve.cVEMP.weakEar===pcS?" + cVEMP↓ (woreczek)":""} — kaloryka i HC prawidłowe`; }   // RALP zawiera tylny-L, LARP tylny-P
-    else if(cal.dissociation && cal.weakEar && !hc.abnormal)          localization = `ubytek NISKOczęstotliwościowy (wodniak / Ménière?) po stronie ${side(cal.weakEar)}`;
-    else if((hc.abnormal||cal.weakEar) && supObl && !othObl)          localization = `nerw GÓRNY po stronie ${side(lesSide)} (poziomy + przedni)${ve.oVEMP.weakEar===lesSide?" + oVEMP↓ (łagiewka)":""}`;
-    else if((hc.abnormal||cal.weakEar) && !ralp.abnormal && !larp.abnormal) localization = `nerw GÓRNY po stronie ${side(lesSide)} (kanał poziomy)`;
-    else if(ve.cVEMP.weakEar && !ve.oVEMP.weakEar && !planes.length && !cal.weakEar) localization = `nerw DOLNY (woreczek) po stronie ${side(ve.cVEMP.weakEar)} — izolowany ubytek otolitowy (cVEMP↓, oVEMP prawidłowy)`;
-    else if(h.verdict==="central")                                    localization = "ośrodkowa (pień/móżdżek)";
-    else if(scds && scds.present)                                     localization = `SCDS / trzecie okno po stronie ${side(p.dehiscence)}`;
-    else if(!h.ny.hasSpontaneous && !cal.caloricWeak && !planes.length && !(sk.present) && !sv.abnormal && !ve.cVEMP.weakEar && !ve.oVEMP.weakEar) localization = "brak lokalizacji (obraz prawidłowy)";
-    else                                                              localization = "nieokreślona";
+    if(cal.bilateralWeak && hc.abnormal)                              localization = tr("obustronna westybulopatia (BVH)","bilateral vestibulopathy (BVH)");
+    else if(hc.abnormal && ralp.abnormal && larp.abnormal)           localization = tr(`pełny ubytek błędnika po stronie ${side(lesSide)}`,`complete labyrinthine loss on the ${side(lesSide)} side`);
+    else if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar){ const pcS=ralp.abnormal?"L":"P"; localization = tr(`nerw DOLNY (kanał tylny) po stronie ${side(pcS)}${ve.cVEMP.weakEar===pcS?" + cVEMP↓ (woreczek)":""} — kaloryka i HC prawidłowe`,`INFERIOR nerve (posterior canal) on the ${side(pcS)} side${ve.cVEMP.weakEar===pcS?" + cVEMP↓ (saccule)":""} — caloric and HC normal`); }   // RALP zawiera tylny-L, LARP tylny-P
+    else if(cal.dissociation && cal.weakEar && !hc.abnormal)          localization = tr(`ubytek NISKOczęstotliwościowy (wodniak / Ménière?) po stronie ${side(cal.weakEar)}`,`LOW-frequency deficit (hydrops / Ménière?) on the ${side(cal.weakEar)} side`);
+    else if((hc.abnormal||cal.weakEar) && supObl && !othObl)          localization = tr(`nerw GÓRNY po stronie ${side(lesSide)} (poziomy + przedni)${ve.oVEMP.weakEar===lesSide?" + oVEMP↓ (łagiewka)":""}`,`SUPERIOR nerve on the ${side(lesSide)} side (horizontal + anterior)${ve.oVEMP.weakEar===lesSide?" + oVEMP↓ (utricle)":""}`);
+    else if((hc.abnormal||cal.weakEar) && !ralp.abnormal && !larp.abnormal) localization = tr(`nerw GÓRNY po stronie ${side(lesSide)} (kanał poziomy)`,`SUPERIOR nerve on the ${side(lesSide)} side (horizontal canal)`);
+    else if(ve.cVEMP.weakEar && !ve.oVEMP.weakEar && !planes.length && !cal.weakEar) localization = tr(`nerw DOLNY (woreczek) po stronie ${side(ve.cVEMP.weakEar)} — izolowany ubytek otolitowy (cVEMP↓, oVEMP prawidłowy)`,`INFERIOR nerve (saccule) on the ${side(ve.cVEMP.weakEar)} side — isolated otolithic deficit (cVEMP↓, oVEMP normal)`);
+    else if(h.verdict==="central")                                    localization = tr("ośrodkowa (pień/móżdżek)","central (brainstem/cerebellum)");
+    else if(scds && scds.present)                                     localization = tr(`SCDS / trzecie okno po stronie ${side(p.dehiscence)}`,`SCDS / third window on the ${side(p.dehiscence)} side`);
+    else if(!h.ny.hasSpontaneous && !cal.caloricWeak && !planes.length && !(sk.present) && !sv.abnormal && !ve.cVEMP.weakEar && !ve.oVEMP.weakEar) localization = tr("brak lokalizacji (obraz prawidłowy)","no localization (normal picture)");
+    else                                                              localization = tr("nieokreślona","indeterminate");
 
     // niejednoznaczności / pułapki
-    if(cal.dissociation) ambiguities.push("Dysocjacja kaloryka↔vHIT (LF osłabiona, HF prawidłowy): wodniak/Ménière lub ubytek niskoczęstotliwościowy. Obraz często NAPADOWY → HINTS (dla ciągłego AVS) nie ma zastosowania.");
-    if(h.infarct.impulseNormal && cal.weakEar) ambiguities.push("HIT prawidłowy mimo oczopląsu, ale kaloryka lokalizuje ubytek OBWODOWY — rozważ fazę DRAŻNIENIA Ménière (napadowy) zamiast udaru.");
-    if(cal.bilateralWeak) ambiguities.push("HINTS zakłada jednostronny AVS — przy obustronnym ubytku (BVH) nie różnicuje; kieruj się sumą kaloryczną i obustronnym vHIT.");
-    if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar) ambiguities.push("Kaloryka i vHIT poziomy prawidłowe, lecz vHIT kanału tylnego patologiczny — neuronitis nerwu DOLNEGO (kaloryka go NIE wykrywa).");
-    if(cal.reverseDissociation) ambiguities.push("Odwrotna dysocjacja: vHIT poziomy patologiczny przy PRAWIDŁOWEJ kalorycе — ubytek WYSOKOczęstotliwościowy (lub wczesna/częściowo skompensowana faza).");
+    if(cal.dissociation) ambiguities.push(tr("Dysocjacja kaloryka↔vHIT (LF osłabiona, HF prawidłowy): wodniak/Ménière lub ubytek niskoczęstotliwościowy. Obraz często NAPADOWY → HINTS (dla ciągłego AVS) nie ma zastosowania.","Caloric↔vHIT dissociation (LF weakened, HF normal): hydrops/Ménière or a low-frequency deficit. The picture is often PAROXYSMAL → HINTS (for continuous AVS) does not apply."));
+    if(h.infarct.impulseNormal && cal.weakEar) ambiguities.push(tr("HIT prawidłowy mimo oczopląsu, ale kaloryka lokalizuje ubytek OBWODOWY — rozważ fazę DRAŻNIENIA Ménière (napadowy) zamiast udaru.","HIT normal despite nystagmus, but caloric localizes a PERIPHERAL deficit — consider the IRRITATIVE phase of Ménière (paroxysmal) rather than a stroke."));
+    if(cal.bilateralWeak) ambiguities.push(tr("HINTS zakłada jednostronny AVS — przy obustronnym ubytku (BVH) nie różnicuje; kieruj się sumą kaloryczną i obustronnym vHIT.","HINTS assumes a unilateral AVS — with a bilateral deficit (BVH) it does not differentiate; be guided by the caloric sum and bilateral vHIT."));
+    if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar) ambiguities.push(tr("Kaloryka i vHIT poziomy prawidłowe, lecz vHIT kanału tylnego patologiczny — neuronitis nerwu DOLNEGO (kaloryka go NIE wykrywa).","Caloric and horizontal vHIT normal, but posterior-canal vHIT pathological — INFERIOR nerve neuritis (caloric does NOT detect it)."));
+    if(cal.reverseDissociation) ambiguities.push(tr("Odwrotna dysocjacja: vHIT poziomy patologiczny przy PRAWIDŁOWEJ kalorycе — ubytek WYSOKOczęstotliwościowy (lub wczesna/częściowo skompensowana faza).","Reverse dissociation: horizontal vHIT pathological with a NORMAL caloric — a HIGH-frequency deficit (or an early/partially compensated phase)."));
 
     return { verdict:h.verdict, localization, findings, peripheralSigns, centralSigns, ambiguities,
       hints:h, caloric:cal, vhit:{ HC:hc, RALP:ralp, LARP:larp }, spontaneous:dark, skew:sk, scds, svv:sv, vemp:ve };
