@@ -36,10 +36,25 @@ function syncHtmlLang(){
     document.documentElement.lang = state.lang;
 }
 
+// Metadane dokumentu (tytul karty przegladarki + <meta description>) — dwujezyczne, EN domyslny.
+// Statyczne wartosci EN sa w index.html (pierwszy paint / crawlery); tu nadpisujemy je wg state.lang,
+// wiec tytul karty PL pojawia sie przy locale PL i reaguje na przelacznik jezyka. (manifest.json = EN,
+// staly — etykieta instalacji PWA jest pobierana raz i nie ma prostej podmiany w locie.)
+function syncMeta(){
+  if (typeof document === 'undefined') return;
+  document.title = t('OTOREPO — asystent przedsionkowy', 'OTOREPO — vestibular assistant');
+  const desc = document.querySelector('meta[name="description"]');
+  if (desc) desc.setAttribute('content', t(
+    'Asystent przedsionkowy — repozycja BPPV, testy pozycyjne i różnicowanie ośrodek/obwód (HINTS). Narzędzie dydaktyczne dla personelu medycznego.',
+    'Vestibular assistant — BPPV repositioning, positional tests and central/peripheral differentiation (HINTS). Educational tool for medical professionals.'
+  ));
+}
+
 // Boot: ustala jezyk startowy z detekcji (localStorage/navigator) i spina <html lang>.
 export function initLang(){
   state.lang = detectLang();
   syncHtmlLang();
+  syncMeta();
   return state.lang;
 }
 
@@ -49,5 +64,6 @@ export function setLang(lang){
   state.lang = (lang === 'pl') ? 'pl' : 'en';
   try { localStorage.setItem(LS_KEY, state.lang); } catch { /* pomin */ }
   syncHtmlLang();
+  syncMeta();
   return state.lang;
 }

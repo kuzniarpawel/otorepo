@@ -1,8 +1,8 @@
 {
-  "name": "OTOREPO — asystent przedsionkowy",
+  "name": "OTOREPO — vestibular assistant",
   "short_name": "OTOREPO",
-  "description": "Asystent przedsionkowy — repozycja BPPV, testy pozycyjne i różnicowanie ośrodek/obwód (HINTS). Narzędzie dydaktyczne dla personelu medycznego.",
-  "lang": "pl",
+  "description": "Vestibular assistant — BPPV repositioning, positional tests and central/peripheral differentiation (HINTS). Educational tool for medical professionals.",
+  "lang": "en",
   "start_url": "otorepo.html",
   "scope": "./",
   "display": "standalone",
