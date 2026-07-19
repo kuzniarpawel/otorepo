@@ -7,6 +7,7 @@ import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { t } from '../i18n.js';
+const tr = t;   // alias tlumaczenia dla funkcji HINTS z lokalnym 't' (string/param) — 'tr' (modul-scope) NIE jest przeslaniany, wiec nie koliduje w bundlu
 
 // ikona „obróć kartę" (flip) — używana w Repozycji i Diagnostyce
 const FLIP_ICO = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 8a8 8 0 0 1 13-2.5M20 16a8 8 0 0 1-13 2.5M17 3v4h-4M7 21v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -1094,14 +1095,14 @@ function renderHints(){
       <div class="note" data-supplnote>${hintsSupplHTML(H,fixOn,sp)}</div>
     </div>
     <div class="panelbox hpanel" style="margin-top:12px">
-      <h4>Test pchnięcia głowy (HIT) — obserwuj cel ○</h4>
+      <h4>${tr("Test pchnięcia głową (HIT) — obserwuj cel ○","Head impulse test (HIT) — watch the target ○")}</h4>
       <div class="viewpoint">widok badającego (naprzeciw pacjenta) — P = ucho prawe pacjenta, L = ucho lewe</div>
       <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-hit>${hitSVG()}</div><span class="emk">L</span></div>
       <div class="hctrl" style="justify-content:center"><span class="lbl">Płaszczyzna</span>
         <div class="pillseg">${["HC","RALP","LARP"].map(pl=>`<button aria-pressed="${(state.hintsPlane||'HC')===pl}" onclick="setHintsPlane('${pl}')">${pl==='HC'?'HC poziomy':pl}</button>`).join("")}</div></div>
       <div class="hctrl" style="justify-content:center"><span class="lbl">Pchnij</span>
         <div class="pillseg">${(NeuroVOR.PLANE_CANALS[state.hintsPlane||'HC']).map(s=>`<button data-hitbtn="${s.canal}-${s.ear}" aria-pressed="${state.hintsHitSide===s.ear && (state.hintsHitCanal||'horizontal')===s.canal}" onclick="hintsHIT('${s.canal}','${s.ear}')">${hitPushLabel(s.canal,s.ear)}</button>`).join("")}</div></div>
-      <div class="note" data-hitlabel>${lastHi ? hitLabel(lastHi) : ((state.hintsPlane||'HC')==='HC' ? "Kliknij stronę (ucho pacjenta), aby wykonać szybkie pchnięcie głowy. Oczy powinny zostać na celu; sakada korygująca = kanał chory po tej stronie." : "Płaszczyzny skośne RALP/LARP badają kanały PIONOWE (przedni/tylny). Sakada korygująca jest pionowo-skrętna. Wybierz kanał do pchnięcia.")}</div>
+      <div class="note" data-hitlabel>${lastHi ? hitLabel(lastHi) : ((state.hintsPlane||'HC')==='HC' ? tr("Kliknij stronę (ucho pacjenta), aby wykonać szybkie pchnięcie głową. Oczy powinny zostać na celu; sakada korygująca = kanał chory po tej stronie.","Click a side (the patient's ear) to perform a quick head thrust. The eyes should stay on the target; a corrective saccade = the affected canal on that side.") : tr("Płaszczyzny skośne RALP/LARP badają kanały PIONOWE (przedni/tylny). Sakada korygująca jest pionowo-skrętna. Wybierz kanał do pchnięcia.","The oblique RALP/LARP planes test the VERTICAL canals (anterior/posterior). The corrective saccade is vertical-torsional. Choose a canal to thrust."))}</div>
     </div>
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>Odchylenie skośne — naprzemienne zasłanianie</h4>
@@ -1220,7 +1221,7 @@ function startNeuroNys(container, nys, gazeDeg){
 function hitSVG(){
   const eye=(cx)=>`<ellipse cx="${cx}" cy="66" rx="27" ry="21" fill="#EEF3F7" stroke="var(--line)" stroke-width="2"/>
     <g class="hiris"><circle cx="${cx}" cy="66" r="10" fill="#3A6B86"/><circle cx="${cx}" cy="66" r="5" fill="#0b1118"/></g>`;
-  return `<svg viewBox="0 0 240 150" class="eyes" role="img" aria-label="Test pchnięcia głowy — widok frontalny (badający naprzeciw pacjenta)">
+  return `<svg viewBox="0 0 240 150" class="eyes" role="img" aria-label="${tr("Test pchnięcia głową — widok frontalny (badający naprzeciw pacjenta)","Head impulse test — frontal view (examiner facing the patient)")}">
     <line x1="120" y1="2" x2="120" y2="15" stroke="var(--faint)" stroke-width="2"/><circle cx="120" cy="21" r="4" fill="none" stroke="var(--faint)" stroke-width="2"/>
     <g id="hithead">
       <ellipse cx="47" cy="88" rx="9" ry="15" fill="#16222c" stroke="#2b3e4b" stroke-width="2"/>
@@ -1276,14 +1277,14 @@ function startHIT(container, hi){
 }
 // Kierunek sakady korygującej (opis) — pozioma (HC) lub pionowo-skrętna (kanały przednie/tylne).
 function hitSaccadeDir(hi){
-  if(hi.plane==="HC") return "pozioma, ku linii środkowej";
-  const v = hi.saccade.v>0 ? "ku górze" : "ku dołowi";
-  const t = Math.abs(hi.saccade.t)>0.15 ? ` + skrętna (bieguny górne ${hi.saccade.t>0?"w prawo":"w lewo"})` : "";
+  if(hi.plane==="HC") return tr("pozioma, ku linii środkowej","horizontal, toward the midline");
+  const v = hi.saccade.v>0 ? tr("ku górze","upward") : tr("ku dołowi","downward");
+  const t = Math.abs(hi.saccade.t)>0.15 ? tr(` + skrętna (bieguny górne ${hi.saccade.t>0?"w prawo":"w lewo"})`,` + torsional (upper poles ${hi.saccade.t>0?"to the right":"to the left"})`) : "";
   return v+t;
 }
 function hitPushLabel(canal, ear){
-  if(canal==="horizontal") return ear==="P"?"prawemu (P)":"lewemu (L)";
-  return `${ear==="P"?"prawy":"lewy"} ${canal==="anterior"?"przedni":"tylny"}`;
+  if(canal==="horizontal") return ear==="P"?tr("prawemu (P)","right (R)"):tr("lewemu (L)","left (L)");
+  return tr(`${ear==="P"?"prawy":"lewy"} ${canal==="anterior"?"przedni":"tylny"}`,`${ear==="P"?"right":"left"} ${canal==="anterior"?"anterior":"posterior"}`);
 }
 // Spec ostatnio pchniętego kanału (string dla HC, {canal,ear} dla pionowych) — do odtworzenia opisu przy suwakach.
 function hintsHitSpecOf(){
@@ -1293,22 +1294,22 @@ function hintsHitSpecOf(){
 }
 function hitLabel(hi){
   const g=hi.gain.toFixed(2);
-  const what = hi.plane==="HC" ? `Pchnięcie ku uchu ${hi.toSide==="P"?"prawemu (P)":"lewemu (L)"}`
-             : `Pchnięcie w płaszczyźnie ${hi.plane} (kanał ${hi.canal==="anterior"?"przedni":"tylny"} ${hi.ear==="P"?"prawy":"lewy"})`;
-  const dir = ` Sakada korygująca: ${hitSaccadeDir(hi)}.`;
-  const vhitOnly = ` <b style="color:#ffcf8f">Sakada UKRYTA (covert) — rejestrowana tylko w vHIT (video), niewidoczna gołym okiem.</b>`;
-  if(!hi.abnormal) return `<b style="color:#7fe3c4">${what}: bez sakady</b> · VOR gain ${g} → HIT prawidłowy.`;
-  if(hi.overtSaccade && hi.covertSaccade) return `<b style="color:#ffbf8f">${what}: sakada JAWNA + UKRYTA</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>częściowo skompensowany</b>.${dir}${vhitOnly}`;
-  if(hi.overtSaccade)  return `<b style="color:#ff9bab">${what}: sakada JAWNA (overt)</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>nieskompensowany</b> — widoczna gołym okiem (bedside).${dir}`;
-  if(hi.covertSaccade) return `<b style="color:#ffcf8f">${what}: sakada UKRYTA (covert)</b> · gain ${g} wciąż niski, korekta W TRAKCIE ruchu → <b>bedside HIT „prawidłowy"</b>, deficyt widoczny TYLKO w vHIT (video).${dir}`;
-  return `<b style="color:#7fe3c4">${what}: bez jawnej sakady</b> · VOR gain ${g}.`;
+  const what = hi.plane==="HC" ? tr(`Pchnięcie ku uchu ${hi.toSide==="P"?"prawemu (P)":"lewemu (L)"}`,`Thrust toward the ${hi.toSide==="P"?"right (R)":"left (L)"} ear`)
+             : tr(`Pchnięcie w płaszczyźnie ${hi.plane} (kanał ${hi.canal==="anterior"?"przedni":"tylny"} ${hi.ear==="P"?"prawy":"lewy"})`,`Thrust in the ${hi.plane} plane (${hi.canal==="anterior"?"anterior":"posterior"} canal, ${hi.ear==="P"?"right":"left"})`);
+  const dir = tr(` Sakada korygująca: ${hitSaccadeDir(hi)}.`,` Corrective saccade: ${hitSaccadeDir(hi)}.`);
+  const vhitOnly = tr(` <b style="color:#ffcf8f">Sakada UKRYTA (covert) — rejestrowana tylko w vHIT (video), niewidoczna gołym okiem.</b>`,` <b style="color:#ffcf8f">Covert saccade — recorded only on vHIT (video), invisible to the naked eye.</b>`);
+  if(!hi.abnormal) return tr(`<b style="color:#7fe3c4">${what}: bez sakady</b> · VOR gain ${g} → HIT prawidłowy.`,`<b style="color:#7fe3c4">${what}: no saccade</b> · VOR gain ${g} → HIT normal.`);
+  if(hi.overtSaccade && hi.covertSaccade) return tr(`<b style="color:#ffbf8f">${what}: sakada JAWNA + UKRYTA</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>częściowo skompensowany</b>.${dir}${vhitOnly}`,`<b style="color:#ffbf8f">${what}: OVERT + COVERT saccade</b> · gain ${g} → HIT pathological (peripheral), deficit <b>partially compensated</b>.${dir}${vhitOnly}`);
+  if(hi.overtSaccade)  return tr(`<b style="color:#ff9bab">${what}: sakada JAWNA (overt)</b> · gain ${g} → HIT patologiczny (obwód), deficyt <b>nieskompensowany</b> — widoczna gołym okiem (bedside).${dir}`,`<b style="color:#ff9bab">${what}: OVERT saccade</b> · gain ${g} → HIT pathological (peripheral), deficit <b>uncompensated</b> — visible to the naked eye (bedside).${dir}`);
+  if(hi.covertSaccade) return tr(`<b style="color:#ffcf8f">${what}: sakada UKRYTA (covert)</b> · gain ${g} wciąż niski, korekta W TRAKCIE ruchu → <b>bedside HIT „prawidłowy"</b>, deficyt widoczny TYLKO w vHIT (video).${dir}`,`<b style="color:#ffcf8f">${what}: COVERT saccade</b> · gain ${g} still low, correction DURING the movement → <b>bedside HIT "normal"</b>, deficit visible ONLY on vHIT (video).${dir}`);
+  return tr(`<b style="color:#7fe3c4">${what}: bez jawnej sakady</b> · VOR gain ${g}.`,`<b style="color:#7fe3c4">${what}: no overt saccade</b> · VOR gain ${g}.`);
 }
 
 /* --- Test odchylenia skośnego: naprzemienne zasłanianie → pionowa sakada korygująca gdy skew obecny --- */
 function skewSVG(){
   const eye=(cx,side)=>`<ellipse cx="${cx}" cy="55" rx="32" ry="25" fill="#EEF3F7" stroke="var(--line)" stroke-width="2"/>
     <g class="skiris" data-eye="${side}"><circle cx="${cx}" cy="55" r="14" fill="#3A6B86"/><circle cx="${cx}" cy="55" r="6.5" fill="#0b1118"/></g>`;
-  return `<svg viewBox="0 0 240 110" class="eyes" role="img" aria-label="Test naprzemiennego zasłaniania">
+  return `<svg viewBox="0 0 240 110" class="eyes" role="img" aria-label="${tr("Test naprzemiennego zasłaniania","Alternate cover test")}">
     ${eye(70,"P")}${eye(170,"L")}
     <rect id="skcover" x="34" y="22" width="72" height="66" rx="10" fill="#0b1118" stroke="#33404d" stroke-width="2" opacity="0.96"/>
   </svg>`;
@@ -1335,11 +1336,11 @@ function startSkew(container, sk){
   });
 }
 function skewLabel(sk){
-  if(!sk.present) return `<b style="color:#7fe3c4">Skew nieobecny</b> — oczy pozostają w linii pionowej przy naprzemiennym zasłanianiu.`;
-  const who = sk.hyperSide?`, oko ${sk.hyperSide==="P"?"prawe":"lewe"} wyżej`:"";
+  if(!sk.present) return tr(`<b style="color:#7fe3c4">Skew nieobecny</b> — oczy pozostają w linii pionowej przy naprzemiennym zasłanianiu.`,`<b style="color:#7fe3c4">Skew absent</b> — the eyes stay vertically aligned during alternate cover.`);
+  const who = sk.hyperSide?tr(`, oko ${sk.hyperSide==="P"?"prawe":"lewe"} wyżej`,`, ${sk.hyperSide==="P"?"right":"left"} eye higher`):"";
   return sk.central
-    ? `<b style="color:#ff9bab">Skew OBECNY (~${sk.skewDeg}°${who})</b> — pionowa sakada przy odsłanianiu = objaw OŚRODKOWY.`
-    : `<b style="color:#ffd9a0">Śladowy skew (~${sk.skewDeg}°${who})</b> — poniżej progu ośrodkowego; drobny rozjazd łagiewkowy (obwodowy, np. nerw górny).`;
+    ? tr(`<b style="color:#ff9bab">Skew OBECNY (~${sk.skewDeg}°${who})</b> — pionowa sakada przy odsłanianiu = objaw OŚRODKOWY.`,`<b style="color:#ff9bab">Skew PRESENT (~${sk.skewDeg}°${who})</b> — vertical saccade on uncovering = CENTRAL sign.`)
+    : tr(`<b style="color:#ffd9a0">Śladowy skew (~${sk.skewDeg}°${who})</b> — poniżej progu ośrodkowego; drobny rozjazd łagiewkowy (obwodowy, np. nerw górny).`,`<b style="color:#ffd9a0">Trace skew (~${sk.skewDeg}°${who})</b> — below the central threshold; a small utricular offset (peripheral, e.g. superior nerve).`);
 }
 /* ============ Otolity — SVV (subiektywna pionowa) + VEMP (cVEMP/oVEMP) ============
    Wizualizacja gotowych NeuroVOR.svv/vemp: linia SVV przechylona ku stronie chorej + słupki amplitud
@@ -1352,12 +1353,12 @@ function svvSVG(sv){
   const ang = (-90 + dir*deg)*Math.PI/180;                // 0°→pion (górny koniec linii)
   const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
   const col = sv.abnormal ? "#ffcf8f" : "#7fe3c4";
-  return `<svg viewBox="0 0 140 126" role="img" aria-label="Subiektywna pionowa (SVV)" style="max-width:150px;width:100%">
+  return `<svg viewBox="0 0 140 126" role="img" aria-label="${tr("Subiektywna pionowa (SVV)","Subjective visual vertical (SVV)")}" style="max-width:150px;width:100%">
     <rect x="0" y="0" width="140" height="110" rx="8" fill="#0b1118"/>
     <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#22303d" stroke-width="1.5"/>
     <line x1="${cx}" y1="${cy-R}" x2="${cx}" y2="${cy+R}" stroke="#33404d" stroke-width="1.4" stroke-dasharray="4 5"/>
     <line x1="${(cx-dx).toFixed(1)}" y1="${(cy-dy).toFixed(1)}" x2="${(cx+dx).toFixed(1)}" y2="${(cy+dy).toFixed(1)}" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
-    <text x="8" y="123" fill="var(--muted)" font-size="10">P</text><text x="127" y="123" fill="var(--muted)" font-size="10">L</text>
+    <text x="8" y="123" fill="var(--muted)" font-size="10">${tr("P","R")}</text><text x="127" y="123" fill="var(--muted)" font-size="10">L</text>
   </svg>`;
 }
 function otolithInner(p){
