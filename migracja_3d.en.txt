@@ -1,0 +1,117 @@
+English translation of migracja_3d.txt (Polish original — canonical, referenced by bridge-check.mjs / three-bridge.js).
+
+════════════════════════════════════════════════════════════════════
+NOTE (2026-07-11): THIS PLAN (PATH B) IS SUPERSEDED.
+Current migration = src/ modularization (Vite + ES modules) + Three.js with a GLB model.
+Description: the "Stage 0–5" tasks + memory [[otorepo-modularization-migration]].
+Differences vs PATH B below:
+  • NOT a single file with inline three.min.js — many src/ modules bundled by Vite → dist/ (offline preserved).
+  • Model from GLB (GLTFLoader), not procedural geometry only.
+  • The assistant NOW HAS a 3D preview (Browser pane) — it assesses the look on its own.
+STILL CURRENT (moved into Stage 3 — the Three renderer adapter):
+  • the "COORDINATE FRAMES — BRIDGE" section below. Our world z=FRONT vs Three z=BACK =
+    a handedness mirror; do NOT trust a ready-made formula — build the orientation from basis vectors
+    (nose/vertex/gravity) and verify against gHead for all 21 position×face combinations.
+════════════════════════════════════════════════════════════════════
+
+3D MIGRATION PLAN — PATH B  [SUPERSEDED — see the banner above]
+(Three.js in a single HTML file, procedural geometry, offline preserved)
+otorepo.html — continuation. The Vestibular engine is ported 1:1.
+
+═══════════════════════════════════════════════════════════════════
+GOAL AND CONSTRAINTS
+═══════════════════════════════════════════════════════════════════
+• Stays: ONE standalone .html file, working offline on Android.
+• Added: an interactive 3D view (rotate with finger/mouse, perspective, transparent labyrinth).
+• Offline consequence: three.min.js MUST be in the file (not from a CDN).
+  → three.min.js (~600 KB) is supplied by Paweł (downloaded once), pasted in via a merge step.
+  → The final artifact is still a single .html (just larger).
+• Assistant-side constraint: no 3D preview. The math (adapter, bone positions,
+  timeline) I verify numerically; the 3D LOOK is assessed by Paweł. That is the main risk — we plan the
+  stages so each one leaves a WORKING app and can be rolled back.
+
+═══════════════════════════════════════════════════════════════════
+WHAT WE PORT / WHAT WE DROP
+═══════════════════════════════════════════════════════════════════
+PORT 1:1 (the heart of the app, no logic changes):
+  • Vestibular: quaternions qmul/qaxis/rotate/slerpQ, stepHeadQ/stepGravity, LEAN_G/BASE_G,
+    the entire nystagmus model and otolith physics.
+  • Maneuver step sequences (generators), text instructions, timers, state UI.
+BECOMES A PROCEDURAL RIG IN THREE:
+  • SKEL / bodyJoints / composeHead / TORSO_Q / POSE3D / NECK_DEG
+    → a THREE.Object3D hierarchy (bone = Object3D, offset = position, rotation = quaternion).
+TO REMOVE (Three replaces it):
+  • Scene3D.project (Three projects on its own), figProj/figSide/postureFront + the whole SVG silhouette render
+    — but ONLY in the last stage (until then SVG is our fallback/comparison).
+
+═══════════════════════════════════════════════════════════════════
+COORDINATE FRAMES — BRIDGE (the most important math)
+═══════════════════════════════════════════════════════════════════
+Our world:  x=right, y=up, z=FRONT (nose, belly). Gravity down=[0,-1,0].
+Three.js:   x=right, y=up, z=BACK (toward the observer); an object's "front" is local -z.
+NOTE: this is a mirror of the z axis — it is NOT enough to negate the z component of a vector, because it changes handedness.
+PRINCIPLE: do NOT trust a ready-made formula. Build the head orientation in Three from BASIS VECTORS
+  (where the nose and the vertex point in the world) and VERIFY with the same test we
+  have been using: rotate the nose [0,0,1], the vertex [0,1,0], and gravity — check that they land where
+  gHead(stepHeadQ) says. Only when the test passes for all 21 combinations
+  (position×face) is the bridge ready. Candidate to check: q'=(-qx,-qy,qz,qw) (z mirror),
+  but we CONFIRM it numerically, we do not assume it.
+
+═══════════════════════════════════════════════════════════════════
+STAGES (each one leaves a working app)
+═══════════════════════════════════════════════════════════════════
+STAGE 0 — Three offline in the file
+  • Paweł supplies three.min.js to /mnt/user-data/uploads.
+  • Merge step: three.min.js pasted into a <script> at the start of otorepo.html (inline).
+  • Verification: THREE exists in the file; the app still opens and works as before (SVG unchanged).
+  WORKS OFFLINE: yes (the library is in the file).
+
+STAGE 1 — 3D sandbox next to the SVG
+  • Add a <canvas> next to the current positioning view. Scene: a perspective camera, lighting
+    (ambient + directional), OrbitControls (rotate with finger/mouse). requestAnimationFrame render loop.
+  • Primitives: sphere = head, capsule/cylinder = trunk, at [0,0,0]. Helper axes (AxesHelper).
+  • Goal: confirm the axis mapping and that the canvas coexists with the rest of the UI.
+  • Verification: Paweł sees a rotatable solid; I check there are no console/parser errors.
+
+STAGE 2 — Quaternion bridge (math, verifiable without a preview)
+  • A toThree(q) function per the principle above. Wire stepHeadQ → head3d.quaternion.
+  • Numerical test (as before): for each position×face compare the nose/vertex/gravity direction
+    in Three vs gHead. Error threshold as in K1 (~1e-3).
+  • Visual verification (Paweł): the "blocky" head reacts correctly to the maneuver steps.
+
+STAGE 3 — Procedural body rig
+  • Build the Object3D hierarchy per SKEL (pelvis→spine→neck→head; limbs), offsets=position.
+  • Poses (POSE3D) and orientations (composeHead/TORSO_Q) → bone.quaternion (via the Stage 2 bridge).
+  • Numerical verification: the bones' world position in Three == bodyJoints (after the frame transform).
+    Bone lengths preserved. Visual verification: the silhouette in every Semont/Epley position.
+
+STAGE 4 — Labyrinth + otolith
+  • Semicircular canals as THREE.CatmullRomCurve3 (the same paths as CANAL_PATHS, but in 3D).
+  • Otolith = a small sphere; position = a point on the curve per phi from the engine (curve.getPointAt).
+  • Semi-transparent skull/labyrinth (material transparent, opacity). Embed it in the head or beside it.
+  • Verification: otolith motion consistent with the engine's phi(t) (numerically); Paweł judges legibility.
+
+STAGE 5 — Smooth transitions (timeline)
+  • Between steps: slerpQ (we have it) on the bones/head; the otolith along the curve. Optionally GSAP (it would also have to
+    be inline for offline — or a custom tween on slerpQ, with no dependency).
+  • Verification: the transitions reproduce the engine's interpolation.
+
+STAGE 6 — Retire the SVG
+  • Once the 3D stably reproduces all positions + nystagmus → remove the SVG silhouette render.
+  • Optionally keep a 2D mode as an option/fallback (a toggle), if useful for teaching.
+
+═══════════════════════════════════════════════════════════════════
+ROLE SPLIT
+═══════════════════════════════════════════════════════════════════
+ASSISTANT (certain, numerically verifiable): the Three merge step, the scene/rig/bridge code,
+  quaternion and bone-position tests, canal paths, tweens, integration with the engine.
+PAWEŁ (what I cannot verify without a preview): supplying three.min.js; assessing the 3D LOOK
+  at each stage (proportions, legibility, aesthetics, visual correctness of the positions).
+
+RISKS
+  • No 3D preview on the assistant side — visual debugging is slower, based on Paweł's description.
+  • File size (Three inline) — the file will grow to ~1 MB; acceptable for an offline single file.
+  • Stage 3 (the rig) — the most work; we do it incrementally, position by position.
+
+NEXT STEP: Stage 0 — Paweł uploads three.min.js; the assistant wires it inline and confirms
+  the app works as before. Then Stage 1 (the sandbox).
