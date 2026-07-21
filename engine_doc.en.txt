@@ -614,10 +614,17 @@ PUBLIC API (returned from the module)
    SUPERIOR → nystagmus + pathological vHIT of the horizontal AND anterior + caloric↓ + oVEMP↓ + SVV↑, POSTERIOR/cVEMP normal;
    INFERIOR → only POSTERIOR (torsional downbeat) + cVEMP↓ + a small SVV tilt, HC/caloric/oVEMP/skew-deviation normal. [H22]
 
- bilateralLoss(sev) -> overrides for makePatient                                                  [H19]
+ bilateralLoss(sev) -> overrides for makePatient                                                  [H19][H23]
    E4 — BVH/ototoxicity: a SYMMETRIC drop of tone+gain of all 6 canals + caloricGain↓ bilaterally. EMERGENTLY: symmetry → NO
    spontaneous nystagmus (distinguishes it from unilateral UVH!), yet a pathological vHIT BILATERALLY (all
    planes); verdict peripheral (no false stroke). Compensation idle. Preset SCENARIOS.bvh.
+   BVH THRESHOLDS (Bárány criteria [H19], confirmed [H23]): vHIT bilateral HC gain < 0.6 (SHIMP < 0.5) · caloric
+   sum of warm+cold for a GIVEN ear < 6 °/s (= CAL_BILAT) · rotatory-chair gain < 0.1 with phase lead > 68° (NOT
+   modelled). IN THE ENGINE: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) bilaterally; "pathological vHIT" is NOT a
+   direct gain cutoff but a corrective-saccade amplitude ≥ 2.5° in headImpulse (for amp 15° ≈ gain ≤ 0.83 — more
+   sensitive than 0.6, appropriate for a SINGLE canal). Only the caloric 6 °/s threshold is encoded numerically
+   (CAL_BILAT → caloricBattery.bilateralWeak). SHIMP not implemented. NOTE: the random preset bilateralLoss(r(0.6,1))
+   yields gain 0.35–0.61 — the upper end (0.61) is SLIGHTLY above the Bárány 0.6 cutoff (meets BVH by caloric, not vHIT).
 
  meniere(ear, {phase | tone, gain}) -> overrides for makePatient                                  [H20]
    E4 — MÉNIÈRE / hydrops: PAROXYSMAL fluctuations of the affected ear's horizontal tone + a CHRONIC caloricGain↓ (opts.caloricLoss
@@ -858,6 +865,15 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         nerve, oVEMP↓ superior nerve). Added after validation 2026-07-10: parameters sacculeL/R, utricleL/R + functions
         svv()/vemp() (see STAGE 7 API). NOTE: standard HINTS = "normal" (the horizontal/utricular test is
         BLIND to an isolated IVN — consistent with the article; the localization is caught only by the posterior-canal vHIT + cVEMP).
+[H23] van Dooren T, Starkov D, Lucieer F, Dobbels B, Janssen M, Guinand N, Pérez Fornos A, Kingma H,
+      Van Rompaey V, van de Berg R (2022). "Suppression Head Impulse Test (SHIMP) versus Head Impulse Test
+      (HIMP) When Diagnosing Bilateral Vestibulopathy." J Clin Med 11(9):2444. doi:10.3390/jcm11092444.
+      → BVH THRESHOLDS (Bárány criteria): bilateral HC VOR gain (vHIT) < 0.6 [SHIMP < 0.5] · caloric sum of
+        warm+cold for a GIVEN ear < 6 °/s (→ CAL_BILAT) · rotatory-chair gain < 0.1 with phase lead > 68° (NOT
+        modelled). SHIMP = HEAD-fixed target → a normal VOR makes an ANTI-compensatory saccade (its ABSENCE =
+        deficit — rule INVERTED vs HIMP); "covert-saccade killer" (covert ~5% vs ~35%) → cleaner gain (slightly
+        lower → hence the lower 0.5 cutoff). Protocol: peak head velocity > 120 °/s, amplitude 10–30°. SHIMP not
+        implemented (candidate to extend headImpulse: same gain machinery, but presence of a saccade = HEALTHY VOR).
 
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals

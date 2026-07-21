@@ -613,10 +613,17 @@ API PUBLICZNE (zwracane z modułu)
    SUPERIOR → oczopląs + patolog. vHIT poziomego I przedniego + kaloryka↓ + oVEMP↓ + SVV↑, TYLNY/cVEMP prawidłowe;
    INFERIOR → tylko TYLNY (downbeat torsyjny) + cVEMP↓ + mały przechył SVV, HC/kaloryka/oVEMP/skew-dewiacja prawidłowe. [H22]
 
- bilateralLoss(sev) -> overrides do makePatient                                                  [H19]
+ bilateralLoss(sev) -> overrides do makePatient                                                  [H19][H23]
    E4 — BVH/otoksyczność: SYMETRYCZNY spadek tonu+gain wszystkich 6 kanałów + caloricGain↓ obustronnie. EMERGENTNIE: symetria → BRAK
    oczopląsu samoistnego (odróżnia od jednostronnego UVH!), lecz vHIT patolog. OBUSTRONNIE (wszystkie
    płaszczyzny); werdykt peripheral (bez fałszywego udaru). Kompensacja bezczynna. Preset SCENARIOS.bvh.
+   PROGI BVH (kryt. Bárány [H19], potwierdzone [H23]): vHIT obustronny gain HC < 0.6 (SHIMP < 0.5) · suma
+   kaloryczna ciepła+zimna DANEGO ucha < 6 °/s (= CAL_BILAT) · fotel obrotowy gain < 0.1 z fazą > 68° (NIE
+   modelowany). W SILNIKU: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) obustronnie; „vHIT patolog." to NIE próg gain
+   wprost, lecz amplituda sakady korygującej ≥ 2.5° w headImpulse (dla amp 15° ≈ gain ≤ 0.83 — czulsze niż 0.6,
+   właściwe dla POJEDYNCZEGO kanału). Jedynie próg kaloryczny 6 °/s jest zakodowany numerycznie (CAL_BILAT →
+   caloricBattery.bilateralWeak). SHIMP nie zaimplementowany. UWAGA: losowy preset bilateralLoss(r(0.6,1)) daje
+   gain 0.35–0.61 — górny kraniec (0.61) LEKKO powyżej progu Bárány 0.6 (spełnia BVH kalorycznie, nie vHIT-owo).
 
  meniere(ear, {phase | tone, gain}) -> overrides do makePatient                                  [H20]
    E4 — MÉNIÈRE / wodniak: NAPADOWE wahania tonu poziomego ucha chorego + PRZEWLEKŁY caloricGain↓ (opts.caloricLoss
@@ -857,6 +864,15 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         dolny, oVEMP↓ n. górny). Dodano po walidacji 2026-07-10: parametry sacculeL/R, utricleL/R + funkcje
         svv()/vemp() (patrz ETAP 7 API). UWAGA: standardowy HINTS = „normal" (test poziomy/łagiewkowy jest
         ŚLEPY na izolowany IVN — zgodne z artykułem; lokalizację łapie dopiero vHIT kanału tylnego + cVEMP).
+[H23] van Dooren T, Starkov D, Lucieer F, Dobbels B, Janssen M, Guinand N, Pérez Fornos A, Kingma H,
+      Van Rompaey V, van de Berg R (2022). "Suppression Head Impulse Test (SHIMP) versus Head Impulse Test
+      (HIMP) When Diagnosing Bilateral Vestibulopathy." J Clin Med 11(9):2444. doi:10.3390/jcm11092444.
+      → PROGI BVH (kryt. Bárány): obustronny gain HC (vHIT) < 0.6 [SHIMP < 0.5] · suma kaloryczna ciepła+zimna
+        DANEGO ucha < 6 °/s (→ CAL_BILAT) · fotel obrotowy gain < 0.1 z fazą > 68° (NIE modelowany). SHIMP = cel
+        związany z GŁOWĄ → prawidłowy VOR daje sakadę ANTYkompensacyjną (jej BRAK = ubytek — reguła ODWROTNA vs
+        HIMP); „zabójca sakad ukrytych" (covert ~5% vs ~35%) → czystszy gain (nieco niższy → stąd niższe cięcie
+        0.5). Protokół: szczyt prędkości głowy > 120 °/s, amplituda 10–30°. SHIMP nie zaimplementowany (kandydat
+        na rozszerzenie headImpulse: ta sama maszyneria gain, lecz obecność sakady = ZDROWY VOR).
 
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE
