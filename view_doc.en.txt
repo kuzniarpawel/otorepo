@@ -1,0 +1,741 @@
+==========================================================================
+ OTOREPO — VISUALIZATION DOCUMENTATION (2.5D + 3D)
+ English translation of view_doc.txt (Polish original — canonical, referenced by in-code comments).
+ Files: src/engine/scene3d.js (Scene3D) · src/render/svg-screens.js (SVG renderer) ·
+        src/render/three-patient.js + three-bridge.js (3D/WebGL renderer) · src/pose/maneuvers.js
+        (poseSpec, makeManualOrientation).  (the otorepo.html monolith = frozen snapshot source)
+ Character: (pure) 3D math → schematic SVG (orthographic projection) OR WebGL silhouette.
+ Principle: a single 3D source of truth shared with the engine (head frame x=right, y=up, z=nose).
+         The SVG path is fully offline (no three.js); the 3D path adds three.js as a
+         lazy-loaded chunk (Stage 3–5) — DEFAULT when WebGL is available, SVG = fallback.
+ Last update: 2026-07-15 (Bárány/ICVD classification card + central differentiation CPN;
+        otolithic SVV & VEMP panel in HINTS)
+==========================================================================
+
+MAIN IDEA
+ - head orientation = quaternion (engine convention), from a PLUGGABLE source
+ - observer (clinician) = CAMERA (right/up/fwd in the world)
+ - each view = projection of the head model through the camera
+ - the L/R side swap and mirror FOLLOW FROM the camera (no more swap/behindHead flags)
+
+=== BÁRÁNY (ICVD) CLASSIFICATION + CENTRAL DIFFERENTIATION (CPN) — diagnostics ===
+Card in renderDiag (svg-screens.js), below the mechanism card, above the treatment recommendation. Two views toggled by the
+segment "Peripheral (BPPV) ↔ Central (CPN)" (state.diagCentral, handler toggleDiagCentral; full render).
+ - PERIPHERAL (default): subtype label from pose/maneuvers.js:baranyClassify(canal,variant,side,antMode) —
+   subtype + "established / emerging syndrome" (established/emerging) + feature chips (Latency / Duration /
+   Fatigability / Direction / Affected side). Pure clinical function (like recommend/variantLabels) — a SYNTHESIS of conventions
+   already encoded in DIAG (latNote/features), ZERO effect on physics. Golden captures this view (deterministic).
+ - CENTRAL (after click): a .redflag block with the CPN red flags (no latency / persistent / non-fatigable /
+   purely vertical — especially downbeat — or purely torsional / direction outside any canal / neutral position / neuro symptoms),
+   a diagram of PERSISTENT DOWNBEAT (data-cpnnys: startNys from nysFromGeom("anterior",side,"cupulo",qSupineYaw(0)) with an
+   OVERRIDDEN dir=0 → pure downbeat without torsion; persistent=true carries a persistent envelope), and swapping the
+   "Suggested treatment" card for "Repositioning not indicated" (do not reposition → neuro + posterior-fossa MRI; mimic: vestibular
+   migraine). Reset diagCentral→false on openTest/pickTest (fresh entry into a test). Criteria: otoneurology
+   memory "BPPV — Bárány 2015 criteria".
+
+=== OTOLITHIC PANEL — SVV & VEMP (HINTS) ===
+A panelbox in renderHints (after "Skew deviation"), visible in EVERY mode (scenario + custom). It visualizes
+the READY outputs of the NeuroVOR.svv(p) and NeuroVOR.vemp(p) engine — no new physics. Static (no rAF) → refreshed by
+swapping the innerHTML of the [data-otolith] container in refreshHintsCustom (saccule/utricle sliders + nerve selector).
+ - SVV (svvSVG): a dark circle with a vertical reference line (true vertical, dashed) + a colored line tilted by
+   svv.deg TOWARD the affected side (ipsiversively); convention as in the eye panels (R=screen-left, L=screen-right). Normal
+   (deg<threshold) → vertical. Caption: "vertical tilt X° toward side …" + an OTR note.
+ - VEMP: 4 horizontal amplitude bars (0..1) with a threshold marker (30%): cVEMP R/L (saccule → INFERIOR nerve, ipsilateral SCM) and
+   oVEMP R/L (utricle → SUPERIOR nerve, contralateral inferior oblique m.). Color per status (normal/reduced/absent).
+   A note localizes the weak side to a nerve branch. SCDS: a note that the model renders the third window through nystagmus, not amplitude.
+ Patterns (verified): SUPERIOR nerve → oVEMP↓ + SVV↑ toward the affected side (cVEMP preserved); INFERIOR nerve → cVEMP↓ (oVEMP preserved).
+ Visually completes the "end organ / nerve branch" map alongside vHIT (6 canals). [engine_doc: SVV/VEMP — H22]
+
+=== DEBRIS SIZE/DENSITY — UI INTEGRATION (Repositioning) ===
+The engine accepts `size` ("small"|"medium"|"big"; medium=r1=baseline) scaling the particle's dynamics
+(tauP∝r⁻², gc∝r³, adh∝r — see engine_doc). The UI layer adds:
+ - state.size (default "medium"). Selector in setup (Repositioning) and a compact `.sizepill` on the step screen
+   (renderGuide, next to the step dots). pickSize(s): plan rebuild (new holds) + invalidation of the dynamics
+   cache (key `name|side|size` in currentManSim) + re-render. Diagnostics NOT changed (medium default).
+ - SIZE-DEPENDENT HOLDS (small = slow settling → longer position hold):
+     • clinically recommended step hold: sizedSeconds() multiplies `st.seconds` (small ×1.6, 15 s grid;
+       medium/big unchanged) in genPlan() — hence the slider/counter start from a longer value for small.
+     • DYNAMICS hold (maneuverTimeline): hold cap 12 s → for small round(12/r²)≈20 s, so the slow debris
+       has time to reach φ=178° (exit). Verified: small with longer holds CLEARS Epley/Semont/
+       Yacovino/Lempert (without them Semont/Yacovino stalled at φ≈157°/128°). medium/big: cap 12 s (regression).
+     • NOTE in the UI (small only): "the recommended position-hold time was extended" with a literature citation.
+ - OTOLITH ANIMATION by size (setupGuideAnim): transition DUR ∝ 1/r² (Stokes settling velocity ∝ r²)
+   → small ~2630 ms (slower), medium 1600 ms (unchanged), big ~878 ms (faster); clamp [800,3000].
+   Nystagmus intensity/latency (startNys/startDialNys, manStepEnv envelope) follow directly from
+   ξ(t) scaled by size — with no separate code.
+ - Consistency note: sizeRadius() in the UI layer must stay CONSISTENT with SIZE_R in the Vestibular module.
+ CITATION (rationale for longer holds for fine/slow-settling debris):
+   Hain TC, Squires TM, Stone HA (2005). "Clinical implications of a mathematical model of BPPV."
+   Ann N Y Acad Sci 1039:384-394. (rationale for holding the position ~30 s in CRP; slow settling of otoconia).
+   Latency/strength variability by size: "Extremely Long Latency BPPV" (Res Vestib Sci, 2017).
+
+=== CENTRAL↔PERIPHERAL DIFFERENTIATION — UI "HINTS" (engine module: NeuroVOR) ===
+Third tab (alongside Repositioning and Diagnostics). state.screen==="hints"; renderHints() draws:
+ - scenario selector (NeuroVOR.SCENARIOS) + VERDICT card (hintsVerdictHTML: peripheral/central verdict,
+   HI·N·TS tags green/red, INFARCT block for central).
+ - SPONTANEOUS NYSTAGMUS PANEL: eyesSVG (the same eyes as Diagnostics) + startNeuroNys — CONTINUOUS
+   horizontal-torsional nystagmus (translate x = horizontal + rotate = torsion around the iris), amplitude ∝ strength from
+   NeuroVOR.nystagmusAtGaze(p,gazeDeg,fixOn). Gaze deviation = translate x (camera mirror ~0.5 px/°).
+   No tEnd (runs until the conditions change). Background ".dark" = Frenzel/darkness mode. Toggles: fixation
+   (Frenzel/light) + gaze (L/center/R) → re-render.
+ - HIT PANEL (not "vHIT" — V=video; the covert saccade is visible only in vHIT): hitSVG = FRONTAL VIEW of the face
+   (head with ears + eyes + nose, target ○ above the head). PATIENT side markers (emk R/L) around the head, mirror:
+   R=screen-left, L=screen-right. Buttons "Push toward the right ear (R)/left ear (L)" — PATIENT sides, not screen sides.
+   startHIT(hi): timeline push→hold→corrective SACCADE→return. Head = translate x (yaw, illustrative); irises
+   locally = (fixation_error − head_translate), eye-in-space = (1−gain)·amplitude; corr(t) cancels
+   part of the undershoot: COVERT saccade during the push (T_COV..T_IMP), OVERT after (T_SAC). gain 1 → eyes on target.
+ - SKEW PANEL: skewSVG (eyes R/L + cover) + startSkew: alternating movement of the cover; the uncovered eye
+   makes a VERTICAL saccade dev→0; the covered eye drifts to misalignment (±skewDeg·4 px). No skew → eyes in line.
+All loops via loopRAF (cleaned by cancelAnims on re-render). CSS: .tabs.three, .pillseg, .hint-eyes,
+.hverdict.{peripheral|central|normal}, .hrow .tag.{ok|bad}. Color: peripheral=green (reassuring), central=red.
+Physics and literature: engine_doc "NeuroVOR MODULE" [H1]-[H8].
+
+--- CENTRAL COMPENSATION PANEL (stage 6, 2026-07-08; only the peripheral scenarios neuritisR/L) ---
+hintsCompPanel(key) → slider <input.comprange> "one slider" c∈[0..1] + readouts (clamp −Hz / pacemaker +Hz /
+velocity storage s from NeuroVOR.postRotational) + toggle Labyrinth non-functional/regeneration (Bechterew) + note.
+Patient = hintsCompPatient(key): scenario + p.comp; regeneration sets toneR/L≈85, lesionEar, sticky
+p.pacemakerBias = 0.7·c·(R0−acuteTone). Visible only for peripheral (normal/stroke → empty "" panel).
+SLIDER SMOOTHNESS: oninput → setHintsComp → refreshHintsComp() — a LIGHT refresh (without rebuilding the DOM):
+swaps the text of [data-comptag/comprow/compnote/verdict/nyslabel/supplnote] and the animation parameters. startNeuroNys
+rewritten to __nnParams read IN THE LOOP (a repeat call does NOT restart the phase) → amplitude changes
+smoothly while dragging. The slider also refreshes the HIT DESCRIPTION for the last-pushed ear (state.hintsHitSide):
+oninput → refreshHintsComp updates [data-hitlabel] live (OVERT↔COVERT); onchange (release) →
+rerunHintsHIT() replays the animation for that ear (you can see the overt→covert transition). setHintsRecovery/scenario →
+full render (reset of compensation and hintsHitSide on scenario change; HIT description replayed from lastHi).
+HIT with compensation: covertFrac = c (compensation completeness) → c=1 saccade ENTIRELY covert (overt disappears);
+corr(t) cancels part of the undershoot DURING the push (T_COV..T_IMP), the rest OVERT after (T_SAC). gain unrepairable.
+hitLabel: no saccade / OVERT (uncompensated) / OVERT+COVERT (partial) / COVERT (compensated — bedside "normal", vHIT only).
+Physics and literature: engine_doc "NeuroVOR MODULE / STAGE 6" [H10]-[H14].
+
+--- "MATHEMATICAL PATIENT" — CUSTOM PARAMETERS mode (stage 7 / UI, 2026-07-10) ---
+4th button "Custom" in the HINTS selector (seg four) + entry from the setup screen. state.hintsCustom = a FULL
+NeuroVOR.makePatient object (null → scenario mode). hintsActivePatient() reconciles both modes (used also in renderHints,
+hintsHIT, refreshHints*). Default entry: mild superior neuritis R (nerveBranchLesion('P','superior',0.6)).
+ • hintsCustomPanel() — driven by NeuroVOR.PARAM_SPEC: basic groups always visible, the "advanced" tier in <details>.
+   Slider row = <input.comprange.prange> (oninput→setHintsParam: number→refreshHintsCustom, select→render;
+   onchange→rerunHintsHIT) + [data-pval] live. Scenario presets (HINTS_PRESETS: Healthy/BVH/Ménière L·R/SCDS L·R/Stroke) → loadHintsPreset = full
+   makePatient (sliders take values). NEURITIS = a separate button-mode (loadHintsNeuritis, state.hintsPreset=
+   "neuritis") — it does NOT have separate superior/inferior/full×L/R buttons (they would duplicate the frame). The frame "Nerve-branch
+   loss" (Ear + Branch Superior/Inferior/Whole + Severity) appears ONLY in neuritis mode (dynamically per the
+   active preset) + live summary nerveLesionSummary() [data-nervesummary]. applyHintsNerve RESETS the
+   peripheral canals to health (HINTS_CANAL_KEYS), then applies nerveBranchLesion (central/compensation PRESERVED).
+   openHintsCustom initializes the default neuritis ONLY when there is no patient (frame↔slider consistency). Dehiscence=select;
+   the active preset is highlighted (.preset[aria-pressed]).
+ • hintsReadoutHTML(p) = NeuroVOR.clinicalReadout: list of findings + chips .rchip.per/.cen (peripheral/central) + pitfalls
+   + LOCALIZATION. In quiz mode (state.hintsQuiz && !reveal) localization/verdict/parameters are HIDDEN → banner
+   hintsQuizBanner + [Reveal]. hintsRandomPatient() = 7 archetypes (healthy/superior·inferior neuritis/BVH/Ménière/SCDS/stroke).
+ • vHIT RALP/LARP (U3): plane selector (HC/RALP/LARP) → per-canal push buttons (NeuroVOR.PLANE_CANALS).
+   hintsHIT(canal,ear) backward-compatible with hintsHIT('P'). GENERALIZED startHIT: head+pupil move along the
+   screen saccade vector hi.saccade {h,v,t} (scale −camRx in x, −v in y) + torsional rotation of the pupils; HC has v=0,t=0 →
+   rotate(0)=no-op = unchanged behavior. hitSaccadeDir describes the direction (horizontal / upward·downward + torsion).
+ • SCDS (U4): when p.dehiscence → buttons "🔊 Sound/Valsalva" (excitation) and "Negative pressure" (inhibition) →
+   hintsSCDSStim → NeuroVOR.pressureStimulus → startNeuroNys vertical-torsional on [data-neuronys]; after ~4.2 s return
+   to rest (SCDS has no resting nystagmus). The NYSTAGMUS RENDERER was extended with a VERTICAL component: neuroNysParams returns
+   Av/vDir (vertical-torsional strength = strengthV or strength when dir=0) + torsion = 8·max(strengthH,strengthV); startNeuroNys
+   adds a translation y=−o·Av·vDir (completion of the deferred E3 — INFERIOR neuritis draws torsional downbeat).
+ • Save/link (U7): hintsCustomDiff (difference from normal) → base64(UTF-8 JSON) in #p=… + localStorage; loadHintsFromHash
+   on startup → "Custom" mode. Data ONLY local. Verdict/skew: tsRow and skewLabel distinguish ts.central —
+   a trace utricular skew (<SKEW_CENTRAL, superior nerve) shown as PERIPHERAL, not "central".
+Physics and literature: engine_doc "STAGE 7 / NEUROANATOMY" [H15]-[H21].
+
+--------------------------------------------------------------------------
+ Scene3D  (stage A)
+--------------------------------------------------------------------------
+HEAD_POINTS — anatomical head points (unit, head frame):
+   nose[0,0,1] top[0,1,0] chin[0,-1,0] earR[1,0,0] earL[-1,0,0]
+   occiput[0,0,-1] eyeR[0.4,0.15,0.85] eyeL[-0.4,0.15,0.85]
+
+CAMERAS — orthographic cameras {right, up, fwd} (world vectors):
+   topDownBehind — above the head, from behind → REPRODUCES THE CURRENT DIAL (behind+swap)
+   topDownFront  — above the head, from the front
+   frontal       — facing the patient (eyes; MIRROR: the patient's right ear on the left of the screen)
+   behind        — behind the head (the patient's right ear on the right of the screen)
+   sideRight / sideLeft — from the side
+   Convention: right = world→screen +x; up = world→"top of the screen";
+               SVG y downward, so screen y = -(p·up); fwd = viewing direction (depth/occlusion).
+
+project(pHead, qHead, cam) -> {x, y, depth}
+   Rotates the head point by qHead (head→world) and projects through the camera.
+   depth = p·fwd (for sorting/occlusion and the sign of chirality in the future).
+
+screenAngleCW(p) -> degrees
+   Clockwise angle from "top of the screen" — for schematic rotations.
+
+--------------------------------------------------------------------------
+ makeManualOrientation()  (orientation source — stage A)
+--------------------------------------------------------------------------
+ Returns an object: setQuat(q) | setYaw(yawDeg) | get() -> quaternion.
+ setYaw: rotation around the skull axis (y); sign consistent with the dial (yaw>0 = rotation to the left).
+ Target interface (OrientationSource): the same methods for the sources:
+   gyroscope (Generic Sensor / DeviceOrientation), recording replay.
+
+--------------------------------------------------------------------------
+ STATUS / VALIDATION (offline)
+--------------------------------------------------------------------------
+ [x] topDownBehind + qaxis([0,1,0], yaw) reproduces the dial: rot = 180 - yaw (full range)
+ [x] the L/R sides and mirror follow from the camera (frontal: right ear on the left; behind: on the right)
+ [x] DIAL REWIRING onto Scene3D: rot = nose angle (camera), L/R sides from the ear projection,
+     nystagmus sign from the camera (up·nose<0 → an observer from behind mirrors horizontal+torsion).
+     Validated offline: identical to the previous (behind+swap). The swap/behindHead/dialSwap flags
+     are unnecessary for the dial.
+ [x] diagnostic eyes: nystagmus direction from the 'frontal' camera (mirror) instead of a hardcoded -sign;
+     validated offline (20 phases dix/roll/bow&lean identical). The eye pair is a fixed front view.
+ [x] UI: the 'Head (top-down)' card in Diagnostics unified with Repositioning (topDownBehind camera);
+     the 'Mechanism' panel moved below the phase cards; the .minihead grid = .viz (+ a mobile rule).
+     NOTE: the dial in Diagnostics is now a 'from behind' view (L left/R right), and the eye card remains
+     'frontal' (mirror) — two different observers in one phase (a deliberate choice: consistency with Repositioning).
+ [x] UI: added a frontal card 'Nystagmus (frontal view)' to Repositioning (eyesNysFromHead → frontal camera,
+     the same {kind,dir,strength} layout as diagnostics). Both tabs: dial = view from behind, eyes = frontal;
+     both cards are labeled 'frontal view'. Two observers preserved (for clinical assessment).
+ [x] Yacovino (anterior canal): added headNys to the provocation step → two animations (dial 'from behind'
+     + the 'Nystagmus (frontal view)' card), card layout as in the other maneuvers; dial=behindHead.
+     Nystagmus vertical generalized by the field 'vdir' (downbeat for the anterior canal); startNys/arrowGlyph
+     handle ↑/↓. The posterior canal unchanged (upbeat). Validated offline (P→↓↺, L→↓↻).
+ [x] Nystagmus animation (eyes + dial) ENGINE-DRIVEN: temporal envelope from ξ(t)
+     (simulateCanalith/Cupulolith via provokeQ/engineXi/xiEnvelope). Canalithiasis = transient
+     (latency→peak→decay, the particle exits → plays ONCE, no loop); cupulolithiasis = persistent.
+     Removed the looping nysEnvelope. Eye torsion 15°→9°. Diagnostics uses the real q position;
+     maneuvers — the canal-provoking position (until quaternion timelines for maneuvers are introduced).
+ [x] Diagnostics: the 'Head (top-down)' card also animates nystagmus (startDialNysIn — per-phase, within the range
+     of the data-dialnys container). View from behind (topDownBehind), anatomical components from position() (the anat field
+     in nysFromGeom), envelope ξ(t) from the engine (transient/persistent). Consistent with the eye card (the same source).
+ [x] STAGE B (silhouette): observer = CAMERA on the AFFECTED side; 'away' (face vs back of the head) from the nose projection.
+     The body schematic stays 2D (full body projection = stage C). postureFront (Semont) = frontal observer.
+ [x] yaw CONVENTION UNIFIED: yaw>0 = RIGHT (consistent with the engine qSupineYaw and the dial). Fixed
+     AT THE SOURCE: yawToA (was inverted) → rotation TOWARD the affected ear (L:-45 / P:+45); yaw in Roll; turnLabel;
+     silhouette camera-observer. NYSTAGMUS DIRECTIONS UNCHANGED (the test q-literals untouched; a clean regression).
+ [x] Diagnostic mechanism (otolith in the canal) driven by the REAL φ(t) from the engine (simulateCanalith):
+     the particle, after the latency, travels by gravity and stops (Dix/Yacovino→exit; Roll→toward the cupula),
+     without an artificial loop. Cupulolithiasis: the cupula deflects per ξ(t) (persistently). φ→fraction of the path = φ/360.
+ [ ] The REPOSITIONING labyrinth (Otolith journey) is still on 'progress' interpolation — a faithful φ(t) for the WHOLE
+     maneuver requires a QUATERNION MANEUVER TIMELINE (head orientation per step = body orientation ∘ neck twist).
+     Offline attempt: a fast orientation model does NOT expel the particle (Epley step 'to the side, nose down' reverses φ)
+     → DONE: maneuverTimeline/maneuverSim (engine_doc). 5/6 maneuvers expel the particle on both sides.
+     DONE: setupGuideAnim → otolith animation as a TRANSITION on entering a step (1.6s, ease), INDEPENDENT
+     of the timer (previously the movement was coupled to the timer = it stood still without 'Start'). Fractions from the real φ (manFractions:
+     cummax for the clearing ones), placeOtolith(canal,p,exitBlend) falls into the utricle (LAB_UTR≈147,162) on exit.
+     manFractions: the engine VALIDATES the exit (man.exited) and indicates the curative step. VERTICAL canals = the REAL
+     expulsion step from physics (manExitStep: Epley=sit-up k5, Semont=throw, Yacovino=chin); horizontal/cupulo =
+     schematic (nSteps-2). The journey = a monotonic progression 0.15→1.0 with exit on the curative step, then rest.
+     The raw φ is front-loaded and for the horizontal canal goes toward the cupula → a schematic instead of raw φ/step.
+     Gufoni-apo (no exit): movement toward the cupula per the engine + a 'conversion' note.
+     CANAL_PATHS paths: start = CUPULA (φ≈0), end = EXIT (vertical → common crus→utricle; horizontal
+     → straight to the utricle), φ≈180≈1.0. Anatomical schematic: ampullae with cristae+cupulae, common crus
+     (the fork of the vertical canals → a trunk to the utricle), utricle chamber. viewBox CROPPED to the content (38 35 205 164,
+     no empty margins) + SVG scaled to 80% (inline style width:80%, centered); the LAB_* constants in svg-screens.js.
+     Gufoni-apo (no exit) → a 'conversion maneuver' note in the labyrinth panel (renderGuide).
+ [x] STAGE C: full body (trunk+neck+limbs) as a 3D projection — DONE (figProj/bodyJoints, see the
+        figProj ARCHITECTURE below and the SESSION SUMMARY 2026-07-02). Free camera choice (K4) remains
+        in migracja_3d.txt as a project for the future.
+
+DEPENDENCIES
+ Scene3D uses Vestibular.rotate / Vestibular.qaxis (shared quaternion algebra).
+
+
+=== COMPACT REPOSITIONING STEP LAYOUT (renderGuide) — one screen ===
+Side selection: an L|R pill in the header (.sidepill, color L=--left/R=--right, aria-pressed), onclick=setGuideSide.
+  Removed the full-row sideSel from the Repositioning view (sideSel still in Diagnostics).
+Timer card (.tcard) instead of a ring + two .switchrow:
+  - row: Start (#btnGo), Reset (↺, .ghost), two ICONS without a caption (.ic, role=switch, aria-checked):
+      auto-advance = "jump to next" (triangle+bar ▸|, onclick=toggleAuto),
+      signal+vibration = a bell (onclick=toggleSound); readout m:ss (.tval, #tread).
+  - a thin linear progress bar #tprog (.tprog, width = remaining time, decreasing).
+  - a linear time SLIDER (.slider/#track): range 0–2:00, snap every 15 s, drag with a finger (pointer),
+      jump-labels 0:30/1:00/2:00 (onclick=setStepSeconds). setStepSeconds sets state.total+st.seconds
+      and moves #knob/#fill; initGuideSlider attaches pointerdown/move/up. The setupGuideAnim loop reads
+      state.total LIVE (the slider works immediately) and updates #tprog (linearly) + #tread (fmtClock m:ss).
+  - a step without countdown (st.seconds==null): .tcard with a note + only icons (no Start/slider).
+FLIP card (.flipwrap/.flip) — combines "frontal view" and "otolith journey" in ONE place:
+  - only when the step has frontal nystagmus (gn=eyesNysFromHead); otherwise an ordinary labyrinth panel.
+  - front = FRONTAL VIEW (visible by default), back = otolith journey (labyrinth).
+  - mechanics: position:absolute inset:0 layers, transform-style:preserve-3d, .flip.flipped→rotateY(180deg),
+      backface-visibility:hidden; flipGuide() toggles the class; touch/Enter/Space, role=button.
+  - BOTH sides are in the DOM simultaneously → animations (#otolith from setupGuideAnim and [data-nys-guide] from startNys)
+      work independently of which side is visible (a purely visual rotation).
+  - sizeFlip() equalizes the height of both sides (max scrollHeight) — no "jumping"; .flip min-height:200px (a reserve).
+fmtClock(s)=m:ss (consistent with the slider labels); fmt(s) remains for old spots. The adjust() function is unused.
+
+=== STEP NAVIGATION IN THE STEP CARD (renderGuide) ===
+Removed the bottom .nav row (← Previous / Next →) and the .meta caption "Suggested time: N s…".
+Navigation is now in the STEP card header (.stephead): small arrow-icons .stepnav on the sides of "STEP n/N":
+  - ‹ previous → goStep(step-1); disabled on the first step (.stepnav:disabled);
+  - › next → goStep(step+1); on the LAST step it turns into a ✓ (.stepnav.fin, color --primary)
+    → backToSetup() ("Finish the series"). aria-label on each button.
+
+=== FIX: no nystagmus in the Gufoni maneuvers ===
+Cause: gufoniGeo/gufoniApo had no headNys on any step (→ no frontal view gn and no nystagmus on the
+dial) or headView/dialSwap (like Lempert). Added:
+  - headView:"behindHead", dialSwap:true (consistent with Lempert — the second horizontal-canal maneuver).
+  - headNys on the provoking steps (canal:"horizontal", ear:"healthy" — beating toward the HEALTHY ear):
+      gufoniGeo: step "onto the healthy side" (intensity strong, geotropic toward the floor=healthy) +
+                 step "nose down" (weak, liberatory);
+      gufoniApo: step "onto the affected side" (strong, apogeotropic upward=healthy).
+  Direction rationale (Ewald): geo lies on the HEALTHY side → geotropic toward the floor=healthy ear;
+  apo lies on the AFFECTED side → apogeotropic upward=healthy ear. In both ear:"healthy".
+  Verified: eyesNysFromHead returns kind=horizontal, dir toward the healthy ear (R-affected→left, L-affected→right).
+
+=== FRONTAL VIEW — UI simplification (Repositioning + Diagnostics) ===
+- Header "Nystagmus (frontal view)" → "Frontal view" (both views).
+- Removed the description "...the patient's right ear on your left". Instead, letters beside the eyes:
+  R (screen-left = the patient's right ear) | L (screen-right = the left ear) — a mirror convention. (.eyesrow/.emk)
+- Added a small arrow "GROUND" = the current downward direction (toward the floor). gravArrowFor(body,yaw,face):
+  projects the step's gravity (stepGravity → gHead) onto the frontal screen (right=-x, up=y → SVG vector=(-g.x,-g.y)),
+  angle = atan2. Hidden when the in-plane projection is <0.15 (gravity ~along the nose-occiput axis). (.gravmark)
+  Verification: side L→arrow to the right, side R→to the left, sitting up→downward (coincides with geotropy in the horizontal maneuvers).
+
+=== UNIFICATION OF THE DIAGNOSTICS UI WITH REPOSITIONING ===
+- Side selection: instead of sideSel (Left/Right side) → an L|R pill (.sidepill, the same icons as Repositioning),
+  in the .diagside row with the caption "Affected side:". onclick=setDiagSide.
+- Canalithiasis/cupulolithiasis variant: removed the .tabs; moved onto the "Mechanism" card as a
+  FLIP (#mechflip, class .flip as in Repositioning): front = canalithiasis, back = cupulolithiasis (each side
+  with its own diagCanalSVG + features + note + interpretation; both animated startDiagOtolith).
+  flipDiagMech(): flips visually (CSS), and after the animation finishes (500 ms = transition duration) re-renders
+  with the new state.variant — so the phases (transient/persistent), nystagmus and recommendation stay consistent.
+  Initial state: .flipped = (variant==='cupulo'). FLIP_ICO shared to global scope.
+  sizeFlip(id) generalized (sizeFlip("flip") in Repositioning, sizeFlip("mechflip") in Diagnostics).
+
+=== DIAGNOSTICS: position pairs as flip cards (Roll, Bow-Lean) ===
+When a test has TWO phases (phases.length===2 → Roll: L/R ear down; Bow-Lean: bow/lean), they render
+as a single FLIP card (#phaseflip) instead of two separate ones. phaseInner(ph,i) builds the content of a single
+position (posture + dial data-dialnys=i + frontal view data-nys=i + note). front=phase0, back=phase1.
+flipPhases(): a purely visual rotation (both positions constantly in the DOM, per-index animations work independently,
+without a re-render). fliphint shows the ptitle of the second position. sizeFlip("phaseflip") equalizes the height
+(+ inline min-height:470px before the measurement is taken). 1-phase tests (Dix, head-hang) unchanged (.phase).
+The Roll caption was fixed: "The ${SIDE} ear down" (Polish feminine lewa/prawa) → "The left/right ear down" (neutral).
+
+=== NYSTAGMUS RESTART WHEN FLIPPING POSITION CARDS (Roll, Bow-Lean) ===
+Flipping a position-pair card = a change of the patient's posture → the nystagmus should start from the beginning
+(latency → build-up → peak → decay), rather than be caught mid-way/after the end of the envelope.
+- startNys / startDialNysIn: added a restart token (container.__nysTok / __dialTok). Each call
+  increments the counter; the loopRAF loop checks the token at the start and finishes when it is stale —
+  so a repeat call cleanly replaces the old loop (without a double animation).
+- renderDiag stores state._diagPhaseNys = phases.map(p=>p.nys).
+- flipPhases(): after toggling .flipped it determines the revealed position i = flipped?1:0, then restarts
+  its animations: startNys([data-nys=i]) + startDialNysIn([data-dialnys=i]) → the envelope plays from t=0.
+Scope: only flips that change the POSITION (Roll, Bow-Lean). The mechanism flip (canalo/cupulo) does a
+re-render anyway (reset). The frontal⇄labyrinth flip in Repositioning is the same position — no reset.
+
+=== SIMPLIFICATION OF THE SELECTION SCREEN (setup) ===
+Removed the CTA buttons "Start maneuver" and "Show test". Clicking a position opens it immediately:
+- maneuver: onclick=openMan(k) → sets maneuverKey and calls startPlan() (you choose the canal earlier, as before);
+- test: onclick=openTest(k) → sets testKey + screen='diag'.
+pickMan/pickTest (selection only) and startDiag remain in the code, but are no longer used on setup.
+
+=== FIX: the flip-card header overlaps the toggle marker ===
+.fliphint is in the top-right corner (top:11px). A long title ("Mechanism — Canal … · cupulolithiasis")
+went under it. Added margin-top:26px (≈2 lines) on the first flip-card header of Diagnostics:
+#mechflip .face h4 and #phaseflip .phaseface .ptitle. Incidentally, the .ptitle/.ppos styles were extended to
+.phaseface (they were only under .phase) — a consistent look of position titles in flip cards.
+
+=== FIX: an unnecessary scrollbar in flip cards (e.g. "otolith journey") ===
+Cause: box-sizing:border-box + a 1px border on .panelbox; sizeFlip set height = scrollHeight,
+so the wall was ~2px (the border) too short → overflow → a bar (visible on desktop with overflow:auto).
+Fix: sizeFlip adds the border: h = max(scrollHeight + (offsetHeight - clientHeight)). Additionally .flip .face
+now has overflow:hidden (a guarantee of no bar; the exact size prevents clipping). Applies to all
+flip cards (#flip, #mechflip, #phaseflip).
+
+=== STAGE C (v1): articulated silhouette — side view ===
+figSide(body,face,yaw,viewSide): instead of a rectangle-trunk + circle-head it draws a silhouette from CAPSULES
+(thick lines, stroke-linecap=round): legs (thigh/shin/foot), arms (upper arm/forearm), trunk, neck, head.
+Simple kinematics: seg(point,length,screen_angle) — angles 0=right,90=down. Poses in one POSE table
+(pelvis + segment angles) for easy tuning. Preserved: camera on the affected side (face vs back of the head
+via the nose projection) and faceAngle for face rotation. The couch at supineHang is shorter — the head hangs off the edge.
+Covered positions (posture): sit (long sit), supineHang, prone, sideL, sideR.
+STILL REMAINING in C: the FRONT view (postureFront: sitFront, leanL/leanR — Semont/Bow-Lean) on the same rig;
+optionally a free 3D camera. Proportions/angles to be tuned visually.
+
+=== FIX Roll test: the supineFlex position (head flexed, not hanging) ===
+The Roll test used body:"supineHang" → the silhouette hung its head off the couch and bent downward (incorrectly).
+Introduced a separate body "supineFlex": head ON the couch, raised/flexed ~30° toward the chest (neck=-28,
+faceAngle=-28). The engine treats supineFlex IDENTICALLY to supineHang (stepGravity/stepHeadQ → qSupineYaw),
+so gravity, nystagmus and the "ground" arrow of Roll do NOT change numerically. supineHang remains
+correct for Dix-Hallpike/Yacovino/deep-head-hang/Epley (the head actually hangs, extended).
+(Lempert: also supineHang for the horizontal canal — for possible correction separately, if needed.)
+
+=== Lempert: the supineFlat position (head flat/slightly flexed) ===
+The Lempert steps "on the back" (1-2) changed from supineHang to a new supineFlat: head ON the couch,
+almost flat / slightly flexed (neck=-12, faceAngle=-12) — less than the 30° of Roll (supineFlex, neck=-28).
+The side/prone/sit-up steps unchanged. Engine: stepGravity/stepHeadQ simplified to body.startsWith("supine")
+— covers supineHang/Flex/Flat uniformly (all qSupineYaw), so gravity/nystagmus unchanged.
+Supine variants: Hang=hang+extension (Dix/Yacovino/deep-hang/Epley), Flex=~30° (Roll), Flat=flat (Lempert).
+
+=== Head in the side view: face/back/PROFILE from the projection (supine differentiation) ===
+Problem: in the side view "head toward the affected" (yaw=45) and "nose to the ceiling" (yaw=0) drew the same frontal
+face (faceAngle = a rigid lookup, without yaw). Fix: for supine* positions the head orientation is computed from the projection of the nose
+axis through the side camera (stepHeadQ → project): |depth|>0.4 → face (nose toward the camera) / back (nose away from the camera),
+|depth|≤0.4 → PROFILE (nose in the screen plane) drawn by the new profileMarks (protruding nose + one eye),
+oriented per screenAngleCW(nose). Verified: Lempert k1=face(d=-0.71), k2=profile nose~up (both sides).
+Supine twists (Roll ±90, Dix 45) unchanged (face/back as before). sit/side/prone stay on away+faceAngle.
+profileMarks is v1 — for visual refinement.
+
+=== Head: fixes to the trunk→neck→head(face) ordering ===
+1) Side positions (sideL/sideR, face=fwd): faceAngle changed 90→0. Previously a 90° rotation pointed
+   the frontal nose distally (it protruded from the trunk, e.g. Lempert step 5). Now face/back vertically (away decides).
+2) profileMarks (supine profile, e.g. Lempert step 2 "nose to the ceiling"): simplified — nose = the distal
+   apex (triangle at the top), one eye just below the nose. A readable nose→eye ordering (the eye/nose was confusing before).
+Note: full orientation consistency in all positions ultimately requires deriving the ENTIRE silhouette
+from the camera projection (a 3D source of truth) — the schematic is drawn by hand, so we apply the projection pointwise (supine).
+
+=== figProj ARCHITECTURE: composeHead + 3D skeleton (FK) + projective renderer ===
+(A design reference; figProj is today the ONLY silhouette renderer — see the SESSION SUMMARY below
+ for the history of the transition from figSide/POSE and the list of fixed bugs.)
+
+composeHead(body,face,yaw): head→world = BODY_Q[body] ∘ headPitchQ(body,face) ∘ qaxis([0,1,0],yaw)
+  (body ∘ pitch ∘ neck twist). BODY_Q = head orientation at neutral face/yaw=0 (per body class).
+  headPitchQ: pitch neutral→face determined from BASE_G via qFromToVec (the shortest rotation a→b).
+  Special cases: supine*→Vestibular.qSupineYaw(yaw) (like stepHeadQ); leanL/R→qFromG(LEAN_G[...]).
+  Core property: gHead(composeHead) == stepGravity for all combinations used (validated
+  21/21, max err 0.00045) — the RENDER AND the ENGINE agree on the orientation, with the correct anatomical roll.
+
+3D skeleton (FK): body frame x=right,y=up(skull),z=front(nose). SKEL = a tree [name,parent,offset] for
+  the neutral posture (pelvis→spine→neck→head; spine→shoulders→elbows→hands; pelvis→hips→knees→ankles→toes).
+  fkJoints(rot): forward kinematics, a joint rotation affects descendants via the worldRot of the parent chain.
+  POSE3D[class]: articulation (joint angles, e.g. flexed hips in sit, flexed knees). TORSO_Q[body]: trunk
+  orientation per body class. bodyJoints(body,face): FK(POSE3D)∘TORSO_Q → 3D joint positions (+ a dynamic neck,
+  see the SESSION SUMMARY).
+
+PoseSpec (Stage 2 of modularization, 2026-07-11): the canonical description of a step/phase pose — a SINGLE source for
+  all renderers (SVG today, Three.js from Stage 3). Producer: pose/maneuvers.js →
+  poseSpec({body,yaw,face}) = { body,yaw,face, headQ:composeHead(...), stepQ:stepHeadQ(...),
+  gravity:stepGravity(...), joints:bodyJoints(...) }. The renderer does NOT derive the pose itself (closing the
+  engine↔view divergence from the 2.5D audit): figProj reads spec.joints/spec.headQ, gravArrowFor reads
+  spec.gravity, headDial reads spec.yaw/face. Debris physics (maneuverTimeline) uses stepQ; drawing
+  the head headQ; invariant: gHead(headQ)==gravity==gHead(stepQ). Consumers: posture(spec,viewSide),
+  figProj(spec,obsCam,opt), headDial(spec,headCamera,nys), gravArrowFor(spec). Camera/transitions
+  DELIBERATELY outside the spec (view decisions, plan.headCamera) — Stage 3 will extend the spec when Three requires it.
+
+figProj(spec,obsCam,opt): projection of the skeleton through the observer camera → {fig, headC}.
+  - spec.joints → Scene3D.project(joint,I,obsCam) → {x,y,depth}; capsules sorted by depth (far→near).
+  - HEAD: a circle at pos.head; face/profile/back from the projection of the nose+skull (spec.headQ), WITHOUT a separate faceAngle:
+      |nose.depth|≤0.4 → profile (profileMarks); nose.depth<0 → face (frontFace); >0 → back; plus a screen-space
+      rule "nose straight down → back" (see the Lempert STEP 5 section below) for side views.
+  - opt.bedY: anchoring the WHOLE group to the couch (see the SESSION SUMMARY, the "floating patient" bug).
+  - Sides (sideL/R): lying as supine + a roll around the long axis, so that the broadside faces the side camera
+    (not a perspective foreshortening).
+
+==========================================================================
+SESSION SUMMARY 2026-07-02: figProj as the only renderer + 2.5D de-fussing
+==========================================================================
+After moving back to 2.5D (the 3D migration deferred — see migracja_3d.txt) and following the recommendation to
+abandon figSide/POSE in favor of closing on figProj, the following were fixed in sequence:
+
+Bug A "floating patient": the couch on a fixed y, the pelvis in POSE hardcoded → the body
+  floated (supineHang ~20px above the bed) or sank. FIX: anchoring computed from the bounding box of
+  the WHOLE silhouette (with segment thickness), a translate() transform on the whole group. Later
+  generalized as opt.bedY in figProj itself (not only in the old figSide).
+Refinement of supineHang: the head in Dix-Hallpike DELIBERATELY hangs off the edge, below the top surface — the anchoring
+  excludes the head+neck from the bounding box for this position (we anchor the trunk, not the lowest point overall).
+Bug B "stiff neck" (Yacovino, sit/down): the neck did not bend, only the facial features rotated.
+  Original FIX in figSide, later MOVED TO THE SOURCE: bodyJoints(body,face) bends the neck in the 3D
+  skeleton itself (sit/down +30°, sit/up -30°) — so it also applies to the future Three.js, not only SVG.
+Bug C the scale(-1 1) hack in Semont: mirroring the whole group falsified L/R (the ear, future directional
+  shading). FIX: removed; the head end follows purely from TORSO_Q + a single fixed camera (topDownBehind).
+Frame-fit fix (A/B sit): the silhouette went above the frame — s/ay were tuned so that the top of the head
+  fits with a margin (later replaced by the general bedY/bbox mechanism in figProj).
+Bug reported by Paweł (Epley step 4, nose↓ on the healthy side): from the side, the face was visible instead of the back
+  of the head. Cause: the face/back logic looked only at depth (the horizontal component), ignoring that the nose
+  points MAINLY at the floor. FIX: a rule "nose toward the floor (world-y<-0.6) → always the back of the head",
+  independent of depth. It also fixed prone (which was wrong identically).
+
+FINAL TRANSITION (per recommendation): figSide, POSE, postureFront, faceAngle, faceMarks, backMarks
+  COMPLETELY REMOVED. figProj (FK+quaternions, bodyJoints) is now the ONLY source of the silhouette render
+  for all positions and views (side/frontal/top-down). Side effect: the class of bugs
+  "floating pelvis"/"stiff neck" is now STRUCTURALLY impossible (anchoring and the neck are
+  properties of the skeleton/renderer, not hand-entered coordinates per position).
+
+VERIFICATION STATE: all the above fixes confirmed NUMERICALLY (bounding boxes, world-space vectors of the
+  nose/skull, node --check) — image preview was unavailable on the assistant's side throughout the session;
+  the visual assessment (final appearance) was performed by Paweł on exported PNGs. Paweł's last confirmation:
+  "Now it's ok" (after the Epley step 4 fix).
+
+OPEN (see also todo.txt): elbow bends (cosmetic), an optional neck extension for sit/up
+  (not reported as a bug, left as is), the Three.js migration (deferred, plan in migracja_3d.txt).
+
+--- 2.5D step: FIX legibility — "affected side" indistinguishable from "healthy side" in the Semont top-down view ---
+Paweł reported: for affected=left the figure "lies on its right side" (the opposite of what it should). NUMERICAL verification
+  (not a sign-bug, only GEOMETRY): TORSO_Q and leanA/leanH in semont() are correct — for affected=L step2 (leanR) the left
+  arm has world.y=-13 (physically at the bottom/on the couch), the right +13 (at the top) = lying on the left/affected side, correctly.
+  Problem: in a PURELY TOP-DOWN camera (topDownBehind) the left and right limbs (shL/shR, hipL/hipR etc.) project
+  onto EXACTLY THE SAME screen pixel (verified: identical screenX,screenY, differing only in depth) — the upper
+  arm completely occludes the lower. Result: the silhouette does NOT show at all which side is down — the only visually
+  available cues are the head position and the face rotation, easily misread as the "side of lying".
+FIX in bodyJoints(body,face): for leanL/leanR the upper (visible) arm — sh+up qaxis(x,-100) — swung forward,
+  onto the chest (as in the real Semont position / on the reference schematic); the lower arm stays straight
+  (still overlaps the trunk = "tucked under the body", physically correct, needs no change).
+Verification: the upper hand offset 47.3px from the trunk line (a visible asymmetry) on a 200×160 canvas; the lower unchanged.
+  Mirror correct: affected=LEFT→visible RIGHT arm (lies on the left), affected=RIGHT→visible LEFT (lies on the right).
+Clean regression: face/back and the head end identical to before the change; sit/supineHang/prone/sideL unchanged.
+
+--- 2.5D step: FIX of the side of lying in Semont (camera topDownBehind → topDownFront) ---
+Report: Semont, "Patient posture", step 2 (affected side) — the figure lay on the wrong side of the screen; both steps and both
+  BPPV sides inverted relative to the instruction "facing the patient".
+Cause: lying rendered with the topDownBehind camera (right=[1,0,0], a view "from behind the head") → patient-right=screen-right (NO mirror),
+  while the instructions/comment in semont() assume an observer FACING (patient-left=screen-right, mirror). Additionally an inconsistency:
+  sitting used frontal (mirror), lying topDownBehind (no mirror). The mapping of leanA/leanH onto the affected/healthy side was CORRECT
+  — only the camera chirality was wrong.
+Fix: Semont lying → topDownFront camera (right=[-1,0,0] mirror, fwd=[0,-1,0] as before → face/back unchanged).
+  Now patient-left=screen-right for both sides and both steps; sitting and lying in the same "facing" convention.
+Numerical verification (head on screen): A=L step2(affected L)=screen-RIGHT, step3(healthy R)=screen-LEFT; A=R the reverse.
+  Face/back preserved: step2=FACE (nose↑), step3=back (nose↓). Head y=101 (within the frame, couch 120).
+
+--- 2.5D step: FIX of the head-feet inversion in prone (Lempert step 4) ---
+Report: Lempert (BBQ roll) step 4 (prone) — the figure suddenly changed its layout: head where the feet had been.
+Cause: all supine/side have the base TORSO_Q=qaxis(x,-90) (cranial→-z = screen-left), but prone was qaxis(x,+90)
+  (cranial→+z = screen-right) — physically a "forward fall" vs a "backward fall", the head at the opposite end. This inverted the head-feet axis
+  only in the prone step.
+Fix: prone = "supine + a 180° rotation around the long axis": TORSO_Q[prone]=qmul(qaxis(z,180),qaxis(x,-90));
+  BODY_Q[prone]=qmul(qaxis(z,180),qaxis(x,-107.5)) (consistently, head+trunk). The face stays down (nose.y=-0.95 → back of the head).
+Verification: the whole Lempert A=R — head to the LEFT in every step (prone too x=28, was ~170); prone face=back. Engine untouched
+  (BODY_Q/TORSO_Q are render-only). node --check OK.
+
+==========================================================================
+PRIORITY A: historical ξ(t) per maneuver step (instead of a fresh provokeQ)
+==========================================================================
+Goal: the nystagmus in the guide should reflect the CUPULA STATE carried over from the previous steps (a continuous maneuver simulation),
+  instead of computing a fresh provocation provokeQ separately for each step (which ignored history).
+Implementation:
+  • New helper manStepEnv(man, step): from the HISTORICAL state._manSim.sim (a continuous simulation of the whole timeline) it cuts out
+    the step window [seg.t0, +dur], normalizes |ξ| by the GLOBAL peak (env carries the RELATIVE intensity between steps)
+    and returns {env, tEnd}. env(0) may be >0 = residue from the previous step. A smooth tail (TAIL=6s) to zero after the simulation
+    window, to avoid a cutoff (because _manSim has a shortened tHold≤12 for the particle dynamics).
+  • startNys(container, nys, envOv) and startDialNys(headNys, plan, envOv): an optional 3rd arg. When given — it uses its
+    {env,tEnd} AND sets strength/amp=1 (env carries the magnitude → no double scaling). Without the arg = as before
+    (a fresh engineXi). Diagnostics (renderDiag/flipPhases) calls without envOv → UNCHANGED.
+  • Wiring into renderGuide: startDialNys(st.headNys,p,manStepEnv(man,step)) and startNys(c,gn,manStepEnv(man,step)),
+    where man=state._manSim (computed/cached).
+Verification (Epley, both sides identical): k1 env0=0.00 peak=1.00 (fresh provoke, latency→build-up);
+  k2 env0=0.91 (RESIDUE from k1, not from zero!) decays; k3 env0=0.16 (residue); k4≈0. Exactly carry-over.
+CLINICAL NOTE (for Paweł's deliberate assessment): with tHold≤12 (the current _manSim) the carry-over is strong (k2=0.91), but ξ does not
+  fully decay within the window — hence the smoothing tail. A tHold scan showed a trade-off: a longer hold → k1 decays
+  smoothly, but k2/k3 drop toward zero (the particle settles; the model does NOT re-provoke on the step→step transitions). So the current
+  model shows mainly the FADING trace from the step-1 provocation, not fresh per-step provocations. If clinically
+  you want a per-step re-provocation, that is a separate task (engine: provocation on each transition), not this change.
+  The nystagmus direction still comes from the geometry (headNys), not from the sign of ξ — reversal ("Nystagmus REVERSED") = a separate TODO.
+
+==========================================================================
+VALIDATION of INTERMEDIATE Epley/Lempert steps after wiring the dynamics (Priority A)
+==========================================================================
+Context: the "static stage 1" (a fresh provokeQ per step) was unreliable for intermediate steps (it ignored history).
+After wiring the historical ξ (manStepEnv from _manSim), both maneuvers were validated, both sides, on REAL plans.
+
+EPLEY RESULT (R and L — identical): RELIABLE.
+  • Particle progression φ: 90→164→178° monotonically ↑, exit=true. (Note: "front-loaded" — the particle reaches 178°
+    already in k2; a known engine feature, for the POSITION of the otolith handled by a schematic ramp in manFractions.)
+  • Nystagmus (historical env): k1 start=0.00/peak=1.00 (a fresh provocation, latency→build-up); k2 start=0.91
+    (RESIDUE carried over from k1 — carry-over works!); k3 start=0.16 (weak residue). All geotropic (affected).
+  • All annotated steps have a real historical signal → they use HISTORY. Correct.
+
+LEMPERT RESULT (R and L): REQUIRED A SAFETY GUARD — the validation detected a mismatch of the physics with the annotations.
+  • The horizontal model does NOT re-provoke on rotations: k0 (annot strong) had env=0.00, k4 (annot strong) env=0.04 —
+    a purely-historical env would make these steps DISAPPEAR. k2 (annot weak) has env=1.00 (a large transit 109→178°).
+  • SAFETY GUARD: manStepEnv returns null when the historical peak of a step is < 0.10 → startNys reverts to a fresh provokeQ
+    with the annotation. Effect: k0/k4 = PROVOKE(annot) peak=1.00 (the annotated nystagmus does not disappear), k2 = HISTORY (transit).
+  • After the safety guard: no annotated step is empty; carry-over stays where the physics gives it (Epley).
+
+REMAINING FOR CLINICAL DECISION (not rendering bugs — a model↔annotation discrepancy):
+  1. Lempert k2: physics=strong (transit), annotation=weak. Which is clinically true? (currently we show strong/history)
+  2. Epley "front-loaded": steps 3–4 under-represented in the nystagmus (the particle has already exited). If the nystagmus
+     in k3/k4 is clinically important, it requires a correction of the φ dynamics in the engine (a separate task, not the visualization layer).
+  3. Per-rotation re-provocation (Lempert) — the model does not have it; the safety guard works around it with the annotation. A full solution =
+     a change in the engine (provocation on each head-Q transition). A separate task.
+Diagnostics (renderDiag/flipPhases): calls startNys/startDialNysIn WITHOUT envOv → engineXi, UNTOUCHED.
+
+==========================================================================
+CORRECTION: Ewald II rectification in the historical nystagmus (+ unification of numbering to 1-index)
+==========================================================================
+NUMBERING NOTE: the app shows the user 1-indexed steps (renderGuide: "STEP ${state.step+1}/${n}").
+  Earlier validation entries in this file used 0-index (k0,k1,...). From now on we number 1-indexed,
+  consistent with the UI. (Mapping: the old kX = STEP X+1.)
+
+PROBLEM (reported clinically by Paweł): in Lempert STEP 3 (rolling onto the healthy side) the nystagmus SHOULD be weak,
+  because the endolymph flows AMPULLOFUGALLY → per Ewald's second law this is INHIBITION (a weaker response in the horizontal canal).
+CHECK IN THE ENGINE: the engine computes ξ WITH A SIGN (flow=gc·G.exc·dφ; horizontal G.exc=-1 → movement toward the exit gives ξ<0),
+  and the function dynNystagmus HAS rectification: intensity=|ξ|·(ξ>0?1:0.45). BUT dynNystagmus was only EXPORTED,
+  used nowhere — and manStepEnv took the raw |ξ|, so it skipped the inhibition. The whole Lempert roll is ampullofugal
+  (ξ<0 in all steps), so STEP 3 (the largest transit, |ξ|=0.99) came out wrongly as the strongest.
+CORRECTION: manStepEnv now uses the ABSOLUTE intensity with Ewald rectification (like dynNystagmus): |ξ|·(ξ>0?1:0.45),
+  WITHOUT normalization to the maneuver peak (otherwise — when the whole maneuver is inhibitory — the attenuation would disappear).
+VERIFICATION (1-index): Lempert STEP 3 peak 1.00 → 0.45 (attenuated, inhibition); STEP 1/5 = PROVOKE(annot) strong=1.00.
+  Epley (entirely excitatory, ξ>0) unchanged: STEP 2=0.81, 3=0.74 (residue), 4=0.13.
+FOR PAWEŁ'S DECISION: the model gives STEP 3 = 0.45 (the 0.45 inhibition coefficient from dynNystagmus). The annotation "weak"≈0.22 —
+  if it should be clinically WEAKER, the inhibition coefficient can be increased (a constant in the engine). The direction is already correct.
+
+==========================================================================
+ENGINE AUDIT AGAINST EWALD'S LAWS (at Paweł's request) — RESULT: CONSISTENT
+==========================================================================
+Frame (Paweł): the nystagmus direction = the FAST PHASE (saccadic, cortical-muscular, this is what we call nystagmus);
+  the SLOW PHASE = a drift from the endolymph flow in the plane of the provoked canal (Ewald I), opposite to the fast one.
+
+WHAT WAS CHECKED AND CONFIRMED:
+1. quickPhase (fast phase, Ewald I — plane specificity, ipsiversive to the provoked ear):
+   horizontal → horizontally toward the provoked ear; posterior → upbeat+torsion toward the ear; anterior → downbeat. CORRECT for all.
+2. nysOffset (render of the fast/slow phase): a fast jump (ease-out cubic) in the named direction, then a slow linear
+   drift the opposite way. Consistent: slow phase = endolymph, fast phase = muscular correction. CORRECT.
+3. isExcitatory / position / dynNystagmus: Ewald II (horizontal: ampullopetal excites) and Ewald III (vertical:
+   ampullofugal excites) — CORRECT. The sign of ξ (flow=gc·G.exc·dφ) encodes excitation/inhibition consistently.
+4. Ewald II asymmetry (inhibition ×0.45): wired into manStepEnv (maneuver nystagmus magnitude) AND into diagnostics
+   (nysFromGeom "asym" mode). dynNystagmus also reverses the DIRECTION when ξ<0 (Ewald's rule — inhibition reverses).
+5. CUPULOLITHIASIS weaker than canalithiasis (Vestibular.CUP_WEAK=0.6): nysFromGeom multiplies the "cupulo" variant's `strength`
+   by CUP_WEAK → the eyes/dial on the mechanism card (the back of the #mechflip flip) beat with a smaller amplitude than "canalo",
+   but with a `persistent` flag. THE SAME coefficient scales ξ in simulateCupulolith (engine). Golden
+   UNTOUCHED: diagnostics is snapshotted at variant=canalo (default), so the "cupulo" path is outside the pattern.
+
+TWO LEVELS OF WIRING (an important distinction):
+  • DIAGNOSTICS: direction+excitation+asymmetry COMPUTED FROM THE ENGINE (nysFromGeom → position() → projection of gravity onto
+    the excitation axis → Ewald). Fully auto-derived.
+  • MANEUVERS: direction MANUALLY ANNOTATED (headNys.ear affected/healthy → eyesNysFromHead → nystagmus), NOT
+    auto-derived from the step orientation.
+
+VERIFICATION OF MANEUVER ANNOTATIONS vs THE ENGINE (dynamic ξ from the continuous simulation + dynNystagmus), all maneuvers,
+  both sides, 1-indexed steps:
+  Epley (posterior) ✓ · Semont (posterior) ✓ · Yacovino (anterior) ✓ · Lempert (horizontal) ✓ · Gufoni geo ✓ · Gufoni apo (cupulo) ✓.
+  ALL direction annotations CONSISTENT with the engine's dynamic ξ. (Methodological note: the static position() gave
+  false "divergent" for intermediate posterior-canal steps — because there the particle FLOWS ON in the same direction
+  [ξ>0], even though the static gravity projects the opposite way. The reference for the maneuver nystagmus is the DYNAMICS, not the statics.)
+  Lempert STEP 1/5: ξ≈0 in the continuous simulation (the model does not re-provoke) → safety guard → provokeQ with the annotation, direction
+    consistent (h toward the affected, as the annotation). In practice correct.
+
+CONCLUSION: Ewald's laws are consistently applied in ALL maneuvers and positions. The core (quickPhase/position/
+  dynNystagmus/isExcitatory) is Ewald-correct. No direction errors.
+
+POSSIBLE IMPROVEMENT (not a bug): the maneuver direction could be AUTO-DERIVED from the sign of the dynamic ξ (dynNystagmus)
+  instead of the annotation — then (a) zero dependence on manual annotations, (b) AUTOMATIC REVERSED nystagmus when
+  the flow reverses (an atypical/failed maneuver). The current annotations are correct for standard maneuvers, so this is
+  a robustness/didactic improvement, not a fix. (It overlaps with the TODO "Nystagmus REVERSED".)
+
+==========================================================================
+FULL EWALD-WIRING OF THE MANEUVERS + REVERSED NYSTAGMUS (removal of manual annotations)
+==========================================================================
+At Paweł's request: we remove the manual direction/intensity annotations; everything is derived from the PHYSICS (Ewald).
+  "The annotation should follow from the physics, not the other way around."
+
+CHANGES:
+1. REMOVED annotations: all headNys:{canal,ear,intensity} → headNys:true (only a MARKER "observe the nystagmus here";
+   direction/intensity/reversal are no longer entered by hand). Removed the dead eyesNysFromHead.
+2. NEW nysFromDyn(canal, side, ξ): direction + intensity + REVERSAL from Vestibular.dynNystagmus:
+   - direction = quickPhase(canal,side) × sign(ξ)  → ξ<0 (inhibition) REVERSES the nystagmus (automatically);
+   - intensity = |ξ|·(ξ>0?1:0.45)  → Ewald II rectification (inhibition weaker);
+   - vdir/kind/dir mapped as before; anat{h,v,t} for the dial; label from the physics (a "REVERSED"/"weak" annotation).
+3. NEW stepXiPeak(man, plan, step): the ξ peak WITH SIGN from the continuous simulation; at a gap (the model does not re-provoke)
+   — a fresh provoke from the ACTUAL step orientation (neutral start → position). The sign drives the reversal.
+4. renderGuide: gn = nysFromDyn(...stepXiPeak...) (was eyesNysFromHead from the annotation). startDialNys uses anat.
+   headDial: label from nys.strength (a number) and nys.reversed (instead of the .intensity string). Diagnostics UNTOUCHED
+   (nysFromGeom/position + startDialNysIn — a separate path, already Ewald-derived).
+5. FIX Lempert yaw=90° (STEP 1 "head 90° toward the affected side"): it was yaw=45 → ξ=0.00 (no provocation). Now
+   yaw=±90 → ξ=0.52, excitation toward the affected. The instruction said 90°, the code had 45.
+
+VERIFICATION (nysFromDyn + stepXiPeak, all maneuvers, both sides):
+  Epley/Semont (posterior): upbeat+torsion toward the affected, int 0.81→0.13, excitation ✓ (consistent with the old annotations).
+  Yacovino (anterior): downbeat, int 0.67 ✓.
+  Lempert: STEP 1 excitation toward the affected (int 0.52 — fixed); STEP 3 REVERSED+weak (ξ=-1.03 ampullofugal,
+    int 0.46, Ewald II); STEP 5 excitation toward the affected (int 0.84). Reversal AUTOMATIC from the sign of ξ.
+  Gufoni geo: STEP 2/3 REVERSED+weak (ampullofugal, int 0.41).
+CONCLUSION: direction, intensity and reversal now follow SOLELY from the physics (the sign and magnitude of ξ + Ewald's laws).
+  A minimal marker headNys:true remains (which steps have a nystagmus card — a didactic choice, not an Ewald annotation).
+
+--- Removing the headNys marker: the nystagmus card purely from the physics (threshold 0.10) ---
+Removed the headNys:true marker from ALL steps. renderGuide: gn = nysFromDyn(...stepXiPeak...); the card appears
+  only when gn.strength >= 0.10 (the physics decides which steps). Verification (side R):
+  Epley: cards k2,3,4 (sit k1,k5 — none). Semont: k2,3, +k4 sit weak (0.15). Lempert: k1–5 (each rotation; k2,k4
+    REVERSED — ampullofugal), sit k6 none — more complete than the old k1/3/5. Yacovino: k2, +k3 chin-chest (0.85, ADDED),
+    +k4 weak (0.17). Gufoni geo: k2,3 (REVERSED), sit k1/k4 none.
+  Note: the final "return to sitting" in Semont/Yacovino gives a weak card (0.15–0.17, residue while sitting up) — above
+  the 0.10 threshold. If clinically they should not show, it is enough to raise the threshold (e.g. 0.20). Direction/strength/reversal 100% from the physics.
+
+--- FIX face/back Lempert STEP 5 (rotation toward 360°): the "nose to the floor" rule too aggressive ---
+Report: Lempert STEP 5 (affected side, ~270°→360°) showed the BACK of the head, it should show the FACE (an observer from the affected side
+  sees the face when the patient is on the affected side). Cause: the noseDown rule used the WORLD nose.y<-0.6 → it also caught a nose
+  pointing down-AND-FORWARD (a side profile, noseW=[0,-0.71,0.71], depth≈0), not only straight at the floor.
+Fix (figProj): noseDown = noseP.y>0.5 && |noseP.x| < 0.6·noseP.y (SCREEN PROJECTION — back only when the nose points almost
+  STRAIGHT down the screen). Verification: Epley4=BACK, prone=BACK (preserved); Lempert STEP 5 and 3 = profile (face from the side,
+  fixed); Dix-Hallpike=FACE, Semont Initial=FACE, Maneuver=BACK (preserved).
+
+===== PoseSpec -> Three.js (Stage 3) =====
+The 3D renderer (src/render/three-patient.js) reads THE SAME pose data as SVG: spec.joints (joints/segments like figProj) +
+  spec.headQ through the axis bridge. The 3D scope = ONLY the body/head silhouette; nystagmus/eyes/HIT/dial(head top-down)/labyrinth stay SVG.
+OTOREPO<->Three BRIDGE (src/render/three-bridge.js): our world z=FRONT (nose), three z=BACK -> map M:(x,y,z)->(x,y,-z)
+  (a reflection of the z axis = a change of chirality, applies equally to world and local). toThreeQuat is built from BASIS VECTORS
+  (the images of local right/tip/back in the world), NOT from a ready-made formula — the principle from migracja_3d.txt. A candidate formula
+  (-x,-y,z,w) confirmed numerically. ORACLE tools/bridge-check.mjs (npm run bridge:check): 408 poses
+  (grid of position×face×yaw + steps of all maneuvers + test phases), threshold 1e-6, actual max error 1.37e-15;
+  it checks the basis vectors, gravity (gHead directionally) and |Q3|=1. ON-DEMAND render: a frame after a pose change, the
+  loopRAF loop (rAF registry) only during a slerp+lerp transition (~620 ms) and then it stops. Anchoring to the top surface = exclusions like
+  figProj bedY (supineHang: head+neck hang; sit: shins/feet). Visual verification: Epley R step1 supineHang
+  3D vs SVG — the head hangs on the same (left) side, view from the affected side, consistent.
+
+===== Stage 4: full mapping in 3D (all maneuvers + tests) =====
+The 3D view choice = THE SAME rule as posture(): sitFront->frontal; leanL/R (Semont)->frontal [CHANGED — see below];
+  the rest -> side from the affected side. A shared source: three-patient.js exports FRAME/camKeyFor/cameraDef — used by the
+  renderer AND the view oracle.
+CORRECTION (feedback): Semont step 2/3 (the leans) was from a TOP-DOWN view (topDownFront) — at request changed to FRONTAL
+  (the observer facing throughout the WHOLE maneuver, consistent with steps 1/4). In both renderers at once (posture() and camKeyFor) +
+  removed the hack raising the upper arm from bodyJoints (it was needed only for the top-down camera, where the shoulders projected
+  onto each other; frontal separates them by the screen Y). Legibility of nose↑ vs nose↓ stays high: step 2 shows the FACE
+  (nose to the ceiling), step 3 the OCCIPUT (face into the mattress) — the standard mirror illustration of Semont (the head at opposite
+  ends = two positions mirrored about the sit). camKeyFor no longer returns topDownFront (cameraDef retains it,
+  unused). Golden rebaselined: 60 grid positions leanL/leanR (without the arm hack) + 4 dom (semont R/L step1/2).
+topDownFront MIRROR: the SVG base has det=-1 (audit #7 — a reflection, unreachable by camera rotation). The physical three camera
+  renders without a mirror, and we do the reflection ON THE IMAGE: canvas.style.transform=scaleX(-1) (mirrorX in cameraDef).
+  After the mirror the screen axes = exactly the SVG base (screen-x=-x world, screen-up=+z/front). frontal has det=+1 -> an ordinary
+  camera facing the patient (the clinical mirroring follows from the geometry, as in SVG).
+sitFront (Semont): POSE3D.sitFront={} -> legs STRAIGHT down; anchoring the feet to the top surface would place the patient ON the couch
+  (head ~165 u. — cut off; detected by pixel measurement). Like SVG: NO anchor — the figure is centered vertically
+  (dy = FRAME.cy - center), the couch = a bench BEHIND the patient (cz=-36), the top surface under the pelvis (y=dy). The couch legs shortened
+  34->24 (in the frontal view the nearer legs, enlarged by perspective, protruded at the bottom).
+NOSE anchoring: the tip of the nose (three-local -z, ~R+9 from the head center) counted into minY/bbox when the head is not cut off
+  — prone (Lempert step 4) and Semont step 3 (face into the mattress) do not penetrate the top surface.
+VIEW ORACLE tools/view-check.mjs (npm run view:check): for 78 poses (all maneuvers×sides×steps + DIAG
+  ×sides×variants×phases) it compares SCREEN directions SVG(ortho, Scene3D)↔3D(perspective+mirror): trunk(head-pelvis),
+  knees(kneeL-kneeR — L/R CHIRALITY), nose(from headQ). NDC x multiplied by aspect (5/4) for isotropy; vectors
+  degenerate in a given view are skipped. Threshold 25° (perspective vs ortho gives up to ~18° at the edge of the frame; axis flips
+  are 60-180°). Result: max 17.7° (nose, Semont topDown). The mirror confirmed ALSO by pixels: the centroid of cyan (the head)
+  vs the centroid of the body — leanL/leanR consistent with the sign of the SVG projection (note: the canvas buffer is UNmirrored — the CSS transform
+  mirrors only the image; in pixel measurements the reflection must be applied by hand).
+Transitions: a camera-key change (Semont frontal->topDown) = a jump without a tween (lastCam=camKey); within the same
+  camera a slerp+lerp ~620 ms as before.
+
+===== YACOVINO — face of step 3/4 + a hidden anterior physics bug (report with markers) =====
+SYMPTOM: in 2.5D (and then 3D) the face in step 3 (supineChin) and 4 (sit/down) was turned the opposite way from anatomically.
+CAUSE (undebuggable earlier): audit #1 ties the face to gHead (a single source: composeHead==stepGravity).
+  The old engine "cleared" the anterior canal ONLY in an anatomically REVERSED pose: supineChin had SUPINE_PITCH=-75
+  (gHead≈[0,+1,-0.09], gravity TOWARD THE TIP = the head still extended backward, not "chin to chest"), and step 4 was
+  sit/down (a deep bow, like Bow&Lean). The renderer FAITHFULLY showed this wrong physical pose. The face and the physics are
+  the same quaternion — you cannot fix one without the other.
+DIAGNOSIS: the φ(t) simulation of the debris in the anterior canal. The deep hang alone (isolated) clears the anterior (φ→178 exited),
+  but shared with Epley/Dix supineHang it is SHALLOW (~10° below horizontal, φ stalls at 173) and held too briefly
+  (dynamics cap 12 s). The chin-to-chest (anatomically correct) with an unfinished hang REVERSES the debris (φ 145->118->82).
+CORRECTION (only the Yacovino pose/time — the canal geometry / nystagmus / HINTS were NOT touched):
+  • a new body supineDeepHang (SUPINE_PITCH=-30, gHead≈[0,0.64,-0.77], nose up-and-back = a DEEP hang);
+    NECK_DEG=-52, TORSO_Q + BED_EXCL (head+neck hang) like supineHang.
+  • step 2 body=supineDeepHang + dynHold=22: override of the step's DYNAMICS time, scaled like the cap (dynHold·cap/12 →
+    small ~37 s, medium 22 s), so the debris has time to leave the canal DURING the hang. exited persists to steps 3-4.
+  • step 3 supineChin: SUPINE_PITCH +75 (chin to chest: nose up-toward-the-feet [0,0.42,0.91]).
+  • step 4: face "chin" (new) instead of "down"; BASE_G["sit|chin"]=[0,-0.64,0.77] (chin to chest while seated,
+    nose down-and-forward [0,-0.77,0.64]) — NOT a deep bow "down". NECK_DEG sit: face=="chin" → +45° of flexion.
+  • label faceLabel: "chin to chest".
+VERIFICATION: φ→178 exited for R/L × small/medium/big; the other maneuvers unchanged (gufoniApo φ=69 exited=false
+  = correct, it is a conversion without evacuation); bridge/view/golden green; visually the 4 steps consistent with the markers.
+INVARIANT audit #1 preserved: gHead(headQ)==gravity == 2.5e-16 for all steps.
+
+===== Stage 5: 3D DEFAULT renderer + SVG fallback (migration finale) =====
+webglAvailable() [svg-screens.js, cache _webglOK]: creates a canvas, tries getContext('webgl'/'experimental-webgl'),
+  try/catch. main.js on boot: `if(webglAvailable()) state.view3d=true` BEFORE render(). CRUCIAL for the golden:
+  the literal state.view3d=false STAYS in state.js — jsdom/harness has no WebGL → webglAvailable()=false → view3d
+  stays false → the "Posture" card renders SVG → snapshot:check IDENTICAL (zero rebaseline). This is at the same time PROOF
+  of the "no WebGL → SVG by default" path: a passing golden = an environment without WebGL showing SVG.
+The "3D" BUTTON stays unconditional (can3d=true in renderGuide/renderDiag) — it does NOT depend on webglAvailable, so that the DOM
+  in jsdom is identical (the button present in 50 scenarios as in Stage 4). On a real device without WebGL the button
+  is there, but SVG by default; a click → a mount attempt → fallback (below).
+RUNTIME FALLBACK: mountPatient3D (three-patient.js) on an error NO LONGER writes text into the slot, but THROWS (throw e
+  after dispose+pool.delete). mount3D.catch: `if(state.view3d){ state.view3d=false; render() }` → the card returns to SVG.
+  Without a loop: after view3d=false renderGuide/renderDiag do not call mount3D (gate `can3d && state.view3d`).
+VERIFICATION (browser, WebGL): boot view3d=true; Epley/Roll 3D WITHOUT clicking; toggle 3D↔2D↔3D; breaking
+  HTMLCanvasElement.getContext→null (after boot, pool empty) → entering a maneuver → WebGLRenderer throws → SVG posture,
+  the step works, no hang; fresh load: a live webgl2/webgl context on the canvas (466×372).
+PERFORMANCE (DESKTOP — no phone in the dev environment): a cold mount (import of the three chunk + WebGLRenderer + 1 frame)
+  92 ms; step transitions within the budget DUR=620 ms (smooth, steady); +1.4 MB usedJSHeapSize after 25 maneuver changes;
+  1 canvas per page (pool ≤3 WebGL contexts, no accumulation). Note: rAF is suspended in the preview panel — for
+  measurements window.requestAnimationFrame was swapped for setTimeout(16).
+OFFLINE/BUILD: vite build code-splits three into assets/three-patient-*.js (~516 KB, lazy — index ~124 KB); the chunk
+  is in the precache dist/sw.js (3D works offline after PWA installation); the cache name hash changes with the content.
+GLB: NOT deployed (user decision: a procedural model). The bone adapter is ready — a swap = the same show(spec,side).
