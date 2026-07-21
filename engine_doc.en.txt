@@ -1,0 +1,878 @@
+==========================================================================
+ OTOREPO — ENGINE DOCUMENTATION (modules `Vestibular` + `NeuroVOR`)
+ English translation of engine_doc.txt (Polish original — canonical, referenced by in-code comments).
+ Files: src/engine/vestibular.js (Vestibular) · src/engine/neuro-vor.js (NeuroVOR)
+        (monolith otorepo.html = frozen source of the golden snapshot — the same IIFEs)
+ Nature: pure ES modules WITHOUT DOM (offline-testable in node; importable in .mjs)
+ Last update: 2026-07-12 (added nystagmus fatigability: fatigueFactor + rep parameter)
+ Note: `Vestibular` = BPPV physics (otolith debris in the canal). `NeuroVOR` = the
+        tonic/central layer (VOR, fixation, vHIT, gaze-evoked nystagmus, skew, HINTS) —
+        see the "NeuroVOR MODULE" section at the end of the file.
+
+ >>> MODEL NATURE (IMPORTANT): a PHENOMENOLOGICAL / EDUCATIONAL model. The engine is a REDUCED implementation
+     of established models, CALIBRATED to the expected CLINICAL dynamics — it is NOT a predictive
+     hydrodynamic model of a specific patient. simulateCanalith models a particle on an arc (overdamped
+     Stokes motion + first-order cupular relaxation), WITHOUT full duct geometry of variable diameter, endolymph
+     viscosity, transcupular pressure, fluid inertia, the distribution of MANY particles, or individual anatomy
+     (full model: Squires/Hain/Stone [1]). It reproduces the EXPECTED clinical behavior, it does not predict the patient.
+     Details → "BIBLIOGRAPHY AND MODEL CONSISTENCY" + "SIMPLIFICATIONS RELATIVE TO FULL MODELS". An EDUCATIONAL
+     tool, not a diagnostic one. <<<
+==========================================================================
+
+This document describes the public and internal helper API of the engine and the adopted
+conventions. Keep it updated as the engine evolves.
+
+--------------------------------------------------------------------------
+ CONVENTIONS AND COORDINATE SYSTEMS
+--------------------------------------------------------------------------
+Head frame:  x = right, y = up (skull), z = forward (nose).
+World: "up" axis = +y; world gravity = (0,-1,0).
+Sides (ear/side): "L" = left ear, "P" = right ear.
+Canals (canal): "posterior", "horizontal", "anterior".
+
+Quaternion: q = [w, x, y, z]; rotates HEAD vectors → WORLD
+            (v_world = q ⊗ v_head ⊗ q*).
+
+Nystagmus components (anatomical, patient frame), returned as {h, v, t}:
+   h: + to the right / − to the left        (horizontal)
+   v: + upward / − downward         (vertical)
+   t: + upper poles to the right / − to the left  (torsional)
+
+Ewald's laws used in the engine:
+   I   — plane specificity: the fast-phase axis of a given canal (quickPhase)
+   II  — horizontal canal: AMPULLOPETAL flow is excitatory; excitation > inhibition
+   III — vertical canals: AMPULLOFUGAL flow is excitatory
+
+--------------------------------------------------------------------------
+ PUBLIC API (returned from the module)
+--------------------------------------------------------------------------
+
+— STAGE 0 (rule-based) ——————————————————————————————————————————————
+
+isExcitatory(canal, flow) -> bool
+   Whether the given flow direction excites the canal (Ewald's law II/III).
+   flow: "ampullopetal" | "ampullofugal".
+   Returns: horizontal → (flow==="ampullopetal"); vertical → (flow==="ampullofugal").
+
+quickPhase(canal, ear) -> {h, v, t}
+   Fast-phase axis for canal EXCITATION, ipsiversive to the ear (Ewald I).
+   ear: "L"|"P". (ipsi = ear==="P" ? +1 : -1)
+   horizontal → {h:ipsi, v:0,    t:0}      (horizontal toward the excited ear; torsion masked)
+   posterior  → {h:0,    v:+0.93,t:ipsi}   (upbeat + torsion toward the ear; real v:t≈0.93:1)
+   anterior   → {h:0,    v:-1,   t:0}      (PURE downbeat; geometric torsion ~0.78 MASKED — NYS_SHOW.anterior.t=false)
+   NOTE — CLINICAL MASK (NYS_SHOW): quickPhase returns the UI convention for BPPV (anterior = pure downbeat,
+   horizontal without torsion). The FULL geometry (anterior torsion PRESERVED, for lateralization) → NeuroVOR.qpFull()
+   / Vestibular.nysMag(); used by the HINTS layer (vHIT saccade / verticalBeat / SCDS). See the "CLINICAL MASK" section.
+
+nysMag(canal, ear) -> {h, v, t}
+   Full geometric proportions of the nystagmus from REAL canal normals (CANAL_NORMALS), normalized
+   to max=1. Does NOT apply the NYS_SHOW clinical mask (anterior-canal torsion PRESERVED) — cf. quickPhase
+   (same geometry, masked to the BPPV convention). Source of the full geometry for NeuroVOR
+   (qpFull → vHIT saccade / verticalBeat / pressureStimulus-SCDS). ear: "L"|"P".
+
+nystagmus({canal, ear, excited=true}) -> {h, v, t}
+   Fast phase for the given, excited/inhibited canal.
+   Inhibition (excited=false) reverses the sign of all components.
+   Future use: unilateral loss (excited:false), push-pull.
+
+— STAGE 1 (static geometry) ————————————————————————————————————
+
+gHead(q) -> [x, y, z]
+   The gravity vector expressed in the head frame for orientation q.
+   Upright-standing head (q=[1,0,0,0]) → [0,-1,0].
+
+qSupineYaw(deg) -> q
+   "Supine head-hanging" orientation (a -100° pitch about the interaural axis)
+   with a head yaw of `deg` about the skull axis (y). Use: Dix-Hallpike (±45),
+   Roll (±90). Note: positive deg = right ear down (3D convention, NOT the UI schematic).
+
+qPitch(deg) -> q
+   Pure pitch about the interaural axis (x). +deg = bow forward (bow),
+   -deg = lean back (lean). Use: Bow & Lean test.
+
+position({canal, side, variant, q}) -> {excited, mag, h, v, t}
+   Static stimulation of the AFFECTED canal in head orientation q.
+   side: "L"|"P"; variant: "canalo" (geotropic) | "cupulo" (apogeotropic).
+   Mechanism: projection of gravity onto the canal's excitation axis → flow → Ewald.
+     - horizontal:  proj = g · uHC(side);  excited = (variant==="cupulo" ? proj<0 : proj>0)
+                 (Ewald II: geo/apo reverse)
+     - vertical:  proj = g · GEXC[canal];  excited = proj>0
+                 (Ewald III; no geo/apo reversal for vertical canals)
+   excited: bool; mag = |proj| (raw force); {h,v,t} = quickPhase with the sign of excitation.
+   VALIDATED: Dix-Hallpike (posterior), Roll (geo/apo), Bow & Lean.
+
+— STAGE 2 (particle dynamics) ————————————————————————————————————————
+
+simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145}) -> [{t, xi, phi, exited}, ...]
+   Simulation of CANALITHIASIS: the otolith as a particle on the canal arc.
+   [PHENOMENOLOGICAL MODEL — a proxy for the dynamics, not full hydrodynamics; see the "MODEL NATURE" header
+    and "SIMPLIFICATIONS RELATIVE TO FULL MODELS".]
+   timeline: array of segments [{q, tTrans, tHold}, ...]
+       q      — target orientation (quaternion)
+       tTrans — transition time to q [s] (slerp interpolation from the previous q)
+       tHold  — hold time at q [s]
+   q0 — STARTING orientation (quaternion); default null = the q of the FIRST segment (backward compatibility).
+       NOTE (semantics of the 1st segment): with q0=null the first segment does NOT interpolate from the neutral position —
+       its tTrans is time ALREADY IN the starting position, NOT a transition from sitting. To force a transition from a given
+       orientation to the 1st q, pass q0 (e.g. [1,0,0,0] = neutral head). UI convention: the 1st segment has tTrans:0,
+       and the transition is realized by the NEXT segment (maneuverTimeline: tTrans:0.8 per step). Analogously for simulateCupulolith.
+   Model:
+       φ — arc angle of the particle (ampulla φ=0, exit/common crus φ≈180°); lower bound 3°.
+       Overdamped motion (Stokes drag, no inertia):
+           dφ/dt = (g_head · tangent(φ)) / tauP
+       Cupula (first-order model, long time constant):
+           dξ/dt = -ξ/tauC + gc · exc · dφ/dt   (exc: +1 vertical / -1 horizontal)
+   OTOLITH ADHESION (latency):
+       The otolith is initially attached; the bond (adh) is broken by a sustained tangential force
+       above the threshold fStat → a delayed start = LATENCY. A stronger provocation = shorter
+       latency (consistent with the clinic). Once broken, the otolith no longer re-attaches in this session.
+   COMMON-CRUS CHAMBER + EXPULSION INTO THE UTRICLE (VERTICAL canals: posterior+anterior; the horizontal has no crus):
+       Anatomically, "reaching the end of the arc" (φ=phiExit) ≠ "falling into the utricle" — these are TWO events.
+       • HORIZONTAL CANAL: no common crus → the non-ampullary end opens DIRECTLY into the utricle: after φ≥phiExit
+         the otolith enters the utricle ONE-WAY (exited). (Unchanged from the previous version.)
+       • VERTICAL CANALS (crusArc/crusGrav/crusFling): after reaching the crus (φ≥phiExit−crusArc) the otolith ENTERS
+         THE CRUS CHAMBER and PARKS — it leaves the sensitive canal, the cupula relaxes (ξ→0, no nystagmus), it waits for
+         expulsion into the utricle. Two physiological expulsion routes from the crus:
+           – GRAVITATIONAL (slow): with the head UPRIGHT (sitting) the utricle is below the crus → the debris falls in. Condition
+             −gHead_y > crusGrav (projection of gravity onto the crus→utricle axis ≈ [0,−1,0]). Gives Epley expulsion AT
+             SITTING (step 5) + a LIBERATORY nystagmus where it clinically occurs.
+           – INERTIAL (fast): an abrupt flip through a large angle (Semont ~180°) throws the debris out of the crus by inertial
+             forces regardless of gravity. Proxy: segment transition angle > crusFling (with a ~uniform transition
+             time, a large angle ≈ a large angular velocity). Sustains Semont expulsion AT THE FLING (step 3).
+         Expulsion advances φ: (phiExit−crusArc)→phiExit over ~EXPEL_DUR(1.2 s) → an ampullofugal nystagmus TRANSIENT
+         (the SAME sign as the original) = liberatory/confirmatory. exited=true one-way (blocks the reversed phase).
+       Backward motion in the canal lumen (dφ/dt<0, before the crus) → ξ<0 → REVERSED nystagmus.
+       VALIDATION (offline, real generated plans, both sides): Epley expulsion/liberatory at STEP 5 (sitting, ξ~0.31);
+       Semont at STEP 3 (fling); Yacovino at STEP 3 (chin to chest); horizontal canal (Lempert/Gufoni) UNCHANGED;
+       Gufoni apo still does not clear (conversion). Diagnostics (a single lying position): the debris parks in the crus
+       without expulsion → nystagmus crescendo→decrescendo (extinguishes), the debris does NOT "vanish" (more physiological).
+   CONSTANTS CALIBRATED TO THE LITERATURE (posterior canal, canalithiasis):
+       latency ~1–3 s, time to peak ~7–9 s, attack duration ~25 s;
+       tauC=5 s corresponds to a long cupular/canal time constant (~4–6 s).
+   Returns: t [s], xi (sign = excitation/inhibition), phi [°], exited (bool).
+   Tuning parameters: tauP, tauC, gc, phiExit, fStat, adh.
+   PARTICLE SIZE/DENSITY (size): "small" | "medium" (default) | "big" — or a number (radius multiplier r).
+       Mapping SIZE_R = {small:0.78, medium:1.0, big:1.35}. Physical scaling from r:
+         tauP ∝ r⁻²  (Stokes settling velocity v ∝ r² → faster flow for a larger particle),
+         gc   ∝ r³   (displaced volume/mass of endolymph → cupular deflection),
+         adh  ∝ r    (detachment force of a sphere from the wall, JKR/DMT scaling).
+       medium == r=1 → result IDENTICAL to the previous calibration (safe default).
+       Emergently: LARGE = shorter latency, stronger/faster nystagmus, faster exit;
+       SMALL = long latency, weak and slow course, MAY NOT reach φ=178° in the shortened holds
+       of a maneuver (e.g. Semont/Yacovino) — consistent with the rationale of ~30 s holds for slowly settling
+       fragments (Hain [2]) and with "extremely long-latency BPPV" [11]. Addresses the simplification
+       "no effect of particle size" from the SIMPLIFICATIONS section.
+   FATIGABILITY (rep) — a DIFFERENTIATING criterion canalithiasis↔cupulolithiasis [12].
+       rep = the provocation repetition number in the same session (0 = first = full response). Mechanism:
+       a compact cluster of otoconia DISPERSES on repetition (serial Dix–Hallpike) into smaller, less
+       coherent fragments → weaker aggregate cupular deflection. The factor fatigueFactor(rep,{fatTau,fatFloor})
+       scales gc → the AMPLITUDE ξ (and the nystagmus) decreases linearly; GEOMETRY/LATENCY UNCHANGED (the dominant,
+       undisputed clinical effect is the amplitude drop). Defaults fatTau=2.0, fatFloor=0.06; rep=0 → factor 1
+       → IDENTICAL result (backward compatibility). Example (posterior canal): peak ξ 0.81→0.51→0.33→0.22→0.15 for
+       rep 0..4. CUPULOLITHIASIS (simulateCupulolith) has NO rep — the debris adheres to the cupula, does not disperse
+       → does NOT fatigue; the difference is an emergent differentiating feature.
+
+fatigueFactor(rep=0, {fatTau=2.0, fatFloor=0.06}) -> factor ∈ [fatFloor, 1]
+   Pure fatigability factor: fatFloor + (1−fatFloor)·exp(−rep/fatTau); rep 0/negative/NaN → 1; monotonic
+   decay to fatFloor; fatTau≤0 → RangeError. Exported to UI/diagnostics (serial Dix–Hallpike).
+
+nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
+   Classification of the phase relative to the provoking direction:
+   "primary" (ξ>thr, primary/liberatory), "reversed" (ξ<-thr, reversed), "none".
+
+simulateCupulolith({canal, side, timeline, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
+   size scales gain ∝ r³ (a heavier otoconia cluster → stronger cupular deflection); no latency
+   (tauCup unchanged). SIZE_R as in simulateCanalith. medium == r=1 → identical result.
+   Simulation of CUPULOLITHIASIS: otoliths attached to the cupula → a heavy cupula deflected
+   DIRECTLY by gravity (static projection), without a free particle in the canal lumen.
+   Model:
+       target = CUP_WEAK · gain · |proj| · (excited ? +1 : -1)
+                where proj/excited from position({canal,side,variant:"cupulo",q}) (Ewald's rule;
+                horizontal: apogeotropic = reversed relative to geotropic)
+                CUP_WEAK=0.6 — CUPULOLITHIASIS WEAKER THAN CANALITHIASIS [1] (debris attached to the cupula
+                deflects it more weakly than a bolus of free otoconia driving the endolymph column). The SAME
+                coefficient scales the diagnostic nystagmus of the "cupulo" variant (nysFromGeom) — a single source of truth.
+       dξ/dt = (target - ξ) / tauCup           (fast relaxation)
+   Emergent features (contrast to canalithiasis):
+       - NO LATENCY (ξ follows gravity immediately; tauCup small)
+       - PERSISTENCE (ξ holds the target as long as the position is maintained; no extinction)
+       - SMALLER AMPLITUDE (CUP_WEAK): nystagmus less intense than in canalithiasis [1]
+       - smooth reversal on position change
+   Returns: t [s], xi (sign = excitation/inhibition), target (static target).
+   Tuning parameters: tauCup, gain — TO BE CALIBRATED.
+
+dynNystagmus(canal, side, xi) -> {excited, intensity, h, v, t}
+   Conversion of instantaneous ξ (from simulateCanalith) into nystagmus components.
+   excited = (xi>0); direction = quickPhase with the sign of excitation.
+   intensity = min(1, |xi| · (excited ? 1 : 0.45))
+               — Ewald II rectification: the inhibitory response is weaker.
+   [2026-07-02] NOW THE SOLE SOURCE of nystagmus direction/strength/reversal in the ENTIRE application — diagnostics
+   (via nysFromGeom→position) AND maneuvers (via the view: nysFromDyn/stepXiPeak in otorepo.html, outside
+   the Vestibular module). Manual direction annotations for maneuvers (headNys.ear/intensity) REMOVED;
+   direction+strength+reversal (ξ<0→inhibition) follow exclusively from this function. Validated by an Ewald
+   audit for all maneuvers/sides (view_doc.txt: "ENGINE AUDIT AGAINST EWALD'S LAWS").
+
+--------------------------------------------------------------------------
+ INTERNAL CONSTANTS AND HELPERS (non-exported)
+--------------------------------------------------------------------------
+qmul, qconj, qaxis(ax,deg), rotv(q,v), dot3, nrm3, nrm4 — vector/quaternion algebra.
+slerpQ(a,b,t) — spherical quaternion interpolation (with hemisphere handling and the near case).
+Q_SUPINE = qaxis([1,0,0],-100) — base of the supine head-hanging orientation.
+
+GEXC — excitation axes of the VERTICAL canals (in the canal plane; g·GEXC>0 = ampullofugal; axis = -e1):
+   RP: norm(1,0,-1)  LP: norm(-1,0,-1)  RA: norm(-1,0,-1)  LA: norm(1,0,-1)   (anterior = -e1, consistent with CANAL_GEOM / the RESOLVED fix below)
+uHC(side) — the ampullopetal axis of the HORIZONTAL canal (interaural + antero-posterior):
+   P: norm(0.87,0,0.5)   L: norm(-0.87,0,0.5)
+CK — mapping {canal,side} → GEXC key for the vertical canals.
+
+CANAL_GEOM — arc geometry for the dynamics (e1=ampulla direction φ=0, e2=second plane axis,
+             exc=sign of excitation):
+   posterior  P:{e1 norm(-1,0,1),  e2 (0,-1,0), exc +1}   L:{e1 norm(1,0,1),  e2 (0,-1,0), exc +1}
+   horizontal P:{e1 norm(0.87,0,0.5), e2 norm(0.5,0,-0.87), exc -1}
+              L:{e1 norm(-0.87,0,0.5), e2 norm(-0.5,0,-0.87), exc -1}
+   anterior   P:{e1 norm(1,0,1),   e2 (0,-1,0), exc +1}   L:{e1 norm(-1,0,1), e2 (0,-1,0), exc +1}
+   Note: the ampullae of the posterior and anterior canals are on opposite sides (e1 reversed) —
+   a result of calibration to ampullofugal flow in the provoking position.
+
+--------------------------------------------------------------------------
+ VALIDATION STATUS (offline, node)
+--------------------------------------------------------------------------
+ [x] Stage 0: quickPhase directions consistent with the previously approved UI directions.
+ [x] Stage 1: Dix-Hallpike, Roll (geo/apo), Bow & Lean — consistent with the clinic; consistent with the UI.
+ [x] Stage 2: all 6 canals — dynamic directions consistent; posterior Epley: latency ~2.7 s,
+     peak ~11 s, no reversal, extinction.
+ [x] Stage 2: reversed phase + one-way otolith exit (canalithiasis).
+ [x] Stage 2: cupulolithiasis — apogeotropic direction, no latency (~0.2 s), persistence;
+     contrast with canalithiasis (build-up+extinction).
+ [x] Stage 2: CALIBRATION of the constants to the literature (posterior, canalithiasis): latency ~1.6 s,
+     peak ~9 s, duration ~25 s (tauP=6.5, tauC=5, gc=1.6); otolith adhesion (fStat=0.04, adh=0.2).
+ [x] Stage 2: PARTICLE SIZE (size small/medium/big). Offline validation (engine in the browser,
+     preview_eval — node unavailable; DOM-free module, so equivalent). Results (posterior|P):
+       medium: lat 1.15 s, peak +8.45 s, ξpeak 0.81, duration 27 s — IDENTICAL to the baseline (regression OK).
+       small : lat 3.0 s,  peak +12.1 s, ξpeak 0.27 — longer latency, weaker/slower.
+       big   : lat 0.25 s, peak +5.5 s,  ξpeak 2.80 (saturates intensity→1) — short latency, florid.
+     Monotonicity lat↓/ξ↑/peak↓ with r confirmed for all 6 canals, both sides symmetric.
+     Cupulolith: gain ∝ r³ exactly (small −0.41 / medium −0.85 / big −2.10). Maneuvers (generated plans, side P):
+       medium/big — Epley/Semont/Yacovino/Lempert reach φ=178° (exited); small — Epley/Lempert do,
+       Semont (φmax 157) and Yacovino (φmax 128) do NOT clear in the shortened holds (emergent, clinically
+       consistent: slow fragments → consider repetition / longer holds).
+
+--------------------------------------------------------------------------
+ USAGE EXAMPLES
+--------------------------------------------------------------------------
+// Statically (diagnostics): nystagmus direction in a right-side Dix-Hallpike
+Vestibular.position({canal:"posterior", side:"P", variant:"canalo",
+                     q: Vestibular.qSupineYaw(45)});
+// -> {excited:true, mag:~0.98, h:0, v:1, t:1}
+
+// Dynamically: the ξ(t) course for the first Epley position (posterior right)
+const tr = Vestibular.simulateCanalith({canal:"posterior", side:"P", timeline:[
+   {q:[1,0,0,0], tTrans:0, tHold:2},
+   {q:Vestibular.qSupineYaw(45), tTrans:1.5, tHold:25}
+]});
+Vestibular.dynNystagmus("posterior","P", tr[tr.length-1].xi);
+
+--------------------------------------------------------------------------
+ INTER-LAYER DEPENDENCIES
+--------------------------------------------------------------------------
+ quickPhase  ──> nystagmus, position, dynNystagmus   (source of direction {h,v,t})
+ gHead       ──> position, simulateCanalith           (gravity in the head frame)
+ GEXC/uHC    ──> position                             (static projection → Ewald)
+ CANAL_GEOM  ──> simulateCanalith                     (arc + sign of excitation)
+ position    ──> simulateCupulolith                    (static gravitational cupular target)
+ slerpQ      ──> simulateCanalith, simulateCupulolith  (orientation interpolation)
+
+--------------------------------------------------------------------------
+ BIBLIOGRAPHY AND MODEL CONSISTENCY WITH THE LITERATURE
+--------------------------------------------------------------------------
+The engine is a REDUCED, phenomenological implementation of established biomechanical
+BPPV models — it contains no new scientific hypotheses. Mapping:
+
+[1] Squires TM, Weidman MS, Hain TC, Stone HA (2004). "A mathematical model
+    for top-shelf vertigo: the role of sedimenting otoconia in BPPV."
+    J Biomech 37(8):1137-1146.
+    → The canonical canalithiasis model: an otolith settling under gravity with Stokes
+      drag, transcupular pressure, cupular deflection. CONSISTENT with our
+      dynamics layer (simulateCanalith), in a simplified version.
+    → The MAIN mechanism of latency per [1]: no significant pressure until the otolith
+      travels from the wide ampulla to the NARROW duct (pressure amplification).
+      WE DO NOT MODEL THIS — see the latency annotation below.
+
+[2] Hain TC, Squires TM, Stone HA (2005). "Clinical implications of a
+    mathematical model of BPPV." Ann N Y Acad Sci 1039:384-394.
+    → Clinical implications of [1]; the rationale for holding a position ~30 s in the CRP.
+
+[3] House MG, Honrubia V (2003). "Theoretical models for the mechanisms of BPPV."
+    → Both mechanisms (canalithiasis and cupulolithiasis) are physically plausible.
+
+[4] Obrist D, Hegemann S (2008). "Fluid-particle dynamics in canalithiasis."
+    J R Soc Interface 5(27):1215-1229.
+    → Fluid–particle dynamics; the open question of whether otoliths adhere to the wall.
+
+[5] Dai M, Klein A, Cohen B, Raphan T (1999). "Model-based study of the human
+    cupular time constant." J Vestib Res.
+    → Long cupular/canal time constant (~4–6 s). CONSISTENT with tauC=5.
+
+[6] Schuknecht HF (1969). Cupulolithiasis (heavy cupula → immediate,
+    persistent nystagmus). CONSISTENT with simulateCupulolith (no latency, persistence).
+
+[7] Hall SF, Ruby RRF, McClure JA (1979). Canalithiasis (free fragments in the canal).
+    CONSISTENT with the particle model. (cf. Brandt & Steddin 1993 — canalithiasis better
+    explains latency and fatigability).
+
+[8] Steinhausen (1933); Van Egmond, Groen, Jongkees (1949) — the torsional-pendulum
+    model of the cupula. CONSISTENT with the first-order cupula.
+
+[9] Ewald (1892) — Ewald's laws I/II/III. CONSISTENT with quickPhase / isExcitatory.
+
+[10] Della Santina et al. (2005) — canal-plane orientations. The basis for the
+     canal normals (GEXC, CANAL_GEOM) in an idealized version (45°).
+
+[11] "Extremely Long Latency BPPV" (Res Vestib Sci, 2017) — very long latencies
+     attributed to otolith ADHESION and their size. The basis for the adhesion hypothesis
+     (our latency) as a minority mechanism.
+
+[12] Dix MR, Hallpike CS (1952) — the original description of positional BPPV nystagmus and its
+     FATIGABILITY (extinction/attenuation on repeated provocation). The dispersion mechanism
+     of the compact debris: Brandt & Steddin (1993, [7]). The basis for the fatigueFactor (rep) factor:
+     canalithiasis fatigues, cupulolithiasis (debris on the cupula) — does not.
+
+ANNOTATION — LATENCY (a deliberate modeling choice):
+  Our latency arises from otolith ADHESION (a bond broken by a sustained tangential
+  force). In the literature this is an ACCEPTED but MINORITY hypothesis, invoked
+  especially for long latencies (Hain/dizziness-and-balance; "Extremely Long
+  Latency BPPV" 2017). The MAINSTREAM [1,2] explains latency by the ampulla→narrow-duct
+  geometry (pressure amplification), which we do NOT implement. Other hypotheses:
+  inertia of the otolith clot. We reproduce the correct clinical behavior
+  (latency present, shorter with a stronger provocation) by an alternative route.
+
+SIMPLIFICATIONS RELATIVE TO FULL MODELS:
+  - a "tangential gravity → flow" proxy instead of the full transcupular pressure ΔPc;
+  - no amplification in the narrow duct (the main latency mechanism per [1]);
+  - particle size: SUPPORTED as a scaling parameter (size → tauP∝r⁻², gc∝r³, adh∝r);
+    still no wall interactions and no velocity storage;
+  - cupulolithiasis WEAKER than canalithiasis [1]: MODELED by a single coefficient CUP_WEAK=0.6
+    (amplitude multiplier of ξ in simulateCupulolith AND of the diagnostic nystagmus of the "cupulo" variant in nysFromGeom);
+    residual simplification: the coefficient is GLOBAL (not per-canal or per-geometry), a calibration value;
+  - fatigability (dispersion of the compact debris on repetition) MODELED as a factor scaling
+    amplitude (fatigueFactor / the rep parameter in simulateCanalith) — NOT as an explicit simulation of many
+    particles with different trajectories; cupulolithiasis is deliberately without fatigability (a differentiating feature) [12].
+
+
+=== MANEUVERS AS QUATERNION TIMELINES (entry into the dynamics) ===
+The maneuver plan → engine bridge. simulateCanalith uses ONLY gHead (gravity in the head frame),
+so we define a step by the target gHead and build a quaternion qFromG(g).
+Head frame: x=right ear, y=skull(+crown), z=nose.
+Functions (after xiEnvelope in the file):
+- qFromG(g) → a head→world quaternion such that gHead(q)=g.
+- rotYg(g,deg) → rotation of gravity about the skull axis (neck yaw).
+- BASE_G[body|face] → gHead for yaw=0 (sit/sideL/sideR/prone/sitFront). Yaw: rotYg(g,-yaw).
+- LEAN_G[leanL/R|up/down] → FINAL gHead for the Semont flings (neck yaw built in; mirrored by side).
+- stepGravity(body,yaw,face) → the step's gHead (supineHang: via qSupineYaw — validated).
+- stepHeadQ(body,yaw,face) → the step's head orientation (head→world).
+- maneuverTimeline(plan) → [{q,tTrans:0.8,tHold:6–12}] (hold limited for the dynamics).
+- maneuverSim(plan) → simulateCanalith over the timeline → φ(t) of the particle in the canal.
+  [2026-07-02] Lempert STEP 1 (head turn toward the affected side, horizontal canal): yaw must be ±90° — at 45°
+  ξ_peak≈0 (no provocation). The clinical instruction says "90°"; the code was inconsistent (45°), fixed.
+KEY PHYSICAL PRINCIPLE: the "nose down" therapeutic steps have a +crown component in gHead
+(the crown of the head drops → the otolith is carried through the common crus). Without this the particle backs up.
+VALIDATION (offline, real generated plans, both sides — the particle reaches φ=178°=exit):
+  Epley ✓✓ · Yacovino ✓✓ · Lempert ✓✓ · Semont ✓✓ · Gufoni geotropic ✓✓
+  Gufoni apogeotropic ✗✗ — CORRECTLY: a CONVERSION maneuver (apo→geo), it does not clear directly
+  (φmax 90°), followed by a Roll test and treatment of the geotropic form.
+
+=== ANTERIOR-CANAL TEST (deep head-hang) + a note on consistency ===
+Diagnostics: the 'headhang' test (deep head-hang, supineHang/yaw0/face:up) → DOWNbeat nystagmus + torsional
+toward the affected ear; treatment: Yacovino. Lateralization of the anterior canal is sometimes uncertain (torsion often weak).
+RESOLVED: the anterior canal's GEXC had the WRONG SIGN (RA/LA = +e1 = ampullopetal) instead of -e1
+(ampullofugal, like the posterior). Rule: the excitation axis = -e1 (the ampullofugal tangent at φ=90°).
+Fix: GEXC RA:[1,0,1]→[-1,0,-1], LA:[-1,0,1]→[1,0,-1]. After it, position()↔simulateCanalith
+CONSISTENT 24/24 (all canals/sides/positions). The antHeadHangNys workaround REMOVED — the deep head-hang test
+and the Dix toggle now use nysFromGeom (with quickPhase anterior t:0 → pure downbeat).
+
+=== CLINICAL CORRECTION: anterior canal = PURE DOWNBEAT (no torsion) ===
+quickPhase('anterior') changed from {0,-1,ipsi} to {0,-1,0}. Reason: clinically deep head-hang produces
+primarily/exclusively downbeat; the torsion is trace/variable/absent → lateralization by nystagmus is
+UNRELIABLE (anterior canals near the sagittal plane). The idealized CANAL_GEOM geometry
+gave vertical:torsion = 1:1 (like the posterior: normal [0.71,0,±0.71]) → overestimation of torsion. The change applies
+everywhere (deep head-hang test, dial, frontal eyes, Yacovino). arrowGlyph: dir=0 → pure vertical (↓).
+Deep head-hang test: the torsion-lateralization declaration removed (latNote/label/note/recommend).
+
+=== DIFFERENTIATION IN DIX-HALLPIKE: posterior vs anterior canal (derived from the engine) ===
+The dynamic probe (simulateCanalith, ξpeak≈0.81) in the Dix-Hallpike position confirms the coplanarity of LARP/RALP:
+  RIGHT Dix-Hallpike (qSupineYaw +45): posterior RIGHT → ↑+torsional (v+1,t+1);  anterior LEFT → ↓downbeat (v-1,t0)
+  LEFT  Dix-Hallpike (qSupineYaw -45): posterior LEFT  → ↑+torsional;            anterior RIGHT → ↓downbeat
+Differentiator = the vertical direction: ↑→posterior (lower ear); ↓→anterior (the OPPOSITE ear, same plane).
+(After the GEXC=-e1 fix, static position() agrees with the dynamics — nysFromGeom computes the nystagmus directly.)
+UI: in the Dix test, the 'Observed nystagmus' toggle (↑torsional / ↓downbeat) — the downbeat mode switches
+the animation (pure downbeat), the mechanism (anterior canal of the opposite ear), the recommendation (Yacovino) and shows
+a CENTRAL RED FLAG (isolated/persistent downbeat without latency → cerebellum/craniocervical junction).
+
+=== NYSTAGMUS MAGNITUDES FROM REAL CANAL NORMALS (instead of ideal 45°) ===
+SOURCE (cited in the code, constant CANAL_NORMALS):
+  Wu S, Lin P, Zheng Y, Zhou Y, Liu Z, Yang X (2021). "Measurement of Human Semicircular Canal
+  Spatial Attitude". Front Neurol 12:741948. doi:10.3389/fneur.2021.741948  (MRI, n=55).
+  Directionally consistent with the canon: Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP
+  (2005). "Orientation of human semicircular canals measured by 3D multiplanar CT reconstruction".
+  JARO 6:191-206. doi:10.1007/s10162-005-0003-x.
+  Internal data validation: LARP/RALP coplanarity — RA∥LP (cos≈0.985, ~10°), RP∥LA (cos≈0.988, ~9°).
+
+NORMAL VECTORS (Wu frame: x=left, y=antero-posterior, z=up):
+  RP[-0.651,0.702,0.287] LP[0.660,0.702,0.266] RA[0.749,0.577,0.324]
+  LA[-0.739,0.588,0.329] RH[-0.017,-0.299,0.954] LH[0.025,-0.279,0.960]
+
+MAPPING TO MAGNITUDES (I take |components| — the sign of the Wu axis is irrelevant for the proportions; beat directions
+from the clinical convention in quickPhase): VERTICAL ∝ |x|(interaural), HORIZONTAL ∝ |z|(cranial),
+TORSION ∝ |y|(naso-occipital). nysMag() normalizes to max=1.
+
+REAL PROPORTIONS (max=1):  posterior v0.93:h0.41:t1.00 · anterior v1.00:h0.44:t0.78 · horizontal v0.02:h1.00:t0.29
+
+CLINICAL MASK (constant NYS_SHOW) — geometry gives the magnitudes, but the clinical convention decides
+WHICH components we express (each can be revealed with a true flag):
+  posterior.h=false  geom.≈0.41 — clinically omitted (the posterior is described as vertical-torsional)
+  posterior.t=true                — torsion expressed; real v:t ≈ 0.93:1 (was a rigid 1:1)
+  anterior.t=false   geom.≈0.78 — CLINICAL OVERRIDE: pure downbeat. NOTE: the geometry gives
+                                   SIGNIFICANT torsion (~0.78× vertical); "anterior = pure downbeat" is
+                                   a clinical decision (torsion observationally trace), NOT a result of the geometry.
+  horizontal.t=false geom.≈0.29 — clinically purely horizontal (the small geometric torsion omitted)
+Beat signs and masks verified: posterior upbeat+ipsi torsion, anterior downbeat t=0, horizontal toward the ear.
+The only immediately visible change vs before: posterior v:t = 0.93:1 (real) instead of 1:1.
+
+DESIGN DECISION — EXCEPTION TO THE anterior.t MASK FOR SCDS/TULLIO (2026-07-09):
+  PROBLEM: the Tullio phenomenon (dehiscence of the SUPERIOR/anterior canal) produces a VERTICAL-TORSIONAL
+  nystagmus in which the anterior canal's TORSION is the DISTINGUISHING SIGN (it identifies the canal plane).
+  The clinical mask "anterior = pure downbeat" (anterior.t=false) — correct for BPPV — would here ZERO OUT
+  this diagnostic torsion.
+  CONSIDERED and REJECTED: globally revealing anterior.t (=true). It would change the rendering and geometry
+  of anterior-canal BPPV → a risk of REGRESSION of the validated tests (t1–t5 + the BPPV path) and a change
+  to the established clinical convention "pure downbeat".
+  CHOSEN: nysMag() was EXPORTED from the Vestibular module; NeuroVOR.pressureStimulus() builds the Tullio
+  vector from the FULL geometry (nysMag: anterior v1.00 : t0.78), BYPASSING the mask — LOCALLY, only for SCDS.
+  The NYS_SHOW mask remains globally in force (BPPV unchanged). The anterior canal's torsion is thus
+  "hidden" for BPPV rendering, but AVAILABLE via the raw geometry for the pressure path.
+  → see NeuroVOR MODULE / STAGE 7 · pressureStimulus() (Minor 2000, [H18]).
+
+
+==========================================================================
+ NeuroVOR MODULE — THE TONIC/CENTRAL LAYER (VOR · fixation · vHIT · HINTS)
+ File: src/engine/neuro-vor.js  |  Module: export const NeuroVOR = (()=>{ ... })()
+ Nature: a pure ES module WITHOUT DOM (offline-testable in node)
+ Added: 2026-07-07  |  Extensions: central COMPENSATION (stage 6/6b/6c) 2026-07-08 ·
+ NEUROANATOMY (stage 7: E1 per-canal · E2 plane vHIT · E3 3D vector · E4 pathologies) 2026-07-09 [in progress]
+==========================================================================
+
+GOAL AND PHILOSOPHY ("first-principles")
+ We do not code the APPEARANCE of a pathology, but the PHYSIOLOGY: the resting activity of the labyrinths,
+ Ewald's law with an inhibitory cut-off, fixation suppression (flocculus), canal VOR gain,
+ the neural integrator, and the graviceptive axis (otoliths/MLF). The signs — spontaneous
+ nystagmus, its dependence on fixation and gaze, the head impulse (vHIT) result,
+ skew deviation — FOLLOW from the asymmetry of a few parameters. A layer INDEPENDENT of
+ the BPPV dynamics (simulateCanalith); it shares only the direction conventions (quickPhase)
+ and the frontal camera (mirror cam.right[0] = -1, like nysFromGeom/nysFromDyn).
+ It realizes the todo item: "Other states (excited:false / push-pull): unilateral
+ vestibulopathy, central nystagmus".
+
+CONVENTIONS
+ Sides: "P"=right=+x (right ear), "L"=left=-x. Afferent frequencies in Hz.
+ Slow-phase velocities (SPV) and drift in °/s. Gaze angle gazeDeg: + = to the right (P).
+ The "head-frame" sign h/t as in Vestibular; `dir`/`tdir` = the SCREEN sign after camera mirroring.
+
+"PATIENT" — makePatient(overrides) -> a parameter object
+   toneL, toneR   : resting labyrinth activity L/P [Hz], healthy = 90. Hypofunction lowers it. [H1]
+   gainL, gainR   : horizontal-canal VOR gain L/P (0..~1.1), healthy = 1.0 — HIGH frequency (vHIT). [H4][H5]
+   caloricGainL/R : LOW-frequency gain of HC L/P, healthy = 1.0 — CALORIC TEST (~0.003 Hz).      [H21]
+                    A SEPARATE axis from `gain` (HF) → enables the caloric↔vHIT dissociation (stage 7/E4.5).
+   fixationGain   : the flocculus's capacity for visual suppression (0..1); central → ~0.              [H3]
+   integratorTau  : the neural integrator's time constant [s]; healthy ~25, central "leaky" ~1–3. [H6]
+   skewTone       : vertical graviceptive asymmetry [°, signed]; + = eye P higher.          [H7]
+   otrTorsion     : OTR torsion [°] (upper poles toward the lower eye).                            [H7]
+   sacculeL/R     : SACCULE function (0..1, healthy=1) → cVEMP; INFERIOR nerve.                       [H22]
+   utricleL/R     : UTRICLE function (0..1, healthy=1) → oVEMP + co-forms SVV; SUPERIOR nerve.     [H22]
+   comp           : level of central COMPENSATION c∈[0,1]; 0=acute phase, 1=full symmetry.     [H10][H11]
+   pacemakerBias  : the persistent (sticky) pacemaker charge of the affected nucleus [Hz] → Bechterew's nystagmus. [H11]
+   lesionEar      : the explicit affected side for compensation ("P"/"L"/null=auto from the weaker labyrinth).
+   tauVS          : the VELOCITY STORAGE time constant [s] (decay after rotation); healthy ~15.     [H14]
+   --- STAGE 7 (neuroanatomy): VERTICAL canals per side; healthy = like horizontal (tone R0, gain 1.0) ---
+   toneAcL/R, gainAcL/R : ANTERIOR canal (anterior/"superior") L/P — SUPERIOR nerve.          [H15]
+   tonePcL/R, gainPcL/R : POSTERIOR canal (posterior)          L/P — INFERIOR nerve.         [H15]
+   dehiscence     : SCDS — dehiscence of the SUPERIOR canal: null | "L" | "P" (a mobile third window).   [H18]
+
+PUBLIC API (returned from the module)
+
+ afferent(tone, drive) -> Hz                                                                  [H1][H2]
+   The afferent after RECTIFICATION: max(0, min(R_SAT, tone+drive)). Inhibitory cut-off (≥0) +
+   saturation (≤R_SAT=300). A shared primitive: rest (drive=0) and head impulse (drive≠0).
+
+ spontaneous(p) -> {kind,h,v,t,dir,tdir,vdir,strength,spv,beatEar,lesionEar}                  [H1][H2]
+   STAGE 1 — SPONTANEOUS nystagmus from tonic asymmetry (push-pull). The brain estimates head velocity
+   from the difference of the horizontal-pair afferents: Ω_est ∝ (rateL − rateR). A tonic asymmetry mimics a steady
+   rotation → the SLOW phase toward the weaker labyrinth, the FAST phase (the visible beat) toward the stronger one.
+   spv = SPV_MAX·|toneL−toneR|/R0 (SPV_MAX=12°/s, R0=90). Horizontal-torsional nystagmus (tH = 0.5·h).
+   Direction FIXED regardless of gaze — a PERIPHERAL feature.
+   STAGE 7 (E3): a VERTICAL-TORSIONAL component from the vertical-canal pairs (verticalBeat) is added to the horizontal —
+   fields v/vdir, tV, t=tH+tV, spvV/strengthV; kind="verticalTorsional" when the vertical dominates. Vertical canals
+   healthy → v=0, spvV=0 (the horizontal case unchanged). See verticalBeat (STAGE 7).
+
+ suppressionFactor(p, fixOn) -> [0..~1.5]                                                       [H3]
+ observe(p, fixOn) -> spontaneous(p) with suppression applied {spv,spvRaw,suppressionFactor,suppressed,...}
+   STAGE 2 — FIXATION SUPPRESSION. eye = VOR − fixationGain·retinal_slip. fixOn=true (light):
+   peripheral (fixationGain≈0.9) fades (×0.1); central (≈0) persists; <0 = paradoxical enhancement.
+   fixOn=false (Frenzel/darkness): the full slow phase. `suppressed` = clinically "suppresses with fixation".
+
+ headImpulse(p, toSide, {headVel=200, headAmp=15}) -> {gain,deficit,saccadePresent,saccadeAmp,
+                                                        saccadeToSide,inhibitedFloored,abnormal,...}  [H4][H5]
+   STAGE 3 — head impulse (vHIT). At the impulse velocity the INHIBITED canal hits the inhibitory cut-off
+   (0 Hz, `inhibitedFloored`) → the VOR velocity is carried SOLELY by the EXCITED canal
+   (ipsilateral). gain = the excited modulation / the ideal one. deficit → a corrective SACCADE (overt when
+   ≥2.5° ≈ gain<0.83), directed opposite to the impulse (`saccadeToSide`). CENTRAL: gains≈1 →
+   a normal HIT (ominous). Calibration S_HZ=0.8 → cut-off ~tone/S≈112°/s < the vHIT velocity.
+   STAGE 7 (E2): the second argument is POLYMORPHIC — 'P'/'L' (horizontal, as above, numerically unchanged) OR {canal,ear}
+   (any of the 6 canals; planes HC/RALP/LARP). It also returns canal/ear/plane/coplanar/saccade{h,v,t}. See vhitPlane.
+
+ gazeEvoked(p, gazeDeg) -> {tau,spv,beatSign,driftVel,present}                                  [H6]
+ nystagmusAtGaze(p, gazeDeg, fixOn) -> the resultant nystagmus {beatHead,spv,dir,strength,components}
+ directionChanging(p, fixOn, ecc=20) -> bool
+   STAGE 4a — a "leaky" integrator: at gaze θ the drift toward center = θ/τ (slow phase), the fast phase
+   toward the gaze. Healthy τ≈25 (negligible drift); central τ≈1–3 → a DIRECTION-CHANGING nystagmus.
+   nystagmusAtGaze sums the beat velocities: SPONTANEOUS (peripheral, fixed) + GAZE-EVOKED (central, changing).
+   directionChanging requires visibility ≥VIS_THRESH(2°/s) on BOTH sides and opposite directions
+   (a strong spontaneous nystagmus can dominate the drift → it stays unidirectional — realistic).
+
+ skew(p) -> {present,central,skewDeg,sign,hyperSide,torsionDeg}                                  [H7]
+   STAGE 4b — skew deviation / OTR from graviceptive asymmetry (otoliths + MLF). present when |skewTone|≥1°.
+   central when |skewTone|≥SKEW_CENTRAL(2.5°) — only a SIGNIFICANT skew counts as a CENTRAL feature (INFARCT);
+   a small skew (e.g. the utricle of the superior nerve) present, but NOT central (avoids a false "stroke" — a review fix).
+   Alternate-cover test: the uncovered eye catches fixation with a VERTICAL SACCADE = positive cover test = central.
+ svv(p) -> {tiltSide, deg, abnormal}                                                             [H22]
+   STAGE 7 — SUBJECTIVE VISUAL VERTICAL (SVV): the graviceptive tilt = f(utricle + VERTICAL canals AC/PC).
+   The vertical tilts TOWARD THE AFFECTED SIDE (the graviceptively weaker one). MORE SENSITIVE than skew deviation: an
+   INFERIOR neuritis gives ~2.5° of tilt DESPITE a normal skew (skew from the utricle=0). Symmetry (BVH)→0. abnormal when ≥2°.
+   Does NOT affect the HINTS verdict (a supplementary readout).
+ vemp(p) -> {cVEMP:{L,R,ampL,ampR,asym,weakEar,organ,nerve}, oVEMP:{...}}                         [H22]
+   STAGE 7 — VEMP: cVEMP(cervical)≈SACCULE→INFERIOR nerve (ipsi); oVEMP(ocular)≈UTRICLE→SUPERIOR nerve. Amplitude from the
+   organ's function (sacculeL/R, utricleL/R ∈0..1). Status: ≥0.65 normal / ≥0.3 reduced / <0.3 absent. It separates
+   the branches: INFERIOR neuritis→cVEMP↓+oVEMP normal; SUPERIOR→the opposite; BVH→both bilaterally. weakEar = the weaker ear.
+
+ SCENARIOS, scenario(key) -> patient                                                            [H8]
+   Presets: normal · neuritisR/neuritisL (PERIPHERAL: tone↓ + gain↓ of the affected canal, flocculus intact,
+   integrator normal, no skew) · strokeCentral (CENTRAL: canals INTACT gain≈1 → a normal HIT,
+   mild asymmetric tone, a "leaky" integrator, skew+torsion). KEY: the STATIC tone (nystagmus) and the
+   DYNAMIC gain (HIT) are SEPARATE parameters — that is why a stroke gives a nystagmus with a normal HIT.
+
+ hints(p) -> {verdict, hi, ny, ts, infarct, centralSigns}                                       [H8]
+   STAGE 5 — HINTS synthesis. verdict: "normal" | "peripheral" (reassuring) | "central" (ominous).
+   Central features (INFARCT): Impulse Normal (a normal HIT DESPITE a spontaneous nystagmus) ·
+   Fast-phase Alternating (a direction-changing nystagmus) · Refixation on Cover Test (a positive skew).
+   The presence of any → "central". The reassuring triad (pathological HIT + unidirectional, fixation-suppressed
+   + no skew) → "peripheral".
+
+ --- STAGE 6: CENTRAL COMPENSATION (brainstem/cerebellar neuroplasticity) — added 2026-07-08 ---
+
+ compensate(p) -> {vnL, vnR, c, lesionEar, clampAmt, paceAmt, pacemakerBias}                    [H10][H11]
+   STAGE 6 — STATIC compensation. The activity of the vestibular NUCLEI (VN) after neuroplasticity — it is this
+   (not the raw labyrinth) that push-pull "sees" (spontaneous). Two-track: a CEREBELLAR CLAMP lowers the healthy
+   nucleus (early, contribution exp(−c/CLAMP_TAU)) + an intrinsic PACEMAKER raises the affected nucleus (late, persistent).
+   clamp+pacemaker = c·gap (restored) → symmetry at c=1 WITHOUT overshoot. c=0 and bias=0 → an exact
+   NO-OP (vnL/vnR = afferent(tone,0)) — consistent with stages 1–5.
+   STAGE 6b — pacemakerBias (sticky, [Hz]): a latched pacemaker charge INDEPENDENT of the current tone.
+   When the labyrinth recovers function, the affected nucleus (tone returned + charged bias) becomes STRONGER →
+   a RECOVERY nystagmus (Bechterew's) beating toward the EARLIER affected ear. The scalar c carries no history —
+   which is why the charge is a separate, persistent parameter (flag spontaneous().bechterew).
+
+ fusionWeights(p, headVel, toSide) -> {wCanal, wNeck, canalRel, neckRel}                        [H12][H13][H14]
+   STAGE 6c — RELIABILITY-WEIGHTED FUSION (precision-weighted / complementary filter; an optimal estimator).
+   The canal carries a velocity estimate with a weight = reliability (gain × the margin to saturation). At high velocity
+   the canal loses reliability (saturation/inhibitory cut-off) → the estimator SWITCHES to neck
+   proprioception/efference: neckRel = c·(1−canalRel). The "switch" FOLLOWS from the weights, not from a script. fw describes
+   the MECHANISM (when/why the system switches to prediction).
+
+ postRotational(p) -> {tauBase, tau, c, shortened}                                              [H10][H14]
+   STAGE 6c — VELOCITY STORAGE. tau = tauVS·(1 − DVS_FRAC·c): compensation "opens the valve" of the velocity
+   integrator → decay after rotation 15 s → ~5 s. A SEPARATE system from the gaze-holding integrator
+   (integratorTau, stage 4a): compensation shortens velocity storage, but NOT gaze-holding (otherwise a false central).
+
+ headImpulse — EXTENDED with DYNAMIC compensation: {covertAmp, overtAmp, covertFrac, covertSaccade,
+   overtSaccade, fusion}. The total saccade = deficit·amp (the gain is IRREPARABLE), but it shifts from OVERT
+   (overt, after the impulse, slip) to COVERT (covert, during the movement, prediction from fusion); the covert share = c
+   (completeness of compensation): c=1 → the saccade is entirely COVERT (a bedside HIT "normal"). fusionWeights = the mechanism.
+   abnormal = an INSTRUMENTAL deficit (independent of compensation); saccadePresent/overtSaccade = bedside
+   overtness (vanishes with compensation). [H5][H12][H13]
+
+ --- STAGE 7: NEUROANATOMY (added 2026-07-09) — per-canal (E1) · plane vHIT (E2) · 3D vector (E3) ·
+     pathologies (E4: SCDS ✓, BVH ✓, Ménière ✓) · CALORIC test (E4.5 ✓) · clinicalReadout synthesis (E5 ✓).
+     Generalizes the horizontal model → 6 CANALS. ENGINE COMPLETE — the UI phase remains (U1–U8).
+     BACKWARD COMPATIBLE: vertical canals default to healthy → stages 1–8 numerically unchanged. Reuses Vestibular
+     geometry (quickPhase/nysMag/CANAL_NORMALS). E5 will add PARAM_SPEC + clinicalReadout + hardening. ---
+
+ CANAL_PARAM, NERVE_CANALS — maps: canal→param names (toneXx/gainXx); nerve→canals: superior={horizontal,
+     anterior,utricle}, inferior={posterior,saccule}. Neuritis usually of the SUPERIOR nerve (longer bony canal). [H15]
+
+ nerveBranchLesion(ear, branch, sev) -> overrides for makePatient                                 [H15]
+   E1 — dropout of a nerve BRANCH (branch "superior"/"inferior", sev 0..1): tone→R0·(1−sev), gain→1−0.65·sev
+   for the branch's canals; superior adds a SMALL skewTone (1.5·sev, utricle — < the central threshold) + caloricGain↓ (1−sev;
+   HC=superior nerve) + utricle↓ (oVEMP); inferior adds saccule↓ (cVEMP) — does NOT touch the caloric (HC spared).
+   SUPERIOR → nystagmus + pathological vHIT of the horizontal AND anterior + caloric↓ + oVEMP↓ + SVV↑, POSTERIOR/cVEMP normal;
+   INFERIOR → only POSTERIOR (torsional downbeat) + cVEMP↓ + a small SVV tilt, HC/caloric/oVEMP/skew-deviation normal. [H22]
+
+ bilateralLoss(sev) -> overrides for makePatient                                                  [H19]
+   E4 — BVH/ototoxicity: a SYMMETRIC drop of tone+gain of all 6 canals + caloricGain↓ bilaterally. EMERGENTLY: symmetry → NO
+   spontaneous nystagmus (distinguishes it from unilateral UVH!), yet a pathological vHIT BILATERALLY (all
+   planes); verdict peripheral (no false stroke). Compensation idle. Preset SCENARIOS.bvh.
+
+ meniere(ear, {phase | tone, gain}) -> overrides for makePatient                                  [H20]
+   E4 — MÉNIÈRE / hydrops: PAROXYSMAL fluctuations of the affected ear's horizontal tone + a CHRONIC caloricGain↓ (opts.caloricLoss
+   default 0.55) with the HF gain (vHIT) preserved = caloric/vHIT DISSOCIATION. Phases: irritative (tone 150, gain 1 →
+   nystagmus TOWARD the affected ear, vHIT ~normal) · nullpoint (90 → none) · paretic (0, gain 0.5 → TOWARD the healthy ear, vHIT
+   weakened) · interictal (90 → normal). A raw `tone` can be passed (smooth sweep). THE DIRECTION REVERSES
+   ITSELF via push-pull (150→90→0 = P→none→L for ear P). PITFALL: irritation = nystagmus + a normal HIT →
+   HINTS (for a CONTINUOUS AVS) reads "Impulse-Normal" = apparently CENTRAL; Ménière is PAROXYSMAL → HINTS does not apply
+   (clinicalReadout E5 flags it). NOT added to SCENARIOS (a misleading verdict without context — for U6 with a caveat).
+
+ qpFull(canal, ear) -> {h, v, t}                                                                 [E5-fix]
+   The FULL (UNmasked) fast-phase axis of the EXCITED canal, signed (ipsi = ear==="P"?+1:−1):
+   horizontal {ipsi·h, 0, 0}; anterior {0, −v, ipsi·t} (downbeat + anterior-canal torsion, which quickPhase
+   MASKS for BPPV); posterior {0, +v, ipsi·t} (upbeat + torsion). Magnitudes from Vestibular.nysMag(). The PUBLIC
+   source of the full geometry (vHIT saccade / verticalBeat / pressureStimulus have a consistent anterior torsion).
+ canalPlane(canal,ear) -> "HC"|"RALP"|"LARP"                                                     [H16][H17]
+ vhitPlane(p, plane) -> {plane, tests[2], abnormal, abnormalCanals}
+   E2 — COPLANAR pairs: HC-P↔HC-L; RALP = anterior P ∥ posterior L; LARP = anterior L ∥ posterior P (RA∥LP,
+   LA∥RP). vhitPlane fires both excitatory impulses of the plane. A corrective saccade per canal (headImpulse
+   .saccade{h,v,t} from NeuroVOR.qpFull — the full geometry): horizontal toward the midline, anterior UP + torsion, posterior DOWN + torsion.
+
+ verticalBeat(p) -> {v, t, mag, spvV, present}                                                   [H15][H16]
+   E3 — the VERTICAL-TORSIONAL component of the spontaneous nystagmus from the vertical-canal PAIRS. imb = (ANTERIOR −
+   POSTERIOR activity)/R0 per plane (LARP, RALP): the anterior more active → downbeat + torsion (LARP toward L, RALP toward P);
+   the posterior → upbeat + reversed torsion. PER-PAIR summation guarantees CANCELLATION under symmetry (BVH → vector 0)
+   despite different AC/PC magnitudes. Compensation shortens it the same as the horizontal (scale 1−c). Merged in spontaneous.
+   (TORS_V=0.8 — a simplified torsion contribution; real geometry ~0.78–1.0.)
+
+ pressureStimulus(p, {type, intensity, sign}) -> {present, ear, kind, h, v, t, dir, tdir, vdir, spv, strength}  [H18]
+   STAGE 7 (E4) — SCDS / the TULLIO phenomenon. Dehiscence of the SUPERIOR canal (p.dehiscence = "L"/"P") = a MOBILE
+   THIRD WINDOW: sound/pressure (type: sound|valsalva|hennebert|pressure) deflects the superior canal's cupula
+   WITHOUT head movement → a VERTICAL-TORSIONAL nystagmus. sign: + EXCITATION (default per PRESSURE_EXC; downbeat +
+   torsion TOWARD the affected ear) / − INHIBITION (suction; reversal to upbeat). intensity∈[0,1] scales the slow
+   phase (spv = SPV_MAX·intensity), the direction vector normalized. AT REST SILENCE: dehiscence ≠
+   hypofunction (tones/gains normal → no spontaneous nystagmus, a NORMAL canal vHIT) — the sign appears
+   ONLY on stimulus. This distinguishes SCDS from neuritis (there a tonic/gain loss).
+   DESIGN DECISION (anterior-canal torsion vs the NYS_SHOW mask): the anterior torsion is the
+   DISTINGUISHING SIGN of SCDS, but quickPhase masks it to 0 (the "pure downbeat" convention for BPPV). So as NOT to
+   violate the global mask (BPPV rendering/test regression), the Tullio vector is built from the FULL
+   geometry Vestibular.nysMag (exported for this purpose), with a LOCAL bypass of the mask. The mask remains
+   globally in force. (details and alternatives → the "CLINICAL MASK" section at the top of the file).
+
+ caloric(p, {ear, temp}) -> {ear, temp, spv, beatEar, dir, fixationIndex, failsSuppression, caloricGain, Vcal, Vsp}  [H21]
+   STAGE 7 (E4.5) — a single irrigation. The caloric = a LOW-frequency (~0.003 Hz) HC test, the other end
+   of the characteristic relative to vHIT (~5 Hz); it scales with a SEPARATE `caloricGain` (not the HF `gain`) → that gives the DISSOCIATION.
+   The stimulus = a thermal drive on the HC of the irrigated ear: WARM excites (beats TOWARD it), COLD inhibits (COWS).
+   The spontaneous nystagmus (darkness) SUPERIMPOSES (→ DP). The fixation index = suppression by fixation (flocculus → central).
+
+ caloricBattery(p) -> {RW,RC,LW,LC, rightSum,leftSum,total, CP,CPcorrected,DP, weakEar,dpSide,
+                       bilateralWeak, fixationIndex,failsSuppression, vHITabnormal, caloricWeak,
+                       dissociation, reverseDissociation}                                                 [H21]
+   STAGE 7 (E4.5) — the bithermal battery (4 irrigations) + the Jongkees formula. CP% = canal paresis (LOCALIZES
+   the weaker ear; <0 = right), DP% = directional preponderance (from the superimposed spontaneous nystagmus). CP/DP are
+   RATIOS (independent of the CAL_NORMAL scale); `total`/`bilateralWeak` = absolute values. EMERGENTS:
+   caloric↔vHIT dissociation (Ménière: caloricGain↓, HF gain normal) · reverseDissociation (vHIT+ / caloric− =
+   a HIGH-frequency loss) · the caloric REVEALS a compensated
+   loss (CP persists once the nystagmus is gone — caloricGain is peripheral, independent of `comp`) · BVH: bilateralWeak
+   with CP≈0 (the ratio PITFALL) · INFERIOR nerve: caloric normal (HC=superior nerve) · stroke: caloric normal
+   but failsSuppression (flocculus). CPcorrected (E5): CP from the CALORIC component |Vcal| ALONE — robust to
+   MASKING by an acute spontaneous nystagmus (raw CP underestimates, e.g. −25% for a full UVH); weakEar/caloricWeak
+   computed from the corrected one. Raw CP retained to show the masking effect.
+
+ PARAM_SPEC -> [ {group, tier:"basic"|"advanced", help, params:[{key,label,min,max,step,unit,def} | {key,label,type:"select",options,def}]} ]  [E5]
+   STAGE 7 (E5) — metadata of ALL patient parameters for the "mathematical patient" UI (sliders + selectors).
+   7 groups: HC + caloric = "basic" (visible); AC/PC/central/compensation/SCDS = "advanced" (collapsible). Covers
+   the full set of makePatient keys. Contains no logic — a pure table to generate the panel (UI phase/U2).
+
+ clinicalReadout(p) -> {verdict, localization, findings[], peripheralSigns[], centralSigns[], ambiguities[],
+                        hints, caloric, vhit, spontaneous, skew, scds}                                    [H8][H21]
+   STAGE 7 (E5) — SYNTHESIS: the full clinical readout from the parameters. Reuses hints/caloricBattery/vhitPlane/observe/
+   skew/pressureStimulus. `findings` = PL sentences; `localization` from the vHIT+caloric pattern (superior/inferior nerve/full/
+   BVH/hydrops/central); `ambiguities` = PITFALLS: dissociation→paroxysmal Ménière (HINTS n/a), irritation misleadingly
+   "central", BVH (HINTS assumes a unilateral AVS), INFERIOR neuritis (caloric blind). An EDUCATIONAL tool.
+   SUPERIOR nerve LOCALIZATION (fixed 2026-07-10, revealed by the UI): the superior nerve of ear E = horizontal canal-E +
+   anterior-E; anterior-P lies in the RALP plane, anterior-L in LARP (posterior-E = the inferior nerve — spared). Hence
+   the "superior nerve" pattern = a pathological HC + ONE oblique (from the affected side: supObl) pathological, the other (othObl)
+   normal — and not "both obliques normal" (that would only be possible with an isolated HC). A separate "horizontal
+   canal" branch when both obliques are normal (isolated HC). Without this branch the most common superior neuritis fell into
+   "undetermined".
+
+EXPORTED CONSTANTS (in the public NeuroVOR object — also used by the UI, e.g. R0, VIS_THRESH): R0=90
+   (rest), R_SAT=300 (saturation), SPV_MAX=12 (°/s at full asymmetry), VIS_THRESH=2 (°/s — the nystagmus
+   visibility threshold), CLAMP_TAU=0.32 (distribution of the clamp contribution in c), DVS_FRAC=0.67 (max. shortening
+   of velocity storage).
+INTERNAL CONSTANTS (non-exported): TORS_FRAC=0.5 (torsion share of the horizontal-torsional), S_HZ=0.8 (afferent
+   sensitivity Hz/°·s⁻¹), CAL_NORMAL=20 (°/s irrigation norm), CAL_BILAT=6 (°/s bilateral/ear threshold),
+   CP_THRESH=25%, DP_THRESH=30%, SKEW_CENTRAL=2.5 (° — the skew threshold for the CENTRAL flag; a small skew < the threshold =
+   peripheral, e.g. the utricle of the superior nerve).
+
+VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Scene3D+NeuroVOR IIFEs from the HTML):
+ [x] Stage 1: symmetry→0; a P dropout→beats to the left (screen +1), spv 12; L→mirror; linearity with asymmetry;
+     an irritative state (tone↑) reverses the direction. (22 assertions)
+ [x] Stage 2: peripheral (fixationGain 0.9) fix ≈0.1×dark, suppressed; central (0) fix==dark; paradox (<0). (13)
+ [x] Stage 3: healthy gain≈1 no saccade; P dropout: an impulse into P gain 0.35 + a saccade toward L; into L normal;
+     central gain≈1 no saccade (a normal HIT = ominous); the inhibitory cut-off present at vHIT, absent at 50°/s. (18)
+ [x] Stage 4: healthy no gaze-evoked/skew; central (τ=2) direction-changing; peripheral unidirectional;
+     skew present/hyperSide/torsion; a strong spontaneous nystagmus masks the drift (unidirectional). (21)
+ [x] Stage 5: normal→normal; neuritis L/P→peripheral (pathological ipsilateral HIT, unidirectional, suppressed, no skew);
+     stroke→central (3 INFARCT features). (28)   [stages 1–5: 102 assertions]
+ [x] Stage 6: STATIC compensation — c=0 exact no-op (regression); c=1 symmetry for any depth of the loss;
+     monotonic SPV drop; clamp+pacemaker sum without overshoot (early clamp / late pacemaker). (33)
+ [x] Stage 7: Bechterew — sticky pacemakerBias + labyrinth regeneration → REVERSAL of the beat toward the earlier affected ear;
+     a small charge does not reverse; the scale grows with the charge; full tone regeneration still reverses (history in the latch). (17)
+ [x] Stage 8: DYNAMIC compensation — vHIT gain independent of c; overt→covert (constant sum); fusion switches
+     canal→neck with c and velocity; velocity storage 15→~5 s; the gaze-holding integrator UNTOUCHED. (26)
+     Subtotal stages 1–8: 178/178 assertions (t1–t8; stages 6–8 = 76 new).
+ [x] Stage 9 (E1 — per-canal): vertical parameters healthy (backward compat); nerveBranchLesion superior→like
+     neuritisR (horizontal+anterior), inferior→only posterior; nerve→canal maps. (t9: 32)
+ [x] Stage 10 (E2 — plane vHIT): 'P'/'L' numerically unchanged; coplanar pairs; per-canal saccade;
+     the SUPERIOR pattern (horizontal+anterior pathological, posterior normal) vs INFERIOR (only posterior). (t10: 51)
+ [x] Stage 11 (E3 — 3D vector): pairs; SYMMETRY→0; superior upbeat+torsion, inferior downbeat; compensation cancels
+     the vertical by scale 1−c; observe/nystagmusAtGaze carry the vertical; horizontal scenarios unchanged. (t11: 38)
+ [x] Stage 12 (E4-SCDS): pressureStimulus — SILENCE at rest, sound/pressure→vertical-torsional WITHOUT head
+     movement; excitation/inhibition reverses the direction; no dehiscence→no response; the canal vHIT normal. (t12: 29)
+ [x] Stage 13 (E4-BVH): bilateralLoss — SYMMETRY→no nystagmus + a BILATERAL vHIT of all planes;
+     verdict peripheral; compensation idle; preset bvh; repair of the pair cancellation in verticalBeat. (t13: 31)
+ [x] Stage 14 (E4-Ménière): meniere — a tone sweep 150→90→0 REVERSES the direction (irritation TOWARD the affected →
+     paresis TOWARD the healthy, the null point silent); irritation vHIT normal / paresis weakened;
+     the HINTS PITFALL noted (irritation reads "central" — paroxysmal, not AVS); mirror L/P. (t14: 30)
+ [x] Stage 15 (E4.5 — caloric): caloric/caloricBattery — COWS; CP localizes the weaker ear; the Ménière
+     DISSOCIATION (CP+, vHIT−); the caloric REVEALS compensation (CP persists, DP→0); the BVH pitfall (bilat. weak, CP≈0);
+     the inferior nerve "invisible" to the caloric; stroke = a normal caloric + no fixation suppression. (t15: 41)
+ [x] Stage 16 (E5 — synthesis): PARAM_SPEC (coverage of makePatient keys, basic/advanced tiers) + clinicalReadout
+     (verdict, localization superior/inferior nerve/full/BVH/hydrops/central, peripheral/central signs, PITFALLS) +
+     CPcorrected (reveals the CP masked by nystagmus) + HARDENING (extreme/negative/1e6 parameters → everything
+     finite, no exceptions). (t16: 48)
+     TOTAL 481/481 assertions (node harness: t1–t16; stages 9–16 / E1–E5 = 300 new assertions). ENGINE COMPLETE.
+ [x] REVIEW (t17): fixes after a review of the whole engine — #1 the SKEW_CENTRAL threshold (a small utricular skew of the superior nerve
+     does NOT falsely trigger "central"; superior neuritis via nerveBranchLesion → verdict peripheral), #2 clinicalReadout
+     detects a VERTICAL-TORSIONAL spontaneous nystagmus (inferior neuritis is no longer "no nystagmus"), #3 SCDS in
+     the localization, #5 the anterior vHIT saccade with torsion (qpFull = the shared unmasked geometry: saccade/vertical/SCDS),
+     #6 the reverseDissociation flag (vHIT+ / caloric− = an HF loss), #7 the readout reuses hints (no double counting).
+ [x] HYGIENE (t18 doc↔code, t19 input validation): t18 PARSES the geometry tables from engine_doc (GEXC, CANAL_NORMALS)
+     and compares them with the exported code (Vestibular.GEXC/CANAL_NORMALS) — catches a "table vs code drift"; t19:
+     a bad canal/side/variant/timeline/dt → a CLEAR error (reqCanal/reqCanal in nysMag/position/simulate*; canalSpec/
+     vhitPlane in NeuroVOR); dt<=0 does not hang (RangeError). NOTE: the `variant` validation in position() must
+     allow the APPLICATION CONVENTION "canalo"|"cupulo" (not "canalith"!) — otherwise it breaks the diagnostics (nysFromGeom
+     calls position with state.variant="canalo"). t19 guards "canalo" as CORRECT. TOTAL 552/552 (t1–t19).
+     TOTAL 511/511 (t1–t17). [#4 the tone→vHIT coupling at R_SAT saturation (tone >~170 → vHIT gain underestimated
+     despite gain=1.0; the tone 150 Ménière is safe, gain 0.94) — deliberately LEFT for a decision at the tone slider
+     in the UI phase/U2 (see todo.txt, block U2). Saturation is physiological; it is an education↔physiology trade-off.]
+ [x] Browser (preview): mobile 375 + desktop, no console errors; the compensation slider drives the ENTIRE
+     physiology live (nystagmus SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain irreparable,
+     the saccade COVERT during the impulse (intra-impulse error 18→10 px), regeneration→Bechterew; the verdict consistent.
+     E1–E4 also confirmed in the browser (the engine in the console): the superior/inferior/BVH patterns, Tullio, no
+     scenario regression — 0 console errors. RENDERER: the vertical of the nystagmus is not yet drawn (neuroNysParams
+     = horizontal+torsion); vertical-torsional drawing + the plane/SCDS UI → the UI phase (U3/U4).
+
+DEPENDENCIES: NeuroVOR uses Scene3D.CAMERAS.frontal.right[0] (mirror) and the side conventions; it does NOT depend on
+   simulateCanalith. The UI (outside the module): renderHints/startNeuroNys/startHIT/startSkew + the verdict card.
+
+--------------------------------------------------------------------------
+ BIBLIOGRAPHY — NeuroVOR MODULE
+--------------------------------------------------------------------------
+The layer is a REDUCED, phenomenological implementation of established models of the neurophysiology
+of the vestibulo-ocular reflex and peripheral/central differentiation — with no new scientific hypotheses.
+
+[H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
+     canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
+     → resting activity of canal afferents (~90 imp./s) → R0; the basis for push-pull.
+[H2] Ewald JR (1892). "Physiologische Untersuchungen über das Endorgan des Nervus octavus";
+     Baloh RW, Honrubia V, "Clinical Neurophysiology of the Vestibular System."
+     → Ewald's law II: excitation more effective than inhibition; SATURATION and the INHIBITORY CUT-OFF
+       of the afferent (0 imp./s) → afferent()/rectification; the mechanism of vHIT ipsilaterality.
+[H3] Leigh RJ, Zee DS. "The Neurology of Eye Movements" (Oxford University Press, 5th ed., 2015).
+     → the VOR and its suppression by fixation (flocculus/smooth pursuit-optokinetics); in cerebellar damage no
+       suppression; Alexander's law (amplitude modulation by gaze) → suppressionFactor/observe.
+[H4] Halmagyi GM, Curthoys IS (1988). "A clinical sign of canal paresis." Arch Neurol 45(7):737–739.
+     → the clinical head impulse test; the corrective saccade in canal paresis → headImpulse.
+[H5] Weber KP, Aw ST, Todd MJ, McGarvie LA, Curthoys IS, Halmagyi GM (2008). "Head impulse test in
+     unilateral vestibular loss: vestibulo-ocular reflex and catch-up saccades." Neurology 70(6):454–463.
+     → VOR gain, covert/overt saccades, ipsilaterality of the damaged canal → headImpulse (gain, saccade).
+[H6] Cannon SC, Robinson DA (1987). "Loss of the neural integrator of the oculomotor system from brain
+     stem lesions in monkey." J Neurophysiol 57(5):1383–1409.
+     → the "leaky" neural integrator (drift θ/τ) → a direction-changing gaze-evoked nystagmus → gazeEvoked.
+[H7] Brandt T, Dieterich M (1993). "Skew deviation with ocular torsion: a vestibular brainstem sign of
+     topographic diagnostic value." Ann Neurol 33(5):528–534.
+     → the ocular tilt reaction (OTR)/skew deviation; the otolith-brainstem graviceptive axis, MLF → skew.
+[H8] Kattah JC, Talkad AV, Wang DZ, Hsieh YH, Newman-Toker DE (2009). "HINTS to diagnose stroke in the
+     acute vestibular syndrome: three-step bedside oculomotor examination more sensitive than early MRI
+     diffusion-weighted imaging." Stroke 40(11):3504–3510.
+     → the HINTS protocol and the INFARCT mnemonic (Impulse Normal, Fast-phase Alternating, Refixation on Cover
+       Test) → hints()/verdict.
+[H9] Tarnutzer AA, Berkowitz AL, Robinson KA, Hsieh YH, Newman-Toker DE (2011). "Acute vestibular
+     syndrome: does my patient have a stroke?" CMAJ 183(9):E571–E592.
+     → a review of AVS peripheral/central differentiation; the clinical context of the verdict (an educational tool).
+[H10] Curthoys IS, Halmagyi GM (1995). "Vestibular compensation: a review of the oculomotor, neural, and
+      clinical consequences of unilateral vestibular loss." J Vestib Res 5(2):67–107.
+      → STATIC and DYNAMIC compensation; the cerebellar clamp, restoration of resting symmetry → compensate().
+[H11] Smith PF, Curthoys IS (1989). "Mechanisms of recovery following unilateral labyrinthectomy: a review."
+      Brain Res Rev 14(2):155–180.
+      → restoration of the resting activity of the DEAFFERENTED nucleus (an autonomous "pacemaker"); the substrate of
+        Bechterew's recovery nystagmus → pacemakerBias (sticky).
+[H12] Sadeghi SG, Minor LB, Cullen KE (2012). "Neural correlates of sensory substitution in vestibular
+      pathways following complete vestibular loss." J Neurosci 32(42):14685–14695.
+      → sensory substitution (proprioception/efference), covert saccades after a loss → covert/overt, fusionWeights.
+[H13] Cullen KE (2012). "The vestibular system: multimodal integration and encoding of self-motion."
+      Trends Neurosci 35(3):185–196.
+      → multimodal integration and the RE-WEIGHTING of inputs (canals ↔ neck proprioception) → reliability-weighted fusion.
+[H14] Laurens J, Angelaki DE (2011). "The functional significance of velocity storage and its dependence on
+      gravity." Exp Brain Res 210(3–4):407–422.
+      → the internal model / optimal estimation of head velocity and velocity storage → postRotational, the fusion weight.
+[H15] Fetter M, Dichgans J (1996). "Vestibular neuritis spares the inferior division of the vestibular nerve."
+      Brain 119(3):755–763.
+      → neuritis usually of the SUPERIOR nerve (horizontal+anterior+utricle), spares the POSTERIOR → nerveBranchLesion / NERVE_CANALS.
+[H16] Aw ST, Halmagyi GM, Haslwanter T, Curthoys IS, Yavor RA, Todd MJ (1996). "Three-dimensional vector
+      analysis of the human vestibulo-ocular reflex in response to high-acceleration head rotations. I–II."
+      J Neurophysiol 76(6):4009–4034.
+      → 3D VOR and the deficit per single canal → plane headImpulse (RALP/LARP), the vector saccade, verticalBeat.
+[H17] Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP (2005). "Orientation of human
+      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res Otolaryngol
+      6(3):191–206. → coplanarity RA∥LP, LA∥RP and canal orientations → COPLANAR / PLANE_CANALS (RALP/LARP).
+[H18] Minor LB (2000). "Superior canal dehiscence syndrome." Am J Otol 21(1):9–19; and Minor LB, Solomon D,
+      Zinreich JS, Zee DS (1998), Arch Otolaryngol Head Neck Surg 124(3):249–258.
+      → SCDS / the third window; a vertical-torsional nystagmus triggered by sound (Tullio) and pressure (Hennebert),
+        in the plane of the superior canal → pressureStimulus() (a drive without head movement; excitation/inhibition direction).
+[H19] Strupp M, Kim JS, Murofushi T, Straumann D, Jen JC, Rosengren SM, Della Santina CC, Kingma H (2017).
+      "Bilateral vestibulopathy: Diagnostic criteria — Consensus document of the Bárány Society." J Vestib
+      Res 27(4):177–189.
+      → BVH: a bilateral loss → oscillopsia/instability, NO spontaneous nystagmus, a BILATERAL vHIT → bilateralLoss.
+[H20] Lopez-Escamez JA, Carey J, Chung WH, et al. (2015). "Diagnostic criteria for Menière's disease —
+      Consensus of the Bárány/AAO-HNS/EAONO/JSER/KBS." J Vestib Res 25(1):1–7; and McClure JA, Copp JC,
+      Lycett P (1981), "Recovery nystagmus in Ménière's disease." Laryngoscope 91(10):1727–1737.
+      → hydrops, the paroxysmal nystagmus phases (irritation→paresis→recovery), direction reversal → meniere().
+[H21] Jongkees LBW, Maas JPM, Philipszoon AJ (1962). "Clinical nystagmography." Pract Otorhinolaryngol
+      24:65–93; and Baloh RW, Honrubia V, "Clinical Neurophysiology of the Vestibular System" (caloric,
+      caloric/vHIT dissociation); Halmagyi GM et al. (2017), "The video head impulse test," Front Neurol 8:258.
+      → the bithermal caloric test, the CP/DP formula (canal paresis, directional preponderance), the
+        low-/high-frequency decoupling (caloric vs vHIT) → caloric()/caloricBattery().
+[H22] Musat GC, Preda MA, Tanase I, et al. (2025). "Inferior Vestibular Neuritis: Diagnostic Criteria,
+      Clinical Features, and Prognosis — A Focused Review." Medicina (Kaunas) 61(2):361. doi:10.3390/medicina61020361.
+      → NEURITIS of the INFERIOR nerve (nerveBranchLesion(ear,"inferior")). CONSISTENCY with the engine: (a) a
+        TORSIONAL-DOWNBEAT nystagmus, directionally fixed, fixation-suppressed, torsion TOWARD THE HEALTHY ear (verticalBeat: v<0,
+        t toward the healthy; no horizontal component); (b) vHIT — the POSTERIOR canal pathological (LARP/RALP), horizontal and
+        anterior NORMAL; (c) caloric NORMAL (HC = superior nerve); (d) SVV — a tilt TOWARD the affected side
+        (svv(): utricle + vertical canals → ~2.5° for the inferior, DESPITE a normal skew deviation = skew
+        only from the utricle); (e) VEMP — cVEMP reduced (saccule, ipsi) / oVEMP normal (vemp(): cVEMP↓ inferior
+        nerve, oVEMP↓ superior nerve). Added after validation 2026-07-10: parameters sacculeL/R, utricleL/R + functions
+        svv()/vemp() (see STAGE 7 API). NOTE: standard HINTS = "normal" (the horizontal/utricular test is
+        BLIND to an isolated IVN — consistent with the article; the localization is caught only by the posterior-canal vHIT + cVEMP).
+
+SIMPLIFICATIONS / CAVEATS:
+  - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals
+    (stage 7/E3) are composed realistically PER coplanar PAIR (verticalBeat), but with a simplified TORS_V=0.8;
+    the HINTS RENDERER draws horizontal + VERTICAL + torsion (added in U4: neuroNysParams Av/vDir; the inferior-nerve downbeat visible);
+    the animation is GATED by the visibility threshold (strength < VIS_THRESH/SPV_MAX → 0), so as not to show sub-threshold
+    gaze-evoked drift of the healthy (τ=25 → 0.8°/s) — consistent with the label (spv<VIS_THRESH = "no nystagmus");
+  - vHIT: a single gain value (the excited canal); covert/overt saccades as a TEMPORAL SPLIT of the total
+    correction (share from the neck-ocular fusion), without the full eyeball velocity dynamics;
+  - a linear integrator (drift θ/τ) without horizontal/vertical asymmetry and without rebound nystagmus;
+  - skew as a scalar vertical divergence; no full OTR geometry (head tilt, cyclotorsion);
+  - compensation: a single scalar c (without a time axis hours↔weeks); clamp/pacemaker as pure functions of c;
+    the pacemaker charge (Bechterew) as a sticky parameter (a carrier of history), because the scalar c carries no memory;
+  - neck-ocular fusion and velocity storage: phenomenological (weight ∝ reliability / c), without a full Kalman
+    filter; head-shaking nystagmus omitted (a latent velocity-storage asymmetry after compensation);
+  - HINTS as an EDUCATIONAL model — it does NOT replace an examination; valid in AVS with a persistent nystagmus,
+    interpret with HINTS "plus" (hearing) and context (Tarnutzer 2011 [H9]). NOTE: a compensated peripheral loss
+    can have a bedside HIT "normal" (covert saccades) — a pitfall when the AVS nystagmus is no longer present.
