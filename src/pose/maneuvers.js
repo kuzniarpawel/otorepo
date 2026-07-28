@@ -1,8 +1,9 @@
 // Poza + domena manewrów/diagnostyki BPPV (czyste: silnik → plan/poza/oczopląs; bez state/DOM).
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
-import { $ } from '../runtime/registry.js';
-import { render } from '../render/svg-screens.js';
+// UWAGA: żadnego importu z runtime/registry ani render/svg-screens — ten moduł jest czysty (patrz
+// nagłówek). Wisiały tu martwe importy `$` i `render` (nieużywane w całym pliku), przez które KAŻDY
+// czysto-nodowy import pozy (bridge:check, view:check) wciągał cały 2450-liniowy moduł renderujący.
 import { t } from '../i18n.js';
 
 const SIDE = {L:"lewa", P:"prawa"};

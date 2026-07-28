@@ -134,7 +134,12 @@ function engineOracle(h) {
     const patients = {};
     // scenariusze wbudowane
     for (const k of Object.keys(NV.SCENARIOS || {})) {
-      try { patients['scenario/' + k] = NV.makePatient ? NV.makePatient(NV.SCENARIOS[k]) : NV.scenario(k); }
+      // SCENARIOS[k] to OPAKOWANIE {label, side, params} — parametry patologii siedzą w .params.
+      // Podanie całego opakowania do makePatient (Object.assign kopiuje tylko klucze najwyższego
+      // poziomu) NIE nakładało ich: pacjent zostawał zdrowy, a .label/.side/.params lądowały w nim
+      // jako śmieciowe pola. Skutek: wszystkie 5 scenariuszy przypinało w golden TEGO SAMEGO
+      // zdrowego pacjenta (verdict "normal"), czyli neuritis/udar/BVH nie były badane wcale.
+      try { patients['scenario/' + k] = NV.makePatient ? NV.makePatient(NV.SCENARIOS[k].params) : NV.scenario(k); }
       catch (e) { patients['scenario/' + k] = 'ERR:' + e.message; }
     }
     // uszkodzenia gałęzi nerwu (górna/dolna × ucho × nasilenie)
@@ -145,7 +150,20 @@ function engineOracle(h) {
     } catch (e) { patients['nerve/ERR'] = 'ERR:' + e.message; }
     // dodatkowe jednostki chorobowe
     try { patients['bilateral'] = NV.makePatient(NV.bilateralLoss(0.7)); } catch {}
-    try { patients['meniereP'] = NV.makePatient(NV.meniere('P', 0.6)); } catch {}
+    // meniere(ear, opts) NIE ma parametru nasilenia — w przeciwieństwie do dwóch linii wyżej
+    // (nerveBranchLesion/bilateralLoss, gdzie ostatni argument to sev). Trzeci wymiar Ménière'a to
+    // FAZA napadu: opts {phase:"irritative"|"nullpoint"|"paretic"|"interictal", tone, gain, caloricLoss}.
+    // Podanie liczby dawało opts=0.6, więc każde opts.* czytało undefined i wchodziły domyślne
+    // (irritative, tone 150, gain 1.0, caloricLoss 0.55) — argument był martwy, nie zmieniał niczego.
+    // Wołanie jest teraz jawne i pinuje DOKŁADNIE tę samą fazę (liczby w golden bez zmian).
+    // Klucz 'meniereP' = faza DRAŻNIENIA (nazwa historyczna, zachowana dla ciągłości golden).
+    try { patients['meniereP'] = NV.makePatient(NV.meniere('P', { phase: 'irritative' })); } catch {}
+    // FAZA PORAŻENIA tego samego ucha — para do powyższej. Przypina EMERGENTNE odwrócenie kierunku:
+    // drażnienie (toneR 150 > toneL 90) bije KU uchu choremu, porażenie (toneR 0) bije KU zdrowemu,
+    // przy niezmienionej stronie zmiany. Do tego rozjeżdża się vHIT (gain 1.0 → prawidłowy mimo
+    // oczopląsu = pułapka „pozornie ośrodkowa"; gain 0.5 → patologiczny), więc jedna zmiana pola
+    // `phase` przestawia werdykt HINTS. Bez tej pary wyrocznia pinowała tylko jeden kraniec napadu.
+    try { patients['meniereP/paretic'] = NV.makePatient(NV.meniere('P', { phase: 'paretic' })); } catch {}
 
     const readouts = {};
     for (const [pk, p] of Object.entries(patients)) {
@@ -159,8 +177,11 @@ function engineOracle(h) {
       call('svv', () => NV.svv(p));
       call('vemp', () => NV.vemp(p));
       call('caloric', () => NV.caloricBattery(p));
-      call('hitHC_P', () => NV.headImpulse(p, 'horizontal', 'P'));
-      call('hitHC_L', () => NV.headImpulse(p, 'horizontal', 'L'));
+      // sygnatura to headImpulse(p, spec, opts), gdzie spec = 'P'/'L' ALBO {canal, ear} — trzeci
+      // argument to opcje, nie ucho. Wołanie (p,'horizontal','P') dawało spec='horizontal', więc
+      // canalSpec brał ear='horizontal' i rzucał; golden trzymał komunikat błędu zamiast liczb vHIT.
+      call('hitHC_P', () => NV.headImpulse(p, { canal: 'horizontal', ear: 'P' }));
+      call('hitHC_L', () => NV.headImpulse(p, { canal: 'horizontal', ear: 'L' }));
       readouts[pk] = r;
     }
     out.neuro = readouts;
