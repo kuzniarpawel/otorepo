@@ -18,6 +18,7 @@
  *   node tools/snapshot.mjs                 # zapisz złoty snapshot
  *   node tools/snapshot.mjs --check         # porównaj z zapisanym (exit 1 przy różnicy)
  *   node tools/snapshot.mjs --target x.html # inne wejście (domyślnie otorepo.html)
+ *   node tools/snapshot.mjs --check --layers=engine,pose   # tylko silnik+geometria (bez DOM)
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +40,22 @@ const optVal = (name) => {
 const SRC = optVal('--src');                         // np. src/main.js → bundluj esbuild IIFE (moduły ES)
 const HTML = optVal('--html') || 'index.html';       // markup dla trybu --src
 const TARGET = resolve(ROOT, optVal('--target') || 'otorepo.html');  // monolit (klasyczny <script>)
+
+// --layers=engine,pose — porównuj TYLKO wskazane warstwy (domyślnie wszystkie trzy).
+// Powód (przebudowa UI, gałąź futureUI): warstwy `engine` i `pose` to CZYSTA fizyka/geometria i
+// muszą pozostać bit w bit przez cały remont interfejsu — natomiast `dom` z definicji się zmienia,
+// bo nowy DOM JEST produktem tej przebudowy. Rozdzielenie daje niezależną bramkę regresji silnika
+// (Blok 18: „nowy interfejs nie zmienia wyników istniejącego silnika symulacji"), która nie tonie
+// w szumie zmienionego markupu. Zapis golden (bez --check) zawsze zapisuje komplet warstw.
+const ALL_LAYERS = ['engine', 'pose', 'dom'];
+const LAYERS = (() => {
+  const raw = optVal('--layers');
+  if (!raw) return ALL_LAYERS;
+  const want = raw.split(',').map(s => s.trim()).filter(Boolean);
+  const bad = want.filter(l => !ALL_LAYERS.includes(l));
+  if (bad.length) { console.error(`--layers: nieznana warstwa: ${bad.join(', ')} (dozwolone: ${ALL_LAYERS.join(', ')})`); process.exit(2); }
+  return want;
+})();
 
 // ---- load app in jsdom, neuter animation for determinism ----------------------
 function mkJsdom(htmlStr) {
@@ -116,7 +133,72 @@ function stable(o) {
 const plain = (v) => { try { return JSON.parse(JSON.stringify(v)); } catch { return String(v); } };
 
 // ---- oracles ------------------------------------------------------------------
-function engineOracle(h) {
+// Zwięzły ODCISK trajektorii zamiast surowej serii (~1040 próbek na przebieg × 42 przebiegi
+// podwoiłoby golden). Decyle φ/ξ pinują KSZTAŁT toru, a skalary — moment ekspulsji i szczyt
+// oczopląsu. Każda zmiana gc/adh/tauP/tauC/phiExit/SIZE_R przesuwa którąś z tych liczb.
+function trajDigest(series) {
+  if (!Array.isArray(series) || !series.length) return 'ERR:pusta seria';
+  const n = series.length, last = series[n - 1];
+  const at = f => series[Math.min(n - 1, Math.round(f * (n - 1)))];
+  const dec = [];
+  for (let i = 0; i <= 10; i++) { const s = at(i / 10); dec.push([s.t, s.phi !== undefined ? s.phi : null, s.xi]); }
+  let xiMax = -Infinity, xiMin = Infinity, tXiMax = null, tExit = null;
+  for (const s of series) {
+    if (s.xi > xiMax) { xiMax = s.xi; tXiMax = s.t; }
+    if (s.xi < xiMin) xiMin = s.xi;
+    if (tExit === null && s.exited) tExit = s.t;
+  }
+  return { n, tEnd: last.t, phiEnd: last.phi !== undefined ? last.phi : null, exitedEnd: !!last.exited, xiMax, xiMin, tXiMax, tExit, dec };
+}
+
+// Dynamika złogu — LUKA W SIATCE BEZPIECZEŃSTWA zamknięta przy przebudowie UI (gałąź futureUI):
+// `engine.plans` pinuje wyłącznie POZY i CZASY (name/canal/side/steps[body,yaw,face,seconds…]),
+// natomiast sama fizyka cząstki (simulateCanalith: gc∝r³, adh∝r, tauP/tauC, phiExit oraz
+// SIZE_R small/medium/big) była próbkowana JEDYNIE pośrednio, przez warstwę `dom` (rendering
+// oczopląsu). Rebaseline `dom` — nieunikniony przy remoncie interfejsu — kasowałby więc jedyną
+// ochronę klinicznie najnośniejszego kodu w aplikacji. Dowód luki: podmiana SIZE_R.medium
+// 1.0→1.01 NIE ruszała `engine`/`pose`. Teraz rusza.
+function dynOracle(h, win) {
+  const out = {};
+  const sim = win && win.maneuverSim, mkTl = win && win.maneuverTimeline, V = h.Vestibular;
+  if (!sim || !V) { out['ERR'] = 'brak maneuverSim/Vestibular na window'; return out; }
+  for (const key of Object.keys(h.MANEUVERS || {})) {
+    for (const side of ['P', 'L']) {
+      for (const size of ['small', 'medium', 'big']) {
+        const k = `canalith/${key}/${side}/${size}`;
+        try { out[k] = trajDigest(plain(sim(h.MANEUVERS[key].gen(side), size))); }
+        catch (e) { out[k] = 'ERR:' + e.message; }
+      }
+    }
+  }
+  // Kupulolitiaza — osobne równanie (tauCup, gain∝r³, CUP_WEAK), również nietknięte przez `plans`.
+  if (mkTl && V.simulateCupulolith) {
+    for (const key of Object.keys(h.MANEUVERS || {})) {
+      for (const side of ['P', 'L']) {
+        const k = `cupulolith/${key}/${side}`;
+        try {
+          const plan = h.MANEUVERS[key].gen(side);
+          out[k] = trajDigest(plain(V.simulateCupulolith({ canal: plan.canal, side: plan.side, timeline: mkTl(plan, 'medium'), size: 'medium' })));
+        } catch (e) { out[k] = 'ERR:' + e.message; }
+      }
+    }
+  }
+  // ξ → {h,v,t}: rektyfikacja Ewalda II (odpowiedź hamująca słabsza) — czysta mapa, siatka ξ.
+  if (V.dynNystagmus) {
+    for (const canal of ['posterior', 'horizontal', 'anterior']) {
+      for (const side of ['P', 'L']) {
+        for (const xi of [-1, -0.5, -0.1, 0, 0.1, 0.5, 1]) {
+          const k = `dynNys/${canal}/${side}/${xi}`;
+          try { out[k] = plain(V.dynNystagmus(canal, side, xi)); }
+          catch (e) { out[k] = 'ERR:' + e.message; }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function engineOracle(h, win) {
   const out = {};
   // plans (poza + oczopląs + timing per krok) dla wszystkich manewrów × stron
   const plans = {};
@@ -186,6 +268,7 @@ function engineOracle(h) {
     }
     out.neuro = readouts;
   }
+  out.dyn = dynOracle(h, win);
   return out;
 }
 
@@ -287,8 +370,15 @@ async function collect() {
   // W P2 bez efektu (żaden napis nie czyta jeszcze state.lang); od P4 gwarantuje stabilny DOM/engine
   // niezależnie od navigator.language jsdom (które w jsdom domyślnie = "en-US").
   try { if (h.state) h.state.lang = 'pl'; } catch { /* monolit / brak state → pomiń */ }
+  // Rozmiar złogu: przypnij 'medium' — genPlan NIE jest czystą funkcją swoich argumentów, czyta state.size
+  // (actions.js: sizedSeconds(st.seconds, state.size) → holdMult, maneuvers.js:446). Bez tego pinu gwarancja
+  // „engine bit w bit" jest BEHAWIORALNA, nie strukturalna: dowolny kod bootowy przywracający preferencję
+  // użytkownika (np. zapis sesji z Bloku 15) przestawia czasy holdów i wywala wszystkie 14 planów, mimo że
+  // silnik jest nietknięty. Udowodnione: state.size='small' na boot → engine.plans/epley/P seconds 30→45.
+  // Pułapka jest podstępna, bo holdMult=1 dla medium i big — przechodzi wszystko poza 'small'.
+  try { if (h.state) h.state.size = 'medium'; } catch { /* jw. */ }
   // engine/pose first (pure, before we mutate state), then dom
-  const engine = engineOracle(h);
+  const engine = engineOracle(h, win);
   const pose = poseOracle(h);
   const dom = domOracle(h, win);
   const meta = {
@@ -298,6 +388,7 @@ async function collect() {
     counts: {
       plans: Object.keys(engine.plans || {}).length,
       neuro: Object.keys(engine.neuro || {}).length,
+      dyn: Object.keys(engine.dyn || {}).length,
       pose: Object.keys(pose).length,
       dom: Object.keys(dom).length,
     },
@@ -333,6 +424,20 @@ console.log('handle missing:', snap._meta.handleMissing);
 console.log('counts        :', JSON.stringify(snap._meta.counts));
 if (snap._meta.domErr.length) console.log('DOM scenarios with ERR:', snap._meta.domErr);
 
+// Błąd ładowania / brak uchwytu = TWARDA PORAŻKA, także w trybie zapisu golden.
+// Dotąd te dwa pola były tylko DRUKOWANE, nigdy porównywane: wyjątek w ciele modułu (albo brak API
+// przeglądarki w jsdom, np. ResizeObserver/matchMedia) dawał pustą aplikację, a wyrocznie i tak
+// świeciły na zielono — bo pusty DOM porównywał się z pustym DOM-em dopiero PO rebaseline, a przed
+// nim scenariusze cicho zwracały 'ERR:'. Przy przebudowie UI (nowe API przeglądarki w powłoce)
+// to najbardziej prawdopodobny tryb awarii: biały ekran przy komplecie zielonych wyroczni.
+if (snap._meta.loadErrors.length || snap._meta.handleMissing.length) {
+  console.error('\n✗ BŁĄD ŁADOWANIA APLIKACJI — snapshot nieważny (nie zapisuję, nie porównuję).');
+  if (snap._meta.loadErrors.length) console.error('  loadErrors   :', snap._meta.loadErrors.slice(0, 5));
+  if (snap._meta.handleMissing.length) console.error('  handleMissing:', snap._meta.handleMissing);
+  console.error('  Wskazówka: API przeglądarki użyte w module musi być za detekcją (typeof X === "function").');
+  process.exit(1);
+}
+
 if (!CHECK) {
   mkdirSync(dirname(GOLDEN), { recursive: true });
   const body = JSON.stringify(snap, (k, v) => (typeof v === 'number' && Number.isFinite(v)) ? Math.round(v * 1e6) / 1e6 : v, 1);
@@ -342,16 +447,18 @@ if (!CHECK) {
   if (!existsSync(GOLDEN)) { console.error('no golden file — run without --check first'); process.exit(2); }
   const gold = JSON.parse(readFileSync(GOLDEN, 'utf8'));
   const diffs = [];
-  for (const layer of ['engine', 'pose', 'dom']) {
+  if (LAYERS.length !== ALL_LAYERS.length) console.log('layers        :', LAYERS.join(', ') + `  (pominięto: ${ALL_LAYERS.filter(l => !LAYERS.includes(l)).join(', ')})`);
+  for (const layer of LAYERS) {
     if (layer === 'engine') {
       diffKeys(snap.engine.plans, gold.engine.plans, 'engine.plans/', diffs);
       diffKeys(snap.engine.neuro, gold.engine.neuro, 'engine.neuro/', diffs);
+      diffKeys(snap.engine.dyn, gold.engine.dyn, 'engine.dyn/', diffs);
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }
   }
   if (diffs.length === 0) {
-    console.log('\n✓ PASS — snapshot identyczny ze złotym wzorcem.');
+    console.log(`\n✓ PASS — snapshot identyczny ze złotym wzorcem${LAYERS.length !== ALL_LAYERS.length ? ' (warstwy: ' + LAYERS.join(', ') + ')' : ''}.`);
     process.exit(0);
   }
   console.log(`\n✗ FAIL — ${diffs.length} scenariuszy różni się od wzorca:`);

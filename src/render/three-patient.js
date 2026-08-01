@@ -241,4 +241,23 @@ export async function mountPatient3D(key, container, spec, side) {
     throw e;                                              // Etap 5: sygnalizuj błąd → mount3D przełącza kartę na SVG (fallback)
   }
 }
+// Przeliczenie bufora WebGL zamontowanych paneli po zmianie szerokości kontenera.
+// Renderer ma metodę resize(container) (wyżej, :218), ale do Bloku 1 NIE MIAŁA ANI JEDNEGO
+// wywołania w repo: bufor zostawał zamrożony na clientWidth z chwili montażu, a reguła
+// `.threewrap canvas{width:100%!important}` tylko go rozciągała — po zmianie okna obraz 3D
+// był rozmyty. Powłoka woła to z ResizeObserver (oś inline), NIGDY przez render():
+// render ekranu manewru bezwarunkowo zeruje timer (setupGuideAnim), więc przerysowanie
+// na zmianę szerokości kasowałoby trwające odliczanie pozycji.
+// Zwraca liczbę faktycznie przeliczonych paneli (diagnostyka w konsoli/testach).
+export function resizeMounted3D() {
+  if (typeof document === 'undefined') return 0;        // view-check.mjs importuje moduł w czystym Node
+  let n = 0;
+  for (const [key, r] of pool) {
+    const el = document.querySelector(`[data-three3d="${key}"]`);
+    if (!el || !el.isConnected || !el.clientWidth) continue;   // panel odmontowany albo jeszcze bez layoutu
+    try { r.resize(el); n++; } catch { /* jeden panel nie może wywalić pozostałych */ }
+  }
+  return n;
+}
+
 export { createPatientRenderer };

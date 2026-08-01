@@ -1,0 +1,107 @@
+/* OTOREPO — układ treści wewnątrz #app (Blok 1, E2A).
+ *
+ * Ten plik ROZPRZĘGA rzeczy, które w legacy.css były zrośnięte z założeniem „aplikacja jest
+ * szerokości telefonu i przewija się cały dokument". Reguł legacy nie usuwamy — nadpisujemy je
+ * tutaj, bo warstwa layout wchodzi w kaskadzie później. Kasowanie martwych reguł to osobna
+ * operacja, wymagająca maszynowego dowodu martwoty (grep myli: .hint-eyes.dark wygląda na
+ * nieużywaną, a jest wizualizacją zniesienia fiksacji — filarem modułu HINTS).
+ */
+
+/* Kolumna treści. Trzy zmiany wobec .wrap:
+   1) limit szerokości jest TOKENEM i rośnie z ekranem (było: twarde 560px na każdym urządzeniu,
+      czyli 39 % wykorzystania szerokości na monitorze 1440 px),
+   2) bezpieczne marginesy znikają stąd — należą do powłoki (.apptop / .bottomnav / .mainscroll),
+      więc nie są już doliczane dwa razy,
+   3) wcięcie idzie z jednego tokena, z którego .ghead liczy swój ujemny margines. */
+#app{
+  max-width:var(--col-max);
+  margin-inline:auto;
+  padding:var(--pad-y) var(--pad-x) var(--sp-8);
+}
+
+/* Nagłówek ekranu przykleja się do GÓRY SCROLLPORTU (.mainscroll), a nie do okna. Topbar leży poza
+   scrollportem, więc top:0 jest poprawne i nie trzeba kompensować jego wysokości. env(safe-area)
+   usunięte — wcięcie systemowe obsługuje .apptop, a doliczanie go tutaj dawało podwójny odstęp. */
+.ghead{
+  margin-inline:calc(-1 * var(--pad-x));
+  margin-block-start:calc(-1 * var(--pad-y));
+  padding-inline:var(--pad-x);
+  padding-block:var(--sp-3);
+  top:0;
+  z-index:var(--z-sticky);
+}
+
+/* Pasek akcji manewru przykleja się do dołu scrollportu. Dolny pasek nawigacji jest POZA nim,
+   więc nie może zasłonić przycisku — odpada doliczanie --nav-h i safe-area. */
+.tcard{
+  bottom:var(--sp-3);
+  z-index:var(--z-actionbar);
+}
+
+/* Wizualizacje zachowują dotychczasowe proporcje. Reguła .panelbox{aspect-ratio:259/392} istnieje
+   po to, żeby wysokość karty NIE SKAKAŁA między krokami manewru — to intencja kliniczna zapisana
+   w komentarzu w legacy.css, nie estetyka. Gdyby puścić panele na pełną szerokość kolumny, urosłyby
+   proporcjonalnie i na laptopie wypchnęły instrukcję poza ekran. Powiększenie wizualizacji przyjdzie
+   wtedy, gdy dostanie własną kolumnę (E2B) — wtedy będzie czym sterować jej wysokością. */
+.viz, .minihead{
+  max-width:560px;
+  margin-inline:auto;
+}
+
+/* ============ DWIE KOLUMNY (E2B) ============
+   Dwie kolumny wymagają DWÓCH KONTENERÓW w markupie: w siatce CSS wiersze są wspólne dla obu
+   kolumn, więc z płaskiego strumienia bloków przy align-items:start powstają dziury rzędu
+   700-1200 px. Stąd .pagegrid > .col--viz + .col--ctl w renderGuide.
+
+   NA TELEFONIE kontenery ZNIKAJĄ z układu (display:contents), więc kolejność czytania jest
+   dokładnie taka jak dotąd — wrappery nie wprowadzają żadnej zmiany wizualnej poniżej progu.
+
+   Próg to ZAPYTANIE KONTENERA, nie okna: liczba kolumn ma wynikać z miejsca, którym dysponuje
+   treść (dokument: „przełączenie układu powinno wynikać z miejsca potrzebnego komponentowi").
+   Przy szynie bocznej okno 1200 px daje kontener ~950 px — media query na 1200 pomyliłoby się
+   o szerokość szyny. */
+.pagegrid{ display:block; }
+.col{ display:contents; }
+
+@container main (min-width:900px){
+  /* Kolumna sterowania po lewej, wizualizacja po prawej — układ z mockupu D2. */
+  #app{ max-width:none; }
+  .pagegrid{
+    display:grid;
+    grid-template-columns:minmax(300px,380px) minmax(0,1fr);
+    column-gap:var(--sp-5);
+    align-items:start;
+  }
+  .col{ display:flex; flex-direction:column; gap:var(--gap-card); min-width:0; }
+  /* WIERSZ JAWNIE 1 dla obu kolumn. Samo grid-column nie wystarczy: kursor auto-rozmieszczania
+     idzie tylko do przodu, więc kontener wizualizacji (pierwszy w DOM) zajmował wiersz 1, a
+     sterowanie lądowało w wierszu 2 — czyli POD wizualizacją, mimo poprawnych kolumn
+     (zmierzone: ctl top=1640 przy viz top=259). */
+  .col--ctl{ grid-column:1; grid-row:1; }
+  .col--viz{ grid-column:2; grid-row:1; }
+
+  /* Panele wizualizacji NIE dostają całej szerokości kolumny. Reguła .panelbox{aspect-ratio:259/392}
+     zamienia każdy dodatkowy piksel szerokości na 1,51 px wysokości: przy kolumnie 929 px karta
+     rosła do ~700 px, a cała kolumna do 1380 px (zmierzone). Powiększenie wizualizacji wymaga
+     zmiany PROPORCJI panelu z pionowej na poziomą — tak jak w mockupie D2 — a to przebudowa
+     samej karty testu (Blok 7), nie układu kolumn. Tu zostawiamy dzisiejszy rozmiar. */
+  .col--viz .viz, .col--viz .minihead{ max-width:560px; margin-inline:0; }
+}
+
+/* WebView < 105 (Capacitor, minSdk 24) nie zna zapytań kontenera — bez tego układ zwinąłby się
+   po cichu do jednej kolumny. Próg okna wyższy o szerokość szyny bocznej. */
+@supports not (container-type:inline-size){
+  @media (min-width:1200px){
+    #app{ max-width:none; }
+    .pagegrid{
+      display:grid;
+      grid-template-columns:minmax(300px,380px) minmax(0,1fr);
+      column-gap:var(--sp-5);
+      align-items:start;
+    }
+    .col{ display:flex; flex-direction:column; gap:var(--gap-card); min-width:0; }
+    .col--ctl{ grid-column:1; grid-row:1; }
+    .col--viz{ grid-column:2; grid-row:1; }
+    .col--viz .viz, .col--viz .minihead{ max-width:560px; margin-inline:0; }
+  }
+}

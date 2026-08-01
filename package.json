@@ -10,6 +10,7 @@
     "snapshot": "node tools/snapshot.mjs --src src/main.js",
     "snapshot:check": "node tools/snapshot.mjs --check --src src/main.js",
     "snapshot:check:src": "node tools/snapshot.mjs --check --src src/main.js",
+    "snapshot:engine": "node tools/snapshot.mjs --check --src src/main.js --layers=engine,pose",
     "snapshot:mono": "node tools/snapshot.mjs --check --target otorepo.html",
     "bridge:check": "node tools/bridge-check.mjs",
     "view:check": "node tools/view-check.mjs",

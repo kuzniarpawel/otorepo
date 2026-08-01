@@ -229,7 +229,19 @@ function syncLangBar(){
   bar.querySelectorAll("button[data-lang]").forEach(b=>
     b.setAttribute("aria-pressed", String(b.getAttribute("data-lang")===state.lang)));
 }
-function setLangUI(lang){ setLang(lang); if(state.plan && state.screen==="guide"){ state.plan=genPlan(state.maneuverKey, state.side); } syncLangBar(); render(); }   // regeneruj plan → instrukcje kroków w nowym jezyku (wzorzec jak pickSize)
+// Przełączenie języka regeneruje plan, żeby instrukcje kroków były w nowym języku (wzorzec jak pickSize).
+// ALE regeneracja przywraca fabryczne czasy holdów, a setStepSeconds (svg-screens.js:686) zapisuje w
+// żywym planie czas utrzymania pozycji ustawiony RĘCZNIE przez klinicystę — parametr kliniczny, nie
+// preferencję UI. Przenosimy go na nowy plan: zmiana języka nie ma prawa zmienić przebiegu manewru.
+function setLangUI(lang){
+  setLang(lang);
+  if(state.plan && state.screen==="guide"){
+    const prev=state.plan.steps.map(s=>s.seconds);
+    state.plan=genPlan(state.maneuverKey, state.side);
+    state.plan.steps.forEach((s,i)=>{ if(prev[i]!=null) s.seconds=prev[i]; });
+  }
+  syncLangBar(); render();
+}
 
 
 export { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };

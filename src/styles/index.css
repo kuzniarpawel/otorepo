@@ -1,0 +1,10 @@
+/* OTOREPO — jedyny arkusz wpinany z index.html. Kolejnosc importow = kolejnosc kaskady.
+ * NIE importowac CSS z main.js: snapshot.mjs buduje modules przez esbuild z bundle:true/write:false
+ * i bez outfile, wiec import pliku .css konczy sie twardym bledem i wywala trzy warstwy wyroczni naraz.
+ */
+@import './tokens.css';    /* nowe tokeny (addytywne) — MUSI byc przed legacy */
+@import './legacy.css';    /* zastane reguly, przeniesione 1:1 z index.html */
+@import './theme.css';     /* korekty WARTOSCI odziedziczonych — MUSI byc po legacy */
+@import './shell.css';     /* powloka: siatka, paski, model przewijania */
+@import './layout.css';    /* uklad tresci wewnatrz #app */
+@import './a11y.css';      /* pola dotykowe, fokus, stan nie-tylko-kolorem, ograniczenie ruchu */

@@ -25,6 +25,11 @@ const state={
   hintsSCDS:null,                                  // SCDS: ostatni bodziec (obiekt pressureStimulus) lub null
   view3d:false,                                    // karta „Ułożenie": 3D (WebGL) vs SVG. Literał=false (golden bez WebGL); Etap 5: main.js ustawia true na boot gdy webglAvailable()
   lang:"en",                                       // język UI: 'en' (domyślny) | 'pl'. Literał=EN; main.js initLang() ustawia wg locale/wyboru na boot. t(pl,en) w src/i18n.js czyta to pole (golden przypina 'pl' w snapshot.mjs)
+  // --- Powłoka aplikacji (Blok 1/3). Pola czytane WYŁĄCZNIE przez src/app/shell.js; żadna
+  //     wyrocznia nie serializuje obiektu state, więc dokładanie pól jest golden-neutralne.
+  area:"start",                                    // aktywny obszar powłoki: start|diag|learn|lab|profile (Blok 3 wypełnia nawigację)
+  reducedMotion:false,                             // ograniczenie ruchu: preferencja systemowa LUB własny przełącznik (Blok 2)
+  stepMapOpen:false,                               // telefon: czy rozwinięta pełna mapa 6 kroków (stepper skrócony do „Krok X z 6")
 };
 
 export { state };

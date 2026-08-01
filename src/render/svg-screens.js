@@ -576,9 +576,20 @@ function guideNysSeconds(plan, man, step, size){
   const r = manStepEnv(man, step) || xiEnvelope(engineXi(_gn.canal, _gn.side, _gn.persistent, _gn.q));
   return r ? r.tEnd : null;
 }
+// Klucz TOŻSAMOŚCI odliczanej pozycji. Póki się nie zmieni, ponowny render NIE jest nowym krokiem.
+let _timerKey=null;
 function setupGuideAnim(){
   const st=state.plan.steps[state.step], total=st.seconds||0;
-  state.total=total; state.elapsedMs=0; state.running=false;
+  // Licznik zerował się BEZWARUNKOWO przy każdym renderze ekranu manewru, a render woła m.in.
+  // przełącznik języka i przełącznik 2D/3D — w środku repozycji kasowało to trwające odliczanie
+  // pozycji. Blok 1 wymaga, by zmiana układu/preferencji nie gubiła stanu przypadku, więc reset
+  // wiążemy z TOŻSAMOŚCIĄ kroku, nie z faktem przerysowania. `total` jest w kluczu celowo:
+  // ręcznie ustawiony czas utrzymania pozycji (suwak) to parametr kliniczny — jego zmiana MA
+  // zaczynać odliczanie od nowa. Clamp chroni przed stanem „już przekroczony" po skróceniu czasu.
+  const k=`${state.maneuverKey}|${state.side}|${state.step}|${state.size}|${total}`;
+  state.total=total;
+  if(_timerKey!==k){ _timerKey=k; state.elapsedMs=0; state.running=false; }
+  state.elapsedMs=Math.min(state.elapsedMs, total*1000);
   const canal=state.plan.canal;
   const cupPivot=(()=>{const a=LAB_AMP[canal]||LAB_AMP.posterior; return `${a.x} ${a.y}`;})();   // środek obrotu osklepka = bańka AKTYWNEGO kanału (Bascule=tylny / Gufoni apo=poziomy)
   const man=currentManSim(), sched=manFractions(man, state.plan), fr=sched.fr;
@@ -676,6 +687,8 @@ function setStepSeconds(v){
   if(state.elapsedMs/1000>v) state.elapsedMs=v*1000;
   const p=v/120*100, k=$("#knob"), f=$("#fill"); if(k)k.style.left=p+"%"; if(f)f.style.width=p+"%";
   const r=$("#tread"); if(r)r.textContent=fmtClock(Math.max(0,Math.ceil(v-state.elapsedMs/1000)));
+  // ARIA musi iść za wartością — inaczej czytnik ekranu podaje wartość z chwili renderu.
+  const tr0=$("#track"); if(tr0){ tr0.setAttribute("aria-valuenow", String(v)); tr0.setAttribute("aria-valuetext", fmtClock(v)); }
 }
 function initGuideSlider(){
   const track=$("#track"); if(!track) return;
@@ -684,6 +697,27 @@ function initGuideSlider(){
   track.onpointerdown=e=>{ drag=true; try{track.setPointerCapture(e.pointerId);}catch(_){} setStepSeconds(fromX(e.clientX)); };
   track.onpointermove=e=>{ if(drag) setStepSeconds(fromX(e.clientX)); };
   track.onpointerup=track.onpointercancel=()=>{ drag=false; };
+  // KLAWIATURA (Blok 2). Suwak obsługiwał wyłącznie wskaźnik, więc czas utrzymania pozycji —
+  // parametr KLINICZNY, nie preferencja UI — był nieosiągalny bez myszy/dotyku. Krok 15 s jest
+  // zgodny z kwantyzacją w setStepSeconds (Math.round(v/15)*15), więc klawiatura i przeciąganie
+  // dają dokładnie ten sam zbiór wartości.
+  track.onkeydown=e=>{
+    // Wartość bieżąca czytana z KROKU planu, nie ze state.total: total ustawia setupGuideAnim,
+    // które biegnie w rAF, więc tuż po renderze bywa jeszcze 0 — pierwszy klawisz liczyłby wtedy
+    // od zera i skakał na 15 s zamiast o jeden krok w górę.
+    const stp=state.plan && state.plan.steps[state.step];
+    const cur=(stp && stp.seconds!=null) ? stp.seconds : (state.total||0);
+    let v=null;
+    if(e.key==="ArrowRight"||e.key==="ArrowUp") v=cur+15;
+    else if(e.key==="ArrowLeft"||e.key==="ArrowDown") v=cur-15;
+    else if(e.key==="Home") v=15;
+    else if(e.key==="End") v=120;
+    else if(e.key==="PageUp") v=cur+30;
+    else if(e.key==="PageDown") v=cur-30;
+    if(v==null) return;
+    e.preventDefault();
+    setStepSeconds(v);
+  };
 }
 // Odwracana karta: widok frontalny ⇄ wędrówka otolitów — obrót jest CZYSTO WIZUALNY (tylko klasa CSS).
 // Animacje kroku (oczopląs: oczy+dial oraz wędrówka otolitu) startują RAZ przy wejściu w krok (renderGuide
@@ -692,6 +726,12 @@ function initGuideSlider(){
 function flipGuide(){ const f=$("#flip"); if(!f) return; f.classList.toggle("flipped"); }
 // wyrównanie wysokości obu stron (warstwy absolutne) — bez „skakania" przy obrocie
 function sizeFlip(id="flip"){ const f=$("#"+id); if(!f) return; let h=0;
+  // ZAPADKA (naprawa, Blok 1): obie strony to .face{position:absolute;inset:0;overflow:hidden},
+  // więc gdy f.style.height jest już ustawione, warstwy są do niego PRZYCIĘTE i scrollHeight nigdy
+  // nie zgłosi mniej niż bieżąca wysokość — karta potrafiła tylko rosnąć (1200→360 px zostawiało
+  // ~793 px). Zerujemy PRZED pomiarem; odczyt scrollHeight i tak wymusza layout synchronicznie,
+  // a całość biegnie w rAF, więc użytkownik nie zobaczy stanu pośredniego.
+  f.style.height="";
   f.querySelectorAll(".face").forEach(el=>{ h=Math.max(h, el.scrollHeight + (el.offsetHeight - el.clientHeight)); });  // +ramka (border-box) → bez paska
   if(h>0) f.style.height=h+"px"; }
 
@@ -752,7 +792,11 @@ function renderSetup(){
    (dynamiczny import → chunk three ładowany dopiero przy pierwszym użyciu 3D).
    Renderer czyta wyłącznie PoseSpec (most osi zweryfikowany: npm run bridge:check). */
 function view3dToggle(){
-  return `<button class="mini3d" aria-pressed="${!!state.view3d}" onclick="event.stopPropagation();setView3d(${!state.view3d})" title="Widok przestrzenny (WebGL) — sylwetka wg PoseSpec">3D</button>`;
+  // Etykieta MUSI iść przez t(): twardy polski `title` był jednym z wycieków językowych — po
+  // przełączeniu na EN zostawał po polsku. Do tego sam napis „3D" nie mówi czytnikowi ekranu nic
+  // o tym, że to przełącznik widoku, stąd osobny aria-label.
+  const l3d=t("Widok przestrzenny (WebGL)","Spatial view (WebGL)");
+  return `<button class="mini3d" aria-pressed="${!!state.view3d}" onclick="event.stopPropagation();setView3d(${!state.view3d})" aria-label="${l3d}" title="${l3d}">3D</button>`;
 }
 function threeSlot(key){ return `<div class="threewrap" data-three3d="${key}">ładowanie 3D…</div>`; }
 // Etap 5: detekcja WebGL (raz, cache). Decyduje o domyślnym 3D (boot w main.js) i o fallbacku.
@@ -798,12 +842,14 @@ function renderGuide(){
         </div>
         <div class="tprogwrap"><div id="tprog" class="tprog"></div></div>
         <div class="slider">
-          <div class="track" id="track">
+          <div class="track" id="track" role="slider" tabindex="0"
+               aria-label="${t("Czas utrzymania pozycji","Position hold time")}"
+               aria-valuemin="15" aria-valuemax="120" aria-valuenow="${st.seconds}" aria-valuetext="${fmtClock(st.seconds)}">
             <div class="fill" id="fill" style="width:${sp}%"></div>
             <span class="tk" style="left:25%"></span><span class="tk" style="left:50%"></span><span class="tk" style="left:100%"></span>
             <div class="knob" id="knob" style="left:${sp}%"></div>
           </div>
-          <div class="ticks"><span style="left:25%" onclick="setStepSeconds(30)">0:30</span><span style="left:50%" onclick="setStepSeconds(60)">1:00</span><span class="r" style="left:100%" onclick="setStepSeconds(120)">2:00</span></div>
+          <div class="ticks"><button type="button" style="left:25%" onclick="setStepSeconds(30)">0:30</button><button type="button" style="left:50%" onclick="setStepSeconds(60)">1:00</button><button type="button" class="r" style="left:100%" onclick="setStepSeconds(120)">2:00</button></div>
         </div>
       </div>`;
   const headPanel = st.headSlot && st.headSlot.kind==="textOnly"
@@ -828,6 +874,7 @@ function renderGuide(){
     ${state.size==="small"
       ? `<div class="note">${t('Drobny/wolno osiadający złóg — <b>wydłużono zalecany czas utrzymania pozycji</b> (wolniejsze osiadanie otoconiów; por. uzasadnienie ~30 s holdów w CRP: Hain, Squires &amp; Stone 2005). Oczopląs słabszy i o dłuższej latencji.','Fine/slow-settling debris — <b>the recommended hold time has been extended</b> (slower otoconia settling; cf. the rationale for ~30 s holds in CRP: Hain, Squires &amp; Stone 2005). Nystagmus is weaker and with a longer latency.')}</div>`
       : ""}
+    <div class="pagegrid"><div class="col col--viz">
     <div class="viz"><div class="panelbox"><h4>${t("Ułożenie pacjenta","Patient position")}${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("guide"):posture(ps,p.side)}</div>
       ${headPanel}</div>
     ${gn
@@ -841,6 +888,7 @@ function renderGuide(){
             <div class="fliphint">${FLIP_ICO} ${t("widok frontalny","frontal view")}</div></div>
         </div></div>`
       : `<div class="panelbox" style="margin-bottom:12px"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}</div>`}
+    </div><div class="col col--ctl">
     <div class="card stepcard">
       <div class="stephead">
         <button class="stepnav" ${state.step===0?"disabled":""} onclick="goStep(${state.step-1})" aria-label="${t("Poprzedni krok","Previous step")}"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -852,7 +900,8 @@ function renderGuide(){
       <div class="title">${st.title}</div>
       <div class="instr">${st.instr}</div></div>
     ${timerBlock}
-    <p class="footnote">${t("Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.","When finished, wait per protocol and consider repeating the positional test.")}</p>`;
+    <p class="footnote">${t("Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.","When finished, wait per protocol and consider repeating the positional test.")}</p>
+    </div></div>`;
   if(can3d && state.view3d) mount3D("guide", ps, p.side);
   requestAnimationFrame(setupGuideAnim);
   requestAnimationFrame(initGuideSlider);
@@ -936,7 +985,7 @@ function renderDiag(){
         ${gravArrowFor(phs)}</div>
       <div class="note">${ph.note}</div>`;};
   const phaseHTML = phases.length===2
-    ? `<div class="flipwrap" style="margin-top:6px"><div class="flip${state.diagPhaseFace?' flipped':''}" id="phaseflip" style="min-height:470px" role="button" tabindex="0" aria-label="${t("Odwróć","Flip")}: ${phases[0].ptitle} ${t("albo","or")} ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
+    ? `<div class="flipwrap" style="margin-top:6px"><div class="flip${state.diagPhaseFace?' flipped':''}" id="phaseflip" role="button" tabindex="0" aria-label="${t("Odwróć","Flip")}: ${phases[0].ptitle} ${t("albo","or")} ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
         <div class="face front phaseface">${phaseInner(phases[0],0)}<div class="fliphint">${FLIP_ICO} ${phases[1].ptitle}</div></div>
         <div class="face back phaseface">${phaseInner(phases[1],1)}<div class="fliphint">${FLIP_ICO} ${phases[0].ptitle}</div></div>
       </div></div>`
@@ -954,7 +1003,7 @@ function renderDiag(){
     return `<div class="card" style="margin-bottom:4px">
       <div class="obslabel" style="margin-bottom:4px">${t("Powtarzalność prowokacji — męczliwość oczopląsu","Provocation repeatability — nystagmus fatigability")}</div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-        <button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center" onclick="repeatDixProvoke()">${t("↻ Powtórz prowokację","↻ Repeat provocation")}</button>
+        <button class="opt opt--inline" onclick="repeatDixProvoke()">${t("↻ Powtórz prowokację","↻ Repeat provocation")}</button>
         <span class="mono" style="color:var(--muted);font-size:13px">${t("Prowokacja","Provocation")} #${rep+1}</span>
         ${rep>0?`<button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center;opacity:.85" onclick="resetDixProvoke()">Reset</button>`:""}
       </div>
