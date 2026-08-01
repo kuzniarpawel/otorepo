@@ -1,11 +1,24 @@
 // Infrastruktura przeglądarkowa: $, rejestr rAF, easing, Wake Lock, dźwięk.
 import { state } from '../app/state.js';
+import { vizClock } from './viz-clock.js';
 
 const $ = (s,r=document)=>r.querySelector(s);
 
 /* ============ rAF rejestr ============ */
 let animFrames=[];
-function cancelAnims(){ animFrames.forEach(id=>cancelAnimationFrame(id)); animFrames=[]; }
+function cancelAnims(){
+  animFrames.forEach(id=>cancelAnimationFrame(id)); animFrames=[];
+  // Rozpięcie zegara wizualizacji od czasu rzeczywistego (Blok 7). cancelAnims() leci na początku
+  // KAŻDEGO render(), a nowe pętle zapisują swój start z bieżącego czasu wirtualnego. Między
+  // renderami mija dowolnie dużo czasu rzeczywistego (użytkownik czyta ekran), więc bez tego
+  // pierwsza klatka po renderze doliczyłaby całą przerwę i oczopląs pojawiłby się już wygasły.
+  try{ vizClock.detach(); }catch(e){}
+}
+/* Czas WIZUALIZACJI dla pętli animacji. Świadomie NIE dotyczy klinicznego licznika utrzymania
+   pozycji (setupGuideAnim liczy `dt` z surowego `now`): prędkość podglądu nie ma prawa zmieniać
+   czasu, przez który pacjent naprawdę trzyma głowę w pozycji. */
+function vizPeek(){ try{ return vizClock.peek(); }catch(e){ return 0; } }
+function vizNow(realNow){ try{ return vizClock.now(realNow); }catch(e){ return realNow; } }
 function loopRAF(fn){ // fn(now) -> true aby kontynuować
   const myFrames=animFrames;                       // rejestr aktywny w chwili startu pętli
   const idx=myFrames.length;
@@ -47,7 +60,7 @@ function beep(){ if(!state.sound) return;
   }catch(e){}
 }
 
-export { $, animFrames, cancelAnims, loopRAF, easeInOut, lerp, _wakeLock, acquireWake, releaseWake, syncWake, audioCtx, beep };
+export { $, animFrames, cancelAnims, loopRAF, easeInOut, lerp, _wakeLock, acquireWake, releaseWake, syncWake, audioCtx, beep, vizNow, vizPeek, vizClock };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")

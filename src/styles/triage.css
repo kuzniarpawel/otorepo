@@ -92,3 +92,57 @@
 }
 .flowflag b{ color:var(--crit); flex:0 0 auto; }
 .flowflag span{ flex:1 1 auto; min-width:0; color:var(--text); }
+
+/* ============ Sterowanie symulacją + jawna perspektywa (Blok 7) ============ */
+
+/* Nota perspektywy. Nie jest ozdobnikiem: na jednym ekranie sąsiadują dwa panele o PRZECIWNYCH
+   konwencjach stron („Widok frontalny" = oczami badającego, „Głowa z góry" = od tyłu), a od
+   strony zależy, które ucho zostanie poddane repozycji. */
+.perspnote{
+  margin:6px 0 0; font-size:11.5px; line-height:1.35; color:var(--faint);
+  border-left:2px solid var(--line-strong); padding-left:8px;
+}
+.emk abbr{ text-decoration:none; border-bottom:1px dotted var(--line-strong); cursor:help; }
+
+/* Pasek odtwarzania. Przykleja się do DOŁU scrollportu — dolna nawigacja leży poza nim
+   (shell.css), więc nic go nie zasłoni i nie trzeba doliczać --nav-h. */
+.vizbar{
+  position:sticky; bottom:var(--sp-3); z-index:var(--z-actionbar);
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-1);
+  margin:var(--sp-3) 0; padding:var(--sp-2);
+  background:color-mix(in srgb, var(--panel) 92%, transparent);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  border:1px solid var(--line-strong); border-radius:var(--r-md);
+  box-shadow:var(--shadow);
+}
+.vizbtn{
+  appearance:none; cursor:pointer; flex:0 0 auto;
+  display:inline-flex; align-items:center; gap:6px;
+  min-height:var(--tap); padding:var(--sp-1) var(--sp-3);
+  background:var(--panel2); color:var(--text);
+  border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font:inherit; font-size:13px; font-weight:700;
+}
+.vizbtn:hover{ border-color:var(--primary); }
+/* Stan wciśnięcia NIE samym kolorem — dochodzi wypełnienie i obrys (a11y.css: „STAN NIGDY
+   SAMYM KOLOREM"), a przy pauzie zmienia się też glif i napis. */
+.vizbtn[aria-pressed="true"]{ border-color:var(--primary); background:color-mix(in oklab, var(--primary) 16%, var(--panel2)); color:var(--text); }
+.vizbtn[aria-disabled="true"]{ opacity:.5; cursor:default; }
+.vizbtn[aria-disabled="true"]:hover{ border-color:var(--line-strong); }
+.vizbtn__glif{ font-size:11px; line-height:1; }
+.vizbar__stan{ flex:1 1 100%; font-size:11.5px; color:var(--faint); padding-left:2px; }
+@media (min-width:600px){ .vizbar__stan{ flex:0 1 auto; margin-left:auto; padding-right:4px; } }
+
+/* Statyczna sekwencja pozycji (kryterium odbioru nr 4). NIE zastępuje animacji oczopląsu —
+   pokazuje UŁOŻENIA, które są z natury statyczne. */
+.seqcard{ margin:var(--sp-3) 0; }
+.seqcard summary{ cursor:pointer; font-weight:700; font-size:14px; min-height:var(--tap); display:flex; align-items:center; }
+.seqlist{ list-style:none; margin:var(--sp-2) 0 0; padding:0; display:grid; gap:var(--sp-2); }
+@media (min-width:560px){ .seqlist{ grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); } }
+.seqitem{ display:flex; gap:var(--sp-2); align-items:flex-start; padding:var(--sp-2); background:var(--panel2); border:1px solid var(--line); border-radius:var(--r-md); }
+.seqitem__n{ flex:0 0 auto; width:20px; height:20px; border-radius:50%; display:grid; place-items:center; font-size:11px; font-weight:800; color:var(--primary); border:1px solid var(--primary); }
+.seqitem__img{ flex:0 0 74px; width:74px; }
+.seqitem__img svg{ width:100%; height:auto; display:block; }
+.seqitem__txt{ flex:1 1 auto; min-width:0; }
+.seqitem__txt b{ display:block; font-size:12.5px; line-height:1.25; }
+.seqitem__txt small{ display:block; font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.3; }

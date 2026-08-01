@@ -2,8 +2,8 @@
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { MANEUVERS, CANALS, sizedSeconds, CANAL_OF } from '../pose/maneuvers.js';
 import { state } from './state.js';
-import { $, releaseWake, beep } from '../runtime/registry.js';
-import { render, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
+import { $, releaseWake, beep, vizClock } from '../runtime/registry.js';
+import { render, syncVizBar, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
 import { setLang, t } from '../i18n.js';
 import { markDecision, markSeen, markManeuver, patchManeuverSide, markConsumed, resetSeen, noteNavCleared, syncTriage } from './flow-state.js';
 import { toggleFlaga, sciezkaDozwolona } from './triage-model.js';
@@ -250,6 +250,22 @@ function startManeuver(key){
   markManeuver(state,key,true);
   state.plan=genPlan(key,state.side); state.step=0; state.autostart=false; state.screen="guide"; render();
 }
+
+/* ============ Sterowanie symulacją (Blok 7) ============
+   ŻADNA z tych akcji NIE woła render(). Przerysowanie przechodzi przez cancelAnims() i odtwarza
+   wszystkie pętle od zera, więc „pauza" najpierw restartowałaby animację, a dopiero potem ją
+   zatrzymywała — nie dałoby się zamrozić oglądanej klatki, czyli kryterium odbioru nr 2
+   („animację można zatrzymać w KAŻDYM momencie") byłoby spełnione tylko pozornie.
+   Stan zegara odbijamy w miejscu przez syncVizBar (wzorzec toggleAuto/toggleSound). */
+function toggleVizPause(){ vizClock.toggle(); syncVizBar(); }
+function setVizSpeed(v){ vizClock.setSpeed(v); syncVizBar(); }
+// Krok działa WYŁĄCZNIE przy zatrzymanym obrazie (pilnuje tego sam zegar) — przesuwanie
+// biegnącej animacji dałoby skok nieodróżnialny od zacięcia.
+function vizStepFwd(){ if(!vizClock.isPaused()) return; vizClock.step(); syncVizBar(); }
+// Reset dotyczy CZASU obrazu, nie preferencji: wybrane 0,5× i pauza zostają. Wymaga przerysowania,
+// bo pętle muszą wystartować od nowa z wyzerowanym `start`.
+function resetViz(){ vizClock.reset(); render(); }
+
 /* ============ Kwalifikacja wstępna („Wywiad", Blok 6) ============
    Kwestionariusz WYBIERA ŚCIEŻKĘ BADANIA, nie stawia rozpoznania — dlatego `triageGo` prowadzi
    do trybu, a nie do gotowego wyniku, i istnieje wyłącznie dla ścieżki, którą model rzeczywiście
@@ -315,8 +331,8 @@ function setLangUI(lang){
 }
 
 
-export { openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });

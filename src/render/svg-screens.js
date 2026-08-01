@@ -4,7 +4,7 @@ import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
-import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
+import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
 import { activeQuestions, nextQuestionId, triageComplete, triageResult, czerwoneFlagi } from '../app/triage-model.js';
@@ -85,9 +85,9 @@ function startDialNysIn(container, nys){
   const cam=Scene3D.CAMERAS.topDownBehind, flip=cam.up[2]<0?-1:1;
   const a=nys.anat||{h:0,v:0,t:0}, amp=(nys.strength||1)*(nys.fatigue==null?1:nys.fatigue);   // fatigue: męczliwość przy powtórzeniach (Dix-Hallpike)
   const hx=a.h*flip*2.2*amp, upY=a.v*2*amp, rot=a.t*flip*12*amp;   // poziom (odbity) / pion / skręt (odbity)
-  const fast=0.17, T=720, start=performance.now();
+  const fast=0.17, T=720, start=vizPeek();
   const {env, tEnd} = xiEnvelope(engineXi(nys.canal, nys.side, nys.persistent, nys.q));
-  loopRAF((now)=>{
+  loopRAF((rnow)=>{ const now=vizNow(rnow);
     if(container.__dialTok!==token || !document.body.contains(container)) return false;
     const elapsed=(now-start)/1000;
     if(elapsed>tEnd+0.4){ for(const g of irises) g.setAttribute("transform","translate(0 0) rotate(0)"); return false; }
@@ -106,10 +106,10 @@ function startDialNys(nys,plan,envOv){
   const flip = cam.up[2] < 0 ? -1 : 1, cH=flip, cT=flip;
   const amp = envOv ? 1 : (nys.strength||1);            // env historyczny niesie intensywność
   const hx=a.h*cH*2.2*amp, upY=a.v*2*amp, rot=a.t*cT*12*amp;  // pozioma / pionowa / skrętna
-  const fast=0.17, T=720, start=performance.now();
+  const fast=0.17, T=720, start=vizPeek();
   // ta sama OBWIEDNIA co karta oczu → oba widoki zsynchronizowane, jednorazowe (bez pętli)
   const {env, tEnd} = envOv || xiEnvelope(engineXi(nys.canal, nys.side, false, provokeQ(nys.canal, nys.side)));
-  loopRAF((now)=>{
+  loopRAF((rnow)=>{ const now=vizNow(rnow);
     if(!document.querySelector(".dial-iris")) return false;
     const elapsed=(now-start)/1000;
     if(elapsed>tEnd+0.4){ for(const g of irises) g.setAttribute("transform","translate(0 0) rotate(0)"); return false; }
@@ -137,8 +137,8 @@ function backHeadSVG(){
 }
 function startBackHeadTurn(container,dir){
   const g=container.querySelector("#backhead"); if(!g) return;
-  const target=dir==="L"?-45:45, start=performance.now();
-  loopRAF((now)=>{
+  const target=dir==="L"?-45:45, start=vizPeek();
+  loopRAF((rnow)=>{ const now=vizNow(rnow);
     if(!document.body.contains(container)) return false;
     const t=((now-start)%3000)/3000;
     let a;
@@ -389,13 +389,13 @@ function startNys(container,nys,envOv){
   const Aup=(nys.kind==="upbeatTorsional"?5:0)*fat;
   const tors=(nys.kind==="upbeatTorsional"?9:0)*fat;    // skrętność zmniejszona (było 15) — bliżej realnej
   const vdir=(nys.vdir==null?1:nys.vdir);               // +góra / -dół (kanał przedni = downbeat)
-  const T=nys.kind==="upbeatTorsional"?720:760, fast=0.17, start=performance.now();
+  const T=nys.kind==="upbeatTorsional"?720:760, fast=0.17, start=vizPeek();
   // OBWIEDNIA CZASOWA Z SILNIKA: ξ(t) z simulateCanalith/Cupulolith.
   // kanalolitiaza → przejściowa (narost po latencji → szczyt → wygasanie, cząstka wychodzi → NIE wraca);
   // kupulolitiaza → uporczywa. Animacja gra RAZ i się zatrzymuje (koniec pętli).
   const canal=nys.canal||"posterior", side=nys.side||"P";
   const {env, tEnd} = envOv || xiEnvelope(engineXi(canal, side, nys.persistent, nys.q));
-  loopRAF((now)=>{
+  loopRAF((rnow)=>{ const now=vizNow(rnow);
     if(container.__nysTok!==token || !document.body.contains(container)) return false;
     const elapsed=(now-start)/1000;                      // sekundy
     if(elapsed>tEnd+0.4){ for(const g of irises) g.setAttribute("transform","translate(0 0) rotate(0)"); return false; } // koniec — bez zapętlenia
@@ -438,7 +438,7 @@ function startDiagOtolith(container,variant,canal,side){
   const cuptip=container.querySelector("#cuptip");
   if(!path||!particle||!cupula) return;
   canal=canal||"posterior"; side=side||"P";
-  const len=path.getTotalLength(), start=performance.now();
+  const len=path.getTotalLength(), start=vizPeek();
   if(variant==="canalo"){
     cuptip.style.display="none";                 // złóg swobodny w świetle kanału
     cupula.setAttribute("transform","rotate(0 62 96)");
@@ -450,7 +450,7 @@ function startDiagOtolith(container,variant,canal,side){
     const phiAt = ts=>{ const i=Math.max(0,Math.min(sim.length-1,Math.round(ts/dt))); return sim[i]?sim[i].phi:90; };
     const place = ph=>{ const pt=path.getPointAtLength(Math.max(0,Math.min(1,ph/360))*len); particle.setAttribute("cx",pt.x); particle.setAttribute("cy",pt.y); };
     place(phiAt(0));
-    loopRAF((now)=>{ if(!document.body.contains(container)) return false;
+    loopRAF((rnow)=>{ const now=vizNow(rnow); if(!document.body.contains(container)) return false;
       const elapsed=(now-start)/1000;
       if(elapsed>lastT){ place(phiAt(lastT)); return false; }   // koniec — cząstka spoczywa, bez pętli
       place(phiAt(elapsed)); return true; });
@@ -459,7 +459,7 @@ function startDiagOtolith(container,variant,canal,side){
     // odgięcie osklepka wg ξ(t) z silnika (uporczywe — kupulolitiaza nie wygasa, dopóki pozycja trwa)
     const {env, tEnd} = xiEnvelope(engineXi(canal, side, true, provokeQ(canal, side)));
     cupula.setAttribute("transform","rotate(0 62 96)");
-    loopRAF((now)=>{ if(!document.body.contains(container)) return false;
+    loopRAF((rnow)=>{ const now=vizNow(rnow); if(!document.body.contains(container)) return false;
       const elapsed=(now-start)/1000;
       const ang = 17*env(Math.min(elapsed,tEnd));
       cupula.setAttribute("transform",`rotate(${ang.toFixed(2)} 62 96)`);
@@ -619,9 +619,15 @@ function setupGuideAnim(){
     : nysSec!=null
     ? Math.max(1200, Math.min(24000, Math.round(nysSec*1000)))              // krok z oczopląsem → zsynchronizowany z ξ(t)
     : Math.max(800,  Math.min(3000,  Math.round(1600/(rSize*rSize))));      // krok bez oczopląsu → fallback wg rozmiaru (osiadanie ∝ 1/r²)
-  loopRAF((now)=>{
+  loopRAF((rnow)=>{
     if(!document.getElementById("otolith")) return false;
-    const dt=now-last; last=now;
+    /* DWA ZEGARY W JEDNEJ PETLI (Blok 7). `dt` liczy sie z czasu RZECZYWISTEGO, bo zasila
+       state.elapsedMs — czas utrzymania pozycji jest parametrem KLINICZNYM (od niego zalezy,
+       czy zlog zdazy opuscic kanal) i predkosc podgladu nie ma prawa go zmieniac.
+       `vnow` to czas WIZUALIZACJI: wedrowka zloga, oddech osklepka i pulsy reaguja na pauze
+       i na 0,5x. Pomylenie tych dwoch znaczyloby, ze aplikacja pisze „utrzymaj 30 s", a liczy 60. */
+    const dt=rnow-last; last=rnow;
+    const now=vizNow(rnow);
     // ANIMACJA OTOLITU: przejście fFrom→fTo na wejściu w krok, niezależnie od timera (ruch przy repozycji)
     if(_otoStart===null) _otoStart=now;
     const ot=Math.min(1,(now-_otoStart)/DUR);
@@ -856,6 +862,92 @@ function triageQuestionHTML(q, odp, nastepne){
       <div class="tq__opts">${q.opcje.map(o=>triageOpcjaHTML(q,o,wybrane)).join("")}</div>
     </section>`;
 }
+/* ============ Sterowanie symulacją + jawna perspektywa (Blok 7) ============
+   Dokument: „Sterowanie: pauza, 0,5×, 1×, krok po kroku, reset i pełny ekran" oraz
+   „Stale jawna perspektywa: widok badającego lub pacjenta" i „Widoczne etykiety LEWE/PRAWE
+   UCHO PACJENTA".
+
+   Dlaczego etykieta perspektywy jest tu sprawą KLINICZNĄ, a nie kosmetyczną: na jednym ekranie
+   sąsiadują dwa panele o PRZECIWNYCH konwencjach — „Widok frontalny" pokazuje pacjenta tak, jak
+   widzi go badający (prawe ucho pacjenta po LEWEJ stronie obrazu), a „Głowa (z góry)" jest
+   rysowana kamerą topDownBehind, czyli znad głowy OD TYŁU (prawe ucho po PRAWEJ). Dotąd żaden
+   z nich tego nie mówił, a od strony zależy, które ucho zostanie poddane repozycji. */
+const VIZ_PERSPEKTYWA = {
+  frontal: () => t('widok badającego — prawe ucho pacjenta po LEWEJ stronie obrazu',
+                   "examiner's view — the patient's right ear is on the LEFT of the image"),
+  topDownBehind: () => t('znad głowy, od tyłu — prawe ucho pacjenta po PRAWEJ stronie obrazu',
+                         'from above and behind — the patient’s right ear is on the RIGHT of the image'),
+};
+function perspNota(kind){
+  const f = VIZ_PERSPEKTYWA[kind]; if(!f) return "";
+  return `<p class="perspnote">${f()}</p>`;
+}
+// Znacznik ucha przy wierszu oczu. Sam napis „P"/„L" nie mówi CZYJA to strona — a to jedyna
+// informacja, od której zależy, po której stronie wykonasz manewr.
+function earMark(strona){
+  const pl = strona==="P" ? "prawe ucho pacjenta" : "lewe ucho pacjenta";
+  const en = strona==="P" ? "patient's right ear" : "patient's left ear";
+  return `<span class="emk" title="${t(pl,en)}"><abbr aria-label="${t(pl,en)}">${strona==="P"?t("P","R"):"L"}</abbr></span>`;
+}
+
+/* Pasek sterowania odtwarzaniem. Stan mieszka w zegarze (src/runtime/viz-clock.js), nie w DOM:
+   cancelAnims() kasuje pętle przy każdym render(), więc prędkość trzymana w pętli wracałaby
+   po cichu do 1× po każdym dotknięciu czegokolwiek.
+   UWAGA: przyciski NIE wołają render(). Przerysowanie odtworzyłoby wszystkie pętle od zera,
+   czyli „pauza" najpierw restartowałaby animację, a dopiero potem ją zatrzymywała — nie dałoby
+   się zamrozić oglądanej klatki. Stan odbijamy w miejscu (wzorzec toggleAuto/toggleSound). */
+function vizControls(){
+  const sp = vizClock.getSpeed(), pau = vizClock.isPaused();
+  const spBtn = (v,lbl)=>`<button type="button" class="vizbtn" data-vizspeed="${v}" aria-pressed="${sp===v}" onclick="setVizSpeed(${v})">${lbl}</button>`;
+  return `<div class="vizbar" role="group" aria-label="${t("Sterowanie symulacją","Simulation controls")}">
+      <button type="button" class="vizbtn vizbtn--play" data-vizpause aria-pressed="${pau}"
+              aria-label="${t("Zatrzymaj albo wznów animację","Pause or resume the animation")}" onclick="toggleVizPause()">
+        <span class="vizbtn__glif" aria-hidden="true">${pau?"▶":"❚❚"}</span><span class="vizbtn__txt">${pau?t("Wznów","Resume"):t("Pauza","Pause")}</span></button>
+      ${spBtn(1,"1×")}${spBtn(0.5,"0,5×")}
+      <button type="button" class="vizbtn" data-vizstep aria-disabled="${!pau}"
+              aria-label="${t("Przesuń obraz o jeden krok","Advance the image by one step")}" onclick="vizStepFwd()">${t("Krok","Step")} ›</button>
+      <button type="button" class="vizbtn" onclick="resetViz()" aria-label="${t("Odtwórz animację od początku","Replay the animation from the start")}">↺</button>
+      <span class="vizbar__stan" role="status" data-vizstate>${vizStanTxt()}</span>
+    </div>`;
+}
+function vizStanTxt(){
+  const sp = vizClock.getSpeed();
+  return vizClock.isPaused()
+    ? t("obraz zatrzymany","image paused")
+    : (sp===1 ? t("odtwarzanie 1×","playing 1×") : t("odtwarzanie 0,5×","playing 0.5×"));
+}
+// Odbicie stanu zegara BEZ przerysowania — patrz komentarz przy vizControls.
+function syncVizBar(){
+  try{
+    const pau = vizClock.isPaused(), sp = vizClock.getSpeed();
+    document.querySelectorAll("[data-vizpause]").forEach(b=>{
+      b.setAttribute("aria-pressed", String(pau));
+      const g=b.querySelector(".vizbtn__glif"); if(g) g.textContent = pau?"▶":"❚❚";
+      const x=b.querySelector(".vizbtn__txt"); if(x) x.textContent = pau?t("Wznów","Resume"):t("Pauza","Pause");
+    });
+    document.querySelectorAll("[data-vizspeed]").forEach(b=>
+      b.setAttribute("aria-pressed", String(parseFloat(b.getAttribute("data-vizspeed"))===sp)));
+    document.querySelectorAll("[data-vizstep]").forEach(b=> b.setAttribute("aria-disabled", String(!pau)));
+    // role="status" ogłasza zmianę czytnikowi ekranu — bez tego pauza byłaby zmianą wyłącznie wizualną.
+    document.querySelectorAll("[data-vizstate]").forEach(e=> e.textContent = vizStanTxt());
+  }catch(e){}
+}
+
+/* STATYCZNA SEKWENCJA POZYCJI (kryterium odbioru nr 4: „przy ograniczonych animacjach dostępna
+   jest statyczna sekwencja pozycji"). NIE zastępuje pętli oczopląsu — Blok 2 rozstrzygnął, że
+   zatrzymanie oczopląsu w losowej klatce pod podpisem opisującym jego kierunek byłoby kłamstwem.
+   To informacja INNEGO rodzaju: same UŁOŻENIA, które są z natury statyczne. */
+function pozySekwencja(fazy, strona, rozwin){
+  if(!fazy || !fazy.length) return "";
+  const kafle = fazy.map((ph,i)=>`<li class="seqitem"><div class="seqitem__n">${i+1}</div>
+      <div class="seqitem__img">${posture(poseSpec(ph), strona)}</div>
+      <div class="seqitem__txt"><b>${ph.ptitle||ph.title||""}</b><small>${ph.ppos||""}</small></div></li>`).join("");
+  return `<details class="card seqcard"${rozwin?" open":""}>
+      <summary>${t("Sekwencja pozycji (statyczna)","Position sequence (static)")}</summary>
+      <p class="note">${t("Kolejne ułożenia pacjenta bez animacji — do odczytania w dowolnym tempie.","The successive patient positions without animation — to read at any pace.")}</p>
+      <ol class="seqlist">${kafle}</ol></details>`;
+}
+
 function renderTriage(){
   const odp = state.triage||{};
   const pytania = activeQuestions(odp);
@@ -1147,9 +1239,10 @@ function renderDiag(){
     return `
       <div class="ptitle">${ph.ptitle}</div><div class="ppos">${ph.ppos}</div>
       <div class="minihead"><div class="panelbox"><h4>${t("Ułożenie","Position")}${can3d?view3dToggle():""}</h4>${can3d&&state.view3d?threeSlot("diag"+i):posture(phs,A)}</div>
-        <div class="panelbox"><h4>${t("Głowa (z góry)","Head (top-down)")}</h4><div data-dialnys="${i}">${headDial(phs,"topDownBehind")}</div></div></div>
+        <div class="panelbox"><h4>${t("Głowa (z góry)","Head (top-down)")}</h4><div data-dialnys="${i}">${headDial(phs,"topDownBehind")}</div>${perspNota("topDownBehind")}</div></div>
       <div class="panelbox" style="margin-top:10px"><h4>${t("Widok frontalny","Frontal view")}</h4>
-        <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div><span class="emk">L</span></div>
+        <div class="eyesrow">${earMark("P")}<div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div>${earMark("L")}</div>
+        ${perspNota("frontal")}
         <div class="nyslabel"><span class="arrow">${arrowGlyph(ph.nys)}</span><span>${ph.label}${ph.nys.persistent?t(" · uporczywy"," · persistent"):t(" · przemijający"," · transient")}</span></div>
         ${gravArrowFor(phs)}</div>
       <div class="note">${ph.note}</div>`;};
@@ -1192,7 +1285,9 @@ function renderDiag(){
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
       </div></div>` : ""}
-    ${phaseHTML}${fatPanel}
+    ${phaseHTML}
+    ${pozySekwencja(phases, A, !!state.reducedMotion)}
+    ${fatPanel}
     ${(()=>{
       const interp = v0 => antMode
         ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)
@@ -1222,6 +1317,7 @@ function renderDiag(){
         <div class="note" style="color:var(--text)">${rec.note}</div>
         <div class="note">${t(`Leczenie dla strony <b>${SIDE[effSide]}</b>.`,`Treatment for the <b>${effSide==="L"?"left":"right"}</b> side.`)} ${antMode?t("Strona kanału przedniego niepewna — potwierdź deep head-hangiem i dopiero po wykluczeniu przyczyny ośrodkowej.","The anterior-canal side is uncertain — confirm with the deep head-hang and only after ruling out a central cause."):t("Potwierdź stronę regułą lateralizacji powyżej, zanim rozpoczniesz manewr.","Confirm the side with the lateralization rule above before starting the maneuver.")}</div>
         <div class="recobtns">${btns}</div></div>`; })()}
+    ${vizControls()}
     <p class="footnote">${t("Wzorce poglądowe. Interpretuj w kontekście klinicznym.","Illustrative patterns. Interpret in the clinical context.")}</p>`;
   if(can3d && state.view3d) phases.forEach((ph,i)=>mount3D("diag"+i, poseSpec(ph), A));
   requestAnimationFrame(()=>{
@@ -1422,8 +1518,8 @@ function startNeuroNys(container, nys, gazeDeg){
   container.__nnParams = neuroNysParams(nys, gazeDeg);
   if(container.__nnRunning) return;                // pętla już działa → sama odczyta nowe __nnParams
   container.__nnRunning = true;
-  const T=780, fast=0.17, start=performance.now();
-  loopRAF((now)=>{
+  const T=780, fast=0.17, start=vizPeek();
+  loopRAF((rnow)=>{ const now=vizNow(rnow);
     if(!document.body.contains(container)){ container.__nnRunning=false; return false; }
     const P=container.__nnParams, ph=((now-start)%T)/T, o=nysOffset(ph,fast);
     const x=P.gazePx + o*P.Ah*P.hDir, y=-o*(P.Av||0)*(P.vDir||0), rot=o*P.At*P.tDir;   // y: ekran w dół = +, vdir<0 downbeat → +y
@@ -1476,8 +1572,8 @@ function startHIT(container, hi){
     : t<T_IMP+T_HOLD ? covFrac
     : t<T_IMP+T_HOLD+T_SAC ? covFrac+(1-covFrac)*((t-T_IMP-T_HOLD)/T_SAC)
     : 1;
-  const start=performance.now();
-  loopRAF((now)=>{
+  const start=vizPeek();
+  loopRAF((rnow)=>{ const now=vizNow(rnow);
     if(container.__hitTok!==token || !document.body.contains(container)) return false;
     const t=now-start; let prof, raw;                     // prof = profil skoku głowy (0..1), raw = niedomiar zanim skoryguje
     if(t<T_IMP){ prof=easeInOut(t/T_IMP); raw=prof; }                                    // pchnięcie
@@ -1541,8 +1637,8 @@ function startSkew(container, sk){
   const off=sk.present?Math.min(15, sk.skewDeg*4):0;      // px pionowego rozjazdu (SVG: −y=góra)
   const devP=(sk.sign>0?-1:1)*off, devL=-devP;             // sign>0: oko P wyżej
   const period=2600, half=1300, SAC=150, covXP=34, covXL=134;
-  const start=performance.now();
-  loopRAF((now)=>{
+  const start=vizPeek();
+  loopRAF((rnow)=>{ const now=vizNow(rnow);
     if(container.__skTok!==token || !document.body.contains(container)) return false;
     const tt=(now-start)%period, pCov=tt<half;            // pCov: zasłonięte oko P (odsłonięte L)
     cover.setAttribute('x', pCov?covXP:covXL);
@@ -1785,8 +1881,8 @@ function sideSel(current, fn, lbl){
   return `<div class="sidesel"><span class="lbl">${lbl}</span><div class="tabs">${opt('L')}${opt('P')}</div></div>`;
 }
 
-export { renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
+export { syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { renderTriage, startGo, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });
+Object.assign(window, { syncVizBar, renderTriage, startGo, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });

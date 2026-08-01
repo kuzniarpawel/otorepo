@@ -18,7 +18,8 @@
     "sync": "npm run build && npm run copy:web && cap sync",
     "open": "cap open android",
     "flow:check": "node tools/flow-check.mjs",
-    "triage:check": "node tools/triage-check.mjs"
+    "triage:check": "node tools/triage-check.mjs",
+    "viz:check": "node tools/vizclock-check.mjs"
   },
   "repository": {
     "type": "git",
