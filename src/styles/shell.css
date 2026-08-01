@@ -24,8 +24,14 @@
      min-content 378 px) rozpychał całą powłokę poza okno 360 px — przy czym przelew był
      niewidoczny w documentElement.scrollWidth, bo chował się w scrollporcie. */
   grid-template-columns:minmax(0,1fr);
-  grid-template-rows:auto 1fr auto;
-  grid-template-areas:"top" "main" "nav";
+  /* REGUŁA: każda zmiana grid-template-areas MUSI iść w parze ze zmianą grid-template-rows.
+     Lista wierszy krótsza niż lista obszarów nie jest błędem składni — ścieżki się PRZESUWAJĄ.
+     Przy „top/flow/main/nav" i starych rzędach „auto 1fr auto" jedyny 1fr trafiłby na pasek
+     przebiegu: na krótkim ekranie rozdąłby się na pół okna, a na długim (diagnostyka ~3000 px)
+     `main` dostałby `auto`, przerósł powłokę i został przycięty przez overflow:hidden — dół
+     ekranu i przyklejony pasek startu manewru stałyby się niedostępne. Jedynym 1fr jest `main`. */
+  grid-template-rows:auto auto 1fr auto;
+  grid-template-areas:"top" "flow" "main" "nav";
   overflow:hidden;
 }
 
@@ -185,8 +191,8 @@
        widocznej zawartości zwija się do zera, a szerokość nadaje sama szyna. Rozwiązanie działa
        bez :has(), więc nie wymaga WebView >= 105 (Capacitor, minSdk 24). */
     grid-template-columns:auto minmax(0,1fr);
-    grid-template-areas:"rail top" "rail main";
-    grid-template-rows:auto 1fr;
+    grid-template-areas:"rail top" "rail flow" "rail main";
+    grid-template-rows:auto auto 1fr;
     max-width:var(--content-max);
     margin-inline:auto;
   }

@@ -5,6 +5,7 @@ import { state } from './state.js';
 import { $, releaseWake, beep } from '../runtime/registry.js';
 import { render, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
 import { setLang, t } from '../i18n.js';
+import { markDecision, markSeen, markManeuver, patchManeuverSide, markConsumed, resetSeen, noteNavCleared } from './flow-state.js';
 
 function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
 function hintsHIT(canal, ear){
@@ -181,19 +182,47 @@ function loadHintsFromStore(){
 function pickSide(s){ state.side=s; render(); }
 function pickCanal(k){ state.canal=k; const keys=CANALS[k].maneuvers; if(!keys.includes(state.maneuverKey)) state.maneuverKey=keys.length===1?keys[0]:null; render(); }
 function pickMan(k){ state.maneuverKey=k; render(); }
-function pickTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.diagPhaseFace=0; render(); }
+/* Wybór próby. Zerowanie dixObs/dixRep/diagCentral dotyczy WYŁĄCZNIE zmiany próby na inną.
+   Przy ponownym dotknięciu TEJ SAMEJ próby (kafel aktywnego testu ma tylko aria-pressed, nie jest
+   wyłączony, a to jedyna droga powrotu po „Wróć") kasowanie flagi „Ośrodkowy — CPN" byłoby cichym
+   cofnięciem decyzji klinicznej przez sam akt nawigacji: aplikacja przestawałaby ostrzegać przed
+   repozycją u pacjenta oznaczonego jako podejrzany o przyczynę ośrodkową. [Blok 5] */
+function resetTestLocal(k){
+  const innaProba = state.testKey!==k;
+  state.diagPhaseFace=0;
+  if(innaProba){
+    // NAJPIERW zapamiętaj, że zaraz zniknie sygnał ostrzegawczy — potem go wyczyść. Odwrotna
+    // kolejność patrzyłaby na już wyzerowane pola i flaga nigdy by nie wstała. Ciąg „oznacz CPN →
+    // inna próba → z powrotem ta sama próba" przywraca KOMPLET pól odcisku do wartości sprzed
+    // decyzji, więc bez tej flagi aplikacja meldowałaby „wniosek zgodny" u pacjenta oznaczonego
+    // jako podejrzany o przyczynę ośrodkową.
+    noteNavCleared(state);
+    state.dixRep=0;
+    markDecision(state,"dixObs","post");
+    markDecision(state,"diagCentral",false);
+    markDecision(state,"testKey",k);
+    resetSeen(state);
+  } else state.testKey=k;
+  markSeen(state,"testSeen");
+}
+function pickTest(k){ resetTestLocal(k); render(); }
 // kliknięcie pozycji = od razu otwórz (bez osobnego przycisku CTA)
-function openMan(k){ state.maneuverKey=k; startPlan(); }
-function openTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.diagPhaseFace=0; state.screen="diag"; render(); }
-function setDixObs(o){ state.dixObs=o; state.dixRep=0; render(); }
+// Wejście „Znam kanał i stronę": manewr BEZ interpretacji próby → krok „Interpretacja" dostanie
+// status „pominięty z uzasadnieniem", a nie fałszywe „zakończony".
+function openMan(k){ state.maneuverKey=k; markManeuver(state,k,false); startPlan(); }
+function openTest(k){ resetTestLocal(k); state.screen="diag"; render(); }
+function setDixObs(o){ markDecision(state,"dixObs",o); state.dixRep=0; markSeen(state,"obsSeen"); render(); }
 // Diagnostyka: przełącznik „obwodowy (BPPV) ↔ ośrodkowy (CPN)" w karcie klasyfikacji Bárány.
-function toggleDiagCentral(v){ state.diagCentral=!!v; render(); }
-function setVariant(v){ state.variant=v; render(); }
+function toggleDiagCentral(v){ markDecision(state,"diagCentral",!!v); markSeen(state,"interpretSeen"); render(); }
+function setVariant(v){ markDecision(state,"variant",v); markSeen(state,"interpretSeen"); render(); }
 // Męczliwość oczopląsu: powtórna prowokacja Dix-Hallpike (rep++) → kanalolitiaza słabnie (fatigueFactor);
 // kupulolitiaza nie. Reset zeruje serię. Nie zerujemy przy przełączeniu mechanizmu (flip) — po to, by przy tym
 // samym rep pokazać kontrast kanalo↔kupulo.
-function repeatDixProvoke(){ state.dixRep=(state.dixRep||0)+1; render(); }
-function resetDixProvoke(){ state.dixRep=0; render(); }
+// Męczliwość to OBSERWACJA (krok „Oczopląs"), nie wniosek — stąd markSeen('obsSeen') i BRAK
+// markDecision: dixRep celowo nie wchodzi do odcisku decyzyjnego, bo alarm przy każdym
+// powtórzeniu prowokacji zapalałby się dokładnie wtedy, gdy klinicysta pracuje wg protokołu.
+function repeatDixProvoke(){ state.dixRep=(state.dixRep||0)+1; markSeen(state,"obsSeen"); render(); }
+function resetDixProvoke(){ state.dixRep=0; markSeen(state,"obsSeen"); render(); }
 // Generuje plan manewru i nakłada holdy zależne od rozmiaru złogu (małe = dłuższe utrzymanie pozycji).
 function genPlan(key, side){
   const plan=MANEUVERS[key].gen(side);
@@ -204,18 +233,27 @@ function genPlan(key, side){
 function pickSize(s){ if(state.size===s) return; state.size=s;
   if(state.plan && state.screen==="guide"){ state.plan=genPlan(state.maneuverKey, state.side); }
   render(); }
-// Repozycja: zmiana strony PRZEBUDOWUJE plan i restartuje manewr od kroku 0
-function setGuideSide(s){ if(state.side===s) return; state.side=s; state.plan=genPlan(state.maneuverKey,s); state.step=0; state.autostart=false; render(); }
-// Diagnostyka: zmiana strony tylko odświeża predykcje (brak bieżącego kroku — fazy widoczne naraz)
-function setDiagSide(s){ if(state.side===s) return; state.side=s; state.dixRep=0; render(); }
+// Repozycja: zmiana strony PRZEBUDOWUJE plan i restartuje manewr od kroku 0.
+// Odcisk dostaje NOWĄ stronę: po tej akcji plan jest najświeższym elementem stanu, więc pasek
+// nie ma prawa krzyczeć „zmieniono stronę" nad planem właśnie przeliczonym. Aktualizujemy samo
+// pole strony — podmiana całego odcisku skasowałaby równoczesny, zasłużony dryf.
+function setGuideSide(s){ if(state.side===s) return; state.side=s; state.plan=genPlan(state.maneuverKey,s); state.step=0; state.autostart=false; patchManeuverSide(state,s); render(); }
+// Diagnostyka: zmiana strony tylko odświeża predykcje (brak bieżącego kroku — fazy widoczne naraz).
+// Tu odcisku NIE ruszamy: plan nadal celuje w poprzednie ucho, więc dryf jest zasłużony.
+function setDiagSide(s){ if(state.side===s) return; markDecision(state,"side",s); state.dixRep=0; render(); }
 function startPlan(){ state.plan=genPlan(state.maneuverKey,state.side); state.step=0; state.autostart=false; state.screen="guide"; render(); }
+// Wejście z rekomendacji na ekranie testu: kroki „Próba/Oczopląs/Interpretacja" mają za sobą
+// realną pracę, więc odcisk zapisujemy z viaInterpret=true.
 function startManeuver(key){
   state.mode="treat"; state.maneuverKey=key; state.canal=CANAL_OF[key];
+  markManeuver(state,key,true);
   state.plan=genPlan(key,state.side); state.step=0; state.autostart=false; state.screen="guide"; render();
 }
-function startDiag(){ state.screen="diag"; render(); }
+function startDiag(){ state.screen="diag"; markSeen(state,"testSeen"); render(); }
 function backToSetup(){ state.running=false; releaseWake(); state.screen="setup"; render(); }
-function goStep(i,autostart){ const n=state.plan.steps.length; if(i<0||i>=n) return; state.step=i; state.autostart=!!autostart; render(); }
+// Dojście do OSTATNIEGO kroku planu = manewr wykonany. Od tej chwili nie jest już wnioskiem
+// oczekującym: konwersja postaci albo próba kontrolna po repozycji nie mogą go unieważniać.
+function goStep(i,autostart){ const n=state.plan.steps.length; if(i<0||i>=n) return; state.step=i; state.autostart=!!autostart; if(i===n-1) markConsumed(state); render(); }
 function toggleAuto(el){ state.autoAdvance=!state.autoAdvance; el.setAttribute("aria-checked",state.autoAdvance); }
 function toggleSound(el){ state.sound=!state.sound; el.setAttribute("aria-checked",state.sound); if(state.sound)beep(); }
 // Etap 3: przełącznik karty „Ułożenie" SVG ↔ Three.js (WebGL). Pełny render — montaż canvasa robi hook w renderGuide/renderDiag.
@@ -241,6 +279,10 @@ function setLangUI(lang){
     state.plan.steps.forEach((s,i)=>{ if(prev[i]!=null) s.seconds=prev[i]; });
   }
   syncLangBar(); render();
+  // Cały chrom (marka, nawigacja, pasek przebiegu, arkusz ustawień) jest wypełniany przez t()
+  // RAZ, na boocie — bez tego wywołania przełączenie języka górnym paskiem zostawiało powłokę
+  // po polsku nad angielską treścią, i to przy komplecie zielonych wyroczni (chrom leży poza #app).
+  try{ if(typeof window!=="undefined" && typeof window.__otoLangChange==="function") window.__otoLangChange(); }catch(e){}
 }
 
 

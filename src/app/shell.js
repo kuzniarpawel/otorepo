@@ -18,6 +18,10 @@
 import { state } from './state.js';
 import { t } from '../i18n.js';
 import { AREAS, barAreas, areaById } from './nav-model.js';
+import {
+  FLOW_STEPS, FLOW_STATUS, flowStep, flowStatuses, activeStepId, nextStepId,
+  stepTarget, stepSummary, flowVisible, flowSignature,
+} from './flow-model.js';
 
 const $ = (sel) => (typeof document !== 'undefined' ? document.querySelector(sel) : null);
 
@@ -64,9 +68,15 @@ function applyArea(id) {
   if (stub) stub.hidden = !naNauke;
   if (app) app.hidden = naNauke;
   if (naNauke) { A.render && A.render(); syncShell(); return; }
-  if (id === 'start') A.setMode && A.setMode('treat');
-  else if (id === 'diag') A.setMode && A.setMode('diag');
-  else if (id === 'lab') { A.setMode && A.setMode('hints'); A.openHintsCustom && A.openHintsCustom(); }
+  // „Start" to ekran oparty na CELU (Blok 4), nie skrót do modułu repozycji.
+  if (id === 'start') { state.screen = 'start'; A.render && A.render(); }
+  else {
+    // Każdy inny obszar MUSI opuścić ekran startowy. setMode zmienia wyłącznie tryb, a render()
+    // przy screen==='start' rysowałby dalej ekran startowy — dotknięcie wyglądało na nieskuteczne.
+    if (state.screen === 'start') state.screen = 'setup';
+    if (id === 'diag') A.setMode && A.setMode('diag');
+    else if (id === 'lab') { A.setMode && A.setMode('hints'); A.openHintsCustom && A.openHintsCustom(); }
+  }
   syncShell();
 }
 
@@ -76,16 +86,23 @@ function applyArea(id) {
 export function goArea(id) {
   try {
     if (id === 'profile') { openSheet(); return; }
-    if (state.screen === 'guide' && state.running) { askLeave(id); return; }
+    if (state.screen === 'guide' && state.running) { askLeave(() => applyArea(id)); return; }
     applyArea(id);
   } catch { /* powłoka nie ma prawa wywalić aplikacji */ }
 }
 
-let _leaveTarget = null;
-function askLeave(id) {
-  _leaveTarget = id;
+/* Cel strażnika jest FUNKCJĄ, nie napisem. Wcześniej `_leaveTarget` był nietypowanym stringiem
+   konsumowanym wyłącznie przez applyArea — po dołożeniu kroków przebiegu (Blok 5) wpadłoby tam
+   `applyArea('nystagmus')`, które nie trafia w żaden warunek: ustawia state.area na nieistniejący
+   obszar, zatrzymuje licznik, zwalnia blokadę ekranu, przestawia screen z 'guide' na 'setup'
+   i NIE woła render() — w DOM zostaje karta manewru z zatrzymanym licznikiem, a cel przejścia
+   ginie. Zbiory identyfikatorów obszarów i kroków są rozłączne, więc rozpoznanie „po nazwie"
+   nie było możliwe. */
+let _leaveAkcja = null;
+function askLeave(akcja) {
+  _leaveAkcja = akcja;
   const d = $('#leaveDlg');
-  if (!d) { applyArea(id); return; }                      // brak dialogu → nie blokuj użytkownika
+  if (!d) { akcja(); _leaveAkcja = null; return; }         // brak dialogu → nie blokuj użytkownika
   // <dialog> bez showModal (starszy WebView) → atrybut open jako degradacja
   if (typeof d.showModal === 'function') { try { d.showModal(); } catch { d.setAttribute('open', ''); } }
   else d.setAttribute('open', '');
@@ -93,8 +110,9 @@ function askLeave(id) {
 function closeLeave(potwierdzone) {
   const d = $('#leaveDlg');
   if (d) { if (typeof d.close === 'function') { try { d.close(); } catch { d.removeAttribute('open'); } } else d.removeAttribute('open'); }
-  if (potwierdzone && _leaveTarget) { state.running = false; applyArea(_leaveTarget); }
-  _leaveTarget = null;
+  const akcja = _leaveAkcja;
+  _leaveAkcja = null;
+  if (potwierdzone && akcja) { state.running = false; akcja(); }
 }
 
 /* ---- Arkusz ustawień (obszar „Profil") ---- */
@@ -172,13 +190,18 @@ export function mountNav(deps = {}) {
           <button type="button" class="cta" data-sheet-close>${t('Zamknij', 'Close')}</button>
         </div>`;
       s.querySelectorAll('[data-lang-set]').forEach(b =>
-        b.addEventListener('click', () => { A.setLangUI && A.setLangUI(b.getAttribute('data-lang-set')); rebuildNavLabels(); syncSheet(); }));
+        b.addEventListener('click', () => { A.setLangUI && A.setLangUI(b.getAttribute('data-lang-set')); }));
       const mt = s.querySelector('[data-motion-toggle]');
       if (mt) mt.addEventListener('click', () => setReducedMotion(!state.reducedMotion));
       s.querySelector('[data-sheet-close]').addEventListener('click', closeSheet);
     }
   } catch { /* jw. */ }
 }
+
+// Powierzchnia globalna dla handlerów inline (onclick="goArea('diag')") — ten sam wzorzec, co
+// w actions.js i maneuvers.js. Bez tego karty trybu na ekranie startowym rzucały ReferenceError
+// i klikanie ich nie robiło NIC (klik nie zgłasza błędu widocznego dla użytkownika).
+if (typeof window !== 'undefined') Object.assign(window, { goArea, setReducedMotion, goFlowStep });
 
 // Po zmianie języka etykiety muszą się przebudować — inaczej nawigacja zostaje w starym języku.
 function rebuildNavLabels() {
@@ -191,6 +214,218 @@ function rebuildNavLabels() {
   } catch {}
 }
 
+/* ============ Pasek przebiegu klinicznego (Blok 5) ============
+   Dokument: „Pełny sześciostopniowy stepper stale widoczny u góry" (komputer) / „Stepper skrócony
+   do «Krok 2 z 6 — Próba» z możliwością rozwinięcia pełnej mapy" (telefon). To CHROM, więc leży
+   poza #app i nie rusza złotego wzorca.
+
+   Wiedza kliniczna (recommend/CANAL_OF/DIAG) jest WSTRZYKIWANA z main.js: flow-model.js jest
+   celowo bezimportowy, a powłoka ma zostać liściem grafu renderowania. */
+let FD = {};
+
+// Przewijanie do kotwicy WEWNĄTRZ #app. Świadomie bez scrollIntoView i bez window.scrollTo:
+// w jsdom (tools/snapshot.mjs) scrollIntoView nie istnieje (TypeError), a window.scrollTo NIE
+// rzuca — emituje jsdomError, którego try/catch nie rozbraja, a snapshot.mjs kończy wtedy
+// exit(1). Przypisanie scrollTop jsdom przyjmuje bez błędu.
+// Kompensacja przyklejonego nagłówka jest MIERZONA: .ghead ma ~92 px i po zwykłym przewinięciu
+// zasłaniałby prawie całą kotwicę (zmierzone: 92,5 ze 128,75 px karty obserwacji).
+function scrollToAnchor(sel) {
+  if (!sel || typeof document === 'undefined') return;
+  const sc = $('#mainscroll');
+  const el = document.querySelector(`#app ${sel}`);
+  if (!sc || !el || typeof el.getBoundingClientRect !== 'function') return;
+  try {
+    const gh = document.querySelector('#app .ghead');
+    const off = gh ? gh.getBoundingClientRect().height : 0;
+    sc.scrollTop = sc.scrollTop + el.getBoundingClientRect().top - sc.getBoundingClientRect().top - off - 12;
+  } catch { }
+  // Fokus przenosimy ZAWSZE: bez tego czytnik ekranu zostaje tam, gdzie był, i użytkownik
+  // niewidomy nie dowie się, że w ogóle coś się stało. preventScroll, bo pozycję już ustawiliśmy.
+  try { if (typeof el.focus === 'function') el.focus({ preventScroll: true }); } catch { }
+}
+
+const wPozniej = (fn) => { try { if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fn); else fn(); } catch { } };
+
+/* Przejście do kroku przebiegu. Trzy rzeczy, których nie wolno pominąć:
+   1) ten sam strażnik trwającego manewru, co w goArea (repozycja to procedura na pacjencie);
+   2) BRAMKA DANYCH — stepTarget nigdy nie zwraca ekranu, którego stan nie udźwignie. renderDiag
+      czyta DIAG[state.testKey].canal, renderGuide czyta plan.steps[step]; przy pustym stanie
+      leci TypeError PRZED przypisaniem innerHTML, więc ekran nie drgnie, a każdy kolejny render()
+      rzuca to samo — aplikacja zablokowana do przeładowania, i to bez śladu w konsoli, bo powłoka
+      ma puste catch;
+   3) wyjście z zaślepki „Nauka" — tam #app jest fizycznie hidden, więc samo ustawienie screen
+      nic by nie dało. */
+export function goFlowStep(id) {
+  try {
+    const cel = stepTarget(state, id);
+    if (!cel) return;                                     // krok w przygotowaniu — nie udajemy nawigacji
+    const idz = () => {
+      if (state.area !== 'diag') applyArea('diag');
+      if (state.screen === 'guide') { state.running = false; A.releaseWake && A.releaseWake(); }
+      state.mode = cel.mode;
+      state.screen = cel.screen;
+      state.stepMapOpen = false;
+      closeFlowMap();
+      A.render && A.render();
+      syncShell();
+      if (cel.anchor) wPozniej(() => scrollToAnchor(cel.anchor));
+    };
+    if (state.screen === 'guide' && state.running) { askLeave(idz); return; }
+    idz();
+  } catch { /* powłoka nie ma prawa wywalić aplikacji */ }
+}
+
+function statusLabel(k) { const d = FLOW_STATUS[k] || {}; return t(d.pl || '', d.en || ''); }
+
+// Jeden krok. Status niesiony GLIFEM i słowem w dostępnej nazwie, nie samym kolorem — ta sama
+// zasada, co w a11y.css („STAN NIGDY SAMYM KOLOREM"). aria-disabled, NIGDY disabled: krok
+// niedostępny ma zostać fokusowalny, żeby dało się przeczytać powód.
+function flowStepHTML(st, sr, i) {
+  const def = flowStep(st.id) || {};
+  const nazwa = t(def.pl, def.en);
+  const nieklikalny = !st.osiagalny;
+  const glif = (FLOW_STATUS[st.status] || {}).glif || '';
+  return `<li class="flowstep flowstep--${st.status}">
+      <button type="button" class="flowstep__btn" data-flow-step="${st.id}"
+              ${st.active ? 'aria-current="step"' : ''} ${nieklikalny ? 'aria-disabled="true"' : ''}
+              title="${st.powodPl || st.powodEn ? t(st.powodPl, st.powodEn) : nazwa}">
+        <span class="flowstep__n" aria-hidden="true">${glif || (i + 1)}</span>
+        <span class="flowstep__txt">
+          <b class="flowstep__name">${nazwa}</b>
+          <span class="flowstep__st">${statusLabel(st.status)}</span>
+        </span>
+      </button></li>`;
+}
+
+// Pełna mapa (nakładka na telefonie): to samo źródło statusów + uzasadnienia, których na pasku
+// nie ma gdzie pokazać.
+function flowMapHTML(lista) {
+  const nast = nextStepId(state, FD);
+  return `<div class="card sheet__panel" role="dialog" aria-modal="true" aria-label="${t('Przebieg badania', 'Examination flow')}">
+      <h2>${t('Przebieg badania', 'Examination flow')}</h2>
+      <ol class="flowmap__list">${lista.map((st, i) => {
+        const def = flowStep(st.id) || {};
+        const powod = st.powodPl || st.powodEn ? `<span class="flowmap__why">${t(st.powodPl, st.powodEn)}</span>` : '';
+        const glif = (FLOW_STATUS[st.status] || {}).glif || '';
+        return `<li class="flowmap__row flowstep--${st.status}">
+          <button type="button" class="flowmap__btn" data-flow-step="${st.id}"
+                  ${st.active ? 'aria-current="step"' : ''} ${st.osiagalny ? '' : 'aria-disabled="true"'}>
+            <span class="flowstep__n" aria-hidden="true">${glif || (i + 1)}</span>
+            <span class="flowmap__txt">
+              <b>${t(def.pl, def.en)}</b>
+              <span class="flowmap__st">${statusLabel(st.status)}${st.id === nast ? ` · ${t('następny krok', 'next step')}` : ''}</span>
+              <span class="flowmap__desc">${t(def.plDesc, def.enDesc)}</span>
+              ${powod}
+            </span></button></li>`;
+      }).join('')}</ol>
+      <button type="button" class="cta" data-flowmap-close>${t('Zamknij', 'Close')}</button>
+    </div>`;
+}
+
+function openFlowMap() {
+  const m = $('#flowmap'); if (!m) return;
+  state.stepMapOpen = true;
+  m.hidden = false;
+  const f = m.querySelector('button'); if (f) { try { f.focus(); } catch { } }
+}
+function closeFlowMap() {
+  const m = $('#flowmap'); if (m) m.hidden = true;
+  state.stepMapOpen = false;
+  const s = $('#flowsum'); if (s) s.setAttribute('aria-expanded', 'false');
+}
+
+export function mountFlow(deps = {}) {
+  FD = { ...FD, ...deps };
+  try {
+    const nav = $('#flownav');
+    if (nav) nav.setAttribute('aria-label', t('Przebieg badania', 'Examination flow'));
+    // Delegacja zdarzeń: lista jest przebudowywana przy każdej zmianie stanu, więc podpinanie
+    // handlerów do pojedynczych przycisków wymagałoby powtarzania tego po każdym renderze.
+    const klik = (e) => {
+      const b = e.target && e.target.closest ? e.target.closest('[data-flow-step]') : null;
+      if (b) {
+        if (b.getAttribute('aria-disabled') === 'true') { openFlowMap(); return; }   // pokaż POWÓD zamiast milczeć
+        goFlowStep(b.getAttribute('data-flow-step')); return;
+      }
+      if (e.target && e.target.closest && e.target.closest('[data-flowmap-close]')) closeFlowMap();
+    };
+    const bar = $('#flowbar'), map = $('#flowmap');
+    if (bar) bar.addEventListener('click', klik);
+    if (map) {
+      map.addEventListener('click', (e) => { if (e.target === map) { closeFlowMap(); return; } klik(e); });
+    }
+    syncFlow();
+  } catch { /* jw. */ }
+}
+
+/* Przebudowa paska. Wołana z syncShell, czyli po każdej zmianie podpisu stanu. */
+export function syncFlow() {
+  try {
+    const bar = $('#flowbar'); if (!bar) return;
+    const widoczny = flowVisible(state);
+    bar.hidden = !widoczny;
+    if (!widoczny) {
+      closeFlowMap();
+      // Czyścimy treść, a nie tylko chowamy. Pasek ukryty z zawartością poprzedniego badania
+      // trzyma w DOM cudzy przebieg („Manewr: Semont — zakończony") razem z ostrzeżeniem, które
+      // odżyje w chwili powrotu do ścieżki klinicznej, zanim cokolwiek je przeliczy.
+      const ol0 = $('#flowsteps'); if (ol0) ol0.innerHTML = '';
+      const s0 = $('#flowsum'); if (s0) s0.remove();
+      const a0 = $('#flowalert'); if (a0) { a0.hidden = true; a0.innerHTML = ''; }
+      return;
+    }
+
+    const lista = flowStatuses(state, FD);
+    const ol = $('#flowsteps');
+    if (ol) {
+      // Zapamiętanie fokusu: lista jest przebudowywana w całości, a bez tego dotknięcie kroku
+      // klawiaturą gubiłoby fokus na <body> i nawigacja Tab zaczynałaby od początku strony.
+      const akt = document.activeElement;
+      const fokusKrok = akt && akt.getAttribute ? akt.getAttribute('data-flow-step') : null;
+      const sum = stepSummary(state, state.lang);
+      ol.innerHTML = lista.map((st, i) => flowStepHTML(st, sum, i)).join('');
+      // Skrót na telefon — ten sam DOM, o widoczności decyduje CSS (jedno źródło statusów).
+      const podpis = sum
+        ? `${t('Krok', 'Step')} ${sum.nr} ${t('z', 'of')} ${sum.total} — ${sum.label}`
+        : t('Przebieg badania', 'Examination flow');
+      let s = $('#flowsum');
+      if (!s) {
+        s = document.createElement('button');
+        s.type = 'button'; s.className = 'flowsum'; s.id = 'flowsum';
+        s.setAttribute('aria-controls', 'flowmap');
+        s.addEventListener('click', () => { if (state.stepMapOpen) closeFlowMap(); else { openFlowMap(); s.setAttribute('aria-expanded', 'true'); } });
+        const nav = $('#flownav'); if (nav) nav.insertBefore(s, nav.firstChild);
+      }
+      s.setAttribute('aria-expanded', String(!!state.stepMapOpen));
+      s.innerHTML = `<span class="flowsum__txt">${podpis}</span><span class="flowsum__more" aria-hidden="true">▾</span>`;
+      s.setAttribute('aria-label', `${podpis} — ${t('pokaż pełną mapę kroków', 'show the full step map')}`);
+      if (fokusKrok) { const znowu = ol.querySelector(`[data-flow-step="${fokusKrok}"]`); if (znowu) { try { znowu.focus(); } catch { } } }
+    }
+
+    // Pasek ostrzeżenia. To jedyne miejsce, w którym kryterium odbioru nr 2 dociera do ekranu.
+    const man = lista.find(x => x.id === 'maneuver');
+    const al = $('#flowalert');
+    if (al) {
+      const powody = man && man.status === 'stale'
+        ? (man.drift.length ? man.drift.map(d => t(d.pl, d.en)) : [t(man.powodPl, man.powodEn)])
+        : [];
+      if (powody.length) {
+        const m = state.flow && state.flow.maneuver;
+        al.hidden = false;
+        al.innerHTML = `<b class="flowalert__ttl">⟳ ${t('Wniosek wymaga ponownego przeliczenia', 'The conclusion needs recalculation')}</b>
+          <span class="flowalert__txt">${t('Wybrany manewr', 'The chosen maneuver')}${m ? ` (${m.key})` : ''}: ${powody.join('; ')}.</span>
+          <button type="button" class="flowalert__go" data-flow-step="interpret">${t('Wróć do interpretacji', 'Back to interpretation')}</button>`;
+      } else { al.hidden = true; al.innerHTML = ''; }
+    }
+    // Mapa przebudowuje się tylko wtedy, gdy jest otwarta — inaczej niepotrzebnie pracujemy.
+    const map = $('#flowmap');
+    if (map && !map.hidden) map.innerHTML = flowMapHTML(lista);
+  } catch { /* jw. */ }
+}
+
+// Po zmianie języka etykiety kroków muszą się przebudować — patrz rebuildNavLabels.
+export function rebuildFlowLabels() { syncFlow(); }
+
 /* ============ Synchronizacja stanu → powłoka ============ */
 
 // Odbija stan na atrybutach powłoki (CSS i późniejsza nawigacja czytają je selektorami).
@@ -201,9 +436,12 @@ function rebuildNavLabels() {
 // jawne pierwszeństwo state.area, gdy zaślepka jest widoczna.
 function areaZeStanu() {
   if (state.area === 'learn') return 'learn';
+  if (state.screen === 'start') return 'start';
   if (state.mode === 'hints') return state.hintsCustom ? 'lab' : 'diag';
-  if (state.mode === 'diag') return 'diag';
-  return 'start';
+  // Repozycja (tryb treat) NIE jest osobnym obszarem: dokument umieszcza manewry wewnątrz
+  // ścieżki klinicznej („Diagnostyka — BPPV krok po kroku … i czerwone flagi"). Podświetlanie
+  // przy niej „Start" sugerowałoby, że użytkownik jest na ekranie startowym, a nie w module.
+  return 'diag';
 }
 
 export function syncShell() {
@@ -223,8 +461,22 @@ export function syncShell() {
       b.setAttribute('aria-current', akt ? 'page' : 'false');
       b.classList.toggle('is-active', akt);
     });
+    syncFlow();                         // pasek przebiegu odbija ten sam stan (Blok 5)
   } catch { /* jw. */ }
 }
+
+// Jedno wejście dla zmiany języka. Były DWIE ścieżki i tylko jedna odświeżała powłokę: arkusz
+// Profilu wołał rebuildNavLabels ręcznie, a górny pasek #langbar (onclick="setLangUI(...)"
+// w index.html) nie wołał nic — po przełączeniu na EN podtytuł marki, „Przejdź do treści",
+// etykiety nawigacji i cały pasek przebiegu zostawały po polsku. mountShell wypełnia napisy
+// przez t() tylko RAZ, na boocie, więc musi zostać wywołane ponownie.
+export function onLangChange() {
+  try { mountShell(); rebuildNavLabels(); rebuildFlowLabels(); syncSheet(); } catch { /* jw. */ }
+}
+// Wystawione globalnie, a nie importowane przez actions.js: powłoka ma zostać LIŚCIEM grafu.
+// actions.js woła to przez window.__otoLangChange (guard w środku), więc w gołym Node nic się
+// nie dzieje i tools/bridge-check.mjs dalej importuje actions.js bez powłoki.
+if (typeof window !== 'undefined') window.__otoLangChange = onLangChange;
 
 /* ============ Obserwatory ============ */
 
@@ -272,10 +524,17 @@ export function initShellObservers(deps = {}) {
     // Powłoka musi nadążać za ekranem, ale aplikacja nie ma żadnego zdarzenia „przerysowano".
     // Zamiast dopisywać syncShell() do kilkunastu miejsc (goStep, setGuideSide, pickSize,
     // backToSetup…) i zapominać o kolejnych — obserwujemy podmianę treści #app.
+    // BRAMKA MUSI OBEJMOWAĆ WSZYSTKO, CO POWŁOKA POKAZUJE. Poprzednia wersja porównywała
+    // `screen|mode|step|side|area` — czyli ani jednego pola, na którym stoi wykrywanie
+    // nieaktualnych wniosków (testKey, variant, dixObs, diagCentral, decisionSeq, flow.*).
+    // Skutek byłby taki, że klinicysta przełącza na „Ośrodkowy — CPN", #app się przerysowuje,
+    // a pasek przebiegu nie drga: kryterium odbioru Bloku 5 nigdy nie docierałoby do ekranu.
+    // Podpis liczy teraz CZYSTA funkcja flowSignature, pilnowana przez tools/flow-check.mjs
+    // (każde pole musi go zmieniać — dowiedzione failing-first).
     if (app && typeof MutationObserver === 'function') {
       let last = '';
       new MutationObserver(() => {
-        const sig = `${state.screen}|${state.mode}|${state.step}|${state.side}|${state.area}`;
+        const sig = flowSignature(state);
         if (sig === last) return;                      // ta sama sygnatura → nic do odbicia
         last = sig;
         syncShell();

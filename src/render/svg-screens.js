@@ -6,6 +6,7 @@ import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, n
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
+import { markDecision, markSeen } from '../app/flow-state.js';
 import { t } from '../i18n.js';
 const tr = t;   // alias tlumaczenia dla funkcji HINTS z lokalnym 't' (string/param) — 'tr' (modul-scope) NIE jest przeslaniany, wiec nie koliduje w bundlu
 
@@ -738,10 +739,95 @@ function sizeFlip(id="flip"){ const f=$("#"+id); if(!f) return; let h=0;
 /* ============ Render ============ */
 function render(){
   cancelAnims();
-  if(state.screen==="setup") renderSetup();
+  if(state.screen==="start") renderStart();
+  else if(state.screen==="setup") renderSetup();
   else if(state.screen==="guide") renderGuide();
   else if(state.screen==="hints") renderHints();
   else renderDiag();
+}
+
+/* ============ Ekran startowy oparty na CELU użytkownika (Blok 4) ============
+   Dotąd wejściem był wybór MODUŁU aplikacji (zakładki Repozycja/Diagnostyka/HINTS), co wymagało
+   od użytkownika wiedzy, jak nazywa się szuflada, w której leży to, czego szuka. Ten ekran pyta
+   o SYTUACJĘ KLINICZNĄ i sam prowadzi do właściwego modułu.
+
+   Ważne: żadne wejście nie prowadzi donikąd i żadne nie obiecuje funkcji, której nie ma. Pozycja
+   „Mam wynik próby" celuje w ekran testu, bo TAM istnieje wprowadzanie zaobserwowanego oczopląsu
+   (.obsrow) i klasyfikacja Bárány; pełny krok „Interpretacja" jako osobny etap to Blok 9.
+
+   Wyrocznia: domOracle ustawia state.screen jawnie dla każdego scenariusza (snapshot.mjs:305),
+   więc dołożenie NOWEGO ekranu nie zmienia żadnego z 91 przypiętych kluczy.
+   Handlery wołane przez powierzchnię globalną (window) — ten sam wzorzec, co reszta onclick
+   w tym pliku; dzięki temu moduł nie musi importować actions.js i nie powstaje cykl. */
+// Szybkie wejście z ekranu startowego: przełącz moduł I OPUŚĆ ekran startowy. Samo setMode nie
+// wystarcza — zmienia tryb, ale render() zostaje przy screen="start", więc dotknięcie karty
+// wyglądałoby na nieskuteczne.
+function startGo(mode){ state.mode=mode; state.screen="setup"; render(); }
+function startQuick(n, ico, tytul, opis, akcja){
+  return `<li><button type="button" class="quick" onclick="${akcja}">
+      <span class="quick__n" aria-hidden="true">${n}</span>
+      <span class="quick__ico" aria-hidden="true">${ico}</span>
+      <span class="quick__txt"><b>${tytul}</b><small>${opis}</small></span>
+      <span class="quick__go" aria-hidden="true">›</span></button></li>`;
+}
+function renderStart(){
+  const I = {
+    poz:  '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="6" r="2.6" stroke="currentColor" stroke-width="1.8"/><path d="M6 20c0-3.6 2.7-6 6-6s6 2.4 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 9.5 6.5 7M20 9.5 17.5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    czas: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    oko:  '<svg viewBox="0 0 24 24" fill="none"><path d="M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.8"/></svg>',
+    cel:  '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7.5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    uwaga:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 4.5 21 19.5H3L12 4.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4M12 16.6v.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+    lek:  '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="6.2" r="2.8" stroke="currentColor" stroke-width="1.8"/><path d="M7 11.5v3.2a5 5 0 0 0 10 0v-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>',
+    ucz:  '<svg viewBox="0 0 24 24" fill="none"><path d="M3 8.5 12 4.5l9 4-9 4-9-4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M6.5 10.5v5c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  };
+  $("#app").innerHTML=`
+    <section class="startpage">
+      <h2 class="starth">${t("Wybierz tryb","Choose a mode")}</h2>
+      <div class="modecards">
+        <button type="button" class="modecard modecard--clin" onclick="goArea('diag')">
+          <span class="modecard__ico" aria-hidden="true">${I.lek}</span>
+          <span class="modecard__txt"><b>${t("Badam pacjenta","Examining a patient")}</b>
+            <small>${t("Tryb kliniczny dla lekarzy i praktyków","Clinical mode for physicians and practitioners")}</small></span>
+          <span class="modecard__go" aria-hidden="true">›</span></button>
+        <button type="button" class="modecard" onclick="goArea('learn')">
+          <span class="modecard__ico" aria-hidden="true">${I.ucz}</span>
+          <span class="modecard__txt"><b>${t("Uczę się","Learning")}</b>
+            <small>${t("Tryb edukacyjny dla studentów i lekarzy","Educational mode for students and physicians")}</small></span>
+          <span class="modecard__go" aria-hidden="true">›</span></button>
+      </div>
+
+      <div class="pagegrid startgrid">
+        <div class="col col--ctl">
+          <h2 class="starth">${t("Co chcesz zrobić?","What do you want to do?")}</h2>
+          <ul class="quicklist">
+            ${startQuick(1, I.poz,  t("Zawroty po zmianie pozycji","Vertigo after a change of position"),
+                             t("Diagnostyka BPPV krok po kroku","Step-by-step BPPV work-up"), "startGo('diag')")}
+            ${startQuick(2, I.czas, t("Ciągłe zawroty od godzin lub dni","Continuous vertigo for hours or days"),
+                             t("Kwalifikacja do HINTS / HINTS+","Qualification for HINTS / HINTS+"), "startGo('hints')")}
+            ${startQuick(3, I.oko,  t("Mam wynik próby","I have a test result"),
+                             t("Opis oczopląsu i klasyfikacja","Nystagmus description and classification"), "startGo('diag')")}
+            ${startQuick(4, I.cel,  t("Znam kanał i stronę","I know the canal and the side"),
+                             t("Szybki wybór manewru","Quick maneuver selection"), "startGo('treat')")}
+            ${startQuick(5, I.uwaga,t("Przypadek nietypowy","Atypical case"),
+                             t("Różnicowanie i czerwone flagi","Differentiation and red flags"), "startGo('hints')")}
+          </ul>
+        </div>
+        <div class="col col--viz">
+          <div class="card startaside">
+            <h4>${t("Zakres narzędzia","Scope of the tool")}</h4>
+            <ul class="startscope">
+              <li><b>${t("Repozycja","Repositioning")}</b> — ${t("manewry i protokoły","maneuvers and protocols")}</li>
+              <li><b>${t("Diagnostyka","Diagnostics")}</b> — ${t("testy pozycyjne, oczopląs, klasyfikacja Bárány","positional tests, nystagmus, Bárány classification")}</li>
+              <li><b>HINTS</b> — ${t("różnicowanie obwód ↔ ośrodek","peripheral ↔ central differentiation")}</li>
+              <li><b>${t("Laboratorium","Laboratory")}</b> — ${t("matematyczny pacjent (parametry fizjologii)","mathematical patient (physiology parameters)")}</li>
+            </ul>
+            <p class="note">${t("Oczopląs i czasy wynikają z symulacji fizyki złogu, nie z ręcznych adnotacji.","Nystagmus and timings follow from a physical simulation of the debris, not from manual annotations.")}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="disclaimer">${t('<b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem.','<b>Support tool for medical staff.</b> Does not replace examination, diagnosis, or clinician judgment. Nystagmus timings and patterns are illustrative — verify against your own protocol.')}</div>
+    </section>`;
 }
 
 function renderSetup(){
@@ -947,7 +1033,12 @@ function diagClassifyCard(canal, v, side, antMode){
         <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-cpnnys>${eyesSVG()}</div><span class="emk">L</span></div>
         <div class="nyslabel"><span class="arrow">↓</span><span>${t("downbeat · uporczywy · bez latencji","downbeat · persistent · no latency")}</span></div></div>
       <div class="note" style="color:var(--text)">${t('<b>Postępowanie:</b> NIE wykonuj repozycji. Skieruj na ocenę neurologiczną + MRI tylnego dołu (móżdżek, pogranicze szczytowo-potyliczne: malformacja Chiariego; SM; zmiany naczyniowe). Najczęstszy łagodny mimik: <b>migrena przedsionkowa</b> (ośrodkowy oczopląs pozycyjny w napadzie).','<b>Management:</b> Do NOT perform repositioning. Refer for neurological evaluation + MRI of the posterior fossa (cerebellum, craniocervical junction: Chiari malformation; MS; vascular lesions). The most common benign mimic: <b>vestibular migraine</b> (central positional nystagmus during an attack).')}</div>`;
-  return `<div class="card" style="margin-top:12px">
+  // data-flow-anchor + tabindex: cel przewijania dla kroku „Interpretacja" w pasku przebiegu
+  // (Blok 5). Kotwica MUSI być w markupie, a nie doczepiana po renderze: doczepianie działałoby
+  // tylko dlatego, że wyrocznia czyta innerHTML synchronicznie i nie widzi rAF — czyli opierałoby
+  // bezpieczeństwo na tym, czego golden NIE obejmuje. tabindex="-1" jest konieczny, żeby po
+  // przewinięciu dało się przenieść fokus (czytnik ekranu musi wiedzieć, gdzie wylądował).
+  return `<div class="card" style="margin-top:12px" data-flow-anchor="interpret" tabindex="-1">
       <div class="obslabel" style="margin-bottom:8px">${t("Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe","Bárány classification (ICVD) and central differentiation")}</div>
       ${seg}${central?cpn:bppv}</div>`;
 }
@@ -1017,8 +1108,8 @@ function renderDiag(){
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
-    <div class="card" style="margin-bottom:4px"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
-    ${isDix ? `<div class="obsrow"><div class="obslabel">${t("Zaobserwowany oczopląs w Dix-Hallpike:","Observed nystagmus in the Dix-Hallpike:")}</div>
+    <div class="card" style="margin-bottom:4px" data-flow-anchor="test" tabindex="-1"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
+    ${isDix ? `<div class="obsrow" tabindex="-1"><div class="obslabel">${t("Zaobserwowany oczopląs w Dix-Hallpike:","Observed nystagmus in the Dix-Hallpike:")}</div>
       <div class="seg segobs">
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
@@ -1035,7 +1126,7 @@ function renderDiag(){
         <div data-diagcanal="${v0}">${diagCanalSVG(effCanal)}</div>
         <div class="features">${D.features(v0).map(f=>`<span>${f}</span>`).join("")}</div>
         <div class="note">${note(v0)}</div>
-        <div class="note" style="color:var(--text)"><b>${t("Interpretacja:","Interpretation:")}</b> ${interp(v0)}</div>`;
+        <div class="note" style="color:var(--text)"><b>${t("Lateralizacja:","Lateralization:")}</b> ${interp(v0)}</div>`;
       return `<div class="flipwrap" style="margin-top:12px"><div class="flip ${v==='cupulo'?'flipped':''}" id="mechflip" role="button" tabindex="0" aria-label="${t('Odwróć kartę mechanizmu: kanalolitiaza albo kupulolitiaza','Flip the mechanism card: canalithiasis or cupulolithiasis')}" onclick="flipDiagMech()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipDiagMech();}">
         <div class="face front panelbox">${face("canalo")}<div class="fliphint">${FLIP_ICO} ${t("kupulolitiaza","cupulolithiasis")}</div></div>
         <div class="face back panelbox">${face("cupulo")}<div class="fliphint">${FLIP_ICO} ${t("kanalolitiaza","canalithiasis")}</div></div>
@@ -1589,7 +1680,13 @@ function flipDiagMech(){
   const c=$("#mechflip"); if(c) c.classList.toggle("flipped");
   state._mechTO=setTimeout(()=>{ state._mechTO=null;
     if(state.screen!=="diag") return;                      // użytkownik opuścił diagnostykę (Wróć / zmiana ekranu) → nie wymuszaj zmiany wariantu ani re-renderu
-    state.variant = state.variant==="canalo"?"cupulo":"canalo"; render(); }, 500);
+    // Odwrócenie karty mechanizmu to ŚWIADOMA decyzja interpretacyjna (kanalolitiaza ↔
+    // kupulolitiaza), a od niej zależy zalecany manewr — musi więc iść przez ten sam zapis,
+    // co przełącznik „obwodowy ↔ ośrodkowy", inaczej wcześniej wybrany manewr zostałby
+    // niezauważenie nieaktualny. [Blok 5]
+    markDecision(state,"variant", state.variant==="canalo"?"cupulo":"canalo");
+    markSeen(state,"interpretSeen");
+    render(); }, 500);
 }
 // Diagnostyka: para pozycji (Roll: ucho L/P w dole; Bow-Lean: skłon/odchylenie) jako flip — czysto wizualny
 // (obie pozycje stale w DOM, animacje per-indeks działają niezależnie).
@@ -1598,6 +1695,7 @@ function flipPhases(){
   state.diagPhaseFace = state.diagPhaseFace ? 0 : 1;          // utrwal fazę w stanie → przetrwa re-render (przełącznik 3D nie przewraca karty)
   c.classList.toggle("flipped", state.diagPhaseFace===1);     // klasa zgodna ze stanem (płynna animacja flip zostaje)
   const i = state.diagPhaseFace;                              // odsłonięta pozycja (front=0 / back=1)
+  markSeen(state,"obsSeen");                                  // odwrócenie pary pozycji = oglądanie oczopląsu w obu ułożeniach [Blok 5]
   const nys=(state._diagPhaseNys||[])[i]; if(!nys) return;
   // odwrócenie karty = zmiana pozycji pacjenta → odtwórz oczopląs od początku (latencja → narost → wygasanie)
   const fr=$(`[data-nys="${i}"]`); if(fr) startNys(fr, nys);
@@ -1609,8 +1707,8 @@ function sideSel(current, fn, lbl){
   return `<div class="sidesel"><span class="lbl">${lbl}</span><div class="tabs">${opt('L')}${opt('P')}</div></div>`;
 }
 
-export { FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
+export { renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });
+Object.assign(window, { startGo, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });

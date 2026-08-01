@@ -47,7 +47,13 @@ const TARGET = resolve(ROOT, optVal('--target') || 'otorepo.html');  // monolit 
 // bo nowy DOM JEST produktem tej przebudowy. Rozdzielenie daje niezależną bramkę regresji silnika
 // (Blok 18: „nowy interfejs nie zmienia wyników istniejącego silnika symulacji"), która nie tonie
 // w szumie zmienionego markupu. Zapis golden (bez --check) zawsze zapisuje komplet warstw.
-const ALL_LAYERS = ['engine', 'pose', 'dom'];
+// Warstwa `shell` (Blok 5) pina CHROM POZA #app: pasek marki, nawigację i pasek przebiegu
+// klinicznego. Powstała, bo „golden-safe" zaczęło znaczyć „bez żadnej bramki": domOracle czyta
+// wyłącznie #app.innerHTML, bridge/view nie budują DOM powłoki, a flow:check testuje czysty
+// model. W shell.js siedzi kilkanaście pustych `catch {}`, więc wyjątek w budowie steppera
+// zostałby połknięty lokalnie i NIE dotarłby nawet do twardej bramki loadErrors — komplet
+// wyroczni na zielono, a jedynego nowego artefaktu bloku nie ma na ekranie.
+const ALL_LAYERS = ['engine', 'pose', 'dom', 'shell'];
 const LAYERS = (() => {
   const raw = optVal('--layers');
   if (!raw) return ALL_LAYERS;
@@ -106,6 +112,9 @@ const HANDLE_NAMES = [
   'startManeuver', 'setGuideSide', 'openTest', 'setDiagSide', 'setDixObs', 'setVariant',
   'openHints', 'loadHintsPreset', 'loadHintsNeuritis', 'openHintsCustom', 'exitHintsCustom',
   'setHintsFix', 'setHintsGaze', 'setHintsNerveEar', 'setHintsNerveBranch', 'setHintsNerveSev',
+  // Blok 5 — potrzebne warstwie `shell`. Brak któregokolwiek = handleMissing = twardy exit(1),
+  // czyli sytuacja „powłoka przestała być sterowalna z testu" jest błędem, a nie cichą degradacją.
+  'goArea', 'syncShell', 'toggleDiagCentral',
 ];
 function makeHandle(win) {
   if (win.__OTOREPO_TEST__) return win.__OTOREPO_TEST__;
@@ -361,6 +370,81 @@ function domOracle(h, win) {
   return out;
 }
 
+/* Warstwa `shell` — chrom powłoki dla kilku charakterystycznych stanów.
+   Poddrzewo #app jest WYCINANE: jego treść pilnuje domOracle, a dublowanie jej tutaj zamieniłoby
+   każdą zmianę ekranu w podwójny szum. Zostaje to, czego nie widzi żadna inna warstwa: pasek
+   marki, nawigacja, pasek przebiegu, ostrzeżenie o nieaktualnym wniosku i atrybuty data-* na
+   .shell, przez które CSS steruje układem. */
+function shellOracle(h, win) {
+  const out = {};
+  const doc = win.document;
+  const zrzut = () => {
+    const sh = doc.getElementById('shell');
+    if (!sh) return 'BRAK #shell';
+    const app = doc.getElementById('app');
+    let zapamietane = null;
+    if (app) { zapamietane = app.innerHTML; app.innerHTML = '<!--APP-->'; }
+    let s;
+    try { s = sh.outerHTML; } finally { if (app) app.innerHTML = zapamietane; }
+    const mapa = doc.getElementById('flowmap');
+    return s + (mapa && !mapa.hidden ? '\n@@FLOWMAP@@' + mapa.outerHTML : '');
+  };
+  const grab = (tag, fn) => { try { fn(); out[tag] = zrzut(); } catch (e) { out[tag] = 'ERR:' + e.message; } };
+  const st = h.state;
+  const czysty = () => {
+    if (!st) return;
+    st.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
+    st.decisionSeq = 0; st.diagCentral = false; st.variant = 'canalo'; st.dixObs = 'post';
+    st.stepMapOpen = false; st.running = false; st.step = 0;
+  };
+
+  grab('start', () => { czysty(); h.goArea && h.goArea('start'); });
+  grab('diag/dix/P', () => { czysty(); h.goArea && h.goArea('diag'); h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P'); h.syncShell && h.syncShell(); });
+  grab('diag/roll/P', () => { czysty(); h.openTest && h.openTest('roll'); h.syncShell && h.syncShell(); });
+  // Stan ZGODNY: Dix-Hallpike + kanalolitiaza → Epley jest manewrem pierwszego rzutu, więc pasek
+  // NIE MOŻE pokazywać ostrzeżenia. Fałszywy alarm jest tu równie groźny jak brak alarmu — pasek,
+  // który krzyczy zawsze, przestaje być czytany.
+  grab('guide/epley/P', () => { czysty(); h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P'); h.startManeuver && h.startManeuver('epley'); h.syncShell && h.syncShell(); });
+  grab('learn', () => { czysty(); h.goArea && h.goArea('learn'); });
+  grab('hints', () => { czysty(); h.goArea && h.goArea('lab'); });
+  // NAJWAŻNIEJSZY stan bloku: manewr wybrany z rekomendacji, po czym zmieniony mechanizm.
+  // Pasek MUSI wtedy pokazać „wymaga ponownego przeliczenia" wraz z powodem.
+  grab('stale/mechanizm', () => {
+    czysty();
+    h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('dix');
+    h.startManeuver && h.startManeuver('epley');
+    h.setVariant && h.setVariant('cupulo');
+    h.syncShell && h.syncShell();
+  });
+  // Ostrzeżenie NIE MOŻE zgasnąć przez samą nawigację (openTest po cichu przywraca diagCentral).
+  grab('stale/cpn-po-nawigacji', () => {
+    czysty();
+    h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('dix');
+    h.startManeuver && h.startManeuver('epley');
+    h.toggleDiagCentral && h.toggleDiagCentral(true);
+    h.openTest && h.openTest('dix');
+    h.syncShell && h.syncShell();
+  });
+  // Obejście przez INNĄ próbę: openTest('roll') zeruje diagCentral, a powrót na 'dix' przywraca
+  // komplet pól odcisku do wartości wyjściowych. Binarne porównanie pól melduje wtedy „wniosek
+  // zgodny" u pacjenta oznaczonego jako podejrzany o przyczynę ośrodkową — to najgroźniejszy
+  // fałszywy negatyw tego bloku. Ratuje go MONOTONICZNY licznik decyzji.
+  grab('stale/cpn-obejscie-inna-proba', () => {
+    czysty();
+    h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('dix');
+    h.startManeuver && h.startManeuver('epley');
+    h.toggleDiagCentral && h.toggleDiagCentral(true);
+    h.openTest && h.openTest('roll');
+    h.openTest && h.openTest('dix');
+    h.syncShell && h.syncShell();
+  });
+  czysty();
+  return out;
+}
+
 // ---- collect all ------------------------------------------------------------
 async function collect() {
   const { win, errs, label } = await loadApp();
@@ -381,6 +465,8 @@ async function collect() {
   const engine = engineOracle(h, win);
   const pose = poseOracle(h);
   const dom = domOracle(h, win);
+  // shell PO dom: obie warstwy mutują stan, a dom jest starsza i ma pierwszeństwo w kolejności.
+  const shell = shellOracle(h, win);
   const meta = {
     target: label,
     loadErrors: errs,
@@ -391,10 +477,11 @@ async function collect() {
       dyn: Object.keys(engine.dyn || {}).length,
       pose: Object.keys(pose).length,
       dom: Object.keys(dom).length,
+      shell: Object.keys(shell).length,
     },
-    domErr: Object.entries(dom).filter(([, v]) => typeof v === 'string' && v.startsWith('ERR:')).map(([k]) => k),
+    domErr: Object.entries({ ...dom, ...shell }).filter(([, v]) => typeof v === 'string' && v.startsWith('ERR:')).map(([k]) => k),
   };
-  return { engine, pose, dom, _meta: meta };
+  return { engine, pose, dom, shell, _meta: meta };
 }
 
 // ---- write / check ----------------------------------------------------------

@@ -2,13 +2,13 @@
 import { Vestibular } from './engine/vestibular.js';
 import { Scene3D } from './engine/scene3d.js';
 import { NeuroVOR } from './engine/neuro-vor.js';
-import { MANEUVERS, CANALS, stepGravity, stepHeadQ, composeHead, TORSO_Q, bodyJoints, poseSpec, gravArrowFor, DIAG, CANAL_OF } from './pose/maneuvers.js';
+import { MANEUVERS, CANALS, stepGravity, stepHeadQ, composeHead, TORSO_Q, bodyJoints, poseSpec, gravArrowFor, DIAG, CANAL_OF, recommend } from './pose/maneuvers.js';
 import { state } from './app/state.js';
 import { render, webglAvailable, sizeFlip } from './render/svg-screens.js';
-import { openHints, setHintsFix, setHintsGaze, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, loadHintsFromHash, openTest, setDixObs, setVariant, genPlan, setGuideSide, setDiagSide, startManeuver, syncLangBar, setMode, setLangUI } from './app/actions.js';
+import { openHints, setHintsFix, setHintsGaze, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, loadHintsFromHash, openTest, setDixObs, setVariant, toggleDiagCentral, genPlan, setGuideSide, setDiagSide, startManeuver, syncLangBar, setMode, setLangUI } from './app/actions.js';
 import { initLang } from './i18n.js';
 import { releaseWake } from './runtime/registry.js';
-import { mountShell, syncShell, initShellObservers, mountNav, goArea, setReducedMotion } from './app/shell.js';
+import { mountShell, syncShell, initShellObservers, mountNav, mountFlow, goArea, goFlowStep, setReducedMotion } from './app/shell.js';
 
 // Etap 5: 3D jest DOMYŚLNYM rendererem karty „Ułożenie" tam, gdzie WebGL działa.
 // Ustawiane raz na boot (NIE w literale state.js) — jsdom/harness bez WebGL → view3d=false → SVG → golden bez zmian.
@@ -23,6 +23,11 @@ if(/[#&]p=/.test(location.hash) && loadHintsFromHash()){ state.mode="hints"; sta
 mountShell();
 // Nawigacja (Blok 3). Akcje wstrzykiwane, żeby shell.js pozostał liściem grafu importów.
 mountNav({ setMode, openHintsCustom, setLangUI, render, releaseWake });
+// Pasek przebiegu klinicznego (Blok 5). Wiedza kliniczna WSTRZYKIWANA: src/app/flow-model.js jest
+// celowo bezimportowy (wyrocznia tools/flow-check.mjs importuje go w gołym Node), a powłoka ma
+// zostać liściem grafu renderowania. Dzięki wstrzyknięciu zgodność wybranego manewru z bieżącą
+// interpretacją liczy PRAWDZIWY silnik, a nie kopia reguł, która mogłaby się z nim rozjechać.
+mountFlow({ recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[k] || {}).canal || null });
 // Preferencja ograniczenia ruchu z systemu — ZA DETEKCJĄ (jsdom nie ma matchMedia; niezłapany
 // wyjątek w ciele modułu = biały ekran, dlatego snapshot.mjs ma teraz twarde exit(1)).
 try {
@@ -47,4 +52,4 @@ try {
 
 
 
-window.__OTOREPO_TEST__ = { Vestibular, NeuroVOR, Scene3D, composeHead, stepHeadQ, stepGravity, bodyJoints, poseSpec, gravArrowFor, genPlan, MANEUVERS, CANALS, DIAG, CANAL_OF, HINTS_PRESETS, TORSO_Q, state, render, startManeuver, setGuideSide, openTest, setDiagSide, setDixObs, setVariant, openHints, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsFix, setHintsGaze, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, goArea, setReducedMotion, setMode, syncShell };
+window.__OTOREPO_TEST__ = { Vestibular, NeuroVOR, Scene3D, composeHead, stepHeadQ, stepGravity, bodyJoints, poseSpec, gravArrowFor, genPlan, MANEUVERS, CANALS, DIAG, CANAL_OF, HINTS_PRESETS, TORSO_Q, state, render, startManeuver, setGuideSide, openTest, setDiagSide, setDixObs, setVariant, openHints, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsFix, setHintsGaze, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, goArea, setReducedMotion, setMode, syncShell, goFlowStep, toggleDiagCentral };

@@ -1,0 +1,162 @@
+/* OTOREPO — pasek przebiegu klinicznego (Blok 5).
+ *
+ * Dokument: „Pełny sześciostopniowy stepper stale widoczny u góry" (komputer) / „Stepper skrócony
+ * do «Krok 2 z 6 — Próba» z możliwością rozwinięcia pełnej mapy" (telefon).
+ *
+ * DWIE ZASADY, KTÓRE MUSZĄ ZOSTAĆ:
+ * 1. Pasek jest WIERSZEM SIATKI powłoki o wysokości `auto`. Jedynym `1fr` w .shell zostaje
+ *    `main` — patrz shell.css. Dołożenie obszaru bez dołożenia wiersza przesuwa ścieżki i `1fr`
+ *    trafia na chrom: na krótkim ekranie pasek rozdyma się na pół okna, na długim (diagnostyka
+ *    ~3000 px) `main` przerasta powłokę i zostaje przycięty przez overflow:hidden, przez co dół
+ *    ekranu i przyklejony pasek startu manewru stają się niedostępne.
+ * 2. Status NIGDY samym kolorem. Każdy stan ma własny GLIF (✓ ⟳ ? – ⋯ ▸) i słowo statusu obok
+ *    nazwy kroku — to ta sama zasada, co w a11y.css, i jedyny sposób, by „wymaga ponownego
+ *    przeliczenia" dotarło też do osoby nierozróżniającej barw.
+ */
+
+.flowbar{
+  grid-area:flow;
+  border-bottom:1px solid var(--line);
+  background:var(--bg);
+  padding:var(--sp-2) max(var(--shell-pad), var(--safe-l), var(--safe-r));
+  min-width:0;
+}
+.flownav{ min-width:0; }
+.flowsteps{ list-style:none; margin:0; padding:0; }
+
+/* ---- telefon: jeden wiersz „Krok 2 z 6 — Próba" ---- */
+.flowsum{
+  appearance:none; cursor:pointer; width:100%;
+  display:flex; align-items:center; gap:var(--sp-2);
+  min-height:var(--tap); padding:var(--sp-1) var(--sp-2);
+  background:var(--panel); color:var(--text);
+  border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font:inherit; text-align:left;
+}
+.flowsum__txt{ flex:1 1 auto; min-width:0; font-size:13.5px; font-weight:700;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.flowsum__more{ flex:0 0 auto; color:var(--faint); font-size:13px; }
+.flowsum[aria-expanded="true"] .flowsum__more{ transform:rotate(180deg); }
+.flowsteps{ display:none; }
+
+/* ---- komputer: pełne sześć kroków ----
+   Próg 900 px, nie 768: sześć etykiet ze statusami poniżej tej szerokości ścina się do
+   nieczytelnych kikutów, a dokument chce steppera „pełnego", nie „upchniętego". */
+@media (min-width:900px){
+  .flowsum{ display:none; }
+  .flowsteps{ display:flex; align-items:stretch; gap:var(--sp-1); }
+  .flowsteps > li{ flex:1 1 0; min-width:0; }
+}
+
+.flowstep__btn{
+  appearance:none; cursor:pointer; width:100%; height:100%;
+  display:flex; align-items:center; gap:var(--sp-2);
+  min-height:var(--tap); padding:var(--sp-1) var(--sp-2);
+  background:transparent; color:var(--muted);
+  border:1px solid transparent; border-radius:var(--r-md);
+  font:inherit; text-align:left;
+  border-bottom:2px solid var(--line);
+  transition:color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.flowstep__btn:hover{ color:var(--text); background:var(--panel2); }
+.flowstep__n{
+  flex:0 0 auto; width:22px; height:22px; border-radius:50%;
+  display:grid; place-items:center;
+  font-size:12px; font-weight:800; line-height:1;
+  border:1px solid var(--line-strong);
+}
+.flowstep__txt{ flex:1 1 auto; min-width:0; }
+.flowstep__name{ display:block; font-size:12.5px; font-weight:700; line-height:1.2;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.flowstep__st{ display:block; font-size:11px; color:var(--faint); line-height:1.25;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Stany. Kolor JEST użyty, ale zawsze razem z glifem w kółku i słowem w wierszu statusu. */
+.flowstep--active  .flowstep__btn{ color:var(--text); border-bottom-color:var(--primary); }
+.flowstep--active  .flowstep__n{ color:var(--primary); border-color:var(--primary); }
+.flowstep--done    .flowstep__n{ color:var(--ok); border-color:var(--ok); }
+.flowstep--done    .flowstep__btn{ border-bottom-color:var(--ok-line, var(--ok)); }
+.flowstep--stale   .flowstep__btn{ color:var(--text); border-bottom-color:var(--crit); }
+.flowstep--stale   .flowstep__n{ color:var(--crit); border-color:var(--crit); }
+.flowstep--unreliable .flowstep__n{ color:var(--warn); border-color:var(--warn); }
+.flowstep--unreliable .flowstep__btn{ border-bottom-color:var(--warn); }
+.flowstep--skipped .flowstep__n,
+.flowstep--pending .flowstep__n{ color:var(--faint); }
+
+/* Krok niedostępny: aria-disabled, NIGDY atrybut disabled — ma zostać fokusowalny, bo dotknięcie
+   otwiera mapę z UZASADNIENIEM. Przycisk, który milczy, jest gorszy od przycisku wyłączonego. */
+.flowstep__btn[aria-disabled="true"]{ opacity:.55; cursor:default; }
+.flowstep__btn[aria-disabled="true"]:hover{ background:transparent; color:var(--muted); }
+
+/* ---- pasek „wniosek nieaktualny": jedyne miejsce, w którym kryterium odbioru nr 2 dociera
+       do ekranu. Nie ma przycisku „zamknij": ostrzeżenie gaśnie wyłącznie wtedy, gdy zniknie
+       jego przyczyna. ---- */
+.flowalert{
+  margin-top:var(--sp-2);
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3);
+  border:1px solid var(--crit); border-left-width:4px;
+  border-radius:var(--r-md);
+  background:var(--crit-bg, color-mix(in oklab, var(--crit) 12%, transparent));
+}
+.flowalert__ttl{ font-size:13px; color:var(--crit); flex:0 0 auto; }
+.flowalert__txt{ flex:1 1 260px; min-width:0; font-size:12.5px; line-height:1.4; color:var(--text); }
+.flowalert__go{
+  appearance:none; cursor:pointer; flex:0 0 auto;
+  min-height:var(--tap); padding:var(--sp-1) var(--sp-3);
+  background:var(--panel); color:var(--text);
+  border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font:inherit; font-size:12.5px; font-weight:700;
+}
+
+/* ---- pełna mapa jako NAKŁADKA (telefon) ----
+   Panel MUSI mieć sufit wysokości, a przewijać ma się jego LISTA, nie on sam. Zmierzone przy
+   360×640: mapa z uzasadnieniami ma 773 px, czyli przy zwykłym arkuszu (place-items:end)
+   wychodzi dołem poza okno na 789 px — dwa ostatnie kroki i przycisk „Zamknij" lądują poza
+   ekranem, a nakładka nie ma czym się przewinąć. Użytkownik zostaje uwięziony w warstwie
+   modalnej bez widocznego wyjścia. Przewijanie samej listy trzyma nagłówek i „Zamknij"
+   zawsze w zasięgu. */
+.flowmap .sheet__panel{
+  display:flex; flex-direction:column;
+  max-height:calc(100svh - 2 * var(--sp-4) - var(--safe-b) - var(--safe-t));
+}
+.flowmap .sheet__panel > h2{ flex:0 0 auto; }
+.flowmap .sheet__panel > .cta{ flex:0 0 auto; }
+.flowmap__list{
+  list-style:none; margin:0 0 var(--sp-4); padding:0; display:grid; gap:var(--sp-1);
+  flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+}
+.flowmap__btn{
+  appearance:none; cursor:pointer; width:100%; text-align:left;
+  display:flex; align-items:flex-start; gap:var(--sp-3);
+  min-height:var(--tap); padding:var(--sp-2) var(--sp-2);
+  background:transparent; color:var(--text);
+  border:1px solid transparent; border-radius:var(--r-md); font:inherit;
+}
+.flowmap__btn:hover{ background:var(--panel2); }
+.flowmap__btn[aria-disabled="true"]{ cursor:default; }
+.flowmap__row .flowstep__n{ margin-top:2px; }
+.flowmap__txt{ flex:1 1 auto; min-width:0; }
+.flowmap__txt b{ font-size:14.5px; }
+.flowmap__st{ display:block; font-size:12px; color:var(--primary); margin-top:1px; }
+.flowmap__desc{ display:block; font-size:12.5px; color:var(--muted); margin-top:2px; line-height:1.35; }
+.flowmap__why{ display:block; font-size:12.5px; color:var(--faint); margin-top:4px; line-height:1.35; }
+.flowmap__row.flowstep--stale .flowmap__st{ color:var(--crit); }
+.flowmap__row.flowstep--unreliable .flowmap__st{ color:var(--warn); }
+.flowmap__row.flowstep--pending .flowmap__st,
+.flowmap__row.flowstep--skipped .flowmap__st{ color:var(--faint); }
+
+/* ---- budżet pionu ----
+   Telefon w poziomie zostawia po pasku górnym i nawigacji ~240 px na CAŁĄ treść. Tryb skupienia
+   (trwający manewr) potrzebuje pionu na bieżącą pozycję i licznik, a nie na mapę procesu.
+   `data-focusmode` jest ustawiany przez syncShell od Bloku 3 i to jest pierwsza reguła, która
+   z niego korzysta. */
+@media (orientation:landscape) and (max-height:520px){
+  .flowbar{ padding-block:2px; }
+  .flowsum{ min-height:34px; }
+  .flowstep__st{ display:none; }
+}
+.shell[data-focusmode] .flowalert{ margin-top:var(--sp-1); }
+@media (orientation:landscape) and (max-height:520px){
+  .shell[data-focusmode] .flowbar{ display:none; }
+}

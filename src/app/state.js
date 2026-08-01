@@ -5,7 +5,7 @@ import { HINTS_PRESETS } from './actions.js';
 
 /* ============ Stan ============ */
 const state={
-  mode:"treat", screen:"setup",
+  mode:"treat", screen:"start",   // Blok 4: wejsciem jest ekran oparty na CELU, nie wybor modulu. Golden bez zmian: domOracle ustawia screen jawnie dla kazdego scenariusza (snapshot.mjs:305).
   side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:"post", dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
   diagCentral:false,   // przełącznik karty klasyfikacji: false=obwodowy (BPPV, klasyfikacja Bárány) · true=ośrodkowy (CPN)
   diagPhaseFace:0,     // odsłonięta faza karty pozycji (Bow&Lean/Roll): 0=przód/bow · 1=tył/lean. W STANIE, by przetrwać re-render (np. przełącznik 3D nie przewraca karty)
@@ -30,6 +30,11 @@ const state={
   area:"start",                                    // aktywny obszar powłoki: start|diag|learn|lab|profile (Blok 3 wypełnia nawigację)
   reducedMotion:false,                             // ograniczenie ruchu: preferencja systemowa LUB własny przełącznik (Blok 2)
   stepMapOpen:false,                               // telefon: czy rozwinięta pełna mapa 6 kroków (stepper skrócony do „Krok X z 6")
+  // --- Przebieg kliniczny (Blok 5). Czytane przez src/app/flow-model.js (czysty), zapisywane
+  //     wyłącznie przez src/app/flow-state.js. Żadna wyrocznia nie serializuje obiektu state,
+  //     więc dokładanie pól jest golden-neutralne.
+  decisionSeq:0,                                   // MONOTONICZNY licznik świadomych decyzji interpretacyjnych (mechanizm/oczopląs/CPN). Rośnie tylko przy realnej zmianie wartości; nawigacja go NIE cofa — dzięki temu ciche przywrócenie diagCentral=false przez openTest nie gasi ostrzeżenia
+  flow:{ testSeen:false, obsSeen:false, interpretSeen:false, maneuver:null },   // co użytkownik naprawdę zrobił + odcisk wejść z chwili wyboru manewru
 };
 
 export { state };

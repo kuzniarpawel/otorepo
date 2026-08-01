@@ -40,6 +40,14 @@
   </header>
   <!-- Sloty nawigacji: markup i miejsce w siatce powstają teraz, wypełnia je Blok 3. -->
   <nav class="railnav" id="railnav" hidden><ul></ul></nav>
+  <!-- PASEK PRZEBIEGU KLINICZNEGO (Blok 5). Wiersz siatki „flow" — chrom, nie treść, więc leży
+       poza #app i nie rusza złotego wzorca. Widoczny WYŁĄCZNIE w ścieżce klinicznej: nad zaślepką
+       „Nauka" czy nad HINTS pasek „Krok 2 z 6 — Próba" nie tylko zajmowałby miejsce, on by kłamał.
+       Treść wypełnia src/app/shell.js przez t(), żeby nie zamrozić języka. -->
+  <div class="flowbar" id="flowbar" hidden>
+    <nav class="flownav" id="flownav"><ol class="flowsteps" id="flowsteps"></ol></nav>
+    <div class="flowalert" id="flowalert" role="status" hidden></div>
+  </div>
   <div class="mainscroll" id="mainscroll">
     <!-- Zaslepka obszaru „Nauka": modul przypadkow powstaje w Bloku 13. Uczciwy komunikat
          zamiast pustego ekranu udajacego dzialajacy modul. Tresc wypelnia shell.js. -->
@@ -56,6 +64,10 @@
 <!-- Warstwy nad powłoką. Treść wypełnia src/app/shell.js przez t(), żeby nie zamrozić języka. -->
 <dialog class="leavedlg" id="leaveDlg"></dialog>
 <div class="sheet" id="sheet" hidden></div>
+<!-- Pełna mapa 6 kroków na telefonie: NAKŁADKA, nie wiersz siatki. Przy 800×360 sześć pól
+     dotykowych po 48 px = 288 px, czyli więcej niż cały pion pozostały po pasku i nawigacji —
+     jako wiersz siatki przycięłaby i siebie, i treść. -->
+<div class="sheet flowmap" id="flowmap" hidden></div>
 
 <script type="module" src="./src/main.js"></script>
 <!-- Rejestracja service workera (PWA offline). WYŁĄCZONA w natywnej apce Capacitor
