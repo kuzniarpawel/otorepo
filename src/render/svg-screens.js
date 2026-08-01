@@ -4,7 +4,7 @@ import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
-import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
+import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
 import { activeQuestions, nextQuestionId, triageComplete, triageResult, czerwoneFlagi } from '../app/triage-model.js';
@@ -752,6 +752,13 @@ function render(){
   else if(state.screen==="guide") renderGuide();
   else if(state.screen==="hints") renderHints();
   else renderDiag();
+  /* ZASIĘG ZEGARA WIZUALIZACJI = EKRAN, KTÓRY MA PILOTA (naprawa po krytyce Bloku 7).
+     Warunek stoi na OBECNOŚCI paska w świeżo narysowanym drzewie, a nie na liście nazw ekranów:
+     lista rozjechałaby się po cichu przy pierwszym ekranie, który dostanie sterowanie, a golden
+     i tak przypina, gdzie pasek jest (markup .vizbar siedzi w kluczach diag/*).
+     Wołane PO narysowaniu, a przed pierwszą klatką: pętle zapisują tylko `start=vizPeek()`,
+     a `vizNow()` czytają dopiero w rAF, czyli już po powrocie z render(). */
+  try{ if(!document.querySelector(".vizbar")) vizClock.wymusOdtwarzanie(); }catch(e){}
 }
 
 /* ============ Ekran startowy oparty na CELU użytkownika (Blok 4) ============
@@ -877,6 +884,12 @@ const VIZ_PERSPEKTYWA = {
                    "examiner's view — the patient's right ear is on the LEFT of the image"),
   topDownBehind: () => t('znad głowy, od tyłu — prawe ucho pacjenta po PRAWEJ stronie obrazu',
                          'from above and behind — the patient’s right ear is on the RIGHT of the image'),
+  /* Kamera DOMYŚLNA schematu głowy (headDial: `Scene3D.CAMERAS[headCamera] || topDownFront`).
+     Dopisana, bo bez niej perspNota() dla Semonta i Bascule — jedynych dwóch manewrów bez jawnej
+     `headCamera` — zwracałaby pusty napis, czyli naprawa udawałaby, że działa akurat tam,
+     gdzie sprawdzić ją najtrudniej. */
+  topDownFront: () => t('znad głowy, od przodu — prawe ucho pacjenta po LEWEJ stronie obrazu',
+                        'from above and in front — the patient’s right ear is on the LEFT of the image'),
 };
 function perspNota(kind){
   const f = VIZ_PERSPEKTYWA[kind]; if(!f) return "";
@@ -903,7 +916,7 @@ function vizControls(){
       <button type="button" class="vizbtn vizbtn--play" data-vizpause aria-pressed="${pau}"
               aria-label="${t("Zatrzymaj albo wznów animację","Pause or resume the animation")}" onclick="toggleVizPause()">
         <span class="vizbtn__glif" aria-hidden="true">${pau?"▶":"❚❚"}</span><span class="vizbtn__txt">${pau?t("Wznów","Resume"):t("Pauza","Pause")}</span></button>
-      ${spBtn(1,"1×")}${spBtn(0.5,"0,5×")}
+      ${spBtn(1,"1×")}${spBtn(0.5,t("0,5×","0.5×"))}
       <button type="button" class="vizbtn" data-vizstep aria-disabled="${!pau}"
               aria-label="${t("Przesuń obraz o jeden krok","Advance the image by one step")}" onclick="vizStepFwd()">${t("Krok","Step")} ›</button>
       <button type="button" class="vizbtn" onclick="resetViz()" aria-label="${t("Odtwórz animację od początku","Replay the animation from the start")}">↺</button>
@@ -1112,7 +1125,7 @@ function renderGuide(){
       ? `<div class="panelbox"><h4>${t("Głowa","Head")}</h4><div class="headnote">${st.headText}</div></div>`
     : st.headSlot && st.headSlot.kind==="backTurn"
       ? `<div class="panelbox"><h4>${t("Głowa","Head")}</h4><div data-backhead>${backHeadSVG()}</div><div class="headnote">${st.headText}</div></div>`
-      : `<div class="panelbox"><h4>${t("Głowa (z góry)","Head (top-down)")}</h4>${headDial(ps,p.headCamera,gn)}</div>`;
+      : `<div class="panelbox"><h4>${t("Głowa (z góry)","Head (top-down)")}</h4>${headDial(ps,p.headCamera,gn)}${perspNota(p.headCamera||"topDownFront")}</div>`;
   const gufoniNote = state.maneuverKey==="gufoniApo"
     ? `<div class="note">${t('Manewr <b>konwersji</b>: złóg nie opuszcza kanału — celem jest przekształcenie postaci apogeotropowej w geotropową. Po nim wykonaj ponowny Roll test i lecz postać geotropową (Lempert / Gufoni geotropowy).','<b>Conversion</b> maneuver: the debris does not leave the canal — the goal is to convert the apogeotropic form into the geotropic one. Afterward repeat the Roll test and treat the geotropic form (Lempert / Gufoni geotropic).')}</div>` : "";
   const basculeNote = state.maneuverKey==="bascule"
@@ -1136,7 +1149,8 @@ function renderGuide(){
     ${gn
       ? `<div class="flipwrap"><div class="flip${cupuloMech?' flipped':''}" id="flip" role="button" tabindex="0" aria-label="${t('Odwróć kartę: widok frontalny albo wędrówka otolitów','Flip the card: frontal view or otolith migration')}" onclick="flipGuide()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipGuide();}">
           <div class="face front panelbox"><h4>${t("Widok frontalny","Frontal view")}</h4>
-            <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-nys-guide>${eyesSVG()}</div><span class="emk">L</span></div>
+            <div class="eyesrow">${earMark("P")}<div class="eyeswrap" data-nys-guide>${eyesSVG()}</div>${earMark("L")}</div>
+            ${perspNota("frontal")}
             <div class="nyslabel"><span class="arrow">${arrowGlyph(gn)}</span><span>${gn.label}</span></div>
             ${gravArrow}
             <div class="fliphint">${FLIP_ICO} ${t("wędrówka otolitów","otolith migration")}</div></div>
@@ -1159,12 +1173,12 @@ function renderGuide(){
     <p class="footnote">${t("Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.","When finished, wait per protocol and consider repeating the positional test.")}</p>
     </div></div>`;
   if(can3d && state.view3d) mount3D("guide", ps, p.side);
-  requestAnimationFrame(setupGuideAnim);
-  requestAnimationFrame(initGuideSlider);
-  if(gn) requestAnimationFrame(()=>sizeFlip("flip"));
-  if(st.headSlot && st.headSlot.kind==="backTurn") requestAnimationFrame(()=>{ const bh=$("[data-backhead]"); if(bh) startBackHeadTurn(bh, st.headSlot.dir); });
-  if(gn) requestAnimationFrame(()=>{ startDialNys(gn,p,manStepEnv(_man,state.step)); });
-  if(gn) requestAnimationFrame(()=>{ const c=$("[data-nys-guide]"); if(c) startNys(c, gn, manStepEnv(_man,state.step)); });
+  rafOnce(setupGuideAnim);
+  rafOnce(initGuideSlider);
+  if(gn) rafOnce(()=>sizeFlip("flip"));
+  if(st.headSlot && st.headSlot.kind==="backTurn") rafOnce(()=>{ const bh=$("[data-backhead]"); if(bh) startBackHeadTurn(bh, st.headSlot.dir); });
+  if(gn) rafOnce(()=>{ startDialNys(gn,p,manStepEnv(_man,state.step)); });
+  if(gn) rafOnce(()=>{ const c=$("[data-nys-guide]"); if(c) startNys(c, gn, manStepEnv(_man,state.step)); });
   updateGoBtn();
 }
 
@@ -1200,7 +1214,7 @@ function diagClassifyCard(canal, v, side, antMode){
           <li>${t("Objawy towarzyszące: dyzartria, ataksja, dwojenie, zaburzenia spojrzenia.","Accompanying signs: dysarthria, ataxia, diplopia, gaze disturbances.")}</li>
         </ul></div>
       <div class="panelbox" style="margin-top:10px"><h4>${t("Wzorzec: uporczywy downbeat (poglądowo)","Pattern: persistent downbeat (illustrative)")}</h4>
-        <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-cpnnys>${eyesSVG()}</div><span class="emk">L</span></div>
+        <div class="eyesrow">${earMark("P")}<div class="eyeswrap" data-cpnnys>${eyesSVG()}</div>${earMark("L")}</div>
         <div class="nyslabel"><span class="arrow">↓</span><span>${t("downbeat · uporczywy · bez latencji","downbeat · persistent · no latency")}</span></div></div>
       <div class="note" style="color:var(--text)">${t('<b>Postępowanie:</b> NIE wykonuj repozycji. Skieruj na ocenę neurologiczną + MRI tylnego dołu (móżdżek, pogranicze szczytowo-potyliczne: malformacja Chiariego; SM; zmiany naczyniowe). Najczęstszy łagodny mimik: <b>migrena przedsionkowa</b> (ośrodkowy oczopląs pozycyjny w napadzie).','<b>Management:</b> Do NOT perform repositioning. Refer for neurological evaluation + MRI of the posterior fossa (cerebellum, craniocervical junction: Chiari malformation; MS; vascular lesions). The most common benign mimic: <b>vestibular migraine</b> (central positional nystagmus during an attack).')}</div>`;
   // data-flow-anchor + tabindex: cel przewijania dla kroku „Interpretacja" w pasku przebiegu
@@ -1320,7 +1334,7 @@ function renderDiag(){
     ${vizControls()}
     <p class="footnote">${t("Wzorce poglądowe. Interpretuj w kontekście klinicznym.","Illustrative patterns. Interpret in the clinical context.")}</p>`;
   if(can3d && state.view3d) phases.forEach((ph,i)=>mount3D("diag"+i, poseSpec(ph), A));
-  requestAnimationFrame(()=>{
+  rafOnce(()=>{
     phases.forEach((ph,i)=>{
       const c=$(`[data-nys="${i}"]`); if(c) startNys(c,ph.nys);
       const dh=$(`[data-dialnys="${i}"]`); if(dh) startDialNysIn(dh,ph.nys);   // animacja dialu (widok z tyłu)
@@ -1395,7 +1409,7 @@ function renderHints(){
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>${tr("Oczopląs samoistny — widok frontalny","Spontaneous nystagmus — frontal view")}</h4>
       <div class="hint-eyes ${fixOn?'':'dark'}">
-        <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-neuronys>${eyesSVG()}</div><span class="emk">L</span></div>
+        <div class="eyesrow">${earMark("P")}<div class="eyeswrap" data-neuronys>${eyesSVG()}</div>${earMark("L")}</div>
         ${fixOn?"":'<div class="frenzel-tag">'+tr("◌ gogle Frenzla — fiksacja zniesiona","◌ Frenzel goggles — fixation removed")+'</div>'}
       </div>
       <div data-nyslabel>${hintsNysLabel(nys)}</div>
@@ -1411,7 +1425,7 @@ function renderHints(){
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>${tr("Test pchnięcia głową (HIT) — obserwuj cel ○","Head impulse test (HIT) — watch the target ○")}</h4>
       <div class="viewpoint">${tr("widok badającego (naprzeciw pacjenta) — P = ucho prawe pacjenta, L = ucho lewe","examiner's view (facing the patient) — R = patient's right ear, L = left ear")}</div>
-      <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-hit>${hitSVG()}</div><span class="emk">L</span></div>
+      <div class="eyesrow">${earMark("P")}<div class="eyeswrap" data-hit>${hitSVG()}</div>${earMark("L")}</div>
       <div class="hctrl" style="justify-content:center"><span class="lbl">${tr("Płaszczyzna","Plane")}</span>
         <div class="pillseg">${["HC","RALP","LARP"].map(pl=>`<button aria-pressed="${(state.hintsPlane||'HC')===pl}" onclick="setHintsPlane('${pl}')">${pl==='HC'?tr('HC poziomy','HC horizontal'):pl}</button>`).join("")}</div></div>
       <div class="hctrl" style="justify-content:center"><span class="lbl">${tr("Pchnij","Thrust")}</span>
@@ -1420,13 +1434,13 @@ function renderHints(){
     </div>
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>${tr("Odchylenie skośne — naprzemienne zasłanianie","Skew deviation — alternate cover")}</h4>
-      <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-skew>${skewSVG()}</div><span class="emk">L</span></div>
+      <div class="eyesrow">${earMark("P")}<div class="eyeswrap" data-skew>${skewSVG()}</div>${earMark("L")}</div>
       <div class="note">${skewLabel(H.ts)}</div>
     </div>
     ${otolithPanel(p)}
     ${custom ? `<div data-readout>${hintsReadoutHTML(p)}</div>` : ""}
     <p class="footnote">${tr("Wzorce poglądowe — narzędzie dydaktyczne, nie urządzenie diagnostyczne. Interpretuj klinicznie.","Illustrative patterns — an educational tool, not a diagnostic device. Interpret clinically.")}</p>`;
-  requestAnimationFrame(()=>{
+  rafOnce(()=>{
     const c=$('[data-neuronys]'); if(c) startNeuroNys(c, nys, gazeDeg);
     const sk=$('[data-skew]'); if(sk) startSkew(sk, H.ts);
   });

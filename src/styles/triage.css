@@ -98,8 +98,11 @@
 /* Nota perspektywy. Nie jest ozdobnikiem: na jednym ekranie sąsiadują dwa panele o PRZECIWNYCH
    konwencjach stron („Widok frontalny" = oczami badającego, „Głowa z góry" = od tyłu), a od
    strony zależy, które ucho zostanie poddane repozycji. */
+/* 12,5 px i --muted, nie 11,5 px i --faint: po naprawie Z2 ta nota stoi już na trzech ekranach
+   i niesie informację o STRONIE, a Blok 2 ustalił 12,5 px jako podłogę dla etykiet. Nota mniejsza
+   od własnej podłogi czytelności byłaby ostrzeżeniem, którego nie warto czytać. */
 .perspnote{
-  margin:6px 0 0; font-size:11.5px; line-height:1.35; color:var(--faint);
+  margin:6px 0 0; font-size:12.5px; line-height:1.35; color:var(--muted);
   border-left:2px solid var(--line-strong); padding-left:8px;
 }
 .emk abbr{ text-decoration:none; border-bottom:1px dotted var(--line-strong); cursor:help; }

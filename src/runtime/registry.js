@@ -28,6 +28,17 @@ function loopRAF(fn){ // fn(now) -> true aby kontynuować
   const tick=(now)=>{ if(animFrames===myFrames && fn(now) && animFrames===myFrames){ animFrames[idx]=requestAnimationFrame(tick); } };
   myFrames.push(requestAnimationFrame(tick));
 }
+/* Jednorazowy rAF ZAREJESTROWANY w rejestrze — do rozruchu ekranu po przerysowaniu.
+   Rozruch planowany gołym requestAnimationFrame jest NIEKASOWALNY: cancelAnims() widzi tylko
+   to, co jest w animFrames, więc po dwóch render()-ach w JEDNEJ turze obie zaległe funkcje
+   rozruchowe odpalają w tej samej klatce i każda startuje własną pętlę. Pętle są wtedy nowe
+   (ten sam rejestr), więc strażnik „zombie" z loopRAF ich nie rozróżnia i obie liczą.
+   Na ekranie manewru znaczy to KLINICZNY LICZNIK BIEGNĄCY N RAZY SZYBCIEJ — zmierzone
+   dokładnie 1,00 / 2,01 / 3,00 przy jednym, dwóch i trzech przerysowaniach.
+   Tu fn jest bramkowane tym samym warunkiem co pętla: gdy między zaplanowaniem a klatką
+   przyszedł nowy render, zaległy rozruch po prostu nie zachodzi — a nowy render i tak
+   zaplanował własny. */
+function rafOnce(fn){ loopRAF((now)=>{ fn(now); return false; }); }
 const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 const lerp=(a,b,t)=>a+(b-a)*t;
 
@@ -60,7 +71,7 @@ function beep(){ if(!state.sound) return;
   }catch(e){}
 }
 
-export { $, animFrames, cancelAnims, loopRAF, easeInOut, lerp, _wakeLock, acquireWake, releaseWake, syncWake, audioCtx, beep, vizNow, vizPeek, vizClock };
+export { $, animFrames, cancelAnims, loopRAF, rafOnce, easeInOut, lerp, _wakeLock, acquireWake, releaseWake, syncWake, audioCtx, beep, vizNow, vizPeek, vizClock };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")

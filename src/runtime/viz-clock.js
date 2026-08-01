@@ -57,6 +57,23 @@ export function createVizClock() {
     setPaused(p) { paused = !!p; return paused; },
     isPaused() { return paused; },
     toggle() { paused = !paused; return paused; },
+    /* ZASIĘG STEROWANIA = EKRAN, KTÓRY MA PILOTA.
+       Zegar jest jeden na całą aplikację (stan musi przeżyć render()), ale pasek sterowania
+       renderuje SIĘ tylko na ekranie „Próba". Bez tej metody pauza wciśnięta tam jechała
+       z użytkownikiem na ekran manewru i do HINTS: obraz stawał, a nie było ani kontrolki,
+       ani wskaźnika, żeby go wznowić — przy czym KLINICZNY licznik utrzymania pozycji biegł
+       dalej i kończył krok nad nieruchomym złogiem. Najgorszy przypadek jest w HINTS, gdzie
+       werdykt tekstowy („sakada jawna → HIT patologiczny") powstaje niezależnie od animacji,
+       więc podpis twierdziłby o ruchu, którego obraz nie pokazuje.
+       Zwraca informację, CZY coś zmieniła — dzięki temu wywołujący może to odróżnić od stanu
+       spoczynkowego, a wyrocznia ma co przypiąć.
+       NIE dotyka czasu wirtualnego ani przypięcia: to decyzja o PRĘDKOŚCI ODTWARZANIA,
+       a nie o pozycji w materiale — zerowanie czasu cofnęłoby oczopląs na innym ekranie. */
+    wymusOdtwarzanie() {
+      const zmiana = paused || speed !== 1;
+      paused = false; speed = 1;
+      return zmiana;
+    },
     // Ręczne przesunięcie przy zatrzymanym obrazie. Poza pauzą nie robi nic: przesuwanie
     // biegnącego zegara dałoby skok, którego użytkownik nie odróżni od zacięcia.
     step(ms) { if (paused) wirt += Math.max(0, ms == null ? VIZ_STEP_MS : ms); return wirt; },

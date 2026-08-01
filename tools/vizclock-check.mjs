@@ -128,12 +128,90 @@ const eq = (tag, a, b) => T(tag, JSON.stringify(a) === JSON.stringify(b), `oczek
   eq('RS4/niezalezne', b.peek(), 0);
 }
 
-/* ============ 8. Singleton aplikacji ============ */
+/* ============ 8. PAUZA × PRĘDKOŚĆ — iloczyn, nie suma ============
+   Luka znaleziona przez krytykę adwersaryjną: sekcja „Prędkość" nigdy nie pauzowała, sekcja
+   „Pauza" chodziła na domyślnym 1×, a sekcja „Reset" ustawiała oba, ale potem wołała już tylko
+   reset/peek/getSpeed/isPaused — ani razu now(). Iloczynu nie dotykał ŻADEN z 40 przypadków,
+   więc mutacja `if (!paused)` → `if (!paused || speed !== 1)` przechodziła 40/40 na zielono.
+   Dla użytkownika znaczyłoby to: wybiera 0,5×, klika Pauzę, pasek pisze „obraz zatrzymany”,
+   a złóg i oczopląs idą dalej. */
+{
+  const c = createVizClock(); c.now(0);
+  c.setSpeed(0.5);
+  eq('PS1/polowa-idzie', c.now(1000), 500);
+  c.setPaused(true);
+  // TO jest przypadek, który przepuszczał mutację: pauza MUSI działać także poza 1×.
+  eq('PS2/pauza-przy-polowie', c.now(3000), 500);
+  eq('PS3/dalej-stoi', c.now(9000), 500);
+  c.setSpeed(1);
+  eq('PS4/zmiana-predkosci-w-pauzie-nie-rusza', c.now(11000), 500);
+  c.setPaused(false);
+  // Po wznowieniu liczy się NOWA prędkość i tylko czas OD wznowienia — zero nadrabiania przerwy.
+  eq('PS5/wznowienie-bez-nadrabiania', c.now(12000), 1500);
+}
+{
+  // Krok przy zatrzymanym obrazie to przesunięcie w MATERIALE, więc nie skaluje się prędkością
+  // podglądu: przy 0,5× ma dać te same 120 ms, a nie 60. Druga mutacja, która przechodziła 40/40.
+  const c = createVizClock(); c.now(0); c.now(1000);
+  c.setSpeed(0.5); c.setPaused(true);
+  eq('PS6/krok-nieskalowany', c.step(), 1000 + VIZ_STEP_MS);
+  eq('PS7/krok-jawny-nieskalowany', c.step(300), 1000 + VIZ_STEP_MS + 300);
+  c.setPaused(false);
+  eq('PS8/wznowienie-od-przesunietego', c.now(2000), 1000 + VIZ_STEP_MS + 300 + 500);
+}
+
+/* ============ 9. Zasięg sterowania: ekran bez pilota gra normalnie ============
+   Zegar jest jeden, a pasek renderuje się tylko na ekranie „Próba”. Bez tego zawężenia pauza
+   jechała z użytkownikiem na ekran manewru i do HINTS — obraz stawał, kontrolki nie było,
+   a kliniczny licznik utrzymania pozycji odliczał dalej nad nieruchomym złogiem. */
+{
+  const c = createVizClock(); c.now(0); c.now(1000);
+  c.setSpeed(0.5); c.setPaused(true); c.step();
+  const czasPrzed = c.peek();
+  T('ZA1/zglasza-zmiane', c.wymusOdtwarzanie() === true, 'wywołujący musi móc odróżnić realną zmianę od stanu spoczynkowego');
+  T('ZA2/gra', !c.isPaused() && c.getSpeed() === 1, 'ekran bez pilota MUSI grać 1× bez pauzy');
+  // Wymuszenie dotyczy PRĘDKOŚCI, nie pozycji w materiale: zerowanie czasu cofnęłoby oczopląs
+  // na ekranie, na który użytkownik dopiero wchodzi.
+  eq('ZA3/czas-nietkniety', c.peek(), czasPrzed);
+  T('ZA4/idempotentne', c.wymusOdtwarzanie() === false, 'drugie wywołanie nie zgłasza zmiany');
+  const d = createVizClock(); d.now(0); d.now(500); d.detach();
+  d.wymusOdtwarzanie();
+  T('ZA5/nie-przypina', d.snapshot().przypiety === false,
+    'wymuszenie nie może przypiąć zegara — inaczej pierwsza klatka po renderze doliczyłaby całą przerwę');
+  // Po wymuszeniu przyrost musi być 1:1 z czasem rzeczywistym.
+  d.now(10000); eq('ZA6/po-wymuszeniu-1do1', d.now(10500), 1000);
+}
+{
+  // Strażnik montażu: sama metoda nie chroni niczego, dopóki render() jej nie woła. Skan po
+  // źródle, bo golden nie widzi animacji (rAF jest zneutralizowany), a tej linii nie widzi też
+  // żaden inny test — bez tego przypadku usunięcie jej byłoby cichą regresją.
+  const fs = await import('node:fs');
+  const rend = fs.readFileSync(new URL('../src/render/svg-screens.js', import.meta.url), 'utf8');
+  const ciało = (rend.match(/function render\(\)\{[\s\S]*?\n\}/) || [''])[0];
+  T('ZA7/straznik-w-render', /wymusOdtwarzanie\(\)/.test(ciało),
+    'render() musi wymuszać odtwarzanie na ekranie bez paska sterowania');
+  T('ZA8/warunek-na-obecnosci-paska', /querySelector\((["'`])\.vizbar\1\)/.test(ciało),
+    'warunek MUSI stać na obecności paska, nie na liście nazw ekranów — lista rozjedzie się po cichu');
+
+  /* KAŻDA klatka planowana z modułu ekranów MUSI iść przez rejestr (loopRAF / rafOnce).
+     Rozruch ekranu planowany gołym requestAnimationFrame jest niekasowalny przez cancelAnims(),
+     więc dwa render()-y w jednej turze zostawiają dwie zaległe funkcje rozruchowe — obie odpalają
+     w tej samej klatce i każda startuje własną pętlę. Na ekranie manewru daje to KLINICZNY LICZNIK
+     N RAZY SZYBSZY (zmierzone 1,00 / 2,01 / 3,00 dla jednego, dwóch i trzech przerysowań), czyli
+     „utrzymaj 30 s" odliczone w 15 s realnych. Golden tego nie widzi, bo neuter() zabija rAF. */
+  const goleRAF = (rend.match(/(?<!\.)\brequestAnimationFrame\s*\(/g) || []).length;
+  T('ZA9/bez-golych-rAF', goleRAF === 0,
+    `w module ekranów zostało ${goleRAF} gołych requestAnimationFrame — rozruch musi iść przez rafOnce/loopRAF`);
+  T('ZA10/skan-dziala', (rend.match(/\brafOnce\s*\(/g) || []).length > 0,
+    'kontrola skanu: moduł musi w ogóle używać rafOnce, inaczej ZA9 przechodzi na pustym wzorcu');
+}
+
+/* ============ 10. Singleton aplikacji ============ */
 T('SG1/istnieje', vizClock && typeof vizClock.now === 'function', 'aplikacja potrzebuje jednej instancji');
 T('SG2/domyslnie-1x', vizClock.getSpeed() === 1 && !vizClock.isPaused(),
   'domyślnie zegar musi być nieodróżnialny od stanu sprzed Bloku 7');
 
-/* ============ 9. Czystość modułu ============ */
+/* ============ 11. Czystość modułu ============ */
 {
   const fs = await import('node:fs');
   const src = fs.readFileSync(new URL('../src/runtime/viz-clock.js', import.meta.url), 'utf8');
@@ -158,7 +236,7 @@ if (bledy.length) {
   for (const b of bledy) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 40;
+const OCZEKIWANE = 58;   // 40 (Blok 7) + 8 (pauza × prędkość) + 10 (zasięg sterowania i rejestr klatek) — po krytyce
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);
