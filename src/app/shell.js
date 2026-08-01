@@ -372,6 +372,7 @@ export function syncFlow() {
       const ol0 = $('#flowsteps'); if (ol0) ol0.innerHTML = '';
       const s0 = $('#flowsum'); if (s0) s0.remove();
       const a0 = $('#flowalert'); if (a0) { a0.hidden = true; a0.innerHTML = ''; }
+      const f0 = $('#flowflag'); if (f0) f0.remove();
       return;
     }
 
@@ -417,6 +418,24 @@ export function syncFlow() {
           <button type="button" class="flowalert__go" data-flow-step="interpret">${t('Wróć do interpretacji', 'Back to interpretation')}</button>`;
       } else { al.hidden = true; al.innerHTML = ''; }
     }
+
+    /* Czerwona flaga z kwalifikacji wstępnej JEDZIE Z UŻYTKOWNIKIEM przez cały przebieg.
+       Dokument (Blok 6): „Czerwone flagi są widoczne PRZED przejściem do manewru lub HINTS".
+       Karta wyniku zostaje na ekranie Wywiadu, więc gdyby sygnał kończył się razem z nią,
+       kryterium byłoby spełnione tylko dopóki użytkownik nie kliknie dalej — czyli dokładnie
+       do momentu, w którym zaczyna mieć znaczenie. */
+    const tr = state.flow && state.flow.triage;
+    let fl = $('#flowflag');
+    if (tr && tr.complete && tr.czerwona) {
+      if (!fl) {
+        fl = document.createElement('div');
+        fl.id = 'flowflag'; fl.className = 'flowflag'; fl.setAttribute('role', 'status');
+        bar.appendChild(fl);
+      }
+      fl.innerHTML = `<b>⚠ ${t('Czerwona flaga', 'Red flag')}</b><span>${t(
+        'Kwalifikacja wstępna wykazała objaw wymagający pilnej oceny. Nie wykonuj repozycji przed jej przeprowadzeniem.',
+        'The initial triage found a feature requiring urgent evaluation. Do not perform repositioning before it is done.')}</span>`;
+    } else if (fl) fl.remove();
     // Mapa przebudowuje się tylko wtedy, gdy jest otwarta — inaczej niepotrzebnie pracujemy.
     const map = $('#flowmap');
     if (map && !map.hidden) map.innerHTML = flowMapHTML(lista);

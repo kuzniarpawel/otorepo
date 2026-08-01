@@ -10,6 +10,7 @@
  * z obu stron: z actions.js i z svg-screens.js.
  */
 import { noteManeuver } from './flow-model.js';
+import { triageComplete, triageResult, czerwoneFlagi } from './triage-model.js';
 
 function f(state) {
   if (!state.flow) state.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
@@ -76,6 +77,22 @@ export function resetSeen(state) {
    Wołane z jednego miejsca: wybór INNEJ próby (który zeruje dixObs i diagCentral). Zwykłe
    odwrócenie karty mechanizmu tam i z powrotem tu nie trafia i trafić nie może — alarm po
    każdym obejrzeniu karty porównawczej byłby szumem, a szum uczy ignorowania paska. */
+/* Streszczenie kwalifikacji wstępnej (Blok 6) do stanu przebiegu. Po co osobne pole zamiast
+   liczenia w locie: flow-model.js jest BEZIMPORTOWY i taki ma zostać (wyrocznia flow:check
+   uruchamia go w gołym Node i pilnuje tego skanem źródła). Streszczamy więc dokładnie tyle,
+   ile pasek przebiegu naprawdę pokazuje — resztę zna karta wyniku w #app. */
+export function syncTriage(state) {
+  const odp = state.triage || {};
+  const o = f(state);
+  if (!triageComplete(odp)) { o.triage = { complete: false, kategoria: null, sciezka: null, pewnosc: null, czerwona: false }; return; }
+  const w = triageResult(odp);
+  o.triage = {
+    complete: true, kategoria: w.kategoria, sciezka: w.sciezka, pewnosc: w.pewnosc,
+    czerwona: czerwoneFlagi(odp).length > 0,
+    tytulPl: w.tytul.pl, tytulEn: w.tytul.en,
+  };
+}
+
 export function noteNavCleared(state) {
   const m = f(state).maneuver;
   if (!m) return;

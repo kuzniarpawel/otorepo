@@ -8,5 +8,6 @@
 @import './shell.css';     /* powloka: siatka, paski, model przewijania */
 @import './layout.css';    /* uklad tresci wewnatrz #app */
 @import './flow.css';      /* pasek przebiegu klinicznego: 6 krokow + ostrzezenie (Blok 5) */
+@import './triage.css';    /* kwalifikacja wstepna „Wywiad" + pasek czerwonej flagi (Blok 6) */
 @import './start.css';     /* ekran startowy oparty na celu uzytkownika (Blok 4) */
 @import './a11y.css';      /* pola dotykowe, fokus, stan nie-tylko-kolorem, ograniczenie ruchu */

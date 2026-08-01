@@ -28,9 +28,11 @@
 // Kroki 2-4 dzielą dziś jeden ekran (renderDiag) — rozdzielą je Bloki 7-9.
 // `pending:true` = funkcji jeszcze nie ma; `pendingGdy` = jest, ale nie przy każdej próbie.
 export const FLOW_STEPS = [
+  // Blok 6: krok przestał być zaślepką. Kwalifikacja wstępna wg taksonomii czas-i-wyzwalacze
+  // (GRACE-3, engine_doc [H24]) — wybiera ŚCIEŻKĘ badania, nie stawia rozpoznania.
   { id: 'history',   pl: 'Wywiad',        en: 'History',
-    plDesc: 'czas trwania i czynnik wyzwalający', enDesc: 'duration and trigger',
-    pending: true },
+    plDesc: 'czas trwania, wyzwalacz, czerwone flagi', enDesc: 'time course, trigger, red flags',
+    mode: 'diag', screen: 'triage' },
 
   { id: 'test',      pl: 'Próba',         en: 'Test',
     plDesc: 'wybór i wykonanie testu pozycyjnego', enDesc: 'choose and perform the positional test',
@@ -265,6 +267,7 @@ export function lateralizacjaNiepewna(s) {
 // Wyprowadzany z ekranu i trybu, a nie trzymany osobno. Osobne pole rozjeżdżałoby się przy każdej
 // nawigacji, która je pomija (zakładki trybów wewnątrz #app, „Rozpocznij: Epley", przycisk „Wróć").
 export function activeStepId(s) {
+  if (s.screen === 'triage') return 'history';
   if (s.screen === 'guide') return 'maneuver';
   if (s.screen === 'diag') {
     // Na ekranie testu współistnieją dziś trzy kroki. Bierzemy najdalszy, który użytkownik
@@ -288,7 +291,7 @@ export function flowVisible(s) {
   if (s.area && s.area !== 'diag') return false;          // learn / lab / profile / start
   if (s.mode === 'hints') return false;
   if (s.screen === 'start' || s.screen === 'hints') return false;
-  return s.screen === 'setup' || s.screen === 'diag' || s.screen === 'guide';
+  return s.screen === 'setup' || s.screen === 'diag' || s.screen === 'guide' || s.screen === 'triage';
 }
 
 /* PODPIS STANU dla powłoki. Obserwator mutacji #app (shell.js) odświeża chrom tylko wtedy, gdy
@@ -304,6 +307,8 @@ export function flowSignature(s) {
     s.testKey, s.variant, s.dixObs, s.diagCentral ? 1 : 0, s.decisionSeq | 0,
     s.canal, s.maneuverKey, s.stepMapOpen ? 1 : 0,
     f.testSeen ? 1 : 0, f.obsSeen ? 1 : 0, f.interpretSeen ? 1 : 0,
+    f.triage ? `${f.triage.complete ? 1 : 0}:${f.triage.kategoria}:${f.triage.sciezka}:${f.triage.pewnosc}` : '-',
+    s.triageStep || '',
     m ? `${m.key}:${m.planSide}:${m.viaInterpret ? 1 : 0}:${m.consumed ? 1 : 0}:${m.inputs ? m.inputs.seq : ''}` : '-',
   ].join('|');
 }
@@ -337,6 +342,21 @@ export function flowStatuses(s, deps) {
         // Jedyny dziś przypadek: obserwację wpisuje się wyłącznie w Dix-Hallpike'u.
         powodPl = 'Wprowadzanie zaobserwowanego oczopląsu istnieje na razie tylko dla manewru Dix–Hallpike’a. Przy tej próbie aplikacja pokazuje wzorzec PRZEWIDYWANY przez model — porównaj go z tym, co widzisz u pacjenta.';
         powodEn = 'Entering the observed nystagmus currently exists only for the Dix–Hallpike. For this test the app shows the pattern PREDICTED by the model — compare it with what you see in the patient.';
+      }
+    } else if (st.id === 'history') {
+      // Wynik kwalifikacji jest STRESZCZANY do stanu przez flow-state.syncTriage — model zostaje
+      // bezimportowy, a wyrocznia flow:check nie musi znać kwestionariusza.
+      const tr = f.triage;
+      if (tr && tr.complete) {
+        status = 'done';
+        if (tr.czerwona) {
+          powodPl = 'Kwalifikacja wykazała czerwoną flagę — przed manewrem potrzebna pilna ocena.';
+          powodEn = 'Triage found a red flag — urgent evaluation is needed before any maneuver.';
+        } else if (tr.pewnosc === 'niska') {
+          status = 'unreliable';
+          powodPl = 'Kwalifikacja niepełna — ścieżka wybrana na podstawie niepewnych odpowiedzi.';
+          powodEn = 'Triage incomplete — the pathway was chosen from uncertain answers.';
+        }
       }
     } else if (st.id === 'test') {
       if (f.testSeen) status = 'done';

@@ -7,6 +7,7 @@ import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
+import { activeQuestions, nextQuestionId, triageComplete, triageResult, czerwoneFlagi } from '../app/triage-model.js';
 import { t } from '../i18n.js';
 const tr = t;   // alias tlumaczenia dla funkcji HINTS z lokalnym 't' (string/param) — 'tr' (modul-scope) NIE jest przeslaniany, wiec nie koliduje w bundlu
 
@@ -740,6 +741,7 @@ function sizeFlip(id="flip"){ const f=$("#"+id); if(!f) return; let h=0;
 function render(){
   cancelAnims();
   if(state.screen==="start") renderStart();
+  else if(state.screen==="triage") renderTriage();
   else if(state.screen==="setup") renderSetup();
   else if(state.screen==="guide") renderGuide();
   else if(state.screen==="hints") renderHints();
@@ -784,7 +786,7 @@ function renderStart(){
     <section class="startpage">
       <h2 class="starth">${t("Wybierz tryb","Choose a mode")}</h2>
       <div class="modecards">
-        <button type="button" class="modecard modecard--clin" onclick="goArea('diag')">
+        <button type="button" class="modecard modecard--clin" onclick="openTriage()">
           <span class="modecard__ico" aria-hidden="true">${I.lek}</span>
           <span class="modecard__txt"><b>${t("Badam pacjenta","Examining a patient")}</b>
             <small>${t("Tryb kliniczny dla lekarzy i praktyków","Clinical mode for physicians and practitioners")}</small></span>
@@ -828,6 +830,82 @@ function renderStart(){
 
       <div class="disclaimer">${t('<b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem.','<b>Support tool for medical staff.</b> Does not replace examination, diagnosis, or clinician judgment. Nystagmus timings and patterns are illustrative — verify against your own protocol.')}</div>
     </section>`;
+}
+
+/* ============ Kwalifikacja wstępna („Wywiad", Blok 6) ============
+   Układ z dokumentu: komputer — kwestionariusz i podsumowanie ryzyka OBOK SIEBIE, panel boczny
+   tłumaczy, DLACZEGO proponowana jest dana ścieżka; telefon — mała grupa pytań, wynik jako
+   wyraźna karta z JEDNĄ zalecaną akcją, dłuższe wyjaśnienie w rozwijanym „Dlaczego?".
+   Dwie kolumny idą przez ten sam `.pagegrid` co ekran manewru, więc na telefonie znikają
+   (display:contents) i kolejność czytania zostaje pytania → wynik.
+
+   Karta wyniku pokazuje ŚCIEŻKĘ, nigdy rozpoznania — patrz nagłówek triage-model.js. */
+function triageOpcjaHTML(q, o, wybrane){
+  const zazn = q.typ==="wielokrotny" ? (wybrane||[]).includes(o.v) : wybrane===o.v;
+  const akcja = q.typ==="wielokrotny" ? `toggleTriageFlaga('${o.v}')` : `setTriage('${q.id}','${o.v}')`;
+  return `<button type="button" class="tqopt" aria-pressed="${zazn}" onclick="${akcja}">
+      <span class="tqopt__box" aria-hidden="true"></span>
+      <span class="tqopt__txt">${t(o.pl,o.en)}</span></button>`;
+}
+function triageQuestionHTML(q, odp, nastepne){
+  const wybrane = odp[q.id];
+  const odpowiedziane = q.typ==="wielokrotny" ? Array.isArray(wybrane)&&wybrane.length : !!wybrane;
+  return `<section class="card tq ${q.id===nastepne?'tq--biezace':''} ${odpowiedziane?'tq--gotowe':''}">
+      <h3 class="tq__q">${t(q.pl,q.en)}</h3>
+      <p class="tq__hint">${t(q.plHint,q.enHint)}</p>
+      <div class="tq__opts">${q.opcje.map(o=>triageOpcjaHTML(q,o,wybrane)).join("")}</div>
+    </section>`;
+}
+function renderTriage(){
+  const odp = state.triage||{};
+  const pytania = activeQuestions(odp);
+  const nastepne = nextQuestionId(odp);
+  const gotowe = triageComplete(odp);
+  const w = triageResult(odp);
+  const flagi = czerwoneFlagi(odp);
+  const ile = pytania.length, zrobione = pytania.filter(q=> q.typ==="wielokrotny"
+    ? Array.isArray(odp[q.id])&&odp[q.id].length : !!odp[q.id]).length;
+
+  // JEDNA zalecana akcja — i tylko wtedy, gdy model naprawdę dopuścił ścieżkę.
+  const akcja = gotowe && w.sciezka
+    ? `<button class="recoprimary" onclick="triageGo('${w.sciezka}')">${
+        w.sciezka==="diag" ? t("Przejdź do prób pozycyjnych","Go to positional testing")
+                           : t("Przejdź do HINTS","Go to HINTS")}</button>`
+    : "";
+  const dlaczego = gotowe && w.powody.length
+    ? `<details class="tw__why"><summary>${t("Dlaczego?","Why?")}</summary>
+        <ul class="tw__powody">${w.powody.map(p=>`<li>${t(p.pl,p.en)}</li>`).join("")}</ul></details>`
+    : "";
+  const uwagi = gotowe && (w.uwagi||[]).length
+    ? `<ul class="tw__uwagi">${w.uwagi.map(u=>`<li>${t(u.pl,u.en)}</li>`).join("")}</ul>` : "";
+
+  const wynik = gotowe
+    ? `<section class="card tw tw--${w.kategoria}" data-flow-anchor="triage" tabindex="-1">
+        <div class="tw__ttl">${flagi.length?"⚠ ":""}${t(w.tytul.pl,w.tytul.en)}</div>
+        <p class="tw__tresc">${t(w.tresc.pl,w.tresc.en)}</p>
+        ${uwagi}${dlaczego}
+        <div class="tw__akcje">${akcja}</div>
+        <p class="tw__pewnosc">${t("Pewność kwalifikacji","Triage confidence")}: <b>${
+          w.pewnosc==="wysoka"?t("wysoka","high"):w.pewnosc==="srednia"?t("średnia","medium"):t("niska","low")}</b></p>
+      </section>`
+    : `<section class="card tw tw--wtoku">
+        <div class="tw__ttl">${t("Kwalifikacja w toku","Triage in progress")}</div>
+        <p class="tw__tresc">${t(`Odpowiedziano na ${zrobione} z ${ile} pytań. Wynik pojawi się, gdy odpowiesz na wszystkie — łącznie z przeglądem czerwonych flag.`,
+                                 `${zrobione} of ${ile} questions answered. The result appears once all are answered — including the red-flag review.`)}</p>
+      </section>`;
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="goArea('start')" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Wywiad — kwalifikacja wstępna","History — initial triage")}</b><span>${t("czas trwania · wyzwalacz · czerwone flagi","time course · trigger · red flags")}</span></div>
+      ${Object.keys(odp).length?`<button class="opt opt--inline" onclick="resetTriage()">${t("Wyczyść","Clear")}</button>`:""}</div>
+    <div class="pagegrid triagegrid">
+      <div class="col col--ctl">
+        ${pytania.map(q=>triageQuestionHTML(q,odp,nastepne)).join("")}
+      </div>
+      <div class="col col--viz">${wynik}</div>
+    </div>
+    <div class="disclaimer">${t('<b>Kwalifikacja wskazuje ŚCIEŻKĘ BADANIA, nie rozpoznanie.</b> Opiera się na taksonomii czas-i-wyzwalacze z wytycznych GRACE-3 (Edlow i wsp., <i>Acad Emerg Med</i> 2023). Nie zastępuje badania ani decyzji klinicysty.',
+                              '<b>The triage selects an EXAMINATION PATHWAY, not a diagnosis.</b> It follows the timing-and-triggers taxonomy of the GRACE-3 guideline (Edlow et al., <i>Acad Emerg Med</i> 2023). It does not replace examination or clinician judgment.')}</div>`;
 }
 
 function renderSetup(){
@@ -1707,8 +1785,8 @@ function sideSel(current, fn, lbl){
   return `<div class="sidesel"><span class="lbl">${lbl}</span><div class="tabs">${opt('L')}${opt('P')}</div></div>`;
 }
 
-export { renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
+export { renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { startGo, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });
+Object.assign(window, { renderTriage, startGo, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });

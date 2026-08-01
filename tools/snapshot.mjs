@@ -115,6 +115,8 @@ const HANDLE_NAMES = [
   // Blok 5 — potrzebne warstwie `shell`. Brak któregokolwiek = handleMissing = twardy exit(1),
   // czyli sytuacja „powłoka przestała być sterowalna z testu" jest błędem, a nie cichą degradacją.
   'goArea', 'syncShell', 'toggleDiagCentral',
+  // Blok 6 — kwalifikacja wstępna. Brak = handleMissing = twardy exit(1).
+  'openTriage', 'setTriage', 'toggleTriageFlaga', 'resetTriage',
 ];
 function makeHandle(win) {
   if (win.__OTOREPO_TEST__) return win.__OTOREPO_TEST__;
@@ -341,6 +343,28 @@ function domOracle(h, win) {
     }
   }
 
+  /* Kwalifikacja wstępna („Wywiad", Blok 6). Pinujemy po JEDNYM stanie na każdą kategorię
+     taksonomii GRACE-3 — to jedyny ekran, którego treść jest wprost zaleceniem klinicznym,
+     więc cicha zmiana słów („nie wykonuj repozycji" → cokolwiek łagodniejszego) musi się
+     odbić w wyroczni. Scenariusz `czerwona` jest najważniejszy: ten sam komplet odpowiedzi
+     co `tEVS`, różniący się WYŁĄCZNIE ataksją chodu. */
+  if (h.openTriage && h.setTriage && h.toggleTriageFlaga && h.resetTriage) {
+    const tri = (tag, odp, flagi) => grab(`triage/${tag}`, () => {
+      h.resetTriage();
+      h.openTriage();
+      for (const [k, v] of Object.entries(odp)) h.setTriage(k, v);
+      for (const f of (flagi || [])) h.toggleTriageFlaga(f);
+      h.render();
+    });
+    tri('pusty', {});
+    tri('tEVS', { przebieg: 'napadowe', wyzwalacz: 'pozycyjny' }, ['brak']);
+    tri('czerwona', { przebieg: 'napadowe', wyzwalacz: 'pozycyjny' }, ['ataksja']);
+    tri('AVS', { przebieg: 'ciagle', oczoplas: 'obecny' }, ['brak']);
+    tri('pseudoAVS', { przebieg: 'ciagle', oczoplas: 'brak' }, ['brak']);
+    tri('sEVS', { przebieg: 'napadowe', wyzwalacz: 'samoistny' }, ['brak']);
+    try { h.resetTriage(); } catch { /* przywróć czysty stan dla kolejnych warstw */ }
+  }
+
   // HINTS — presety
   for (const p of Object.keys(h.HINTS_PRESETS || {})) {
     grab(`hints/preset/${p}`, () => {
@@ -396,6 +420,8 @@ function shellOracle(h, win) {
     st.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
     st.decisionSeq = 0; st.diagCentral = false; st.variant = 'canalo'; st.dixObs = 'post';
     st.stepMapOpen = false; st.running = false; st.step = 0;
+    st.triage = {}; st.triageStep = null;
+    try { if (h.resetTriage) h.resetTriage(); } catch { }
   };
 
   grab('start', () => { czysty(); h.goArea && h.goArea('start'); });
@@ -439,6 +465,17 @@ function shellOracle(h, win) {
     h.toggleDiagCentral && h.toggleDiagCentral(true);
     h.openTest && h.openTest('roll');
     h.openTest && h.openTest('dix');
+    h.syncShell && h.syncShell();
+  });
+  // Czerwona flaga z kwalifikacji MUSI jechac z uzytkownikiem przez caly przebieg: karta wyniku
+  // zostaje na ekranie Wywiadu, a sygnal ma byc widoczny „PRZED przejsciem do manewru lub HINTS".
+  grab('flaga/czerwona-w-pasku', () => {
+    czysty();
+    h.openTriage && h.openTriage();
+    h.setTriage && h.setTriage('przebieg', 'napadowe');
+    h.setTriage && h.setTriage('wyzwalacz', 'pozycyjny');
+    h.toggleTriageFlaga && h.toggleTriageFlaga('ataksja');
+    h.openTest && h.openTest('dix');            // uzytkownik idzie dalej mimo flagi
     h.syncShell && h.syncShell();
   });
   czysty();

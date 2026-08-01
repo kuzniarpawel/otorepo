@@ -49,8 +49,10 @@ const zManewrem = (o = {}, key = 'epley', via = true) => {
 /* ============ 1. Kształt tablicy kroków ============ */
 eq('SH1/kolejnosc', FLOW_IDS, ['history', 'test', 'nystagmus', 'interpret', 'maneuver', 'followup']);
 T('SH2/liczba', FLOW_STEPS.length === 6, `kroków ${FLOW_STEPS.length}, dokument mówi o sześciu`);
-T('SH3/pending', FLOW_STEPS.filter(s => s.pending).map(s => s.id).join(',') === 'history,followup',
-  'w przygotowaniu mają być dokładnie Wywiad i Kontrola');
+// Blok 6 dał Wywiadowi realną tresc (kwalifikacja wstepna), wiec jedynym krokiem bez modulu
+// zostaje Kontrola. Ta asercja ma trzymac liste KROTKA: kazdy kolejny `pending` to obietnica.
+T('SH3/pending', FLOW_STEPS.filter(s => s.pending).map(s => s.id).join(',') === 'followup',
+  'w przygotowaniu ma byc juz tylko Kontrola');
 T('SH4/dwujezycznosc', FLOW_STEPS.every(s => s.pl && s.en && s.plDesc && s.enDesc),
   'każdy krok musi mieć komplet napisów PL i EN');
 T('SH5/statusy', ['todo', 'active', 'done', 'unreliable', 'skipped', 'pending', 'stale']
@@ -269,10 +271,10 @@ eq('AK7/start', activeStepId(S({ screen: 'start' })), null);
 eq('AK8/hints', activeStepId(S({ screen: 'hints', mode: 'hints' })), null);
 
 /* ============ 9. Statusy kroków ============ */
-eq('ST1/wywiad', statusOf(S(), 'history'), 'pending');
+eq('ST1/wywiad-niewykonany', statusOf(S(), 'history'), 'todo');
 eq('ST2/kontrola', statusOf(S(), 'followup'), 'pending');
-T('ST3/powod-pending', krok(S(), 'history').powodPl.length > 20, 'krok w przygotowaniu MUSI mieć uzasadnienie');
-T('ST3b/powod-en', krok(S(), 'history').powodEn.length > 20, 'uzasadnienie po angielsku');
+T('ST3/powod-pending', krok(S(), 'followup').powodPl.length > 20, 'krok w przygotowaniu MUSI mieć uzasadnienie');
+T('ST3b/powod-en', krok(S(), 'followup').powodEn.length > 20, 'uzasadnienie po angielsku');
 eq('ST4/test-aktywny', statusOf(S(), 'test'), 'active');
 eq('ST5/test-todo-gdy-gdzie-indziej', statusOf(S({ screen: 'guide' }), 'test'), 'todo');
 eq('ST6/test-done', statusOf(S({ screen: 'guide', flow: { testSeen: true } }), 'test'), 'done');
@@ -323,7 +325,7 @@ eq('OB8/aktywny-nie-wskrzesza', activeStepId(S({ screen: 'diag', testKey: 'roll'
   for (const id of FLOW_IDS) {
     const cel = stepTarget(pusty, id);
     if (stepPending(pusty, id)) { T(`CL/${id}-pending`, cel === null, 'krok w przygotowaniu nie ma celu'); continue; }
-    T(`CL/${id}-cel`, !!cel && ['start', 'setup', 'diag', 'guide', 'hints'].includes(cel.screen),
+    T(`CL/${id}-cel`, !!cel && ['start', 'setup', 'diag', 'guide', 'hints', 'triage'].includes(cel.screen),
       `krok ${id} musi wskazać ekran obsługiwany przez render(), jest ${JSON.stringify(cel)}`);
   }
   eq('CL1/test-bez-proby', stepTarget(pusty, 'test'), { screen: 'setup', mode: 'diag', anchor: null, pelny: false });
@@ -335,7 +337,44 @@ eq('CL5/oczoplas-kotwica', stepTarget(S(), 'nystagmus').anchor, '.obsrow');
 eq('CL6/interpretacja-kotwica', stepTarget(S(), 'interpret').anchor, '[data-flow-anchor="interpret"]');
 eq('CL7/manewr-z-planem', stepTarget(S({ plan: { steps: [{}] }, maneuverKey: 'epley' }), 'maneuver'),
   { screen: 'guide', mode: 'treat', anchor: null, pelny: true });
-eq('CL8/pending-brak-celu', stepTarget(S(), 'history'), null);
+eq('CL8/pending-brak-celu', stepTarget(S(), 'followup'), null);
+eq('CL9/wywiad-ma-cel', stepTarget(S(), 'history'), { screen: 'triage', mode: 'diag', anchor: null, pelny: true });
+
+/* ============ 11b. Integracja kwalifikacji wstępnej (Blok 6) ============
+   Model przebiegu NIE zna kwestionariusza — czyta jego STRESZCZENIE zapisane przez
+   flow-state.syncTriage. Dzięki temu flow-model.js zostaje bezimportowy (tripwire CZ1). */
+eq('TR1/ekran-wywiadu', activeStepId(S({ screen: 'triage' })), 'history');
+T('TR2/pasek-widoczny', flowVisible(S({ screen: 'triage' })), 'pasek przebiegu musi być widoczny nad Wywiadem');
+eq('TR3/aktywny-na-ekranie', statusOf(S({ screen: 'triage' }), 'history'), 'active');
+{
+  const zrobiony = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null,
+    triage: { complete: true, kategoria: 'tEVS', sciezka: 'diag', pewnosc: 'wysoka', czerwona: false } };
+  eq('TR4/zakonczony', statusOf(S({ screen: 'diag', flow: zrobiony }), 'history'), 'done');
+}
+{
+  // Czerwona flaga: krok jest ZAKONCZONY (kwalifikacja dala jednoznaczna odpowiedz), ale musi
+  // niesc uzasadnienie — samo „zakonczony" nad pacjentem z ataksja chodu byloby uspokajajace.
+  const flaga = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null,
+    triage: { complete: true, kategoria: 'czerwona', sciezka: null, pewnosc: 'wysoka', czerwona: true } };
+  const k = krok(S({ screen: 'diag', flow: flaga }), 'history');
+  eq('TR5/czerwona-zakonczona', k.status, 'done');
+  T('TR6/czerwona-z-uzasadnieniem', /czerwon/i.test(k.powodPl) && k.powodEn.length > 20,
+    'status musi powiedziec, ze kwalifikacja wykazala czerwona flage');
+}
+{
+  const niepewny = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null,
+    triage: { complete: true, kategoria: 'niepewna', sciezka: null, pewnosc: 'niska', czerwona: false } };
+  eq('TR7/niska-pewnosc', statusOf(S({ screen: 'diag', flow: niepewny }), 'history'), 'unreliable');
+}
+{
+  // Podpis powloki MUSI reagowac na wynik kwalifikacji — inaczej pasek czerwonej flagi
+  // nie odswiezylby sie po jej stwierdzeniu.
+  const baza = flowSignature(S());
+  const zFlaga = flowSignature(S({ flow: { triage: { complete: true, kategoria: 'czerwona', sciezka: null, pewnosc: 'wysoka', czerwona: true } } }));
+  const zeSciezka = flowSignature(S({ flow: { triage: { complete: true, kategoria: 'tEVS', sciezka: 'diag', pewnosc: 'wysoka', czerwona: false } } }));
+  T('TR8/podpis-widzi-kwalifikacje', zFlaga !== baza && zeSciezka !== baza && zFlaga !== zeSciezka,
+    'wynik kwalifikacji musi zmieniac podpis powloki');
+}
 
 /* ============ 12. Następny krok ============ */
 eq('NX1/z-testu', nextStepId(S({ screen: 'diag' }), DEPS), 'nystagmus');
@@ -343,14 +382,15 @@ eq('NX2/z-oczoplasu', nextStepId(S({ screen: 'diag', flow: { obsSeen: true } }),
 eq('NX3/z-interpretacji', nextStepId(S({ screen: 'diag', flow: { obsSeen: true, interpretSeen: true } }), DEPS), 'maneuver');
 eq('NX4/pomija-pending', nextStepId(S({ screen: 'guide' }), DEPS), null);
 eq('NX5/z-niczego', nextStepId(S({ screen: 'start' }), DEPS), 'test');
+eq('NX7/z-wywiadu', nextStepId(S({ screen: 'triage' }), DEPS), 'test');
 {
   const s = zManewrem({ screen: 'guide' }); s.variant = 'cupulo';
   eq('NX6/stale-kieruje-do-interpretacji', nextStepId(s, DEPS), 'interpret');
 }
 
 /* ============ 13. Osiągalność i podpis ============ */
-T('OS1/pending-nieosiagalny', !stepReachable(S(), 'history') && !stepReachable(S(), 'followup'), 'kroki w przygotowaniu');
-T('OS2/reszta-osiagalna', ['test', 'nystagmus', 'interpret', 'maneuver'].every(id => stepReachable(S(), id)), 'kroki istniejące');
+T('OS1/pending-nieosiagalny', !stepReachable(S(), 'followup'), 'krok w przygotowaniu');
+T('OS2/reszta-osiagalna', ['history', 'test', 'nystagmus', 'interpret', 'maneuver'].every(id => stepReachable(S(), id)), 'kroki istniejące');
 T('OS3/nieznany', !stepReachable(S(), 'bzdura'), 'nieznany krok');
 eq('PD1/podpis-pl', stepSummary(S({ screen: 'diag' }), 'pl'), { nr: 2, total: 6, label: 'Próba', id: 'test' });
 eq('PD2/podpis-en', stepSummary(S({ screen: 'guide' }), 'en'), { nr: 5, total: 6, label: 'Maneuver', id: 'maneuver' });
@@ -377,7 +417,7 @@ if (bledy.length) {
   process.exit(1);
 }
 // Bramka liczności: skasowanie przypadków jest równie groźne jak zepsucie kodu.
-const OCZEKIWANE = 164;
+const OCZEKIWANE = 174;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);
