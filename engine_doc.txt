@@ -809,7 +809,7 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
        Test) → hints()/werdykt.
 [H9] Tarnutzer AA, Berkowitz AL, Robinson KA, Hsieh YH, Newman-Toker DE (2011). "Acute vestibular
      syndrome: does my patient have a stroke?" CMAJ 183(9):E571–E592.
-     → przegląd różnicowania AVS obwód/ośrodek; kontekst kliniczny werdyktu (narzędzie dydaktyczne).
+     → przegląd różnicowania AVS obwód/ośrodek; kontekst kliniczny werdyktu (narzędzie dydaktyczne); rama ED = wytyczne GRACE-3 [H24].
 [H10] Curthoys IS, Halmagyi GM (1995). "Vestibular compensation: a review of the oculomotor, neural, and
       clinical consequences of unilateral vestibular loss." J Vestib Res 5(2):67–107.
       → kompensacja STATYCZNA i DYNAMICZNA; clamp móżdżkowy, odbudowa spoczynkowej symetrii → compensate().
@@ -873,6 +873,17 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         HIMP); „zabójca sakad ukrytych" (covert ~5% vs ~35%) → czystszy gain (nieco niższy → stąd niższe cięcie
         0.5). Protokół: szczyt prędkości głowy > 120 °/s, amplituda 10–30°. SHIMP nie zaimplementowany (kandydat
         na rozszerzenie headImpulse: ta sama maszyneria gain, lecz obecność sakady = ZDROWY VOR).
+[H24] Edlow JA, Carpenter C, Akhter M, et al. (2023). "Guidelines for Reasonable and Appropriate Care in the
+      Emergency Department 3 (GRACE-3): Acute dizziness and vertigo in the emergency department." Acad Emerg
+      Med 30(5):442–486. doi:10.1111/acem.14728. PMID 37166022.
+      → WYTYCZNE ED (SAEM, GRADE, 15 zaleceń) dla ostrych zawrotów < 2 tyg. Podejście czas-i-wyzwalacze (zamiast
+        typu zawrotu): t-EVS (wyzwalane pozycją = BPPV → Dix-Hallpike/Epley, roll/Gufoni) · AVS ciągły (prawdziwy
+        AVS z oczopląsem samoistnym → HINTS(+) TYLKO u przeszkolonych; pseudo-AVS bez oczopląsu → znieś fiksację,
+        każda ataksja chodu = OŚRODEK) · s-EVS (samoistny epizodyczny → migrena przedsionkowa, TIA tylnego kręgu).
+        NIE stosować CT do wykluczenia udaru (MRI DWI+MRA dla ośrodek/niejednoznaczny; wczesne MRI fałszywie ujemne
+        → powtórzyć 48–72 h); czerwone flagi 5 D (dyplopia, dyzartria, dysfagia, dysfonia, dysmetria). Rama
+        dydaktyczna + autorytet dla całego różnicowania OTOREPO (HINTS + BPPV); migrena przedsionkowa (s-EVS)
+        CELOWO nie modelowana — flagowana jako różnicowa.
 
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE

@@ -810,7 +810,7 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
        Test) → hints()/verdict.
 [H9] Tarnutzer AA, Berkowitz AL, Robinson KA, Hsieh YH, Newman-Toker DE (2011). "Acute vestibular
      syndrome: does my patient have a stroke?" CMAJ 183(9):E571–E592.
-     → a review of AVS peripheral/central differentiation; the clinical context of the verdict (an educational tool).
+     → a review of AVS peripheral/central differentiation; the clinical context of the verdict (an educational tool); ED framework = the GRACE-3 guideline [H24].
 [H10] Curthoys IS, Halmagyi GM (1995). "Vestibular compensation: a review of the oculomotor, neural, and
       clinical consequences of unilateral vestibular loss." J Vestib Res 5(2):67–107.
       → STATIC and DYNAMIC compensation; the cerebellar clamp, restoration of resting symmetry → compensate().
@@ -874,6 +874,17 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         deficit — rule INVERTED vs HIMP); "covert-saccade killer" (covert ~5% vs ~35%) → cleaner gain (slightly
         lower → hence the lower 0.5 cutoff). Protocol: peak head velocity > 120 °/s, amplitude 10–30°. SHIMP not
         implemented (candidate to extend headImpulse: same gain machinery, but presence of a saccade = HEALTHY VOR).
+[H24] Edlow JA, Carpenter C, Akhter M, et al. (2023). "Guidelines for Reasonable and Appropriate Care in the
+      Emergency Department 3 (GRACE-3): Acute dizziness and vertigo in the emergency department." Acad Emerg
+      Med 30(5):442–486. doi:10.1111/acem.14728. PMID 37166022.
+      → ED GUIDELINE (SAEM, GRADE, 15 recommendations) for acute dizziness < 2 wk. A timing-and-triggers approach
+        (instead of the type of dizziness): t-EVS (positionally triggered = BPPV → Dix-Hallpike/Epley, roll/Gufoni)
+        · AVS continuous (true AVS with spontaneous nystagmus → HINTS(+) ONLY if trained; pseudo-AVS without
+        nystagmus → remove fixation, any gait ataxia = CENTRAL) · s-EVS (spontaneous episodic → vestibular migraine,
+        posterior-circulation TIA). Do NOT use CT to exclude stroke (MRI DWI+MRA for central/equivocal; early MRI
+        false-negative → repeat 48–72 h); the 5 Ds red flags (diplopia, dysarthria, dysphagia, dysphonia,
+        dysmetria). An educational framing + authority for all of OTOREPO's differentiation (HINTS + BPPV);
+        vestibular migraine (s-EVS) DELIBERATELY not modelled — flagged as a differential.
 
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals
