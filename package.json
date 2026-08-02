@@ -22,7 +22,8 @@
     "viz:check": "node tools/vizclock-check.mjs",
     "barany:check": "node tools/barany-check.mjs",
     "obs:check": "node tools/obs-check.mjs",
-    "interp:check": "node tools/interp-check.mjs"
+    "interp:check": "node tools/interp-check.mjs",
+    "interp:dom": "node tools/interp-dom.mjs"
   },
   "repository": {
     "type": "git",

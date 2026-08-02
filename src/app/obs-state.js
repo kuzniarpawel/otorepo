@@ -12,13 +12,24 @@
  * stronę i zalecany manewr (a `setDixObs('ant')` robi dokładnie te cztery rzeczy naraz),
  * czyli Blok 9 wchodziłby tylnymi drzwiami przy okazji wypełniania formularza.
  */
-import { pustyRekord, OBS_POLA, OBS_FAZY, instancjeStosowalne, wartoscInstancji, kluczInstancji } from './obs-model.js';
+import { pustyRekord, OBS_POLA, OBS_FAZY, instancjeStosowalne, wartoscInstancji, kluczInstancji,
+         odciskObserwacji } from './obs-model.js';
 import { markDecision, markSeen } from './flow-state.js';
 
 function dostep(state, proba) {
   if (!state.obs || typeof state.obs !== 'object') state.obs = {};
   if (!state.obs[proba]) state.obs[proba] = pustyRekord(proba);
   return state.obs[proba];
+}
+
+/* ODCISK OPISU dla wykrywania nieaktualnego wniosku (Blok 5 × Blok 9). Liczony TUTAJ, bo
+   flow-model.js jest bezimportowy i nie może zawołać `odciskObserwacji` sam, a rekord obserwacji
+   ma dokładnie jednego pisarza — ten moduł. Każda mutacja rekordu MUSI przez to przejść: odcisk,
+   który rozjedzie się z rekordem, jest gorszy od braku odcisku, bo alarm milczy fałszywie. */
+function odswiezOdcisk(state, proba) {
+  if (!state.obsOdciski || typeof state.obsOdciski !== 'object') state.obsOdciski = {};
+  const r = obsRekordu(state, proba);
+  state.obsOdciski[proba] = r ? odciskObserwacji(r) : null;
 }
 
 export function obsRekordu(state, proba) {
@@ -28,6 +39,7 @@ export function obsRekordu(state, proba) {
 export function setObsWystapil(state, proba, w) {
   const r = dostep(state, proba);
   r.wystapil = (r.wystapil === w) ? undefined : w;      // ponowne dotknięcie = cofnięcie odpowiedzi
+  odswiezOdcisk(state, proba);
   markSeen(state, 'obsSeen');
 }
 
@@ -36,6 +48,7 @@ export function setObsPole(state, proba, klucz, wartosc) {
   const e = r.pola[klucz];
   if (e && e.w === wartosc) delete r.pola[klucz];        // cofnięcie odpowiedzi, nie „nie wiem"
   else r.pola[klucz] = { w: wartosc, znak: e ? e.znak : null };
+  odswiezOdcisk(state, proba);
   markSeen(state, 'obsSeen');
 }
 
@@ -46,6 +59,9 @@ export function oznaczObsPole(state, proba, klucz) {
   const e = r.pola[klucz];
   if (!e) return;
   e.znak = e.znak === null ? 'niepewne' : e.znak === 'niepewne' ? 'niewiarygodne' : null;
+  // Znacznik ZMIENIA odcisk, bo `odciskObserwacji` pomija pola kwarantannowane: oznaczenie cechy
+  // jako niewiarygodnej wyjmuje ją z podstawy wniosku równie skutecznie jak jej skasowanie.
+  odswiezOdcisk(state, proba);
 }
 
 export function setObsPowod(state, proba, powod) {
@@ -58,7 +74,8 @@ export function setObsPowod(state, proba, powod) {
    usuwanie cudzego zapisu jest najgorszym możliwym obejściem się z danymi. */
 export function clearObs(state, proba) {
   if (!state.obs) return;
-  if (proba) delete state.obs[proba]; else state.obs = {};
+  if (proba) { delete state.obs[proba]; odswiezOdcisk(state, proba); }
+  else { state.obs = {}; state.obsOdciski = {}; }
 }
 
 export function setObsGrupa(state, grupa) {

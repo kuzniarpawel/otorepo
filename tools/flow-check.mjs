@@ -69,7 +69,7 @@ T('SH6/flowStep', flowStep('maneuver').id === 'maneuver' && flowStep('nieistniej
 T('SH7/brak-t', !/\bt\(/.test(FLOW_STEPS.map(s => s.pl + s.en).join('')), 'napisy nie mogą przechodzić przez t()');
 
 /* ============ 2. Odcisk wejść decyzyjnych ============ */
-eq('OD1/dix', decisionInputs(S()), { testKey: 'dix', variant: 'canalo', dixObs: 'post', side: 'P', central: false });
+eq('OD1/dix', decisionInputs(S()), { testKey: 'dix', variant: 'canalo', dixObs: 'post', side: 'P', central: false, obsOdcisk: null });
 eq('OD2/roll-zeruje-dixObs', decisionInputs(S({ testKey: 'roll', dixObs: 'ant' })).dixObs, null);
 eq('OD3/headhang', decisionInputs(S({ testKey: 'headhang', dixObs: 'ant' })).dixObs, null);
 T('OD4/central', decisionInputs(S({ diagCentral: true })).central === true, 'diagCentral → central');
@@ -84,6 +84,13 @@ T('OD8/sameInputs-null', !sameInputs(null, decisionInputs(S())) && !sameInputs(d
 // którego nie da się zdjąć. Sygnał zatarty przez nawigację łapie osobna, precyzyjna flaga.
 T('OD9/seq-poza-odciskiem', sameInputs(decisionInputs(S()), decisionInputs(S({ decisionSeq: 7 }))),
   'sam licznik decyzji nie może unieważniać wniosku');
+/* OD10-OD12 — ODCISK OPISU OBSERWACJI (Blok 9). Model jest bezimportowy, więc czyta gotową
+   wartość z `state.obsOdciski[proba]`; liczy ją obs-state.js. Odcisk jest KLUCZOWANY PRÓBĄ,
+   inaczej opis rolla unieważniałby wniosek z Dix-Hallpike'a. */
+eq('OD10/odcisk-w-odcisku', decisionInputs(S({ obsOdciski: { dix: 'dix|pion#jedyna=p1' } })).obsOdcisk, 'dix|pion#jedyna=p1');
+eq('OD11/odcisk-innej-proby-niewidoczny', decisionInputs(S({ obsOdciski: { roll: 'roll|poziom#prawoWDole=p1' } })).obsOdcisk, null);
+T('OD12/odcisk-rozroznia', !sameInputs(decisionInputs(S()), decisionInputs(S({ obsOdciski: { dix: 'dix|pion#jedyna=p1' } }))),
+  'sameInputs MUSI widzieć zmianę opisu — inaczej odcisk jest martwym polem');
 
 /* ============ 3. Wykrywanie nieaktualnego manewru ============ */
 eq('DR1/swiezy', maneuverDrift(zManewrem()), []);
@@ -136,6 +143,40 @@ T('DR10/brak-flow', maneuverDrift({ testKey: 'dix', side: 'P', variant: 'canalo'
 { const s = zManewrem(); s.flow.maneuver.inputs.dixObs = 'ant'; s.dixObs = null;
   T('DR-D/ant-na-null-alarm', maneuverDrift(s).some(x => x.pole === 'dixObs'),
     'cofnięcie downbeatu też zmienia wniosek'); }
+
+/* --- 3a''. SKASOWANIE OPISU PO WYBORZE MANEWRU (Blok 9, poprawka F3) ---
+   Defekt, którego pilnuje DR-O2: `variant` przykleja się do ostatniej wartości (animacja musi coś
+   rysować), więc po skasowaniu opisu WSZYSTKIE dotychczasowe pola odcisku stały nietknięte, dryf
+   był pusty i krok „Manewr" świecił `done` na mechanizmie, którego podstawę użytkownik przed
+   chwilą skasował. Kierunek „było → nie ma" jest tu ważniejszy niż zwykły, dlatego straż
+   `bylUstalony` przy tym polu NIE STOI. */
+{ const s = zManewrem({ obsOdciski: { dix: 'dix|pion#jedyna=p1,torsja#jedyna=p1' } });
+  s.obsOdciski = { dix: 'dix|pion#jedyna=m1,torsja#jedyna=p1' };
+  T('DR-O1/zmiana-opisu-alarm', maneuverDrift(s).some(x => x.pole === 'obsOdcisk'),
+    'zmiana opisu rozstrzygającej cechy MUSI unieważnić wniosek'); }
+{ const s = zManewrem({ obsOdciski: { dix: 'dix|pion#jedyna=p1,torsja#jedyna=p1' } });
+  s.obsOdciski = {};
+  const d = maneuverDrift(s);
+  T('DR-O2/skasowanie-opisu-alarm', d.some(x => x.pole === 'obsOdcisk'),
+    'skasowanie opisu zostawiało wniosek bez podstawy i BEZ alarmu — to jest naprawiany defekt');
+  T('DR-O2b/wlasne-zdanie', d.some(x => x.pole === 'obsOdcisk' && /skasowano/.test(x.pl) && /cleared/.test(x.en)),
+    'skasowanie i zmiana to dwa różne zdarzenia i muszą mieć różne zdania'); }
+{ const s = zManewrem(); s.obsOdciski = {};
+  eq('DR-O3/dwa-puste-to-nie-zmiana', maneuverDrift(s), []); }
+{ // Droga „Znam kanał i stronę": testKey null po obu stronach, opis nie istnieje — cisza.
+  const s = zManewrem({ testKey: null }, 'epley', false);
+  eq('DR-O4/bez-proby-cisza', maneuverDrift(s).filter(x => x.pole === 'obsOdcisk'), []); }
+{ // Odcisk jest kluczowany próbą, więc zmiana próby NIE dokłada drugiego, mylącego powodu.
+  const s = zManewrem({ obsOdciski: { dix: 'dix|pion#jedyna=p1' } });
+  s.testKey = 'roll'; s.dixObs = 'post';
+  const d = maneuverDrift(s);
+  T('DR-O5/przy-zmianie-proby-bez-szumu', !d.some(x => x.pole === 'obsOdcisk'),
+    'zmiana próby ma JEDEN powód — testKey; odcisk opisu nie może dokładać drugiego'); }
+{ // Pola wagi 1-2 nie wchodzą do `odciskObserwacji`, więc ich dopisywanie nie może alarmować.
+  // Kontrola czułości całej sekcji: gdyby odcisk był porównywany BEZ warunku równości prób,
+  // DR-O5 by padło; gdyby nie był porównywany wcale, padłoby DR-O1 i DR-O2.
+  const s = zManewrem({ obsOdciski: { dix: 'dix|pion#jedyna=p1' } });
+  eq('DR-O6/ten-sam-odcisk-cisza', maneuverDrift(s), []); }
 
 /* --- 3b. Sygnał zatarty przez nawigację ---
    Ciąg z krytyki: Dix → Epley → oznacz „Ośrodkowy — CPN" → INNA próba → z powrotem Dix.
@@ -469,7 +510,7 @@ if (bledy.length) {
   process.exit(1);
 }
 // Bramka liczności: skasowanie przypadków jest równie groźne jak zepsucie kodu.
-const OCZEKIWANE = 187;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8
+const OCZEKIWANE = 197;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9, odcisk opisu w wejsciach decyzyjnych
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

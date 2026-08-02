@@ -10,4 +10,9 @@
 @import './flow.css';      /* pasek przebiegu klinicznego: 6 krokow + ostrzezenie (Blok 5) */
 @import './triage.css';    /* kwalifikacja wstepna „Wywiad" + pasek czerwonej flagi (Blok 6) */
 @import './start.css';     /* ekran startowy oparty na celu uzytkownika (Blok 4) */
+/* Arkusz Bloku 8 NIE BYL WPIETY NIGDZIE — caly ekran „Oczoplas" renderowal sie bez stylow, przy
+   komplecie zielonych wyroczni (domOracle czyta innerHTML, nie kaskade). Bramka: interp:dom
+   sprawdza, ze kazdy plik z src/styles/ jest zaimportowany wlasnie tutaj. */
+@import './obs.css';       /* krok „Oczoplas": formularz opisu obserwacji (Blok 8) */
+@import './interp.css';    /* interpretacja: obraz nietypowy, kandydatury (Blok 9) */
 @import './a11y.css';      /* pola dotykowe, fokus, stan nie-tylko-kolorem, ograniczenie ruchu */

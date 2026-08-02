@@ -7,7 +7,8 @@ import { state } from '../app/state.js';
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
          OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
          ETYKIETY_OSI, nieuzyte, porownajZPredykcja, WERDYKTY_POROWNANIA, fazaDIAG,
-         OBS_FAZY } from '../app/obs-model.js';
+         OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI } from '../app/obs-model.js';
+import { nietypowy, POWODY_NIETYPOWOSCI } from '../app/interp-model.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
@@ -1404,15 +1405,56 @@ function diagClassifyCard(canal, v, side, antMode, wsparcie){
    odwrotność tego, czego wymaga bezpieczeństwo. Zasada: kwarantanna wycisza WNIOSEK,
    nigdy OSTRZEŻENIE. */
 function obsRekord(){ return ((state.obs || {})[state.testKey]) || null; }
-/* Ile ekran ma prawo powiedzieć. Do czasu powstania ekranu obserwacji jedynym wejściem jest
-   ubogi, dwustanowy przełącznik `.obsrow` przy Dix-Hallpike — ubogi, ale JEST wypowiedzią
-   klinicysty, więc liczy się jako opis częściowy. Brak jakiejkolwiek wypowiedzi to `brak`:
-   to jest naprawa defektu, od którego zaczął się cały blok (pusty opis dawał pełne
-   rozpoznanie i gotowy przycisk manewru). */
+
+/* WSTRZYKIWACZ WIEDZY KLINICZNEJ DO MODELU INTERPRETACJI (Blok 9). `interp-model.js` jest
+   bezimportowy, więc predykcje silnika, wzorce dynamiki i zasady kwarantanny dostaje stąd —
+   DOKŁADNIE tak samo, jak dostaje je wyrocznia (tools/interp-check.mjs). Rozjazd tych dwóch
+   wstrzykiwaczy oznaczałby, że wyrocznia bada inny model niż aplikacja, więc każda zmiana
+   MUSI iść w obu miejscach naraz. */
+function interpDeps(){
+  return {
+    fazyProby: (p)=>OBS_FAZY[p],
+    /* Kandydatura kanału PRZEDNIEGO przy Dix-Hallpike'u nie siedzi w `DIAG.dix.phases` —
+       aplikacja buduje ją osobno (gałąź `antMode` niżej) przez nysFromGeom, bo ułożenie głowy
+       jest to samo, a inny jest tylko zaobserwowany oczopląs. Bez tego wyjątku kandydatura
+       przednia dostawałaby predykcję kanału TYLNEGO i obie przechodziłyby identycznie. */
+    faza: (p, fazaId, kand)=>{
+      const { side, variant } = kand;
+      try{
+        if(p==="dix" && kand.canal==="anterior"){
+          const badana = otherSide(side);
+          const n = nysFromGeom("anterior", side, variant, Vestibular.qSupineYaw(badana==="P"?45:-45));
+          return { h:n.anat.h, v:n.anat.v, t:n.anat.t, s:n.strength==null?1:n.strength };
+        }
+        const f = DIAG[p].phases(side, variant)[fazaDIAG(p, fazaId, side)];
+        if(!f || !f.nys || !f.nys.anat) return null;
+        return { h:f.nys.anat.h, v:f.nys.anat.v, t:f.nys.anat.t, s:f.nys.strength==null?1:f.nys.strength };
+      }catch(e){ return null; }
+    },
+    wzorzec: (variant)=>WZORCE_DYNAMIKI.find(z=>z.id===(variant==="cupulo"?"B":"A")),
+    czytaj: (rek, klucz, ufaj)=>wartoscInstancji(rek, klucz, { ufajNiewiarygodnym: !!ufaj }),
+    spojnosc, flagi,
+    // Po WSZYSTKICH próbach, nie po bieżącej: inaczej rada „zrób następną próbę" kasowałaby
+    // alarm, bo downbeat opisany w Dix-Hallpike znikałby z pamięci po przełączeniu na roll.
+    proby: OBS_PROBY,
+    rekord: (p)=>((state.obs || {})[p]) || null,
+  };
+}
+/* Ile ekran ma prawo powiedzieć.
+   ═══ KRYTERIUM ODBIORU NR 2 („brak wystarczających danych NIE jest przedstawiany jako pewne
+   rozpoznanie") DZIAŁAŁO DOTĄD TYLKO PRZY DIX-HALLPIKE'U ═══
+   Ustępstwo `proba!=="dix" → czesciowe` było w Bloku 8 UCZCIWE: przy rollu, bow&leanie
+   i head-hangu nie istniało wtedy ŻADNE pole, w które dałoby się cokolwiek wpisać, więc
+   wymaganie opisu zamykałoby trzy z czterech prób na głucho. Blok 8 zbudował pełny formularz dla
+   WSZYSTKICH czterech prób i tym samym unieważnił tę przesłankę — a ustępstwo zostało. Skutek
+   zmierzony: wejście na ekran rolla bez jednego dotknięcia formularza dawało kartę klasyfikacji
+   z nazwanym podtypem, stroną chorą i gotowym „Rozpocznij: Lempert”.
+   Droga „Znam kanał i stronę" (ekran wyboru, tryb leczenia) zostaje otwarta i prowadzi do manewru
+   bez opisu — z tą różnicą, że tam kanał i strona pochodzą JAWNIE od użytkownika, a pasek
+   przebiegu odnotowuje krok „Interpretacja" jako pominięty Z UZASADNIENIEM. */
 function obsPoparcie(rek, proba, dixObs){
   if(rek) return poparcie(rek, proba, dixObs);
-  if(proba!=="dix") return { poziom:"czesciowe", powod:null };
-  return dixObs ? { poziom:"czesciowe", powod:null } : { poziom:"brak", powod:"brakOpisu" };
+  return (proba==="dix" && dixObs) ? { poziom:"czesciowe", powod:null } : { poziom:"brak", powod:"brakOpisu" };
 }
 /* Ekran przy BRAKU opisu. Nie ma tu ani podtypu, ani plakietki „zespół ustalony", ani strony
    chorej, ani przycisku „Rozpocznij" — bo żadna z tych rzeczy nie wynika z niczego, co
@@ -1425,6 +1467,22 @@ function kartaBezOpisu(wsparcie){
     <div class="note" style="color:var(--text)">${t(p.pl, p.en)}</div>
     <div class="note">${t("Opisz zaobserwowany oczopląs — aplikacja pokaże wtedy, do którego wzorca pasuje.","Describe the observed nystagmus — the app will then show which pattern it matches.")}</div></div>`;
 }
+/* Blok akcji przy obrazie NIETYPOWYM. Zajmuje miejsce rekomendacji manewru — nie dokłada się do
+   niej — i świadomie NIE zawiera ani jednego `startManeuver(`. Wymienia POWODY, bo „coś tu nie
+   gra" bez wskazania czego jest komunikatem, który uczy klikać dalej. Nie jest rozpoznaniem
+   ośrodkowym: mówi, że TEN model nie ma wzorca na to, co opisano, i że repozycja nie ma na czym
+   stanąć. Dwa wyjścia są realne: poprawić opis albo wziąć inną próbę. */
+function kartaNietypowa(niet){
+  const powody = (niet.powody||[]).map(p=>POWODY_NIETYPOWOSCI[p]).filter(Boolean);
+  return `<div class="reco reco--niet"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
+    <div class="note" style="color:var(--ant)"><b>${t("Repozycja niewskazana na tej podstawie.","Repositioning is not indicated on this basis.")}</b> ${t("Opisany obraz jest NIETYPOWY — nie da się z niego wyprowadzić kanału i strony, a manewr wykonany „na wszelki wypadek” przenosi złóg w miejsce, którego nikt nie ustalił.","The described picture is ATYPICAL — the canal and side cannot be derived from it, and a maneuver done “just in case” moves debris to a place nobody has established.")}</div>
+    ${powody.length?`<ul class="nietpowody">${powody.map(p=>`<li>${t(p.pl,p.en)}</li>`).join("")}</ul>`:""}
+    <div class="note">${t("Oceń przyczynę OŚRODKOWĄ, zanim wrócisz do repozycji. Jeżeli opis nie oddaje tego, co widziałeś — popraw go; jeżeli oddaje, wykonaj inną próbę pozycyjną.","Assess a CENTRAL cause before returning to repositioning. If the description does not reflect what you saw — correct it; if it does, perform a different positional test.")}</div>
+    <div class="recobtns">
+      <button class="recoalt" onclick="goObs()">${t("Wróć do opisu obserwacji","Back to the observation record")}</button>
+      <button class="recoalt" onclick="backToSetup()">${t("Wybierz inną próbę","Choose a different test")}</button>
+    </div></div>`;
+}
 function renderDiag(){
   const D=DIAG[state.testKey], A=state.side, v=state.variant;   // D = obiekt testu (NIE koliduj z importem t = tlumaczenie)
   const isDix = state.testKey==="dix";
@@ -1434,6 +1492,13 @@ function renderDiag(){
   // OSTRZEŻENIA czytają REKORD — także wtedy, gdy jest oznaczony jako niewiarygodny.
   const ostrDownbeat = rekObs ? ostrzezenieDownbeat(rekObs) : (isDix && state.dixObs==="ant");
   const ostrSkretny  = rekObs ? ostrzezenieSkretny(rekObs)  : false;
+  /* KRYTERIUM ODBIORU NR 3 („nietypowy wynik NIE prowadzi automatycznie do manewru repozycyjnego").
+     Bramka stoi TUTAJ, a nie na nowym ekranie interpretacji, bo `recommend()` wołany jest w tym
+     pliku i to stąd wychodzi jedyny `startManeuver(` diagnostyki. Zmierzony przeciwprzykład:
+     roll o kierunku STAŁYM (prawo w dole = lewo w dole) daje flagę f3, a ekran próby dalej
+     pokazywał „Rozpocznij: Lempert". `recommend()` zostaje NIETKNIĘTY — po prostu nie jest
+     wołany w tej gałęzi, więc konflikt z kryterium znika bez ruszania silnika. */
+  const niet = nietypowy(state, interpDeps());
   const effCanal = antMode ? "anterior" : D.canal;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
   const phases = D.phases(A,v).map(ph => antMode
@@ -1537,7 +1602,8 @@ function renderDiag(){
     ${wsparcie.poziom==="brak" ? kartaBezOpisu(wsparcie, state.testKey) : diagClassifyCard(effCanal, v, effSide, antMode, wsparcie)}
     ${ostrSkretny ? `<div class="redflag">${t('<b>⚠ Oczopląs czysto skrętny.</b> Kierunek bez składowej pionowej nie odpowiada żadnemu kanałowi w tym modelu — to jedna z cech przemawiających za przyczyną OŚRODKOWĄ. Nie wykonuj repozycji na tej podstawie.','<b>⚠ Purely torsional nystagmus.</b> A direction with no vertical component does not match any canal in this model — it is one of the features arguing for a CENTRAL cause. Do not perform repositioning on this basis.')}</div>` : ""}
     ${ostrDownbeat ? `<div class="redflag">${t('<b>⚠ Czerwona flaga — wyklucz przyczynę OŚRODKOWĄ.</b> Downbeat, który jest <b>uporczywy, bez latencji i nie wyczerpuje się</b> przy powtórzeniach, występuje także w pozycji neutralnej (na wznak, głowa prosto), albo towarzyszą mu objawy neurologiczne (dyzartria, ataksja, zaburzenia spojrzenia, dwojenie) — przemawia za przyczyną OŚRODKOWĄ (móżdżek, pogranicze czaszkowo‑szyjne: malformacja Arnolda‑Chiariego, SM, zmiany naczyniowe). Wymaga oceny neurologicznej i MRI, nie manewru. Repozycję rozważ dopiero po wykluczeniu przyczyny ośrodkowej.','<b>⚠ Red flag — rule out a CENTRAL cause.</b> A downbeat that is <b>persistent, without latency and non-fatiguing</b> on repetition, is also present in the neutral position (supine, head straight), or is accompanied by neurological signs (dysarthria, ataxia, gaze disturbances, diplopia) — argues for a CENTRAL cause (cerebellum, craniocervical junction: Arnold-Chiari malformation, MS, vascular lesions). Requires neurological evaluation and MRI, not a maneuver. Consider repositioning only after ruling out a central cause.')}</div>` : ""}
-    ${wsparcie.poziom==="brak" ? "" : (()=>{ if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
+    ${wsparcie.poziom==="brak" ? "" : (()=>{ if(niet.nietypowy && !state.diagCentral) return kartaNietypowa(niet);
+      if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--ant)">${t('<b>Repozycja niewskazana.</b> Przy podejrzeniu ośrodkowego oczoplasu pozycyjnego (CPN) nie wykonuj manewrów repozycyjnych — najpierw ocena neurologiczna i MRI tylnego dołu. Wróć do widoku „Obwodowy — BPPV", jeśli obraz jednak spełnia kryteria BPPV.','<b>Repositioning is not indicated.</b> When central positional nystagmus (CPN) is suspected, do not perform repositioning maneuvers — first a neurological evaluation and MRI of the posterior fossa. Return to the "Peripheral — BPPV" view if the picture does meet BPPV criteria.')}</div></div>`;
       const rec = antMode
         ? {primary:"yacovino", alts:[], note:t(`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`,`Downbeat in the Dix-Hallpike → ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}), LARP/RALP plane. Treatment: Yacovino (deep head-hang → quick chin-to-chest movement). Lateralization by nystagmus uncertain.`)}

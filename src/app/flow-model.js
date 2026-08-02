@@ -135,13 +135,21 @@ export function decisionInputs(s) {
     dixObs: testKey === 'dix' ? (s.dixObs || 'post') : null,
     side: s.side || null,
     central: !!s.diagCentral,
+    /* ODCISK OPISU OBSERWACJI (Blok 9). Bez niego skasowanie opisu PO wyborze manewru
+       zostawiało komplet pól odcisku bez zmian: `variant` przyklejał się do ostatniej wartości,
+       `maneuverDrift` był pusty, a krok „Manewr" świecił `done` na mechanizmie, którego podstawę
+       użytkownik przed chwilą skasował. Wartość liczy `odciskObserwacji` (obs-model.js — WYŁĄCZNIE
+       pola wagi 3, z pominięciem kwarantannowanych), a wstawia ją do stanu jedyny pisarz rekordów
+       obserwacji, obs-state.js. Dzięki temu ten moduł zostaje bezimportowy, a pola wagi 1-2
+       (przebieg, warunki, fiksacja…) NIE ruszają odcisku, więc ich dopisywanie nie alarmuje. */
+    obsOdcisk: testKey ? ((s.obsOdciski || {})[testKey] || null) : null,
   };
 }
 
 export function sameInputs(a, b) {
   if (!a || !b) return false;
   return a.testKey === b.testKey && a.variant === b.variant && a.dixObs === b.dixObs
-      && a.side === b.side && a.central === b.central;
+      && a.side === b.side && a.central === b.central && a.obsOdcisk === b.obsOdcisk;
 }
 
 // Czy w chwili zapisu odcisku dane pole było w ogóle ustalone. Wejście „Znam kanał i stronę"
@@ -226,6 +234,23 @@ export function maneuverDrift(s) {
   if (bylUstalony(was, 'side') && was.side !== now.side)
     out.push({ pole: 'side', pl: 'zmieniono stronę',
                en: 'the side was changed', waga: 'krytyczna' });
+
+  /* OPIS OBSERWACJI ZMIENIONY ALBO SKASOWANY (Blok 9). Straży `bylUstalony` TU NIE MA, i to jest
+     cały sens tego porównania: przypadek graniczny biegnie w drugą stronę niż zwykle — groźny jest
+     stan „w chwili wyboru manewru opis BYŁ, teraz go nie ma", w którym `now.obsOdcisk` jest null,
+     a nie `was`. Warunek `was.testKey === now.testKey` odcina zmianę próby (ta ma własny, mocniejszy
+     powód) i drogę „Znam kanał i stronę" (testKey null po obu stronach → alternatywa niżej fałszywie
+     by nie zaszła, bo oba odciski są wtedy null i tak). Alarm milczy, dopóki którakolwiek strona
+     nie niesie opisu — dwa puste stany to nie zmiana. */
+  if (was.testKey === now.testKey && (was.obsOdcisk || now.obsOdcisk) && was.obsOdcisk !== now.obsOdcisk)
+    out.push({ pole: 'obsOdcisk',
+               pl: now.obsOdcisk
+                 ? 'zmieniono opis zaobserwowanego oczopląsu — wniosek stoi na innej obserwacji niż w chwili wyboru manewru'
+                 : 'skasowano opis zaobserwowanego oczopląsu — wniosek stracił podstawę, na której go wybrano',
+               en: now.obsOdcisk
+                 ? 'the observed-nystagmus description was changed — the conclusion rests on a different observation than when the maneuver was chosen'
+                 : 'the observed-nystagmus description was cleared — the conclusion lost the basis it was chosen on',
+               waga: 'krytyczna' });
 
   /* SYGNAŁ ZATARTY PRZEZ NAWIGACJĘ. Samo porównanie pól ma tu ślepą plamkę: wybór innej próby
      zeruje diagCentral i dixObs (actions.js), więc po ciągu „Epley → oznacz CPN → inna próba →
@@ -325,6 +350,10 @@ export function flowSignature(s) {
   return [
     s.screen, s.mode, s.area, s.step, s.side, s.lang,
     s.testKey, s.variant, s.dixObs, s.diagCentral ? 1 : 0, s.decisionSeq | 0,
+    // Blok 9: odcisk opisu wszedł do `decisionInputs`, więc bez niego w podpisie zmiana opisu
+    // zapalałaby dryf, którego pasek NIGDY by nie przerysował (obserwator #app nie odświeża chromu,
+    // dopóki podpis stoi) — alarm istniałby wyłącznie w modelu.
+    (s.obsOdciski || {})[s.testKey] || '',
     s.canal, s.maneuverKey, s.stepMapOpen ? 1 : 0,
     f.testSeen ? 1 : 0, f.obsSeen ? 1 : 0, f.interpretSeen ? 1 : 0,
     f.triage ? `${f.triage.complete ? 1 : 0}:${f.triage.kategoria}:${f.triage.sciezka}:${f.triage.pewnosc}` : '-',

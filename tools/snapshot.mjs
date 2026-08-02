@@ -400,6 +400,27 @@ function domOracle(h, win) {
     obs('bowlean/odwraca', 'bowlean', [['poziom#bow', 'p1'], ['poziom#lean', 'm1']]);
     obs('headhang/pusty', 'headhang', []);
     obs('headhang/downbeat', 'headhang', [['pion#jedyna', 'm1'], ['pozycjaNeutralna', 'tak'], ['fiksacja', 'nieTlumil']]);
+
+    /* OBRAZ NIETYPOWY NA EKRANIE PRÓBY (Blok 9, kryterium odbioru nr 3). Para scenariuszy
+       bliźniaczych, różniących się WYŁĄCZNIE kierunkiem w drugiej fazie rolla: geotropowy
+       (kierunek się odwraca) prowadzi do manewru, stały (nie odwraca się — flaga f3) prowadzi
+       do komunikatu zamiast przycisku. Bez tej PARY klucz pinowałby tylko jeden stan i nie
+       byłoby widać, że różnicę robi obserwacja, a nie sam fakt istnienia opisu.
+       Wnętrze bloku leczenia jest tu jedynym miejscem, gdzie golden widzi rekomendację manewru
+       pod kontrolą opisu — `interp:dom` bada obecność przycisku, a nie brzmienie zdań. */
+    const diagPoOpisie = (tag, proba, kroki) => grab(`diag/${tag}`, () => {
+      czystyObs();
+      if (h.openTest) h.openTest(proba); else Object.assign(h.state, { testKey: proba });
+      if (h.setDiagSide) h.setDiagSide('P');
+      for (const [klucz, w] of kroki) h.setObsPole(proba, klucz, w);
+      h.render();
+    });
+    diagPoOpisie('roll-geotropowy/P', 'roll', [
+      ['poziom#prawoWDole', 'p1'], ['pion#prawoWDole', 'zero'],
+      ['poziom#lewoWDole', 'm1'], ['pion#lewoWDole', 'zero'], ['nasilenie', 'silniejsza']]);
+    diagPoOpisie('roll-kierunek-staly/P', 'roll', [
+      ['poziom#prawoWDole', 'p1'], ['pion#prawoWDole', 'zero'],
+      ['poziom#lewoWDole', 'p1'], ['pion#lewoWDole', 'zero']]);
     czystyObs();
   }
 
