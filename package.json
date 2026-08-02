@@ -21,7 +21,8 @@
     "triage:check": "node tools/triage-check.mjs",
     "viz:check": "node tools/vizclock-check.mjs",
     "barany:check": "node tools/barany-check.mjs",
-    "obs:check": "node tools/obs-check.mjs"
+    "obs:check": "node tools/obs-check.mjs",
+    "interp:check": "node tools/interp-check.mjs"
   },
   "repository": {
     "type": "git",
