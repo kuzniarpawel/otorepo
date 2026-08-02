@@ -8,6 +8,7 @@
 import {
   kandydatury, interpretuj, werdyktCechy, nietypowy, WERDYKT,
   CECHY_KIERUNKU, CECHY_DYNAMIKI, POWODY_ZGODNOSCI, POWODY_NIETYPOWOSCI, KANDYDATURY_PROBY,
+  sugerowaneProby, odciskPredykcji, rozdzielaProba,
 } from '../src/app/interp-model.js';
 import { OBS_FAZY, pustyRekord, kluczInstancji } from '../src/app/obs-model.js';
 /* WSTRZYKIWACZ JEST TEN SAM, KTÓREGO UŻYWA APLIKACJA (src/app/interp-deps.js) — nie kopia.
@@ -217,6 +218,45 @@ for (const v of ['p1', 'm1', 'zero']) {
   T('NIET5/powody-dwujezyczne', Object.values(POWODY_NIETYPOWOSCI).every(p => p.pl && p.en), 'każdy powód dwujęzyczny');
 }
 
+/* ============ 8a. SUGEROWANA NASTĘPNA PRÓBA — WYPROWADZONA Z MODELU ============
+   Nie ma tu ani jednej wpisanej ręcznie pary „próba → próba". Pytanie brzmi: czy kandydatury,
+   które przetrwały, mają w innej próbie RÓŻNE predykcje. Dzięki temu rada nie może się rozjechać
+   z silnikiem — ale musi też umieć powiedzieć „żadna próba tego nie rozdzieli", zamiast odsyłać
+   klinicystę do badania, które nic nie wniesie. */
+{
+  const bl = interpretuj(rek('bowlean', { 'poziom#bow': 'p1', 'poziom#lean': 'm1' }), 'bowlean', DEPS);
+  eq('SUG1/bowlean-rozdziela-roll', sugerowaneProby(bl.pozostale, 'bowlean', DEPS), ['roll']);
+
+  // Head-hang: strony nie ustala ŻADNA próba w tym modelu (kanał przedni to wszędzie czysty
+  // downbeat). Pusta lista jest tu TWIERDZENIEM, nie luką — i musi taka zostać.
+  const hh = interpretuj(rek('headhang', { 'pion#jedyna': 'm1' }), 'headhang', DEPS);
+  eq('SUG2/headhang-zadna-proba', sugerowaneProby(hh.pozostale, 'headhang', DEPS), []);
+
+  // Dix z samym kierunkiem: zostaje kanalo vs kupulo, a mechanizm rozstrzyga DYNAMIKA, która jest
+  // ta sama we wszystkich próbach — więc żadne kolejne badanie nie pomoże.
+  const dx = interpretuj(rek('dix', { 'pion#jedyna': 'p1', 'torsja#jedyna': 'p1', 'poziom#jedyna': 'zero' }), 'dix', DEPS);
+  eq('SUG3/dix-mechanizm-to-nie-inna-proba', sugerowaneProby(dx.pozostale, 'dix', DEPS), []);
+
+  T('SUG4/nigdy-siebie', DEPS.proby.every(p => !sugerowaneProby(kandydatury(p), p, DEPS).includes(p)),
+    'próba nie może sugerować samej siebie');
+  // Każda sugerowana próba MUSI naprawdę rozdzielać — to samo twierdzenie, drugą drogą.
+  T('SUG5/sugestia-naprawde-rozdziela', sugerowaneProby(bl.pozostale, 'bowlean', DEPS)
+    .every(p => new Set(bl.pozostale.filter(x => kandydatury(p).some(k => k.canal === x.canal && k.side === x.side && k.variant === x.variant))
+      .map(k => odciskPredykcji(k, p, DEPS))).size > 1), 'sugerowana próba musi mieć różne predykcje dla pozostałych');
+
+  /* KONTROLA CZUŁOŚCI + zmierzony fakt: RELACJA SIŁ jest w odcisku NOŚNA. Bez niej (canalo,P)
+     i (canalo,L) mają przy rollu identyczny odcisk kierunku `1,0,0|-1,0,0`, więc roll wyglądałby
+     na próbę nierozdzielającą — a jest jedyną, która ustala stronę kanału poziomego.
+     Zmierzone: roll ma 4 rozłączne odciski z siłą i tylko 2 bez niej. */
+  const zSila = new Set(kandydatury('roll').map(k => odciskPredykcji(k, 'roll', DEPS)));
+  const bezSily = new Set([...zSila].map(s => s.split('#')[0]));
+  eq('SUG6/roll-z-sila', zSila.size, 4);
+  eq('SUG6b/roll-bez-sily', bezSily.size, 2);
+  // …i to samo dla bow&leana, gdzie dwuznaczność jest STRUKTURALNA: siła jest symetryczna,
+  // więc odciski zlewają się parami niezależnie od tego, czy ją liczymy.
+  eq('SUG7/bowlean-dwuznacznosc-strukturalna', new Set(kandydatury('bowlean').map(k => odciskPredykcji(k, 'bowlean', DEPS))).size, 2);
+}
+
 /* ============ 9. SEP — zero słownictwa rozpoznania i zero procentów ============ */
 {
   const napisy = [];
@@ -273,7 +313,7 @@ if (bledy.length) {
   for (const b of bledy.slice(0, 20)) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 68;
+const OCZEKIWANE = 76;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

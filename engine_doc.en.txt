@@ -903,3 +903,112 @@ SIMPLIFICATIONS / CAVEATS:
   - HINTS as an EDUCATIONAL model — it does NOT replace an examination; valid in AVS with a persistent nystagmus,
     interpret with HINTS "plus" (hearing) and context (Tarnutzer 2011 [H9]). NOTE: a compensated peripheral loss
     can have a bedside HIT "normal" (covert saccades) — a pitfall when the AVS nystagmus is no longer present.
+
+================================================================================
+OBSERVATIONS OUTSIDE THE MODEL — what the BPPV engine does NOT compute (Block 8)
+================================================================================
+The "Nystagmus" step lets the clinician record what they SAW in the patient. Some of the features
+the form asks about have NO counterpart in the engine — and that is written down explicitly, so
+that nobody mistakes the model's silence for its prediction. The "Compare with the model's
+prediction" card returns the verdict `nieporownywalne` (not comparable) for them, never `rozne`
+(different).
+
+1. EFFECT OF VISUAL FIXATION. The BPPV engine has no fixation parameter. Verified: the key set of
+   `Vestibular` (isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
+   simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor, qmul, qconj,
+   qaxis, rotate, GEXC, CANAL_NORMALS, CUP_WEAK) contains not a single one. Fixation suppression
+   exists EXCLUSIVELY in NeuroVOR (see [H3]) and is read only by the HINTS screen. Clinically the
+   feature matters (peripheral nystagmus is suppressed by fixation, central is not), so the field
+   stays in the form — with weight 1 and an explicit annotation next to the question.
+
+2. DIRECTION REVERSAL ON SITTING UP. The model has no sitting-up phase in the diagnostic test:
+   `DIAG.dix.phases` is a SINGLE phase, and `engineXi` builds its time axis from one segment
+   {q, tTrans, tHold}. The liberatory transient described above (maneuver dynamics) has THE SAME
+   SIGN as the primary excitation and is not a reversal. The field stays in the form with weight 1.
+
+3. VERTIGO ACCOMPANYING THE NYSTAGMUS. The criterion is not in the repository — `baranyClassify`
+   has no such row in `crit[]`. We do NOT fill the gap with an invented criterion; we name it here
+   so that Block 9 knows what is missing.
+
+DURATION AS A CLAIM, NOT AN ANIMATION PARAMETER
+The positional-test simulation window (`XI_OKNO_PRZEMIJAJACY`, `XI_OKNO_UPORCZYWY` in maneuvers.js)
+stands for CLINICAL TIME, not animation convenience. The two numbers have different status:
+  - canalithiasis — the duration is set by PHYSICS. Measured natural decay (|xi| < 3% of peak):
+    posterior 29.75 s, horizontal 39.85 s, anterior 34.35 s. The window (55 s) must ACCOMMODATE
+    that decay, not define it.
+  - cupulolithiasis — xi does NOT decay (|xi| = 1.000 of peak even after 300 s), so tEnd IS the
+    window and nothing else. That number (75 s) is a clinical claim outright and must exceed the
+    60 s threshold the app prints next to the animation.
+Gate: npm run barany:check. The golden pins VALUES but does not express RELATIONS — which is why
+the previous value (18 s, shorter than the transient form) passed green.
+
+================================================================================
+INTERPRETATION — WHAT THE MODEL CAN SETTLE, AND WHAT IT CANNOT (Block 9)
+================================================================================
+The "Interpretation" step leads from a RECORDED observation to canal, side and mechanism. It holds
+no second, independent set of clinical rules: that would be a third description of the same
+knowledge (after the engine and `baranyClassify`) and would drift apart at the first parameter
+change. Instead we ENUMERATE 20 candidates (test x canal x side x mechanism) and check which of
+them the recorded observation EXCLUDES. A candidate falls when even one recorded DECISIVE feature
+contradicts the model's prediction. No scoring, no percentages, no ranking.
+
+"Agreement" describes the RELATION of the record to a pattern, not the state of the patient, and
+has NO numeric form. A number next to a canal name would read as the probability of a diagnosis in
+this patient.
+
+LIMITS OF DECIDABILITY — MEASURED ON THE ENGINE'S PREDICTIONS
+The four statements below are claims about the MODEL, not about the examiner's diligence. The app
+states each of them explicitly on the interpretation screen, each with its own distinct reason.
+
+1. DIX-HALLPIKE: the direction gives the SIDE (torsion +-1) but NOT the mechanism. Canalithiasis
+   and cupulolithiasis have an identical direction {h:0, v:+0.93, t:+1} — they differ only in
+   `strength` (1.00 vs 0.60), which the form does not measure. The mechanism follows EXCLUSIVELY
+   from the dynamics (latency, duration, fatigability), and those are the same in ALL tests, so no
+   further positional test will settle it.
+
+2. ROLL TEST: the direction gives the MECHANISM (geo/apo), while the side comes only from the
+   ASYMMETRY OF INTENSITY — and in opposite directions for the two mechanisms: canalithiasis, the
+   affected ear STRONGER (1.00/0.45); cupulolithiasis, the affected ear WEAKER (0.27/0.60). This is
+   the only one of the four missing-side cases that can be fixed by RECORDING more, so the screen
+   asks for a specific feature instead of declaring a limitation of the model.
+
+3. BOW & LEAN: the ambiguity is STRUCTURAL. (canalithiasis, one ear) and (cupulolithiasis, the
+   other) produce an IDENTICAL pattern, and the intensity is symmetric — measured: 4 candidates
+   yield only 2 disjoint prediction fingerprints. No further description of THIS test will separate
+   them; the roll test does.
+
+4. DEEP HEAD-HANG: all 4 candidates have the same direction {h:0, v:-1, t:0}. The side is
+   NOT DERIVABLE — a consequence of the simplification described above (the anterior canal drawn as
+   a pure downbeat), not a lack of data. NO test in this model will establish it.
+
+THE SUGGESTED NEXT TEST IS DERIVED, NOT WRITTEN DOWN
+There is not a single hand-written "test -> test" pair in the code. We ask the model: do the
+candidates that survived have DIFFERENT predictions in another test (`odciskPredykcji`)? The
+fingerprint covers the direction per phase AND the relation of intensities between phases; without
+the intensity relation, (canalithiasis,R) and (canalithiasis,L) have an identical direction
+fingerprint in the roll test, so the roll would look like a test that does not separate them — and
+it is the only one that establishes the side of the horizontal canal. Measured: the roll has 4
+disjoint fingerprints with intensity and only 2 without it.
+An empty suggestion list is a CLAIM ("no test will separate this"), not a gap. Sending the
+clinician to an examination that cannot contribute anything would be worse than silence.
+
+AN ATYPICAL PICTURE DOES NOT LEAD TO A MANEUVER (acceptance criterion 3)
+`recommend()` ALWAYS returns a first-line maneuver and remains UNTOUCHED — it is simply not called
+when `nietypowy()` is true. The alarm is computed over ALL records of the session, not over the
+current test: otherwise the advice "do the next test" would clear it, because a downbeat recorded
+in the Dix-Hallpike would vanish from memory on switching to the roll. Quarantine ("unreliable
+observation") silences the CONCLUSION but NOT the alarm — `interpretuj` performs a second, CONTROL
+pass including the quarantined fields, and if that pass leaves no candidate at all, the picture
+stays atypical.
+
+SOURCE OF THE MECHANISM
+`state.variant` drives the animation, the feature chips, the Barany classification and the choice
+of maneuver. Until Block 9 it looked identical in three different situations; the most dangerous of
+them — "it is left over from the previous screen, because the animation has to draw something" —
+posed as a conclusion. `state.variantZrodlo` tells them apart explicitly: derived (by an explicit
+gesture, and only when exactly one mechanism remains) / manually overridden / none. Changing the
+record removes the derivation but NOT the mechanism: the animation has to draw something, only the
+claim about its source disappears.
+
+Gates: npm run interp:check (pure model, bare Node) and npm run interp:dom (a DOM scan in jsdom —
+criterion 3 is a claim about the SCREEN, not about the model).

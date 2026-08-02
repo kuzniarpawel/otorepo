@@ -170,6 +170,51 @@ export function interpretuj(rekord, proba, deps) {
   };
 }
 
+/* ═══ SUGEROWANA NASTĘPNA PRÓBA — WYPROWADZONA, NIE WPISANA ═══
+   Kusiło, żeby zapisać wprost „przy bow&leanie zrób roll". Byłby to CZWARTY opis tej samej
+   wiedzy (po silniku, `baranyClassify` i tym module) i rozjechałby się przy pierwszej zmianie
+   parametru — dokładnie ten błąd, przed którym broni zasada z nagłówka pliku.
+   Zamiast tego pytamy MODEL: czy dwie kandydatury, które przetrwały, mają w tej innej próbie
+   RÓŻNE predykcje? Jeśli tak, próba je rozdzieli; jeśli nie — nie ma po co jej robić i trzeba
+   to powiedzieć wprost, zamiast odsyłać klinicystę do badania, które nic nie wniesie.
+
+   ODCISK PREDYKCJI celowo obejmuje kierunek per faza ORAZ relację sił między fazami: przy rollu
+   kierunek niesie mechanizm, a stronę niesie dopiero asymetria nasilenia, więc odcisk bez sił
+   uznałby (canalo,P) i (canalo,L) za nierozróżnialne i zgubił jedyną próbę, która je rozdziela.
+   NIE obejmuje dynamiki — wzorce dynamiki są te same we wszystkich próbach, więc dokładanie ich
+   sugerowałoby, że kolejne badanie rozstrzygnie mechanizm, którego nie rozstrzyga. */
+export function odciskPredykcji(kand, proba, deps) {
+  const fazy = deps.fazyProby(proba) || [];
+  const czesci = [];
+  const sily = [];
+  for (const f of fazy) {
+    const p = deps.faza(proba, f, kand);
+    czesci.push(p ? [znakModelu(p.h), znakModelu(p.v), znakModelu(p.t)].join(',') : 'x');
+    sily.push(p && p.s != null ? p.s : null);
+  }
+  let rel = '-';
+  if (fazy.length === 2 && sily[0] != null && sily[1] != null) {
+    const d = sily[0] - sily[1];
+    rel = Math.abs(d) < 0.02 ? 'rowne' : d > 0 ? 'pierwsza' : 'druga';
+  }
+  return `${czesci.join('|')}#${rel}`;
+}
+
+const taSama = (a, b) => a.canal === b.canal && a.side === b.side && a.variant === b.variant;
+
+/* Czy `proba` rozdziela kandydatury, które przetrwały? Wymaga co najmniej DWÓCH wspólnych:
+   próba, która obejmuje tylko jedną z nich, niczego nie rozstrzyga o pozostałych. */
+export function rozdzielaProba(pozostale, proba, deps) {
+  const wspolne = (pozostale || []).filter(p => kandydatury(proba).some(k => taSama(k, p)));
+  if (wspolne.length < 2) return false;
+  const odciski = new Set(wspolne.map(k => odciskPredykcji(k, proba, deps)));
+  return odciski.size > 1;
+}
+
+export function sugerowaneProby(pozostale, biezaca, deps) {
+  return (deps.proby || []).filter(p => p !== biezaca && rozdzielaProba(pozostale, p, deps));
+}
+
 export const POWODY_NIETYPOWOSCI = {
   sprzecznyZWszystkimi: { pl: 'opis nie pasuje do żadnego wzorca, który model zna', en: 'the description matches no pattern the model knows' },
   wyciszoneKwarantanna: { pl: 'opis przestaje pasować do czegokolwiek po uwzględnieniu cechy oznaczonej jako niewiarygodna', en: 'the description stops matching anything once the feature marked unreliable is included' },

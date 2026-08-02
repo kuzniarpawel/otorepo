@@ -8,7 +8,7 @@ import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wniosk
          OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
          ETYKIETY_OSI, nieuzyte, porownajZPredykcja, WERDYKTY_POROWNANIA, fazaDIAG,
          OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI } from '../app/obs-model.js';
-import { nietypowy, interpretuj, POWODY_NIETYPOWOSCI, POWODY_ZGODNOSCI, CECHY_KIERUNKU, CECHY_DYNAMIKI } from '../app/interp-model.js';
+import { nietypowy, interpretuj, sugerowaneProby, POWODY_NIETYPOWOSCI, POWODY_ZGODNOSCI, CECHY_KIERUNKU, CECHY_DYNAMIKI } from '../app/interp-model.js';
 import { interpDeps as _interpDeps } from '../app/interp-deps.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -1175,6 +1175,17 @@ function powodBrakuStrony(w, proba){
     return `${lead} ${t("To ograniczenie MODELU, a nie brak staranności: kanalolitiaza jednego ucha i kupulolitiaza drugiego dają w tej próbie IDENTYCZNY wzorzec, a nasilenie jest symetryczne — żaden dodatkowy opis tej próby ich nie rozdzieli. Rozstrzyga próba obrotowa albo odpowiedź na manewr.","This is a limitation of the MODEL, not a lack of care: canalithiasis of one ear and cupulolithiasis of the other produce an IDENTICAL pattern in this test, and the intensity is symmetric — no further description of this test will separate them. The roll test or the response to a maneuver settles it.")}`;
   return `${lead} ${t("To ograniczenie MODELU, a nie brak staranności: kanał przedni rysowany jest jako czysty downbeat (uproszczenie kliniczne), więc kierunek oczopląsu jest dla obu stron taki sam. Stronę rozstrzyga kontekst kliniczny i odpowiedź na manewr.","This is a limitation of the MODEL, not a lack of care: the anterior canal is drawn as a pure downbeat (a clinical simplification), so the nystagmus direction is the same for both sides. The side is settled by the clinical context and the response to the maneuver.")}`;
 }
+/* SUGEROWANA NASTĘPNA PRÓBA. Lista NIE jest wpisana ręcznie — `sugerowaneProby` pyta model, czy
+   pozostałe kandydatury mają w innej próbie RÓŻNE predykcje. Dzięki temu rada nie może rozjechać
+   się z silnikiem, a pusta lista jest TWIERDZENIEM („żadna próba tego nie rozdzieli"), nie luką.
+   Odesłanie klinicysty do badania, które z góry nic nie wniesie, byłoby gorsze od milczenia. */
+function kartaNastepnejProby(w, proba, deps){
+  const sug = sugerowaneProby(w.pozostale, proba, deps);
+  if(!sug.length) return `<div class="note ilimit">${t("<b>Żadna z prób, które ten model zna, nie rozdzieli tych możliwości.</b> Rozstrzyga kontekst kliniczny i odpowiedź na manewr — nie kolejne badanie pozycyjne.","<b>None of the tests this model knows will separate these possibilities.</b> The clinical context and the response to a maneuver decide — not another positional test.")}</div>`;
+  return `<div class="isug"><div class="isug__t">${t("Próba, która to rozdzieli","A test that will separate this")}</div>
+    ${sug.map(p=>`<button class="recoalt" onclick="idzDoProby('${p}')">${DIAG[p].name}</button>`).join("")}
+    <div class="note">${t("Wskazana dlatego, że model przewiduje dla pozostałych możliwości RÓŻNY obraz w tej próbie.","Indicated because the model predicts a DIFFERENT picture for the remaining possibilities in this test.")}</div></div>`;
+}
 const ETYKIETY_ZGODNOSCI = {
   pelna:      { pl:"opis pasuje do jednego wzorca", en:"the description matches one pattern" },
   czesciowa:  { pl:"opis zawęża, ale nie rozstrzyga", en:"the description narrows down but does not settle it" },
@@ -1210,6 +1221,7 @@ function renderInterpret(){
         : `<div class="note">${t("Żadna z możliwości, które model zna, nie pasuje do tego opisu.","None of the possibilities this model knows matches this description.")}</div>`}
       ${w.pozostale.length && !w.stronaWyprowadzalna ? `<div class="note ilimit">${powodBrakuStrony(w, proba)}</div>`:""}
       ${w.pozostale.length && !w.mechanizmWyprowadzalny && proba==="dix" ? `<div class="note ilimit">${t("<b>Mechanizmu nie da się wyprowadzić z samego kierunku.</b> Kanalolitiaza i kupulolitiaza dają w Dix-Hallpike'u ten sam kierunek — różni je wyłącznie DYNAMIKA (latencja, czas trwania, męczliwość).","<b>The mechanism cannot be derived from direction alone.</b> Canalithiasis and cupulolithiasis produce the same direction in the Dix-Hallpike — they differ only in DYNAMICS (latency, duration, fatigability).")}</div>`:""}
+      ${w.pozostale.length>1 ? kartaNastepnejProby(w, proba, deps) : ""}
     </div>`;
   };
 
@@ -1682,6 +1694,23 @@ function renderDiag(){
         })()}</span>
         <span class="obsgo__go" aria-hidden="true">›</span></button>
       ${isDix && state.dixObs ? `<div class="obspodstawa">${t("Przyjęta podstawa interpretacji:","Accepted basis of interpretation:")} <b>${state.dixObs==="ant"?t("downbeat","downbeat"):t("ku górze + skrętny","upbeat + torsional")}</b></div>` : ""}
+      ${/* WEJŚCIE NA EKRAN INTERPRETACJI. Do tej pory nowy ekran był osiągalny WYŁĄCZNIE przez
+            rozwiniętą mapę kroków w pasku przebiegu — a ekran, do którego trzeba trafić przez
+            schowane menu, jest praktycznie ekranem nieistniejącym. Podpis mówi, ile możliwości
+            zostało, więc wejście niesie informację, a nie samą strzałkę. */""}
+      <button class="obsgo interpgo" onclick="goInterpret()">
+        <span class="obsgo__t">${t("Interpretacja","Interpretation")}</span>
+        <span class="obsgo__s">${(()=>{
+          if(!rekObs) return t("opisz obserwację, żeby model miał co interpretować","describe the observation so the model has something to interpret");
+          const wi = interpretuj(rekObs, state.testKey, interpDeps());
+          if(wi.zgodnosc==="brak") return wi.powod==="sprzecznyZWszystkimi"
+            ? t("opis nie pasuje do żadnego wzorca, który model zna","the description matches no pattern the model knows")
+            : t("nie opisano jeszcze cechy rozstrzygającej","no decisive feature described yet");
+          return wi.pozostale.length===1
+            ? t("jedna możliwość zgodna z opisem","one possibility consistent with the description")
+            : t(`możliwości zgodnych z opisem: ${wi.pozostale.length}`,`possibilities consistent with the description: ${wi.pozostale.length}`);
+        })()}</span>
+        <span class="obsgo__go" aria-hidden="true">›</span></button>
     </div>
     ${phaseHTML}
     ${pozySekwencja(phases, A, !!state.reducedMotion)}

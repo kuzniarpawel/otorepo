@@ -121,7 +121,7 @@ const HANDLE_NAMES = [
   // nie da się wysterować z testu" jest błędem, a nie cichą degradacją pokrycia.
   'goObs', 'setObsPole', 'oznaczObsPole', 'setObsGrupa', 'wyczyscObs', 'przyjmijObs',
   // Blok 9 — krok „Interpretacja" ma wlasny ekran. Brak = handleMissing = twardy exit(1).
-  'goInterpret', 'przyjmijMechanizm', 'nadpiszMechanizm', 'wrocDoWyprowadzonego',
+  'goInterpret', 'przyjmijMechanizm', 'nadpiszMechanizm', 'wrocDoWyprowadzonego', 'idzDoProby',
 ];
 function makeHandle(win) {
   if (win.__OTOREPO_TEST__) return win.__OTOREPO_TEST__;

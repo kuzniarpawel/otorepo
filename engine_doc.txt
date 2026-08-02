@@ -939,3 +939,70 @@ udaje CZAS KLINICZNY, a nie wygode animacji. Dwie liczby maja rozny status:
     przekraczac prog 60 s, ktory aplikacja drukuje obok animacji.
 Bramka: npm run barany:check. Golden przypina WARTOSCI, ale nie wyraza RELACJI — dlatego
 poprzednia wartosc (18 s, krotsza od postaci przemijajacej) przechodzila na zielono.
+
+================================================================================
+INTERPRETACJA — CO MODEL POTRAFI ROZSTRZYGNAC, A CZEGO NIE (Blok 9)
+================================================================================
+Krok „Interpretacja" prowadzi od OPISANEJ obserwacji do kanalu, strony i mechanizmu. Nie ma
+w nim drugiego, niezaleznego zbioru regul klinicznych: bylby to trzeci opis tej samej wiedzy
+(po silniku i po `baranyClassify`) i rozjechalby sie przy pierwszej zmianie parametru. Zamiast
+tego ENUMERUJEMY 20 kandydatur (proba x kanal x strona x mechanizm) i sprawdzamy, ktore z nich
+opisana obserwacja WYKLUCZA. Kandydatura pada, gdy chocby jedna opisana cecha ROZSTRZYGAJACA
+jest sprzeczna z predykcja modelu. Bez punktacji, bez procentow, bez rankingu.
+
+„Zgodnosc" opisuje RELACJE opisu do wzorca, nie stan pacjenta, i NIE MA postaci liczbowej.
+Liczba przy nazwie kanalu czytalaby sie jak prawdopodobienstwo rozpoznania u tego pacjenta.
+
+GRANICE ROZSTRZYGALNOSCI — ZMIERZONE NA PREDYKCJACH SILNIKA
+Cztery zdania ponizej sa twierdzeniami o MODELU, a nie o starannosci badajacego. Aplikacja
+wypowiada je wprost na ekranie interpretacji, kazde z wlasnym, innym uzasadnieniem.
+
+1. DIX-HALLPIKE: kierunek daje STRONE (torsja +-1), ale NIE daje mechanizmu. Kanalolitiaza
+   i kupulolitiaza maja identyczny kierunek {h:0, v:+0,93, t:+1} — rozni je wylacznie
+   `strength` (1,00 vs 0,60), ktorego formularz nie mierzy. Mechanizm wynika WYLACZNIE
+   z dynamiki (latencja, czas trwania, meczliwosc), a ta jest ta sama we WSZYSTKICH probach,
+   wiec zadne kolejne badanie pozycyjne go nie rozstrzygnie.
+
+2. PROBA OBROTOWA (roll): kierunek daje MECHANIZM (geo/apo), a strone daje dopiero ASYMETRIA
+   SILY, i to w przeciwnych zwrotach dla obu mechanizmow — kanalolitiaza: chore ucho SILNIEJ
+   (1,00/0,45); kupulolitiaza: chore ucho SLABIEJ (0,27/0,60). To jedyny z czterech przypadkow
+   braku strony, ktory da sie naprawic OPISEM, wiec ekran prosi o konkretna ceche zamiast
+   deklarowac ograniczenie modelu.
+
+3. BOW & LEAN: dwuznacznosc jest STRUKTURALNA. (kanalolitiaza, jedno ucho) i (kupulolitiaza,
+   drugie) daja IDENTYCZNY wzorzec, a nasilenie jest symetryczne — zmierzone: 4 kandydatury
+   daja tylko 2 rozlaczne odciski predykcji. Zaden dodatkowy opis TEJ proby ich nie rozdzieli;
+   rozdziela je proba obrotowa.
+
+4. DEEP HEAD-HANG: wszystkie 4 kandydatury maja ten sam kierunek {h:0, v:-1, t:0}. Strona jest
+   NIEWYPROWADZALNA — i to konsekwencja uproszczenia opisanego wyzej (kanal przedni rysowany
+   jako czysty downbeat), a nie brak danych. ZADNA proba w tym modelu jej nie ustali.
+
+SUGEROWANA NASTEPNA PROBA JEST WYPROWADZANA, NIE WPISANA
+Nie ma w kodzie ani jednej recznie wpisanej pary „proba -> proba". Pytamy model: czy
+kandydatury, ktore przetrwaly, maja w innej probie ROZNE predykcje (`odciskPredykcji`). Odcisk
+obejmuje kierunek per faza ORAZ relacje sil miedzy fazami; bez relacji sil (kanalolitiaza,P)
+i (kanalolitiaza,L) maja przy rollu identyczny odcisk kierunku, wiec roll wygladalby na probe
+nierozdzielajaca — a jest jedyna, ktora ustala strone kanalu poziomego. Zmierzone: roll ma
+4 rozlaczne odciski z sila i tylko 2 bez niej.
+Pusta lista sugestii jest TWIERDZENIEM („zadna proba tego nie rozdzieli"), nie luka. Odeslanie
+klinicysty do badania, ktore z gory nic nie wniesie, byloby gorsze od milczenia.
+
+OBRAZ NIETYPOWY NIE PROWADZI DO MANEWRU (kryterium odbioru nr 3)
+`recommend()` ZAWSZE zwraca manewr pierwszego rzutu i pozostaje NIETKNIETY — po prostu nie jest
+wolany, gdy `nietypowy()` jest prawdziwe. Alarm liczy sie po WSZYSTKICH rekordach sesji, nie po
+biezacej probie: inaczej rada „zrob nastepna probe" kasowalaby go, bo downbeat opisany w Dix-
+Hallpike znikalby z pamieci po przelaczeniu na roll. Kwarantanna („obserwacja niewiarygodna")
+wycisza WNIOSEK, ale NIE alarm — `interpretuj` robi drugi, KONTROLNY przebieg z polami
+kwarantannowanymi i jesli ten nie zostawia zadnej kandydatury, obraz zostaje nietypowy.
+
+ZRODLO MECHANIZMU
+`state.variant` steruje animacja, chipami cech, klasyfikacja Barany i doborem manewru. Do
+Bloku 9 wygladal identycznie w trzech roznych sytuacjach; najgrozniejsza z nich — „zostal
+z poprzedniego ekranu, bo animacja musi cos rysowac" — udawala wniosek. `state.variantZrodlo`
+rozroznia je jawnie: wyprowadzony (za jawnym gestem, tylko gdy zostal dokladnie jeden
+mechanizm) / nadpisany recznie / brak. Zmiana opisu zdejmuje wyprowadzenie, ale NIE mechanizm:
+animacja musi cos rysowac, znika samo twierdzenie o zrodle.
+
+Bramki: npm run interp:check (model czysty, gola konsola Node) oraz npm run interp:dom
+(skan DOM w jsdom — kryterium nr 3 jest twierdzeniem o EKRANIE, nie o modelu).
