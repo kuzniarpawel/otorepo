@@ -407,6 +407,27 @@ eq('OB7/nastepny-nie-pomija', nextStepId(S({ screen: 'diag', testKey: 'roll' }),
 eq('OB8/aktywny-na-ekranie-obs', activeStepId(S({ screen: 'obs', testKey: 'roll' })), 'nystagmus');
 T('OB9/pasek-widoczny-na-obs', flowVisible(S({ screen: 'obs', testKey: 'roll' })), 'pasek przebiegu musi być widoczny na ekranie obserwacji');
 
+/* ============ 10a. Krok „Interpretacja" MA WŁASNY EKRAN (Blok 9, poprawka F4) ============
+   Zmierzone PRZED poprawką: `flowVisible=false` i `activeStepId=null` dla `screen:'interpret'`,
+   czyli pasek ZNIKAŁ dokładnie na ekranie, do którego krok prowadzi — a razem z nim jedyny
+   sygnał o nieaktualnym wniosku. Trzy miejsca muszą się zgadzać: cel kroku, krok aktywny
+   i widoczność paska; rozjazd któregokolwiek daje ekran-sierotę. */
+eq('IN1/cel-to-osobny-ekran', stepTarget(S({ testKey: 'dix' }), 'interpret').screen, 'interpret');
+eq('IN2/bez-kotwicy', stepTarget(S({ testKey: 'dix' }), 'interpret').anchor, null);
+eq('IN3/aktywny-na-ekranie', activeStepId(S({ screen: 'interpret', testKey: 'dix' })), 'interpret');
+T('IN4/pasek-widoczny', flowVisible(S({ screen: 'interpret', testKey: 'dix' })),
+  'pasek przebiegu MUSI być widoczny na ekranie interpretacji — inaczej krok prowadzi w miejsce, gdzie nie ma jak wrócić');
+eq('IN5/nastepny-to-manewr', nextStepId(S({ screen: 'interpret', testKey: 'dix', flow: { testSeen: true, obsSeen: true, interpretSeen: true, maneuver: null } }), DEPS), 'maneuver');
+// Ekran interpretacji czyta DIAG[testKey] tak samo jak ekran próby, więc bez wybranej próby
+// cel MUSI zejść na wybór — inaczej powtórzyłby się zawis opisany w sekcji 11.
+eq('IN6/bez-proby-zamiast', stepTarget(S({ testKey: null }), 'interpret').screen, 'setup');
+// Krok aktywny na ekranie interpretacji NIE MOŻE zależeć od znacznika `interpretSeen`: znacznik
+// mówi, co użytkownik zrobił KIEDYŚ, a ekran mówi, gdzie jest TERAZ.
+eq('IN7/aktywny-bez-znacznika', activeStepId(S({ screen: 'interpret', testKey: 'dix', flow: { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null } })), 'interpret');
+// Kontrola czułości sekcji: na ekranie PRÓBY krok interpretacji nadal wyprowadza się ze
+// znaczników (trzy kroki dzielą ten ekran), więc gałąź `screen==='diag'` musi zostać nietknięta.
+eq('IN8/ekran-proby-bez-zmian', activeStepId(S({ screen: 'diag', testKey: 'dix', flow: { testSeen: true, obsSeen: true, interpretSeen: true, maneuver: null } })), 'interpret');
+
 /* ============ 11. Cel nawigacji — bramka danych ============
    renderDiag czyta DIAG[state.testKey].canal (svg-screens.js:1039-1043), renderGuide czyta
    plan.steps[step] (:905-906). Wyjątek leci PRZED przypisaniem innerHTML, więc ekran nie drgnie,
@@ -417,7 +438,7 @@ T('OB9/pasek-widoczny-na-obs', flowVisible(S({ screen: 'obs', testKey: 'roll' })
   for (const id of FLOW_IDS) {
     const cel = stepTarget(pusty, id);
     if (stepPending(pusty, id)) { T(`CL/${id}-pending`, cel === null, 'krok w przygotowaniu nie ma celu'); continue; }
-    T(`CL/${id}-cel`, !!cel && ['start', 'setup', 'diag', 'guide', 'hints', 'triage'].includes(cel.screen),
+    T(`CL/${id}-cel`, !!cel && ['start', 'setup', 'diag', 'obs', 'interpret', 'guide', 'hints', 'triage'].includes(cel.screen),
       `krok ${id} musi wskazać ekran obsługiwany przez render(), jest ${JSON.stringify(cel)}`);
   }
   eq('CL1/test-bez-proby', stepTarget(pusty, 'test'), { screen: 'setup', mode: 'diag', anchor: null, pelny: false });
@@ -427,7 +448,11 @@ T('OB9/pasek-widoczny-na-obs', flowVisible(S({ screen: 'obs', testKey: 'roll' })
 eq('CL4/test-z-proba', stepTarget(S(), 'test'), { screen: 'diag', mode: 'diag', anchor: '[data-flow-anchor="test"]', pelny: true });
 // Blok 8: krok ma WŁASNY EKRAN, więc nie ma kotwicy w ekranie próby — rozdzielenie jest fizyczne.
 eq('CL5/oczoplas-bez-kotwicy', stepTarget(S(), 'nystagmus').anchor, null);
-eq('CL6/interpretacja-kotwica', stepTarget(S(), 'interpret').anchor, '[data-flow-anchor="interpret"]');
+// Blok 9: interpretacja też dostała WŁASNY EKRAN, więc krok przestaje celować w kotwicę na
+// ekranie próby. Sam atrybut `data-flow-anchor="interpret"` ZOSTAJE w markupie karty
+// klasyfikacji (svg-screens.js) — jest znacznikiem tego, gdzie ta karta jest, a nie celem
+// nawigacji; usunięcie go byłoby rebaseline'em bez powodu. Asercja przepisana, nie skasowana.
+eq('CL6/interpretacja-bez-kotwicy', stepTarget(S(), 'interpret').anchor, null);
 eq('CL7/manewr-z-planem', stepTarget(S({ plan: { steps: [{}] }, maneuverKey: 'epley' }), 'maneuver'),
   { screen: 'guide', mode: 'treat', anchor: null, pelny: true });
 eq('CL8/pending-brak-celu', stepTarget(S(), 'followup'), null);
@@ -510,7 +535,7 @@ if (bledy.length) {
   process.exit(1);
 }
 // Bramka liczności: skasowanie przypadków jest równie groźne jak zepsucie kodu.
-const OCZEKIWANE = 197;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9, odcisk opisu w wejsciach decyzyjnych
+const OCZEKIWANE = 205;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9 odcisk opisu; +8 (IN1-IN8) — Blok 9 wlasny ekran interpretacji
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

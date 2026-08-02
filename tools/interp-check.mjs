@@ -9,44 +9,18 @@ import {
   kandydatury, interpretuj, werdyktCechy, nietypowy, WERDYKT,
   CECHY_KIERUNKU, CECHY_DYNAMIKI, POWODY_ZGODNOSCI, POWODY_NIETYPOWOSCI, KANDYDATURY_PROBY,
 } from '../src/app/interp-model.js';
-import {
-  OBS_FAZY, pustyRekord, kluczInstancji, fazaDIAG, wartoscInstancji, spojnosc, flagi,
-  WZORCE_DYNAMIKI,
-} from '../src/app/obs-model.js';
-import { DIAG, nysFromGeom, otherSide } from '../src/pose/maneuvers.js';
-import { Vestibular } from '../src/engine/vestibular.js';
+import { OBS_FAZY, pustyRekord, kluczInstancji } from '../src/app/obs-model.js';
+/* WSTRZYKIWACZ JEST TEN SAM, KTÓREGO UŻYWA APLIKACJA (src/app/interp-deps.js) — nie kopia.
+   Wcześniej wyrocznia miała własną i rozjazd między nimi znaczyłby, że bada INNY model niż
+   aplikacja: awaria niewidoczna, bo obie strony świecą na zielono. `interpDeps` bierze stan
+   ARGUMENTEM, więc daje się zaimportować w gołym Node bez wciągania grafu renderera. */
+import { interpDeps } from '../src/app/interp-deps.js';
 
 let ok = 0; const bledy = [];
 const T = (tag, w, opis) => { if (w) ok++; else bledy.push(`${tag}: ${opis}`); };
 const eq = (tag, a, b) => T(tag, JSON.stringify(a) === JSON.stringify(b), `oczekiwano ${JSON.stringify(b)}, jest ${JSON.stringify(a)}`);
 
-const DEPS = {
-  fazyProby: (p) => OBS_FAZY[p],
-  /* KANDYDATURA KANAŁU PRZEDNIEGO PRZY DIX-HALLPIKE NIE JEST W `DIAG.dix.phases` — aplikacja
-     buduje ją osobno (renderDiag, gałąź antMode) przez nysFromGeom, bo ułożenie głowy jest
-     to samo, a inny jest tylko zaobserwowany oczopląs. Bez tego wyjątku wstrzykiwacz podawał
-     kandydaturze przedniej predykcję kanału TYLNEGO i obie przechodziły identycznie.
-     Zmierzone: chore ucho = PRZECIWNE do badanego, kierunek {h:0, v:-1, t:0} dla obu stron
-     (czyli strony z kierunku nie ustalisz — to jest właśnie „maska modelu"). */
-  faza: (p, fazaId, kand) => {
-    const { side, variant } = kand;
-    try {
-      if (p === 'dix' && kand.canal === 'anterior') {
-        const badana = otherSide(side);
-        const n = nysFromGeom('anterior', side, variant, Vestibular.qSupineYaw(badana === 'P' ? 45 : -45));
-        return { h: n.anat.h, v: n.anat.v, t: n.anat.t, s: n.strength == null ? 1 : n.strength };
-      }
-      const f = DIAG[p].phases(side, variant)[fazaDIAG(p, fazaId, side)];
-      if (!f || !f.nys || !f.nys.anat) return null;
-      return { h: f.nys.anat.h, v: f.nys.anat.v, t: f.nys.anat.t, s: f.nys.strength == null ? 1 : f.nys.strength };
-    } catch { return null; }
-  },
-  wzorzec: (variant) => WZORCE_DYNAMIKI.find(z => z.id === (variant === 'cupulo' ? 'B' : 'A')),
-  czytaj: (rek, klucz, ufaj) => wartoscInstancji(rek, klucz, { ufajNiewiarygodnym: !!ufaj }),
-  spojnosc, flagi,
-  proby: ['dix', 'roll', 'bowlean', 'headhang'],
-  rekord: () => null,
-};
+const DEPS = interpDeps({ obs: {} });
 const ustaw = (r, klucz, w, znak = null) => { if (klucz === 'wystapil') r.wystapil = w; else r.pola[klucz] = { w, znak }; return r; };
 const rek = (proba, pary = {}) => { const r = pustyRekord(proba); r.wystapil = 'tak'; for (const [k, v] of Object.entries(pary)) ustaw(r, k, Array.isArray(v) ? v[0] : v, Array.isArray(v) ? v[1] : null); return r; };
 
@@ -264,6 +238,29 @@ for (const v of ['p1', 'm1', 'zero']) {
   T('CZ3/bez-t', !/\bt\s*\(\s*["'`]/.test(kod), 't() zamraża język — napisy jako pary {pl,en}');
   T('CZ4/bez-czasu', !/Date\.now|new Date|Math\.random/.test(kod), 'zero niedeterminizmu');
   T('CZ5/kontrola-skanu', /new Date/.test(src) && !/new Date/.test(kod), 'kontrola: wzorzec w komentarzu musi znikać po wycięciu');
+
+  /* CZ6-CZ8 — JEDEN WSTRZYKIWACZ. Wyrocznia, która buduje własną kopię `deps`, bada inny model
+     niż aplikacja i rozjazd jest niewidoczny, bo obie strony świecą na zielono. */
+  const wyr = fs.readFileSync(new URL('./interp-check.mjs', import.meta.url), 'utf8');
+  const wyrKod = wyr.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+  /* Wzorzec wymaga KONTEKSTU KODU (dwukropek, a po nim otwarcie funkcji), bo wersja goła
+     zapalała się na WŁASNYM komunikacie błędu — ta sama pułapka, którą Blok 6 złapał przy
+     tripwirze na `t()`. Stąd też kontrola: skaner musi widzieć prawdziwą definicję. */
+  const WLASNA_FAZA = /\bfaza\s*:\s*(\(|function)/;
+  T('CZ6/wyrocznia-nie-ma-wlasnego-wstrzykiwacza', !WLASNA_FAZA.test(wyrKod),
+    'wyrocznia definiuje własną predykcję fazy — wstrzykiwacz MUSI pochodzić z src/app/interp-deps.js');
+  // Wzorzec kontrolny SKLEJANY, bo napisany wprost byłby dla skanera prawdziwą definicją
+  // w tym pliku — kontrola czułości wywracałaby bramkę, której czułość sprawdza.
+  T('CZ6b/kontrola-skanu', WLASNA_FAZA.test('const d = { fa' + 'za: (p, id, k) => null };'),
+    'kontrola: skaner musi łapać prawdziwą definicję wstrzykiwacza');
+  T('CZ7/wyrocznia-importuje-wstrzykiwacz', /from\s+'\.\.\/src\/app\/interp-deps\.js'/.test(wyr),
+    'brak importu wspólnego wstrzykiwacza');
+  /* Wstrzykiwacz NIE MOŻE importować `state.js`: ten wciąga `actions.js`, a ten cały graf
+     renderera — wyrocznia w gołym Node przestałaby się ładować. Stan wchodzi ARGUMENTEM. */
+  const dep = fs.readFileSync(new URL('../src/app/interp-deps.js', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+  T('CZ8/wstrzykiwacz-bez-state', !/from\s+'\.\/state\.js'/.test(dep),
+    'interp-deps.js nie może importować state.js — stan wchodzi argumentem');
 }
 
 /* ============ Wynik ============ */
@@ -276,7 +273,7 @@ if (bledy.length) {
   for (const b of bledy.slice(0, 20)) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 64;
+const OCZEKIWANE = 68;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

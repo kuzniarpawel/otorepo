@@ -55,9 +55,12 @@ export const FLOW_STEPS = [
     mode: 'diag', screen: 'obs', anchor: () => null,
     wymaga: s => !!s.testKey, zamiast: { screen: 'setup', mode: 'diag' } },
 
+  /* Blok 9 dał interpretacji WŁASNY EKRAN, symetrycznie do kroku „Oczopląs". Powód jest ten sam
+     co przy obserwacji, tylko odwrócony: dopóki wynik wnioskowania sąsiaduje z kartą mechanizmu,
+     którą użytkownik SAM przewraca, nie widać, co jest wnioskiem z opisu, a co jego wyborem. */
   { id: 'interpret', pl: 'Interpretacja', en: 'Interpretation',
     plDesc: 'kanał, strona, mechanizm', enDesc: 'canal, side, mechanism',
-    mode: 'diag', screen: 'diag', anchor: () => '[data-flow-anchor="interpret"]',
+    mode: 'diag', screen: 'interpret', anchor: () => null,
     wymaga: s => !!s.testKey, zamiast: { screen: 'setup', mode: 'diag' } },
 
   // Ekran przewodnika istnieje dopiero, gdy jest plan. Bez niego celujemy w ekran wyboru
@@ -313,6 +316,7 @@ export function lateralizacjaNiepewna(s) {
 export function activeStepId(s) {
   if (s.screen === 'triage') return 'history';
   if (s.screen === 'obs') return 'nystagmus';        // własny ekran kroku „Oczopląs" (Blok 8)
+  if (s.screen === 'interpret') return 'interpret';  // własny ekran kroku „Interpretacja" (Blok 9)
   if (s.screen === 'guide') return 'maneuver';
   if (s.screen === 'diag') {
     // Na ekranie testu współistnieją dziś trzy kroki. Bierzemy najdalszy, który użytkownik
@@ -336,7 +340,8 @@ export function flowVisible(s) {
   if (s.area && s.area !== 'diag') return false;          // learn / lab / profile / start
   if (s.mode === 'hints') return false;
   if (s.screen === 'start' || s.screen === 'hints') return false;
-  return s.screen === 'setup' || s.screen === 'diag' || s.screen === 'obs' || s.screen === 'guide' || s.screen === 'triage';
+  return s.screen === 'setup' || s.screen === 'diag' || s.screen === 'obs' || s.screen === 'interpret'
+      || s.screen === 'guide' || s.screen === 'triage';
 }
 
 /* PODPIS STANU dla powłoki. Obserwator mutacji #app (shell.js) odświeża chrom tylko wtedy, gdy

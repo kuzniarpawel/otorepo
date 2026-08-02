@@ -17,3 +17,50 @@
   font-size:12.8px; line-height:1.5; color:var(--text);
 }
 .nietpowody li{ margin:3px 0; }
+
+/* ---- ekran interpretacji ---- */
+.iintro{ margin-bottom:var(--sp-3); }
+.iintro .instr{ font-size:14px; line-height:1.5; color:var(--text); }
+.iwynik, .iuzas, .imech, .ibrak{ margin-bottom:var(--sp-2); }
+
+/* Etykieta zgodności jest SŁOWEM, nigdy liczbą ani paskiem — liczba przy nazwie kanału czyta się
+   jak prawdopodobieństwo rozpoznania u tego pacjenta, a model prawdopodobieństw nie liczy.
+   Stan nie jest nadawany samym kolorem: każdy wariant ma własne, pełne zdanie. */
+.izgod{ font-family:var(--display); font-weight:700; font-size:15px; line-height:1.3; margin-bottom:6px; }
+.izgod--pelna{ color:var(--ok); }
+.izgod--czesciowa{ color:var(--text); }
+.izgod--brak{ color:var(--ant); }
+
+/* Kandydatury RÓWNORZĘDNE — bez numeracji, bez wyróżnienia pierwszej. Lista numerowana albo
+   pogrubiona pierwsza pozycja byłyby rankingiem wprowadzonym typografią. */
+.ikand{ list-style:none; margin:0 0 var(--sp-2); padding:0; }
+.ikand li{
+  padding:var(--sp-2) var(--sp-3); margin-bottom:6px;
+  background:var(--panel2); border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font-size:14px; font-weight:700;
+}
+.ilimit{ border-left:2px solid var(--line-strong); padding-left:10px; color:var(--muted); }
+
+/* Uzasadnienie: co ODRZUCIŁO każdą możliwość. Kryterium odbioru nr 1 („wynik zawiera uzasadnienie
+   oparte na WPROWADZONYCH cechach") realizuje się tutaj, bez ani jednej liczby zbiorczej. */
+.iwykl{ margin:var(--sp-2) 0 0; padding-left:20px; font-size:13px; line-height:1.45; }
+.iwykl li{ margin-bottom:6px; }
+.iwykl__k{ display:block; font-weight:700; color:var(--muted); }
+.iwykl__d{ display:block; color:var(--faint); font-size:12.5px; }
+
+/* Mechanizm: wartość i jej ŹRÓDŁO zawsze razem. Trzy źródła = trzy różne zdania; brak źródła
+   jest najmocniej oznaczony, bo to jedyny stan, w którym mechanizm nie jest niczyim wnioskiem. */
+.imech__w{ font-size:15px; margin-bottom:6px; }
+.imech__z{ display:block; font-size:12.5px; margin-top:2px; }
+.imech__z--wyprowadzony{ color:var(--ok); }
+.imech__z--nadpisany{ color:var(--muted); }
+.imech__z--brak{ color:var(--ant); }
+.imech__r{ display:flex; gap:var(--sp-2); margin-top:var(--sp-2); }
+.imech__r .recoalt{ flex:1 1 0; min-width:0; }
+.imech .recoalt, .ibrak .recoprimary, .imech .recoprimary{
+  appearance:none; cursor:pointer; min-height:var(--tap); padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--r-md); font:inherit; font-size:13px;
+}
+.imech .recoalt{ background:transparent; color:var(--muted); border:1px solid var(--line-strong); }
+.imech .recoalt[aria-pressed="true"]{ color:var(--text); border-color:var(--primary); }
+.ibrak .recoprimary, .imech .recoprimary{ width:100%; margin-top:var(--sp-2); }

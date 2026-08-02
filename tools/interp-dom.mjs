@@ -49,7 +49,8 @@ win.requestAnimationFrame = () => 0;
 win.cancelAnimationFrame = () => {};
 
 const h = win.__OTOREPO_TEST__;
-const POTRZEBNE = ['state', 'render', 'openTest', 'setDiagSide', 'goObs', 'setObsPole', 'oznaczObsPole', 'przyjmijObs', 'goArea'];
+const POTRZEBNE = ['state', 'render', 'openTest', 'setDiagSide', 'goObs', 'setObsPole', 'oznaczObsPole', 'przyjmijObs', 'goArea',
+  'goInterpret', 'przyjmijMechanizm', 'nadpiszMechanizm', 'setVariant'];
 const brak = POTRZEBNE.filter(n => !h || !(n in h));
 if (errs.length || brak.length) {
   console.error('✗ BŁĄD ŁADOWANIA — wyrocznia nieważna.');
@@ -65,6 +66,10 @@ const MANEWR = /startManeuver\(/;
 const czysty = () => {
   h.state.obs = {}; h.state.obsOdciski = {}; h.state.obsGrupa = null;
   h.state.dixObs = null; h.state.diagCentral = false; h.state.variant = 'canalo';
+  // ŹRÓDŁO mechanizmu też musi wracać do zera. Bez tego ZR4/ZR5 przechodziły dzięki temu, że
+  // poprzedni blok akurat zostawił `null` — czyli przez KOLEJNOŚĆ bloków w pliku, a nie przez
+  // kod aplikacji. Ten sam wyciek Blok 8 zamknął w harnessie golden (`czystyObs`).
+  h.state.variantZrodlo = null;
   h.state.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
   h.state.decisionSeq = 0;
 };
@@ -226,6 +231,67 @@ const dixSprzeczny = () => {                    // model daje h=0 dla KAŻDEJ ka
     'kontrola: pełny opis rolla MUSI prowadzić do manewru');
 }
 
+/* ============ 6c. ŹRÓDŁO MECHANIZMU (poprawka P2) ============
+   `state.variant` steruje animacją, chipami cech, klasyfikacją Bárány i doborem manewru — i do
+   Bloku 9 wyglądał identycznie w trzech zupełnie różnych sytuacjach: wyprowadzony z opisu,
+   ustawiony ręcznie i „został z poprzedniego ekranu, bo animacja musi coś rysować". Ta ostatnia
+   jest groźna, bo udaje wniosek. Zapis idzie ZA JAWNYM GESTEM: `przyjmijMechanizm` liczy warunek
+   jeszcze raz sam, więc przycisk nieaktualny o jeden render nie może przepchnąć zapisu. */
+const dixPelny = () => {
+  dixTypowy();
+  h.setObsPole('dix', 'latencja', '1-5s');
+  h.setObsPole('dix', 'czasTrwania', 'ponizej1min');
+  h.setObsPole('dix', 'meczliwosc', 'slabnie');
+};
+{
+  czysty(); dixPelny(); h.goInterpret();
+  T('ZR1/domyslnie-hipoteza', h.state.variantZrodlo == null, 'świeży stan nie może twierdzić, że mechanizm skądś wynika');
+  h.przyjmijMechanizm();
+  T('ZR2/gest-wyprowadza', h.state.variantZrodlo === 'wyprowadzony' && h.state.variant === 'canalo',
+    `po jawnym geście mechanizm ma być wyprowadzony, jest ${h.state.variantZrodlo}/${h.state.variant}`);
+  // Dopisanie cechy unieważnia wyprowadzenie: powstało z INNEGO opisu niż ten, który jest teraz.
+  h.setObsPole('dix', 'przebieg', 'narastaWygasa');
+  T('ZR3/zmiana-opisu-zdejmuje-wyprowadzenie', h.state.variantZrodlo == null,
+    'wyprowadzenie przeżyło zmianę opisu, z którego powstało');
+  T('ZR3b/mechanizm-zostaje', h.state.variant === 'canalo',
+    'sam mechanizm ma ZOSTAĆ — animacja musi coś rysować; znika tylko twierdzenie o jego źródle');
+}
+{
+  // Sam kierunek przy dix NIE różnicuje mechanizmu → gest nie ma prawa niczego zapisać.
+  czysty(); dixTypowy(); h.goInterpret();
+  h.przyjmijMechanizm();
+  T('ZR4/bez-podstawy-brak-zapisu', h.state.variantZrodlo == null,
+    'przy dix sam kierunek nie rozstrzyga mechanizmu — gest musi być bezskuteczny');
+  // …i tak samo przy opisie sprzecznym z każdą kandydaturą.
+  czysty(); dixSprzeczny(); h.goInterpret();
+  h.przyjmijMechanizm();
+  T('ZR5/sprzeczny-brak-zapisu', h.state.variantZrodlo == null,
+    'opis sprzeczny ze wszystkim nie może wyprowadzać mechanizmu');
+}
+{
+  // Ręczne nadpisanie jest ŚWIADOMĄ decyzją i NIE znika przez to, że ktoś dopisał cechę.
+  czysty(); dixPelny(); h.goInterpret();
+  h.nadpiszMechanizm('cupulo');
+  T('ZR6/nadpisanie', h.state.variantZrodlo === 'nadpisany' && h.state.variant === 'cupulo', 'ręczny wybór mechanizmu');
+  h.setObsPole('dix', 'przebieg', 'narastaWygasa');
+  T('ZR7/nadpisanie-przezywa', h.state.variantZrodlo === 'nadpisany',
+    'ręczna decyzja nie może znikać przez dopisanie cechy — to nie ona się zdezaktualizowała');
+  // Przewrócenie karty mechanizmu na ekranie PRÓBY idzie tą samą drogą (setVariant) i też
+  // musi oznaczyć źródło jako ręczne — inaczej ekran interpretacji twierdziłby „wyprowadzony"
+  // nad mechanizmem, który użytkownik przed chwilą przestawił sam.
+  czysty(); dixPelny(); h.goInterpret(); h.przyjmijMechanizm();
+  h.setVariant('cupulo');
+  T('ZR8/flip-na-ekranie-proby', h.state.variantZrodlo === 'nadpisany',
+    'zmiana mechanizmu na ekranie próby zostawiała etykietę „wyprowadzony" — czyli kłamstwo o źródle');
+}
+{
+  // Ekran interpretacji jest krokiem PRZED manewrem i nie ma prawa go rozpoczynać.
+  const html = ekran(() => { dixPelny(); h.goInterpret(); });
+  T('ZR9/interpretacja-nie-rozpoczyna-manewru', !MANEWR.test(html),
+    'ekran interpretacji nie może nieść przycisku rozpoczynającego repozycję');
+  T('ZR10/mowi-co-wynika', /iwynik/.test(html) && /ikand/.test(html), 'ekran musi pokazać, co z opisu wynika');
+}
+
 /* ============ 7. ARKUSZ, KTÓREGO NIKT NIE WPIĄŁ ============
    Znalezione przy pisaniu tej wyroczni: `src/styles/obs.css` (ponad 200 wierszy napisanych
    w Bloku 8) nie był importowany NIGDZIE — cały ekran „Oczopląs" renderował się bez stylów,
@@ -254,7 +320,7 @@ if (bledy.length) {
   for (const b of bledy) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 22;
+const OCZEKIWANE = 33;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

@@ -8,7 +8,8 @@ import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wniosk
          OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
          ETYKIETY_OSI, nieuzyte, porownajZPredykcja, WERDYKTY_POROWNANIA, fazaDIAG,
          OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI } from '../app/obs-model.js';
-import { nietypowy, POWODY_NIETYPOWOSCI } from '../app/interp-model.js';
+import { nietypowy, interpretuj, POWODY_NIETYPOWOSCI, POWODY_ZGODNOSCI, CECHY_KIERUNKU, CECHY_DYNAMIKI } from '../app/interp-model.js';
+import { interpDeps as _interpDeps } from '../app/interp-deps.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
@@ -756,6 +757,7 @@ function render(){
   else if(state.screen==="setup") renderSetup();
   else if(state.screen==="guide") renderGuide();
   else if(state.screen==="obs") renderObs();
+  else if(state.screen==="interpret") renderInterpret();
   else if(state.screen==="hints") renderHints();
   else renderDiag();
   /* ZASIĘG ZEGARA WIZUALIZACJI = EKRAN, KTÓRY MA PILOTA (naprawa po krytyce Bloku 7).
@@ -1129,6 +1131,139 @@ function renderObs(){
     <p class="footnote">${t("Opis obserwacji nie jest rozpoznaniem. Interpretacja to osobny krok.","An observation record is not a diagnosis. Interpretation is a separate step.")}</p>`;
 }
 
+/* ============ Krok „Interpretacja" — WŁASNY EKRAN (Blok 9) ============
+   Symetrycznie do kroku „Oczopląs", z powodem odwróconym: dopóki wynik wnioskowania sąsiaduje
+   z kartą mechanizmu, którą użytkownik SAM przewraca, nie widać, co jest wnioskiem z opisu,
+   a co jego wyborem.
+
+   ═══ CZEGO TU NIE MA I DLACZEGO ═══
+   Ani jednej liczby zbiorczej, procentu i rankingu. Kandydatury, które przetrwały eliminację,
+   są RÓWNORZĘDNE — model nie liczy prawdopodobieństw i nie wolno mu ich udawać kolejnością
+   ani typografią. Przy bow&leanie dwie równorzędne hipotezy to nie porażka, tylko jedyna
+   prawda, jaką model ma: (canalo,P) i (cupulo,L) dają identyczny wzorzec. */
+const NAZWA_MECH = (v)=> v==="cupulo" ? t("kupulolitiaza","cupulolithiasis") : t("kanalolitiaza","canalithiasis");
+function nazwaKandydatury(k){
+  return `${CANALS[k.canal].label} · ${SIDE[k.side]} · ${NAZWA_MECH(k.variant)}`;
+}
+/* Czytelny opis instancji rekordu (`pion#jedyna`, `poziom#prawoWDole`, `latencja`). Pytanie
+   ucinamy do pierwszego myślnika — pełne brzmienie jest formularzowe, a tu ma być etykietą. */
+function opisInstancji(klucz){
+  const [pole, fazaId] = String(klucz).split("#");
+  const def = OBS_POLA[pole];
+  if(!def) return klucz;
+  const nazwa = t(def.pytanie.pl, def.pytanie.en).replace(/\s*—.*$/,"");
+  const faza = fazaId && OBS_FAZY_OPIS[fazaId] ? ` (${t(OBS_FAZY_OPIS[fazaId].pl, OBS_FAZY_OPIS[fazaId].en)})` : "";
+  return nazwa + faza;
+}
+/* DLACZEGO strony nie da się wyprowadzić — trzy RÓŻNE powody, których nie wolno zlewać w jedno
+   zdanie. Zmierzone na predykcjach silnika:
+     roll     — kierunek niesie MECHANIZM, stronę niesie dopiero ASYMETRIA NASILENIA. To jedyny
+                z trzech przypadków, który daje się naprawić opisem, więc kończy się prośbą,
+                a nie deklaracją ograniczenia.
+     bowlean  — (kanalolitiaza, jedno ucho) i (kupulolitiaza, drugie) dają IDENTYCZNY wzorzec,
+                a siła jest symetryczna. Dwuznaczność jest STRUKTURALNA: żaden dodatkowy opis
+                tej próby jej nie zdejmie.
+     dix/hh   — kanał przedni rysowany jako czysty downbeat to uproszczenie kliniczne
+                (engine_doc.txt), więc kierunek jest dla obu stron ten sam. „Maska modelu".
+   Pierwsza wersja miała jedno zdanie dla wszystkich i przy bow&leanie CYTOWAŁA POWÓD Z HEAD-HANGA,
+   czyli tłumaczyła ograniczenie przyczyną, która w tej próbie nie zachodzi. */
+function powodBrakuStrony(w, proba){
+  const lead = t("<b>Strony nie da się wyprowadzić z tego opisu.</b>","<b>The side cannot be derived from this description.</b>");
+  if(proba==="roll" && (w.brakujace||[]).includes("nasilenie"))
+    return `${lead} ${t("Przy próbie obrotowej kierunek niesie MECHANIZM, a stronę dopiero różnica NASILENIA między obiema pozycjami. Opisz, przy którym uchu w dole oczopląs był silniejszy.","In the roll test the direction carries the MECHANISM, while the side comes only from the difference in INTENSITY between the two positions. Describe which ear-down position gave the stronger nystagmus.")}`;
+  if(proba==="bowlean")
+    return `${lead} ${t("To ograniczenie MODELU, a nie brak staranności: kanalolitiaza jednego ucha i kupulolitiaza drugiego dają w tej próbie IDENTYCZNY wzorzec, a nasilenie jest symetryczne — żaden dodatkowy opis tej próby ich nie rozdzieli. Rozstrzyga próba obrotowa albo odpowiedź na manewr.","This is a limitation of the MODEL, not a lack of care: canalithiasis of one ear and cupulolithiasis of the other produce an IDENTICAL pattern in this test, and the intensity is symmetric — no further description of this test will separate them. The roll test or the response to a maneuver settles it.")}`;
+  return `${lead} ${t("To ograniczenie MODELU, a nie brak staranności: kanał przedni rysowany jest jako czysty downbeat (uproszczenie kliniczne), więc kierunek oczopląsu jest dla obu stron taki sam. Stronę rozstrzyga kontekst kliniczny i odpowiedź na manewr.","This is a limitation of the MODEL, not a lack of care: the anterior canal is drawn as a pure downbeat (a clinical simplification), so the nystagmus direction is the same for both sides. The side is settled by the clinical context and the response to the maneuver.")}`;
+}
+const ETYKIETY_ZGODNOSCI = {
+  pelna:      { pl:"opis pasuje do jednego wzorca", en:"the description matches one pattern" },
+  czesciowa:  { pl:"opis zawęża, ale nie rozstrzyga", en:"the description narrows down but does not settle it" },
+  brak:       { pl:"opis niczego nie rozstrzyga", en:"the description settles nothing" },
+};
+function renderInterpret(){
+  const proba = state.testKey || "dix";
+  const D = DIAG[proba];
+  const rek = (state.obs||{})[proba] || null;
+  const deps = interpDeps();
+  const w = rek ? interpretuj(rek, proba, deps) : null;
+  const niet = nietypowy(state, deps);
+
+  /* Wyprowadzenie mechanizmu jest MOŻLIWE tylko wtedy, gdy opis coś rozstrzyga i został dokładnie
+     jeden mechanizm. Sam zapis idzie za JAWNYM GESTEM (jak `przyjmijObs`) — zapisywanie przy
+     każdej edycji pola formularza znaczyłoby, że opisanie kierunku po cichu podmienia zalecany
+     manewr, czyli dokładnie to, czego Blok 8 zabronił. */
+  const mozliweWyprowadzenie = !!w && w.zgodnosc !== "brak" && w.mechanizmWyprowadzalny;
+  const zrodlo = state.variantZrodlo || null;
+
+  const kartaWyniku = ()=>{
+    if(!rek) return `<div class="card ibrak"><h4>${t("Nie ma czego interpretować","Nothing to interpret yet")}</h4>
+      <div class="note">${t("Ten krok czyta wyłącznie opis obserwacji. Dopóki go nie ma, aplikacja nie ma z czego wyprowadzić kanału, strony ani mechanizmu.","This step reads the observation record only. Until it exists, the app has nothing from which to derive the canal, side or mechanism.")}</div>
+      <button class="recoprimary" onclick="goObs()">${t("Opisz zaobserwowany oczopląs","Describe the observed nystagmus")}</button></div>`;
+    const et = ETYKIETY_ZGODNOSCI[w.zgodnosc];
+    const powod = w.powod && POWODY_ZGODNOSCI[w.powod] ? POWODY_ZGODNOSCI[w.powod] : null;
+    return `<div class="card iwynik">
+      <h4>${t("Co z tego opisu wynika","What follows from this description")}</h4>
+      <div class="izgod izgod--${w.zgodnosc}">${t(et.pl, et.en)}</div>
+      ${powod?`<div class="note" style="color:var(--text)">${t(powod.pl, powod.en)}</div>`:""}
+      ${w.pozostale.length ? `<ul class="ikand">${w.pozostale.map(k=>`<li>${nazwaKandydatury(k)}</li>`).join("")}</ul>
+        ${w.pozostale.length>1?`<div class="note">${t(`Te ${w.pozostale.length} możliwości są RÓWNORZĘDNE — model nie potrafi ich rozdzielić tym, co opisano, i nie szereguje ich według prawdopodobieństwa.`,`These ${w.pozostale.length} possibilities are EQUIVALENT — the model cannot separate them from what was described, and does not rank them by probability.`)}</div>`:""}`
+        : `<div class="note">${t("Żadna z możliwości, które model zna, nie pasuje do tego opisu.","None of the possibilities this model knows matches this description.")}</div>`}
+      ${w.pozostale.length && !w.stronaWyprowadzalna ? `<div class="note ilimit">${powodBrakuStrony(w, proba)}</div>`:""}
+      ${w.pozostale.length && !w.mechanizmWyprowadzalny && proba==="dix" ? `<div class="note ilimit">${t("<b>Mechanizmu nie da się wyprowadzić z samego kierunku.</b> Kanalolitiaza i kupulolitiaza dają w Dix-Hallpike'u ten sam kierunek — różni je wyłącznie DYNAMIKA (latencja, czas trwania, męczliwość).","<b>The mechanism cannot be derived from direction alone.</b> Canalithiasis and cupulolithiasis produce the same direction in the Dix-Hallpike — they differ only in DYNAMICS (latency, duration, fatigability).")}</div>`:""}
+    </div>`;
+  };
+
+  const kartaUzasadnienia = ()=>{
+    if(!w || (!w.wykluczone.length && !w.rozstrzygajaca)) return "";
+    return `<div class="card iuzas">
+      <h4>${t("Na czym to stoi","What this rests on")}</h4>
+      ${w.rozstrzygajaca?`<div class="note" style="color:var(--text)">${t(`Najwięcej odrzuca cecha: <b>${opisInstancji(w.rozstrzygajaca.klucz)}</b> — sama wyklucza ${w.rozstrzygajaca.ileWyklucza} z ${w.pozostale.length + w.wykluczone.length} możliwości.`,`The feature that rejects the most: <b>${opisInstancji(w.rozstrzygajaca.klucz)}</b> — on its own it excludes ${w.rozstrzygajaca.ileWyklucza} of ${w.pozostale.length + w.wykluczone.length} possibilities.`)}</div>`:""}
+      ${w.wykluczone.length?`<ol class="iwykl">${w.wykluczone.map(k=>`<li><span class="iwykl__k">${nazwaKandydatury(k)}</span>
+          <span class="iwykl__d">${t("odrzucona przez:","rejected by:")} ${opisInstancji(k.wykluczoneCzym.klucz)}</span></li>`).join("")}</ol>`:""}
+      ${w.brakujace.length?`<div class="note">${t(`Cechy rozstrzygające, których jeszcze nie opisano: ${w.brakujace.map(opisInstancji).join(" · ")}.`,`Decisive features not described yet: ${w.brakujace.map(opisInstancji).join(" · ")}.`)}</div>`:""}
+    </div>`;
+  };
+
+  /* Karta mechanizmu: wyprowadzenie ALBO ręczne nadpisanie, zawsze z jawnym ŹRÓDŁEM. Trzy stany
+     muszą być rozróżnialne, bo `state.variant` steruje animacją, chipami cech, klasyfikacją
+     Bárány i doborem manewru — a przy braku danych trzyma po prostu ostatnią wartość i wtedy
+     jest HIPOTEZĄ MODELU, nie wnioskiem z obserwacji. */
+  const kartaMechanizmu = ()=>{
+    const opisZrodla = zrodlo==="wyprowadzony"
+      ? t("wyprowadzony z opisu obserwacji","derived from the observation record")
+      : zrodlo==="nadpisany"
+        ? t("ustawiony ręcznie przez Ciebie","set manually by you")
+        : t("HIPOTEZA MODELU — nie wynika z opisu obserwacji","THE MODEL'S HYPOTHESIS — it does not follow from the observation record");
+    return `<div class="card imech">
+      <h4>${t("Mechanizm użyty w dalszych krokach","Mechanism used in the following steps")}</h4>
+      <div class="imech__w"><b>${NAZWA_MECH(state.variant)}</b> <span class="imech__z imech__z--${zrodlo||"brak"}">${opisZrodla}</span></div>
+      ${mozliweWyprowadzenie && zrodlo!=="wyprowadzony"
+        ? `<button class="recoprimary" onclick="przyjmijMechanizm()">${t(`Przyjmij mechanizm wynikający z opisu: ${NAZWA_MECH(w.mechanizm)}`,`Accept the mechanism that follows from the description: ${NAZWA_MECH(w.mechanizm)}`)}</button>`
+        : `<div class="note">${mozliweWyprowadzenie
+            ? t("Mechanizm jest zgodny z opisem obserwacji.","The mechanism agrees with the observation record.")
+            : t("Z tego opisu nie da się wyprowadzić mechanizmu — możesz go ustawić ręcznie, ale wtedy pochodzi od Ciebie, nie z obserwacji.","The mechanism cannot be derived from this description — you may set it manually, but then it comes from you, not from the observation.")}</div>`}
+      <div class="imech__r">
+        ${["canalo","cupulo"].map(v=>`<button class="recoalt" aria-pressed="${state.variant===v}" onclick="nadpiszMechanizm('${v}')">${NAZWA_MECH(v)}</button>`).join("")}
+      </div>
+      ${zrodlo==="nadpisany" && mozliweWyprowadzenie && state.variant!==w.mechanizm
+        ? `<button class="recoalt" onclick="wrocDoWyprowadzonego()">${t("Wróć do mechanizmu wynikającego z opisu","Return to the mechanism that follows from the description")}</button>`:""}
+    </div>`;
+  };
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="wrocDoProby()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Interpretacja","Interpretation")}</b><span>${D.name}</span></div></div>
+    <div class="card iintro"><div class="instr">${t("Aplikacja porównuje Twój opis z tym, co model potrafi przewidzieć, i ODRZUCA możliwości, które opisowi przeczą. Nie liczy prawdopodobieństw i nie stawia rozpoznania.","The app compares your description with what the model can predict and REJECTS the possibilities that contradict it. It does not compute probabilities and does not make a diagnosis.")}</div></div>
+    <div class="pagegrid"><div class="col col--ctl">
+      ${kartaWyniku()}
+      ${kartaMechanizmu()}
+    </div><div class="col col--viz">
+      ${niet.nietypowy ? kartaNietypowa(niet) : ""}
+      ${kartaUzasadnienia()}
+    </div></div>
+    <p class="footnote">${t("Wynik interpretacji nie jest rozpoznaniem. Model jest uproszczeniem — rozstrzyga kontekst kliniczny.","An interpretation result is not a diagnosis. The model is a simplification — the clinical context decides.")}</p>`;
+}
+
 function renderTriage(){
   const odp = state.triage||{};
   const pytania = activeQuestions(odp);
@@ -1406,40 +1541,9 @@ function diagClassifyCard(canal, v, side, antMode, wsparcie){
    nigdy OSTRZEŻENIE. */
 function obsRekord(){ return ((state.obs || {})[state.testKey]) || null; }
 
-/* WSTRZYKIWACZ WIEDZY KLINICZNEJ DO MODELU INTERPRETACJI (Blok 9). `interp-model.js` jest
-   bezimportowy, więc predykcje silnika, wzorce dynamiki i zasady kwarantanny dostaje stąd —
-   DOKŁADNIE tak samo, jak dostaje je wyrocznia (tools/interp-check.mjs). Rozjazd tych dwóch
-   wstrzykiwaczy oznaczałby, że wyrocznia bada inny model niż aplikacja, więc każda zmiana
-   MUSI iść w obu miejscach naraz. */
-function interpDeps(){
-  return {
-    fazyProby: (p)=>OBS_FAZY[p],
-    /* Kandydatura kanału PRZEDNIEGO przy Dix-Hallpike'u nie siedzi w `DIAG.dix.phases` —
-       aplikacja buduje ją osobno (gałąź `antMode` niżej) przez nysFromGeom, bo ułożenie głowy
-       jest to samo, a inny jest tylko zaobserwowany oczopląs. Bez tego wyjątku kandydatura
-       przednia dostawałaby predykcję kanału TYLNEGO i obie przechodziłyby identycznie. */
-    faza: (p, fazaId, kand)=>{
-      const { side, variant } = kand;
-      try{
-        if(p==="dix" && kand.canal==="anterior"){
-          const badana = otherSide(side);
-          const n = nysFromGeom("anterior", side, variant, Vestibular.qSupineYaw(badana==="P"?45:-45));
-          return { h:n.anat.h, v:n.anat.v, t:n.anat.t, s:n.strength==null?1:n.strength };
-        }
-        const f = DIAG[p].phases(side, variant)[fazaDIAG(p, fazaId, side)];
-        if(!f || !f.nys || !f.nys.anat) return null;
-        return { h:f.nys.anat.h, v:f.nys.anat.v, t:f.nys.anat.t, s:f.nys.strength==null?1:f.nys.strength };
-      }catch(e){ return null; }
-    },
-    wzorzec: (variant)=>WZORCE_DYNAMIKI.find(z=>z.id===(variant==="cupulo"?"B":"A")),
-    czytaj: (rek, klucz, ufaj)=>wartoscInstancji(rek, klucz, { ufajNiewiarygodnym: !!ufaj }),
-    spojnosc, flagi,
-    // Po WSZYSTKICH próbach, nie po bieżącej: inaczej rada „zrób następną próbę" kasowałaby
-    // alarm, bo downbeat opisany w Dix-Hallpike znikałby z pamięci po przełączeniu na roll.
-    proby: OBS_PROBY,
-    rekord: (p)=>((state.obs || {})[p]) || null,
-  };
-}
+// Wstrzykiwacz wiedzy klinicznej dla modelu interpretacji siedzi w `src/app/interp-deps.js` —
+// JEDEN dla aplikacji i dla wyroczni. Kopia w tym pliku była zaproszeniem do cichego rozjazdu.
+const interpDeps = ()=>_interpDeps(state);
 /* Ile ekran ma prawo powiedzieć.
    ═══ KRYTERIUM ODBIORU NR 2 („brak wystarczających danych NIE jest przedstawiany jako pewne
    rozpoznanie") DZIAŁAŁO DOTĄD TYLKO PRZY DIX-HALLPIKE'U ═══

@@ -120,6 +120,8 @@ const HANDLE_NAMES = [
   // Blok 8 — krok „Oczopląs". Brak = handleMissing = twardy exit(1), czyli „ekranu obserwacji
   // nie da się wysterować z testu" jest błędem, a nie cichą degradacją pokrycia.
   'goObs', 'setObsPole', 'oznaczObsPole', 'setObsGrupa', 'wyczyscObs', 'przyjmijObs',
+  // Blok 9 — krok „Interpretacja" ma wlasny ekran. Brak = handleMissing = twardy exit(1).
+  'goInterpret', 'przyjmijMechanizm', 'nadpiszMechanizm', 'wrocDoWyprowadzonego',
 ];
 function makeHandle(win) {
   if (win.__OTOREPO_TEST__) return win.__OTOREPO_TEST__;
@@ -421,7 +423,45 @@ function domOracle(h, win) {
     diagPoOpisie('roll-kierunek-staly/P', 'roll', [
       ['poziom#prawoWDole', 'p1'], ['pion#prawoWDole', 'zero'],
       ['poziom#lewoWDole', 'p1'], ['pion#lewoWDole', 'zero']]);
+
+    /* Krok „Interpretacja" na WŁASNYM EKRANIE (Blok 9). Pinujemy stany, w których ekran mówi
+       RÓŻNE rzeczy o tym, CZEGO MODEL NIE POTRAFI — bo to najłatwiejsze do cichego zgubienia:
+       `bowlean-dwuznaczny` (dwie RÓWNORZĘDNE hipotezy, nie ranking), `headhang-bez-strony`
+       (strona niewyprowadzalna — twierdzenie o modelu, nie o użytkowniku), `dix-bez-mechanizmu`
+       (kierunek nie różnicuje kanalo/cupulo). Gdyby któreś z tych zdań zniknęło, aplikacja
+       zaczęłaby udawać pewność, której nie ma, i żadna inna wyrocznia by tego nie zobaczyła. */
+    const interp = (tag, proba, kroki) => grab(`interpret/${tag}`, () => {
+      czystyObs();
+      if (h.openTest) h.openTest(proba); else Object.assign(h.state, { testKey: proba });
+      if (h.setDiagSide) h.setDiagSide('P');
+      for (const [klucz, w] of (kroki || [])) h.setObsPole(proba, klucz, w);
+      h.goInterpret();
+      h.render();
+    });
+    interp('pusty', 'dix', []);
+    interp('dix-bez-mechanizmu', 'dix', [['pion#jedyna', 'p1'], ['torsja#jedyna', 'p1'], ['poziom#jedyna', 'zero']]);
+    interp('dix-pelna', 'dix', [['pion#jedyna', 'p1'], ['torsja#jedyna', 'p1'], ['poziom#jedyna', 'zero'],
+      ['latencja', '1-5s'], ['czasTrwania', 'ponizej1min'], ['meczliwosc', 'slabnie']]);
+    interp('bowlean-dwuznaczny', 'bowlean', [['poziom#bow', 'p1'], ['poziom#lean', 'm1']]);
+    interp('headhang-bez-strony', 'headhang', [['pion#jedyna', 'm1']]);
+    // Roll bez opisu NASILENIA — jedyny brak strony, ktory da sie naprawic opisem, wiec ekran ma
+    // prosic o konkretna ceche, a nie deklarowac ograniczenie modelu.
+    interp('roll-bez-nasilenia', 'roll', [['poziom#prawoWDole', 'p1'], ['pion#prawoWDole', 'zero'],
+      ['poziom#lewoWDole', 'm1'], ['pion#lewoWDole', 'zero']]);
+    interp('sprzeczny', 'dix', [['pion#jedyna', 'p1'], ['torsja#jedyna', 'p1'], ['poziom#jedyna', 'p1']]);
+    // Mechanizm PRZYJĘTY jawnym gestem — jedyny stan, w którym ekran ma prawo napisać
+    // „wyprowadzony z opisu obserwacji". Bez tego klucza etykieta źródła byłaby nieprzypięta.
+    grab('interpret/dix-przyjety', () => {
+      czystyObs();
+      h.openTest('dix'); h.setDiagSide('P');
+      for (const [k, w] of [['pion#jedyna', 'p1'], ['torsja#jedyna', 'p1'], ['poziom#jedyna', 'zero'],
+        ['latencja', '1-5s'], ['czasTrwania', 'ponizej1min'], ['meczliwosc', 'slabnie']]) h.setObsPole('dix', k, w);
+      h.goInterpret();
+      h.przyjmijMechanizm();
+      h.render();
+    });
     czystyObs();
+    try { h.state.variantZrodlo = null; h.state.variant = 'canalo'; } catch { }
   }
 
   /* Kwalifikacja wstępna („Wywiad", Blok 6). Pinujemy po JEDNYM stanie na każdą kategorię
@@ -540,6 +580,15 @@ function shellOracle(h, win) {
     h.setObsPole && h.setObsPole('dix', 'pion#jedyna', 'm1');
     h.przyjmijObs && h.przyjmijObs();
     h.syncShell && h.syncShell();
+  });
+  /* Blok 9 — krok „Interpretacja" na WŁASNYM ekranie. Ten klucz jest CAŁYM sensem poprawki F4:
+     zmierzone przed nią `flowVisible=false` i `activeStepId=null`, czyli pasek ZNIKAŁ dokładnie
+     na ekranie, do którego krok prowadzi — a razem z nim jedyny sygnał o nieaktualnym wniosku.
+     Pasek musi tu być i musi wskazywać krok 4 jako aktywny. */
+  grab('interpret/dix', () => {
+    czysty(); h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P');
+    h.goInterpret && h.goInterpret(); h.syncShell && h.syncShell();
   });
   // NAJWAŻNIEJSZY stan bloku: manewr wybrany z rekomendacji, po czym zmieniony mechanizm.
   // Pasek MUSI wtedy pokazać „wymaga ponownego przeliczenia" wraz z powodem.
