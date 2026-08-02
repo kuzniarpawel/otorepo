@@ -96,6 +96,13 @@ export function syncTriage(state) {
 export function noteNavCleared(state) {
   const m = f(state).maneuver;
   if (!m) return;
-  const bylSygnal = !!state.diagCentral || (state.testKey === 'dix' && state.dixObs === 'ant');
+  /* WYŁĄCZNIE diagCentral (Blok 8). Człon `dixObs === 'ant'` stał na założeniu, że po odejściu
+     od próby i powrocie obserwacja jest STRACONA — bo `resetTestLocal` czyścił pole. Od Bloku 8
+     rekord obserwacji przeżywa nawigację, a `dixObs` jest PRZYJĘTĄ PODSTAWĄ zmienianą wyłącznie
+     jawnym gestem. Zostawienie członu dawałoby flagę `zatarte` po samym przelocie przez inną
+     próbę — a ta zeruje się dopiero przy wyborze nowego manewru, czyli byłby to trwały,
+     nieusuwalny fałszywy alarm. `diagCentral` nadal jest czyszczony przez `resetTestLocal`
+     i nadal musi zostawiać ślad. */
+  const bylSygnal = !!state.diagCentral;
   if (bylSygnal) m.zatarte = true;
 }

@@ -4,6 +4,7 @@ import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
+import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix } from '../app/obs-model.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
@@ -1185,7 +1186,11 @@ function renderGuide(){
 // Karta klasyfikacji Bárány (ICVD) + różnicowanie OŚRODKOWE (CPN). Etykieta podtypu z baranyClassify();
 // przełącznik „obwodowy (BPPV) / ośrodkowy (CPN)" (state.diagCentral) ujawnia czerwone flagi + schemat
 // uporczywego downbeatu. Czysto widokowa — zero zmian fizyki; domyślnie „obwodowy" (golden deterministyczny).
-function diagClassifyCard(canal, v, side, antMode){
+/* wsparcie: plakietka tieru („zespół ustalony") jest NAJMOCNIEJSZYM twierdzeniem o pewności
+   na tym ekranie, więc pokazuje się wyłącznie przy PEŁNYM opisie obserwacji. Przy opisie
+   częściowym zostaje podtyp i kryteria — czyli „do tego wzorca to pasuje" — bez etykiety
+   sugerującej, że sprawa jest ustalona. */
+function diagClassifyCard(canal, v, side, antMode, wsparcie){
   const central=!!state.diagCentral;
   const cls=baranyClassify(canal, v, side, antMode);
   const tierBg = cls.tier==="established" ? "rgba(127,227,196,.14)" : "rgba(255,207,143,.16)";
@@ -1198,7 +1203,7 @@ function diagClassifyCard(canal, v, side, antMode){
   const bppv=`
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
         <b style="font-size:14.5px">${cls.subtype}</b>
-        <span style="font-size:11px;padding:2px 9px;border-radius:10px;background:${tierBg};color:${tierFg};white-space:nowrap">${cls.tierLabel}</span></div>
+        ${(wsparcie && wsparcie.poziom==="pelne") ? `<span style="font-size:11px;padding:2px 9px;border-radius:10px;background:${tierBg};color:${tierFg};white-space:nowrap">${cls.tierLabel}</span>` : ""}</div>
       <div style="margin-bottom:2px">${cls.crit.map(chip).join("")}</div>
       ${cls.redflag?`<div class="note" style="color:var(--ant)"><b>⚠</b> ${cls.redflag}</div>`:""}
       <div class="note">${t('Kryteria Bárány Society (ICVD 2015). „Zespół ustalony" = pewny podtyp; „wyłaniający się/atypowy" = rzadszy lub kontrowersyjny — potwierdź i wyklucz przyczynę ośrodkową.','Bárány Society criteria (ICVD 2015). "Established syndrome" = confident subtype; "emerging/atypical" = rarer or controversial — confirm and rule out a central cause.')}</div>`;
@@ -1226,10 +1231,43 @@ function diagClassifyCard(canal, v, side, antMode){
       <div class="obslabel" style="margin-bottom:8px">${t("Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe","Bárány classification (ICVD) and central differentiation")}</div>
       ${seg}${central?cpn:bppv}</div>`;
 }
+/* ROZCIĘCIE `antMode` NA TRZY NIEZALEŻNE SYGNAŁY (Blok 8).
+   `antMode` niósł RÓWNOCZEŚNIE wnioskowanie (kanał, strona, dobór manewru) i OSTRZEŻENIE
+   (czerwona flaga downbeatu). Dopóki to jeden przełącznik, uszanowanie znacznika
+   „obserwacja niewiarygodna" gasiłoby czerwoną flagę razem z wnioskiem — a to jest dokładnie
+   odwrotność tego, czego wymaga bezpieczeństwo. Zasada: kwarantanna wycisza WNIOSEK,
+   nigdy OSTRZEŻENIE. */
+function obsRekord(){ return ((state.obs || {})[state.testKey]) || null; }
+/* Ile ekran ma prawo powiedzieć. Do czasu powstania ekranu obserwacji jedynym wejściem jest
+   ubogi, dwustanowy przełącznik `.obsrow` przy Dix-Hallpike — ubogi, ale JEST wypowiedzią
+   klinicysty, więc liczy się jako opis częściowy. Brak jakiejkolwiek wypowiedzi to `brak`:
+   to jest naprawa defektu, od którego zaczął się cały blok (pusty opis dawał pełne
+   rozpoznanie i gotowy przycisk manewru). */
+function obsPoparcie(rek, proba, dixObs){
+  if(rek) return poparcie(rek, proba, dixObs);
+  if(proba!=="dix") return { poziom:"czesciowe", powod:null };
+  return dixObs ? { poziom:"czesciowe", powod:null } : { poziom:"brak", powod:"brakOpisu" };
+}
+/* Ekran przy BRAKU opisu. Nie ma tu ani podtypu, ani plakietki „zespół ustalony", ani strony
+   chorej, ani przycisku „Rozpocznij" — bo żadna z tych rzeczy nie wynika z niczego, co
+   użytkownik powiedział. Zamiast tego jedno zdanie z POWODEM: te powody są rozłączne, więc
+   „nie opisano jeszcze" i „opisany kierunek nie pasuje do żadnego kanału" nigdy nie zlewają
+   się w jeden komunikat. */
+function kartaBezOpisu(wsparcie){
+  const p = POWODY_BRAKU[wsparcie.powod] || POWODY_BRAKU.brakOpisu;
+  return `<div class="card reco obsbrak" style="margin-top:12px"><h4>${t("Nie ma jeszcze na czym oprzeć wniosku","Nothing to base a conclusion on yet")}</h4>
+    <div class="note" style="color:var(--text)">${t(p.pl, p.en)}</div>
+    <div class="note">${t("Opisz zaobserwowany oczopląs — aplikacja pokaże wtedy, do którego wzorca pasuje.","Describe the observed nystagmus — the app will then show which pattern it matches.")}</div></div>`;
+}
 function renderDiag(){
   const D=DIAG[state.testKey], A=state.side, v=state.variant;   // D = obiekt testu (NIE koliduj z importem t = tlumaczenie)
   const isDix = state.testKey==="dix";
-  const antMode = isDix && state.dixObs==="ant";          // zaobserwowano downbeat → kanał PRZEDNI
+  const rekObs = obsRekord();
+  const wsparcie = obsPoparcie(rekObs, state.testKey, state.dixObs);
+  const antMode = wnioskowanieDix(state)==="ant";          // WNIOSEK: downbeat → kanał PRZEDNI
+  // OSTRZEŻENIA czytają REKORD — także wtedy, gdy jest oznaczony jako niewiarygodny.
+  const ostrDownbeat = rekObs ? ostrzezenieDownbeat(rekObs) : (isDix && state.dixObs==="ant");
+  const ostrSkretny  = rekObs ? ostrzezenieSkretny(rekObs)  : false;
   const effCanal = antMode ? "anterior" : D.canal;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
   const phases = D.phases(A,v).map(ph => antMode
@@ -1296,7 +1334,7 @@ function renderDiag(){
     <div class="card" style="margin-bottom:4px" data-flow-anchor="test" tabindex="-1"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
     ${isDix ? `<div class="obsrow" tabindex="-1"><div class="obslabel">${t("Zaobserwowany oczopląs w Dix-Hallpike:","Observed nystagmus in the Dix-Hallpike:")}</div>
       <div class="seg segobs">
-        <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
+        <button class="opt" aria-pressed="${state.dixObs==='post'}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
       </div></div>` : ""}
     ${phaseHTML}
@@ -1319,9 +1357,10 @@ function renderDiag(){
         <div class="face back panelbox">${face("cupulo")}<div class="fliphint">${FLIP_ICO} ${t("kanalolitiaza","canalithiasis")}</div></div>
       </div></div>`;
     })()}
-    ${diagClassifyCard(effCanal, v, effSide, antMode)}
-    ${antMode ? `<div class="redflag">${t('<b>⚠ Czerwona flaga — wyklucz przyczynę OŚRODKOWĄ.</b> Downbeat, który jest <b>uporczywy, bez latencji i nie wyczerpuje się</b> przy powtórzeniach, występuje także w pozycji neutralnej (na wznak, głowa prosto), albo towarzyszą mu objawy neurologiczne (dyzartria, ataksja, zaburzenia spojrzenia, dwojenie) — przemawia za przyczyną OŚRODKOWĄ (móżdżek, pogranicze czaszkowo‑szyjne: malformacja Arnolda‑Chiariego, SM, zmiany naczyniowe). Wymaga oceny neurologicznej i MRI, nie manewru. Repozycję rozważ dopiero po wykluczeniu przyczyny ośrodkowej.','<b>⚠ Red flag — rule out a CENTRAL cause.</b> A downbeat that is <b>persistent, without latency and non-fatiguing</b> on repetition, is also present in the neutral position (supine, head straight), or is accompanied by neurological signs (dysarthria, ataxia, gaze disturbances, diplopia) — argues for a CENTRAL cause (cerebellum, craniocervical junction: Arnold-Chiari malformation, MS, vascular lesions). Requires neurological evaluation and MRI, not a maneuver. Consider repositioning only after ruling out a central cause.')}</div>` : ""}
-    ${(()=>{ if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
+    ${wsparcie.poziom==="brak" ? kartaBezOpisu(wsparcie, state.testKey) : diagClassifyCard(effCanal, v, effSide, antMode, wsparcie)}
+    ${ostrSkretny ? `<div class="redflag">${t('<b>⚠ Oczopląs czysto skrętny.</b> Kierunek bez składowej pionowej nie odpowiada żadnemu kanałowi w tym modelu — to jedna z cech przemawiających za przyczyną OŚRODKOWĄ. Nie wykonuj repozycji na tej podstawie.','<b>⚠ Purely torsional nystagmus.</b> A direction with no vertical component does not match any canal in this model — it is one of the features arguing for a CENTRAL cause. Do not perform repositioning on this basis.')}</div>` : ""}
+    ${ostrDownbeat ? `<div class="redflag">${t('<b>⚠ Czerwona flaga — wyklucz przyczynę OŚRODKOWĄ.</b> Downbeat, który jest <b>uporczywy, bez latencji i nie wyczerpuje się</b> przy powtórzeniach, występuje także w pozycji neutralnej (na wznak, głowa prosto), albo towarzyszą mu objawy neurologiczne (dyzartria, ataksja, zaburzenia spojrzenia, dwojenie) — przemawia za przyczyną OŚRODKOWĄ (móżdżek, pogranicze czaszkowo‑szyjne: malformacja Arnolda‑Chiariego, SM, zmiany naczyniowe). Wymaga oceny neurologicznej i MRI, nie manewru. Repozycję rozważ dopiero po wykluczeniu przyczyny ośrodkowej.','<b>⚠ Red flag — rule out a CENTRAL cause.</b> A downbeat that is <b>persistent, without latency and non-fatiguing</b> on repetition, is also present in the neutral position (supine, head straight), or is accompanied by neurological signs (dysarthria, ataxia, gaze disturbances, diplopia) — argues for a CENTRAL cause (cerebellum, craniocervical junction: Arnold-Chiari malformation, MS, vascular lesions). Requires neurological evaluation and MRI, not a maneuver. Consider repositioning only after ruling out a central cause.')}</div>` : ""}
+    ${wsparcie.poziom==="brak" ? "" : (()=>{ if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--ant)">${t('<b>Repozycja niewskazana.</b> Przy podejrzeniu ośrodkowego oczoplasu pozycyjnego (CPN) nie wykonuj manewrów repozycyjnych — najpierw ocena neurologiczna i MRI tylnego dołu. Wróć do widoku „Obwodowy — BPPV", jeśli obraz jednak spełnia kryteria BPPV.','<b>Repositioning is not indicated.</b> When central positional nystagmus (CPN) is suspected, do not perform repositioning maneuvers — first a neurological evaluation and MRI of the posterior fossa. Return to the "Peripheral — BPPV" view if the picture does meet BPPV criteria.')}</div></div>`;
       const rec = antMode
         ? {primary:"yacovino", alts:[], note:t(`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`,`Downbeat in the Dix-Hallpike → ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}), LARP/RALP plane. Treatment: Yacovino (deep head-hang → quick chin-to-chest movement). Lateralization by nystagmus uncertain.`)}
@@ -1332,6 +1371,7 @@ function renderDiag(){
         <div class="note">${t(`Leczenie dla strony <b>${SIDE[effSide]}</b>.`,`Treatment for the <b>${effSide==="L"?"left":"right"}</b> side.`)} ${antMode?t("Strona kanału przedniego niepewna — potwierdź deep head-hangiem i dopiero po wykluczeniu przyczyny ośrodkowej.","The anterior-canal side is uncertain — confirm with the deep head-hang and only after ruling out a central cause."):t("Potwierdź stronę regułą lateralizacji powyżej, zanim rozpoczniesz manewr.","Confirm the side with the lateralization rule above before starting the maneuver.")}</div>
         <div class="recobtns">${btns}</div></div>`; })()}
     ${vizControls()}
+    ${wsparcie.poziom==="czesciowe" ? `<div class="note obsniep">${t("Opis obserwacji jest niepełny — pokazany podtyp jest zgodnością z wzorcem modelu, a nie rozpoznaniem.","The observation is described only partly — the subtype shown is a match against the model's pattern, not a diagnosis.")}</div>` : ""}
     <p class="footnote">${t("Wzorce poglądowe. Interpretuj w kontekście klinicznym.","Illustrative patterns. Interpret in the clinical context.")}</p>`;
   if(can3d && state.view3d) phases.forEach((ph,i)=>mount3D("diag"+i, poseSpec(ph), A));
   rafOnce(()=>{

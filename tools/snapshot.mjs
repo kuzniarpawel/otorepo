@@ -425,7 +425,7 @@ function shellOracle(h, win) {
   const czysty = () => {
     if (!st) return;
     st.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
-    st.decisionSeq = 0; st.diagCentral = false; st.variant = 'canalo'; st.dixObs = 'post';
+    st.decisionSeq = 0; st.diagCentral = false; st.variant = 'canalo'; st.dixObs = null;   // null, nie 'post' (Blok 8): harness nie ma prawa odpowiadac za uzytkownika
     st.stepMapOpen = false; st.running = false; st.step = 0;
     st.triage = {}; st.triageStep = null;
     try { if (h.resetTriage) h.resetTriage(); } catch { }

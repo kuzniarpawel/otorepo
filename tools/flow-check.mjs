@@ -21,6 +21,10 @@ import {
   flowVisible, flowSignature, KONWERSJE,
 } from '../src/app/flow-model.js';
 import { recommend, CANAL_OF, DIAG } from '../src/pose/maneuvers.js';
+// flow-state.js importuje WYŁĄCZNIE flow-model.js i triage-model.js — oba czyste, więc cały
+// łańcuch jest importowalny w gołym Node i `noteNavCleared` daje się sprawdzić naprawdę,
+// a nie przez odwzorowanie jego działania w teście.
+import { noteNavCleared } from '../src/app/flow-state.js';
 
 const DEPS = { recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[k] || {}).canal || null };
 
@@ -113,6 +117,26 @@ eq('DR1/swiezy', maneuverDrift(zManewrem()), []);
 T('DR9/bez-manewru', maneuverDrift(S()).length === 0, 'bez wybranego manewru nie ma czego unieważniać');
 T('DR10/brak-flow', maneuverDrift({ testKey: 'dix', side: 'P', variant: 'canalo' }).length === 0, 'stan bez pola flow');
 
+/* --- 3a'. DRYF `dixObs` MUSI REAGOWAĆ NA WNIOSEK, NIE NA SUROWĄ WARTOŚĆ (Blok 8) ---
+   Blok 8 przestaje wpisywać domyślne `dixObs='post'` przy wyborze próby: pusty opis nie ma
+   prawa nieść odpowiedzi. Skutek uboczny, gdyby zostawić porównanie surowych wartości:
+   opisanie TYPOWEGO oczopląsu (null → 'post') zapalałoby alarm o wadze KRYTYCZNEJ ze zdaniem
+   „to zmienia wskazany kanał", mimo że kanał się nie zmienia (tylny → Epley w obu stanach),
+   a `nextStepId` zawracałby użytkownika do „Interpretacji". To jest dokładnie to zmęczenie
+   alarmowe, przeciwko któremu argumentuje komentarz przy `decisionInputs`.
+   Alarm ma się zapalać, gdy zmienia się WNIOSEK (downbeat ↔ nie-downbeat). */
+{ const s = zManewrem(); s.flow.maneuver.inputs.dixObs = null; s.dixObs = 'post';
+  T('DR-A/null-na-post-bez-alarmu', !maneuverDrift(s).some(x => x.pole === 'dixObs'),
+    'opisanie typowego oczopląsu nie zmienia wniosku — alarm byłby szumem'); }
+{ const s = zManewrem(); s.flow.maneuver.inputs.dixObs = null; s.dixObs = 'ant';
+  T('DR-B/null-na-ant-alarm', maneuverDrift(s).some(x => x.pole === 'dixObs'),
+    'opisanie downbeatu zmienia wskazany kanał — alarm MUSI wstać'); }
+{ const s = zManewrem(); s.flow.maneuver.inputs.dixObs = 'post'; s.dixObs = 'ant';
+  T('DR-C/post-na-ant-alarm', maneuverDrift(s).some(x => x.pole === 'dixObs'), 'zmiana wniosku na downbeat'); }
+{ const s = zManewrem(); s.flow.maneuver.inputs.dixObs = 'ant'; s.dixObs = null;
+  T('DR-D/ant-na-null-alarm', maneuverDrift(s).some(x => x.pole === 'dixObs'),
+    'cofnięcie downbeatu też zmienia wniosek'); }
+
 /* --- 3b. Sygnał zatarty przez nawigację ---
    Ciąg z krytyki: Dix → Epley → oznacz „Ośrodkowy — CPN" → INNA próba → z powrotem Dix.
    openTest przywraca dixObs='post' i diagCentral=false, więc SAME POLA odcisku wracają do
@@ -128,6 +152,26 @@ T('DR10/brak-flow', maneuverDrift({ testKey: 'dix', side: 'P', variant: 'canalo'
   T('ZT2/alarm-nie-gasnie', d.length > 0, 'nawigacja NIE MOŻE zgasić ostrzeżenia o CPN');
   eq('ZT3/powod-zatarcia', d[0].pole, 'zatarte');
   T('ZT4/dwujezyczny', !!(d[0].pl && d[0].en), 'powód musi być dwujęzyczny');
+}
+
+/* --- 3b'. `noteNavCleared` TRACI PRZESŁANKĘ PRZY dixObs (Blok 8) ---
+   Człon `dixObs === 'ant'` w `bylSygnal` stał na założeniu, że po odejściu od próby i powrocie
+   obserwacja JEST STRACONA — bo `resetTestLocal` czyścił pole. Blok 8 to założenie kasuje:
+   rekord obserwacji przeżywa nawigację, a `dixObs` jest odtąd PRZYJĘTĄ PODSTAWĄ, którą zmienia
+   wyłącznie jawny gest. Gdyby człon został, sam przelot przez inną próbę stawiałby flagę
+   `zatarte`, a ta zeruje się WYŁĄCZNIE przy wyborze nowego manewru — czyli powstałby trwały,
+   nieusuwalny fałszywy alarm nad manewrem, z którym nic złego się nie stało.
+   Sygnał o przyczynie OŚRODKOWEJ zostaje bez zmian: `diagCentral` nadal jest czyszczony przy
+   zmianie próby i nadal musi zostawiać ślad (ZT1-ZT4 wyżej tego pilnują). */
+{
+  const s = zManewrem({ dixObs: 'ant' });
+  noteNavCleared(s);                                   // to, co robi openTest przy INNEJ próbie
+  T('ZT-N1/sam-downbeat-nie-zaciera', !s.flow.maneuver.zatarte,
+    'przelot przez inną próbę nie może zostawiać nieusuwalnego alarmu, skoro obserwacja przeżywa');
+  eq('ZT-N2/brak-dryfu-po-powrocie', maneuverDrift(s), []);
+  const c = zManewrem({ diagCentral: true });
+  noteNavCleared(c);
+  T('ZT-N3/CPN-nadal-zaciera', !!c.flow.maneuver.zatarte, 'sygnał ośrodkowy MUSI zostawiać ślad');
 }
 {
   // Gest POROWNAWCZY: odwrócenie karty mechanizmu tam i z powrotem. Karta jest do tego zrobiona
@@ -417,7 +461,7 @@ if (bledy.length) {
   process.exit(1);
 }
 // Bramka liczności: skasowanie przypadków jest równie groźne jak zepsucie kodu.
-const OCZEKIWANE = 174;
+const OCZEKIWANE = 181;   // +4 (DR-A..D: dryf reaguje na WNIOSEK) +3 (ZT-N: noteNavCleared traci przeslanke dixObs) — Blok 8
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

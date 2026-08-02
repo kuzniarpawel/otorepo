@@ -198,9 +198,24 @@ export function maneuverDrift(s) {
     out.push({ pole: 'variant', pl: 'zmieniono mechanizm (kanalolitiaza ↔ kupulolitiaza) — zalecany manewr jest inny',
                en: 'the mechanism was changed (canalithiasis ↔ cupulolithiasis) — the recommended maneuver differs', waga: 'krytyczna' });
 
-  // dixObs porównujemy TYLKO w obrębie tej samej próby: przy zmianie testu pole jest normalizowane
-  // do null, więc raportowanie go dokładałoby drugi, nieprawdziwy powód.
-  if (bylUstalony(was, 'dixObs') && was.testKey === now.testKey && was.dixObs !== now.dixObs)
+  /* dixObs porównujemy TYLKO w obrębie tej samej próby: przy zmianie testu pole jest
+     normalizowane do null, więc raportowanie go dokładałoby drugi, nieprawdziwy powód.
+
+     PORÓWNUJEMY WNIOSEK, NIE SUROWĄ WARTOŚĆ (Blok 8). Od chwili, gdy wybór próby przestał
+     wpisywać domyślne `dixObs='post'` (pusty opis nie ma prawa nieść odpowiedzi), surowe
+     porównanie zapalałoby alarm KRYTYCZNY ze zdaniem „to zmienia wskazany kanał" na przejściu
+     null → 'post', czyli przy opisaniu TYPOWEGO oczopląsu, który niczego nie zmienia:
+     kanał tylny → Epley w obu stanach. To jest to samo zmęczenie alarmowe, przez które
+     `dixRep` nie wszedł do odcisku.
+
+     Straż `bylUstalony` MUSI TU ZNIKNĄĆ, i to jest defekt ważniejszy od powyższego, znaleziony
+     przypadkiem testowym DR-B: przy `was.dixObs === null` straż wyciszała porównanie CAŁKOWICIE,
+     więc opisanie DOWNBEATU po wybraniu manewru nie zapalałoby ŻADNEGO alarmu — a to jest
+     przejście od kanału tylnego do przedniego, czyli zmiana i kanału, i strony, i manewru.
+     Warunek `now.testKey === 'dix'` sam wyklucza drogę „Znam kanał i stronę" (tam `testKey`
+     jest null, więc równość prób nie zachodzi). */
+  const wnWas = was.dixObs === 'ant', wnNow = now.dixObs === 'ant';
+  if (was.testKey === now.testKey && now.testKey === 'dix' && wnWas !== wnNow)
     out.push({ pole: 'dixObs', pl: 'zmieniono zaobserwowany oczopląs — to zmienia wskazany kanał',
                en: 'the observed nystagmus was changed — this changes the indicated canal', waga: 'krytyczna' });
 

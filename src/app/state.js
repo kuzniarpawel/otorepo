@@ -6,7 +6,7 @@ import { HINTS_PRESETS } from './actions.js';
 /* ============ Stan ============ */
 const state={
   mode:"treat", screen:"start",   // Blok 4: wejsciem jest ekran oparty na CELU, nie wybor modulu. Golden bez zmian: domOracle ustawia screen jawnie dla kazdego scenariusza (snapshot.mjs:305).
-  side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:"post", dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
+  side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:null, dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
   diagCentral:false,   // przełącznik karty klasyfikacji: false=obwodowy (BPPV, klasyfikacja Bárány) · true=ośrodkowy (CPN)
   diagPhaseFace:0,     // odsłonięta faza karty pozycji (Bow&Lean/Roll): 0=przód/bow · 1=tył/lean. W STANIE, by przetrwać re-render (np. przełącznik 3D nie przewraca karty)
   size:"medium",                                   // rozmiar/gęstość złogu otoconiów (small|medium|big) → dynamika + holdy + animacja

@@ -199,7 +199,10 @@ function resetTestLocal(k){
     // jako podejrzany o przyczynę ośrodkową.
     noteNavCleared(state);
     state.dixRep=0;
-    markDecision(state,"dixObs","post");
+    // null, NIE „post" (Blok 8). Wybór próby nie jest obserwacją: wpisanie tu wartości domyślnej
+    // znaczyło, że aplikacja odpowiada za użytkownika, zanim ten cokolwiek zobaczył — i właśnie
+    // dlatego pusty opis dawał do niedawna pełne rozpoznanie z gotowym manewrem.
+    markDecision(state,"dixObs",null);
     markDecision(state,"diagCentral",false);
     markDecision(state,"testKey",k);
     resetSeen(state);
