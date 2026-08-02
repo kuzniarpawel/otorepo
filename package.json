@@ -19,7 +19,9 @@
     "open": "cap open android",
     "flow:check": "node tools/flow-check.mjs",
     "triage:check": "node tools/triage-check.mjs",
-    "viz:check": "node tools/vizclock-check.mjs"
+    "viz:check": "node tools/vizclock-check.mjs",
+    "barany:check": "node tools/barany-check.mjs",
+    "obs:check": "node tools/obs-check.mjs"
   },
   "repository": {
     "type": "git",

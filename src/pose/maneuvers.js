@@ -232,10 +232,27 @@ function provokeQ(canal, side){
   if(canal==="anterior")  return Vestibular.qSupineYaw(0);                      // głębokie odchylenie (strona przez skręt)
   return Vestibular.qSupineYaw(side==="P"? 45 : -45);                           // tylny (Dix-Hallpike)
 }
+/* OKNO SYMULACJI PRÓBY POZYCYJNEJ = CZAS KLINICZNY (decyzja użytkownika, 2026-08-01).
+   Te dwie liczby mają zupełnie inny status i mieszanie ich było źródłem błędu:
+
+   PRZEMIJAJĄCE (kanalolitiaza) — czas trwania wyznacza FIZYKA, nie okno. Zmierzony naturalny
+   zanik (|ξ| < 3 % szczytu): tylny 29,75 s · poziomy 39,85 s · przedni 34,35 s, czyli wszystkie
+   poniżej progu Bárány „< 1 min”. Okno ma ten zanik POMIEŚCIĆ, a nie go wyznaczać — przy dotych-
+   czasowych 40 s kanał poziomy kończył się 0,65 s przed krawędzią, więc dowolna zmiana parametru
+   cząstki obcinałaby go po cichu i „czas trwania” zacząłby znaczyć „długość okna”. Stąd zapas.
+
+   UPORCZYWE (kupulolitiaza) — ξ NIE WYGASA W OGÓLE (zmierzone: |ξ| = 1,000 szczytu jeszcze
+   po 300 s), więc tEnd JEST oknem i niczym więcej. Ta liczba jest zatem wprost twierdzeniem
+   klinicznym wypisanym obok na ekranie („Uporczywy > 60 s”) i musi ten próg przekraczać.
+   Dotychczasowe 18 s dawało obraz KRÓTSZY niż postać przemijająca — dokładnie odwrotnie
+   niż kryteria, które aplikacja drukuje nad animacją.
+   Bramka: npm run barany:check. */
+const XI_OKNO_PRZEMIJAJACY = 55;   // > naturalny zanik (max 39,85 s) z zapasem — okno nie obcina
+const XI_OKNO_UPORCZYWY    = 75;   // > 60 s: tEnd = okno, więc liczba MUSI przekraczać próg Bárány
 // przebieg ξ(t) z silnika: kanalolitiaza = PRZEJŚCIOWY (wygasa, cząstka wychodzi, NIE wraca);
 // kupulolitiaza = uporczywy (trzyma się, dopóki pozycja utrzymana).
 function engineXi(canal, side, persistent, q){
-  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?18:40}];
+  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?XI_OKNO_UPORCZYWY:XI_OKNO_PRZEMIJAJACY}];
   return persistent
     ? Vestibular.simulateCupulolith({canal, side, timeline})
     : Vestibular.simulateCanalith({canal, side, timeline});
@@ -589,7 +606,7 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { XI_OKNO_PRZEMIJAJACY, XI_OKNO_UPORCZYWY, SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

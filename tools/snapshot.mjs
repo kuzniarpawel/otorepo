@@ -312,6 +312,13 @@ function domOracle(h, win) {
   const out = {};
   const grab = (tag, fn) => { try { fn(); out[tag] = app(); } catch (e) { out[tag] = 'ERR:' + e.message; } };
 
+  /* Ekran startowy oparty na CELU (Blok 4) — dotąd NIEPRZYPIĘTY. To pierwszy ekran, jaki widzi
+     użytkownik, i jedyne miejsce, gdzie aplikacja deklaruje swój ZAKRES („narzędzie edukacyjne,
+     nie wyrób medyczny") oraz mapuje pięć szybkich wejść na realne cele. Zmiana dowolnego z tych
+     napisów przechodziła przez komplet wyroczni na zielono. Dokładane przed Blokiem 8, bo ten
+     blok zmienia znaczenie wejścia „Mam wynik próby". */
+  grab('start', () => { h.state.screen = 'start'; h.state.mode = 'treat'; h.render(); });
+
   // setup
   grab('setup', () => { h.state.screen = 'setup'; h.state.mode = 'treat'; h.render(); });
 
