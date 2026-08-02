@@ -7,6 +7,9 @@ import { render, syncVizBar, hintsNysLabel, hintsCompPatient, refreshHintsComp, 
 import { setLang, t } from '../i18n.js';
 import { markDecision, markSeen, markManeuver, patchManeuverSide, markConsumed, resetSeen, noteNavCleared, syncTriage } from './flow-state.js';
 import { toggleFlaga, sciezkaDozwolona } from './triage-model.js';
+import { setObsWystapil as _setObsWystapil, setObsPole as _setObsPole, oznaczObsPole as _oznaczObsPole,
+         setObsPowod as _setObsPowod, setObsGrupa as _setObsGrupa, clearObs as _clearObs,
+         przyjmijObserwacje } from './obs-state.js';
 
 function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
 function hintsHIT(canal, ear){
@@ -269,6 +272,26 @@ function vizStepFwd(){ if(!vizClock.isPaused()) return; vizClock.step(); syncViz
 // bo pętle muszą wystartować od nowa z wyzerowanym `start`.
 function resetViz(){ vizClock.reset(); render(); }
 
+
+/* ============ Krok „Oczopląs" — opis ZAOBSERWOWANEGO wyniku (Blok 8) ============
+   Wszystkie zapisy idą przez obs-state.js. ŻADEN z nich nie rusza `dixObs`, `variant`, `side`
+   ani `plan`: opisanie kierunku nie ma prawa po cichu podmienić kanału i zalecanego manewru.
+   Jedynym mostem do interpretacji jest `przyjmijObs` — jawny gest, własny przycisk. */
+function goObs(){ state.screen="obs"; state.obsGrupa=null; render(); }
+function wrocDoProby(){ state.screen="diag"; render(); }
+function setObsWystapil(proba,w){ _setObsWystapil(state,proba,w); render(); }
+function setObsPole(proba,klucz,wartosc){
+  if(klucz==="wystapil"){ _setObsWystapil(state,proba,wartosc); render(); return; }
+  _setObsPole(state,proba,klucz,wartosc); render();
+}
+function oznaczObsPole(proba,klucz){ _oznaczObsPole(state,proba,klucz); render(); }
+function setObsPowod(proba,p){ _setObsPowod(state,proba,p); render(); }
+function setObsGrupa(os){ _setObsGrupa(state,os); render(); }
+function wyczyscObs(){ _clearObs(state, state.testKey); render(); }
+// Przyjęcie opisu jako podstawy interpretacji ZMIENIA `dixObs` — i jest jedynym miejscem,
+// w którym to się dzieje. Po przyjęciu wracamy na ekran próby, bo to tam widać skutek.
+function przyjmijObs(){ if(przyjmijObserwacje(state, state.testKey)){ state.screen="diag"; } render(); }
+
 /* ============ Kwalifikacja wstępna („Wywiad", Blok 6) ============
    Kwestionariusz WYBIERA ŚCIEŻKĘ BADANIA, nie stawia rozpoznania — dlatego `triageGo` prowadzi
    do trybu, a nie do gotowego wyniku, i istnieje wyłącznie dla ścieżki, którą model rzeczywiście
@@ -334,8 +357,8 @@ function setLangUI(lang){
 }
 
 
-export { toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });

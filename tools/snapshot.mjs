@@ -117,6 +117,9 @@ const HANDLE_NAMES = [
   'goArea', 'syncShell', 'toggleDiagCentral',
   // Blok 6 — kwalifikacja wstępna. Brak = handleMissing = twardy exit(1).
   'openTriage', 'setTriage', 'toggleTriageFlaga', 'resetTriage',
+  // Blok 8 — krok „Oczopląs". Brak = handleMissing = twardy exit(1), czyli „ekranu obserwacji
+  // nie da się wysterować z testu" jest błędem, a nie cichą degradacją pokrycia.
+  'goObs', 'setObsPole', 'oznaczObsPole', 'setObsGrupa', 'wyczyscObs', 'przyjmijObs',
 ];
 function makeHandle(win) {
   if (win.__OTOREPO_TEST__) return win.__OTOREPO_TEST__;
@@ -350,6 +353,56 @@ function domOracle(h, win) {
     }
   }
 
+  /* Krok „Oczopląs" (Blok 8) — opis ZAOBSERWOWANEGO wyniku. Pinujemy stany, w których ekran
+     mówi RÓŻNE rzeczy, bo to jedyne miejsce w aplikacji, gdzie zapisuje się relacja człowieka,
+     a nie wynik modelu. Najważniejsze trzy: `pusty` (nie wolno niczego zakładać), `czysto-skretny`
+     (znalezisko, nie brak danych) i `niewiarygodne` (kwarantanna wycisza wniosek, ale ostrzeżenie
+     ZOSTAJE — cicha zmiana tej reguły byłaby regresją bezpieczeństwa niewidoczną w żadnej innej
+     bramce). Rekordy budujemy przez PRAWDZIWE akcje, nie przez wstrzyknięcie stanu. */
+  if (h.goObs && h.setObsPole && h.oznaczObsPole && h.setObsGrupa) {
+    // Rekordy obserwacji PRZEŻYWAJĄ nawigację (to celowe), więc bez zerowania między scenariuszami
+    // wyciekałyby jeden na drugi i kolejność bloków zaczęłaby wpływać na złoty wzorzec.
+    const czystyObs = () => { h.state.obs = {}; h.state.obsGrupa = null; h.state.dixObs = null; };
+    const obs = (tag, proba, kroki) => grab(`obs/${tag}`, () => {
+      czystyObs();
+      if (h.openTest) h.openTest(proba); else Object.assign(h.state, { testKey: proba });
+      h.goObs();
+      for (const [klucz, w] of (kroki || [])) h.setObsPole(proba, klucz, w);
+      h.render();
+    });
+    obs('dix/pusty', 'dix', []);
+    obs('dix/tylko-pion', 'dix', [['pion#jedyna', 'p1']]);
+    obs('dix/typowy', 'dix', [['pion#jedyna', 'p1'], ['torsja#jedyna', 'p1'], ['poziom#jedyna', 'zero'],
+      ['latencja', '1-5s'], ['czasTrwania', 'ponizej1min'], ['meczliwosc', 'slabnie'], ['przebieg', 'narastaWygasa']]);
+    obs('dix/downbeat', 'dix', [['pion#jedyna', 'm1']]);
+    obs('dix/czysto-skretny', 'dix', [['pion#jedyna', 'zero'], ['torsja#jedyna', 'p1']]);
+    obs('dix/wynik-ujemny', 'dix', [['wystapil', 'nie']]);
+    grab('obs/dix/niewiarygodne', () => {
+      czystyObs();
+      if (h.openTest) h.openTest('dix'); else Object.assign(h.state, { testKey: 'dix' });
+      h.goObs();
+      h.setObsPole('dix', 'pion#jedyna', 'm1');
+      h.oznaczObsPole('dix', 'pion#jedyna');            // → niepewne
+      h.oznaczObsPole('dix', 'pion#jedyna');            // → niewiarygodne
+      h.render();
+    });
+    grab('obs/dix/grupa-dynamika', () => {
+      czystyObs();
+      if (h.openTest) h.openTest('dix'); else Object.assign(h.state, { testKey: 'dix' });
+      h.goObs();
+      h.setObsGrupa('dynamika');                        // dowód, że state.obsGrupa jest NAPRAWDĘ czytane
+      h.render();
+    });
+    obs('roll/pusty', 'roll', []);
+    obs('roll/geotropowy', 'roll', [['poziom#prawoWDole', 'p1'], ['poziom#lewoWDole', 'm1'], ['nasilenie', 'silniejsza']]);
+    obs('roll/niespojny', 'roll', [['poziom#prawoWDole', 'p1'], ['poziom#lewoWDole', 'p1']]);
+    obs('bowlean/pusty', 'bowlean', []);
+    obs('bowlean/odwraca', 'bowlean', [['poziom#bow', 'p1'], ['poziom#lean', 'm1']]);
+    obs('headhang/pusty', 'headhang', []);
+    obs('headhang/downbeat', 'headhang', [['pion#jedyna', 'm1'], ['pozycjaNeutralna', 'tak'], ['fiksacja', 'nieTlumil']]);
+    czystyObs();
+  }
+
   /* Kwalifikacja wstępna („Wywiad", Blok 6). Pinujemy po JEDNYM stanie na każdą kategorię
      taksonomii GRACE-3 — to jedyny ekran, którego treść jest wprost zaleceniem klinicznym,
      więc cicha zmiana słów („nie wykonuj repozycji" → cokolwiek łagodniejszego) musi się
@@ -428,6 +481,10 @@ function shellOracle(h, win) {
     st.decisionSeq = 0; st.diagCentral = false; st.variant = 'canalo'; st.dixObs = null;   // null, nie 'post' (Blok 8): harness nie ma prawa odpowiadac za uzytkownika
     st.stepMapOpen = false; st.running = false; st.step = 0;
     st.triage = {}; st.triageStep = null;
+    // Blok 8: rekordy obserwacji PRZEŻYWAJĄ nawigację (to celowe), więc bez wyczyszczenia ich
+    // TUTAJ scenariusze wyciekałyby jeden na drugi i kolejność bloków w tym pliku zaczęłaby
+    // wpływać na złoty wzorzec — awaria, której nie widać, dopóki ktoś nie przestawi bloków.
+    st.obs = {}; st.obsGrupa = null;
     try { if (h.resetTriage) h.resetTriage(); } catch { }
   };
 

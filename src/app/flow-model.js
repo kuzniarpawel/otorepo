@@ -45,10 +45,14 @@ export const FLOW_STEPS = [
   // Karta wprowadzania obserwacji (.obsrow, svg-screens.js:1106) renderuje się WYŁĄCZNIE dla
   // Dix-Hallpike'a. Przy pozostałych próbach nie ma dziś czego wpisać — pełny formularz
   // obserwacji dla wszystkich prób to Blok 8.
+  /* Blok 8 dał temu krokowi WŁASNY EKRAN i pełny formularz dla WSZYSTKICH czterech prób,
+     więc `pendingGdy` znika: nie ma już próby, przy której nie da się nic wpisać. Cel to
+     `screen:'obs'`, a nie kotwica na ekranie próby — rozdzielenie jest fizyczne, bo dopóki
+     formularz obserwacji sąsiaduje z animacją oczopląsu PRZEWIDYWANEGO, „zgodność" mierzy
+     tylko to, czy ktoś dobrze przepisał to, co widzi na ekranie. */
   { id: 'nystagmus', pl: 'Oczopląs',      en: 'Nystagmus',
     plDesc: 'co widać w próbie', enDesc: 'what the test shows',
-    mode: 'diag', screen: 'diag', anchor: () => '.obsrow',
-    pendingGdy: s => !!s.testKey && s.testKey !== 'dix',
+    mode: 'diag', screen: 'obs', anchor: () => null,
     wymaga: s => !!s.testKey, zamiast: { screen: 'setup', mode: 'diag' } },
 
   { id: 'interpret', pl: 'Interpretacja', en: 'Interpretation',
@@ -283,6 +287,7 @@ export function lateralizacjaNiepewna(s) {
 // nawigacji, która je pomija (zakładki trybów wewnątrz #app, „Rozpocznij: Epley", przycisk „Wróć").
 export function activeStepId(s) {
   if (s.screen === 'triage') return 'history';
+  if (s.screen === 'obs') return 'nystagmus';        // własny ekran kroku „Oczopląs" (Blok 8)
   if (s.screen === 'guide') return 'maneuver';
   if (s.screen === 'diag') {
     // Na ekranie testu współistnieją dziś trzy kroki. Bierzemy najdalszy, który użytkownik
@@ -306,7 +311,7 @@ export function flowVisible(s) {
   if (s.area && s.area !== 'diag') return false;          // learn / lab / profile / start
   if (s.mode === 'hints') return false;
   if (s.screen === 'start' || s.screen === 'hints') return false;
-  return s.screen === 'setup' || s.screen === 'diag' || s.screen === 'guide' || s.screen === 'triage';
+  return s.screen === 'setup' || s.screen === 'diag' || s.screen === 'obs' || s.screen === 'guide' || s.screen === 'triage';
 }
 
 /* PODPIS STANU dla powłoki. Obserwator mutacji #app (shell.js) odświeża chrom tylko wtedy, gdy

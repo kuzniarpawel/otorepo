@@ -4,7 +4,9 @@ import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
-import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix } from '../app/obs-model.js';
+import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
+         OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
+         ETYKIETY_OSI, nieuzyte } from '../app/obs-model.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
@@ -751,6 +753,7 @@ function render(){
   else if(state.screen==="triage") renderTriage();
   else if(state.screen==="setup") renderSetup();
   else if(state.screen==="guide") renderGuide();
+  else if(state.screen==="obs") renderObs();
   else if(state.screen==="hints") renderHints();
   else renderDiag();
   /* ZASIĘG ZEGARA WIZUALIZACJI = EKRAN, KTÓRY MA PILOTA (naprawa po krytyce Bloku 7).
@@ -960,6 +963,127 @@ function pozySekwencja(fazy, strona, rozwin){
       <summary>${t("Sekwencja pozycji (statyczna)","Position sequence (static)")}</summary>
       <p class="note">${t("Kolejne ułożenia pacjenta bez animacji — do odczytania w dowolnym tempie.","The successive patient positions without animation — to read at any pace.")}</p>
       <ol class="seqlist">${kafle}</ol></details>`;
+}
+
+/* ============ EKRAN „OCZOPLĄS" — opis ZAOBSERWOWANEGO wyniku (Blok 8) ============
+   OSOBNY EKRAN, nie panel doklejony do próby. Powód jest treściowy, nie kosmetyczny: dopóki
+   formularz obserwacji sąsiaduje z animacją oczopląsu PRZEWIDYWANEGO, klinicysta może przepisać
+   to, co widzi na ekranie, zamiast tego, co zobaczył u pacjenta — a wtedy „zgodność obserwacji
+   z modelem" mierzy wyłącznie to, że ktoś dobrze przepisał. Rozdzielenie fizyczne jest jedynym,
+   które tego nie dopuszcza.
+   Ekran NIE nazywa kanału, strony ani mechanizmu — to Blok 9. Bramka SEP2 skanuje napisy modelu
+   w obu językach przeciw nazwom rozpoznań. */
+function obsWartoscHTML(proba, klucz, def, biezaca, znak){
+  const btn = (v)=>`<button type="button" class="oqopt" aria-pressed="${biezaca===v.id}"
+      onclick="setObsPole('${proba}','${klucz}','${v.id}')">
+      <span class="oqopt__box" aria-hidden="true"></span>
+      <span class="oqopt__txt">${t(v.pl, v.en)}</span></button>`;
+  return def.wartosci.map(btn).join("");
+}
+function obsZnacznikHTML(proba, klucz, znak, odpowiedziane){
+  if(!odpowiedziane) return "";
+  const opis = znak==="niewiarygodne" ? t("niewiarygodne","unreliable") : znak==="niepewne" ? t("niepewne","uncertain") : t("pewne","confident");
+  const glif = znak==="niewiarygodne" ? "⊘" : znak==="niepewne" ? "~" : "✓";
+  return `<button type="button" class="oznak oznak--${znak||'pewne'}" onclick="oznaczObsPole('${proba}','${klucz}')"
+      aria-label="${t("Wiarygodność tej odpowiedzi","Reliability of this answer")}: ${opis}">
+      <span aria-hidden="true">${glif}</span> ${opis}</button>`;
+}
+function obsPytanieHTML(proba, rekord, inst){
+  const def = OBS_POLA[inst.pole];
+  const e = inst.klucz==="wystapil" ? { w: rekord && rekord.wystapil, znak: null } : ((rekord && rekord.pola[inst.klucz]) || null);
+  const biezaca = e ? e.w : null;
+  const fazaOpis = inst.fazaId && OBS_FAZY_OPIS[inst.fazaId] ? ` — ${t(OBS_FAZY_OPIS[inst.fazaId].pl, OBS_FAZY_OPIS[inst.fazaId].en)}` : "";
+  return `<div class="oq${biezaca?' oq--gotowe':''}">
+      <div class="oq__q">${t(def.pytanie.pl, def.pytanie.en)}${fazaOpis}</div>
+      ${def.pozaModelem ? `<div class="oq__poza">${t("Model tego nie przewiduje — zapisujemy obserwację, ale nie ma jej z czym porównać.","The model does not predict this — we record the observation, but there is nothing to compare it with.")}</div>` : ""}
+      <div class="oq__opts">${obsWartoscHTML(proba, inst.klucz, def, biezaca, e&&e.znak)}</div>
+      ${obsZnacznikHTML(proba, inst.klucz, e&&e.znak, !!biezaca)}
+    </div>`;
+}
+const OBS_GRUPY = [
+  { os:"kontekst_wystapil", pl:"Czy wystąpił", en:"Did it occur" },
+  { os:"kierunek", pl:"Kierunek", en:"Direction" },
+  { os:"dynamika", pl:"Dynamika", en:"Dynamics" },
+  { os:"kontekst", pl:"Warunki i cechy dodatkowe", en:"Conditions and additional features" },
+];
+function renderObs(){
+  const proba = state.testKey || "dix";
+  const D = DIAG[proba];
+  const rek = (state.obs||{})[proba] || null;
+  const wyst = rek ? rek.wystapil : undefined;
+  const inst = instancjeStosowalne(proba, wyst);
+  const komp = kompletnosc(rek || { proba, pola:{} });
+  const sp = spojnosc(rek || { proba, pola:{} });
+  const flg = flagi(rek);
+  const wsp = rek ? poparcie(rek, proba, state.dixObs) : { poziom:"brak", powod:"brakOpisu" };
+
+  const grupaHTML = (g)=>{
+    const lista = g.os==="kontekst_wystapil"
+      ? inst.filter(i=>i.klucz==="wystapil")
+      : inst.filter(i=>i.os===g.os && i.klucz!=="wystapil");
+    if(!lista.length) return "";
+    const zrobione = lista.filter(i=>{
+      const v = i.klucz==="wystapil" ? wyst : ((rek&&rek.pola[i.klucz])||{}).w;
+      return v!=null;
+    }).length;
+    // Na telefonie rozwinięta jest JEDNA grupa; state.obsGrupa jest tu NAPRAWDĘ czytane.
+    const otwarta = state.obsGrupa ? state.obsGrupa===g.os : zrobione<lista.length;
+    return `<details class="card ogrupa"${otwarta?" open":""}>
+        <summary onclick="event.preventDefault();setObsGrupa('${g.os}')">
+          <span class="ogrupa__t">${t(g.pl,g.en)}</span>
+          <span class="ogrupa__n">${zrobione}/${lista.length}</span></summary>
+        ${lista.map(i=>obsPytanieHTML(proba, rek, i)).join("")}
+      </details>`;
+  };
+
+  const osHTML = (klucz, etykietaPl, etykietaEn)=>{
+    const o = komp[klucz]; const et = ETYKIETY_OSI[o.etykieta];
+    return `<div class="opas"><span class="opas__n">${t(etykietaPl,etykietaEn)}</span>
+        <span class="opas__v opas__v--${o.etykieta}">${t(et.pl,et.en)}</span></div>`;
+  };
+  const powodBraku = wsp.poziom==="brak" ? (POWODY_BRAKU[wsp.powod]||POWODY_BRAKU.brakOpisu) : null;
+  /* Przycisk przyjęcia MUSI pytać o to samo, o co pyta `przyjmijObserwacje` — czyli o wartość
+     PO kwarantannie. Inaczej powstaje przycisk aktywny, którego kliknięcie nic nie robi:
+     dokładnie ta klasa defektu, którą krytyka Bloku 7 znalazła w HINTS (werdykt wypisywany
+     nad nieruchomym obrazem). Trzy różne powody blokady dają trzy różne zdania — „nie opisano
+     pionu" i „opisano, ale oznaczono jako niewiarygodny" to nie to samo. */
+  const pionWpis = (rek && rek.pola["pion#jedyna"]) || null;
+  const pionUzyteczny = rek ? wartoscInstancji(rek, "pion#jedyna") : null;
+  const mozliwePrzyjecie = proba==="dix" && ["p1","m1"].includes(pionUzyteczny);
+  const powodBlokady = mozliwePrzyjecie ? null
+    : proba!=="dix" ? t("Podstawę interpretacji przyjmuje się na razie tylko dla manewru Dix–Hallpike'a — pozostałe próby zapisujesz, ale aplikacja nie wyprowadza z nich wniosku.","The basis of interpretation can so far be accepted only for the Dix–Hallpike — the other tests are recorded, but the app does not draw a conclusion from them.")
+    : (pionWpis && pionWpis.znak==="niewiarygodne") ? t("Składowa pionowa jest oznaczona jako NIEWIARYGODNA — obserwacja zostaje zapisana i nadal zapala ostrzeżenia, ale nie może być podstawą wniosku.","The vertical component is marked UNRELIABLE — the observation is kept and still raises warnings, but it cannot be the basis of a conclusion.")
+    : (pionUzyteczny==="zero") ? t("Opisano brak składowej pionowej — ten kierunek nie odpowiada żadnemu kanałowi w tym modelu.","No vertical component was described — this direction does not match any canal in this model.")
+    : t("Żeby przyjąć opis jako podstawę, opisz składową pionową — to ona różnicuje kanał.","To accept the description as the basis, describe the vertical component — it is what differentiates the canal.");
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="wrocDoProby()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Zaobserwowany oczopląs","Observed nystagmus")}</b><span>${D.name}</span></div></div>
+    <div class="card obsintro"><div class="instr">${t("Opisz to, co zobaczyłeś u pacjenta. To jest zapis TWOJEJ obserwacji — nie musi zgadzać się z tym, co pokazuje model.","Describe what you saw in the patient. This is a record of YOUR observation — it does not have to agree with what the model shows.")}</div></div>
+    <div class="pagegrid"><div class="col col--ctl">
+      ${OBS_GRUPY.map(grupaHTML).join("")}
+      <div class="card oakcje">
+        <button class="recoprimary" ${mozliwePrzyjecie?"":'aria-disabled="true"'} onclick="przyjmijObs()">${t("Przyjmij ten opis jako podstawę interpretacji","Accept this description as the basis of interpretation")}</button>
+        ${mozliwePrzyjecie?"":`<div class="note">${powodBlokady}</div>`}
+        <button class="recoalt" onclick="wyczyscObs()">${t("Wyczyść opis tej próby","Clear the description of this test")}</button>
+      </div>
+    </div><div class="col col--viz">
+      <div class="card opodsum">
+        <h4>${t("Podsumowanie obserwacji","Observation summary")}</h4>
+        ${osHTML("kierunek","Kierunek","Direction")}
+        ${osHTML("dynamika","Dynamika","Dynamics")}
+        ${osHTML("kontekst","Warunki","Conditions")}
+        <div class="note">${sp.opisanych
+          ? (sp.pasujace.length
+            ? t("Opisane cechy dynamiki układają się w jeden ze wzorców znanych temu modelowi.","The described dynamic features form one of the patterns this model knows.")
+            : t(`Cech niepasujących do żadnego wzorca, który ten model zna: ${sp.niepasujace}.`,`Features not matching any pattern this model knows: ${sp.niepasujace}.`))
+          : t("Nie opisano jeszcze dynamiki.","The dynamics have not been described yet.")}</div>
+        ${powodBraku?`<div class="note" style="color:var(--text)">${t(powodBraku.pl,powodBraku.en)}</div>`:""}
+        ${flg.length?`<div class="oflagi"><b>${t("Sygnały ostrzegawcze","Warning signals")}</b><ul>${flg.map(f=>`<li>${t(FLAGI[f].pl,FLAGI[f].en)}</li>`).join("")}</ul></div>`:""}
+        ${(rek && nieuzyte(rek).length)?`<div class="note">${t(`Zapisane, nieużyte przy tym wyniku: ${nieuzyte(rek).length} pól.`,`Recorded but unused for this result: ${nieuzyte(rek).length} fields.`)}</div>`:""}
+      </div>
+    </div></div>
+    <p class="footnote">${t("Opis obserwacji nie jest rozpoznaniem. Interpretacja to osobny krok.","An observation record is not a diagnosis. Interpretation is a separate step.")}</p>`;
 }
 
 function renderTriage(){
@@ -1332,11 +1456,22 @@ function renderDiag(){
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
     <div class="card" style="margin-bottom:4px" data-flow-anchor="test" tabindex="-1"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
-    ${isDix ? `<div class="obsrow" tabindex="-1"><div class="obslabel">${t("Zaobserwowany oczopląs w Dix-Hallpike:","Observed nystagmus in the Dix-Hallpike:")}</div>
-      <div class="seg segobs">
-        <button class="opt" aria-pressed="${state.dixObs==='post'}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
-        <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
-      </div></div>` : ""}
+    ${/* WEJŚCIE DO OPISU OBSERWACJI — takie samo dla WSZYSTKICH czterech prób (Blok 8).
+          Zastępuje dwustanowy przełącznik, który istniał wyłącznie przy Dix-Hallpike i pytał
+          wprost o WNIOSEK („kanał tylny" / „kanał przedni"), a nie o to, co widać. Przy roll,
+          bow&lean i head-hangu nie było czym opisać obserwacji w ogóle. */""}
+    <div class="obsrow" tabindex="-1"><div class="obslabel">${t("Zaobserwowany oczopląs","Observed nystagmus")}</div>
+      <button class="obsgo" onclick="goObs()">
+        <span class="obsgo__t">${wsparcie.poziom==="brak" ? t("Opisz, co zobaczyłeś","Describe what you saw") : t("Opis obserwacji","Observation record")}</span>
+        <span class="obsgo__s">${(()=>{
+          if(!rekObs) return t("nie opisano — aplikacja nie ma na czym oprzeć wniosku","not described — the app has nothing to base a conclusion on");
+          const k = kompletnosc(rekObs);
+          const et = (os)=>t(ETYKIETY_OSI[k[os].etykieta].pl, ETYKIETY_OSI[k[os].etykieta].en);
+          return `${t("kierunek","direction")}: ${et("kierunek")} · ${t("dynamika","dynamics")}: ${et("dynamika")}`;
+        })()}</span>
+        <span class="obsgo__go" aria-hidden="true">›</span></button>
+      ${isDix && state.dixObs ? `<div class="obspodstawa">${t("Przyjęta podstawa interpretacji:","Accepted basis of interpretation:")} <b>${state.dixObs==="ant"?t("downbeat","downbeat"):t("ku górze + skrętny","upbeat + torsional")}</b></div>` : ""}
+    </div>
     ${phaseHTML}
     ${pozySekwencja(phases, A, !!state.reducedMotion)}
     ${fatPanel}
@@ -1935,8 +2070,8 @@ function sideSel(current, fn, lbl){
   return `<div class="sidesel"><span class="lbl">${lbl}</span><div class="tabs">${opt('L')}${opt('P')}</div></div>`;
 }
 
-export { syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
+export { renderObs, syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { syncVizBar, renderTriage, startGo, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });
+Object.assign(window, { renderObs, syncVizBar, renderTriage, startGo, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });

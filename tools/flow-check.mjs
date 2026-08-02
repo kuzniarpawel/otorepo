@@ -346,18 +346,25 @@ eq('ST7/manewr-aktywny', statusOf(S({ screen: 'guide' }), 'maneuver'), 'active')
   T('ST14b/nota', krok(s, 'maneuver').powodPl.length > 10, 'alternatywa musi powiedzieć, że pierwszym rzutem jest inny manewr');
 }
 
-/* ============ 10. Krok „Oczopląs" istnieje tylko dla Dix-Hallpike'a ============ */
-for (const k of ['roll', 'bowlean', 'headhang']) {
-  eq(`OB1/${k}`, statusOf(S({ testKey: k }), 'nystagmus'), 'pending');
-  T(`OB2/${k}-nieosiagalny`, !stepReachable(S({ testKey: k }), 'nystagmus'), 'krok bez treści nie może być klikalny');
+/* ============ 10. Krok „Oczopląs" ISTNIEJE DLA KAŻDEJ PRÓBY (Blok 8) ============
+   Do Bloku 7 ten krok był `pending` przy roll, bow&lean i head-hangu, bo wprowadzanie
+   obserwacji istniało wyłącznie przy Dix-Hallpike'u — i to była uczciwa deklaracja braku.
+   Blok 8 dał wszystkim czterem próbom pełny formularz na WŁASNYM ekranie, więc te asercje
+   opisują teraz stan, którego już nie ma; przepisane, a nie usunięte, żeby regresja
+   („ktoś przywrócił pending") miała co złamać. */
+for (const k of ['dix', 'roll', 'bowlean', 'headhang']) {
+  eq(`OB1/${k}/nie-pending`, statusOf(S({ testKey: k, screen: 'guide' }), 'nystagmus'), 'todo');
+  T(`OB2/${k}/osiagalny`, stepReachable(S({ testKey: k }), 'nystagmus'), 'krok z treścią MUSI być klikalny');
+  eq(`OB3/${k}/cel-to-osobny-ekran`, stepTarget(S({ testKey: k }), 'nystagmus').screen, 'obs');
 }
-eq('OB3/dix-dostepny', statusOf(S({ testKey: 'dix', screen: 'guide' }), 'nystagmus'), 'todo');
-T('OB4/dix-osiagalny', stepReachable(S({ testKey: 'dix' }), 'nystagmus'), 'przy Dix-Hallpike krok istnieje');
+T('OB4/zaden-nie-pending', !['dix', 'roll', 'bowlean', 'headhang'].some(k => stepPending(S({ testKey: k }), 'nystagmus')),
+  'po Bloku 8 nie ma próby, przy której nie da się nic wpisać');
 T('OB5/bez-proby', stepReachable(S({ testKey: null }), 'nystagmus'), 'brak wybranej próby nie przesądza');
-T('OB6/uzasadnienie-mowi-o-modelu', /PRZEWIDYWANY/.test(krok(S({ testKey: 'roll' }), 'nystagmus').powodPl),
-  'uzasadnienie musi powiedzieć, że pokazany wzorzec pochodzi z modelu, nie z obserwacji');
-eq('OB7/nastepny-pomija', nextStepId(S({ screen: 'diag', testKey: 'roll' }), DEPS), 'interpret');
-eq('OB8/aktywny-nie-wskrzesza', activeStepId(S({ screen: 'diag', testKey: 'roll', flow: { obsSeen: true } })), 'test');
+// Bez wybranej próby cel schodzi na ekran wyboru — inaczej renderObs czytałby DIAG[null].
+eq('OB6/bez-proby-zamiast', stepTarget(S({ testKey: null }), 'nystagmus').screen, 'setup');
+eq('OB7/nastepny-nie-pomija', nextStepId(S({ screen: 'diag', testKey: 'roll' }), DEPS), 'nystagmus');
+eq('OB8/aktywny-na-ekranie-obs', activeStepId(S({ screen: 'obs', testKey: 'roll' })), 'nystagmus');
+T('OB9/pasek-widoczny-na-obs', flowVisible(S({ screen: 'obs', testKey: 'roll' })), 'pasek przebiegu musi być widoczny na ekranie obserwacji');
 
 /* ============ 11. Cel nawigacji — bramka danych ============
    renderDiag czyta DIAG[state.testKey].canal (svg-screens.js:1039-1043), renderGuide czyta
@@ -377,7 +384,8 @@ eq('OB8/aktywny-nie-wskrzesza', activeStepId(S({ screen: 'diag', testKey: 'roll'
   eq('CL3/manewr-bez-planu', stepTarget(pusty, 'maneuver'), { screen: 'setup', mode: 'treat', anchor: null, pelny: false });
 }
 eq('CL4/test-z-proba', stepTarget(S(), 'test'), { screen: 'diag', mode: 'diag', anchor: '[data-flow-anchor="test"]', pelny: true });
-eq('CL5/oczoplas-kotwica', stepTarget(S(), 'nystagmus').anchor, '.obsrow');
+// Blok 8: krok ma WŁASNY EKRAN, więc nie ma kotwicy w ekranie próby — rozdzielenie jest fizyczne.
+eq('CL5/oczoplas-bez-kotwicy', stepTarget(S(), 'nystagmus').anchor, null);
 eq('CL6/interpretacja-kotwica', stepTarget(S(), 'interpret').anchor, '[data-flow-anchor="interpret"]');
 eq('CL7/manewr-z-planem', stepTarget(S({ plan: { steps: [{}] }, maneuverKey: 'epley' }), 'maneuver'),
   { screen: 'guide', mode: 'treat', anchor: null, pelny: true });
@@ -461,7 +469,7 @@ if (bledy.length) {
   process.exit(1);
 }
 // Bramka liczności: skasowanie przypadków jest równie groźne jak zepsucie kodu.
-const OCZEKIWANE = 181;   // +4 (DR-A..D: dryf reaguje na WNIOSEK) +3 (ZT-N: noteNavCleared traci przeslanke dixObs) — Blok 8
+const OCZEKIWANE = 187;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

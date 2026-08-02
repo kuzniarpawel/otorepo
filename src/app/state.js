@@ -33,7 +33,11 @@ const state={
   // --- Przebieg kliniczny (Blok 5). Czytane przez src/app/flow-model.js (czysty), zapisywane
   //     wyłącznie przez src/app/flow-state.js. Żadna wyrocznia nie serializuje obiektu state,
   //     więc dokładanie pól jest golden-neutralne.
-  triage:{},                                       // Blok 6: odpowiedzi kwalifikacji wstępnej {przebieg, wyzwalacz, oczoplas, flagi[]}. Czyta je src/app/triage-model.js (czysty)
+  triage:{},
+                                                 // Blok 6: odpowiedzi kwalifikacji wstępnej {przebieg, wyzwalacz, oczoplas, flagi[]}. Czyta je src/app/triage-model.js (czysty)
+  // Blok 8: rekordy obserwacji KLUCZOWANE PRÓBĄ (obs.dix, obs.roll, …) — zapis kliniczny nie
+  // znika przez sam akt nawigacji między próbami. Pisze do nich WYŁĄCZNIE src/app/obs-state.js.
+  obs:{}, obsGrupa:null,                         // obsGrupa: rozwinięta grupa pytań na telefonie (czytana przez renderObs)
   triageStep:null,                                 // telefon: pytanie pokazywane w danej chwili (null = po kolei wg nextQuestionId)
   decisionSeq:0,                                 // MONOTONICZNY licznik świadomych decyzji interpretacyjnych (mechanizm/oczopląs/CPN). Rośnie tylko przy realnej zmianie wartości; nawigacja go NIE cofa — dzięki temu ciche przywrócenie diagCentral=false przez openTest nie gasi ostrzeżenia
   flow:{ testSeen:false, obsSeen:false, interpretSeen:false, maneuver:null },   // co użytkownik naprawdę zrobił + odcisk wejść z chwili wyboru manewru
