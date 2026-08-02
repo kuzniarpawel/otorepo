@@ -902,3 +902,40 @@ UPROSZCZENIA / ZASTRZEŻENIA:
   - HINTS jako model DYDAKTYCZNY — NIE zastępuje badania; ważny w AVS z utrzymującym się oczopląsem,
     interpretować z HINTS „plus" (słuch) i kontekstem (Tarnutzer 2011 [H9]). UWAGA: skompensowany ubytek
     obwodowy może mieć bedside HIT „prawidłowy" (sakady ukryte) — pułapka, gdy nie ma już oczopląsu AVS.
+
+================================================================================
+OBSERWACJE POZA MODELEM — czego silnik BPPV NIE liczy (Blok 8)
+================================================================================
+Krok „Oczopląs" pozwala klinicyscie zapisac to, co ZOBACZYL u pacjenta. Czesc cech, o ktore
+formularz pyta, NIE MA odpowiednika w silniku — i to jest zapisane wprost, zeby nikt nie wzial
+milczenia modelu za jego przewidywanie. Karta „Porownaj z przewidywaniem" zwraca dla nich
+werdykt `nieporownywalne`, a nie `rozne`.
+
+1. WPLYW FIKSACJI WZROKU. Silnik BPPV nie ma parametru fiksacji. Sprawdzone: zbior kluczy
+   `Vestibular` (isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch,
+   position, simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
+   qmul, qconj, qaxis, rotate, GEXC, CANAL_NORMALS, CUP_WEAK) nie zawiera ani jednego.
+   Supresja fiksacyjna istnieje WYLACZNIE w NeuroVOR (patrz [H3]) i jest czytana tylko przez
+   ekran HINTS. Klinicznie cecha jest wazna (oczoplas obwodowy tlumi sie przy fiksacji,
+   osrodkowy nie), wiec pole zostaje w formularzu — z waga 1 i jawna adnotacja przy pytaniu.
+
+2. ODWROCENIE KIERUNKU PO POSADZENIU. Model nie ma fazy siadu w probie diagnostycznej:
+   `DIAG.dix.phases` to JEDNA faza, a `engineXi` buduje os czasu z jednego segmentu
+   {q, tTrans, tHold}. Transjent liberacyjny opisany wyzej (dynamika manewrow) ma TEN SAM ZNAK
+   co pobudzenie pierwotne i nie jest odwroceniem. Pole zostaje w formularzu z waga 1.
+
+3. ZAWROTY TOWARZYSZACE OCZOPLASOWI. Kryterium nie ma w repozytorium — `baranyClassify` nie ma
+   takiego wiersza w `crit[]`. Luki NIE zasypujemy wymyslonym kryterium; nazywamy ja tutaj,
+   zeby Blok 9 wiedzial, czego brakuje.
+
+CZAS TRWANIA JAKO TWIERDZENIE, NIE PARAMETR ANIMACJI
+Okno symulacji proby pozycyjnej (`XI_OKNO_PRZEMIJAJACY`, `XI_OKNO_UPORCZYWY` w maneuvers.js)
+udaje CZAS KLINICZNY, a nie wygode animacji. Dwie liczby maja rozny status:
+  - kanalolitiaza — czas wyznacza FIZYKA. Zmierzony naturalny zanik (|ksi| < 3% szczytu):
+    tylny 29,75 s, poziomy 39,85 s, przedni 34,35 s. Okno (55 s) ma ten zanik POMIESCIC,
+    a nie go wyznaczac.
+  - kupulolitiaza — ksi NIE WYGASA (|ksi| = 1,000 szczytu jeszcze po 300 s), wiec tEnd JEST
+    oknem i niczym wiecej. Ta liczba (75 s) jest wprost twierdzeniem klinicznym i musi
+    przekraczac prog 60 s, ktory aplikacja drukuje obok animacji.
+Bramka: npm run barany:check. Golden przypina WARTOSCI, ale nie wyraza RELACJI — dlatego
+poprzednia wartosc (18 s, krotsza od postaci przemijajacej) przechodzila na zielono.

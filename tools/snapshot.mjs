@@ -497,6 +497,29 @@ function shellOracle(h, win) {
   grab('guide/epley/P', () => { czysty(); h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P'); h.startManeuver && h.startManeuver('epley'); h.syncShell && h.syncShell(); });
   grab('learn', () => { czysty(); h.goArea && h.goArea('learn'); });
   grab('hints', () => { czysty(); h.goArea && h.goArea('lab'); });
+  /* Blok 8 — krok „Oczopląs" na WŁASNYM ekranie. Pasek przebiegu żyje w chromie POZA #app,
+     więc te trzy stany są jedynym miejscem, gdzie widać, że nowy ekran w ogóle wpiął się
+     w przebieg kliniczny: krok musi być AKTYWNY, a nie „w przygotowaniu", i to przy próbie
+     INNEJ niż Dix-Hallpike — bo właśnie tam do Bloku 7 stała uczciwa deklaracja braku. */
+  grab('obs/dix', () => {
+    czysty(); h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P');
+    h.goObs && h.goObs(); h.syncShell && h.syncShell();
+  });
+  grab('obs/roll', () => {
+    czysty(); h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('roll'); h.goObs && h.goObs(); h.syncShell && h.syncShell();
+  });
+  // Po przyjęciu downbeatu jako podstawy krok „Oczopląs" jest zrobiony, a lateralizacja
+  // NIEPEWNA — pasek musi to powiedzieć, bo na ekranie manewru tej informacji już nie ma.
+  grab('obs/przyjety-downbeat', () => {
+    czysty(); h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P');
+    h.goObs && h.goObs();
+    h.setObsPole && h.setObsPole('dix', 'pion#jedyna', 'm1');
+    h.przyjmijObs && h.przyjmijObs();
+    h.syncShell && h.syncShell();
+  });
   // NAJWAŻNIEJSZY stan bloku: manewr wybrany z rekomendacji, po czym zmieniony mechanizm.
   // Pasek MUSI wtedy pokazać „wymaga ponownego przeliczenia" wraz z powodem.
   grab('stale/mechanizm', () => {

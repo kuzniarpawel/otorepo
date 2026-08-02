@@ -18,6 +18,7 @@ import {
   pustyRekord, kluczInstancji, rozbijKlucz, stosowalne, instancjeStosowalne, mozliweOsi,
   kompletnosc, etykietaOsi, nieuzyte, spojnosc, geoApo, zmiennoscKierunku, fazaDIAG,
   poparcie, zgodnoscPodstawy, wnioskowanieDix, ostrzezenieDownbeat, ostrzezenieSkretny,
+  porownajZPredykcja, WERDYKTY_POROWNANIA,
   flagi, odciskObserwacji, wartoscInstancji,
 } from '../src/app/obs-model.js';
 import { Vestibular } from '../src/engine/vestibular.js';
@@ -393,6 +394,75 @@ const ZAKAZANE = [
   const q = kopia(dix('m1')); q.pola['pion#jedyna'].znak = 'niewiarygodne';
   T('FLAGA3/kwarantanna-nie-gasi', flagi(q).includes('f1'), 'oznaczenie niewiarygodne NIE MOŻE gasić ostrzeżenia');
   T('FLAGA3/kwarantanna-gasi-wniosek', poparcie(q, 'dix', 'ant').poziom === 'brak', 'kwarantanna MUSI wyciszyć wniosek');
+}
+
+/* ============ 12b. PORÓWNANIE Z PREDYKCJĄ (POR/SEP4/FZ3) ============ */
+{
+  // Predykcja z PRAWDZIWEGO silnika, kluczowana fazą BEZWZGLĘDNĄ przez fazaDIAG.
+  const depsFor = (side, variant) => ({
+    anat: (pr, fazaId) => {
+      try {
+        const f = DIAG[pr].phases(side, variant)[fazaDIAG(pr, fazaId, side)];
+        return f && f.nys && f.nys.anat ? f.nys.anat : null;
+      } catch { return null; }
+    },
+    wzorzec: variant === 'cupulo' ? 'B' : 'A',
+  });
+
+  const pelny = pelnyRekord('dix');
+  const wier = porownajZPredykcja(pelny, depsFor('P', 'canalo'));
+  T('POR1/wiersze', wier.length === instancjeStosowalne('dix', 'tak').length - 1, `wierszy ${wier.length}`);
+  T('POR2/werdykty-znane', wier.every(r => WERDYKTY_POROWNANIA[r.werdykt]), 'każdy werdykt musi mieć zdanie');
+  T('POR3/bez-sumy', typeof porownajZPredykcja(pelny, depsFor('P', 'canalo')).length === 'number'
+    && !('trafnosc' in wier) && !('zgodnych' in wier),
+    'porównanie NIE MOŻE zwracać liczby zbiorczej — to byłby Blok 9 w jednym zdaniu');
+
+  // SEP4 — pola, których model nie przewiduje, są ZAWSZE nieporównywalne…
+  for (const pole of ['fiksacja', 'odwrocenieSiad']) {
+    const r = wier.find(x => x.pole === pole);
+    eq(`SEP4/${pole}`, r && r.werdykt, 'nieporownywalne');
+  }
+  // …a kontrola czułości: latencja NIE jest zawsze nieporównywalna, inaczej test byłby pusty.
+  {
+    const r = wier.find(x => x.pole === 'latencja');
+    T('SEP4/kontrola-latencja', r && r.werdykt !== 'nieporownywalne',
+      'kontrola: gdyby WSZYSTKO było nieporównywalne, SEP4 przechodziłby na pustym');
+  }
+  // Nieopisane pole ma własny werdykt — „nie wiem" to nie to samo co „inne niż w modelu".
+  {
+    const p2 = kopia(pelny); delete p2.pola['torsja#jedyna'];
+    const r = porownajZPredykcja(p2, depsFor('P', 'canalo')).find(x => x.pole === 'torsja');
+    eq('POR4/nieopisane', r && r.werdykt, 'nieopisane');
+  }
+  /* FZ3 — NIEZALEŻNOŚĆ OD STRONY. Pierwsza wersja tego testu była postawiona źle: zakładała,
+     że „lustrem" obserwacji geotropowej jest obserwacja z odwróconymi znakami. Nie jest —
+     GEOTROPIA NIE ZALEŻY od tego, które ucho jest chore. Przy prawym uchu w dole oczopląs bije
+     ku prawemu uchu niezależnie od strony patologii; strony różnią się SIŁĄ (zmierzone: roll
+     canalo/P daje 1,00 vs 0,45), a nie kierunkiem.
+     Stąd właściwy niezmiennik: TEN SAM rekord fizyczny musi dać TE SAME werdykty kierunku dla
+     obu stron. To jest zarazem najostrzejszy test `fazaDIAG` — kolejność faz w modelu obraca się
+     ze stroną (`[mk(A), mk(H)]`), więc naiwne kluczowanie po indeksie rozjechałoby werdykty. */
+  {
+    const r = pustyRekord('roll'); r.wystapil = 'tak';
+    ustaw(r, 'poziom#prawoWDole', 'p1'); ustaw(r, 'poziom#lewoWDole', 'm1');
+    const kier = (side) => porownajZPredykcja(r, depsFor(side, 'canalo'))
+      .filter(x => x.pole === 'poziom')
+      .map(x => `${x.fazaId}:${x.werdykt}`).sort().join(',');
+    eq('FZ3/niezalezne-od-strony', kier('P'), kier('L'));
+    T('FZ3/geotropowy-zgodny', kier('P').includes('zgodne'), 'geotropowy opis MUSI zgadzać się z modelem kanalolitiazy');
+    // KONTROLA: naiwne kluczowanie po indeksie (bez fazaDIAG) MUSI dać rozjazd między stronami.
+    const naiwne = (side) => {
+      const fazy = DIAG.roll.phases(side, 'canalo');
+      return OBS_FAZY.roll.map((fid, idx) => {
+        const a = fazy[idx].nys.anat;                   // ← indeks Z FORMULARZA, nie przez fazaDIAG
+        const obs = wartoscInstancji(r, kluczInstancji('poziom', fid));
+        const m = a.h > 0.05 ? 'p1' : a.h < -0.05 ? 'm1' : 'zero';
+        return `${fid}:${obs === m ? 'zgodne' : 'rozne'}`;
+      }).sort().join(',');
+    };
+    T('FZ3/kontrola-naiwnego-indeksu', naiwne('P') !== naiwne('L'),
+      'kontrola: bez fazaDIAG werdykty MUSZĄ się rozjechać między stronami — inaczej test niczego nie pilnuje');
+  }
 }
 
 /* ============ 13. GRANICA STANU (SEP1) ============ */

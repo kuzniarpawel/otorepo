@@ -6,7 +6,8 @@ import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, n
 import { state } from '../app/state.js';
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
          OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
-         ETYKIETY_OSI, nieuzyte } from '../app/obs-model.js';
+         ETYKIETY_OSI, nieuzyte, porownajZPredykcja, WERDYKTY_POROWNANIA, fazaDIAG,
+         OBS_FAZY } from '../app/obs-model.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
@@ -1006,6 +1007,45 @@ const OBS_GRUPY = [
   { os:"dynamika", pl:"Dynamika", en:"Dynamics" },
   { os:"kontekst", pl:"Warunki i cechy dodatkowe", en:"Conditions and additional features" },
 ];
+
+/* KARTA PORÓWNANIA — wyłącznie za JAWNYM GESTEM (state.obsPorownanie).
+   Domyślnie schowana z dwóch powodów naraz. Klinicznie: dopóki predykcja jest widoczna obok
+   formularza, można ją przepisać zamiast opisać to, co się zobaczyło. Technicznie: karta za
+   gestem nie renderuje się w scenariuszach domyślnych, więc NIE rusza ani jednego istniejącego
+   klucza golden — a jeśli rusza, to znaczy, że gest nie jest gestem.
+   Układ jest ASYMETRYCZNY (obserwacja jako nagłówek wiersza, model jako dopisek), bo dwie
+   kolumny obok siebie sugerowałyby, że to dwa równorzędne pomiary tej samej rzeczy. */
+function obsPorownanieHTML(rek, proba){
+  if(!rek) return "";
+  const A = state.side || "P";
+  const deps = {
+    anat: (pr, fazaId)=>{
+      try{
+        const fazy = DIAG[pr].phases(A, state.variant);
+        const f = fazy[fazaDIAG(pr, fazaId, A)];
+        return f && f.nys && f.nys.anat ? f.nys.anat : null;
+      }catch(e){ return null; }
+    },
+    wzorzec: state.variant==="cupulo" ? "B" : "A",
+  };
+  const wiersze = porownajZPredykcja(rek, deps);
+  const opisWartosci = (pole, id)=>{
+    const w = (OBS_POLA[pole].wartosci||[]).find(v=>v.id===id);
+    return w ? t(w.pl, w.en) : String(id);
+  };
+  const wiersz = (r)=>{
+    const wd = WERDYKTY_POROWNANIA[r.werdykt];
+    const faza = r.fazaId && OBS_FAZY_OPIS[r.fazaId] ? ` (${t(OBS_FAZY_OPIS[r.fazaId].pl, OBS_FAZY_OPIS[r.fazaId].en)})` : "";
+    return `<li class="opor__w opor__w--${r.werdykt}">
+        <div class="opor__co">${t(OBS_POLA[r.pole].pytanie.pl, OBS_POLA[r.pole].pytanie.en).replace(/\s*—.*$/,"")}${faza}</div>
+        <div class="opor__ty">${r.obs!=null && r.werdykt!=="nieopisane" ? opisWartosci(r.pole, r.obs) : "—"}</div>
+        <div class="opor__v">${t(wd.pl, wd.en)}</div></li>`;
+  };
+  return `<div class="card opor">
+      <h4>${t("Porównanie z przewidywaniem modelu","Comparison with the model's prediction")}</h4>
+      <div class="note">${t("Model jest UPROSZCZENIEM, nie wzorcem prawdy — rozbieżność nie znaczy, że obserwacja jest błędna. Aplikacja nie sumuje tych wierszy i nie wylicza z nich żadnej trafności.","The model is a SIMPLIFICATION, not a standard of truth — a discrepancy does not mean the observation is wrong. The app does not total these rows or derive any accuracy from them.")}</div>
+      <ol class="opor__l">${wiersze.map(wiersz).join("")}</ol></div>`;
+}
 function renderObs(){
   const proba = state.testKey || "dix";
   const D = DIAG[proba];
@@ -1080,8 +1120,10 @@ function renderObs(){
           : t("Nie opisano jeszcze dynamiki.","The dynamics have not been described yet.")}</div>
         ${powodBraku?`<div class="note" style="color:var(--text)">${t(powodBraku.pl,powodBraku.en)}</div>`:""}
         ${flg.length?`<div class="oflagi"><b>${t("Sygnały ostrzegawcze","Warning signals")}</b><ul>${flg.map(f=>`<li>${t(FLAGI[f].pl,FLAGI[f].en)}</li>`).join("")}</ul></div>`:""}
+        ${rek?`<button class="recoalt oporgo" aria-pressed="${!!state.obsPorownanie}" onclick="togglePorownanie()">${state.obsPorownanie?t("Ukryj porównanie z modelem","Hide the comparison with the model"):t("Porównaj z przewidywaniem modelu","Compare with the model's prediction")}</button>`:""}
         ${(rek && nieuzyte(rek).length)?`<div class="note">${t(`Zapisane, nieużyte przy tym wyniku: ${nieuzyte(rek).length} pól.`,`Recorded but unused for this result: ${nieuzyte(rek).length} fields.`)}</div>`:""}
       </div>
+      ${state.obsPorownanie?obsPorownanieHTML(rek, proba):""}
     </div></div>
     <p class="footnote">${t("Opis obserwacji nie jest rozpoznaniem. Interpretacja to osobny krok.","An observation record is not a diagnosis. Interpretation is a separate step.")}</p>`;
 }

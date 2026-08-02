@@ -506,6 +506,57 @@ export function flagi(rekord) {
   return out;
 }
 
+/* ═══ PORÓWNANIE Z PREDYKCJĄ ═══
+   CECHA PO CESZE, bez ani jednej liczby zbiorczej. Linijka „5 z 7 cech zgodnych" byłaby już
+   miarą trafności hipotezy, czyli Blokiem 9 przemyconym jednym zdaniem — a przy okazji
+   sugerowałaby, że model jest wzorcem prawdy, wobec którego ocenia się obserwację klinicysty.
+   Kierunek zależności jest odwrotny: to model jest uproszczeniem.
+
+   `fiksacja` i `odwrocenieSiad` zwracają ZAWSZE `nieporownywalne` — silnik BPPV nie ma
+   parametru fiksacji, a próba diagnostyczna nie ma w modelu fazy siadu. Nie dorabiamy
+   predykcji, której nie ma; mówimy wprost, że nie ma z czym porównać.
+
+   deps.anat(proba, fazaId) → {h, v, t} z silnika (znaki w konwencji quickPhase) albo null.
+   deps.wzorzec → 'A' | 'B' | null: który wzorzec dynamiki odpowiada BIEŻĄCEJ hipotezie modelu. */
+const znakOpisu = (w) => (w === 'p1' ? 1 : w === 'm1' ? -1 : w === 'zero' ? 0 : null);
+const znakModelu = (x) => (x == null ? null : x > 0.05 ? 1 : x < -0.05 ? -1 : 0);
+
+export function porownajZPredykcja(rekord, deps) {
+  if (!rekord || !rekord.proba) return [];
+  const proba = rekord.proba, wyst = wartoscInstancji(rekord, 'wystapil');
+  const out = [];
+  for (const i of instancjeStosowalne(proba, wyst)) {
+    if (i.klucz === 'wystapil') continue;
+    const def = OBS_POLA[i.pole];
+    const obs = wartoscInstancji(rekord, i.klucz);
+    if (def.pozaModelem) { out.push({ ...i, obs, model: null, werdykt: 'nieporownywalne' }); continue; }
+    if (obs == null || BEZ_INFORMACJI.has(obs)) { out.push({ ...i, obs, model: null, werdykt: 'nieopisane' }); continue; }
+
+    if (POLA_KIERUNKU_FAZOWE.includes(i.pole)) {
+      const a = deps && deps.anat ? deps.anat(proba, i.fazaId) : null;
+      const m = a ? znakModelu(i.pole === 'poziom' ? a.h : i.pole === 'pion' ? a.v : a.t) : null;
+      if (m == null) { out.push({ ...i, obs, model: null, werdykt: 'nieporownywalne' }); continue; }
+      out.push({ ...i, obs, model: m, werdykt: znakOpisu(obs) === m ? 'zgodne' : 'rozne' });
+      continue;
+    }
+    if (POLA_DYNAMIKI.includes(i.pole)) {
+      const z = WZORCE_DYNAMIKI.find(x => x.id === (deps && deps.wzorzec));
+      if (!z) { out.push({ ...i, obs, model: null, werdykt: 'nieporownywalne' }); continue; }
+      out.push({ ...i, obs, model: z[i.pole], werdykt: z[i.pole] === obs ? 'zgodne' : 'rozne' });
+      continue;
+    }
+    out.push({ ...i, obs, model: null, werdykt: 'nieporownywalne' });
+  }
+  return out;
+}
+
+export const WERDYKTY_POROWNANIA = {
+  zgodne: { pl: 'zgodne z modelem', en: 'agrees with the model' },
+  rozne: { pl: 'INNE niż w modelu', en: 'DIFFERENT from the model' },
+  nieopisane: { pl: 'nieopisane', en: 'not described' },
+  nieporownywalne: { pl: 'model tego nie przewiduje', en: 'the model does not predict this' },
+};
+
 /* Odcisk do wykrywania nieaktualnego wniosku (Blok 5). WYŁĄCZNIE pola wagi 3 i z pominięciem
    kwarantannowanych — ten sam argument, który wykluczył `dixRep` z odcisku: alarm ma się
    zapalać, gdy zmienia się WNIOSEK, a nie gdy ktoś doprecyzowuje opis. */
