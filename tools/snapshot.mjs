@@ -125,6 +125,11 @@ const HANDLE_NAMES = [
   'goObs', 'setObsPole', 'oznaczObsPole', 'setObsGrupa', 'wyczyscObs', 'przyjmijObs',
   // Blok 9 — krok „Interpretacja" ma wlasny ekran. Brak = handleMissing = twardy exit(1).
   'goInterpret', 'przyjmijMechanizm', 'nadpiszMechanizm', 'wrocDoWyprowadzonego', 'idzDoProby',
+  // Blok 12 — HINTS/HINTS+ z kwalifikacją. Trzy ekrany sterowane WYŁĄCZNIE akcjami: wstrzyknięcie
+  // stanu ominęłoby bramkę wejścia, czyli dokładnie to, czego pilnuje kryterium odbioru nr 1.
+  // Brak uchwytu = handleMissing = twardy exit(1).
+  'goHintsKwal', 'ustawPrzeszkolenieHints', 'pomijajKwalifikacje', 'cofnijPominiecie', 'zacznijBadanieHints',
+  'ustawSkladowaHints', 'ustawPowodNiewiarHints', 'goHintsKrok', 'pokazWynikHints', 'wyczyscBadanieHints',
   // Blok 11 — krok „Kontrola" po manewrze. Brak = handleMissing = twardy exit(1): ekran, ktorego
   // nie da sie wysterowac z testu, nie bylby przypiety zadna wyrocznia.
   'goKontrola', 'ustawWynikKontroli', 'ustawPowodKontroli', 'kontrolaAkcja', 'pytajOZakonczeniu', 'zakonczSesje',
@@ -561,9 +566,16 @@ function domOracle(h, win) {
     try { h.resetTriage(); } catch { /* przywróć czysty stan dla kolejnych warstw */ }
   }
 
+  /* SYMULATOR HINTS stoi od Bloku 12 ZA BRAMKĄ (`openHints`/`openHintsCustom` wołają `wolnoBadac`).
+     Harness musi więc wejść tak, jak wchodzi użytkownik — przez świadome pominięcie kwalifikacji
+     z powodem „chcę zobaczyć wzorce na modelu". Gdyby zamiast tego wstrzykiwał `screen='hints'`,
+     złoty wzorzec przypinałby stany, do których aplikacja nie ma już drogi, a bramka mogłaby
+     przestać działać bez jednej czerwonej wyroczni. */
+  const przezBrame = () => { if (h.goHintsKwal) h.goHintsKwal(); if (h.pomijajKwalifikacje) h.pomijajKwalifikacje('symulacja'); };
   // HINTS — presety
   for (const p of Object.keys(h.HINTS_PRESETS || {})) {
     grab(`hints/preset/${p}`, () => {
+      przezBrame();
       if (h.openHintsCustom) h.openHintsCustom();
       h.state.screen = 'hints'; h.state.mode = 'hints';
       if (h.loadHintsPreset) h.loadHintsPreset(p);
@@ -573,6 +585,7 @@ function domOracle(h, win) {
   // HINTS — neuritis (gałąź × ucho)
   for (const ear of ['P', 'L']) for (const br of ['superior', 'inferior']) {
     grab(`hints/nerve/${ear}/${br}`, () => {
+      przezBrame();
       if (h.openHintsCustom) h.openHintsCustom();
       h.state.screen = 'hints'; h.state.mode = 'hints';
       h.state.hintsNerveEar = ear; h.state.hintsNerveBranch = br; h.state.hintsNerveSev = 0.6;
@@ -582,10 +595,75 @@ function domOracle(h, win) {
   }
   // HINTS — scenariusze wbudowane + fixacja/spojrzenie
   for (const k of ['normal', 'neuritisR', 'neuritisL', 'strokeCentral', 'bvh']) {
-    grab(`hints/scenario/${k}`, () => { if (h.openHints) h.openHints(k); h.render(); });
+    grab(`hints/scenario/${k}`, () => { przezBrame(); if (h.openHints) h.openHints(k); h.render(); });
   }
-  grab('hints/scenario/neuritisR/fix', () => { if (h.openHints) h.openHints('neuritisR'); if (h.setHintsFix) h.setHintsFix(true); h.render(); });
-  grab('hints/scenario/neuritisR/gaze30', () => { if (h.openHints) h.openHints('neuritisR'); if (h.setHintsGaze) h.setHintsGaze(30); h.render(); });
+  grab('hints/scenario/neuritisR/fix', () => { przezBrame(); if (h.openHints) h.openHints('neuritisR'); if (h.setHintsFix) h.setHintsFix(true); h.render(); });
+  grab('hints/scenario/neuritisR/gaze30', () => { przezBrame(); if (h.openHints) h.openHints('neuritisR'); if (h.setHintsGaze) h.setHintsGaze(30); h.render(); });
+
+  /* ════ BLOK 12 — KWALIFIKACJA · BADANIE · WYNIK ════
+     Wszystko przez AKCJE (jak `obs/*` i `setup/ekspert/*`): bramka wejścia, kolejność ekranów i
+     zapis odpowiedzi mieszkają w akcjach, więc wstrzyknięty stan przypiąłby ekrany, do których
+     aplikacja nie prowadzi. Stany dobrane tak, żeby KAŻDY wniosek modelu miał w złotym wzorcu
+     co najmniej jeden ekran — inaczej reguła może zniknąć bez zmiany choćby jednego klucza. */
+  {
+    const czystyH = () => {
+      Object.assign(h.state, { triage: {}, triageStep: null, hintsBadanie: {}, hintsPowodNiewiar: null,
+        hintsPominiecie: null, hintsPrzeszkolenie: null, hintsKrok: null, hintsBlad: null,
+        hintsCustom: null, hintsScenario: 'neuritisR', screen: 'setup', mode: 'treat' });
+    };
+    const kwalifikuj = () => {
+      czystyH();
+      h.goHintsKwal();
+      h.setTriage('przebieg', 'ciagle'); h.setTriage('oczoplas', 'obecny'); h.toggleTriageFlaga('brak');
+      h.ustawPrzeszkolenieHints('tak');
+    };
+    // Kwalifikacja: cztery stany, bo cztery różne karty wyniku i cztery różne zestawy przycisków.
+    grab('hintsKwal/pusta', () => { czystyH(); h.goHintsKwal(); });
+    grab('hintsKwal/odradzana-BPPV', () => {
+      czystyH(); h.goHintsKwal();
+      h.setTriage('przebieg', 'napadowe'); h.setTriage('wyzwalacz', 'pozycyjny'); h.toggleTriageFlaga('brak');
+    });
+    grab('hintsKwal/czerwona-flaga', () => {
+      czystyH(); h.goHintsKwal();
+      h.setTriage('przebieg', 'ciagle'); h.setTriage('oczoplas', 'obecny'); h.toggleTriageFlaga('ataksja');
+    });
+    grab('hintsKwal/potwierdzona', () => { kwalifikuj(); });
+    grab('hintsKwal/pominieta', () => { czystyH(); h.goHintsKwal(); h.pomijajKwalifikacje('nauka'); });
+    // ODMOWA WEJŚCIA — jedyny stan, w którym widać, że bramka odmówiła i powiedziała dlaczego.
+    grab('hintsKwal/odmowa', () => { czystyH(); h.goHintsKwal(); h.zacznijBadanieHints(); });
+
+    // Badanie: pierwsza składowa, składowa środkowa, „nie można ocenić", powód niewiarygodności.
+    grab('hintsBad/pierwsza', () => { kwalifikuj(); h.zacznijBadanieHints(); });
+    grab('hintsBad/hit-sakada', () => { kwalifikuj(); h.zacznijBadanieHints(); h.ustawSkladowaHints('hit', 'sakadaP'); });
+    grab('hintsBad/nieocenione', () => { kwalifikuj(); h.zacznijBadanieHints(); h.ustawSkladowaHints('hit', 'nieocenione'); });
+    grab('hintsBad/skew', () => { kwalifikuj(); h.zacznijBadanieHints(); h.goHintsKrok('skew'); });
+    grab('hintsBad/niewiarygodne', () => {
+      kwalifikuj(); h.zacznijBadanieHints(); h.goHintsKrok('wiarygodnosc');
+      h.ustawSkladowaHints('wiarygodnosc', 'niewiarygodne'); h.goHintsKrok('wiarygodnosc');
+      h.ustawPowodNiewiarHints('brakZniesieniaFiksacji');
+    });
+
+    // Wynik — po jednym ekranie na każdy wniosek modelu.
+    const wypelnij = (odp) => { kwalifikuj(); h.zacznijBadanieHints(); for (const [k, v] of Object.entries(odp)) h.ustawSkladowaHints(k, v); h.pokazWynikHints(); };
+    const OBWOD = { hit: 'sakadaP', oczoplas: 'jednokierunkowy', skew: 'brakOdchylenia', sluch: 'symetryczny', chod: 'chodziBezPodparcia', wiarygodnosc: 'wiarygodne' };
+    grab('hintsWyn/niewykonane', () => { kwalifikuj(); h.zacznijBadanieHints(); h.pokazWynikHints(); });
+    grab('hintsWyn/obwodowy', () => wypelnij(OBWOD));
+    grab('hintsWyn/alarm-skew', () => wypelnij({ ...OBWOD, skew: 'obecne' }));
+    grab('hintsWyn/alarm-hit', () => wypelnij({ ...OBWOD, hit: 'brakSakady' }));
+    grab('hintsWyn/alarm-chod', () => wypelnij({ ...OBWOD, chod: 'nieStoiBezPodparcia' }));
+    grab('hintsWyn/alarm-sluch', () => wypelnij({ ...OBWOD, sluch: 'nowyJednostronny' }));
+    grab('hintsWyn/niepelne', () => wypelnij({ ...OBWOD, skew: 'nieocenione' }));
+    grab('hintsWyn/nierozstrzygniete', () => wypelnij({ ...OBWOD, hit: 'sakadaObu' }));
+    grab('hintsWyn/nieinformatywne', () => wypelnij({ ...OBWOD, oczoplas: 'bezOczoplasu' }));
+    grab('hintsWyn/niepewne', () => wypelnij({ ...OBWOD, wiarygodnosc: 'niewiarygodne' }));
+    // Wynik z pominiętą kwalifikacją i bez przeszkolenia — komplet zastrzeżeń na jednym ekranie.
+    grab('hintsWyn/zastrzezenia', () => {
+      czystyH(); h.goHintsKwal(); h.pomijajKwalifikacje('nauka'); h.ustawPrzeszkolenieHints('nie');
+      h.zacznijBadanieHints(); for (const [k, v] of Object.entries(OBWOD)) h.ustawSkladowaHints(k, v);
+      h.pokazWynikHints();
+    });
+    czystyH();
+  }
 
   return out;
 }
@@ -624,10 +702,20 @@ function shellOracle(h, win) {
     // TUTAJ scenariusze wyciekałyby jeden na drugi i kolejność bloków w tym pliku zaczęłaby
     // wpływać na złoty wzorzec — awaria, której nie widać, dopóki ktoś nie przestawi bloków.
     st.obs = {}; st.obsGrupa = null;
+    // Blok 12: odpowiedzi badania HINTS i pominięcie kwalifikacji też PRZEŻYWAJĄ nawigację.
+    st.hintsBadanie = {}; st.hintsPowodNiewiar = null; st.hintsPominiecie = null;
+    st.hintsPrzeszkolenie = null; st.hintsKrok = null; st.hintsBlad = null; st.hintsCustom = null;
     try { if (h.resetTriage) h.resetTriage(); } catch { }
   };
 
-  grab('start', () => { czysty(); h.goArea && h.goArea('start'); });
+  /* Tryb ustawiany JAWNIE tylko tutaj. Klucz 'start' warstwy shell dziedziczyl data-mode po
+     OSTATNIM scenariuszu warstwy dom, czyli zalezal od kolejnosci blokow w tym pliku, a nie od
+     tego, co robi aplikacja — Blok 12 dolozyl na koncu warstwy dom sekcje HINTS i wartosc sie
+     zmienila bez jednej zmiany w kodzie ekranu startowego. Zerowanie w czysty() naprawiloby to
+     szerzej, ale ZEPSULOBY klucz 'diag/roll/P': openTest nie ustawia trybu, wiec ekran proby
+     raportowalby data-mode='treat'. Naprawa wezsza i uczciwa: przypinamy tryb tam, gdzie go
+     naprawde znamy. */
+  grab('start', () => { czysty(); st.mode = 'treat'; h.goArea && h.goArea('start'); });
   grab('diag/dix/P', () => { czysty(); h.goArea && h.goArea('diag'); h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P'); h.syncShell && h.syncShell(); });
   grab('diag/roll/P', () => { czysty(); h.openTest && h.openTest('roll'); h.syncShell && h.syncShell(); });
   // Stan ZGODNY: Dix-Hallpike + kanalolitiaza → Epley jest manewrem pierwszego rzutu, więc pasek
@@ -636,6 +724,15 @@ function shellOracle(h, win) {
   grab('guide/epley/P', () => { czysty(); h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P'); h.startManeuver && h.startManeuver('epley'); h.syncShell && h.syncShell(); });
   grab('learn', () => { czysty(); h.goArea && h.goArea('learn'); });
   grab('hints', () => { czysty(); h.goArea && h.goArea('lab'); });
+  /* Blok 12 — chrom nad trzema nowymi ekranami. Pilnujemy tu JEDNEJ rzeczy, której nie widzi
+     żadna inna warstwa: pasek sześciu kroków przebiegu klinicznego NIE MA PRAWA pojawić się nad
+     HINTS. Ten pasek opisuje ścieżkę BPPV („Krok 2 z 6 — Próba"); postawiony nad różnicowaniem
+     ostrego zespołu przedsionkowego mówiłby, że użytkownik jest w środku innego badania. */
+  grab('hintsKwal', () => { czysty(); h.goHintsKwal && h.goHintsKwal(); h.syncShell && h.syncShell(); });
+  grab('hintsBad', () => {
+    czysty(); h.goHintsKwal && h.goHintsKwal(); h.pomijajKwalifikacje && h.pomijajKwalifikacje('nauka');
+    h.zacznijBadanieHints && h.zacznijBadanieHints(); h.syncShell && h.syncShell();
+  });
   /* Blok 8 — krok „Oczopląs" na WŁASNYM ekranie. Pasek przebiegu żyje w chromie POZA #app,
      więc te trzy stany są jedynym miejscem, gdzie widać, że nowy ekran w ogóle wpiął się
      w przebieg kliniczny: krok musi być AKTYWNY, a nie „w przygotowaniu", i to przy próbie
