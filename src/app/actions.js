@@ -17,6 +17,10 @@ import { manDeps } from './man-deps.js';
 import { celAkcji } from './followup-model.js';
 import { followupDeps } from './followup-deps.js';
 import { zapiszWynik, ustawPowodKontroli as _ustawPowodKontroli, zakonczSesjeStan, syncKontrola } from './followup-state.js';
+import { wolnoBadac, nastepnyElement, ELEMENT_IDS } from './hints-model.js';
+import { hintsDeps } from './hints-deps.js';
+import { zapiszSkladowa, ustawPowodNiewiar as _ustawPowodNiewiar, ustawPrzeszkolenie as _ustawPrzeszkolenie,
+         ustawPominiecie as _ustawPominiecie, cofnijPominiecieStan, wyczyscBadanie as _wyczyscBadanie, ustawKrok, biezacyKrok } from './hints-state.js';
 
 function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
 function hintsHIT(canal, ear){
@@ -33,8 +37,14 @@ function hintsHIT(canal, ear){
 function rerunHintsHIT(){ if(state.hintsHitSide) hintsHIT(state.hintsHitCanal||"horizontal", state.hintsHitSide); }
 
 /* ============ Akcje ============ */
-function setMode(m){ state.mode=m; render(); }
-function openHints(key){ state.hintsCustom=null; state.hintsScenario=key||"neuritisR"; state.hintsSide = key==="neuritisL"?"L":"P"; state.hintsFix=false; state.hintsGaze=0; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; state.screen="hints"; render(); }
+/* Blok 12 (kryterium odbioru nr 1): zakładka HINTS przestała być skrótem do symulatora. Zmierzone
+   przed zmianą: siedem z siedmiu dróg wejścia do modułu wchodziło przy PUSTEJ kwalifikacji, a
+   jedyna bramka w aplikacji (`triageGo`) leżała na ścieżce, której żadna z nich nie dotykała.
+   Teraz drzwi są JEDNE — ekran kwalifikacji — a za nimi stoi `wolnoBadac`. */
+function setMode(m){ if(m==="hints"){ goHintsKwal(); return; } state.mode=m; render(); }
+function openHints(key){
+  if(!bramkaHints()) return;
+  state.hintsCustom=null; state.hintsScenario=key||"neuritisR"; state.hintsSide = key==="neuritisL"?"L":"P"; state.hintsFix=false; state.hintsGaze=0; state.hintsComp=0; state.hintsRecovery=false; state.hintsHitSide=null; state.screen="hints"; render(); }
 // 3 scenariusze: zdrowy / neuronitis / udar (strona neuronitis osobnym przełącznikiem L/P jak w manewrach)
 function setHintsDx(fam){
   state.hintsCustom=null; state.hintsQuiz=false;    // wyjście z trybu „Własny"
@@ -82,6 +92,7 @@ function loadHintsNeuritis(){
 }
 // Wejście do trybu własnego (domyślnie łagodny neuronitis nerwu górnego P).
 function openHintsCustom(){
+  if(!bramkaHints()) return;
   if(!state.hintsCustom){                                       // świeże wejście → domyślny łagodny neuronitis górny P
     state.hintsNerveEar="P"; state.hintsNerveBranch="superior"; state.hintsNerveSev=0.6;
     state.hintsCustom=NeuroVOR.makePatient(NeuroVOR.nerveBranchLesion("P","superior",0.6));
@@ -190,6 +201,60 @@ function loadHintsFromStore(){
   try{ const s=localStorage.getItem('otorepo_hints_patient'); if(!s) return false;
     state.hintsCustom=NeuroVOR.makePatient(JSON.parse(s)); return true; }catch(e){ return false; }
 }
+/* ============ BADANIE HINTS/HINTS+ Z KWALIFIKACJĄ (Blok 12) ============
+   Trzy ekrany, w tej kolejności i bez skrótów:
+     hintsKwal — kwalifikacja: pytania Bloku 6 pod kątem HINTS, przeszkolenie, świadome pominięcie,
+     hintsBad  — badanie: jedna składowa naraz, duże wybory, zawsze jawne „nie można ocenić”,
+     hintsWyn  — wynik: OSOBNY ekran, żeby nie mieszał się z wykonywaniem testu (wprost z dokumentu).
+   Symulator (screen `hints`) zostaje tam, gdzie był, ale też stoi ZA bramką. */
+
+// JEDNA bramka dla wszystkich wejść. Odmowa nie jest cicha: zapisuje powód, który ekran wypisuje.
+function bramkaHints(){
+  const w = wolnoBadac(state, hintsDeps());
+  if(w.wolno){ state.hintsBlad=null; return true; }
+  state.hintsBlad = w.status; state.mode="hints"; state.screen="hintsKwal"; render();
+  return false;
+}
+function goHintsKwal(){ state.mode="hints"; state.screen="hintsKwal"; state.hintsBlad=null; render(); }
+function ustawPrzeszkolenieHints(v){ if(_ustawPrzeszkolenie(v)) render(); }
+function pomijajKwalifikacje(powod){ if(_ustawPominiecie(powod)) render(); }
+function cofnijPominiecie(){ cofnijPominiecieStan(); render(); }
+function zacznijBadanieHints(){
+  if(!bramkaHints()) return;
+  state.mode="hints"; state.screen="hintsBad";
+  state.hintsKrok = nastepnyElement(state) || ELEMENT_IDS[0];
+  render();
+}
+function otworzSymulatorHints(){ openHints(state.hintsScenario||"neuritisR"); }   // bramka siedzi w openHints
+function otworzLaboratorium(){ openHintsCustom(); }                              // j.w.
+
+/* Odpowiedź na składową. AUTOMATYCZNE PRZEJŚCIE DALEJ tylko przy PIERWSZEJ odpowiedzi na daną
+   składową — poprawianie już udzielonej odpowiedzi zostawia użytkownika na miejscu. Bez tego
+   warunku każda korekta wyrzucałaby go o ekran dalej, czyli dokładnie wtedy, gdy patrzy na to,
+   co właśnie poprawia. */
+function ustawSkladowaHints(id, v){
+  const bylo = (state.hintsBadanie||{})[id];
+  if(!zapiszSkladowa(id, v)) return;
+  const jest = (state.hintsBadanie||{})[id];
+  if(!bylo && jest){ const n = nastepnyElement(state); ustawKrok(n || id); }
+  render();
+}
+function ustawPowodNiewiarHints(v){ if(_ustawPowodNiewiar(v)) render(); }
+function goHintsKrok(id){ if(ustawKrok(id)) render(); }
+function dalejHints(){
+  const i = ELEMENT_IDS.indexOf(biezacyKrok());
+  if(i < ELEMENT_IDS.length-1){ ustawKrok(ELEMENT_IDS[i+1]); render(); }
+  else pokazWynikHints();
+}
+function wsteczHints(){
+  const i = ELEMENT_IDS.indexOf(biezacyKrok());
+  if(i > 0){ ustawKrok(ELEMENT_IDS[i-1]); render(); }
+  else goHintsKwal();
+}
+function pokazWynikHints(){ state.mode="hints"; state.screen="hintsWyn"; render(); }
+function wrocDoBadaniaHints(){ state.mode="hints"; state.screen="hintsBad"; render(); }
+function wyczyscBadanieHints(){ _wyczyscBadanie(); state.screen="hintsBad"; render(); }
+
 /* ============ JEDNA droga budowy planu manewru (Blok 10) ============
    Dotąd plan powstawał w czterech miejscach i KAŻDE czytało `state.maneuverKey` w chwili
    przebudowy. To jest źródło cichej podmiany manewru, zmierzonej na realnym grafie:
@@ -459,6 +524,10 @@ function resetTriage(){ state.triage={}; state.triageStep=null; syncTriage(state
 // przy napadach pozycyjnych.
 function triageGo(tryb){
   if(!sciezkaDozwolona(state.triage, tryb)) return;
+  // Blok 12: ścieżka HINTS prowadzi na ekran KWALIFIKACJI, nie do symulatora. Kwalifikacja wstępna
+  // ustaliła obraz kliniczny, ale nie zapytała o przeszkolenie badającego — a bez tej odpowiedzi
+  // wynik nie ma jak powiedzieć, ile jest wart (GRACE-3: HINTS bez przeszkolenia bywa mylący).
+  if(tryb==="hints"){ goHintsKwal(); return; }
   state.mode=tryb; state.screen="setup"; render();
 }
 function startDiag(){ state.screen="diag"; markSeen(state,"testSeen"); render(); }
@@ -635,8 +704,8 @@ function setLangUI(lang){
 }
 
 
-export { goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });

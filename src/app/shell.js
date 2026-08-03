@@ -75,7 +75,12 @@ function applyArea(id) {
     // przy screen==='start' rysowałby dalej ekran startowy — dotknięcie wyglądało na nieskuteczne.
     if (state.screen === 'start') state.screen = 'setup';
     if (id === 'diag') A.setMode && A.setMode('diag');
-    else if (id === 'lab') { A.setMode && A.setMode('hints'); A.openHintsCustom && A.openHintsCustom(); }
+    /* Blok 12 (kryterium odbioru nr 1): „Laboratorium" też nie wchodzi wprost do matematycznego
+       pacjenta. Klik w nazwę obszaru jest aktem świadomym, ale NIE jest świadomym pominięciem
+       kwalifikacji — użytkownik nie dowiedziałby się, że jakaś istnieje. Prowadzimy więc na ekran
+       kwalifikacji, gdzie „nie badam pacjenta, chcę zobaczyć wzorce na modelu" to jedno dotknięcie
+       i zostaje zapisane w wyniku. Drzwi do modułu są JEDNE. */
+    else if (id === 'lab') { A.goHintsKwal && A.goHintsKwal(); }
   }
   syncShell();
 }
@@ -472,6 +477,10 @@ export function rebuildFlowLabels() { syncFlow(); }
 function areaZeStanu() {
   if (state.area === 'learn') return 'learn';
   if (state.screen === 'start') return 'start';
+  /* Blok 12: wejście z „Laboratorium" ląduje teraz na ekranie kwalifikacji, na którym matematycznego
+     pacjenta jeszcze NIE MA — bez tej linii dotknięcie „Laboratorium" podświetlałoby „Diagnostykę",
+     czyli nawigacja mówiłaby, że użytkownik jest gdzie indziej, niż go właśnie posłała. */
+  if (state.mode === 'hints' && state.area === 'lab') return 'lab';
   if (state.mode === 'hints') return state.hintsCustom ? 'lab' : 'diag';
   // Repozycja (tryb treat) NIE jest osobnym obszarem: dokument umieszcza manewry wewnątrz
   // ścieżki klinicznej („Diagnostyka — BPPV krok po kroku … i czerwone flagi"). Podświetlanie

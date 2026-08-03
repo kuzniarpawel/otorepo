@@ -23,6 +23,15 @@ const state={
   hintsPreset:null,                                // aktywny preset/tryb (klucz HINTS_PRESETS lub "neuritis") — podświetlenie + dynamiczna ramka
   hintsPlane:"HC", hintsHitCanal:"horizontal",     // vHIT: wybrana płaszczyzna (HC/RALP/LARP) · kanał ostatniego pchnięcia
   hintsSCDS:null,                                  // SCDS: ostatni bodziec (obiekt pressureStimulus) lub null
+  // --- Blok 12: BADANIE HINTS/HINTS+ Z KWALIFIKACJA. Czyta je src/app/hints-model.js (czysty),
+  //     pisze WYLACZNIE src/app/hints-state.js. Osobne od pol symulatora wyzej i to jest cala
+  //     roznica miedzy tymi dwoma torami: wyzej mieszka model fizjologii, tutaj obserwacja klinicysty.
+  hintsBadanie:{},          // odpowiedzi per skladowa: {hit, oczoplas, skew, sluch, chod, wiarygodnosc}
+  hintsPowodNiewiar:null,   // powod niewiarygodnosci badania (slownik zamkniety Bloku 12)
+  hintsPominiecie:null,     // SWIADOME pominiecie kwalifikacji — powod ze slownika; null = nie pominieto
+  hintsPrzeszkolenie:null,  // deklaracja badajacego: 'tak' | 'nie' | null (GRACE-3: HINTS bez przeszkolenia bywa mylacy)
+  hintsKrok:null,           // telefon: skladowa pokazywana w tej chwili (null = pierwsza nieodpowiedziana)
+  hintsBlad:null,           // powod ODMOWY wejscia przez bramke — ekran musi powiedziec, ze nie wpuscil i dlaczego
   view3d:false,                                    // karta „Ułożenie": 3D (WebGL) vs SVG. Literał=false (golden bez WebGL); Etap 5: main.js ustawia true na boot gdy webglAvailable()
   lang:"en",                                       // język UI: 'en' (domyślny) | 'pl'. Literał=EN; main.js initLang() ustawia wg locale/wyboru na boot. t(pl,en) w src/i18n.js czyta to pole (golden przypina 'pl' w snapshot.mjs)
   // --- Powłoka aplikacji (Blok 1/3). Pola czytane WYŁĄCZNIE przez src/app/shell.js; żadna
