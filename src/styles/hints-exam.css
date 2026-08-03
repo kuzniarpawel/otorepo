@@ -1,0 +1,172 @@
+/* OTOREPO — kwalifikacja, badanie i wynik HINTS/HINTS+ (Blok 12).
+ *
+ * Trzy ekrany, jedna zasada wyglądu: ŻADNEJ liczby prawdopodobieństwa, żadnego paska „ryzyka",
+ * żadnego zielonego znaczka przy wyniku obwodowym. HINTS przy łóżku nie wyklucza udaru, więc
+ * interfejs, który wygląda jak wykluczenie, kłamie mocniej niż jakiekolwiek zdanie.
+ *
+ * KOLOR NIGDY SAM. Cecha alarmowa niesie znak ⚠ i słowo, „nie oceniono" ma własny kształt obrysu,
+ * a nie tylko odcień — ta sama reguła, co w a11y.css i w arkuszach Bloków 8-11.
+ *
+ * PUŁAPKA ROZMIARU PRZYCISKÓW (trzeci raz w tym projekcie: Blok 6 — 22 px, Blok 11 — 21 px):
+ * `.recoprimary` i `.recoalt` mają w legacy.css rozmiar zadeklarowany WYŁĄCZNIE wewnątrz
+ * `.recobtns`. Poza nią schodzą do wysokości tekstu. Dlatego każdy ekran tego bloku, który ich
+ * używa, ustawia rozmiar SAM — zakresowo, po nazwie własnego kontenera.
+ */
+
+/* ══════════ wspólne: przyciski akcji poza `.recobtns` ══════════ */
+.hqw__akcje .recoprimary, .hqw__akcje .recoalt,
+.hqpomin .recoalt, .hxnaw .recoprimary, .hxnaw .recoalt,
+.hwnaw .recoprimary, .hwnaw .recoalt, .hxwynik{
+  appearance:none; cursor:pointer; min-height:var(--tap); padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--r-md); font:inherit; font-size:13.5px; font-weight:700; text-align:left;
+}
+.hqw__akcje .recoalt, .hqpomin .recoalt, .hxnaw .recoalt, .hwnaw .recoalt, .hxwynik{
+  background:var(--panel2); color:var(--text); border:1px solid var(--line-strong);
+}
+.hqw__akcje .recoprimary, .hxnaw .recoprimary, .hwnaw .recoprimary{
+  background:var(--primary); color:var(--ink); border:none;
+}
+.hqw__akcje button{ display:block; width:100%; margin-top:6px; }
+
+/* ══════════ 1. KWALIFIKACJA ══════════ */
+.hqlead{ margin:0 0 var(--sp-3); font-size:13.5px; line-height:1.5; color:var(--muted); }
+.hqprzesz{ border-color:var(--line-strong); }
+.hqw{ border-width:2px; }
+.hqw--potwierdzona{ border-color:var(--ok); }
+.hqw--odradzana{ border-color:var(--warn); }
+.hqw--brak{ border-color:var(--line-strong); }
+.hqw--pominieta{ border-color:var(--acc); }
+.hqw__ttl{ font-size:15px; font-weight:700; color:var(--text); }
+.hqw__tresc{ margin:var(--sp-2) 0 0; font-size:13.5px; line-height:1.5; color:var(--text); }
+.hqczekam{ margin-top:var(--sp-2); }
+.hqblad{
+  margin-top:var(--sp-2); padding:var(--sp-2); font-size:12.8px; line-height:1.45;
+  border:1px solid var(--crit); border-radius:var(--r-sm); color:var(--crit);
+}
+.hqpomin{ margin-top:var(--gap-card); }
+.hqpomin--aktywne{ border-color:var(--acc); }
+.hqpomin__l{ display:grid; gap:6px; margin-top:var(--sp-2); }
+.hqpomin__b{
+  appearance:none; cursor:pointer; text-align:left; width:100%;
+  min-height:var(--tap); padding:var(--sp-2) var(--sp-3); font:inherit; font-size:13px;
+  background:var(--panel2); color:var(--text); border:1px dashed var(--line-strong); border-radius:var(--r-md);
+}
+
+/* ══════════ 2. BADANIE ══════════ */
+/* Oś składowych — ta sama rola, co oś etapów manewru w Bloku 10: użytkownik ma widzieć, gdzie
+   jest i ile zostało, bez opuszczania bieżącego kroku. */
+.hxos{ display:flex; gap:6px; overflow-x:auto; padding:var(--sp-2) 0; margin-bottom:var(--sp-2); }
+.hxkrok{
+  appearance:none; cursor:pointer; flex:0 0 auto; display:flex; align-items:center; gap:6px;
+  min-height:40px; padding:6px var(--sp-2); font:inherit; font-size:12px;
+  background:var(--panel2); color:var(--muted); border:1px solid var(--line); border-radius:var(--r-pill);
+}
+.hxkrok--gotowy{ color:var(--text); border-color:var(--line-strong); }
+.hxkrok--gotowy .hxkrok__n::after{ content:"✓"; }
+.hxkrok--biezacy{ border-color:var(--acc); border-width:2px; color:var(--text); font-weight:700; }
+.hxkrok__n{ font-weight:700; }
+.hxkrok__t{ white-space:nowrap; }
+
+.hxkarta__q{ margin:0; font-size:16px; line-height:1.3; color:var(--text); }
+.hxkarta__instr{ margin:var(--sp-2) 0 0; font-size:13.5px; line-height:1.5; color:var(--muted); }
+.hxopcje{ display:grid; gap:6px; margin-top:var(--sp-3); }
+/* „Duże wybory" z dokumentu — pole dotykowe 56 px, nie minimum 48 px: to jest ekran wykonywany
+   przy pacjencie, jedną ręką, często w pośpiechu. */
+.hxopcja{
+  appearance:none; cursor:pointer; display:flex; align-items:flex-start; gap:var(--sp-2);
+  width:100%; text-align:left; min-height:56px; padding:var(--sp-2) var(--sp-3);
+  background:var(--panel2); color:var(--text); border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font:inherit; font-size:13.5px; line-height:1.4;
+}
+.hxopcja__box{
+  flex:0 0 auto; width:18px; height:18px; margin-top:2px;
+  border:2px solid var(--line-strong); border-radius:50%;
+}
+.hxopcja[aria-pressed="true"]{ border-color:var(--acc); border-width:2px; background:var(--panel); font-weight:700; }
+.hxopcja[aria-pressed="true"] .hxopcja__box{ border-color:var(--acc); background:var(--acc); }
+/* KRYTERIUM ODBIORU NR 2 NA POZIOMIE WYGLĄDU: „nie można ocenić" nie ma prawa wyglądać jak
+   odpowiedź. Obrys przerywany i kwadratowe pole odróżniają je od pozostałych opcji nawet wtedy,
+   gdy ktoś nie czyta napisu — a czytelnik ekranu dostaje pełny tekst opcji, więc różnica nie
+   jest niesiona samym kształtem. */
+.hxopcja--nieocen{ border-style:dashed; color:var(--muted); }
+.hxopcja--nieocen .hxopcja__box{ border-radius:var(--r-xs); }
+.hxopcja--nieocen[aria-pressed="true"]{ border-style:dashed; border-color:var(--warn); color:var(--text); }
+.hxopcja--nieocen[aria-pressed="true"] .hxopcja__box{ border-color:var(--warn); background:var(--warn); }
+
+.hxpowod{ margin-top:var(--sp-2); }
+.hxpowod__b{
+  display:inline-block; margin:4px 4px 0 0; padding:8px var(--sp-2); min-height:44px;
+  background:var(--panel2); border:1px solid var(--line-strong); border-radius:var(--r-sm);
+  color:var(--text); font-size:12.8px; cursor:pointer;
+}
+.hxpowod__b[aria-pressed="true"]{ border-color:var(--warn); border-width:2px; font-weight:700; }
+
+.hxznacz{ margin-top:var(--sp-3); padding-top:var(--sp-2); border-top:1px solid var(--line); }
+.hxznacz p{ margin:4px 0 0; font-size:13px; line-height:1.5; color:var(--text); }
+.hxpul{ margin-top:var(--sp-2); }
+.hxpul summary{ cursor:pointer; font-size:12.8px; font-weight:700; color:var(--muted); min-height:32px; }
+.hxpul p{ margin:6px 0 0; font-size:12.8px; line-height:1.5; color:var(--muted); }
+
+.hxnaw{ display:flex; gap:var(--sp-2); margin-top:var(--gap-card); }
+.hxnaw button{ flex:1 1 0; min-width:0; text-align:center; }
+.hxwynik{ display:block; width:100%; margin-top:var(--sp-2); text-align:center; }
+
+/* Tabela składowych — układ „komputer" z dokumentu. Na telefonie zostaje pod kartą jako zwarta
+   lista tego, co już zaznaczono; nie jest podsumowaniem (to osobny ekran), tylko postępem. */
+.hxtab-wrap{ margin-top:var(--gap-card); }
+.hxtab{ width:100%; border-collapse:collapse; margin:var(--sp-2) 0; font-size:12.5px; }
+.hxtab th, .hxtab td{ padding:6px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+.hxtab thead th{ color:var(--muted); font-weight:700; }
+.hxtab tbody th{ font-weight:400; color:var(--text); width:34%; }
+.hxtab td{ color:var(--muted); }
+.hxtrzon{
+  display:inline-block; margin-left:4px; padding:1px 5px; font-size:10px; font-weight:700;
+  border:1px solid var(--line-strong); border-radius:var(--r-pill); color:var(--muted);
+}
+.hxrola{ white-space:nowrap; }
+.hxw--alarm td, .hxw--alarm th{ color:var(--crit); }
+.hxw--obwod .hxrola{ color:var(--ok); }
+.hxw--nieocen .hxrola{ color:var(--warn); }
+.hxdyn{
+  margin-top:var(--sp-2); padding:var(--sp-2) var(--sp-3); border-radius:var(--r-sm);
+  background:var(--panel2); border-left:3px solid var(--line-strong); font-size:13px; line-height:1.45;
+}
+.hxdyn b{ display:block; color:var(--text); }
+.hxdyn span{ color:var(--muted); font-size:12.5px; }
+.hxdyn--alarm{ border-left-color:var(--crit); }
+.hxdyn--obwodowy{ border-left-color:var(--ok); }
+.hxdyn--niepelne, .hxdyn--nierozstrzygniete, .hxdyn--niepewne, .hxdyn--nieinformatywne{ border-left-color:var(--warn); }
+
+/* ══════════ 3. WYNIK (osobny ekran) ══════════ */
+.hwostrz{ border:2px solid var(--crit); }
+.hwostrz__t{ font-size:16px; font-weight:700; color:var(--crit); }
+.hwostrz__l{ margin:var(--sp-2) 0; padding-left:20px; font-size:13.5px; line-height:1.5; color:var(--text); }
+.hwostrz__l li{ margin-bottom:4px; }
+.hwostrz__c{ margin:0; font-size:13px; line-height:1.5; color:var(--text); }
+.hww{ margin-top:var(--gap-card); border-width:2px; }
+.hww--alarm{ border-color:var(--crit); }
+.hww--obwodowy{ border-color:var(--ok); }
+.hww--niepelne, .hww--niepewne, .hww--nierozstrzygniete, .hww--nieinformatywne{ border-color:var(--warn); }
+.hww--niewykonane{ border-color:var(--line-strong); }
+.hww__ttl{ font-size:15px; font-weight:700; color:var(--text); }
+.hww__tresc{ margin:var(--sp-2) 0 0; font-size:13.5px; line-height:1.5; color:var(--text); }
+.hwlista{ margin-top:var(--gap-card); }
+.hwlista h4{ display:flex; align-items:center; gap:var(--sp-2); }
+.hwlista__n{
+  display:inline-block; min-width:22px; padding:1px 6px; text-align:center;
+  font-size:12px; font-weight:700; border-radius:var(--r-pill);
+  background:var(--panel2); border:1px solid var(--line-strong); color:var(--muted);
+}
+.hwlista ul{ margin:var(--sp-2) 0 0; padding-left:20px; font-size:13px; line-height:1.5; color:var(--text); }
+.hwlista li{ margin-bottom:6px; }
+.hwlista em{ color:var(--muted); font-style:normal; }
+.hwlista--alarm{ border-color:var(--crit); }
+.hwlista--alarm .hwlista__n{ border-color:var(--crit); color:var(--crit); }
+.hwlista--obwod .hwlista__n{ border-color:var(--ok); color:var(--ok); }
+.hwlista--nieocen{ border-style:dashed; }
+.hwlista--nieocen .hwlista__n{ border-color:var(--warn); color:var(--warn); }
+.hwzastrz{ margin-top:var(--gap-card); border-color:var(--warn); }
+.hwzastrz ul{ margin:var(--sp-2) 0 0; padding-left:20px; font-size:13px; line-height:1.5; color:var(--text); }
+.hwzastrz li{ margin-bottom:6px; }
+.hwnaw{ display:flex; flex-wrap:wrap; gap:var(--sp-2); margin-top:var(--gap-card); }
+.hwnaw button{ flex:1 1 180px; min-width:0; text-align:center; }

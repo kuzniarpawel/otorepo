@@ -18,6 +18,11 @@ import { manDeps } from '../app/man-deps.js';
 import { WYNIKI, AKCJE, wynikKontroli, nastepneKroki, kontrolaMozliwa, spojnoscWyniku,
          podsumowanieSesji, streszczenieKontroli } from '../app/followup-model.js';
 import { followupDeps } from '../app/followup-deps.js';
+import { ELEMENTY, ELEMENT_IDS, elementHints, opcjaHints, kwalifikacjaHints, STANY_KWALIFIKACJI,
+         POWODY_POMINIECIA, PRZESZKOLENIE, POWODY_NIEWIARYGODNOSCI_HINTS, SPRZEZENIA,
+         podsumowanieHints, odpowiedziHints, postepBadania, wagaOdpowiedzi } from '../app/hints-model.js';
+import { hintsDeps } from '../app/hints-deps.js';
+import { biezacyKrok } from '../app/hints-state.js';
 import { nowyZegar, startZegara, pauzaZegara, resetZegara, odliczono, ustawOdliczono, odnotujLuke, potwierdzLuke, PROG_LUKI_MS } from '../runtime/hold-clock.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, pickSide, openMan, openTest, zmienManewr, ustawTrybCzasu, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -700,6 +705,9 @@ function render(){
   else if(state.screen==="obs") renderObs();
   else if(state.screen==="interpret") renderInterpret();
   else if(state.screen==="followup") renderFollowup();
+  else if(state.screen==="hintsKwal") renderHintsKwal();
+  else if(state.screen==="hintsBad") renderHintsBad();
+  else if(state.screen==="hintsWyn") renderHintsWyn();
   else if(state.screen==="hints") renderHints();
   else renderDiag();
   /* ZASIĘG ZEGARA WIZUALIZACJI = EKRAN, KTÓRY MA PILOTA (naprawa po krytyce Bloku 7).
@@ -768,13 +776,13 @@ function renderStart(){
             ${startQuick(1, I.poz,  t("Zawroty po zmianie pozycji","Vertigo after a change of position"),
                              t("Diagnostyka BPPV krok po kroku","Step-by-step BPPV work-up"), "startGo('diag')")}
             ${startQuick(2, I.czas, t("Ciągłe zawroty od godzin lub dni","Continuous vertigo for hours or days"),
-                             t("Kwalifikacja do HINTS / HINTS+","Qualification for HINTS / HINTS+"), "startGo('hints')")}
+                             t("Kwalifikacja do HINTS / HINTS+","Qualification for HINTS / HINTS+"), "goHintsKwal()")}
             ${startQuick(3, I.oko,  t("Mam wynik próby","I have a test result"),
                              t("Opis oczopląsu i klasyfikacja","Nystagmus description and classification"), "startGo('diag')")}
             ${startQuick(4, I.cel,  t("Znam kanał i stronę","I know the canal and the side"),
                              t("Szybki wybór manewru","Quick maneuver selection"), "startGo('treat')")}
             ${startQuick(5, I.uwaga,t("Przypadek nietypowy","Atypical case"),
-                             t("Różnicowanie i czerwone flagi","Differentiation and red flags"), "startGo('hints')")}
+                             t("Różnicowanie i czerwone flagi","Differentiation and red flags"), "goHintsKwal()")}
           </ul>
         </div>
         <div class="col col--viz">
@@ -1393,6 +1401,237 @@ function renderFollowup(){
       ${kartaSerii()}
     </div></div>
     <p class="footnote">${t("Wynik kontroli nie jest rozpoznaniem ani oceną skuteczności leczenia. Narzędzie jest edukacyjne — rozstrzyga badanie kliniczne.","A control result is neither a diagnosis nor an assessment of treatment efficacy. This is an educational tool — the clinical examination decides.")}</p>`;
+}
+
+/* ============ HINTS/HINTS+ Z KWALIFIKACJĄ (Blok 12) — trzy ekrany ============
+   Dokument: „Ekran kwalifikacyjny poprzedza badanie”; telefon — „badanie prowadzone krok po kroku,
+   każdy krok ma duże wybory, podsumowanie jest ODDZIELNYM ekranem, aby nie mieszać go z wykonywaniem
+   testu”; komputer — „wyniki wszystkich składowych w tabeli z dynamicznym podsumowaniem, materiały
+   dydaktyczne w bocznym panelu”.
+
+   Cała wiedza kliniczna siedzi w src/app/hints-model.js. Te funkcje NIE decydują o niczym: nie
+   liczą wniosku, nie wiedzą, co jest cechą alarmową, i nie mają własnego warunku wejścia. To nie
+   jest czystość dla czystości — jedyny sposób, żeby wyrocznia mogła sprawdzić kryterium odbioru
+   nr 2 na 14 400 kombinacjach, to trzymanie reguły poza ekranem. */
+const hDeps = () => hintsDeps();
+
+// Jedna odpowiedź = jeden duży przycisk. „Nie można ocenić" dostaje WŁASNĄ klasę, bo ma wyglądać
+// inaczej niż odpowiedź — kryterium odbioru nr 2 zaczyna się na poziomie wyglądu.
+function hxOpcjaHTML(el, o, wybrana){
+  const nieoceniona = o.v === 'nieocenione';
+  return `<button type="button" class="hxopcja${nieoceniona?' hxopcja--nieocen':''}" aria-pressed="${wybrana}"
+      onclick="ustawSkladowaHints('${el.id}','${o.v}')">
+      <span class="hxopcja__box" aria-hidden="true"></span>
+      <span class="hxopcja__txt">${t(o.pl,o.en)}</span></button>`;
+}
+function hxKartaElementu(el, odp){
+  const wybrana = odp[el.id] || null;
+  const powodNiewiar = el.id === 'wiarygodnosc' && wybrana === 'niewiarygodne'
+    ? `<div class="hxpowod"><span class="eyebrow">${t("Powód","Reason")}</span>
+        ${Object.entries(POWODY_NIEWIARYGODNOSCI_HINTS).map(([id,p])=>
+          `<button type="button" class="hxpowod__b" aria-pressed="${state.hintsPowodNiewiar===id}" onclick="ustawPowodNiewiarHints('${id}')">${t(p.pl,p.en)}</button>`).join("")}</div>`
+    : "";
+  return `<section class="card hxkarta" data-hxel="${el.id}">
+      <h3 class="hxkarta__q">${t(el.pl,el.en)}</h3>
+      <p class="hxkarta__instr">${t(el.instrukcjaPl,el.instrukcjaEn)}</p>
+      <div class="hxopcje">${el.opcje.map(o=>hxOpcjaHTML(el,o,wybrana===o.v)).join("")}</div>
+      ${powodNiewiar}
+      <div class="hxznacz"><span class="eyebrow">${t("Co to znaczy","What it means")}</span>
+        <p>${t(el.znaczeniePl,el.znaczenieEn)}</p></div>
+      <details class="hxpul"><summary>${t("Czego ten element NIE mówi","What this element does NOT tell you")}</summary>
+        <p>${t(el.pulapkaPl,el.pulapkaEn)}</p></details>
+    </section>`;
+}
+// Tabela wszystkich składowych + dynamiczne podsumowanie (układ „komputer" z dokumentu).
+function hxTabelaHTML(odp, p){
+  const wiersz = (el)=>{
+    const v = odp[el.id];
+    const w = v ? wagaOdpowiedzi(el.id, odp).waga : null;
+    const kl = w==='alarm'?'hxw--alarm' : w==='obwod'?'hxw--obwod' : w==='nieoceniony'?'hxw--nieocen' : 'hxw--inne';
+    const opis = v ? t(opcjaHints(el.id,v).pl, opcjaHints(el.id,v).en) : t("nie zaznaczono","not marked");
+    const rola = !v ? t("brak odpowiedzi","no answer")
+      : w==='alarm' ? t("cecha alarmowa","alarm feature")
+      : w==='obwod' ? t("wspiera obwód","supports peripheral")
+      : w==='nieoceniony' ? t("nie oceniono","not assessed")
+      : w==='nieinformatywny' ? t("nic nie rozstrzyga","settles nothing")
+      : t("odnotowane","recorded");
+    return `<tr class="${kl}"><th scope="row">${t(el.pl,el.en)}${el.trzon?' <span class="hxtrzon">HINTS</span>':''}</th>
+        <td>${opis}</td><td class="hxrola">${rola}</td></tr>`;
+  };
+  return `<section class="card hxtab-wrap">
+      <h4>${t("Składowe badania","Examination components")}</h4>
+      <table class="hxtab"><thead><tr><th>${t("Składowa","Component")}</th><th>${t("Zaznaczono","Marked")}</th><th>${t("Rola","Role")}</th></tr></thead>
+        <tbody>${ELEMENTY.map(wiersz).join("")}</tbody></table>
+      <div class="hxdyn hxdyn--${p.wniosek}"><b>${t(p.pl,p.en)}</b>
+        <span>${t(`Zaznaczono ${p.postep.zrobione} z ${p.postep.wszystkich} składowych.`,
+                  `${p.postep.zrobione} of ${p.postep.wszystkich} components marked.`)}</span></div>
+    </section>`;
+}
+
+function renderHintsKwal(){
+  const odp = state.triage||{};
+  const pytania = activeQuestions(odp);
+  const nastepne = nextQuestionId(odp);
+  const k = kwalifikacjaHints(state, hDeps());
+  const przesz = state.hintsPrzeszkolenie;
+
+  const kartaPrzeszkolenia = `<section class="card hqprzesz">
+      <h3 class="tq__q">${t("Czy masz przeszkolenie w wykonywaniu HINTS?","Are you trained in performing HINTS?")}</h3>
+      <p class="tq__hint">${t("wytyczne GRACE-3: HINTS wykonany bez przeszkolenia bywa mylący, a wynik pozornie uspokajający jest wtedy groźniejszy niż brak badania",
+                             "the GRACE-3 guideline: HINTS performed without training can mislead, and an apparently reassuring result is then more dangerous than not testing at all")}</p>
+      <div class="tq__opts">${Object.entries(PRZESZKOLENIE).map(([id,o])=>
+        `<button type="button" class="tqopt" aria-pressed="${przesz===id}" onclick="ustawPrzeszkolenieHints('${id}')">
+          <span class="tqopt__box" aria-hidden="true"></span><span class="tqopt__txt">${t(o.pl,o.en)}</span></button>`).join("")}</div>
+    </section>`;
+
+  // Świadome pominięcie. Pokazujemy je WTEDY, gdy jest po co: przy niepotwierdzonym obrazie.
+  // Przy obrazie potwierdzonym pominięcie niczego nie otwiera, więc byłoby tylko szumem.
+  const kartaPominiecia = (k.status==='brak' || k.status==='odradzana')
+    ? `<section class="card hqpomin">
+        <h4>${t("Nie badam teraz pacjenta","I am not examining a patient now")}</h4>
+        <p class="note">${t("Możesz wejść do modułu bez kwalifikacji, ale nie po cichu: wybierz powód, a wynik będzie go niósł do końca sesji.",
+                            "You may enter the module without the qualification, but not silently: choose a reason, and the result will carry it for the rest of the session.")}</p>
+        <div class="hqpomin__l">${Object.entries(POWODY_POMINIECIA).map(([id,o])=>
+          `<button type="button" class="hqpomin__b" onclick="pomijajKwalifikacje('${id}')">${t(o.pl,o.en)}</button>`).join("")}</div>
+      </section>`
+    : k.status==='pominieta'
+      ? `<section class="card hqpomin hqpomin--aktywne">
+          <h4>${t("Kwalifikacja pominięta","Qualification skipped")}</h4>
+          <p>${t(POWODY_POMINIECIA[k.pominiecie].pl, POWODY_POMINIECIA[k.pominiecie].en)}</p>
+          <button type="button" class="recoalt" onclick="cofnijPominiecie()">${t("Cofnij pominięcie i wypełnij kwalifikację","Undo the skip and complete the qualification")}</button>
+        </section>`
+      : "";
+
+  const odmowa = state.hintsBlad
+    ? `<div class="hqblad">${t("Nie wpuszczono do badania.","Entry to the examination was refused.")} ${t(STANY_KWALIFIKACJI[state.hintsBlad].opisPl, STANY_KWALIFIKACJI[state.hintsBlad].opisEn)}</div>`
+    : "";
+
+  const akcje = k.wolno
+    ? `<button class="recoprimary" onclick="zacznijBadanieHints()">${t("Rozpocznij badanie HINTS","Start the HINTS examination")}</button>
+       <button class="recoalt" onclick="otworzSymulatorHints()">${t("Zobacz wzorce na modelu","See the patterns on the model")}</button>
+       <button class="recoalt" onclick="otworzLaboratorium()">${t("Matematyczny pacjent (Laboratorium)","Mathematical patient (Laboratory)")}</button>`
+    : `<p class="note hqczekam">${t("Badanie otworzy się, gdy kwalifikacja zostanie potwierdzona albo świadomie pominięta.",
+                                    "The examination will open once the qualification is confirmed or deliberately skipped.")}</p>`;
+
+  const wynik = `<section class="card hqw hqw--${k.status}" data-hq-status="${k.status}" tabindex="-1">
+      <div class="hqw__ttl">${k.czerwona?"⚠ ":""}${t(k.pl,k.en)}</div>
+      <p class="hqw__tresc">${t(k.opisPl,k.opisEn)}</p>
+      ${odmowa}
+      <div class="hqw__akcje">${akcje}</div>
+    </section>`;
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="goArea('start')" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("HINTS / HINTS+ — kwalifikacja","HINTS / HINTS+ — qualification")}</b><span>${t("ostry zespół przedsionkowy · przeszkolenie · wejście do badania","acute vestibular syndrome · training · entry to the examination")}</span></div></div>
+    <div class="pagegrid hqgrid">
+      <div class="col col--ctl">
+        <p class="hqlead">${t("HINTS ma zastosowanie w CIĄGŁYCH zawrotach z utrzymującym się oczopląsem samoistnym. Poniższe pytania są tymi samymi, które zadaje kwalifikacja wstępna — odpowiedzi są wspólne dla całej sesji.",
+                              "HINTS applies to CONTINUOUS dizziness with sustained spontaneous nystagmus. The questions below are the same ones the initial triage asks — the answers are shared across the whole session.")}</p>
+        ${pytania.map(q=>triageQuestionHTML(q,odp,nastepne)).join("")}
+        ${kartaPrzeszkolenia}
+      </div>
+      <div class="col col--viz">${wynik}${kartaPominiecia}</div>
+    </div>
+    <div class="disclaimer">${t('<b>Kwalifikacja wskazuje, czy HINTS jest tu właściwym badaniem</b> — nie stawia rozpoznania. Taksonomia czas-i-wyzwalacze wg wytycznych GRACE-3 (Edlow i wsp., <i>Acad Emerg Med</i> 2023).',
+                              '<b>The qualification indicates whether HINTS is the right examination here</b> — it makes no diagnosis. Timing-and-triggers taxonomy per the GRACE-3 guideline (Edlow et al., <i>Acad Emerg Med</i> 2023).')}</div>`;
+}
+
+function renderHintsBad(){
+  const odp = odpowiedziHints(state);
+  const p = podsumowanieHints(state, hDeps());
+  const biezacy = biezacyKrok();
+  const el = elementHints(biezacy);
+  const i = ELEMENT_IDS.indexOf(biezacy);
+  const ostatni = i === ELEMENT_IDS.length-1;
+
+  const os = ELEMENT_IDS.map((id,n)=>{
+    const e = elementHints(id), zrobiony = !!odp[id];
+    return `<button type="button" class="hxkrok${id===biezacy?' hxkrok--biezacy':''}${zrobiony?' hxkrok--gotowy':''}"
+        aria-current="${id===biezacy}" onclick="goHintsKrok('${id}')">
+        <span class="hxkrok__n">${n+1}</span><span class="hxkrok__t">${t(e.pl,e.en)}</span></button>`;
+  }).join("");
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="goHintsKwal()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Badanie HINTS / HINTS+","HINTS / HINTS+ examination")}</b><span>${t(`składowa ${i+1} z ${ELEMENT_IDS.length}`,`component ${i+1} of ${ELEMENT_IDS.length}`)}</span></div></div>
+    <nav class="hxos" aria-label="${t("Składowe badania","Examination components")}">${os}</nav>
+    <div class="pagegrid hxgrid">
+      <div class="col col--ctl">
+        ${hxKartaElementu(el, odp)}
+        <div class="hxnaw">
+          <button class="recoalt" onclick="wsteczHints()">${i===0?t("Wróć do kwalifikacji","Back to the qualification"):t("Poprzednia składowa","Previous component")}</button>
+          <button class="${odp[biezacy]?'recoprimary':'recoalt'}" onclick="dalejHints()">${ostatni?t("Pokaż wynik","Show the result"):t("Następna składowa","Next component")}</button>
+        </div>
+        <button class="hxwynik" onclick="pokazWynikHints()">${t("Przejdź do wyniku","Go to the result")}</button>
+      </div>
+      <div class="col col--viz">${hxTabelaHTML(odp, p)}</div>
+    </div>
+    <div class="disclaimer">${t('<b>Zapisujesz to, co widzisz u pacjenta.</b> Aplikacja nie ocenia składowych za Ciebie — wynik powstaje dopiero na osobnym ekranie i nie zastępuje decyzji klinicznej.',
+                              '<b>You are recording what you see in the patient.</b> The app does not judge the components for you — the result appears only on a separate screen and does not replace clinical judgment.')}</div>`;
+}
+
+function renderHintsWyn(){
+  const p = podsumowanieHints(state, hDeps());
+  const odp = odpowiedziHints(state);
+
+  // KRYTERIUM ODBIORU NR 3. Ostrzeżenie stoi NAD wnioskiem i nad wszystkim innym — nie w stopce,
+  // nie w „szczegółach", nie jako kolor ramki. Model gwarantuje, że istnieje dokładnie wtedy,
+  // gdy zaznaczono cechę alarmową; ekran gwarantuje, że jest pierwszą rzeczą, którą widać.
+  const ostrz = p.ostrzezenie
+    ? `<section class="card hwostrz" role="alert" data-hw-ostrzezenie="1">
+        <div class="hwostrz__t">⚠ ${t(p.ostrzezenie.tytulPl,p.ostrzezenie.tytulEn)}</div>
+        <ul class="hwostrz__l">${p.cechyAlarmowe.map(c=>`<li><b>${t(c.pl,c.en)}</b>: ${t(c.wartoscPl,c.wartoscEn)}</li>`).join("")}</ul>
+        <p class="hwostrz__c">${t(p.ostrzezenie.trescPl,p.ostrzezenie.trescEn)}</p>
+      </section>`
+    : "";
+
+  const lista = (tytul, poz, klasa, pusty)=> `<section class="card hwlista ${klasa}">
+      <h4>${tytul} <span class="hwlista__n">${poz.length}</span></h4>
+      ${poz.length
+        ? `<ul>${poz.map(c=>`<li><b>${t(c.pl,c.en)}</b>: ${t(c.wartoscPl,c.wartoscEn)}${c.powodPl?` <em>— ${t(c.powodPl,c.powodEn)}</em>`:""}</li>`).join("")}</ul>`
+        : `<p class="note">${pusty}</p>`}
+    </section>`;
+
+  const zastrz = p.zastrzezenia.length
+    ? `<section class="card hwzastrz"><h4>${t("Zastrzeżenia do tego wyniku","Caveats on this result")}</h4>
+        <ul>${p.zastrzezenia.map(z=>`<li>${t(z.pl,z.en)}</li>`).join("")}</ul></section>`
+    : "";
+
+  const powodNiew = p.powodNiewiarygodnosci
+    ? `<p class="note">${t("Powód niewiarygodności","Reason for unreliability")}: ${t(POWODY_NIEWIARYGODNOSCI_HINTS[p.powodNiewiarygodnosci].pl, POWODY_NIEWIARYGODNOSCI_HINTS[p.powodNiewiarygodnosci].en)}</p>`
+    : "";
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="wrocDoBadaniaHints()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Wynik badania HINTS / HINTS+","HINTS / HINTS+ result")}</b><span>${t(`zaznaczono ${p.postep.zrobione} z ${p.postep.wszystkich} składowych`,`${p.postep.zrobione} of ${p.postep.wszystkich} components marked`)}</span></div></div>
+    ${ostrz}
+    <section class="card hww hww--${p.wniosek}" data-hw-wniosek="${p.wniosek}">
+      <div class="hww__ttl">${t(p.pl,p.en)}</div>
+      <p class="hww__tresc">${t(p.opisPl,p.opisEn)}</p>
+      ${powodNiew}
+    </section>
+    <div class="pagegrid hwgrid">
+      <div class="col col--ctl">
+        ${lista(t("Wspiera uszkodzenie obwodowe","Supports a peripheral lesion"), p.wspierajaObwod, "hwlista--obwod",
+                t("Nic nie przemawia dziś za obwodem.","Nothing currently argues for a peripheral cause."))}
+        ${lista(t("Nie oceniono","Not assessed"), p.nieocenione, "hwlista--nieocen",
+                t("Wszystkie zaznaczone składowe udało się ocenić.","Every marked component could be assessed."))}
+      </div>
+      <div class="col col--viz">
+        ${lista(t("Cechy alarmowe","Alarm features"), p.cechyAlarmowe, "hwlista--alarm",
+                t("Nie zaznaczono cechy alarmowej. To NIE jest wykluczenie przyczyny ośrodkowej.","No alarm feature was marked. This is NOT an exclusion of a central cause."))}
+        ${p.nieinformatywne.length
+          ? lista(t("Nic nie rozstrzyga w tym kontekście","Settles nothing in this context"), p.nieinformatywne, "hwlista--nieinf", "")
+          : ""}
+      </div>
+    </div>
+    ${zastrz}
+    <div class="hwnaw">
+      <button class="recoprimary" onclick="wrocDoBadaniaHints()">${t("Wróć do badania","Back to the examination")}</button>
+      <button class="recoalt" onclick="wyczyscBadanieHints()">${t("Wyczyść i zacznij od nowa","Clear and start again")}</button>
+      <button class="recoalt" onclick="otworzSymulatorHints()">${t("Zobacz wzorce na modelu","See the patterns on the model")}</button>
+    </div>
+    <div class="disclaimer">${t(p.zastrzezenieKliniczne.pl, p.zastrzezenieKliniczne.en)}</div>`;
 }
 
 function renderTriage(){
@@ -2061,7 +2300,7 @@ function renderHints(){
   const gazeBtn=(g,lbl)=>`<button aria-pressed="${gaze===g}" onclick="setHintsGaze(${g})">${lbl}</button>`;
   const fixBtn=(v,lbl)=>`<button aria-pressed="${fixOn===v}" onclick="setHintsFix(${v})">${lbl}</button>`;
   $("#app").innerHTML=`
-    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="ghead"><button class="iconbtn" onclick="goHintsKwal()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${tr("Różnicowanie — HINTS","Differentiation — HINTS")}</b><span>${tr("ośrodek ↔ obwód · silnik z pierwszych zasad","central ↔ peripheral · first-principles engine")}</span></div>
       ${fam==="neuritis" ? `<div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${state.hintsSide==='L'}" onclick="setHintsNeuritisSide('L')">L</button><button data-s="P" aria-pressed="${state.hintsSide==='P'}" onclick="setHintsNeuritisSide('P')">${t("P","R")}</button></div></div>` : ""}</div>
     <div class="group" style="margin-top:4px"><div class="label"><span class="eyebrow">${tr("Scenariusz","Scenario")}</span><span class="hint">${tr("zmienia tylko parametry fizjologii","changes only the physiology parameters")}</span></div>
