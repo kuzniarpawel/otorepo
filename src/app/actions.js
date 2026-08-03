@@ -12,6 +12,7 @@ import { setObsWystapil as _setObsWystapil, setObsPole as _setObsPole, oznaczObs
          przyjmijObserwacje } from './obs-state.js';
 import { interpretuj } from './interp-model.js';
 import { interpDeps } from './interp-deps.js';
+import { wykonanySekwencyjnie, przeniesCzasy } from './man-model.js';
 
 function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
 function hintsHIT(canal, ear){
@@ -185,8 +186,52 @@ function loadHintsFromStore(){
   try{ const s=localStorage.getItem('otorepo_hints_patient'); if(!s) return false;
     state.hintsCustom=NeuroVOR.makePatient(JSON.parse(s)); return true; }catch(e){ return false; }
 }
+/* ============ JEDNA droga budowy planu manewru (Blok 10) ============
+   Dotąd plan powstawał w czterech miejscach i KAŻDE czytało `state.maneuverKey` w chwili
+   przebudowy. To jest źródło cichej podmiany manewru, zmierzonej na realnym grafie:
+     startManeuver('lempert') → plan „Lempert" (6 kroków), odcisk.key='lempert'
+     pickCanal('anterior')    → maneuverKey='yacovino' (kanał ma jeden manewr, więc dotknięcie
+                                KAFELKA KANAŁU wybierało manewr za użytkownika), plan NADAL Lempert
+     setGuideSide('L')        → genPlan(state.maneuverKey) → plan staje się YACOVINO (4 kroki),
+                                a `flow.maneuver.key` dalej mówi 'lempert'; dryf pusty, pasek zielony
+   Klinicysta wykonywał Yacovino, a zapis przebiegu meldował Lemperta — po JEDNYM dotknięciu
+   pigułki strony. Klucz manewru wchodzi więc ARGUMENTEM, a plan nosi go w polu `key`, żeby
+   `spojnoscPlanu` (man-model.js) miała co porównywać.
+
+   `key` stemplujemy TUTAJ, a nie w `genPlan`: golden `engine.plans` serializuje wynik genPlan,
+   więc dołożenie pola w samym generatorze byłoby zmianą warstwy, która ma zostać bit w bit. */
+function przebudujPlan(key, side, opcje){
+  const o = opcje || {};
+  const nowy = genPlan(key, side);
+  nowy.key = key;
+  // Ręcznie ustawiony czas utrzymania pozycji to parametr KLINICZNY, nie preferencja interfejsu
+  // (tak nazywa go komentarz przy setLangUI — jedynej akcji, która go dotąd chroniła).
+  // `setGuideSide` i `pickSize` gubiły go bez słowa; przenosimy po TOŻSAMOŚCI kroku, nie po
+  // indeksie, bo przy podmianie manewru indeksy wskazują zupełnie inne pozycje ciała.
+  if(o.zachowajCzasy !== false && state.plan) przeniesCzasy(state.plan, nowy);
+  return nowy;
+}
 function pickSide(s){ state.side=s; render(); }
-function pickCanal(k){ state.canal=k; const keys=CANALS[k].maneuvers; if(!keys.includes(state.maneuverKey)) state.maneuverKey=keys.length===1?keys[0]:null; render(); }
+/* Wybór kanału NIE wybiera manewru za użytkownika. Dotąd kanał o jednym manewrze (przedni →
+   Yacovino) uzbrajał go samym dotknięciem kafelka kanału, przez co `state.maneuverKey` i
+   `state.plan` opisywały dwa różne manewry. Plan porzuconego kanału znika razem z nim — inaczej
+   krok „Manewr" prowadziłby do przewodnika rysującego manewr kanału, który przed chwilą odrzucono
+   (`wymaga: plan && maneuverKey` było spełnione, bo oba pola były niepuste — tylko niezgodne). */
+function pickCanal(k){
+  state.canal=k;
+  const keys=CANALS[k].maneuvers;
+  if(!keys.includes(state.maneuverKey)) state.maneuverKey=null;
+  if(state.plan && state.plan.canal!==k){
+    state.plan=null; state.step=0; state.running=false; releaseWake();
+    // Skasowanie planu MUSI zabrać ze sobą ekran przewodnika. renderGuide czyta
+    // `state.plan.steps[state.step]` PRZED przypisaniem innerHTML, więc przy pustym planie leci
+    // TypeError, ekran nie drgnie, a każdy kolejny render() rzuca to samo — aplikacja zablokowana
+    // do przeładowania, i to bez śladu widocznego dla użytkownika. Złapane przez man:dom przy
+    // pierwszym uruchomieniu.
+    if(state.screen==="guide") state.screen="setup";
+  }
+  render();
+}
 function pickMan(k){ state.maneuverKey=k; render(); }
 /* Wybór próby. Zerowanie dixObs/dixRep/diagCentral dotyczy WYŁĄCZNIE zmiany próby na inną.
    Przy ponownym dotknięciu TEJ SAMEJ próby (kafel aktywnego testu ma tylko aria-pressed, nie jest
@@ -241,25 +286,50 @@ function genPlan(key, side){
   for(const st of plan.steps){ if(st.seconds!=null) st.seconds=sizedSeconds(st.seconds, state.size); }
   return plan;
 }
-// Zmiana rozmiaru złogu: przebuduj plan (nowe holdy), unieważnij cache dynamiki, przelicz od bieżącego kroku.
+/* Zmiana rozmiaru złogu: przebuduj plan (nowe holdy), unieważnij cache dynamiki.
+   `zachowajCzasy:false` JEST TU ŚWIADOME i jest jedynym takim miejscem: rozmiar złogu zmienia
+   ZALECANY czas utrzymania pozycji (małe/wolno osiadające → dłużej, sizedSeconds), więc trzymanie
+   poprzedniej wartości ręcznej znaczyłoby, że aplikacja przyjmuje wybór rozmiaru i zaraz go
+   ignoruje. Plan przebudowujemy dla manewru, do którego NALEŻY (plan.key), nie dla tego, który
+   akurat stoi w state.maneuverKey. */
 function pickSize(s){ if(state.size===s) return; state.size=s;
-  if(state.plan && state.screen==="guide"){ state.plan=genPlan(state.maneuverKey, state.side); }
+  if(state.plan && state.screen==="guide"){ state.plan=przebudujPlan(state.plan.key||state.maneuverKey, state.plan.side, {zachowajCzasy:false}); }
   render(); }
-// Repozycja: zmiana strony PRZEBUDOWUJE plan i restartuje manewr od kroku 0.
-// Odcisk dostaje NOWĄ stronę: po tej akcji plan jest najświeższym elementem stanu, więc pasek
-// nie ma prawa krzyczeć „zmieniono stronę" nad planem właśnie przeliczonym. Aktualizujemy samo
-// pole strony — podmiana całego odcisku skasowałaby równoczesny, zasłużony dryf.
-function setGuideSide(s){ if(state.side===s) return; state.side=s; state.plan=genPlan(state.maneuverKey,s); state.step=0; state.autostart=false; patchManeuverSide(state,s); render(); }
+/* Repozycja: zmiana strony PRZEBUDOWUJE plan i restartuje manewr od kroku 0.
+   Odcisk dostaje NOWĄ stronę: po tej akcji plan jest najświeższym elementem stanu, więc pasek
+   nie ma prawa krzyczeć „zmieniono stronę" nad planem właśnie przeliczonym. Aktualizujemy samo
+   pole strony — podmiana całego odcisku skasowałaby równoczesny, zasłużony dryf.
+
+   STRAŻ PATRZY NA PLAN, NIE NA `state.side`. Poprzednia wersja (`if(state.side===s) return`)
+   robiła z przycisku strony MARTWY przycisk dokładnie wtedy, gdy był potrzebny: po rozjeździe
+   `state.side='L'` / `plan.side='P'` pigułka pokazywała P (czyta plan), a kliknięcie L nie robiło
+   nic, bo `state.side` już było 'L'. Manewru nie dało się przełączyć na drugie ucho. */
+function setGuideSide(s){
+  if(!state.plan) return;
+  if(state.side===s && state.plan.side===s) return;
+  const key = state.plan.key || state.maneuverKey;
+  state.side=s;
+  state.plan=przebudujPlan(key, s);
+  state.maneuverKey=key;                     // pigułka strony nie ma prawa podmienić manewru
+  state.step=0; state.autostart=false; patchManeuverSide(state,s); render();
+}
 // Diagnostyka: zmiana strony tylko odświeża predykcje (brak bieżącego kroku — fazy widoczne naraz).
 // Tu odcisku NIE ruszamy: plan nadal celuje w poprzednie ucho, więc dryf jest zasłużony.
 function setDiagSide(s){ if(state.side===s) return; markDecision(state,"side",s); state.dixRep=0; render(); }
-function startPlan(){ state.plan=genPlan(state.maneuverKey,state.side); state.step=0; state.autostart=false; state.screen="guide"; render(); }
-// Wejście z rekomendacji na ekranie testu: kroki „Próba/Oczopląs/Interpretacja" mają za sobą
-// realną pracę, więc odcisk zapisujemy z viaInterpret=true.
-function startManeuver(key){
-  state.mode="treat"; state.maneuverKey=key; state.canal=CANAL_OF[key];
+function startPlan(){ state.plan=przebudujPlan(state.maneuverKey,state.side,{zachowajCzasy:false}); state.step=0; state.autostart=false; state.screen="guide"; render(); }
+/* Wejście z rekomendacji na ekranie testu: kroki „Próba/Oczopląs/Interpretacja" mają za sobą
+   realną pracę, więc odcisk zapisujemy z viaInterpret=true.
+
+   STRONA WCHODZI ARGUMENTEM. Przy downbeacie w Dix-Hallpike'u karta leczenia nazywa ucho
+   PRZECIWNE (`effSide = otherSide(A)`, bo kanał przedni leży w drugim uchu), a `startManeuver`
+   budował plan ze `state.side` — czyli dla ucha, które karta właśnie wykluczyła. Zmierzone
+   trzema gestami: karta pisze „Leczenie dla strony lewa", plan powstaje dla P. Domyślnie
+   zostaje `state.side`, więc pozostali wołający nic nie tracą. */
+function startManeuver(key, side){
+  const s = side || state.side;
+  state.mode="treat"; state.maneuverKey=key; state.canal=CANAL_OF[key]; state.side=s;
   markManeuver(state,key,true);
-  state.plan=genPlan(key,state.side); state.step=0; state.autostart=false; state.screen="guide"; render();
+  state.plan=przebudujPlan(key,s,{zachowajCzasy:false}); state.step=0; state.autostart=false; state.screen="guide"; render();
 }
 
 /* ============ Sterowanie symulacją (Blok 7) ============
@@ -367,9 +437,26 @@ function triageGo(tryb){
 }
 function startDiag(){ state.screen="diag"; markSeen(state,"testSeen"); render(); }
 function backToSetup(){ state.running=false; releaseWake(); state.screen="setup"; render(); }
-// Dojście do OSTATNIEGO kroku planu = manewr wykonany. Od tej chwili nie jest już wnioskiem
-// oczekującym: konwersja postaci albo próba kontrolna po repozycji nie mogą go unieważniać.
-function goStep(i,autostart){ const n=state.plan.steps.length; if(i<0||i>=n) return; state.step=i; state.autostart=!!autostart; if(i===n-1) markConsumed(state); render(); }
+/* Dojście do OSTATNIEGO kroku planu = manewr wykonany. Od tej chwili nie jest już wnioskiem
+   oczekującym: konwersja postaci albo próba kontrolna po repozycji nie mogą go unieważniać.
+
+   ALE „wykonany" to nie „obejrzany". `markConsumed` wycisza WSZYSTKIE alarmy manewru na stałe
+   (`maneuverDrift` zwraca wtedy []), a Blok 10 daje oś etapów z podpisami — czyli jedno dotknięcie
+   napisu „Powrót do siadu", najzwyklejszy gest „zobaczmy, co mnie czeka". Zmierzone: pojedyncze
+   `goStep(4)` z kroku 0 ustawiało consumed, po czym zmiana mechanizmu, przełączenie na CPN i
+   skasowanie opisu obserwacji nie zapalały już NICZEGO do końca sesji.
+   Warunek jest teraz SEKWENCYJNY (man-model.wykonanySekwencyjnie); skok po osi go nie spełnia,
+   a kto naprawdę skończył serię, ma jawny przycisk „Zakończ serię". */
+function goStep(i,autostart){
+  const n=state.plan.steps.length; if(i<0||i>=n) return;
+  const zKroku=state.step;
+  state.step=i; state.autostart=!!autostart;
+  if(wykonanySekwencyjnie(zKroku,i,n)) markConsumed(state);
+  render();
+}
+// Jawne zakończenie serii (przycisk ✓ na ostatnim etapie) — to jest DEKLARACJA wykonania,
+// więc tu `markConsumed` idzie bezwarunkowo.
+function zakonczSerie(){ markConsumed(state); backToSetup(); }
 function toggleAuto(el){ state.autoAdvance=!state.autoAdvance; el.setAttribute("aria-checked",state.autoAdvance); }
 function toggleSound(el){ state.sound=!state.sound; el.setAttribute("aria-checked",state.sound); if(state.sound)beep(); }
 // Etap 3: przełącznik karty „Ułożenie" SVG ↔ Three.js (WebGL). Pełny render — montaż canvasa robi hook w renderGuide/renderDiag.
@@ -384,15 +471,16 @@ function syncLangBar(){
     b.setAttribute("aria-pressed", String(b.getAttribute("data-lang")===state.lang)));
 }
 // Przełączenie języka regeneruje plan, żeby instrukcje kroków były w nowym języku (wzorzec jak pickSize).
-// ALE regeneracja przywraca fabryczne czasy holdów, a setStepSeconds (svg-screens.js:686) zapisuje w
+// ALE regeneracja przywraca fabryczne czasy holdów, a setStepSeconds (svg-screens.js) zapisuje w
 // żywym planie czas utrzymania pozycji ustawiony RĘCZNIE przez klinicystę — parametr kliniczny, nie
 // preferencję UI. Przenosimy go na nowy plan: zmiana języka nie ma prawa zmienić przebiegu manewru.
+// Przenoszenie idzie przez `przebudujPlan`, czyli po TOŻSAMOŚCI kroku: kopiowanie po indeksie
+// przepisywało 120 s z kroku 2 jednego manewru na krok 2 drugiego, gdyby plan i `state.maneuverKey`
+// zdążyły się rozjechać.
 function setLangUI(lang){
   setLang(lang);
   if(state.plan && state.screen==="guide"){
-    const prev=state.plan.steps.map(s=>s.seconds);
-    state.plan=genPlan(state.maneuverKey, state.side);
-    state.plan.steps.forEach((s,i)=>{ if(prev[i]!=null) s.seconds=prev[i]; });
+    state.plan=przebudujPlan(state.plan.key||state.maneuverKey, state.plan.side);
   }
   syncLangBar(); render();
   // Cały chrom (marka, nawigacja, pasek przebiegu, arkusz ustawień) jest wypełniany przez t()
@@ -402,8 +490,8 @@ function setLangUI(lang){
 }
 
 
-export { goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });

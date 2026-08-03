@@ -13,7 +13,7 @@ import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wniosk
 import { nietypowy, interpretuj, sugerowaneProby, POWODY_NIETYPOWOSCI, POWODY_ZGODNOSCI, CECHY_KIERUNKU, CECHY_DYNAMIKI } from '../app/interp-model.js';
 import { interpDeps as _interpDeps } from '../app/interp-deps.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
-import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
+import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
 import { activeQuestions, nextQuestionId, triageComplete, triageResult, czerwoneFlagi } from '../app/triage-model.js';
 import { t } from '../i18n.js';
@@ -1388,7 +1388,7 @@ function renderGuide(){
         <div class="num">${t("KROK","STEP")} ${state.step+1} / ${n}</div>
         ${state.step<n-1
           ? `<button class="stepnav" onclick="goStep(${state.step+1})" aria-label="${t("Następny krok","Next step")}"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
-          : `<button class="stepnav fin" onclick="backToSetup()" aria-label="${t("Zakończ serię","Finish series")}"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
+          : `<button class="stepnav fin" onclick="zakonczSerie()" aria-label="${t("Zakończ serię","Finish series")}"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
       </div>
       <div class="title">${st.title}</div>
       <div class="instr">${st.instr}</div></div>
@@ -1649,7 +1649,11 @@ function renderDiag(){
       const rec = antMode
         ? {primary:"yacovino", alts:[], note:t(`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`,`Downbeat in the Dix-Hallpike → ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}), LARP/RALP plane. Treatment: Yacovino (deep head-hang → quick chin-to-chest movement). Lateralization by nystagmus uncertain.`)}
         : recommend(state.testKey,v);
-      const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}')">${idx===0?t('Rozpocznij: ','Start: '):t('Alternatywa: ','Alternative: ')}${MANEUVERS[k].label} — ${MANEUVERS[k].desc}</button>`).join("");
+      /* STRONA IDZIE Z KARTĄ, NIE ZE STANU. Przy downbeacie `effSide` to ucho PRZECIWNE (kanał
+         przedni leży po drugiej stronie), a `startManeuver` budował plan ze `state.side` — czyli
+         dla ucha, które ta sama karta przed chwilą wykluczyła. Zmierzone trzema gestami: karta
+         pisze „Leczenie dla strony lewa", a plan powstaje dla P. */
+      const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}','${effSide}')">${idx===0?t('Rozpocznij: ','Start: '):t('Alternatywa: ','Alternative: ')}${MANEUVERS[k].label} — ${MANEUVERS[k].desc}</button>`).join("");
       return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--text)">${rec.note}</div>
         <div class="note">${t(`Leczenie dla strony <b>${SIDE[effSide]}</b>.`,`Treatment for the <b>${effSide==="L"?"left":"right"}</b> side.`)} ${antMode?t("Strona kanału przedniego niepewna — potwierdź deep head-hangiem i dopiero po wykluczeniu przyczyny ośrodkowej.","The anterior-canal side is uncertain — confirm with the deep head-hang and only after ruling out a central cause."):t("Potwierdź stronę regułą lateralizacji powyżej, zanim rozpoczniesz manewr.","Confirm the side with the lateralization rule above before starting the maneuver.")}</div>
