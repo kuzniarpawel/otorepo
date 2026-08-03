@@ -1006,3 +1006,85 @@ animacja musi cos rysowac, znika samo twierdzenie o zrodle.
 
 Bramki: npm run interp:check (model czysty, gola konsola Node) oraz npm run interp:dom
 (skan DOM w jsdom — kryterium nr 3 jest twierdzeniem o EKRANIE, nie o modelu).
+
+================================================================================
+MANEWR I TRYB EKSPERCKI — CO MODEL DOBIERA, A CZEGO NIE MIERZY (Blok 10)
+================================================================================
+Krok „Manewr" prowadzi repozycję i — w trybie eksperckim — dobiera manewr dla użytkownika, który
+kanał, stronę i mechanizm już zna. Nie ma tu ani jednej pary „kanał+mechanizm → manewr" wpisanej
+ręcznie: pytamy `recommend()`, czyli to samo źródło, z którego korzysta ścieżka diagnostyczna.
+Most kanał→próba wyprowadzamy z DIAG, bo `recommend()` ma CICHY WYNIK DOMYŚLNY (wszystko poza
+'dix' i 'headhang' spada do gałęzi kanału poziomego), więc literówka w kluczu nie dałaby błędu,
+tylko manewr niewłaściwego kanału.
+
+CO KARTA DOBORU MOŻE POWIEDZIEĆ, A CZEGO NIE
+Mockup podpisuje zalecany manewr słowami „najwyższa zgodność z rozpoznaniem". Model nie liczy
+zgodności z rozpoznaniem tego pacjenta — liczy PIERWSZY RZUT WG WYTYCZNYCH dla kanału i mechanizmu,
+które PODAŁ UŻYTKOWNIK. Karta pisze więc dokładnie to i dodatkowo wymienia, które z trzech wartości
+naprawdę pochodzą od człowieka: `state.side` ma literał 'P', a `state.variant` literał 'canalo',
+więc bez `sideZrodlo`/`variantZrodlo` zdanie „kanał, stronę i mechanizm podałeś Ty" byłoby przy
+pierwszym wejściu nieprawdą — i to w zdaniu, którego całą funkcją jest uczciwość atrybucji.
+
+„DO USTĄPIENIA OCZOPLĄSU + ZAPAS" JEST PODŁOGĄ, NIGDY SKRÓCENIEM
+To najważniejsza liczba tego bloku i jedyna, która mogłaby zaszkodzić pacjentowi.
+Przewidywany czas oczopląsu liczy się z okna dynamiki `min(cap, seconds) + tTrans + TAIL`, gdzie
+`cap` dla rozmiaru „średni" wynosi 12 s. ZMIERZONE konsekwencje:
+  • liczba NIGDY nie przekracza ~19 s, niezależnie od tego, ile pozycja ma być trzymana;
+  • Semont ma `seconds=90` i instrukcję „Utrzymaj 1–3 min", a model daje 18,5 s;
+  • Gufoni geotropowy: 18,4 / 14,1 s przy 60 s protokołu;
+  • Lempert krok 5 (wyjście złogu): 39,8 s przy 30 s protokołu — tu tryb realnie WYDŁUŻA.
+Tryb ma zatem prawo WYŁĄCZNIE PODNOSIĆ czas protokolarny. Gdyby ustawiał liczbę wprost, skróciłby
+rzut Semonta o ~70 s poniżej dolnej granicy WŁASNEJ instrukcji aplikacji, a przy włączonym
+auto-przejściu sam przesunąłby pacjenta dalej. Dla kupulolitiazy tryb jest NIEDOSTĘPNY: ξ nie
+wygasa (zmierzone |ξ| = 100 % szczytu jeszcze po 300 s), więc zdanie „do ustąpienia" nie ma
+desygnatu. Bramka: npm run man:check (sekcja D), dowód failing-first = 54 naruszenia na siatce
+manewr × strona × rozmiar × etap.
+
+WYJŚCIE ZŁOGU JEST OSOBNĄ OSIĄ, NIE KRYTERIUM CZASOWYM
+W Epleyu złóg opuszcza kanał w kroku SIAD, który NIE MA odliczania. Wtłoczenie obu rzeczy w jedno
+pole kazałoby wybrać, którą zataić — akurat o kroku, w którym powstaje oczopląs liberacyjny.
+Dla kanałów pionowych etap wyjścia pochodzi z FIZYKI (`manExitStep`); dla kanału poziomego
+i kupulolitiazy ze SCHEMATU (n-2) i ekran to przyznaje, zamiast podawać regułę jako pomiar.
+
+NAZWY POZYCJI KRYJĄ ODWRÓCENIE
+`sideL` znaczy „na boku LEWYM", ale `leanL` znaczy „na boku PRAWYM": pozy Semonta są nazwane od
+strony PRZECHYŁU, nie od boku, na którym pacjent leży. Pomyłka wypisałaby przy kozetce odwrotne
+ucho, a fizyka by nie drgnęła, bo nazwa nie wchodzi do symulacji. Wyrocznia sprawdza te nazwy
+wobec ZNAKU GRAWITACJI w ramce głowy, nie wobec komentarza.
+
+LICZNIK POZYCJI: ZEGAR ŚCIENNY I PRZERWA W OBSERWACJI
+Licznik sumował `dt` z klatek rAF. Wygląda to na „stoi przy zgaszonym ekranie", ale `last` jest
+zmienną domknięcia i nikt jej nie rusza przy powrocie widoczności, a znacznik rAF biegnie w czasie
+rzeczywistym — pierwsza klatka po odblokowaniu dostawała `dt` równe CAŁEJ przerwie i nadrabiała ją
+jednym skokiem razem z warunkiem końca etapu, sygnałem i auto-przejściem; przy dłuższej przerwie
+kaskadą aż do `markConsumed`. Czas mierzy teraz kotwica zegara ściennego (`hold-clock.js`, moduł
+czysty, BEZ `Date.now` — czas wchodzi argumentem, żeby bramka była deterministyczna), a `dt`
+zostaje wyłącznie animacji.
+Przerwa dłuższa niż 3 s jest zdarzeniem KLINICZNYM: aplikacja umie zmierzyć czas, ale nie umie
+stwierdzić, czy pacjent utrzymał pozycję, gdy nikt na ekran nie patrzył. Zatrzymuje więc odliczanie
+i prosi o potwierdzenie. Krótsze mrugnięcia nie alarmują — alarm bez powodu uczy ignorowania
+komunikatu (ten sam mechanizm, przez który `dixRep` nie wszedł do odcisku decyzyjnego).
+Ostrzeżenie o braku blokady ekranu pochodzi z FAKTYCZNEJ próby, nie z detekcji API: blokada bywa
+odrzucona mimo obecnego `wakeLock` (brak secure context, polityka systemu, oszczędzanie energii).
+
+LEWO I PRAWO ZAWSZE Z WŁAŚCICIELEM (kryterium odbioru nr 2)
+Kryterium było spełnione już przed tym blokiem — każde zdanie z kierunkiem niesie właściciela —
+więc dołożyliśmy ZAPADKĘ, a nie naprawę. Jednostką jest ZDANIE, nie okno N znaków (okno dawało
+22 fałszywe trafienia, bo „w stronę zdrową" bywa 56 znaków przed samą nazwą strony), a słownik
+form jest ZAMKNIĘTY i brany z tabeli odmiany — wzorzec prefiksowy „lew*/praw*" łapie „prawidłowy",
+„prawdopodobieństwo" i „poprawić", więc bramka świeciłaby na napisach bez związku z kierunkiem.
+Osobno poprawiono 29 miejsc, w których MIANOWNIK („lewa"/„prawa") był wklejany w biernik, celownik
+i dopełniacz: było „w stronę lewa", „na bok prawa", „ku uchu lewa", „po stronie prawa".
+Rebaseline `engine.plans` ma dowód zakresu: po usunięciu pól tekstowych diff planów jest PUSTY,
+czyli `body/yaw/face/seconds/progress` są bit w bit — fizyka i geometria nietknięte.
+
+CZEGO TEN BLOK NIE ROBI
+Karta „Kontrola po manewrze" z mockupu (ustąpienie / częściowa poprawa / brak poprawy / konwersja
+kanałowa / podejrzenie drugiej strony / residual dizziness / badanie niewiarygodne) to Blok 11
+dokumentu i krok `followup`, który pozostaje `pending`. Blok 10 buduje pod nią miejsce: sygnał
+konwersji kanałowej po WYKONANYM manewrze już działa, bo `consumed` gasiło dotąd nie tylko zdanie
+„wniosek nieaktualny" (słusznie), lecz także „bieżące wejścia wskazują INNY kanał" (błędnie) —
+a to jest wskazanie do NOWEGO manewru, nie zarzut wobec starego.
+
+Bramki: npm run man:check (czysty model, gołe Node) i npm run man:dom (skan DOM w jsdom —
+kryteria odbioru nr 1 i nr 3 są twierdzeniami o EKRANIE, nie o modelu).

@@ -74,14 +74,14 @@ function epley(side){
   const sideH=H==="L"?"sideL":"sideR";
   return {name:t("Manewr Epleya","Epley maneuver"),canal:"posterior",side,headCamera:"topDownBehind",steps:[
     {title:t("Pozycja wyjściowa","Starting position"),body:"sit",yaw:aY,face:"fwd",seconds:null,progress:0.02,
-     headSlot:{kind:"backTurn",dir:A}, headText:t(`Stań za pacjentem i skręć głowę ${A==="L"?"w lewo":"w prawo"}.`,`Stand behind the patient and turn the head ${A==="L"?"to the left":"to the right"}.`),
-     instr:t(`Pacjent siada na kozetce. Obróć jego głowę o 45° w stronę chorą (${sideN(A)}).`,`The patient sits on the couch. Turn their head 45° toward the affected side (${sideN(A)}).`)},
+     headSlot:{kind:"backTurn",dir:A}, headText:t(`Stań za pacjentem i skręć głowę ${sideN(A,"przysl")}.`,`Stand behind the patient and turn the head ${A==="L"?"to the left":"to the right"}.`),
+     instr:t(`Pacjent siada na kozetce. Obróć jego głowę o 45° w stronę chorą (${sideN(A,"bier")}).`,`The patient sits on the couch. Turn their head 45° toward the affected side (${sideN(A)}).`)},
     {title:t("Szybkie położenie na plecach","Quick move to supine"),body:"supineHang",yaw:aY,face:"up",seconds:30,progress:0.18,
-     instr:t(`Połóż pacjenta szybko na plecach, głowa odchylona ~20° poza krawędź kozetki, wciąż obrócona 45° w stronę ${sideN(A)}. Utrzymaj do ustąpienia oczopląsu.`,`Lay the patient down quickly on their back, head extended ~20° beyond the edge of the couch, still turned 45° toward the ${sideN(A)} side. Hold until the nystagmus subsides.`)},
+     instr:t(`Połóż pacjenta szybko na plecach, głowa odchylona ~20° poza krawędź kozetki, wciąż obrócona 45° w stronę chorą (${sideN(A,"bier")}). Utrzymaj do ustąpienia oczopląsu.`,`Lay the patient down quickly on their back, head extended ~20° beyond the edge of the couch, still turned 45° toward the ${sideN(A)} side. Hold until the nystagmus subsides.`)},
     {title:t("Obrót głowy o 90°","Turn the head 90°"),body:"supineHang",yaw:hY,face:"up",seconds:30,progress:0.45,
-     instr:t(`Obróć głowę o 90° w stronę zdrową, tak że jest odchylona 45° w stronę ${sideN(H)}. Utrzymaj.`,`Turn the head 90° toward the healthy side, so it is rotated 45° toward the ${sideN(H)} side. Hold.`)},
+     instr:t(`Obróć głowę o 90° w stronę zdrową, tak że jest odchylona 45° w stronę zdrową (${sideN(H,"bier")}). Utrzymaj.`,`Turn the head 90° toward the healthy side, so it is rotated 45° toward the ${sideN(H)} side. Hold.`)},
     {title:t("Obrót na bok zdrowy","Roll onto the healthy side"),body:sideH,yaw:hY,face:"down",seconds:30,progress:0.74,
-     instr:t(`Obróć pacjenta na bok ${sideN(H)} i dodatkowo głowę o kolejne 90°, tak by nos był skierowany ku podłodze. Utrzymaj.`,`Roll the patient onto the ${sideN(H)} side and turn the head a further 90°, so the nose points toward the floor. Hold.`)},
+     instr:t(`Obróć pacjenta na bok ${sideN(H,"bierM")} i dodatkowo głowę o kolejne 90°, tak by nos był skierowany ku podłodze. Utrzymaj.`,`Roll the patient onto the ${sideN(H)} side and turn the head a further 90°, so the nose points toward the floor. Hold.`)},
     {title:t("Powrót do siadu","Return to sitting"),body:"sit",yaw:hY,face:"fwd",seconds:null,progress:1.0,
      headSlot:{kind:"textOnly"}, headText:t(`Poproś chorego o opuszczenie nóg na podłogę po stronie zdrowej (${A==="L"?"prawej":"lewej"}). Dynamicznym ruchem pomóż choremu usiąść.`,`Ask the patient to lower their legs to the floor on the healthy side (${A==="L"?"right":"left"}). With a brisk motion, help the patient sit up.`),
      instr:t(`Powoli posadź pacjenta, utrzymując obrót głowy w stronę zdrową, a następnie wyprostuj głowę. Koniec serii.`,`Slowly sit the patient up, keeping the head turned toward the healthy side, then straighten the head. End of the series.`)},
@@ -94,11 +94,11 @@ function semont(side){
   const leanH=A==="L"?"leanL":"leanR";
   return {name:t("Manewr Semonta","Semont maneuver"),canal:"posterior",side,steps:[
     {title:t("Pozycja wyjściowa","Starting position"),body:"sitFront",yaw:hY,face:"fwd",seconds:null,progress:0.02,
-     instr:t(`Pacjent siedzi na środku kozetki, twarzą do badającego. Obróć jego twarz o 45° w stronę zdrową (${sideN(H)}).`,`The patient sits in the middle of the couch, facing the examiner. Turn their face 45° toward the healthy side (${sideN(H)}).`)},
+     instr:t(`Pacjent siedzi na środku kozetki, twarzą do badającego. Obróć jego twarz o 45° w stronę zdrową (${sideN(H,"bier")}).`,`The patient sits in the middle of the couch, facing the examiner. Turn their face 45° toward the healthy side (${sideN(H)}).`)},
     {title:t("Szybki rzut na bok chory","Rapid drop onto the affected side"),body:leanA,yaw:hY,face:"up",seconds:90,progress:0.25,
-     instr:t(`Szybko połóż pacjenta na bok chory (${sideN(A)}). Głowa pozostaje obrócona — nos ku górze. Utrzymaj 1–3 min.`,`Quickly lay the patient onto the affected side (${sideN(A)}). The head stays turned — nose pointing up. Hold 1–3 min.`)},
+     instr:t(`Szybko połóż pacjenta na bok chory (${sideN(A,"bierM")}). Głowa pozostaje obrócona — nos ku górze. Utrzymaj 1–3 min.`,`Quickly lay the patient onto the affected side (${sideN(A)}). The head stays turned — nose pointing up. Hold 1–3 min.`)},
     {title:t("Szybki rzut na bok przeciwny","Rapid drop onto the opposite side"),body:leanH,yaw:hY,face:"down",seconds:90,progress:0.72,
-     instr:t(`Bez zmiany ustawienia głowy szybko przemieść pacjenta na bok przeciwny (${sideN(H)}) — nos ku podłodze. Utrzymaj 1–3 min.`,`Without changing the head position, quickly move the patient onto the opposite side (${sideN(H)}) — nose toward the floor. Hold 1–3 min.`)},
+     instr:t(`Bez zmiany ustawienia głowy szybko przemieść pacjenta na bok przeciwny (${sideN(H,"bierM")}) — nos ku podłodze. Utrzymaj 1–3 min.`,`Without changing the head position, quickly move the patient onto the opposite side (${sideN(H)}) — nose toward the floor. Hold 1–3 min.`)},
     {title:t("Powrót do siadu","Return to sitting"),body:"sitFront",yaw:hY,face:"fwd",seconds:null,progress:1.0,
      instr:t(`Powoli posadź pacjenta, nie zmieniając pozycji badającego, a następnie wyprostuj głowę. Koniec serii.`,`Slowly sit the patient up without changing the examiner's position, then straighten the head. End of the series.`)},
   ]};
@@ -114,13 +114,13 @@ function bascule(side){
   const leanH=A==="L"?"leanL":"leanR";
   return {name:t("Manewr Bascule","Bascule maneuver"),canal:"posterior",side,mechanism:"cupulo",steps:[   // mechanism:"cupulo" → wędrówka pokazuje przyleganie/odklejanie od osklepka i wyjście do łagiewki
     {title:t("Pozycja wyjściowa","Starting position"),body:"sitFront",yaw:hY,face:"fwd",seconds:null,progress:0.02,
-     instr:t(`Pacjent siedzi na środku kozetki, twarzą do badającego. Obróć jego głowę o 45° w stronę zdrową (${sideN(H)}) i utrzymuj ten skręt przez cały manewr.`,`The patient sits in the middle of the couch, facing the examiner. Turn their head 45° toward the healthy side (${sideN(H)}) and keep this rotation throughout the maneuver.`)},
+     instr:t(`Pacjent siedzi na środku kozetki, twarzą do badającego. Obróć jego głowę o 45° w stronę zdrową (${sideN(H,"bier")}) i utrzymuj ten skręt przez cały manewr.`,`The patient sits in the middle of the couch, facing the examiner. Turn their head 45° toward the healthy side (${sideN(H)}) and keep this rotation throughout the maneuver.`)},
     {title:t("Szybko na bok zdrowy — nos w dół","Quickly onto the healthy side — nose down"),body:leanH,yaw:hY,face:"down",seconds:30,progress:0.28,
-     instr:t(`Szybko połóż pacjenta na bok zdrowy (${sideN(H)}); głowa wciąż obrócona, nos skierowany ku podłodze. Utrzymaj 15–30 s.`,`Quickly lay the patient onto the healthy side (${sideN(H)}); the head still turned, nose pointing toward the floor. Hold 15–30 s.`)},
+     instr:t(`Szybko połóż pacjenta na bok zdrowy (${sideN(H,"bierM")}); głowa wciąż obrócona, nos skierowany ku podłodze. Utrzymaj 15–30 s.`,`Quickly lay the patient onto the healthy side (${sideN(H)}); the head still turned, nose pointing toward the floor. Hold 15–30 s.`)},
     {title:t("Przerzut na bok chory — nos w górę","Swing onto the affected side — nose up"),body:leanA,yaw:hY,face:"up",seconds:30,progress:0.52,
-     instr:t(`Szybkim ruchem przerzuć głowę i tułów RAZEM o 180° na bok chory (${sideN(A)}) — nos ku sufitowi. Utrzymaj 15–30 s.`,`With a swift motion, swing the head and trunk TOGETHER 180° onto the affected side (${sideN(A)}) — nose toward the ceiling. Hold 15–30 s.`)},
+     instr:t(`Szybkim ruchem przerzuć głowę i tułów RAZEM o 180° na bok chory (${sideN(A,"bierM")}) — nos ku sufitowi. Utrzymaj 15–30 s.`,`With a swift motion, swing the head and trunk TOGETHER 180° onto the affected side (${sideN(A)}) — nose toward the ceiling. Hold 15–30 s.`)},
     {title:t("Powrót na bok zdrowy — nos w dół","Back onto the healthy side — nose down"),body:leanH,yaw:hY,face:"down",seconds:30,progress:0.78,
-     instr:t(`Szybko przerzuć pacjenta o 180° z powrotem na bok zdrowy (${sideN(H)}) — nos ku podłodze. To jedna „huśtawka”; powtarzaj przerzuty bok–bok do 5 serii, aż oczopląs i zawroty wygasną.`,`Quickly swing the patient 180° back onto the healthy side (${sideN(H)}) — nose toward the floor. This is one "rock"; repeat the side-to-side swings up to 5 series until the nystagmus and vertigo subside.`)},
+     instr:t(`Szybko przerzuć pacjenta o 180° z powrotem na bok zdrowy (${sideN(H,"bierM")}) — nos ku podłodze. To jedna „huśtawka”; powtarzaj przerzuty bok–bok do 5 serii, aż oczopląs i zawroty wygasną.`,`Quickly swing the patient 180° back onto the healthy side (${sideN(H)}) — nose toward the floor. This is one "rock"; repeat the side-to-side swings up to 5 series until the nystagmus and vertigo subside.`)},
     {title:t("Powrót do siadu","Return to sitting"),body:"sitFront",yaw:hY,face:"fwd",seconds:null,progress:1.0,
      instr:t(`Po ostatniej serii powoli posadź pacjenta, nie zmieniając pozycji badającego, i dopiero na końcu wyprostuj głowę. Po manewrze wykonaj ponowny Dix–Hallpike. Koniec.`,`After the last series, slowly sit the patient up without changing the examiner's position, and only at the end straighten the head. Afterward repeat the Dix–Hallpike. End.`)},
   ]};
@@ -130,15 +130,15 @@ function lempert(side){
   const sideH=H==="L"?"sideL":"sideR",sideA=A==="L"?"sideL":"sideR";
   return {name:t("Manewr Lemperta (rolka BBQ)","Lempert maneuver (BBQ roll)"),canal:"horizontal",side,headCamera:"topDownBehind",steps:[
     {title:t("Na plecach, głowa ku choremu","Supine, head toward the affected side"),body:"supineFlat",yaw:yawH,face:"up",seconds:30,progress:0.08,
-     instr:t(`Pacjent leży na plecach. Obróć głowę o 90° w stronę chorą (${sideN(A)}). Utrzymaj.`,`The patient lies supine. Turn the head 90° toward the affected side (${sideN(A)}). Hold.`)},
+     instr:t(`Pacjent leży na plecach. Obróć głowę o 90° w stronę chorą (${sideN(A,"bier")}). Utrzymaj.`,`The patient lies supine. Turn the head 90° toward the affected side (${sideN(A)}). Hold.`)},
     {title:t("Głowa twarzą do sufitu","Head facing the ceiling"),body:"supineFlat",yaw:0,face:"up",seconds:30,progress:0.30,
      instr:t(`Obróć głowę o 90° tak, aby nos był skierowany ku sufitowi. Utrzymaj.`,`Turn the head 90° so the nose points toward the ceiling. Hold.`)},
     {title:t("Obrót na bok zdrowy","Roll onto the healthy side"),body:sideH,yaw:-aY,face:"fwd",seconds:30,progress:0.52,
-     instr:t(`Obróć głowę i ciało o kolejne 90° w stronę zdrową (${sideN(H)}). Utrzymaj.`,`Turn the head and body a further 90° toward the healthy side (${sideN(H)}). Hold.`)},
+     instr:t(`Obróć głowę i ciało o kolejne 90° w stronę zdrową (${sideN(H,"bier")}). Utrzymaj.`,`Turn the head and body a further 90° toward the healthy side (${sideN(H)}). Hold.`)},
     {title:t("Obrót na brzuch","Roll onto the stomach"),body:"prone",yaw:0,face:"down",seconds:30,progress:0.74,
      instr:t(`Kontynuuj obrót o 90° — pacjent na brzuchu, nos ku podłodze. Utrzymaj.`,`Continue the 90° roll — the patient prone, nose toward the floor. Hold.`)},
     {title:t("Obrót na bok chory","Roll onto the affected side"),body:sideA,yaw:aY,face:"fwd",seconds:30,progress:0.92,
-     instr:t(`Obróć o kolejne 90° na bok chory (${sideN(A)}). Utrzymaj.`,`Roll a further 90° onto the affected side (${sideN(A)}). Hold.`)},
+     instr:t(`Obróć o kolejne 90° na bok chory (${sideN(A,"bierM")}). Utrzymaj.`,`Roll a further 90° onto the affected side (${sideN(A)}). Hold.`)},
     {title:t("Powrót do siadu","Return to sitting"),body:"sit",yaw:0,face:"fwd",seconds:null,progress:1.0,headSlot:{kind:"textOnly"},headText:t(`Pomóż pacjentowi usiąść przez powrót na plecy. Koniec rolki (360°).`,`Help the patient sit up by returning through supine. End of the roll (360°).`),
      instr:t(`Posadź pacjenta przez powrót na plecy. Koniec rolki (360°).`,`Sit the patient up by returning through supine. End of the roll (360°).`)},
   ]};
@@ -161,7 +161,7 @@ function gufoniGeo(side){
     {title:t("Pozycja wyjściowa","Starting position"),body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:0.05,   // jak Semont krok 1 (widok od przodu), tylko BEZ skrętu głowy 45°
      instr:t(`Pacjent siedzi na środku kozetki, twarzą do badającego, głowa prosto (bez skrętu).`,`The patient sits in the middle of the couch, facing the examiner, head straight (no rotation).`)},
     {title:t("Szybko na bok zdrowy","Quickly onto the healthy side"),body:leanH,yaw:0,face:"fwd",seconds:60,progress:0.32,   // bok ZDROWY w dół, widok od przodu; głowa w linii ciała (leanX|fwd = ta sama grawitacja co sideX|fwd)
-     instr:t(`Szybko połóż pacjenta na bok zdrowy (${sideN(H)}). Oczopląs geotropowy ku podłodze (ku uchu ${sideN(H)}). Utrzymaj 1–2 min, do ustąpienia oczopląsu.`,`Quickly lay the patient onto the healthy side (${sideN(H)}). Geotropic nystagmus toward the floor (toward the ${sideN(H)} ear). Hold 1–2 min, until the nystagmus subsides.`)},
+     instr:t(`Szybko połóż pacjenta na bok zdrowy (${sideN(H,"bierM")}). Oczopląs geotropowy ku podłodze (ku uchu ${sideN(H,"cel")}). Utrzymaj 1–2 min, do ustąpienia oczopląsu.`,`Quickly lay the patient onto the healthy side (${sideN(H)}). Geotropic nystagmus toward the floor (toward the ${sideN(H)} ear). Hold 1–2 min, until the nystagmus subsides.`)},
     {title:t("Obrót głowy nosem ku podłodze","Turn the head, nose toward the floor"),body:leanH,yaw:0,face:"floor",seconds:60,progress:0.78,   // głowa obrócona nosem w dół; widok od przodu (leanX|floor = ta sama grawitacja co sideX|down)
      instr:t(`Nie zmieniając ułożenia ciała, obróć głowę tak, aby nos był skierowany ku podłodze. Możliwy krótki oczopląs liberacyjny ku podłodze. Utrzymaj 1–2 min.`,`Without changing the body position, turn the head so the nose points toward the floor. A brief liberatory nystagmus toward the floor may occur. Hold 1–2 min.`)},
     {title:t("Powrót do siadu","Return to sitting"),body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:1.0,   // siad frontalny, głowa wyprostowana
@@ -174,7 +174,7 @@ function gufoniApo(side){
     {title:t("Pozycja wyjściowa","Starting position"),body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:0.05,   // jak Semont krok 1 (widok od przodu), tylko BEZ skrętu głowy 45°
      instr:t(`Pacjent siedzi na środku kozetki, twarzą do badającego, głowa prosto (bez skrętu).`,`The patient sits in the middle of the couch, facing the examiner, head straight (no rotation).`)},
     {title:t("Szybko na bok chory","Quickly onto the affected side"),body:leanA,yaw:0,face:"fwd",seconds:60,progress:0.30,   // bok CHORY w dół, widok od przodu; głowa w linii ciała (leanX|fwd → gHead ±x, ta sama fizyka co sideX|fwd)
-     instr:t(`Szybko połóż pacjenta na bok chory (${sideN(A)}). Oczopląs apogeotropowy ku górze (ku uchu ${sideN(H)}). Utrzymaj 1–2 min.`,`Quickly lay the patient onto the affected side (${sideN(A)}). Apogeotropic nystagmus upward (toward the ${sideN(H)} ear). Hold 1–2 min.`)},
+     instr:t(`Szybko połóż pacjenta na bok chory (${sideN(A,"bierM")}). Oczopląs apogeotropowy ku górze (ku uchu ${sideN(H,"cel")}). Utrzymaj 1–2 min.`,`Quickly lay the patient onto the affected side (${sideN(A)}). Apogeotropic nystagmus upward (toward the ${sideN(H)} ear). Hold 1–2 min.`)},
     {title:t("Obrót głowy nosem ku sufitowi","Turn the head, nose toward the ceiling"),body:leanA,yaw:0,face:"ceil",seconds:60,progress:0.62,   // głowa skręcona ~90° = nos PROSTO W GÓRĘ; widok od przodu (leanX|ceil)
      instr:t(`Nie zmieniając ułożenia ciała, obróć głowę o ~90° tak, aby nos był skierowany prosto ku górze (ku sufitowi). Utrzymaj 1–2 min.`,`Without changing the body position, turn the head ~90° so the nose points straight up (toward the ceiling). Hold 1–2 min.`)},
     {title:t("Powrót do siadu — kontrola","Return to sitting — check"),body:"sitFront",yaw:A==="L"?90:-90,face:"fwd",seconds:null,progress:0.85,   // siad jak krok 1 (widok od przodu), ale GŁOWA POZOSTAJE skręcona ~90° (nie zmieniamy ustawienia z kroku 3): nos w bok — L→ekran-lewo, P→ekran-prawo (zweryfikowane rzutem nosa). Grawitacja [0,-1,0] niezmienna przy obrocie wokół pionu (fizyka bez zmian).
@@ -623,13 +623,13 @@ const DIAG={
     get intro(){return t("Z siadu obróć głowę 45° w stronę badaną, połóż szybko na plecach z głową odchyloną ~20° poniżej poziomu.","From sitting, turn the head 45° toward the tested side, then lay the patient supine quickly with the head extended ~20° below horizontal.");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? t(`Postać klasyczna (kanalolitiaza): złóg swobodny w kanale tylnym po stronie ${sideN(A)}.`,`Classic form (canalithiasis): free-floating debris in the posterior canal on the ${sideN(A)} side.`)
+      ? t(`Postać klasyczna (kanalolitiaza): złóg swobodny w kanale tylnym po stronie ${sideN(A,"dop")}.`,`Classic form (canalithiasis): free-floating debris in the posterior canal on the ${sideN(A)} side.`)
       : t(`Postać rzadka (kupulolitiaza): złóg na osklepku kanału tylnego — oczopląs uporczywy.`,`Rare form (cupulolithiasis): debris on the cupula of the posterior canal — persistent nystagmus.`),
     phases:(A,v)=>[{
       ptitle:t("Strona chora w dole","Affected side down"), ppos:t("Na plecach, głowa 45° ku stronie chorej, ~20° poniżej poziomu","Supine, head 45° toward the affected side, ~20° below horizontal"),
       body:"supineHang", yaw:yawToA(A), face:"up",
       nys: nysFromGeom("posterior", A, v, Vestibular.qSupineYaw(A==="P"?45:-45)),
-      label:t(`ku górze + skrętny ku uchu choremu (${sideN(A)})`,`upbeat + torsional toward the affected ear (${sideN(A)})`),
+      label:t(`ku górze + skrętny ku uchu choremu (${sideN(A,"cel")})`,`upbeat + torsional toward the affected ear (${sideN(A)})`),
       note: v==="canalo"
         ? t("po latencji, narasta i wygasa; wyczerpuje się przy powtórzeniu.","after a latency, crescendos and fades; fatigues on repetition.")
         : t("bez latencji, uporczywy, nie wyczerpuje się przy powtórzeniu.","no latency, persistent, does not fatigue on repetition.")
@@ -644,10 +644,10 @@ const DIAG={
     phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
       const mk=down=>{ const up=otherSide(down);
         const strong = geo ? (down===A) : (down===H);
-        return {ptitle:t(`Ucho ${down==="L"?"lewe":"prawe"} w dole`,`${down==="L"?"Left":"Right"} ear down`), ppos:t(`Głowa obrócona 90° ku stronie ${sideN(down)}`,`Head turned 90° toward the ${sideN(down)} side`),
+        return {ptitle:t(`Ucho ${down==="L"?"lewe":"prawe"} w dole`,`${down==="L"?"Left":"Right"} ear down`), ppos:t(`Głowa obrócona 90° ku stronie ${sideN(down,"dop")}`,`Head turned 90° toward the ${sideN(down)} side`),
           body:"supineFlex", yaw: down==="P"?90:-90, face:"up",
           nys: nysFromGeom("horizontal", A, v, Vestibular.qSupineYaw(down==="P"?90:-90), "asym"),
-          label: geo ? t(`geotropowy — ku uchu w dole (${sideN(down)})`,`geotropic — toward the lower ear (${sideN(down)})`) : t(`apogeotropowy — ku uchu w górze (${sideN(up)})`,`apogeotropic — toward the upper ear (${sideN(up)})`),
+          label: geo ? t(`geotropowy — ku uchu w dole (${sideN(down,"cel")})`,`geotropic — toward the lower ear (${sideN(down)})`) : t(`apogeotropowy — ku uchu w górze (${sideN(up,"cel")})`,`apogeotropic — toward the upper ear (${sideN(up)})`),
           note: strong ? t("Reakcja silniejsza w tej pozycji.","Stronger response in this position.") : t("Reakcja słabsza w tej pozycji.","Weaker response in this position.")};
       };
       return [mk(A), mk(H)];
@@ -657,19 +657,19 @@ const DIAG={
     get intro(){return t("W siadzie wykonaj skłon głowy w przód (bow), następnie odchylenie do tyłu (lean).","While sitting, bend the head forward (bow), then tilt it back (lean).");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? t(`Geotropowy: skłon (bow) bije ku stronie chorej → ${sideN(A)}.`,`Geotropic: the bow beats toward the affected side → ${sideN(A)}.`)
+      ? t(`Geotropowy: skłon (bow) bije ku stronie chorej → ${sideN(A,"dop")}.`,`Geotropic: the bow beats toward the affected side → ${sideN(A)}.`)
       : t(`Apogeotropowy: kierunki odwrócone — skłon bije ku stronie zdrowej.`,`Apogeotropic: directions reversed — the bow beats toward the healthy side.`),
     phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
       return [
         {ptitle:t("Skłon w przód (bow)","Forward bend (bow)"), ppos:t("Siad, skłon tułowia w przód ~45°, nos ku podłodze","Sitting, trunk bent forward ~45°, nose toward the floor"),
          body:"sit", yaw:0, face:"down",
          nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(90), "flat"),
-         label: geo?t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`):t(`bije ku stronie zdrowej (${sideN(H)})`,`beats toward the healthy side (${sideN(H)})`),
+         label: geo?t(`bije ku stronie chorej (${sideN(A,"dop")})`,`beats toward the affected side (${sideN(A)})`):t(`bije ku stronie zdrowej (${sideN(H,"dop")})`,`beats toward the healthy side (${sideN(H)})`),
          note: geo?t("Geotropowy: skłon wskazuje stronę chorą.","Geotropic: the bow indicates the affected side."):t("Apogeotropowy: kierunek odwrócony.","Apogeotropic: direction reversed.")},
         {ptitle:t("Odchylenie do tyłu (lean)","Backward tilt (lean)"), ppos:t("Siad, głowa odchylona do tyłu","Sitting, head tilted back"),
          body:"sit", yaw:0, face:"up",
          nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(-90), "flat"),
-         label: geo?t(`bije ku stronie zdrowej (${sideN(H)})`,`beats toward the healthy side (${sideN(H)})`):t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`),
+         label: geo?t(`bije ku stronie zdrowej (${sideN(H,"dop")})`,`beats toward the healthy side (${sideN(H)})`):t(`bije ku stronie chorej (${sideN(A,"dop")})`,`beats toward the affected side (${sideN(A)})`),
          note: geo?t("Przy odchyleniu kierunek odwraca się (ku zdrowej).","On leaning back, the direction reverses (toward the healthy side)."):t("Apogeotropowy: odchylenie bije ku chorej.","Apogeotropic: the lean beats toward the affected side.")},
       ];
     }

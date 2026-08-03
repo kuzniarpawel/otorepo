@@ -1012,3 +1012,91 @@ claim about its source disappears.
 
 Gates: npm run interp:check (pure model, bare Node) and npm run interp:dom (a DOM scan in jsdom —
 criterion 3 is a claim about the SCREEN, not about the model).
+
+================================================================================
+MANEUVER AND EXPERT MODE — WHAT THE MODEL SELECTS, AND WHAT IT DOES NOT MEASURE (Block 10)
+================================================================================
+The "Maneuver" step guides the repositioning and — in expert mode — selects a maneuver for a user
+who already knows the canal, side and mechanism. There is not a single hand-written
+"canal+mechanism -> maneuver" pair: we ask `recommend()`, the same source the diagnostic path uses.
+The canal->test bridge is derived from DIAG, because `recommend()` has a SILENT DEFAULT (anything
+other than 'dix' and 'headhang' falls into the horizontal-canal branch), so a typo in the key would
+not raise an error — it would return a maneuver for the wrong canal.
+
+WHAT THE SELECTION CARD MAY SAY, AND WHAT IT MAY NOT
+The mockup captions the recommended maneuver "highest agreement with the diagnosis". The model does
+not compute agreement with the diagnosis of this patient — it computes the FIRST-LINE MANEUVER PER
+THE GUIDELINES for the canal and mechanism the USER PROVIDED. The card says exactly that, and it
+also names which of the three values really came from a human: `state.side` holds the literal 'P'
+and `state.variant` the literal 'canalo', so without `sideZrodlo`/`variantZrodlo` the sentence "you
+provided the canal, side and mechanism" would be false on first entry — in the very sentence whose
+whole purpose is honest attribution.
+
+"UNTIL THE NYSTAGMUS SUBSIDES + MARGIN" IS A FLOOR, NEVER A SHORTENING
+This is the most important number in the block and the only one that could harm a patient.
+The predicted nystagmus duration comes from the dynamics window `min(cap, seconds) + tTrans + TAIL`,
+where `cap` for the "medium" size is 12 s. MEASURED consequences:
+  - the number NEVER exceeds ~19 s, no matter how long the position is meant to be held;
+  - Semont has `seconds=90` and the instruction "Hold 1-3 min", while the model gives 18.5 s;
+  - Gufoni geotropic: 18.4 / 14.1 s against a 60 s protocol;
+  - Lempert stage 5 (debris exit): 39.8 s against 30 s — here the mode genuinely EXTENDS.
+The mode may therefore ONLY RAISE the protocol time. Setting the number directly would shorten the
+Semont drop by ~70 s below the lower bound of the app's OWN instruction, and with auto-advance on it
+would move the patient along by itself. For cupulolithiasis the mode is UNAVAILABLE: xi does not
+decay (measured |xi| = 100 % of peak even after 300 s), so "until it subsides" has no referent.
+Gate: npm run man:check (section D); failing-first proof = 54 violations across the grid
+maneuver x side x size x stage.
+
+DEBRIS EXIT IS A SEPARATE AXIS, NOT A TIMING CRITERION
+In the Epley the debris leaves the canal during the SIT-UP step, which has NO countdown. Forcing
+both facts into one field would mean concealing one of them — for the very step in which the
+liberatory nystagmus arises. For vertical canals the exit stage comes from PHYSICS (`manExitStep`);
+for the horizontal canal and cupulolithiasis it comes from a SCHEME (n-2), and the screen admits
+that instead of presenting a rule as a measurement.
+
+POSITION NAMES HIDE AN INVERSION
+`sideL` means "on the LEFT side", but `leanL` means "on the RIGHT side": the Semont poses are named
+after the direction of the TILT, not after the side the patient lies on. A mistake here would print
+the wrong ear at the bedside, and the physics would not react, because the name never enters the
+simulation. The oracle checks these names against the SIGN OF GRAVITY in the head frame, not
+against the comment.
+
+POSITION TIMER: WALL CLOCK AND THE GAP IN OBSERVATION
+The timer summed `dt` from rAF frames. That looks like "it stops when the screen goes dark", but
+`last` is a closure variable that nobody touches on returning to visibility, while the rAF timestamp
+runs in real time — so the first frame after unlocking received `dt` equal to the WHOLE gap and
+caught it up in a single jump, together with the end-of-stage condition, the sound and the
+auto-advance; for a longer gap, as a cascade all the way to `markConsumed`. Time is now measured by
+a wall-clock anchor (`hold-clock.js`, a pure module, WITHOUT `Date.now` — the current time is passed
+as an argument so the gate stays deterministic), and `dt` is left to the animation alone.
+A gap longer than 3 s is a CLINICAL event: the app can measure time, but it cannot tell whether the
+patient held the position while nobody was looking at the screen. It therefore stops the countdown
+and asks for confirmation. Shorter blinks do not raise an alarm — an alarm without a reason teaches
+people to ignore the message (the same mechanism that kept `dixRep` out of the decision fingerprint).
+The warning about the missing screen lock comes from an ACTUAL attempt, not from feature detection:
+the lock is sometimes refused despite `wakeLock` being present (no secure context, system policy,
+power saving).
+
+LEFT AND RIGHT ALWAYS WITH AN OWNER (acceptance criterion 2)
+The criterion was already met before this block — every sentence containing a direction also names
+the owner — so we added a RATCHET rather than a fix. The unit is the SENTENCE, not a window of N
+characters (a window produced 22 false hits, because "toward the healthy side" can sit 56 characters
+before the side name), and the dictionary of forms is CLOSED and taken from the declension table:
+a prefix pattern "lew*/praw*" matches Polish words for "correct", "probability" and "improve", so
+the gate would fire on text unrelated to direction.
+Separately, 29 places were corrected where the NOMINATIVE ("lewa"/"prawa") had been pasted into
+accusative, dative and genitive contexts.
+The `engine.plans` rebaseline carries a scope proof: after removing the text fields the plan diff is
+EMPTY, i.e. `body/yaw/face/seconds/progress` are bit-for-bit — physics and geometry untouched.
+
+WHAT THIS BLOCK DOES NOT DO
+The "Post-maneuver control" card from the mockup (resolution / partial improvement / no improvement /
+canal conversion / suspicion of the other side / residual dizziness / unreliable examination) is
+Block 11 of the document and the `followup` step, which stays `pending`. Block 10 prepares the ground
+for it: the canal-conversion signal after a PERFORMED maneuver already works, because `consumed` used
+to silence not only the sentence "the conclusion is out of date" (rightly) but also "the current
+inputs point to a DIFFERENT canal" (wrongly) — and that is an indication for a NEW maneuver, not a
+charge against the old one.
+
+Gates: npm run man:check (pure model, bare Node) and npm run man:dom (a DOM scan in jsdom —
+acceptance criteria 1 and 3 are claims about the SCREEN, not about the model).

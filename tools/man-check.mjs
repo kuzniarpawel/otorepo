@@ -20,7 +20,7 @@ import {
 } from '../src/app/man-model.js';
 import { manDeps } from '../src/app/man-deps.js';
 import { nowyZegar, startZegara, pauzaZegara, wznowZegar, resetZegara, odliczono, ustawOdliczono, odnotujLuke, PROG_LUKI_MS } from '../src/runtime/hold-clock.js';
-import { MANEUVERS, CANALS, CANAL_OF, DIAG, recommend, sizedSeconds, LEAN_G, BASE_G } from '../src/pose/maneuvers.js';
+import { MANEUVERS, CANALS, CANAL_OF, DIAG, recommend, sizedSeconds, LEAN_G, BASE_G, SIDE_FORMY } from '../src/pose/maneuvers.js';
 import { state } from '../src/app/state.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -305,10 +305,86 @@ T('WY7/czulosc', (0 === 5 - 1) === false && (4 === 5 - 1) === true, 'kontrola: r
     'kontrola: sam komentarz nie może wywalać bramki');
 }
 
+/* ═══════════ J3. KRYTERIUM ODBIORU NR 2 — LEWO/PRAWO ZAWSZE Z WŁAŚCICIELEM ═══════════
+   „Instrukcja nie używa niejednoznacznych określeń lewo/prawo bez wskazania, czy chodzi o pacjenta."
+   ZMIERZONE: kryterium jest dziś SPEŁNIONE — każde zdanie z kierunkiem niesie właściciela. Ta
+   sekcja jest więc ZAPADKĄ, nie naprawą: pilnuje, żeby kolejny dopisany krok manewru go nie złamał.
+
+   JEDNOSTKĄ JEST ZDANIE, nie okno N znaków. Okno było moim pierwszym pomysłem i dało 22 fałszywe
+   trafienia, bo „w stronę zdrową" bywa 56 znaków przed samą nazwą strony. Zdanie jest też
+   jednostką, w której czyta klinicysta.
+
+   SŁOWNIK JEST ZAMKNIĘTY I PEŁNY, nie prefiksowy. Wzorzec dopasowujący PREFIKS „lew"/„praw"
+   z dowolną końcówką łapie „prawidłowy", „prawdopodobieństwo" i „poprawić" — bramka świeciłaby
+   wtedy na czerwono na napisach bez związku z kierunkiem, a najtańszą reakcją byłoby zawężenie
+   jej aż do niegroźności. Formy bierzemy więc z tabeli SIDE_FORMY, czyli z jedynego miejsca,
+   w którym naprawdę powstają. */
+{
+  const FORMY_PL = new Set();
+  for (const f of Object.values(SIDE_FORMY)) for (const v of Object.values(f)) FORMY_PL.add(v.toLowerCase());
+  // Formy są zwykłymi słowami (bez „w lewo"/„w prawo" ze spacją i bez metaznaków), więc
+  // wystarczy rozbić je na wyrazy — żadnego escapowania regexem w regexie.
+  // Rozbicie na wyrazy wyciąga też PRZYIMEK z formy „w lewo" — a samo „w" stoi w co drugim
+  // polskim zdaniu i zapaliłoby bramkę wszędzie (zmierzone: 3 fałszywe trafienia, m.in. na
+  // „Cel: przekształcenie postaci apogeotropowej w geotropową"). Kierunkiem jest rdzeń, nie przyimek.
+  const slowa = [...FORMY_PL].flatMap(w => w.split(/\s+/))
+    .filter(w => /^[a-ząćęłńóśźż]{3,}$/i.test(w))
+    .sort((a, b) => b.length - a.length);
+  const KIER_PL = new RegExp('(?<![a-ząćęłńóśźż])(?:' + slowa.join('|') + ')(?![a-ząćęłńóśźż])', 'iu');
+  const KIER_EN = /\b(?:left|right)\b/i;
+  const WLASCICIEL_PL = /(pacjent[a-ząćęłńóśźż]*|chor[a-ząćęłńóśźż]*|zdrow[a-ząćęłńóśźż]*|jego|uch[a-ząćęłńóśźż]*|ucho)/iu;
+  const WLASCICIEL_EN = /(patient|affected|healthy|ear)/i;
+  const zdania = (txt) => txt.split(/(?<=[.!?])\s+/);
+  const naruszenia = [];
+  for (const lang of ['pl', 'en']) {
+    state.lang = lang;
+    for (const k of KLUCZE) for (const s of ['P', 'L']) {
+      MANEUVERS[k].gen(s).steps.forEach((sp, i) => {
+        for (const pole of ['title', 'instr', 'headText']) {
+          const txt = sp[pole]; if (!txt) continue;
+          zdania(txt).forEach(z => {
+            const kier = lang === 'pl' ? KIER_PL : KIER_EN;
+            const wl = lang === 'pl' ? WLASCICIEL_PL : WLASCICIEL_EN;
+            if (kier.test(z) && !wl.test(z)) naruszenia.push(`${lang} ${k}/${s} k${i + 1} ${pole}: ${z.trim()}`);
+          });
+        }
+      });
+    }
+  }
+  state.lang = 'pl';
+  eq('K2-1/bez-naruszen', naruszenia.slice(0, 3), []);
+  // KONTROLA CZUŁOŚCI — bramka MUSI zapalić się na zdaniu, które naprawdę łamie regułę…
+  T('K2-2/czulosc-lapie', KIER_PL.test('Obróć głowę w lewo.') && !WLASCICIEL_PL.test('Obróć głowę w lewo.'),
+    'kontrola: goły kierunek bez właściciela musi być wykryty');
+  // …i NIE MOŻE zapalać się na słowach, które tylko zaczynają się tak samo.
+  for (const niewinne of ['prawidłowy VOR', 'nie liczy prawdopodobieństw', 'popraw go', 'lewitacja']) {
+    T(`K2-3/${niewinne.slice(0, 12)}`, !KIER_PL.test(niewinne), `„${niewinne}" nie jest określeniem kierunku`);
+  }
+  T('K2-4/en-niewinne', !KIER_EN.test('the right examination'.replace('right', 'correct')), 'kontrola EN');
+  // Odmiana: każda forma z tabeli MUSI być gdzieś użyta — martwa forma to zaproszenie do
+  // wklejenia mianownika w kolejnym miejscu.
+  const zrodlo = readFileSync(resolve(ROOT, 'src/pose/maneuvers.js'), 'utf8');
+  const uzyte = new Set([...zrodlo.matchAll(/sideN\([^,)]+,\s*["'](\w+)["']\)/g)].map(m => m[1]));
+  eq('K2-5/formy-uzyte', ['bier', 'bierM', 'cel', 'dop'].filter(f => !uzyte.has(f)), []);
+  T('K2-6/tabela-pelna', ['mian', 'bier', 'bierM', 'dop', 'cel', 'dopN', 'mianN', 'przysl'].every(f => SIDE_FORMY[f]),
+    'tabela odmiany musi mieć komplet form');
+  // Brak MIANOWNIKA tam, gdzie polszczyzna wymaga przypadka zależnego.
+  const zlePrzypadki = [];
+  for (const k of KLUCZE) for (const s of ['P', 'L'])
+    MANEUVERS[k].gen(s).steps.forEach((sp, i) => {
+      for (const pole of ['title', 'instr', 'headText']) {
+        const txt = sp[pole]; if (!txt) continue;
+        if (/(?:w stronę|na bok|ku uchu|po stronie|ku stronie)\s+[^.,;]{0,24}?\(?(?:lewa|prawa)\)?/iu.test(txt))
+          zlePrzypadki.push(`${k}/${s} k${i + 1}`);
+      }
+    });
+  eq('K2-7/bez-mianownika-w-zaleznym', zlePrzypadki.slice(0, 3), []);
+}
+
 /* ═══════════ K. LICZNOŚĆ ═══════════
    Zapadka na cichy ubytek przypadków: skasowanie sekcji przy refaktorze zostawiłoby wyrocznię
    zieloną i pustą. Ta sama bramka złapała w torze VOG spadek 253→228. */
-const OCZEKIWANE = 177;
+const OCZEKIWANE = 187;
 if (bledy.length) {
   console.error(`✗ man:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));
