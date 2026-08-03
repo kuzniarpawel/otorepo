@@ -413,10 +413,26 @@ export function syncFlow() {
       if (powody.length) {
         const m = state.flow && state.flow.maneuver;
         al.hidden = false;
+        al.className = 'flowalert';
         al.innerHTML = `<b class="flowalert__ttl">⟳ ${t('Wniosek wymaga ponownego przeliczenia', 'The conclusion needs recalculation')}</b>
           <span class="flowalert__txt">${t('Wybrany manewr', 'The chosen maneuver')}${m ? ` (${m.key})` : ''}: ${powody.join('; ')}.</span>
           <button type="button" class="flowalert__go" data-flow-step="interpret">${t('Wróć do interpretacji', 'Back to interpretation')}</button>`;
-      } else { al.hidden = true; al.innerHTML = ''; }
+      } else {
+        /* SYGNAŁ KONWERSJI KANAŁOWEJ (Blok 10). `consumed` słusznie gasi zdanie „wniosek jest
+           nieaktualny" — manewr się wydarzył i przeszłości nie unieważnia nic. Ale połykał też
+           DRUGIE zdanie: „bieżące wejścia wskazują INNY KANAŁ niż wykonany manewr". To jest
+           podręcznikowa konwersja PC→HC po Epleyu, czyli wskazanie do NOWEGO manewru, a nie zarzut
+           wobec starego. Krok „Kontrola" jest w przygotowaniu (Blok 11), więc dziś nie ma innego
+           miejsca, które by to zauważyło. Ton jest INFORMACYJNY, nie alarmowy — stąd osobna klasa.
+           Liczy to man-model.sygnalKonwersji, WSTRZYKNIĘTY (powłoka zostaje liściem grafu). */
+        const kon = typeof FD.konwersja === 'function' ? FD.konwersja(state) : null;
+        if (kon) {
+          al.hidden = false;
+          al.className = 'flowalert flowalert--info';
+          al.innerHTML = `<b class="flowalert__ttl">↻ ${t('Konwersja kanałowa?', 'Canal conversion?')}</b>
+            <span class="flowalert__txt">${t(kon.pl, kon.en)}</span>`;
+        } else { al.hidden = true; al.className = 'flowalert'; al.innerHTML = ''; }
+      }
     }
 
     /* Czerwona flaga z kwalifikacji wstępnej JEDZIE Z UŻYTKOWNIKIEM przez cały przebieg.

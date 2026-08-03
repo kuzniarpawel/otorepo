@@ -157,6 +157,23 @@
   .flowstep__st{ display:none; }
 }
 .shell[data-focusmode] .flowalert{ margin-top:var(--sp-1); }
+/* ---- TRYB SKUPIENIA OSZCZĘDZA PION NA MAPIE PROCESU, NIGDY NA PRZECIWWSKAZANIU (Blok 10) ----
+   Poprzednia wersja ukrywała CAŁY `.flowbar`, a w nim mieszkają trzy sygnały bezpieczeństwa:
+   ostrzeżenie „wniosek wymaga ponownego przeliczenia" (#flowalert), czerwona flaga z kwalifikacji
+   wstępnej (#flowflag, dokładany przez syncFlow) i sygnał konwersji kanałowej. Reguła zapalała się
+   dokładnie przy `data-focusmode`, czyli na ekranie manewru — więc klinicysta przy kozetce,
+   z telefonem trzymanym poziomo, tracił z oczu zdanie „nie wykonuj repozycji przed pilną oceną"
+   AKURAT tam, gdzie repozycję się wykonuje.
+   Chowamy więc listę kroków i skrót „Krok X z 6", a nie kontener. Gdy żaden sygnał nie jest
+   aktywny, pasek zwija się do zera (zero paddingu i ramki), więc budżet pionu zostaje odzyskany
+   w całości — traci go dopiero ostrzeżenie, i słusznie. */
 @media (orientation:landscape) and (max-height:520px){
-  .shell[data-focusmode] .flowbar{ display:none; }
+  .shell[data-focusmode] .flownav{ display:none; }
+  .shell[data-focusmode] .flowbar{ padding-block:0; border-bottom:0; }
+  .shell[data-focusmode] .flowalert:not([hidden]){ margin-block:var(--sp-1); }
 }
+
+/* Sygnal KONWERSJI KANALOWEJ (Blok 10) — ton informacyjny, nie alarmowy: manewr sie wydarzyl,
+   a biezace wejscia wskazuja inny kanal. To wskazanie do NOWEGO manewru, nie zarzut wobec starego. */
+.flowalert--info{ border-color:var(--line-strong); background:var(--panel2); }
+.flowalert--info .flowalert__ttl{ color:var(--text); }

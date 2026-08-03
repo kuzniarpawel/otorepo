@@ -8,6 +8,8 @@ import { render, webglAvailable, sizeFlip } from './render/svg-screens.js';
 import { openHints, setHintsFix, setHintsGaze, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, loadHintsFromHash, openTest, setDixObs, setVariant, toggleDiagCentral, openTriage, setTriage, toggleTriageFlaga, resetTriage, goObs, setObsPole, oznaczObsPole, setObsGrupa, wyczyscObs, przyjmijObs, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, genPlan, setGuideSide, setDiagSide, startManeuver, syncLangBar, setMode, setLangUI } from './app/actions.js';
 import { initLang } from './i18n.js';
 import { releaseWake } from './runtime/registry.js';
+import { probaKanalu, sygnalKonwersji } from './app/man-model.js';
+import { manDeps } from './app/man-deps.js';
 import { mountShell, syncShell, initShellObservers, mountNav, mountFlow, goArea, goFlowStep, setReducedMotion } from './app/shell.js';
 
 // Etap 5: 3D jest DOMYŚLNYM rendererem karty „Ułożenie" tam, gdzie WebGL działa.
@@ -27,7 +29,11 @@ mountNav({ setMode, openHintsCustom, setLangUI, render, releaseWake });
 // celowo bezimportowy (wyrocznia tools/flow-check.mjs importuje go w gołym Node), a powłoka ma
 // zostać liściem grafu renderowania. Dzięki wstrzyknięciu zgodność wybranego manewru z bieżącą
 // interpretacją liczy PRAWDZIWY silnik, a nie kopia reguł, która mogłaby się z nim rozjechać.
-mountFlow({ recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[k] || {}).canal || null });
+// probaKanalu: most kanal->proba dla sciezki BEZ proby (tryb ekspercki). Bez niego
+// maneuverAgreement degraduje do 'nieznana', czyli do stanu sprzed Bloku 10.
+mountFlow({ recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[k] || {}).canal || null,
+            probaKanalu: (kanal) => probaKanalu(kanal, manDeps()),
+            konwersja: (s) => sygnalKonwersji(s, manDeps()) });
 // Preferencja ograniczenia ruchu z systemu — ZA DETEKCJĄ (jsdom nie ma matchMedia; niezłapany
 // wyjątek w ciele modułu = biały ekran, dlatego snapshot.mjs ma teraz twarde exit(1)).
 try {

@@ -26,7 +26,12 @@ import { recommend, CANAL_OF, DIAG } from '../src/pose/maneuvers.js';
 // a nie przez odwzorowanie jego działania w teście.
 import { noteNavCleared } from '../src/app/flow-state.js';
 
-const DEPS = { recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[k] || {}).canal || null };
+// `probaKanalu` (Blok 10) domyka ścieżkę BEZ próby: w trybie eksperckim wejściem jest KANAŁ, więc
+// zgodność ma z czym porównywać. Bez tej zależności model degraduje do dawnego `nieznana` —
+// dlatego jest tu jawnie, a nie „jakoś się poradzi".
+const DEPS = { recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[k] || {}).canal || null,
+               probaKanalu: (kanal) => (Object.keys(DIAG).find(k => DIAG[k].canal === kanal) || null) };
+const DEPS_BEZ_MOSTU = { recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[k] || {}).canal || null };
 
 let ok = 0; const bledy = [];
 const T = (tag, warunek, opis) => { if (warunek) ok++; else bledy.push(`${tag}: ${opis}`); };
@@ -285,7 +290,31 @@ eq('ZG2/alternatywa', maneuverAgreement(zManewrem({}, 'semont'), DEPS).zgodnosc,
     'zgodność nie kasuje dryfu: wejścia realnie się zmieniły i trzeba je potwierdzić');
 }
 eq('ZG5/central-przeciwwskazany', maneuverAgreement(zManewrem({ diagCentral: true }), DEPS).zgodnosc, 'przeciwwskazany');
-eq('ZG6/bez-proby-nieznana', maneuverAgreement(zManewrem({ testKey: null }, 'epley', false), DEPS).zgodnosc, 'nieznana');
+/* ZG6 PRZEPISANE (Blok 10), nie skasowane. Dawna wersja pinowała `nieznana` dla KAŻDEJ ścieżki
+   bez próby — czyli wyłączała jedyny detektor rozjazdu dokładnie w trybie eksperckim, w którym
+   użytkownik sam deklaruje kanał i mechanizm. Zmierzone: (kanał poziomy + kupulolitiaza +
+   Gufoni GEOTROPOWY) dawało zielony pasek, a ta sama pomyłka z `testKey='roll'` dawała `stale`.
+   Teraz `nieznana` znaczy dokładnie to, co powinno znaczyć: NIE MA Z CZYM PORÓWNAĆ. */
+eq('ZG6/bez-proby-i-bez-kanalu-nieznana',
+  maneuverAgreement(zManewrem({ testKey: null, canal: null }, 'epley', false), DEPS).zgodnosc, 'nieznana');
+eq('ZG6b/bez-mostu-degraduje',
+  maneuverAgreement(zManewrem({ testKey: null, canal: 'posterior' }, 'epley', false), DEPS_BEZ_MOSTU).zgodnosc, 'nieznana');
+{
+  // Deklaracja użytkownika ZASTĘPUJE próbę jako podstawa porównania — i ekran musi móc to napisać.
+  const dobry = zManewrem({ testKey: null, canal: 'posterior', variant: 'canalo' }, 'epley', false);
+  const z1 = maneuverAgreement(dobry, DEPS);
+  eq('ZG6c/deklaracja-pierwszy', z1.zgodnosc, 'pierwszy');
+  eq('ZG6d/zrodlo-deklaracja', z1.zrodlo, 'deklaracja');
+  eq('ZG6e/status-done', statusOf(dobry, 'maneuver'), 'done');
+  // Gufoni GEOTROPOWY przy kupulolitiazie kanału poziomego: pierwszym rzutem jest APOGEOTROPOWY.
+  const zly = zManewrem({ testKey: null, canal: 'horizontal', variant: 'cupulo' }, 'gufoniGeo', false);
+  const z2 = maneuverAgreement(zly, DEPS);
+  eq('ZG6f/deklaracja-rozjazd', z2.zgodnosc, 'rozjazd');
+  eq('ZG6g/status-stale', statusOf(zly, 'maneuver'), 'stale');
+  // KONTROLA CZUŁOŚCI: ten sam stan z manewrem PIERWSZEGO RZUTU nie ma prawa alarmować.
+  const ok2 = zManewrem({ testKey: null, canal: 'horizontal', variant: 'cupulo' }, 'gufoniApo', false);
+  eq('ZG6h/czulosc', statusOf(ok2, 'maneuver'), 'done');
+}
 eq('ZG7/antMode-yacovino', maneuverAgreement(zManewrem({ dixObs: 'ant' }, 'yacovino'), DEPS).zgodnosc, 'pierwszy');
 eq('ZG8/antMode-epley-rozjazd', maneuverAgreement(zManewrem({ dixObs: 'ant' }, 'epley'), DEPS).zgodnosc, 'rozjazd');
 T('ZG9/bez-deps', maneuverAgreement(zManewrem(), null) === null, 'bez wstrzykniętego silnika zwraca null, nie zgaduje');
@@ -535,7 +564,7 @@ if (bledy.length) {
   process.exit(1);
 }
 // Bramka liczności: skasowanie przypadków jest równie groźne jak zepsucie kodu.
-const OCZEKIWANE = 205;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9 odcisk opisu; +8 (IN1-IN8) — Blok 9 wlasny ekran interpretacji
+const OCZEKIWANE = 212;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9 odcisk opisu; +8 (IN1-IN8) — Blok 9 wlasny ekran interpretacji; +7 (ZG6 przepisane: zgodnosc manewru dziala takze BEZ proby, na deklaracji kanalu i mechanizmu) — Blok 10
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

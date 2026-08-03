@@ -37,7 +37,7 @@ win.cancelAnimationFrame = () => {};
 
 const h = win.__OTOREPO_TEST__;
 const A = (n) => (h && h[n]) || win[n];
-const POTRZEBNE = ['state', 'render', 'startManeuver', 'setGuideSide', 'openTest', 'setDixObs', 'pickCanal', 'pickSize', 'goStep', 'zakonczSerie', 'setVariant', 'syncShell', 'setLangUI'];
+const POTRZEBNE = ['state', 'render', 'startManeuver', 'setGuideSide', 'openTest', 'setDixObs', 'pickCanal', 'pickSize', 'goStep', 'zakonczSerie', 'setVariant', 'syncShell', 'setLangUI', 'openMan'];
 const brak = POTRZEBNE.filter(n => typeof A(n) === 'undefined');
 if (errs.length || brak.length) {
   console.error('✗ BLAD LADOWANIA — wyrocznia niewazna.');
@@ -161,8 +161,80 @@ const html2 = app();
 const p2 = html2.match(/startManeuver\('epley','([LP])'\)/);
 T('SD5/czulosc-bez-downbeatu', !!p2 && p2[1] === 'P', 'bez downbeatu strona karty to strona badana');
 
-/* ═══════════ G. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 28;
+/* ═══════════ G. SYGNAŁY BEZPIECZEŃSTWA NIE ZNIKAJĄ NA EKRANIE MANEWRU ═══════════
+   Reguła `@media (orientation:landscape) and (max-height:520px){ .shell[data-focusmode] .flowbar
+   { display:none } }` ukrywała CAŁY pasek — a w nim mieszkają #flowalert i #flowflag. Zapalała się
+   dokładnie przy `data-focusmode`, czyli na ekranie manewru. jsdom nie liczy kaskady, więc bramką
+   jest SAMA REGUŁA: żaden selektor ukrywający nie ma prawa obejmować kontenera, w którym siedzą
+   sygnały bezpieczeństwa. */
+{
+  const css = readFileSync(resolve(ROOT, 'src/styles/flow.css'), 'utf8');
+  const html = readFileSync(resolve(ROOT, 'index.html'), 'utf8');
+  const ukrywaPasek = /\.shell\[data-focusmode\]\s*\.flowbar\s*\{[^}]*display:\s*none/.test(css);
+  T('BE1/pasek-nie-znika', !ukrywaPasek,
+    'tryb skupienia nie może ukrywać kontenera, w którym siedzi ostrzeżenie i czerwona flaga');
+  T('BE2/lista-krokow-moze-zniknac', /\.shell\[data-focusmode\]\s*\.flownav\s*\{[^}]*display:\s*none/.test(css),
+    'budżet pionu ma być odzyskany na MAPIE PROCESU — inaczej naprawa jest tylko kosmetyczna');
+  T('BE3/alert-w-pasku', /id="flowalert"/.test(html) && /id="flowbar"/.test(html),
+    'oba elementy dalej istnieją w powłoce');
+}
+// Czerwona flaga z kwalifikacji wstępnej JEST w drzewie na ekranie manewru.
+czysty();
+st.flow.triage = { complete: true, kategoria: 'x', sciezka: null, pewnosc: 'wysoka', czerwona: true };
+A('startManeuver')('epley');
+A('syncShell')();
+T('BE4/czerwona-flaga-na-manewrze', /Czerwona flaga/i.test(win.document.querySelector('#flowbar').innerHTML),
+  'czerwona flaga musi być w drzewie także przy screen=guide');
+// KONTROLA CZUŁOŚCI: bez czerwonej flagi napisu nie ma.
+czysty(); A('startManeuver')('epley'); A('syncShell')();
+T('BE5/czulosc', !/Czerwona flaga/i.test(win.document.querySelector('#flowbar').innerHTML), 'bez flagi brak napisu');
+
+/* ═══════════ H. ZGODNOŚĆ MANEWRU DZIAŁA TAKŻE BEZ PRÓBY ═══════════
+   Tryb ekspercki nie ma `testKey`, więc dotąd jedyny detektor rozjazdu manewru z wejściami był
+   w nim wyłączony. Sprawdzamy SKUTEK NA EKRANIE (pasek), nie samą wartość z modelu. */
+czysty();
+st.canal = 'horizontal'; st.variant = 'cupulo';
+A('openMan')('gufoniGeo');                          // pierwszym rzutem jest APOgeotropowy
+A('syncShell')();
+T('ZG1/rozjazd-bez-proby', /wymaga ponownego przeliczenia|nie odpowiada bieżącej/i.test(win.document.querySelector('#flowbar').innerHTML),
+  'manewr niezgodny z DEKLAROWANYM kanałem i mechanizmem musi zapalić pasek także bez próby');
+czysty();
+st.canal = 'horizontal'; st.variant = 'cupulo';
+A('openMan')('gufoniApo');                          // manewr pierwszego rzutu
+A('syncShell')();
+T('ZG2/czulosc-zgodny', !/wymaga ponownego przeliczenia/i.test(win.document.querySelector('#flowbar').innerHTML),
+  'manewr pierwszego rzutu nie ma prawa alarmować');
+
+/* ═══════════ I. KROK „INTERPRETACJA" NIE UDAJE WYKONANEGO ═══════════ */
+czysty();
+st.canal = 'posterior';
+A('openMan')('epley');
+A('syncShell')();
+const mapa = () => [...win.document.querySelectorAll('#flowsteps .flowstep')].map(li => li.className);
+T('IN1/pominiety', /flowstep--skipped/.test(mapa()[3]), 'bez próby krok Interpretacja jest „pominięty"');
+A('setVariant')('cupulo');
+A('syncShell')();
+T('IN2/nadal-pominiety', /flowstep--skipped/.test(mapa()[3]),
+  'dotknięcie mechanizmu bez próby nie ma prawa zamienić „pominięty" w „zakończony"');
+// KONTROLA CZUŁOŚCI: przy istniejącej próbie ten sam gest MUSI oznaczyć krok jako zrobiony.
+czysty(); st.mode = 'diag'; A('openTest')('dix'); A('setVariant')('cupulo'); A('syncShell')();
+T('IN3/czulosc-z-proba', !/flowstep--skipped/.test(mapa()[3]), 'przy istniejącej próbie mechanizm liczy się jako interpretacja');
+
+/* ═══════════ J. KONWERSJA KANAŁOWA PO WYKONANYM MANEWRZE ═══════════ */
+czysty();
+st.canal = 'posterior';
+A('startManeuver')('epley');
+A('zakonczSerie')();                                 // manewr WYKONANY
+A('pickCanal')('horizontal');                        // kontrolny roll pokazał kanał poziomy
+A('syncShell')();
+T('KO1/sygnal', /konwersj/i.test(win.document.querySelector('#flowalert').innerHTML),
+  'wykonany manewr + inny kanał = wskazanie do NOWEGO manewru, nie cisza');
+// KONTROLA CZUŁOŚCI: ten sam kanał = cisza.
+czysty(); st.canal = 'posterior'; A('startManeuver')('epley'); A('zakonczSerie')(); A('syncShell')();
+T('KO2/czulosc-ten-sam-kanal', win.document.querySelector('#flowalert').hidden, 'bez zmiany kanału pasek milczy');
+
+/* ═══════════ K. LICZNOŚĆ ═══════════ */
+const OCZEKIWANE = 40;
 if (bledy.length) {
   console.error(`✗ man:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

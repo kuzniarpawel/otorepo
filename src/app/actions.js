@@ -271,7 +271,13 @@ function toggleDiagCentral(v){ markDecision(state,"diagCentral",!!v); markSeen(s
 /* Blok 9: przewrócenie karty mechanizmu na ekranie próby idzie TĄ SAMĄ drogą, więc musi
    oznaczyć źródło jako RĘCZNE. Bez tego ekran interpretacji dalej twierdziłby „wyprowadzony
    z opisu obserwacji" nad mechanizmem, który użytkownik przed chwilą przestawił sam. */
-function setVariant(v){ markDecision(state,"variant",v); state.variantZrodlo="nadpisany"; markSeen(state,"interpretSeen"); render(); }
+/* `interpretSeen` znaczy „użytkownik przeszedł przez krok INTERPRETACJI PRÓBY". Przy pustym
+   `testKey` żadna próba nie istnieje, więc ustawianie tej flagi zamieniało uczciwy status
+   „pominięty — kanał i strona pochodzą od Ciebie" w „zakończony" i kasowało uzasadnienie.
+   Zmierzone: openMan('epley') → pasek „– Interpretacja pominięty"; jedno dotknięcie mechanizmu →
+   „✓ Interpretacja zakończony" przy testKey nadal null. Flaga jest lepka (`resetSeen` woła tylko
+   zmiana PRÓBY, której w tym trybie nie ma), więc zostawała do końca sesji. */
+function setVariant(v){ markDecision(state,"variant",v); state.variantZrodlo="nadpisany"; if(state.testKey) markSeen(state,"interpretSeen"); render(); }
 // Męczliwość oczopląsu: powtórna prowokacja Dix-Hallpike (rep++) → kanalolitiaza słabnie (fatigueFactor);
 // kupulolitiaza nie. Reset zeruje serię. Nie zerujemy przy przełączeniu mechanizmu (flip) — po to, by przy tym
 // samym rep pokazać kontrast kanalo↔kupulo.
@@ -399,7 +405,7 @@ function przyjmijMechanizm(){
 function nadpiszMechanizm(v){
   markDecision(state,"variant",v);
   state.variantZrodlo="nadpisany";
-  markSeen(state,"interpretSeen");
+  if(state.testKey) markSeen(state,"interpretSeen");   // patrz setVariant — bez proby nie ma czego "widziec"
   render();
 }
 function wrocDoWyprowadzonego(){ state.variantZrodlo=null; przyjmijMechanizm(); }

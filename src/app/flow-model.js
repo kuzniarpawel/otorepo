@@ -281,7 +281,27 @@ export function maneuverAgreement(s, deps) {
   if (!m || !deps || typeof deps.recommend !== 'function') return null;
   if (m.consumed) return { zgodnosc: 'consumed' };
   if (s.diagCentral) return { zgodnosc: 'przeciwwskazany' };
-  if (!s.testKey) return { zgodnosc: 'nieznana' };            // droga „Znam kanał i stronę" — nie ma z czym porównać
+
+  /* ŚCIEŻKA BEZ PRÓBY („Znam kanał i stronę", tryb ekspercki Bloku 10). Dotąd zwracaliśmy tu
+     `nieznana` — czyli JEDYNY detektor rozjazdu manewru z wejściami był wyłączony dokładnie w
+     trybie, który Blok 10 rozbudowuje o selektor mechanizmu. Zmierzone na czystym modelu:
+     (kanał poziomy + kupulolitiaza + Gufoni GEOTROPOWY) dawało `nieznana` i pasek na zielono,
+     a ta sama pomyłka z `testKey='roll'` dawała `rozjazd` i status `stale`.
+     Podstawą porównania jest wtedy DEKLARACJA użytkownika (kanał + mechanizm), nie wynik próby —
+     stąd `zrodlo:'deklaracja'`, żeby ekran mógł to napisać wprost i nie udawać wnioskowania.
+     `probaKanalu` jest WSTRZYKIWANA (moduł zostaje bezimportowy); jej brak degraduje do
+     dotychczasowego `nieznana`, więc nic nie wybucha przy niepełnych zależnościach. */
+  if (!s.testKey) {
+    if (!s.canal || typeof deps.probaKanalu !== 'function') return { zgodnosc: 'nieznana' };
+    const proba = deps.probaKanalu(s.canal);
+    if (!proba) return { zgodnosc: 'nieznana' };
+    const recD = deps.recommend(proba, s.variant);
+    if (!recD) return { zgodnosc: 'nieznana' };
+    if (m.key === recD.primary) return { zgodnosc: 'pierwszy', primary: recD.primary, zrodlo: 'deklaracja' };
+    if ((recD.alts || []).includes(m.key)) return { zgodnosc: 'alternatywa', primary: recD.primary, zrodlo: 'deklaracja' };
+    return { zgodnosc: 'rozjazd', primary: recD.primary, zrodlo: 'deklaracja',
+             kanalManewru: typeof deps.canalOf === 'function' ? deps.canalOf(m.key) : null, kanalWejsc: s.canal };
+  }
 
   const antMode = s.testKey === 'dix' && s.dixObs === 'ant';
   // antMode omija recommend() także w aplikacji (svg-screens.js:1133) — downbeat kieruje na
