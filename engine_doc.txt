@@ -885,6 +885,16 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         dydaktyczna + autorytet dla całego różnicowania OTOREPO (HINTS + BPPV); migrena przedsionkowa (s-EVS)
         CELOWO nie modelowana — flagowana jako różnicowa.
 
+[H25] Bhattacharyya N, Gubbels SP, Schwartz SR, et al. (2017). "Clinical Practice Guideline: Benign Paroxysmal
+      Positional Vertigo (Update)." Otolaryngol Head Neck Surg 156(3_suppl):S1–S47.
+      doi:10.1177/0194599816689667. PMID 28248609.
+      → Źródło dla kroku „Kontrola" (Blok 11 dokumentu UI): ocena PO repozycji jako osobny etap, powtórzenie
+        manewru przy utrzymujących się objawach, brak potrzeby ograniczeń pozycyjnych po zabiegu, obserwacja
+        jako dopuszczalna opcja (BPPV bywa samoograniczające) oraz ZAWROTY RESZTKOWE po SKUTECZNEJ repozycji
+        jako zjawisko częste i samoograniczające, którego NIE leczy się powtarzaniem manewru. Konwersja
+        kanałowa (typowo tylny → poziomy po manewrze Epleya) jest wskazaniem do ponownego ustalenia kanału,
+        nie do powtórzenia poprzedniego manewru — to bezpośrednia podstawa kryterium odbioru nr 2 Bloku 11.
+
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE
     (etap 7/E3) składane realnie PER PARA współpłaszczyznowa (verticalBeat), lecz z uproszczonym TORS_V=0.8;
@@ -1088,3 +1098,79 @@ a to jest wskazanie do NOWEGO manewru, nie zarzut wobec starego.
 
 Bramki: npm run man:check (czysty model, gołe Node) i npm run man:dom (skan DOM w jsdom —
 kryteria odbioru nr 1 i nr 3 są twierdzeniami o EKRANIE, nie o modelu).
+
+================================================================================
+KONTROLA PO MANEWRZE — CO APLIKACJA ZAPISUJE, A CZEGO NIE WIE (Blok 11)
+================================================================================
+Krok „Kontrola" zamyka proces kliniczny i obsługuje wyniki inne niż natychmiastowe ustąpienie.
+Odpowiedź na pytanie „co obserwujesz teraz?" jest OBSERWACJĄ KLINICYSTY, nie wnioskiem aplikacji:
+model nie ocenia, czy repozycja się udała, tylko wyprowadza z odpowiedzi NASTĘPNY KROK. To ta sama
+granica, którą trzymają Bloki 6, 8 i 9 — kwestionariusz wybiera ścieżkę, formularz opisuje
+obserwację, interpretacja eliminuje kandydatury i żaden z nich nie stawia rozpoznania.
+Podstawa kliniczna: [H25] (AAO-HNS, aktualizacja wytycznych BPPV 2017).
+
+SIEDEM ODPOWIEDZI, TRZY Z NICH ZAKAZUJĄ REPOZYCJI
+Słownik jest ZAMKNIĘTY: bez pozycji „inne" i bez pola tekstowego (kryterium odbioru nr 3 zaczyna
+się od tego, że nie ma gdzie wpisać nazwiska). Trzy odpowiedzi odbierają ekranowi prawo do
+zaproponowania manewru, każda z INNEGO powodu i każda z powodem NAPISANYM:
+  • konwersja kanałowa — złóg jest w innym kanale, więc ten sam manewr leczyłby kanał, w którym
+    już go nie ma; alternatywa tego samego kanału też nie dotyczy kanału docelowego;
+  • zawroty resztkowe — bez oczopląsu pozycyjnego NIE MA CZEGO repozycjonować, a zjawisko jest
+    opisane po SKUTECZNEJ repozycji i zwykle samoograniczające (dni–tygodnie);
+  • badanie niewiarygodne — ocena, którą klinicysta sam nazwał niewiarygodną, nie uzasadnia
+    kolejnej repozycji; krok dostaje status „niewiarygodny", NIE „zakończony" (ten sam błąd, który
+    Blok 8 wyciął przy lateralizacji).
+Wyszarzenie przycisku bez podania powodu byłoby milczeniem, nie ostrzeżeniem, więc zakazane akcje
+w ogóle nie są przyciskami — są zdaniem w sekcji „czego ten ekran celowo nie proponuje".
+
+KRYTERIUM ODBIORU NR 1 — KONIEC MANEWRU NIE JEST POWROTEM NA POCZĄTEK
+Zmierzone przed zmianą: `zakonczSerie` wołało `backToSetup()`, czyli seria kończyła się DOKŁADNIE
+tam, gdzie się zaczęła — na liście kanałów, bez jednego zdania o tym, co się wydarzyło, i bez
+miejsca na wynik kontroli. Dojście SEKWENCYJNE do ostatniego etapu nadal nie nawiguje nigdzie:
+„wykonany" to stan manewru, a nie polecenie nawigacji.
+
+KRYTERIUM ODBIORU NR 2 — KONWERSJA PROWADZI DO PONOWNEJ INTERPRETACJI
+Model zwraca listę akcji ZAKAZANYCH osobno od listy oferowanych, a ekran zakazanych nie renderuje.
+Bramka czyta tabelę reguł WPROST, i to nie jest nadgorliwość: `nastepneKroki` odsiewa akcje
+zakazane, więc dopisanie „powtórz manewr" do listy kroków konwersji NIE ZMIENIAŁO wyniku funkcji
+— mutacja przechodziła całą wyrocznię na zielono. Filtr broni ekranu, ale przestaje pilnować
+źródła. W trybie eksperckim (bez próby) „ustal kanał i stronę od nowa" celuje w ekran doboru, a nie
+w ekran interpretacji, który bez `testKey` nie ma z czego się zbudować.
+
+KRYTERIUM ODBIORU NR 3 — ZAKOŃCZENIE BEZ DANYCH IDENTYFIKACYJNYCH
+Kryterium było spełnione już przed tym blokiem (w aplikacji nie ma ani jednego pola tekstowego),
+więc dołożyliśmy ZAPADKĘ, a nie naprawę — ten sam ruch, co przy kryterium nr 2 Bloku 10. Bramka
+skanuje OSIEM ekranów wzorcem strukturalnym (znacznik pola, nie słowo); suwaki `type=range` są
+dozwolone, bo to parametry modelu, nie dane. Drugą połową jest STRAŻNIK WPISU: chodzi po gotowym
+rekordzie i go ODRZUCA, zamiast po cichu czyścić — sanityzacja dawałaby zapis, który wygląda na
+zapisany, a części treści w nim nie ma (lekcja z toru VOG). Reguła jest strukturalna: każda wartość
+musi pochodzić ze słownika zamkniętego albo być liczbą, więc napis spoza słownika jest naruszeniem
+niezależnie od tego, co znaczy. Zakończenie sesji NIE MA warunku wstępnego — pierwsza wersja miała
+przycisk wewnątrz karty „Co dalej", która renderuje się dopiero po wybraniu odpowiedzi, czyli sesji
+nie dało się zakończyć bez zaznaczenia czegokolwiek.
+
+HISTORIA SERII: CZASY SĄ PLANOWE, NIE ZMIERZONE
+Powtórzenie manewru to NOWE wykonanie (nowy odcisk przebiegu, nowy wpis), inaczej trzy powtórzenia
+wyglądałyby w podsumowaniu jak jedno podejście. Wpis niesie czasy Z PLANU (protokolarne albo
+ustawione suwakiem) i mówi to wprost: aplikacja odlicza jeden etap naraz i nie sumuje czasu przez
+manewr, więc nazwanie tego „czasem wykonania" byłoby fikcją. Wpis NIE NIESIE ZEGARA — po pierwsze
+złoty wzorzec ma zostać deterministyczny, po drugie godzina badania jest daną, która razem z resztą
+zbliża zapis do dokumentacji pacjenta.
+
+PORÓWNANIE PRZED I PO
+Opis sprzed manewru jest KOPIOWANY w chwili uznania manewru za wykonany. Bez tej kopii porównanie
+znikałoby dokładnie wtedy, gdy powstaje jego druga strona: rekordy obserwacji są kluczowane PRÓBĄ,
+więc opisanie próby kontrolnej nadpisuje opis sprzed manewru. Karta przyznaje, że kolumna „po
+manewrze" wypełnia się dopiero po opisaniu kontroli cechą po cesze w kroku „Oczopląs" — sama
+odpowiedź z tej karty jej nie zastępuje.
+
+CZEGO TEN BLOK NIE ROBI
+Podsumowanie sesji żyje WYŁĄCZNIE w pamięci tej sesji: aplikacja nie zapisuje go na urządzeniu
+i nigdzie nie wysyła. Trwały zapis stanu i generator opisu badania to Blok 15 dokumentu — zapis
+danych klinicznych na dysk jest osobną decyzją (zgoda, retencja, kasowanie), a nie skutkiem
+ubocznym kroku „Kontrola". Wynik kontroli jest przygotowany dla tego generatora: `podsumowanieSesji`
+zwraca same identyfikatory ze słowników zamkniętych, więc etykiety dokłada ekran.
+
+Bramki: npm run fu:check (czysty model, gołe Node, niezmienniki na pełnym iloczynie 588 kombinacji)
+i npm run fu:dom (skan DOM w jsdom — wszystkie trzy kryteria odbioru są zdaniami o tym, CO ROBI
+APLIKACJA, a nie o modelu).

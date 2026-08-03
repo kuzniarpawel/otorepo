@@ -886,6 +886,17 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         dysmetria). An educational framing + authority for all of OTOREPO's differentiation (HINTS + BPPV);
         vestibular migraine (s-EVS) DELIBERATELY not modelled — flagged as a differential.
 
+[H25] Bhattacharyya N, Gubbels SP, Schwartz SR, et al. (2017). "Clinical Practice Guideline: Benign Paroxysmal
+      Positional Vertigo (Update)." Otolaryngol Head Neck Surg 156(3_suppl):S1–S47.
+      doi:10.1177/0194599816689667. PMID 28248609.
+      → The source for the "Follow-up" step (Block 11 of the UI document): assessment AFTER repositioning as a
+        separate stage, repeating the maneuver when symptoms persist, no need for post-procedural postural
+        restrictions, observation as an acceptable option (BPPV can be self-limiting), and RESIDUAL DIZZINESS
+        after SUCCESSFUL repositioning as a common, self-limiting phenomenon that is NOT treated by repeating
+        the maneuver. Canal conversion (typically posterior → horizontal after an Epley) indicates
+        re-establishing the canal, not repeating the previous maneuver — the direct basis for acceptance
+        criterion 2 of Block 11.
+
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals
     (stage 7/E3) are composed realistically PER coplanar PAIR (verticalBeat), but with a simplified TORS_V=0.8;
@@ -1100,3 +1111,83 @@ charge against the old one.
 
 Gates: npm run man:check (pure model, bare Node) and npm run man:dom (a DOM scan in jsdom —
 acceptance criteria 1 and 3 are claims about the SCREEN, not about the model).
+
+================================================================================
+POST-MANEUVER CONTROL — WHAT THE APP RECORDS, AND WHAT IT DOES NOT KNOW (Block 11)
+================================================================================
+The "Follow-up" step closes the clinical process and handles outcomes other than immediate
+resolution. The answer to "what do you observe now?" is the CLINICIAN'S OBSERVATION, not the app's
+conclusion: the model does not judge whether the repositioning succeeded — it derives the NEXT STEP
+from the answer. This is the same boundary Blocks 6, 8 and 9 hold: the questionnaire picks a
+pathway, the form describes an observation, the interpretation eliminates candidacies, and none of
+them makes a diagnosis. Clinical basis: [H25] (AAO-HNS BPPV guideline update, 2017).
+
+SEVEN ANSWERS, THREE OF WHICH FORBID REPOSITIONING
+The vocabulary is CLOSED: no "other" entry and no text field (acceptance criterion 3 starts with
+there being nowhere to type a name). Three answers take away the screen's right to offer a
+maneuver, each for a DIFFERENT reason and each with the reason WRITTEN OUT:
+  • canal conversion — the debris is in another canal, so the same maneuver would treat a canal it
+    is no longer in; an alternative for the same canal does not address the target canal either;
+  • residual dizziness — without positional nystagmus there is NOTHING to reposition, and the
+    phenomenon is described after SUCCESSFUL repositioning and is usually self-limiting (days to
+    weeks);
+  • unreliable examination — an assessment the clinician themselves called unreliable does not
+    justify another repositioning; the step gets the status "unreliable", NOT "done" (the same
+    error Block 8 cut out at lateralization).
+Greying a button out without giving a reason would be silence, not a warning, so forbidden actions
+are not buttons at all — they are a sentence under "what this screen deliberately does not offer".
+
+ACCEPTANCE CRITERION 1 — THE END OF A MANEUVER IS NOT A RETURN TO THE START
+Measured before the change: `zakonczSerie` called `backToSetup()`, i.e. the series ended EXACTLY
+where it began — on the canal list, without a single sentence about what had happened and with no
+place for the control result. Reaching the last stage SEQUENTIALLY still navigates nowhere:
+"performed" is a state of the maneuver, not a navigation command.
+
+ACCEPTANCE CRITERION 2 — CONVERSION LEADS TO RE-INTERPRETATION
+The model returns the list of FORBIDDEN actions separately from the offered ones, and the screen
+does not render the forbidden ones. The gate reads the rule table DIRECTLY, and that is not
+over-zealousness: `nastepneKroki` filters out forbidden actions, so adding "repeat the maneuver" to
+the conversion step list did NOT change the function's result — the mutation passed the entire
+oracle. The filter protects the screen but stops guarding the source. In expert mode (no test)
+"re-establish canal and side" targets the selection screen, not the interpretation screen, which
+without `testKey` has nothing to build itself from.
+
+ACCEPTANCE CRITERION 3 — ENDING WITHOUT IDENTIFYING DATA
+The criterion was already met before this block (there is not a single text field in the app), so
+we added a RATCHET rather than a fix — the same move as for criterion 2 of Block 10. The gate scans
+EIGHT screens with a structural pattern (a field tag, not a word); `type=range` sliders are allowed,
+because they are model parameters, not data. The other half is the RECORD GUARD: it walks the
+finished record and REJECTS it instead of quietly cleaning it — sanitizing would produce a record
+that looks saved while part of its content is missing (a lesson from the VOG track). The rule is
+structural: every value must come from a closed vocabulary or be a number, so a string outside the
+vocabulary is a violation regardless of what it means. Ending the session has NO precondition — the
+first version had the button inside the "What next" card, which only renders after an answer is
+chosen, i.e. the session could not be ended without selecting something.
+
+SERIES HISTORY: THE TIMES ARE FROM THE PLAN, NOT MEASURED
+Repeating a maneuver is a NEW performance (a new flow record, a new entry); otherwise three
+repetitions would look like a single attempt in the summary. The entry carries times FROM THE PLAN
+(protocol or set with the slider) and says so explicitly: the app counts one stage at a time and
+does not sum the time across the maneuver, so calling it "execution time" would be a fiction. The
+entry CARRIES NO CLOCK — first, the golden snapshot must stay deterministic; second, the time of
+the examination is a datum that, together with the rest, moves the record toward patient
+documentation.
+
+BEFORE AND AFTER
+The pre-maneuver description is COPIED at the moment the maneuver is considered performed. Without
+that copy the comparison would disappear exactly when its second half comes into being: observation
+records are keyed by TEST, so describing the control test overwrites the description from before
+the maneuver. The card admits that the "after" column fills in only once the control has been
+described feature by feature in the "Nystagmus" step — the answer on this card does not replace it.
+
+WHAT THIS BLOCK DOES NOT DO
+The session summary lives ONLY in this session's memory: the app does not store it on the device
+and does not send it anywhere. Persistent state and the examination-report generator are Block 15
+of the document — writing clinical data to disk is a separate decision (consent, retention,
+deletion), not a side effect of the "Follow-up" step. The control result is prepared for that
+generator: `podsumowanieSesji` returns only identifiers from closed vocabularies, so the labels are
+added by the screen.
+
+Gates: npm run fu:check (pure model, bare Node, invariants over the full product of 588
+combinations) and npm run fu:dom (a DOM scan in jsdom — all three acceptance criteria are claims
+about WHAT THE APP DOES, not about the model).
