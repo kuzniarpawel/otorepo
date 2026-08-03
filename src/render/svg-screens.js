@@ -2,7 +2,9 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
+         computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds,
+         DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
          OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
@@ -480,109 +482,15 @@ const fmtClock=s=>{const m=Math.floor(s/60),x=s%60; return `${m}:${String(x).pad
    skuteczność (man.exited → krok kuracyjny). POŁOŻENIE cząstki na ścieżce jest jednak SCHEMATYCZNE (audyt #3):
    dla manewrów skutecznych to monotoniczna rampa 0.15→1.0 (patrz manFractions), realne φ(t) tylko dla
    KONWERSJI (Gufoni apo). maneuverSim liczone raz na (manewr×strona×rozmiar×czasy kroków) i cache'owane. */
-function computeManSim(plan, size="medium"){
-  const tl = maneuverTimeline(plan, size);
-  const sim = Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, timeline:tl, size});
-  const dt = sim.length>1 ? sim[1].t - sim[0].t : 0.05;
-  const segs=[]; let t0=0;
-  for(const seg of tl){ const dur=(seg.tTrans||0)+(seg.tHold||0); segs.push({t0,dur}); t0+=dur; }
-  return {sim, dt, segs, exited: sim.some(s=>s.exited)};
-}
+/* computeManSim / manStepEnv / stepXiPeak / manPhi / phiToFrac / manExitStep / manFractions /
+   guideNysSeconds PRZENIESIONE do src/pose/maneuvers.js (Blok 10) — to czysta fizyka złogu, nie
+   renderowanie, a wyrocznia man:check musi ją wołać w gołym Node. Tutaj zostaje wyłącznie
+   currentManSim(), bo trzyma cache w state. */
 // symulacja manewru z cache; klucz zawiera rozmiar → zmiana rozmiaru unieważnia cache i przelicza dynamikę.
 function currentManSim(){
   const key=state.plan.name+"|"+state.plan.side+"|"+state.size+"|"+state.plan.steps.map(s=>s.seconds==null?"_":s.seconds).join(",");   // czasy kroków (st.seconds → tHold) wpływają na dynamikę → muszą być w kluczu (audyt #8: małe złogi cap=20 s, ręczne skrócenie zmienia φ(t))
   if(state._manKey!==key){ state._manKey=key; state._manSim=computeManSim(state.plan, state.size); }
   return state._manSim;
-}
-// Obwiednia ξ(t) dla KROKU z HISTORYCZNEJ symulacji manewru (uwzględnia stan osklepka przeniesiony z poprzednich
-// kroków — np. krok 2/3 Epleya startuje od rezydualnej deflekcji, nie „od świeża" jak provokeQ).
-// Intensywność jak dynNystagmus: ABSOLUTNA |ξ| z REKTYFIKACJĄ EWALDA II — przepływ ampullofugalny (ξ<0, hamowanie)
-// daje słabszą odpowiedź ×0.45. Bez normalizacji do szczytu manewru (inaczej ukryłaby hamowanie, gdy CAŁY manewr
-// jest ampullofugalny, jak rolka Lemperta). env(0) może być >0 (rezyduum). Gładki ogon do zera po oknie symulacji.
-function manStepEnv(man, step){
-  if(!man || !man.sim || !man.segs) return null;
-  const seg = man.segs[Math.min(step, man.segs.length-1)]; if(!seg || seg.dur<=0) return null;
-  const sim=man.sim, dt=man.dt, t0=seg.t0, dur=seg.dur, TAIL=6;
-  const REC = x => Math.min(1, Math.abs(x)*(x>0?1:0.45));           // Ewald II: hamowanie (ampullofugalny ξ<0) słabsze ×0.45
-  const at = tabs => { const i=Math.min(sim.length-1, Math.max(0, Math.round(tabs/dt))); return sim[i]?REC(sim[i].xi):0; };
-  const endV = at(t0+dur);
-  const env = ts => {
-    if(ts<=0) return at(t0);                                        // start = stan REZYDUALNY z poprzedniego kroku
-    if(ts<=dur) return at(t0+ts);
-    return Math.max(0, endV*(1-(ts-dur)/TAIL));                     // gładki ogon
-  };
-  let stepPk=0, tEnd=0;
-  for(let ts=0; ts<=dur+TAIL+1e-6; ts+=dt){ const e=env(ts); if(e>stepPk) stepPk=e; if(e>=0.03) tEnd=ts; }
-  // BEZPIECZNIK: model nie re-prowokuje na niektórych przejściach (obroty poziome Lemperta) — jeśli sygnał
-  // historyczny tego kroku jest znikomy, oddaj sterowanie annotacji (świeży provokeQ w startNys), by krok
-  // z annotowanym oczopląsem nie „zniknął". Carry-over/rektyfikacja zostają tam, gdzie fizyka daje realny ślad.
-  if(stepPk < 0.10) return null;
-  return {env, tEnd, hist:true};
-}
-// szczyt ξ (ZE ZNAKIEM) dla kroku z ciągłej symulacji; przy luce (model nie re-prowokuje) — świeży provoke
-// z FAKTYCZNEJ orientacji kroku (neutralny start → pozycja kroku). Znak steruje kierunkiem (odwróceniem) w nysFromDyn.
-function stepXiPeak(man, plan, step, size="medium"){
-  let xi=0;
-  const seg = man && man.segs ? man.segs[step] : null;
-  if(seg){ const i0=Math.round(seg.t0/man.dt), i1=Math.round((seg.t0+seg.dur)/man.dt);
-    for(let k=i0;k<=i1 && k<man.sim.length;k++){ if(Math.abs(man.sim[k].xi)>Math.abs(xi)) xi=man.sim[k].xi; } }
-  if(Math.abs(xi) < 0.06){                                  // luka: świeży provoke z orientacji kroku
-    const st=plan.steps[step];
-    const pre = stepHeadQ(st.body, 0, st.face==="down"?"up":st.face);
-    const q   = stepHeadQ(st.body, st.yaw, st.face);
-    const psim = Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, size,
-      timeline:[{q:pre,tTrans:0,tHold:1},{q,tTrans:0.8,tHold:12}]});
-    let pp=0; for(const s of psim){ if(Math.abs(s.xi)>Math.abs(pp)) pp=s.xi; }
-    if(Math.abs(pp) > Math.abs(xi)) xi=pp;
-  }
-  return xi;
-}
-function manPhi(man, step, frac){                       // φ realne dla danego kroku i ułamka timera
-  const seg = man.segs[Math.min(step, man.segs.length-1)]; if(!seg) return 90;
-  const ts = seg.t0 + Math.max(0,Math.min(1,frac))*seg.dur;
-  const i = Math.min(man.sim.length-1, Math.max(0, Math.round(ts/man.dt)));
-  return man.sim[i] ? man.sim[i].phi : 90;
-}
-const phiToFrac = phi => Math.max(0, Math.min(1, phi/178));   // φ→ułamek ścieżki (178°=wyjście)
-// krok pierwszej ekspulsji do łagiewki wg FIZYKI (man.sim.exited) → indeks segmentu zawierającego ten czas.
-// Dla kanałów PIONOWYCH model komory odnogi daje teraz czysty, klinicznie właściwy krok wyjścia
-// (Epley = siad; Semont = rzut; Yacovino = broda do klatki). -1 gdy brak ekspulsji / brak danych.
-function manExitStep(man){
-  if(!man || !man.exited || !man.segs) return -1;
-  let tExit=null; for(const s of man.sim){ if(s.exited){ tExit=s.t; break; } }
-  if(tExit==null) return -1;
-  for(let i=0;i<man.segs.length;i++){ const sg=man.segs[i]; if(tExit <= sg.t0+sg.dur+1e-9) return i; }
-  return man.segs.length-1;
-}
-// harmonogram ułamków ścieżki per krok.
-// Silnik WALIDUJE, że manewr czyści (man.exited) i wskazuje krok kuracyjny; wędrówkę pokazujemy jako
-// czystą, monotoniczną progresję 0.15→1.0 (wyjście). Krok kuracyjny:
-//  • kanały PIONOWE (model komory odnogi) → REALNY krok ekspulsji z fizyki (manExitStep): Epley = SIAD (k5),
-//    Semont = rzut (k3), Yacovino = broda (k3). Spójne z oczoplątem liberacyjnym generowanym w tym kroku.
-//  • kanał POZIOMY (bez odnogi, φ front-loaded ku bańce) i KUPULO (Bascule) → schemat n-2 (przedostatni krok).
-function manFractions(man, plan){
-  const n=plan.steps.length;
-  if(plan.mechanism==="cupulo" && !man.exited){   // GUFONI APO (konwersja apo→geo): złóg WBITY w osklepek (krok1) → ODKLEJA się (krok2) →
-    return {fr: plan.steps.map((_,i)=> i===0?0.04 : i===1?0.34 : 0.72), exitStep:-1};   // WĘDRUJE do pozycji GEOTROPOWEJ w kanale (krok3) i tam zostaje (bez wyjścia do łagiewki).
-  }
-  if(!man.exited){          // KONWERSJA nie-kupulityczna: ruch wg φ z silnika, złóg NIE wychodzi do łagiewki.
-    return {fr: plan.steps.map((_,i)=>phiToFrac(manPhi(man,i,1))), exitStep:-1};   // Bascule (kupulo) WYCHODZI (man.exited) → nie tu, tylko rampa niżej.
-  }
-  const vertical = plan.canal!=="horizontal" && plan.mechanism!=="cupulo";
-  const physExit = vertical ? manExitStep(man) : -1;     // pionowy: realny krok ekspulsji; poziomy/kupulo: schemat
-  const cure=Math.max(1, physExit>=1 ? physExit : n-2), s0=0.15;   // krok kuracyjny; pozycja spoczynkowa złogu (blisko bańki)
-  const fr=[];
-  for(let i=0;i<n;i++) fr.push(i<=cure ? s0+(1-s0)*(i/cure) : 1);   // ramp do 1.0 w kroku kuracyjnym, potem łagiewka
-  return {fr, exitStep:cure};
-}
-// Czas trwania oczopląsu (widok frontalny) dla danego kroku — DOKŁADNIE to samo tEnd, którego użyją
-// startNys/startDialNys w renderGuide (envOv=manStepEnv(...) z fallbackiem na świeży xiEnvelope(engineXi(...))).
-// Zwraca sekundy albo null, gdy krok nie ma oczopląsu (sygnał < próg). Wędrówkę otolitu wiążemy z tą wartością.
-function guideNysSeconds(plan, man, step, size){
-  const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step, size), plan.mechanism==="cupulo");
-  if(!_gn || _gn.strength < 0.10) return null;
-  const r = manStepEnv(man, step) || xiEnvelope(engineXi(_gn.canal, _gn.side, _gn.persistent, _gn.q));
-  return r ? r.tEnd : null;
 }
 // Klucz TOŻSAMOŚCI odliczanej pozycji. Póki się nie zmieni, ponowny render NIE jest nowym krokiem.
 let _timerKey=null;

@@ -23,7 +23,8 @@
     "barany:check": "node tools/barany-check.mjs",
     "obs:check": "node tools/obs-check.mjs",
     "interp:check": "node tools/interp-check.mjs",
-    "interp:dom": "node tools/interp-dom.mjs"
+    "interp:dom": "node tools/interp-dom.mjs",
+    "man:check": "node tools/man-check.mjs"
   },
   "repository": {
     "type": "git",
