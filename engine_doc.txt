@@ -895,6 +895,18 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         kanałowa (typowo tylny → poziomy po manewrze Epleya) jest wskazaniem do ponownego ustalenia kanału,
         nie do powtórzenia poprzedniego manewru — to bezpośrednia podstawa kryterium odbioru nr 2 Bloku 11.
 
+[H26] Newman-Toker DE, Kerber KA, Hsieh YH, Pula JH, Omron R, Saber Tehrani AS, Mantokoudis G, Hanley DF,
+      Zee DS, Kattah JC (2013). "HINTS outperforms ABCD2 to screen for stroke in acute continuous vertigo
+      and dizziness." Acad Emerg Med 20(10):986–996. doi:10.1111/acem.12223. PMID 24127701.
+      → Źródło „plusa" w HINTS+ (Blok 12 dokumentu UI): dołożenie przesiewowej oceny słuchu do triady
+        head-impulse / oczopląs / test of skew. NOWY jednostronny niedosłuch w ostrym zespole przedsionkowym
+        podnosi podejrzenie zawału w zakresie tętnicy AICA (błędnik jest unaczyniony z tego dorzecza), więc
+        wchodzi do wyniku jako CECHA ALARMOWA. Kierunek działa TYLKO W JEDNĄ STRONĘ: obecność niedosłuchu
+        podnosi czujność, jego brak niczego nie wyklucza (zapalenie błędnika daje ten sam obraz) — dlatego
+        w modelu OTOREPO odpowiedź „słuch symetryczny" ma wagę NEUTRALNĄ, a nie „wspiera obwód".
+        Razem z [H8] (HINTS/INFARCT), [H9] (kontekst i ograniczenia) i [H24] (GRACE-3: ataksja chodu =
+        ośrodek; HINTS niedokładny bez przeszkolenia) tworzy komplet podstaw Bloku 12.
+
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE
     (etap 7/E3) składane realnie PER PARA współpłaszczyznowa (verticalBeat), lecz z uproszczonym TORS_V=0.8;
@@ -1174,3 +1186,129 @@ zwraca same identyfikatory ze słowników zamkniętych, więc etykiety dokłada 
 Bramki: npm run fu:check (czysty model, gołe Node, niezmienniki na pełnym iloczynie 588 kombinacji)
 i npm run fu:dom (skan DOM w jsdom — wszystkie trzy kryteria odbioru są zdaniami o tym, CO ROBI
 APLIKACJA, a nie o modelu).
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+BADANIE HINTS/HINTS+ Z KWALIFIKACJĄ — DWA TORY, JEDNE DRZWI (Blok 12)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Źródła: [H8] Kattah 2009 (HINTS, mnemonik INFARCT) · [H9] Tarnutzer 2011 (kontekst i ograniczenia) ·
+[H24] GRACE-3 2023 (taksonomia czas-i-wyzwalacze; ataksja chodu = ośrodek; HINTS niedokładny bez
+przeszkolenia) · [H26] Newman-Toker 2013 („plus" = przesiewowa ocena słuchu).
+Bramki: npm run hints:check (czysty model, gołe Node, niezmienniki na PEŁNYM iloczynie 14 400 stanów
+badania) i npm run hints:dom (jsdom, prawdziwy graf modułów — wszystkie trzy kryteria odbioru są
+zdaniami o tym, CO ROBI APLIKACJA).
+
+DWA TORY, KTÓRYCH NIE WOLNO MYLIĆ
+OTOREPO ma teraz w module HINTS dwie rzeczy o przeciwnym kierunku działania:
+  • SYMULATOR (screen `hints`, silnik NeuroVOR) — wybierasz patologię, a model pokazuje, jak
+    zachowają się oczy. Uczy WZORCA;
+  • BADANIE (screen `hintsBad`, src/app/hints-model.js) — zapisujesz to, co ZOBACZYŁEŚ u pacjenta,
+    a aplikacja porządkuje obserwacje. Zapisuje OBSERWACJĘ.
+Rozdzielenie jest fizyczne (osobne ekrany, osobny stan, osobne wyrocznie) z tego samego powodu, dla
+którego Blok 8 oderwał formularz obserwacji od animacji oczopląsu przewidywanego: dopóki formularz
+sąsiaduje z modelem, „zgodność" mierzy tylko to, czy ktoś dobrze przepisał ekran. Model badania nie
+importuje silnika i wyrocznia tego pilnuje (bramka J12).
+
+KRYTERIUM ODBIORU NR 1 — JEDNE DRZWI
+Zmierzone PRZED zmianą: SIEDEM z siedmiu dróg wejścia do modułu wchodziło przy PUSTEJ kwalifikacji
+(kafelki 2 i 5 ekranu startowego, zakładka HINTS, openHints, openHintsCustom, obszar „Laboratorium",
+link `#p=` z udostępnionym pacjentem), a jedyna bramka w aplikacji — `triageGo` — leżała na ścieżce,
+której żadna z nich nie dotykała. Dziś drzwi są JEDNE: ekran kwalifikacji, a za nim `wolnoBadac`.
+Wejście istnieje dokładnie dwoma sposobami:
+  • kwalifikacja POTWIERDZONA — odpowiedzi układają się w ostry zespół przedsionkowy (ciągłe zawroty
+    z utrzymującym się oczopląsem samoistnym, bez czerwonych flag);
+  • kwalifikacja POMINIĘTA ŚWIADOMIE — użytkownik wybiera POWÓD ze słownika zamkniętego (pokaz
+    dydaktyczny / symulacja / kwalifikacja poza aplikacją / wejście mimo odradzania). Powód wchodzi
+    do wyniku jako zastrzeżenie i nie znika z niego do końca sesji; przy „pokazie" i „symulacji"
+    wynik jawnie mówi, że TO NIE JEST ZAPIS BADANIA PACJENTA.
+Odmowa nie jest cicha: ekran pisze, że nie wpuścił, i podaje czego brakuje. Kwalifikacja czyta TEN
+SAM stan `triage`, co Blok 6 — dwa różne kwestionariusze o tym samym pacjencie mogłyby powiedzieć
+dwie różne rzeczy, a użytkownik nie miałby jak zgadnąć, które z nich obowiązuje.
+
+Odnośnik `#p=` bramkujemy najmocniej z całej siódemki i to jest świadome: udostępniony link potrafi
+posadzić klinicystę od razu przed werdyktem „wzorzec obwodowy — uspokajający", policzonym dla
+PARAMETRÓW Z LINKU, a nie dla pacjenta, który przed nim siedzi.
+
+PRZESZKOLENIE BADAJĄCEGO JAKO POLE, NIE JAKO ZASTRZEŻENIE PRAWNE
+GRACE-3 [H24] mówi wprost, że HINTS wykonany bez przeszkolenia jest niedokładny. Pytamy o to RAZ,
+w kwalifikacji, i wynik nosi odpowiedź sam — zamiast kazać użytkownikowi zaznaczać „badanie
+niewiarygodne" przy każdym badaniu. Brak przeszkolenia (albo brak odpowiedzi) nie blokuje badania,
+ale ODBIERA WYNIKOWI WARTOŚĆ USPOKAJAJĄCĄ: komplet obwodowy schodzi wtedy z „wzorzec wspierający
+uszkodzenie obwodowe" na „wzorzec obwodowy, ale bez wartości uspokajającej".
+
+DLACZEGO OPCJE NIE NAZYWAJĄ SIĘ „PRAWIDŁOWY / NIEPRAWIDŁOWY"
+Dokument użytkownika opisuje wybory jako „prawidłowy, nieprawidłowy, nie można ocenić". Zachowujemy
+KSZTAŁT (duże wybory, zawsze jawne „nie można ocenić"), ale nie te dwa napisy — bo w HINTS one się
+ODWRACAJĄ i to jest cała pointa badania. PRAWIDŁOWA próba pchnięcia głową u pacjenta z ostrym
+zespołem przedsionkowym jest ustaleniem GROŹNYM („Impulse Normal" z mnemoniku INFARCT [H8]),
+a NIEPRAWIDŁOWA — uspokajającym. Przycisk „prawidłowy" nad ustaleniem, które znaczy „udar do
+wykluczenia", byłby najgorszym napisem w całej aplikacji. Opcje nazywają więc to, CO WIDAĆ
+(„sakada korygująca" / „oczy zostają na celu"), a znaczenie dokłada wynik. Wyrocznia trzyma to jako
+ZAPADKĘ (bramka B7), żeby nikt nie „poprawił" tego z powrotem do dosłownego brzmienia dokumentu.
+
+SZEŚĆ SKŁADOWYCH — I DLACZEGO TRZY Z NICH WAŻĄ INACZEJ
+Trzon (HI · N · TS) rozstrzyga o wniosku. „Plus" (słuch) i chód mogą DOŁOŻYĆ cechę alarmową, ale
+same nie tworzą wyniku uspokajającego: symetryczny słuch usuwa jedną cechę alarmową i nie dokłada
+nic w drugą stronę [H26], a chód bez podparcia jest zgodny z obwodem, lecz nie zastępuje triady.
+Każda składowa niesie trzy teksty: INSTRUKCJĘ (jak wykonać), ZNACZENIE (co z tego wynika) i PUŁAPKĘ
+(czego ten element NIE mówi). Pułapka jest tu polem klinicznie najważniejszym — bez niej moduł
+uczyłby, że ujemny test of skew wyklucza udar.
+
+DWA SPRZĘŻENIA MIĘDZY SKŁADOWYMI (nie da się ich wyrazić napisem na ekranie)
+  • „Impulse Normal" jest cechą alarmową WYŁĄCZNIE przy obecnym oczopląsie samoistnym. U pacjenta
+    bez oczopląsu prawidłowa próba pchnięcia głową jest zwyczajnie prawidłowa — czytanie jej jako
+    „ośrodek" byłoby fałszywym alarmem w najczęstszej sytuacji ambulatoryjnej. Gdy oczopląsu NIE
+    OCENIONO, wynik też nie jest alarmem, ale wniosek i tak nie może wtedy wyjść uspokajający, bo
+    trzon jest niekompletny.
+  • Sakady po OBU stronach nie wspierają obwodu w sensie HINTS: HINTS zakłada JEDNOSTRONNY ostry
+    zespół przedsionkowy, a obustronna wiestibulopatia daje sakady wszędzie i wygląda uspokajająco
+    przy realnym, ciężkim uszkodzeniu ([H23], BVH).
+
+KRYTERIUM ODBIORU NR 2 — „NIE MOŻNA OCENIĆ" NIE JEST WYNIKIEM PRAWIDŁOWYM
+Zapisane CZTERY razy, na czterech różnych poziomach, bo jedno miejsce dałoby się obejść przypadkiem:
+  1. waga opcji: „nie oceniono" nigdy nie wchodzi do listy wspierających obwód;
+  2. wniosek: „wzorzec wspierający uszkodzenie obwodowe" WYMAGA kompletnego trzonu — jedna nieoceniona
+     składowa HINTS wystarczy, żeby wynik nie mógł wyjść uspokajający;
+  3. ekran: nieocenione składowe są WYMIENIONE z nazwy w osobnej liście, więc nie da się ich
+     przemilczeć;
+  4. wygląd: opcja „nie można ocenić" ma obrys przerywany i kwadratowe pole zamiast okrągłego —
+     różni się od odpowiedzi, zanim ktokolwiek przeczyta napis.
+Osobno pilnujemy różnicy między „jeszcze nie odpowiedziano" a „nie można ocenić": ponowne dotknięcie
+tej samej odpowiedzi ją ZDEJMUJE i wraca do stanu bez odpowiedzi. Gdyby cofnięcie ustawiało „nie
+można ocenić", użytkownik zaznaczałby brak oceny samym wahaniem.
+
+SZEŚĆ WNIOSKÓW — I JEDEN, KTÓRY POWSTAŁ Z BŁĘDU
+Wniosek „badanie niepełne" mówi „nie oceniono wszystkich trzech składowych". Pierwsza wersja modelu
+wrzucała do niego także stany, w których trzon był OCENIONY, ale nie układał się w obraz obwodowy
+(sakady po obu stronach, prawidłowy HIT bez oczopląsu) — czyli pokazywała napis NIEPRAWDZIWY nad
+badaniem, które zostało wykonane w całości. Stąd osobny wniosek „badanie wykonane, wynik
+nierozstrzygający": prowadzi do innego działania niż „dokończ badanie".
+Kolejność sprawdzania jest WYMAGANIEM, nie stylem: alarm idzie pierwszy, przed „HINTS nie ma
+zastosowania" i przed „badanie niepełne", bo obecne odchylenie skośne albo niemożność chodzenia bez
+podparcia znaczą to samo niezależnie od tego, czy resztę badania dało się wykonać.
+
+ASYMETRIA NIEWIARYGODNOŚCI
+Badanie nazwane niewiarygodnym NIE MOŻE uspokajać, ale NIE ZNOSI zauważonej cechy alarmowej. „Nie
+byłem pewien" nie kasuje tego, co zobaczyłeś. Ta asymetria jest sprawdzana na całym iloczynie
+odpowiedzi w obie strony (bramki D10 i F5).
+
+KRYTERIUM ODBIORU NR 3 — CO ZNACZY „WYRAŹNE OSTRZEŻENIE"
+Ostrzeżenie istnieje WTEDY I TYLKO WTEDY, gdy zaznaczono cechę alarmową (równoważność sprawdzana
+w obie strony na 14 400 stanach), stoi NAD wnioskiem, ma role="alert", wymienia z nazwy cechy,
+które je wywołały, i powtarza postępowanie z karty czerwonej flagi Bloku 6: pilna ocena neurologiczna,
+MRI z dyfuzją (DWI) i angiografią (MRA), tomografia komputerowa NIE nadaje się do wykluczenia udaru
+tylnego dołu, wczesne MRI bywa fałszywie ujemne (powtórz po 48–72 h). Dwa różne zdania o tym samym
+postępowaniu znaczyłyby, że jedno z nich jest nieaktualne.
+
+CZEGO TEN BLOK NIE ROBI
+  • Nie stawia rozpoznania i nie wyklucza udaru. Wynik obwodowy mówi wprost, że jest wynikiem
+    BADANIA PRZY ŁÓŻKU, a pusta lista cech alarmowych mówi wprost, że NIE JEST wykluczeniem
+    przyczyny ośrodkowej.
+  • Nie zapisuje niczego na dysk. `wpisHints` przygotowuje rekord ze słowników zamkniętych dla
+    generatora opisu badania (Blok 15), a strażnik `bezDanychOsobowychHints` ten rekord ODRZUCA,
+    gdy pojawi się w nim cokolwiek spoza słownika — zamiast po cichu czyścić. Sanityzacja byłaby
+    gorsza od odmowy: zapis wyglądałby na zapisany, a dane zniknęłyby bez śladu.
+  • Nie mierzy czasu. Wpis nie niesie zegara — z tych samych dwóch powodów, co wpis kontroli
+    (determinizm złotego wzorca + godzina badania to dana pacjenta).
+  • Nie ocenia składowych za użytkownika i nie ma ANI JEDNEGO pola tekstowego na żadnym z trzech
+    ekranów, więc wpisanie danych pacjenta jest strukturalnie niemożliwe.

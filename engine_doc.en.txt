@@ -897,6 +897,19 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         re-establishing the canal, not repeating the previous maneuver — the direct basis for acceptance
         criterion 2 of Block 11.
 
+[H26] Newman-Toker DE, Kerber KA, Hsieh YH, Pula JH, Omron R, Saber Tehrani AS, Mantokoudis G, Hanley DF,
+      Zee DS, Kattah JC (2013). "HINTS outperforms ABCD2 to screen for stroke in acute continuous vertigo
+      and dizziness." Acad Emerg Med 20(10):986–996. doi:10.1111/acem.12223. PMID 24127701.
+      → The source for the "plus" in HINTS+ (Block 12 of the UI document): adding a hearing screen to the
+        head-impulse / nystagmus / test-of-skew triad. NEW unilateral hearing loss in an acute vestibular
+        syndrome raises suspicion of an AICA-territory infarct (the labyrinth is supplied from that
+        territory), so it enters the result as an ALARM FEATURE. The direction works ONE WAY ONLY: the
+        presence of hearing loss raises concern, its absence excludes nothing (labyrinthitis produces the
+        same picture) — which is why, in the OTOREPO model, the answer "symmetric hearing" carries a
+        NEUTRAL weight rather than "supports peripheral". Together with [H8] (HINTS/INFARCT), [H9] (context
+        and limits) and [H24] (GRACE-3: gait ataxia = central; HINTS inaccurate without training) it forms
+        the complete basis for Block 12.
+
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals
     (stage 7/E3) are composed realistically PER coplanar PAIR (verticalBeat), but with a simplified TORS_V=0.8;
@@ -1191,3 +1204,135 @@ added by the screen.
 Gates: npm run fu:check (pure model, bare Node, invariants over the full product of 588
 combinations) and npm run fu:dom (a DOM scan in jsdom — all three acceptance criteria are claims
 about WHAT THE APP DOES, not about the model).
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+THE HINTS/HINTS+ EXAMINATION WITH QUALIFICATION — TWO TRACKS, ONE DOOR (Block 12)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Sources: [H8] Kattah 2009 (HINTS, the INFARCT mnemonic) · [H9] Tarnutzer 2011 (context and limits) ·
+[H24] GRACE-3 2023 (the timing-and-triggers taxonomy; gait ataxia = central; HINTS inaccurate without
+training) · [H26] Newman-Toker 2013 (the "plus" = a hearing screen).
+Gates: npm run hints:check (pure model, bare Node, invariants over the FULL product of 14,400
+examination states) and npm run hints:dom (jsdom, the real module graph — all three acceptance
+criteria are claims about WHAT THE APP DOES).
+
+TWO TRACKS THAT MUST NOT BE CONFUSED
+The HINTS module now holds two things that work in opposite directions:
+  • the SIMULATOR (screen `hints`, the NeuroVOR engine) — you pick a pathology and the model shows
+    how the eyes will behave. It teaches the PATTERN;
+  • the EXAMINATION (screen `hintsBad`, src/app/hints-model.js) — you record what you SAW in the
+    patient and the app organizes the observations. It records the OBSERVATION.
+The separation is physical (separate screens, separate state, separate oracles) for the same reason
+Block 8 tore the observation form away from the animation of the PREDICTED nystagmus: as long as the
+form sits next to the model, "agreement" measures only whether someone copied the screen correctly.
+The examination model does not import the engine, and the oracle enforces that (gate J12).
+
+ACCEPTANCE CRITERION 1 — ONE DOOR
+Measured BEFORE the change: SEVEN of seven entry paths into the module went through with an EMPTY
+qualification (tiles 2 and 5 of the start screen, the HINTS tab, openHints, openHintsCustom, the
+"Laboratory" area, and the `#p=` link carrying a shared patient), while the only gate in the app —
+`triageGo` — sat on a path none of them touched. Today the door is ONE: the qualification screen,
+with `wolnoBadac` behind it. Entry exists in exactly two ways:
+  • qualification CONFIRMED — the answers form an acute vestibular syndrome (continuous dizziness
+    with sustained spontaneous nystagmus, no red flags);
+  • qualification DELIBERATELY SKIPPED — the user picks a REASON from a closed vocabulary (teaching
+    demonstration / simulation / qualification done outside the app / proceeding despite the advice
+    against it). The reason enters the result as a caveat and stays there for the rest of the
+    session; for "demonstration" and "simulation" the result says explicitly that THIS IS NOT A
+    RECORD OF A PATIENT EXAMINATION.
+The refusal is not silent: the screen states that it did not let you in and says what is missing.
+The qualification reads THE SAME `triage` state as Block 6 — two different questionnaires about the
+same patient could say two different things, and the user would have no way to guess which holds.
+
+The `#p=` link is gated most firmly of all seven, deliberately: a shared link can seat a clinician
+straight in front of the verdict "peripheral pattern — reassuring", computed for the PARAMETERS IN
+THE LINK rather than for the patient sitting in front of them.
+
+EXAMINER TRAINING AS A FIELD, NOT A LEGAL DISCLAIMER
+GRACE-3 [H24] states plainly that HINTS performed without training is inaccurate. We ask ONCE, in the
+qualification, and the result carries the answer itself — instead of making the user tick "unreliable
+examination" every time. A lack of training (or a missing answer) does not block the examination, but
+it REMOVES THE REASSURING VALUE of the result: a full peripheral set then drops from "pattern
+supporting a peripheral lesion" to "peripheral pattern, but with no reassuring value".
+
+WHY THE OPTIONS ARE NOT CALLED "NORMAL / ABNORMAL"
+The user document describes the choices as "normal, abnormal, cannot assess". We keep the SHAPE (big
+choices, always an explicit "cannot assess") but not those two labels — because in HINTS they INVERT,
+and that inversion is the whole point of the test. A NORMAL head impulse in a patient with an acute
+vestibular syndrome is the DANGEROUS finding (the "Impulse Normal" of INFARCT [H8]), and an ABNORMAL
+one is reassuring. A button labelled "normal" above a finding that means "rule out a stroke" would be
+the worst label in the entire app. The options therefore name WHAT IS SEEN ("corrective saccade" /
+"the eyes stay on target"), and the meaning is added by the result. The oracle keeps this as a
+RATCHET (gate B7), so nobody "fixes" it back to the document's literal wording.
+
+SIX COMPONENTS — AND WHY THREE OF THEM WEIGH DIFFERENTLY
+The core (HI · N · TS) settles the conclusion. The "plus" (hearing) and gait may ADD an alarm feature,
+but on their own they never create a reassuring result: symmetric hearing removes one alarm feature
+and adds nothing in the other direction [H26], and walking unaided is consistent with a peripheral
+cause but does not substitute for the triad. Every component carries three texts: the INSTRUCTION
+(how to perform it), the MEANING (what follows from it) and the TRAP (what this element does NOT
+tell you). The trap is the clinically most important field here — without it the module would teach
+that a negative test of skew excludes a stroke.
+
+TWO COUPLINGS BETWEEN COMPONENTS (which no on-screen label can express)
+  • "Impulse Normal" is an alarm feature ONLY when spontaneous nystagmus is present. In a patient
+    without nystagmus a normal head impulse is simply normal — reading it as "central" would be a
+    false alarm in the commonest outpatient situation. When the nystagmus was NOT ASSESSED the result
+    is not an alarm either, but the conclusion still cannot come out reassuring, because the core is
+    incomplete.
+  • Saccades on BOTH sides do not support a peripheral cause in the HINTS sense: HINTS assumes a
+    UNILATERAL acute vestibular syndrome, whereas bilateral vestibulopathy produces saccades
+    everywhere and looks reassuring in the face of real, severe loss ([H23], BVH).
+
+ACCEPTANCE CRITERION 2 — "CANNOT ASSESS" IS NOT A NORMAL RESULT
+Written down FOUR times, at four different levels, because a single place could be bypassed by
+accident:
+  1. option weight: "not assessed" never enters the list of findings supporting a peripheral cause;
+  2. conclusion: "pattern supporting a peripheral lesion" REQUIRES a complete core — one unassessed
+     HINTS component is enough to make a reassuring result impossible;
+  3. screen: unassessed components are LISTED BY NAME in a separate list, so they cannot be passed
+     over in silence;
+  4. appearance: the "cannot assess" option has a dashed outline and a square box instead of a round
+     one — it differs from an answer before anyone reads the label.
+We separately guard the difference between "not answered yet" and "cannot assess": touching the same
+answer again REMOVES it and returns to the unanswered state. If undoing an answer set "cannot
+assess", the user would be marking a missing assessment through sheer hesitation.
+
+SIX CONCLUSIONS — AND ONE THAT CAME OUT OF A BUG
+The conclusion "incomplete examination" says "not all three components were assessed". The first
+version of the model also dropped into it the states where the core WAS assessed but did not form a
+peripheral picture (saccades on both sides, a normal HIT without nystagmus) — that is, it displayed
+an UNTRUE label over an examination that had been carried out in full. Hence the separate conclusion
+"examination performed, result inconclusive": it leads to a different action than "finish the
+examination".
+The order of the checks is a REQUIREMENT, not a matter of style: the alarm comes first, before
+"HINTS does not apply here" and before "incomplete examination", because a present skew deviation or
+an inability to walk unaided mean the same thing regardless of whether the rest of the examination
+could be performed.
+
+THE ASYMMETRY OF UNRELIABILITY
+An examination called unreliable CANNOT reassure, but it does NOT cancel an alarm feature that was
+noticed. "I was not sure" does not erase what you saw. This asymmetry is checked in both directions
+over the whole product of answers (gates D10 and F5).
+
+ACCEPTANCE CRITERION 3 — WHAT "A CLEAR WARNING" MEANS
+The warning exists IF AND ONLY IF an alarm feature was marked (the equivalence is checked in both
+directions over 14,400 states), it stands ABOVE the conclusion, it carries role="alert", it names the
+features that triggered it, and it repeats the management from the red-flag card of Block 6: urgent
+neurological evaluation, MRI with diffusion (DWI) and angiography (MRA), CT is NOT suitable for ruling
+out a posterior-fossa stroke, early MRI can be false-negative (repeat after 48–72 h). Two different
+sentences about the same management would mean that one of them is out of date.
+
+WHAT THIS BLOCK DOES NOT DO
+  • It makes no diagnosis and excludes no stroke. The peripheral result states outright that it is a
+    BEDSIDE result, and an empty list of alarm features states outright that it is NOT an exclusion of
+    a central cause.
+  • It writes nothing to disk. `wpisHints` prepares a record from closed vocabularies for the
+    examination-report generator (Block 15), and the guard `bezDanychOsobowychHints` REJECTS that
+    record whenever anything outside the vocabulary appears in it — rather than silently cleaning it.
+    Sanitization would be worse than refusal: the record would look saved while the data vanished
+    without a trace.
+  • It measures no time. The record carries no clock — for the same two reasons as the follow-up
+    record (the golden snapshot must stay deterministic + the time of the examination is patient data).
+  • It does not judge the components for the user, and there is NOT A SINGLE text field on any of the
+    three screens, so entering patient data is structurally impossible.
