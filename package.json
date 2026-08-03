@@ -27,7 +27,9 @@
     "man:check": "node tools/man-check.mjs",
     "man:dom": "node tools/man-dom.mjs",
     "fu:check": "node tools/followup-check.mjs",
-    "fu:dom": "node tools/followup-dom.mjs"
+    "fu:dom": "node tools/followup-dom.mjs",
+    "hints:check": "node tools/hints-check.mjs",
+    "hints:dom": "node tools/hints-dom.mjs"
   },
   "repository": {
     "type": "git",
