@@ -44,6 +44,10 @@ const state={
   obs:{}, obsGrupa:null, obsPorownanie:false,                         // obsGrupa: rozwinięta grupa pytań na telefonie (czytana przez renderObs)
   obsOdciski:{},       // Blok 9: odcisk opisu per próba (pola wagi 3, bez kwarantannowanych). Liczy go obs-state.js przy KAŻDEJ mutacji rekordu; czyta decisionInputs — dzięki temu skasowanie opisu po wyborze manewru zapala „wymaga ponownego przeliczenia"
   triageStep:null,                                 // telefon: pytanie pokazywane w danej chwili (null = po kolei wg nextQuestionId)
+  // Blok 11: KONTROLA PO MANEWRZE. `kontrole` to historia serii (jeden wpis na manewr, indeks
+  // trzyma flow.maneuver.kontrolaIdx); pisze do niej WYLACZNIE src/app/followup-state.js, i tylko
+  // przez straznika danych. Wpis nie niesie zegara — patrz followup-model.wpisKontroli.
+  kontrole:[], kontrolaPowod:null, zakonczeniePyta:false, kontrolaBlad:null,   // wynik kontroli per manewr · powod niewiarygodnosci (slownik Bloku 8) · dwustopniowe potwierdzenie zakonczenia sesji · powod ODMOWY zapisu przez straznika danych (ekran musi powiedziec, ze nie zapisal)
   decisionSeq:0,                                 // MONOTONICZNY licznik świadomych decyzji interpretacyjnych (mechanizm/oczopląs/CPN). Rośnie tylko przy realnej zmianie wartości; nawigacja go NIE cofa — dzięki temu ciche przywrócenie diagCentral=false przez openTest nie gasi ostrzeżenia
   flow:{ testSeen:false, obsSeen:false, interpretSeen:false, maneuver:null },   // co użytkownik naprawdę zrobił + odcisk wejść z chwili wyboru manewru
 };

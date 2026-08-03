@@ -1,7 +1,7 @@
 /* OTOREPO — czysty model KONTROLI PO MANEWRZE (Blok 11).
  *
  * Dokument użytkownika, Blok 11: „Zamknięcie procesu klinicznego i obsługa wyników innych niż
- * natychmiastowe ustąpienie BPPV" — siedem odpowiedzi (ustąpienie / częściowa poprawa / brak
+ * natychmiastowe ustąpienie BPPV” — siedem odpowiedzi (ustąpienie / częściowa poprawa / brak
  * poprawy / konwersja kanałowa / podejrzenie drugiej strony / residual dizziness / badanie
  * niewiarygodne), możliwość powtórzenia próby, zmiany rozpoznania, manewru alternatywnego albo
  * zakończenia sesji, oraz trzy kryteria odbioru:
@@ -12,14 +12,14 @@
  *
  * ═══ CO TEN MODEL ROBI, A CZEGO NIE ═══
  * Wynik kontroli jest OBSERWACJĄ KLINICYSTY, nie wnioskiem aplikacji. Model nie ocenia, czy
- * repozycja się „udała" — przyjmuje odpowiedź na pytanie „co obserwujesz teraz?" i wyprowadza
+ * repozycja się „udała” — przyjmuje odpowiedź na pytanie „co obserwujesz teraz?” i wyprowadza
  * z niej NASTĘPNY KROK. To jest ta sama granica, którą trzymają Bloki 6, 8 i 9: kwestionariusz
  * wybiera ścieżkę, formularz opisuje obserwację, interpretacja eliminuje kandydatury — żaden
  * z nich nie stawia rozpoznania.
  *
  * ═══ MODUŁ JEST CZYSTY ═══
  * ZERO importów, zero DOM, zero `state` z modułu — stan i wiedza kliniczna wchodzą ARGUMENTEM
- * (wzorzec „inject-for-purity"). tools/followup-check.mjs uruchamia go w gołym Node.
+ * (wzorzec „inject-for-purity”). tools/followup-check.mjs uruchamia go w gołym Node.
  * Napisy trzymamy jako SUROWE pary pl/en: wywołanie t() na poziomie modułu ZAMROZIŁOBY język,
  * bo moduły ładują się przed initLang().
  *
@@ -27,13 +27,13 @@
  */
 
 /* ============ 1. Siedem odpowiedzi — SŁOWNIK ZAMKNIĘTY ============
-   Bez pozycji „inne" i bez pola tekstowego. To nie jest oszczędność: pole wolnego tekstu w karcie
+   Bez pozycji „inne” i bez pola tekstowego. To nie jest oszczędność: pole wolnego tekstu w karcie
    kontroli jest wektorem danych identyfikacyjnych pacjenta (kryterium odbioru nr 3) i tę samą
    zasadę trzyma obs-model.js oraz tor VOG.
 
    Pola każdej pozycji:
      wiarygodny — czy odpowiedź w ogóle NIESIE wynik kontroli (badanie niewiarygodne nie niesie);
-     zamyka     — czy proces kliniczny jest po niej domknięty (to nie znaczy „wyleczony" —
+     zamyka     — czy proces kliniczny jest po niej domknięty (to nie znaczy „wyleczony” —
                   patrz `uwaga` przy `ustapienie`);
      nowaPodstawa — czy odpowiedź wymaga ZBUDOWANIA WNIOSKU OD NOWA (kanał/strona), a nie
                   poprawienia wykonania. To jest oś, na której stoi kryterium odbioru nr 2. */
@@ -67,7 +67,7 @@ export const WYNIKI = [
     pl: 'konwersja kanałowa', en: 'canal conversion',
     pytaniePl: 'Wzorzec oczopląsu wskazuje INNY kanał niż leczony',
     pytanieEn: 'The nystagmus pattern points to a canal OTHER than the treated one',
-    uwagaPl: 'Złóg przeszedł do innego kanału (typowo tylny → poziomy po manewrze Epleya). To wskazanie do NOWEGO manewru dla nowego kanału, a nie porażka poprzedniego — kanał i stronę ustal od nowa w kroku „Interpretacja".',
+    uwagaPl: 'Złóg przeszedł do innego kanału (typowo tylny → poziomy po manewrze Epleya). To wskazanie do NOWEGO manewru dla nowego kanału, a nie porażka poprzedniego — kanał i stronę ustal od nowa w kroku „Interpretacja”.',
     uwagaEn: 'The debris moved into another canal (typically posterior → horizontal after an Epley). This indicates a NEW maneuver for the new canal, not a failure of the previous one — re-establish canal and side in the "Interpretation" step.',
   },
   {
@@ -117,8 +117,8 @@ export const AKCJA_IDS = Object.keys(AKCJE);
    wyrocznia sprawdza tę niemożliwość na PEŁNYM iloczynie wyników i stanów. */
 export const ZAWSZE_DOSTEPNE = ['zakonczSesje'];
 
-/* POWODY ZAKAZU. Zakaz znaczy „ta akcja NIE MA PRAWA pojawić się na ekranie", a nie „jest
-   wyszarzona" — i zawsze niesie uzasadnienie. Wyszarzenie bez słowa uczy klikać dalej. */
+/* POWODY ZAKAZU. Zakaz znaczy „ta akcja NIE MA PRAWA pojawić się na ekranie”, a nie „jest
+   wyszarzona” — i zawsze niesie uzasadnienie. Wyszarzenie bez słowa uczy klikać dalej. */
 export const POWODY_ZAKAZU = {
   konwersjaNieJestPowtorka: {
     pl: 'złóg jest w innym kanale — ten sam manewr leczyłby kanał, w którym już go nie ma',
@@ -147,7 +147,7 @@ export const POWODY_ZAKAZU = {
 
    EKSPORTOWANA SUROWO, i to nie jest wygoda testu. `nastepneKroki` odsiewa akcje zakazane, więc
    wpisanie zakazanej akcji do `dalsze` NIE ZMIENIA wyniku funkcji — zmierzone: mutacja dodająca
-   „powtórz manewr" do konwersji przechodziła wyrocznię na zielono. Filtr jest dobry (broni ekranu),
+   „powtórz manewr” do konwersji przechodziła wyrocznię na zielono. Filtr jest dobry (broni ekranu),
    ale sprawia, że sama tabela przestaje być pilnowana. Bramka czyta więc tabelę WPROST i wymaga,
    żeby była wewnętrznie niesprzeczna: nic, co zakazane, nie ma prawa być równocześnie oferowane. */
 export const REGULY_KROKOW = {
@@ -164,8 +164,8 @@ export const REGULY_KROKOW = {
                       zakaz: [['powtorzManewr', 'niewiarygodneNieUzasadnia'], ['alternatywnyManewr', 'niewiarygodneNieUzasadnia']] },
 };
 
-/* CEL NAWIGACYJNY „ponownej interpretacji" zależy od tego, jak użytkownik tu doszedł. Ścieżka
-   diagnostyczna ma próbę, więc ma ekran interpretacji; tryb ekspercki („Znam kanał i stronę")
+/* CEL NAWIGACYJNY „ponownej interpretacji” zależy od tego, jak użytkownik tu doszedł. Ścieżka
+   diagnostyczna ma próbę, więc ma ekran interpretacji; tryb ekspercki („Znam kanał i stronę”)
    próby NIE MA, a ekran interpretacji bez `testKey` nie ma z czego się zbudować — tam ponowne
    ustalenie kanału i strony odbywa się na ekranie doboru. Cel wyliczamy w modelu, żeby wyrocznia
    mogła go sprawdzić bez uruchamiania aplikacji. */
@@ -184,7 +184,7 @@ export function nastepneKroki(id, stan, deps) {
   const zakazane = new Set(k.zakaz.map(z => z[0]));
 
   // Alternatywa istnieje tylko wtedy, gdy kanał NAPRAWDĘ ma drugi manewr. Kanał przedni ma jeden
-  // (Yacovino), więc przycisk „wykonaj alternatywny manewr" prowadziłby donikąd.
+  // (Yacovino), więc przycisk „wykonaj alternatywny manewr” prowadziłby donikąd.
   const kanal = s.plan ? s.plan.canal : s.canal;
   const lista = kanal && deps && typeof deps.manewryKanalu === 'function' ? (deps.manewryKanalu(kanal) || []) : [];
   const maAlternatywe = lista.length > 1;
@@ -223,16 +223,16 @@ export function kontrolaMozliwa(stan) {
 }
 
 /* ============ 4. Sprzeczności między odpowiedzią a resztą stanu ============
-   Nie „walidacja formularza", tylko dwa zdania, których aplikacja NIE MA PRAWA przemilczeć:
-     • wynik mówi „konwersja", ale bieżący kanał to nadal kanał leczony — czyli nikt jeszcze nie
-       powiedział, DOKĄD złóg przeszedł, a bez tego „ponowna interpretacja" nie ma wejścia;
-     • wynik mówi „ustąpienie", a bieżące wejścia wskazują INNY kanał niż wykonany manewr (to samo
+   Nie „walidacja formularza”, tylko dwa zdania, których aplikacja NIE MA PRAWA przemilczeć:
+     • wynik mówi „konwersja”, ale bieżący kanał to nadal kanał leczony — czyli nikt jeszcze nie
+       powiedział, DOKĄD złóg przeszedł, a bez tego „ponowna interpretacja” nie ma wejścia;
+     • wynik mówi „ustąpienie”, a bieżące wejścia wskazują INNY kanał niż wykonany manewr (to samo
        porównanie, które robi man-model.sygnalKonwersji) — dwie sprzeczne rzeczy naraz.
    Sprzeczność nie blokuje zapisu: klinicysta ma prawo mieć rację wbrew stanowi aplikacji. Ma być
    NAZWANA. */
 export const SPRZECZNOSCI = {
   konwersjaBezKanalu: {
-    pl: 'zaznaczono konwersję kanałową, ale kanał w aplikacji jest nadal ten sam co leczony — wskaż nowy kanał w kroku „Interpretacja"',
+    pl: 'zaznaczono konwersję kanałową, ale kanał w aplikacji jest nadal ten sam co leczony — wskaż nowy kanał w kroku „Interpretacja”',
     en: 'canal conversion was marked, but the canal in the app is still the treated one — indicate the new canal in the "Interpretation" step',
   },
   ustapienieMimoInnegoKanalu: {
@@ -240,7 +240,7 @@ export const SPRZECZNOSCI = {
     en: 'resolution was marked, but the current inputs point to a canal other than the performed maneuver',
   },
   niewiarygodneBezPowodu: {
-    pl: 'nie podano powodu niewiarygodności — bez niego zapis mówi tylko „nie wiadomo"',
+    pl: 'nie podano powodu niewiarygodności — bez niego zapis mówi tylko „nie wiadomo”',
     en: 'no reason for unreliability was given — without it the record says only "unknown"',
   },
 };
@@ -257,8 +257,8 @@ export function spojnoscWyniku(id, stan, deps) {
 }
 
 /* ============ 5. Wpis do historii serii ============
-   Dokument (komputer): „Historia pozycji i czasu pozostaje dostępna", a wynik kontroli „zasila
-   generator opisu" (Blok 15). Wpis powstaje TUTAJ, w jednym miejscu, i jest jedyną rzeczą, którą
+   Dokument (komputer): „Historia pozycji i czasu pozostaje dostępna”, a wynik kontroli „zasila
+   generator opisu” (Blok 15). Wpis powstaje TUTAJ, w jednym miejscu, i jest jedyną rzeczą, którą
    ten blok utrwala.
 
    DWIE RZECZY, KTÓRYCH TU NIE MA, I TO JEST ŚWIADOME:
@@ -268,7 +268,7 @@ export function spojnoscWyniku(id, stan, deps) {
        cała potrzebna informacja o następstwie.
      • CZASU ZMIERZONEGO U PACJENTA — `czasy` to czasy Z PLANU (protokolarne albo ustawione ręcznie
        suwakiem), a nie to, ile pacjent naprawdę leżał. Aplikacja mierzy czas jednego etapu naraz
-       i nie sumuje go przez manewr, więc nazwanie tego „czasem wykonania" byłoby fikcją. Pole
+       i nie sumuje go przez manewr, więc nazwanie tego „czasem wykonania” byłoby fikcją. Pole
        `czasySkad` mówi to wprost i wchodzi do podsumowania. */
 export function wpisKontroli(stan, wynikId, deps) {
   const s = stan || {};
@@ -290,7 +290,7 @@ export function wpisKontroli(stan, wynikId, deps) {
 }
 
 /* ============ 6. KRYTERIUM ODBIORU NR 3 — STRAŻNIK, NIE OBIETNICA ============
-   „Użytkownik może zakończyć i zapisać sesję bez wypełnienia danych identyfikacyjnych pacjenta."
+   „Użytkownik może zakończyć i zapisać sesję bez wypełnienia danych identyfikacyjnych pacjenta.”
    W aplikacji nie ma dziś ANI JEDNEGO pola tekstowego, więc kryterium jest spełnione — i dokładnie
    dlatego dokładamy ZAPADKĘ zamiast naprawy (ten sam ruch, co przy kryterium nr 2 Bloku 10).
 
@@ -334,7 +334,7 @@ export function bezDanychOsobowych(wpis, deps) {
 /* ============ 7. Podsumowanie sesji ============
    To NIE jest generator opisu badania (Blok 15). To lista tego, co w tej sesji naprawdę zaszło,
    zbudowana wyłącznie z identyfikatorów — etykiety dokłada ekran. Pozycje o wartości `null` też
-   są zwracane: „czego NIE zrobiono" jest w podsumowaniu badania równie ważne jak to, co zrobiono,
+   są zwracane: „czego NIE zrobiono” jest w podsumowaniu badania równie ważne jak to, co zrobiono,
    a milczenie czytałoby się jako brak potrzeby. */
 export function podsumowanieSesji(stan, deps) {
   const s = stan || {};
@@ -363,11 +363,11 @@ export function podsumowanieSesji(stan, deps) {
   };
 }
 
-/* ============ 8. Status kroku „Kontrola" dla paska przebiegu ============
+/* ============ 8. Status kroku „Kontrola” dla paska przebiegu ============
    Czytane przez flow-model.js (bezimportowy) przez STRESZCZENIE w stanie — dokładnie tak samo,
    jak kwalifikacja wstępna z Bloku 6. Tutaj mieszka reguła, a nie w pasku:
      brak wyniku            → krok niewykonany,
-     wynik „niewiarygodne"  → `unreliable` (nie `done` — kontrola się odbyła, ale nic nie niesie),
+     wynik „niewiarygodne”  → `unreliable` (nie `done` — kontrola się odbyła, ale nic nie niesie),
      wynik zamykający       → `done`,
      wynik niezamykający    → `done` Z POWODEM, bo proces trwa dalej i pasek ma to napisać. */
 export function streszczenieKontroli(stan) {

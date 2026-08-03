@@ -70,9 +70,14 @@ export const FLOW_STEPS = [
     mode: 'treat', screen: 'guide',
     wymaga: s => !!(s.plan && s.maneuverKey), zamiast: { screen: 'setup', mode: 'treat' } },
 
+  /* Blok 11 zdjął z tego kroku `pending`. Ekran kontroli istnieje tylko wtedy, gdy istnieje
+     manewr, którego dotyczy — bez odcisku manewru karta „co obserwujesz teraz?" opisywałaby wynik
+     czegoś, co się nie wydarzyło. Przy pustym stanie celujemy w ekran doboru, odporny na pustkę
+     (ta sama bramka `wymaga`/`zamiast`, którą Blok 5 postawił przy próbie i manewrze). */
   { id: 'followup',  pl: 'Kontrola',      en: 'Follow-up',
     plDesc: 'próba kontrolna po repozycji', enDesc: 'control test after repositioning',
-    pending: true },
+    mode: 'treat', screen: 'followup',
+    wymaga: s => !!(s.flow && s.flow.maneuver && s.flow.maneuver.key), zamiast: { screen: 'setup', mode: 'treat' } },
 ];
 
 export const FLOW_IDS = FLOW_STEPS.map(s => s.id);
@@ -338,6 +343,7 @@ export function activeStepId(s) {
   if (s.screen === 'obs') return 'nystagmus';        // własny ekran kroku „Oczopląs" (Blok 8)
   if (s.screen === 'interpret') return 'interpret';  // własny ekran kroku „Interpretacja" (Blok 9)
   if (s.screen === 'guide') return 'maneuver';
+  if (s.screen === 'followup') return 'followup';    // własny ekran kroku „Kontrola" (Blok 11)
   if (s.screen === 'diag') {
     // Na ekranie testu współistnieją dziś trzy kroki. Bierzemy najdalszy, który użytkownik
     // naprawdę zaczął — inaczej pasek stałby na „Próba" przez cały czas pracy.
@@ -361,7 +367,7 @@ export function flowVisible(s) {
   if (s.mode === 'hints') return false;
   if (s.screen === 'start' || s.screen === 'hints') return false;
   return s.screen === 'setup' || s.screen === 'diag' || s.screen === 'obs' || s.screen === 'interpret'
-      || s.screen === 'guide' || s.screen === 'triage';
+      || s.screen === 'guide' || s.screen === 'triage' || s.screen === 'followup';
 }
 
 /* PODPIS STANU dla powłoki. Obserwator mutacji #app (shell.js) odświeża chrom tylko wtedy, gdy
@@ -384,6 +390,11 @@ export function flowSignature(s) {
     f.triage ? `${f.triage.complete ? 1 : 0}:${f.triage.kategoria}:${f.triage.sciezka}:${f.triage.pewnosc}` : '-',
     s.triageStep || '',
     m ? `${m.key}:${m.planSide}:${m.viaInterpret ? 1 : 0}:${m.consumed ? 1 : 0}:${m.inputs ? m.inputs.seq : ''}` : '-',
+    /* Blok 11: bez wyniku kontroli w podpisie pasek NIGDY by się po nim nie przerysował
+       (obserwator #app nie odświeża chromu, dopóki podpis stoi), czyli krok „Kontrola" zmieniałby
+       status wyłącznie w modelu. Ta sama pułapka, którą Blok 9 zamknął odciskiem obserwacji. */
+    f.kontrola ? `${f.kontrola.wynik}:${f.kontrola.powod || ''}:${f.kontrola.seria}` : '-',
+    s.zakonczeniePyta ? 1 : 0,
   ].join('|');
 }
 
@@ -409,9 +420,6 @@ export function flowStatuses(s, deps) {
       if (st.id === 'history') {
         powodPl = 'Moduł wywiadu i kwalifikacji jest w przygotowaniu. Czerwone flagi oceniaj samodzielnie przed manewrem.';
         powodEn = 'The history and triage module is in preparation. Assess red flags yourself before any maneuver.';
-      } else if (st.id === 'followup') {
-        powodPl = 'Moduł kontroli po repozycji jest w przygotowaniu. Powtórz próbę ręcznie, wracając do kroku „Próba”.';
-        powodEn = 'The post-repositioning control module is in preparation. Repeat the test manually via the "Test" step.';
       } else {
         // Jedyny dziś przypadek: obserwację wpisuje się wyłącznie w Dix-Hallpike'u.
         powodPl = 'Wprowadzanie zaobserwowanego oczopląsu istnieje na razie tylko dla manewru Dix–Hallpike’a. Przy tej próbie aplikacja pokazuje wzorzec PRZEWIDYWANY przez model — porównaj go z tym, co widzisz u pacjenta.';
@@ -470,6 +478,29 @@ export function flowStatuses(s, deps) {
           powodPl = 'Manewr dopuszczalny, ale pierwszym rzutem jest teraz inny.';
           powodEn = 'The maneuver is acceptable, but a different one is now first-line.';
         } else status = 'done';
+      }
+    } else if (st.id === 'followup') {
+      /* Blok 11. Wynik kontroli STRESZCZA do stanu followup-state.syncKontrola — model zostaje
+         bezimportowy, dokładnie jak przy kwalifikacji wstępnej z Bloku 6.
+         Reguła nadrzędna: „niewiarygodne" NIE jest zakończeniem. Kontrola się odbyła, ale nic nie
+         niesie, więc melodowanie „zakończony" powtórzyłoby błąd, który Blok 8 wyciął przy
+         lateralizacji: status opisuje WARTOŚĆ wyniku, nie sam fakt, że ktoś czegoś dotknął. */
+      const k = f.kontrola;
+      if (k) {
+        if (!k.wiarygodny) {
+          status = 'unreliable';
+          powodPl = 'Kontrolę oznaczono jako niewiarygodną — na jej podstawie nie domykaj procesu ani nie uzasadniaj kolejnej repozycji.';
+          powodEn = 'The control was marked unreliable — do not close the process or justify another repositioning on it.';
+        } else {
+          status = 'done';
+          if (k.nowaPodstawa) {
+            powodPl = 'Wynik kontroli wskazuje inny kanał albo drugą stronę — ustal kanał i stronę od nowa.';
+            powodEn = 'The control points to a different canal or the other side — re-establish canal and side.';
+          } else if (!k.zamyka) {
+            powodPl = 'Kontrola wykonana, ale proces nie jest domknięty — objawy utrzymują się.';
+            powodEn = 'The control was performed, but the process is not closed — symptoms persist.';
+          }
+        }
       }
     }
 

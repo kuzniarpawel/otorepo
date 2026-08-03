@@ -2,11 +2,12 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, sideN, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
+import { SIDE, sideN, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, CANAL_OF, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
          computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds,
          DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
+         POWODY_NIEWIARYGODNOSCI,
          OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
          ETYKIETY_OSI, nieuzyte, porownajZPredykcja, WERDYKTY_POROWNANIA, fazaDIAG,
          OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI } from '../app/obs-model.js';
@@ -14,6 +15,9 @@ import { nietypowy, interpretuj, sugerowaneProby, POWODY_NIETYPOWOSCI, POWODY_ZG
 import { interpDeps as _interpDeps } from '../app/interp-deps.js';
 import { doborEkspercki, podpisWyboru, POLA_WYBORU, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny, POWOD_BRAKU_TRYBU, POWODY_CZASU, KRYTERIA, WYJSCIE_ZLOGA, opisPozycji } from '../app/man-model.js';
 import { manDeps } from '../app/man-deps.js';
+import { WYNIKI, AKCJE, wynikKontroli, nastepneKroki, kontrolaMozliwa, spojnoscWyniku,
+         podsumowanieSesji, streszczenieKontroli } from '../app/followup-model.js';
+import { followupDeps } from '../app/followup-deps.js';
 import { nowyZegar, startZegara, pauzaZegara, resetZegara, odliczono, ustawOdliczono, odnotujLuke, potwierdzLuke, PROG_LUKI_MS } from '../runtime/hold-clock.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, pickSide, openMan, openTest, zmienManewr, ustawTrybCzasu, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -695,6 +699,7 @@ function render(){
   else if(state.screen==="guide") renderGuide();
   else if(state.screen==="obs") renderObs();
   else if(state.screen==="interpret") renderInterpret();
+  else if(state.screen==="followup") renderFollowup();
   else if(state.screen==="hints") renderHints();
   else renderDiag();
   /* ZASIĘG ZEGARA WIZUALIZACJI = EKRAN, KTÓRY MA PILOTA (naprawa po krytyce Bloku 7).
@@ -1211,6 +1216,183 @@ function renderInterpret(){
       ${kartaUzasadnienia()}
     </div></div>
     <p class="footnote">${t("Wynik interpretacji nie jest rozpoznaniem. Model jest uproszczeniem — rozstrzyga kontekst kliniczny.","An interpretation result is not a diagnosis. The model is a simplification — the clinical context decides.")}</p>`;
+}
+
+/* ============ Krok „Kontrola" po manewrze (Blok 11) ============
+   Dokument: „Zamknięcie procesu klinicznego i obsługa wyników innych niż natychmiastowe ustąpienie
+   BPPV". Trzy kryteria odbioru i wszystkie trzy są zdaniami o TYM ekranie:
+     1. aplikacja NIE wraca automatycznie do początku — koniec manewru prowadzi TUTAJ, a nie na
+        ekran doboru (zmierzone przed zmianą: `zakonczSerie` wołało `backToSetup`, czyli seria
+        kończyła się dokładnie tam, gdzie się zaczęła, bez śladu po tym, co się wydarzyło);
+     2. konwersja kanałowa prowadzi do ponownej interpretacji — przycisku „powtórz ten sam manewr"
+        po prostu NIE MA (model zwraca go jako zakazany, z powodem);
+     3. sesję da się zakończyć bez danych identyfikacyjnych — na tym ekranie nie ma ANI JEDNEGO
+        pola tekstowego, więc wpisanie nazwiska jest strukturalnie niemożliwe (ta sama zasada,
+        co w karcie obserwacji i w torze VOG).
+
+   Wartość odpowiedzi jest OBSERWACJĄ KLINICYSTY. Ekran nie ocenia, czy repozycja się udała —
+   pokazuje, co z odpowiedzi wynika i czego aplikacja o niej nie wie. */
+function fuWartoscOpisu(rek, klucz){
+  const v = wartoscInstancji(rek, klucz, { ufajNiewiarygodnym:true });
+  if(v==null) return null;
+  const [pole] = String(klucz).split("#");
+  const def = OBS_POLA[pole];
+  if(!def) return String(v);
+  const w = (def.wartosci||[]).find(x=>x.id===v);
+  return w ? t(w.pl, w.en) : String(v);
+}
+/* PORÓWNANIE PRZED I PO (dokument, kolumna „Komputer”). „Przed” to KOPIA rekordu zdjęta w chwili
+   oznaczenia manewru jako wykonanego (flow-state.markConsumed) — bez niej porównanie znikałoby
+   dokładnie wtedy, gdy powstaje jego druga strona: rekordy obserwacji są kluczowane PRÓBĄ, więc
+   opisanie próby kontrolnej nadpisuje opis sprzed manewru. */
+function fuPorownanie(m){
+  if(!m || m.opisPrzed === undefined) return "";
+  const proba = m.opisPrzedProba || null;
+  const przed = m.opisPrzed;
+  const po = proba ? ((state.obs||{})[proba] || null) : null;
+  const zmienione = JSON.stringify(przed) !== JSON.stringify(po);
+  if(!przed && !po) return `<div class="card fuporown"><h4>${t("Przed i po","Before and after")}</h4>
+    <div class="note">${t("Przed manewrem nie opisano oczopląsu w kroku „Oczopląs”, więc nie ma czego porównywać. Sam wynik kontroli zostaje w historii serii.","No nystagmus was described in the “Nystagmus” step before the maneuver, so there is nothing to compare. The control result alone stays in the series history.")}</div></div>`;
+  const inst = instancjeStosowalne(proba, wartoscInstancji(przed || po, "wystapil", { ufajNiewiarygodnym:true }));
+  const wiersze = inst.map(i=>{
+    const a = przed ? fuWartoscOpisu(przed, i.klucz) : null;
+    const b = po ? fuWartoscOpisu(po, i.klucz) : null;
+    if(a==null && b==null) return "";
+    return `<tr><th scope="row">${opisInstancji(i.klucz)}</th><td>${a==null?"—":a}</td><td>${b==null?"—":b}</td></tr>`;
+  }).filter(Boolean).join("");
+  return `<div class="card fuporown"><h4>${t("Przed i po","Before and after")}</h4>
+    ${wiersze?`<table class="futab"><thead><tr><th scope="col">${t("cecha","feature")}</th><th scope="col">${t("przed manewrem","before")}</th><th scope="col">${t("po manewrze","after")}</th></tr></thead><tbody>${wiersze}</tbody></table>`:""}
+    <div class="note">${zmienione
+      ? t("Kolumna „po manewrze” pochodzi z opisu próby kontrolnej, który wprowadziłeś w kroku „Oczopląs”.","The “after” column comes from the control-test description you entered in the “Nystagmus” step.")
+      : t("Próby kontrolnej nie opisano jeszcze cecha po cesze — kolumna „po manewrze” wypełni się, gdy opiszesz ją w kroku „Oczopląs”. Sama odpowiedź z tej karty jej nie zastępuje.","The control test has not been described feature by feature yet — the “after” column fills in once you describe it in the “Nystagmus” step. The answer on this card does not replace it.")}</div>
+  </div>`;
+}
+function renderFollowup(){
+  const D = followupDeps();
+  const m = (state.flow && state.flow.maneuver) || null;
+  const mozliwa = kontrolaMozliwa(state);
+  const str = streszczenieKontroli(state);
+  const wybrany = str.wynik;
+  const kroki = wybrany ? nastepneKroki(wybrany, state, D) : null;
+  const sprzecz = wybrany ? spojnoscWyniku(wybrany, state, D) : [];
+  const wynikDef = wybrany ? wynikKontroli(wybrany) : null;
+  const kanal = m && m.key ? CANAL_OF[m.key] : null;
+  const podpis = m && m.key
+    ? `${MANEUVERS[m.key].label} · ${CANALS[kanal].label} · ${t("ucho","ear")} ${sideN(m.planSide||state.side,"mianN")}`
+    : t("brak manewru","no maneuver");
+
+  // Kanał, do którego złóg mógł przejść, znamy tylko wtedy, gdy ktoś go wskazał; ekran o tym mówi.
+  const alternatywy = kanal ? (CANALS[kanal].maneuvers||[]).filter(k=>k!==(m&&m.key)) : [];
+
+  const kartaPytania = ()=>{
+    if(!mozliwa.mozliwa) return `<div class="card fubrak"><h4>${t("Nie ma czego kontrolować","Nothing to control yet")}</h4>
+      <div class="note">${t(mozliwa.pl, mozliwa.en)}</div>
+      <button class="recoprimary" onclick="wrocDoManewru()">${m&&m.key?t("Wróć do manewru","Back to the maneuver"):t("Wybierz manewr","Choose a maneuver")}</button></div>`;
+    return `<div class="card fupyt"><h4>${t("Co obserwujesz teraz?","What do you observe now?")}</h4>
+      <div class="note">${t("Odpowiedź opisuje TWOJĄ obserwację po repozycji. Aplikacja nie ocenia skuteczności manewru — wyprowadza z odpowiedzi następny krok.","The answer describes YOUR observation after repositioning. The app does not judge the maneuver's effectiveness — it derives the next step from the answer.")}</div>
+      <ul class="fuopcje">${WYNIKI.map(w=>`<li><button type="button" class="fuopcja" aria-pressed="${wybrany===w.id}" onclick="ustawWynikKontroli('${w.id}')">
+        <span class="fuopcja__n">${t(w.pl, w.en)}</span>
+        <span class="fuopcja__o">${t(w.pytaniePl, w.pytanieEn)}</span></button></li>`).join("")}</ul>
+      ${wybrany==="niewiarygodne" ? `<div class="fupowod"><span class="eyebrow">${t("Dlaczego nie da się ocenić","Why it cannot be assessed")}</span>
+        ${POWODY_NIEWIARYGODNOSCI.map(p=>`<button type="button" class="fupowod__b" aria-pressed="${state.kontrolaPowod===p.id}" onclick="ustawPowodKontroli('${p.id}')">${t(p.pl, p.en)}</button>`).join("")}</div>`:""}
+      ${state.kontrolaBlad?`<div class="fublad" role="status">${t("Zapisu nie wykonano:","The record was not written:")} ${state.kontrolaBlad}</div>`:""}
+    </div>`;
+  };
+
+  const kartaDalej = ()=>{
+    if(!wybrany || !kroki) return "";
+    const przycisk = (a, klasa)=>`<button class="${klasa}" onclick="kontrolaAkcja('${a}')">${t(AKCJE[a].pl, AKCJE[a].en)}</button>`;
+    // „Obserwacja” nie jest nawigacją — to zdanie kliniczne. Przycisk, który niczego nie otwiera,
+    // uczy, że przyciski tej aplikacji bywają puste.
+    /* ZAKOŃCZENIE SESJI NIE JEST TU PRZYCISKIEM, choć bywa krokiem głównym (po ustąpieniu).
+       Ma własną, ZAWSZE OBECNĄ kartę niżej, więc dublowanie go tutaj dawało dwa identycznie
+       podpisane przyciski obok siebie — zmierzone na gotowym ekranie przy wyniku „ustąpienie".
+       Zamiast tego karta końcowa dostaje akcent głównego kroku. */
+    const glowny = kroki.glowny==="obserwuj"
+      ? `<div class="fuinfo">${t(AKCJE.obserwuj.pl, AKCJE.obserwuj.en)}</div>`
+      : kroki.glowny==="zakonczSesje" ? ""
+      : przycisk(kroki.glowny, "recoprimary");
+    const dalsze = kroki.dalsze.filter(a=>a!=="obserwuj" && a!=="alternatywnyManewr" && a!=="zakonczSesje").map(a=>przycisk(a, "recoalt")).join("");
+    const alty = kroki.dalsze.includes("alternatywnyManewr") && alternatywy.length
+      ? `<div class="fualt"><span class="eyebrow">${t("Alternatywny manewr tego kanału","Alternative maneuver for this canal")}</span>
+          ${alternatywy.map(k=>`<button class="recoalt" onclick="kontrolaAlternatywa('${k}')">${MANEUVERS[k].label}</button>`).join("")}</div>`
+      : "";
+    return `<div class="card fudalej"><h4>${t("Co dalej","What next")}</h4>
+      <div class="note fuuwaga">${t(wynikDef.uwagaPl, wynikDef.uwagaEn)}</div>
+      ${sprzecz.length?`<ul class="fusprzecz">${sprzecz.map(s=>`<li>${t(s.pl, s.en)}</li>`).join("")}</ul>`:""}
+      ${glowny}
+      ${dalsze}
+      ${alty}
+      ${kroki.zakaz.length?`<div class="fuzakaz"><span class="eyebrow">${t("Czego ten ekran celowo nie proponuje","What this screen deliberately does not offer")}</span>
+        <ul>${kroki.zakaz.map(z=>`<li><b>${t(AKCJE[z.akcja].pl, AKCJE[z.akcja].en)}</b> — ${t(z.pl, z.en)}</li>`).join("")}</ul></div>`:""}
+    </div>`;
+  };
+
+  /* ZAKOŃCZENIE SESJI STOI POZA KARTĄ WYNIKU i to jest kryterium odbioru nr 3, a nie układ.
+     Pierwsza wersja miała ten przycisk wewnątrz karty „Co dalej", która renderuje się dopiero po
+     wybraniu odpowiedzi — czyli sesji NIE DAŁO SIĘ zakończyć, dopóki użytkownik czegoś nie
+     zaznaczył. Warunek wstępny do wyjścia z badania jest dokładnie tym, czego to kryterium
+     zabrania, choć dotyczy odpowiedzi, a nie danych pacjenta. */
+  const kartaKoniec = ()=> state.zakonczeniePyta ? "" : `<div class="card fukoniecbox">
+      <button class="${kroki && kroki.glowny==="zakonczSesje" ? "recoprimary" : "recoalt"} fukoniec" onclick="pytajOZakonczeniu(true)">${t(AKCJE.zakonczSesje.pl, AKCJE.zakonczSesje.en)}</button>
+      <div class="note">${t("Zakończenie nie wymaga wypełnienia czegokolwiek. Aplikacja nigdzie nie pyta o dane pacjenta.","Ending requires nothing to be filled in. The app never asks for patient data.")}</div>
+    </div>`;
+
+  /* HISTORIA SERII (dokument: „Historia pozycji i czasu pozostaje dostępna”). Czasy są PLANOWE
+     i karta mówi to wprost — aplikacja mierzy czas jednego etapu naraz i nie sumuje go przez
+     manewr, więc nazwanie tego „czasem wykonania” byłoby fikcją. */
+  const kartaSerii = ()=>{
+    const lista = (state.kontrole||[]).filter(k=>k && k.wynik);
+    if(!lista.length) return "";
+    return `<div class="card fuseria"><h4>${t("Przebieg serii","Series so far")}</h4>
+      <ol class="fuseria__l">${lista.map((k,i)=>{
+        const w = wynikKontroli(k.wynik);
+        const czasy = (k.czasy||[]).filter(x=>x!=null);
+        return `<li><b>${MANEUVERS[k.manewr]?MANEUVERS[k.manewr].label:k.manewr}</b> · ${t("ucho","ear")} ${sideN(k.strona,"mianN")}
+          <span class="fuseria__w">${w?t(w.pl,w.en):k.wynik}</span>
+          ${k.powod?`<span class="fuseria__p">${(()=>{const p=POWODY_NIEWIARYGODNOSCI.find(x=>x.id===k.powod); return p?t(p.pl,p.en):k.powod;})()}</span>`:""}
+          ${czasy.length?`<span class="fuseria__c">${t("czasy z planu","times from the plan")}: ${czasy.map(s=>fmtClock(s)).join(" · ")}${k.czasySkad==="planPodniesiony"?` (${t("podniesione trybem „do ustąpienia oczopląsu”","raised by the “until nystagmus subsides” mode")})`:""}</span>`:""}
+        </li>`;
+      }).join("")}</ol>
+      <div class="note">${t("Czasy pochodzą z PLANU manewru (protokolarne albo ustawione przez Ciebie), a nie z pomiaru u pacjenta — aplikacja odlicza jeden etap naraz i nie sumuje ich przez cały manewr.","The times come from the maneuver PLAN (protocol or set by you), not from measuring the patient — the app counts one stage at a time and does not sum them across the maneuver.")}</div>
+    </div>`;
+  };
+
+  const kartaZakonczenia = ()=>{
+    if(!state.zakonczeniePyta) return "";
+    const p = podsumowanieSesji(state, D);
+    const poz = [];
+    poz.push([t("Kwalifikacja wstępna","Initial triage"), p.kwalifikacja?`${p.kwalifikacja.kategoria}${p.kwalifikacja.czerwona?` — ${t("czerwona flaga","red flag")}`:""}`:t("nie wypełniona","not completed")]);
+    poz.push([t("Próba","Test"), p.proba?DIAG[p.proba].name:t("nie wybrano","not chosen")]);
+    poz.push([t("Opisane próby","Described tests"), p.opisaneProby.length?p.opisaneProby.map(k=>DIAG[k].name).join(" · "):t("żadna","none")]);
+    poz.push([t("Kanał i strona","Canal and side"), p.kanal?`${CANALS[p.kanal].label} · ${t("ucho","ear")} ${sideN(p.strona,"mianN")}`:t("nie ustalono","not established")]);
+    poz.push([t("Manewry i kontrole","Maneuvers and controls"), p.kontrole.length
+      ? p.kontrole.map(k=>`${MANEUVERS[k.manewr]?MANEUVERS[k.manewr].label:k.manewr} → ${(()=>{const w=wynikKontroli(k.wynik); return w?t(w.pl,w.en):k.wynik;})()}`).join(" · ")
+      : t("brak zapisanej kontroli","no control recorded")]);
+    return `<div class="card fukonczenie"><h4>${t("Zakończyć sesję?","End the session?")}</h4>
+      <dl class="fupods">${poz.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+      ${p.manewrBezKontroli?`<div class="note">${t("Ostatni manewr nie ma zapisanej kontroli — w podsumowaniu zostanie luka.","The last maneuver has no recorded control — the summary will have a gap.")}</div>`:""}
+      <div class="note">${t("Podsumowanie żyje wyłącznie w tej sesji: aplikacja nie zapisuje go na urządzeniu i nigdzie nie wysyła. Zakończenie kasuje dane przypadku i zostawia ustawienia narzędzia. Nigdzie nie pytamy o dane pacjenta i nie ma gdzie ich wpisać.","The summary lives only in this session: the app does not store it on the device and does not send it anywhere. Ending clears the case data and keeps the tool's settings. We never ask for patient data and there is nowhere to enter it.")}</div>
+      <div class="fukonczenie__r">
+        <button class="recoprimary" onclick="zakonczSesje()">${t("Zakończ i wyczyść","End and clear")}</button>
+        <button class="recoalt" onclick="pytajOZakonczeniu(false)">${t("Wróć","Back")}</button>
+      </div>
+    </div>`;
+  };
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="wrocDoManewru()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Kontrola po manewrze","Post-maneuver control")}</b><span>${podpis}</span></div></div>
+    <div class="pagegrid"><div class="col col--ctl">
+      ${kartaPytania()}
+      ${kartaDalej()}
+      ${kartaZakonczenia()}
+      ${kartaKoniec()}
+    </div><div class="col col--viz">
+      ${fuPorownanie(m)}
+      ${kartaSerii()}
+    </div></div>
+    <p class="footnote">${t("Wynik kontroli nie jest rozpoznaniem ani oceną skuteczności leczenia. Narzędzie jest edukacyjne — rozstrzyga badanie kliniczne.","A control result is neither a diagnosis nor an assessment of treatment efficacy. This is an educational tool — the clinical examination decides.")}</p>`;
 }
 
 function renderTriage(){

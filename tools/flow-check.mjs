@@ -58,10 +58,11 @@ const zManewrem = (o = {}, key = 'epley', via = true) => {
 /* ============ 1. Kształt tablicy kroków ============ */
 eq('SH1/kolejnosc', FLOW_IDS, ['history', 'test', 'nystagmus', 'interpret', 'maneuver', 'followup']);
 T('SH2/liczba', FLOW_STEPS.length === 6, `kroków ${FLOW_STEPS.length}, dokument mówi o sześciu`);
-// Blok 6 dał Wywiadowi realną tresc (kwalifikacja wstepna), wiec jedynym krokiem bez modulu
-// zostaje Kontrola. Ta asercja ma trzymac liste KROTKA: kazdy kolejny `pending` to obietnica.
-T('SH3/pending', FLOW_STEPS.filter(s => s.pending).map(s => s.id).join(',') === 'followup',
-  'w przygotowaniu ma byc juz tylko Kontrola');
+/* Blok 6 dał Wywiadowi realną tresc, Blok 11 — Kontroli, wiec lista `pending` jest PUSTA:
+   wszystkie szesc krokow dokumentu istnieje. Asercja przepisana, nie skasowana, i teraz jest
+   mocniejsza niz byla: KAZDY nowy `pending` to obietnica zlozona uzytkownikowi w pasku procesu,
+   wiec ma wymagac swiadomej zmiany tej linii. */
+eq('SH3/bez-pending', FLOW_STEPS.filter(s => s.pending).map(s => s.id), []);
 T('SH4/dwujezycznosc', FLOW_STEPS.every(s => s.pl && s.en && s.plDesc && s.enDesc),
   'każdy krok musi mieć komplet napisów PL i EN');
 T('SH5/statusy', ['todo', 'active', 'done', 'unreliable', 'skipped', 'pending', 'stale']
@@ -386,9 +387,11 @@ eq('AK8/hints', activeStepId(S({ screen: 'hints', mode: 'hints' })), null);
 
 /* ============ 9. Statusy kroków ============ */
 eq('ST1/wywiad-niewykonany', statusOf(S(), 'history'), 'todo');
-eq('ST2/kontrola', statusOf(S(), 'followup'), 'pending');
-T('ST3/powod-pending', krok(S(), 'followup').powodPl.length > 20, 'krok w przygotowaniu MUSI mieć uzasadnienie');
-T('ST3b/powod-en', krok(S(), 'followup').powodEn.length > 20, 'uzasadnienie po angielsku');
+// Blok 11: krok istnieje, wiec „niewykonany" — a nie „w przygotowaniu". Statusy wyniku kontroli
+// maja wlasna sekcje (KT) nizej.
+eq('ST2/kontrola-niewykonana', statusOf(S(), 'followup'), 'todo');
+T('ST3/kontrola-bez-uzasadnienia', !krok(S(), 'followup').powodPl,
+  'krok niewykonany nie ma czego uzasadniac — uzasadnienie ma dopiero WYNIK kontroli');
 eq('ST4/test-aktywny', statusOf(S(), 'test'), 'active');
 eq('ST5/test-todo-gdy-gdzie-indziej', statusOf(S({ screen: 'guide' }), 'test'), 'todo');
 eq('ST6/test-done', statusOf(S({ screen: 'guide', flow: { testSeen: true } }), 'test'), 'done');
@@ -484,7 +487,12 @@ eq('CL5/oczoplas-bez-kotwicy', stepTarget(S(), 'nystagmus').anchor, null);
 eq('CL6/interpretacja-bez-kotwicy', stepTarget(S(), 'interpret').anchor, null);
 eq('CL7/manewr-z-planem', stepTarget(S({ plan: { steps: [{}] }, maneuverKey: 'epley' }), 'maneuver'),
   { screen: 'guide', mode: 'treat', anchor: null, pelny: true });
-eq('CL8/pending-brak-celu', stepTarget(S(), 'followup'), null);
+/* Blok 11: krok „Kontrola" ma wlasny ekran, ale TYLKO wtedy, gdy istnieje manewr, ktorego
+   dotyczy — inaczej karta „co obserwujesz teraz?" opisywalaby wynik czegos, co sie nie wydarzylo.
+   Bez manewru celujemy w ekran doboru, odporny na pusty stan (ta sama bramka `wymaga`/`zamiast`,
+   ktora chroni prube i manewr). Asercja przepisana, nie skasowana. */
+eq('CL8/kontrola-bez-manewru', stepTarget(S(), 'followup'), { screen: 'setup', mode: 'treat', anchor: null, pelny: false });
+eq('CL8b/kontrola-z-manewrem', stepTarget(zManewrem(), 'followup'), { screen: 'followup', mode: 'treat', anchor: null, pelny: true });
 eq('CL9/wywiad-ma-cel', stepTarget(S(), 'history'), { screen: 'triage', mode: 'diag', anchor: null, pelny: true });
 
 /* ============ 11b. Integracja kwalifikacji wstępnej (Blok 6) ============
@@ -527,7 +535,10 @@ eq('TR3/aktywny-na-ekranie', statusOf(S({ screen: 'triage' }), 'history'), 'acti
 eq('NX1/z-testu', nextStepId(S({ screen: 'diag' }), DEPS), 'nystagmus');
 eq('NX2/z-oczoplasu', nextStepId(S({ screen: 'diag', flow: { obsSeen: true } }), DEPS), 'interpret');
 eq('NX3/z-interpretacji', nextStepId(S({ screen: 'diag', flow: { obsSeen: true, interpretSeen: true } }), DEPS), 'maneuver');
-eq('NX4/pomija-pending', nextStepId(S({ screen: 'guide' }), DEPS), null);
+// Blok 11: z manewru prowadzi juz gdzies dalej — do kontroli. Wczesniej bylo `null`, czyli
+// „koniec procesu", i to jest dokladnie ta dziura, ktora ten blok zamyka.
+eq('NX4/z-manewru-do-kontroli', nextStepId(S({ screen: 'guide' }), DEPS), 'followup');
+eq('NX4b/kontrola-jest-ostatnia', nextStepId(zManewrem({ screen: 'followup' }), DEPS), null);
 eq('NX5/z-niczego', nextStepId(S({ screen: 'start' }), DEPS), 'test');
 eq('NX7/z-wywiadu', nextStepId(S({ screen: 'triage' }), DEPS), 'test');
 {
@@ -536,12 +547,70 @@ eq('NX7/z-wywiadu', nextStepId(S({ screen: 'triage' }), DEPS), 'test');
 }
 
 /* ============ 13. Osiągalność i podpis ============ */
-T('OS1/pending-nieosiagalny', !stepReachable(S(), 'followup'), 'krok w przygotowaniu');
-T('OS2/reszta-osiagalna', ['history', 'test', 'nystagmus', 'interpret', 'maneuver'].every(id => stepReachable(S(), id)), 'kroki istniejące');
+T('OS1/kontrola-osiagalna', stepReachable(S(), 'followup'), 'krok Kontrola istnieje od Bloku 11');
+T('OS2/reszta-osiagalna', FLOW_IDS.every(id => stepReachable(S(), id)), 'kroki istniejące');
 T('OS3/nieznany', !stepReachable(S(), 'bzdura'), 'nieznany krok');
 eq('PD1/podpis-pl', stepSummary(S({ screen: 'diag' }), 'pl'), { nr: 2, total: 6, label: 'Próba', id: 'test' });
 eq('PD2/podpis-en', stepSummary(S({ screen: 'guide' }), 'en'), { nr: 5, total: 6, label: 'Maneuver', id: 'maneuver' });
 eq('PD3/poza-przebiegiem', stepSummary(S({ screen: 'start' }), 'pl'), null);
+
+/* ============ 13b. Krok „Kontrola" po manewrze (Blok 11) ============
+   Model przebiegu NIE zna słownika odpowiedzi — czyta STRESZCZENIE zapisane przez
+   followup-state.syncKontrola, dokładnie jak kwalifikację wstępną z Bloku 6. Dzięki temu
+   flow-model.js zostaje bezimportowy (tripwire CZ1), a ta bramka nie musi znać karty kontroli. */
+{
+  const zKontrola = (k, o = {}) => {
+    const s = zManewrem({ screen: 'diag', ...o });
+    s.flow.maneuver.consumed = true;
+    s.flow.kontrola = k;
+    return s;
+  };
+  const K = (wynik, o = {}) => ({ wynik, wiarygodny: true, zamyka: false, nowaPodstawa: false, powod: null, seria: 1, ...o });
+
+  eq('KT1/ekran-kontroli', activeStepId(S({ screen: 'followup' })), 'followup');
+  /* Pasek MUSI być widoczny na ekranie, do którego krok prowadzi. To jest poprawka F4 z Bloku 9
+     postawiona z góry: tam zmierzono `flowVisible=false` dla nowego ekranu, czyli pasek znikał
+     razem z jedynym sygnałem o nieaktualnym wniosku — ekran-sierota. */
+  T('KT2/pasek-widoczny', flowVisible(S({ screen: 'followup' })), 'pasek przebiegu musi być widoczny nad Kontrolą');
+  eq('KT3/aktywny-na-ekranie', statusOf(zManewrem({ screen: 'followup' }), 'followup'), 'active');
+  eq('KT4/ustapienie-done', statusOf(zKontrola(K('ustapienie', { zamyka: true })), 'followup'), 'done');
+  T('KT5/ustapienie-bez-powodu', !krok(zKontrola(K('ustapienie', { zamyka: true })), 'followup').powodPl,
+    'wynik domykający proces nie potrzebuje dopisku — dopisek bez treści uczy ignorowania dopisków');
+  eq('KT6/brak-poprawy-done', statusOf(zKontrola(K('brakPoprawy')), 'followup'), 'done');
+  T('KT7/brak-poprawy-z-powodem', krok(zKontrola(K('brakPoprawy')), 'followup').powodPl.length > 20,
+    'kontrola wykonana, ale proces niedomknięty — pasek musi to powiedzieć');
+  // NAJWAŻNIEJSZY przypadek sekcji: „niewiarygodne" NIE jest zakończeniem kroku.
+  eq('KT8/niewiarygodne', statusOf(zKontrola(K('niewiarygodne', { wiarygodny: false, powod: 'szyja' })), 'followup'), 'unreliable');
+  T('KT9/niewiarygodne-oba-jezyki', krok(zKontrola(K('niewiarygodne', { wiarygodny: false })), 'followup').powodPl.length > 20
+    && krok(zKontrola(K('niewiarygodne', { wiarygodny: false })), 'followup').powodEn.length > 20, 'uzasadnienie w obu językach');
+  T('KT10/nowa-podstawa-z-powodem', /kanał|stron/i.test(krok(zKontrola(K('konwersja', { nowaPodstawa: true })), 'followup').powodPl),
+    'konwersja i druga strona muszą kierować do ponownego ustalenia kanału i strony');
+  /* WYNIK KONTROLI NIE WYCISZA ALARMU MANEWRU. Zapisanie „ustąpienia" nad manewrem wybranym dla
+     nieaktualnych wejść nie ma prawa zdjąć ostrzeżenia: to dwie niezależne rzeczy, a kontrola
+     dotyczy tego, co się WYDARZYŁO, nie tego, czy wybór był aktualny. */
+  {
+    const s = zKontrola(K('ustapienie', { zamyka: true }));
+    s.flow.maneuver.consumed = false;      // manewr jeszcze nie zaliczony, więc dryf działa
+    s.variant = 'cupulo';                  // mechanizm zmieniony PO wyborze manewru
+    eq('KT11/kontrola-nie-gasi-alarmu', statusOf(s, 'maneuver'), 'stale');
+  }
+  // Podpis powłoki musi WIDZIEĆ wynik kontroli — inaczej pasek nigdy się po nim nie przerysuje
+  // (obserwator #app nie odświeża chromu, dopóki podpis stoi). Ta sama pułapka, co przy odcisku
+  // obserwacji w Bloku 9 i przy kwalifikacji w Bloku 6.
+  {
+    const baza = flowSignature(zManewrem());
+    const zU = flowSignature(zKontrola(K('ustapienie', { zamyka: true })));
+    const zB = flowSignature(zKontrola(K('brakPoprawy')));
+    const zPowodem = flowSignature(zKontrola(K('niewiarygodne', { wiarygodny: false, powod: 'szyja' })));
+    const bezPowodu = flowSignature(zKontrola(K('niewiarygodne', { wiarygodny: false })));
+    T('KT12/podpis-widzi-wynik', zU !== baza && zB !== baza && zU !== zB, 'wynik kontroli musi zmieniać podpis powłoki');
+    T('KT13/podpis-widzi-powod', zPowodem !== bezPowodu, 'powód niewiarygodności też musi zmieniać podpis');
+    T('KT14/podpis-widzi-pytanie', flowSignature(S({ zakonczeniePyta: true })) !== flowSignature(S()),
+      'potwierdzenie zakończenia sesji zmienia ekran, więc musi zmieniać podpis');
+  }
+  eq('KT15/podpis-kroku', stepSummary(S({ screen: 'followup' }), 'pl'), { nr: 6, total: 6, label: 'Kontrola', id: 'followup' });
+  eq('KT16/podpis-kroku-en', stepSummary(S({ screen: 'followup' }), 'en').label, 'Follow-up');
+}
 
 /* ============ 14. Czystość modułu ============ */
 {
@@ -564,7 +633,7 @@ if (bledy.length) {
   process.exit(1);
 }
 // Bramka liczności: skasowanie przypadków jest równie groźne jak zepsucie kodu.
-const OCZEKIWANE = 212;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9 odcisk opisu; +8 (IN1-IN8) — Blok 9 wlasny ekran interpretacji; +7 (ZG6 przepisane: zgodnosc manewru dziala takze BEZ proby, na deklaracji kanalu i mechanizmu) — Blok 10
+const OCZEKIWANE = 229;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9 odcisk opisu; +8 (IN1-IN8) — Blok 9 wlasny ekran interpretacji; +7 (ZG6 przepisane: zgodnosc manewru dziala takze BEZ proby, na deklaracji kanalu i mechanizmu) — Blok 10; +17 (SH3/ST2-3/CL8/NX4/OS1 PRZEPISANE + sekcja KT1-KT16) — Blok 11 krok „Kontrola” przestaje byc pending
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

@@ -1,0 +1,75 @@
+/* OTOREPO — krok „Kontrola" po manewrze (Blok 11).
+ *
+ * Zasada wyglądu jak w obs.css i interp.css: ani jednej liczby „skuteczności", ani jednego paska
+ * postępu leczenia, ani jednego koloru znaczącego „dobrze/źle". Siedem odpowiedzi jest
+ * RÓWNORZĘDNYCH — „ustąpienie" nie ma prawa wyglądać na nagrodę, a „brak poprawy" na porażkę,
+ * bo obie są tylko opisem tego, co klinicysta zobaczył.
+ *
+ * ZERO pól tekstowych — to nie jest cecha arkusza, tylko kryterium odbioru nr 3 (nie da się wpisać
+ * danych pacjenta, bo nie ma gdzie). Arkusz nie stylizuje żadnego `input`, bo żadnego nie ma.
+ */
+
+/* ---- karta pytania: siedem odpowiedzi ---- */
+.fuopcje{ list-style:none; margin:var(--sp-2) 0 0; padding:0; display:grid; gap:6px; }
+.fuopcja{
+  display:block; width:100%; text-align:left;
+  padding:var(--sp-2) var(--sp-3); min-height:48px;
+  background:var(--panel2); border:1px solid var(--line-strong); border-radius:var(--r-md);
+  color:var(--text); cursor:pointer;
+}
+/* Stan wybrany NIE jest podany samym kolorem (a11y): zmienia się także obrys i grubość napisu. */
+.fuopcja[aria-pressed="true"]{ border-color:var(--acc); border-width:2px; background:var(--panel); }
+.fuopcja[aria-pressed="true"] .fuopcja__n{ color:var(--acc); }
+.fuopcja__n{ display:block; font-weight:700; font-size:14px; line-height:1.3; }
+.fuopcja__o{ display:block; margin-top:2px; font-size:12.8px; line-height:1.45; color:var(--muted); }
+
+/* ---- powód niewiarygodności (słownik Bloku 8) ---- */
+.fupowod{ margin-top:var(--sp-2); }
+.fupowod__b{
+  display:inline-block; margin:4px 4px 0 0; padding:8px var(--sp-2); min-height:44px;
+  background:var(--panel2); border:1px solid var(--line-strong); border-radius:var(--r-sm);
+  color:var(--text); font-size:12.8px; cursor:pointer;
+}
+.fupowod__b[aria-pressed="true"]{ border-color:var(--warn); border-width:2px; font-weight:700; }
+.fublad{ margin-top:var(--sp-2); padding:var(--sp-2); border:1px solid var(--crit); border-radius:var(--r-sm); color:var(--crit); font-size:12.8px; }
+
+/* ---- co dalej ---- */
+.fuuwaga{ color:var(--text); }
+.fusprzecz{ margin:var(--sp-2) 0; padding-left:20px; font-size:13px; line-height:1.45; color:var(--warn); }
+.fusprzecz li{ margin-bottom:4px; }
+.fudalej .recoprimary, .fudalej .recoalt, .fukoniec{ width:100%; margin-top:6px; }
+.fuinfo{
+  margin-top:var(--sp-2); padding:var(--sp-2) var(--sp-3);
+  border-left:3px solid var(--ok); background:var(--panel2); border-radius:var(--r-sm);
+  font-size:14px; font-weight:700; color:var(--text);
+}
+.fualt{ margin-top:var(--sp-2); }
+/* Czego ekran NIE proponuje — z powodem. Wyszarzony przycisk bez słowa uczy klikać dalej,
+   więc zakazane akcje w ogóle nie są przyciskami: są zdaniem. */
+.fuzakaz{ margin-top:var(--sp-3); padding-top:var(--sp-2); border-top:1px solid var(--line); }
+.fuzakaz ul{ margin:6px 0 0; padding-left:20px; font-size:12.8px; line-height:1.5; color:var(--muted); }
+.fuzakaz li{ margin-bottom:4px; }
+.fuzakaz b{ color:var(--text); }
+.fukoniec{ margin-top:var(--sp-3); }
+
+/* ---- przed i po ---- */
+.futab{ width:100%; border-collapse:collapse; margin:var(--sp-2) 0; font-size:12.8px; }
+.futab th, .futab td{ padding:6px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+.futab thead th{ color:var(--muted); font-size:12.5px; font-weight:700; }
+.futab tbody th{ font-weight:400; color:var(--muted); width:42%; }
+.futab td{ color:var(--text); }
+
+/* ---- historia serii ---- */
+.fuseria__l{ margin:var(--sp-2) 0 0; padding-left:20px; font-size:13px; line-height:1.5; }
+.fuseria__l li{ margin-bottom:8px; }
+.fuseria__w{ display:block; color:var(--acc); font-weight:700; }
+.fuseria__p, .fuseria__c{ display:block; color:var(--muted); font-size:12.5px; }
+
+/* ---- zakończenie sesji ---- */
+.fupods{ margin:var(--sp-2) 0; font-size:13px; }
+.fupods > div{ display:flex; gap:var(--sp-2); padding:5px 0; border-bottom:1px solid var(--line); }
+.fupods dt{ flex:0 0 42%; color:var(--muted); }
+.fupods dd{ margin:0; color:var(--text); }
+.fukonczenie{ border-color:var(--warn); }
+.fukonczenie__r{ display:flex; gap:var(--sp-2); margin-top:var(--sp-2); }
+.fukonczenie__r button{ flex:1 1 0; min-width:0; }

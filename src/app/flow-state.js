@@ -11,6 +11,7 @@
  */
 import { noteManeuver } from './flow-model.js';
 import { triageComplete, triageResult, czerwoneFlagi } from './triage-model.js';
+import { syncKontrola } from './followup-state.js';
 
 function f(state) {
   if (!state.flow) state.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
@@ -39,6 +40,12 @@ export function markSeen(state, ...flagi) { const o = f(state); for (const k of 
 // od użytkownika, nie z interpretacji próby) → krok „Interpretacja" dostaje status „pominięty".
 export function markManeuver(state, key, viaInterpret) {
   f(state).maneuver = noteManeuver(state, key, viaInterpret, state.side);
+  /* Nowy manewr = nowa kontrola. Streszczenie wyniku kontroli w stanie przebiegu dotyczy ZAWSZE
+     manewru bieżącego, więc bez odświeżenia tutaj pasek meldowałby „Kontrola zakończona" nad
+     manewrem, którego nikt jeszcze nie skontrolował — wystarczyłoby powtórzyć manewr po zapisaniu
+     wyniku. Robimy to w JEDNYM miejscu, przez które przechodzą wszystkie drogi wyboru manewru
+     (startManeuver, openMan, zmienManewr, powtórzenie z ekranu kontroli). */
+  syncKontrola(state);
 }
 
 /* Zmiana strony WEWNĄTRZ manewru (setGuideSide) przebudowuje plan dla nowej strony — po tej
@@ -58,7 +65,19 @@ export function patchManeuverSide(state, side) {
 // test kontrolny po repozycji zapalałby „wymaga ponownego przeliczenia" nad zakończoną serią.
 export function markConsumed(state) {
   const m = f(state).maneuver;
-  if (m) m.consumed = true;
+  if (!m) return;
+  m.consumed = true;
+  /* ZDJĘCIE OPISU SPRZED MANEWRU (Blok 11). Dokument żąda na komputerze „porównania przed i po",
+     a jedynym opisem „przed" jest rekord obserwacji tej próby — ten sam, który klinicysta
+     NADPISZE, gdy opisze próbę kontrolną (rekordy są kluczowane próbą, nie fazą leczenia).
+     Bez tej kopii porównanie znikałoby dokładnie w chwili, w której powstaje jego druga strona.
+     Kopiujemy przez JSON, bo rekord jest czystą daną; robimy to RAZ, przy pierwszym oznaczeniu
+     manewru jako wykonanego — późniejsze wejścia w krok „Oczopląs" mają już nie ruszać „przed". */
+  if (m.opisPrzed === undefined) {
+    const r = state.testKey ? (state.obs || {})[state.testKey] : null;
+    m.opisPrzed = r ? JSON.parse(JSON.stringify(r)) : null;
+    m.opisPrzedProba = state.testKey || null;
+  }
 }
 
 /* Wybór INNEJ próby = nowy przebieg obserwacji, więc znaczniki „widziane" idą do zera.

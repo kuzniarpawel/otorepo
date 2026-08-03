@@ -125,6 +125,9 @@ const HANDLE_NAMES = [
   'goObs', 'setObsPole', 'oznaczObsPole', 'setObsGrupa', 'wyczyscObs', 'przyjmijObs',
   // Blok 9 — krok „Interpretacja" ma wlasny ekran. Brak = handleMissing = twardy exit(1).
   'goInterpret', 'przyjmijMechanizm', 'nadpiszMechanizm', 'wrocDoWyprowadzonego', 'idzDoProby',
+  // Blok 11 — krok „Kontrola" po manewrze. Brak = handleMissing = twardy exit(1): ekran, ktorego
+  // nie da sie wysterowac z testu, nie bylby przypiety zadna wyrocznia.
+  'goKontrola', 'ustawWynikKontroli', 'ustawPowodKontroli', 'kontrolaAkcja', 'pytajOZakonczeniu', 'zakonczSesje',
 ];
 function makeHandle(win) {
   if (win.__OTOREPO_TEST__) return win.__OTOREPO_TEST__;
@@ -496,6 +499,46 @@ function domOracle(h, win) {
     try { h.state.variantZrodlo = null; h.state.variant = 'canalo'; } catch { }
   }
 
+  /* KROK „KONTROLA" PO MANEWRZE (Blok 11) — sterowany PRAWDZIWYMI AKCJAMI, nie wstrzyknięciem
+     stanu. Powód jest ten sam co przy trybie eksperckim Bloku 10: wynik kontroli zapisuje wyłącznie
+     `ustawWynikKontroli` (przez strażnika danych i przez `flow.maneuver.kontrolaIdx`), więc stan
+     wstawiony ręcznie przypiąłby ekran, do którego aplikacja nie ma drogi.
+     Pinujemy stany, w których ekran mówi RÓŻNE rzeczy — a najważniejszy jest `konwersja`:
+     to jedyne miejsce w całej aplikacji, gdzie przycisk jest NIEOBECNY z powodu KLINICZNEGO
+     (kryterium odbioru nr 2), więc jego ciche pojawienie się musi się odbić w wyroczni. */
+  if (h.zakonczSerie && h.ustawWynikKontroli && h.goKontrola) {
+    const czystaKontrola = () => {
+      Object.assign(h.state, {
+        screen: 'setup', mode: 'treat', canal: null, maneuverKey: null, plan: null, step: 0,
+        side: 'P', sideZrodlo: null, variant: 'canalo', variantZrodlo: null, testKey: null,
+        dixObs: null, kontrole: [], kontrolaPowod: null, zakonczeniePyta: false, kontrolaBlad: null,
+        obs: {}, obsOdciski: {}, trybCzasu: 'staly',
+        flow: { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null },
+      });
+    };
+    const poManewrze = (key = 'epley') => { czystaKontrola(); h.startManeuver(key); h.zakonczSerie(); };
+    const fu = (tag, fn) => grab(`followup/${tag}`, () => { fn(); h.render(); });
+
+    fu('bez-manewru', () => { czystaKontrola(); h.goKontrola(); });
+    fu('niewykonany', () => { czystaKontrola(); h.startManeuver('epley'); h.goKontrola(); });
+    fu('pusty', () => poManewrze());
+    fu('ustapienie', () => { poManewrze(); h.ustawWynikKontroli('ustapienie'); });
+    fu('konwersja', () => { poManewrze(); h.ustawWynikKontroli('konwersja'); });
+    fu('residual', () => { poManewrze(); h.ustawWynikKontroli('residual'); });
+    fu('niewiarygodne', () => { poManewrze(); h.ustawWynikKontroli('niewiarygodne'); h.ustawPowodKontroli('szyja'); });
+    fu('brak-poprawy', () => { poManewrze(); h.ustawWynikKontroli('brakPoprawy'); });
+    // Seria: powtórzenie manewru to NOWE wykonanie, więc historia ma dwa wpisy, nie jeden.
+    fu('seria', () => {
+      poManewrze();
+      h.ustawWynikKontroli('czesciowaPoprawa');
+      h.kontrolaAkcja('powtorzManewr');
+      h.zakonczSerie();
+      h.ustawWynikKontroli('ustapienie');
+    });
+    fu('zakonczenie', () => { poManewrze(); h.ustawWynikKontroli('ustapienie'); h.pytajOZakonczeniu(true); });
+    czystaKontrola();
+  }
+
   /* Kwalifikacja wstępna („Wywiad", Blok 6). Pinujemy po JEDNYM stanie na każdą kategorię
      taksonomii GRACE-3 — to jedyny ekran, którego treść jest wprost zaleceniem klinicznym,
      więc cicha zmiana słów („nie wykonuj repozycji" → cokolwiek łagodniejszego) musi się
@@ -571,6 +614,9 @@ function shellOracle(h, win) {
   const czysty = () => {
     if (!st) return;
     st.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
+    // Blok 11: historia kontroli PRZEŻYWA nawigację (to celowe), więc bez wyzerowania tutaj
+    // scenariusze wyciekałyby jeden na drugi — ta sama pułapka, co przy rekordach obserwacji.
+    st.kontrole = []; st.kontrolaPowod = null; st.zakonczeniePyta = false; st.kontrolaBlad = null;
     st.decisionSeq = 0; st.diagCentral = false; st.variant = 'canalo'; st.dixObs = null;   // null, nie 'post' (Blok 8): harness nie ma prawa odpowiadac za uzytkownika
     st.stepMapOpen = false; st.running = false; st.step = 0;
     st.triage = {}; st.triageStep = null;
@@ -621,6 +667,30 @@ function shellOracle(h, win) {
     czysty(); h.goArea && h.goArea('diag');
     h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P');
     h.goInterpret && h.goInterpret(); h.syncShell && h.syncShell();
+  });
+  /* Blok 11 — krok „Kontrola" przestał być `pending`. Te dwa stany są jedynym miejscem, w którym
+     widać, że pasek naprawdę zna wynik kontroli: `done` po wyniku wiarygodnym i `unreliable` po
+     kontroli, której nie dało się ocenić. Drugi jest ważniejszy — meldowanie „zakończony" nad
+     badaniem nazwanym niewiarygodnym jest dokładnie tym błędem, który Blok 8 wyciął przy
+     lateralizacji, a żadna inna warstwa golden paska nie dotyka. */
+  grab('followup/wynik', () => {
+    czysty();
+    h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('dix');
+    h.startManeuver && h.startManeuver('epley');
+    h.zakonczSerie && h.zakonczSerie();
+    h.ustawWynikKontroli && h.ustawWynikKontroli('ustapienie');
+    h.syncShell && h.syncShell();
+  });
+  grab('followup/niewiarygodne', () => {
+    czysty();
+    h.goArea && h.goArea('diag');
+    h.openTest && h.openTest('dix');
+    h.startManeuver && h.startManeuver('epley');
+    h.zakonczSerie && h.zakonczSerie();
+    h.ustawWynikKontroli && h.ustawWynikKontroli('niewiarygodne');
+    h.ustawPowodKontroli && h.ustawPowodKontroli('szyja');
+    h.syncShell && h.syncShell();
   });
   // NAJWAŻNIEJSZY stan bloku: manewr wybrany z rekomendacji, po czym zmieniony mechanizm.
   // Pasek MUSI wtedy pokazać „wymaga ponownego przeliczenia" wraz z powodem.

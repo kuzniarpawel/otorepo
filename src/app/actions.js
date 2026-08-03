@@ -14,6 +14,9 @@ import { interpretuj } from './interp-model.js';
 import { interpDeps } from './interp-deps.js';
 import { wykonanySekwencyjnie, przeniesCzasy, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny } from './man-model.js';
 import { manDeps } from './man-deps.js';
+import { celAkcji } from './followup-model.js';
+import { followupDeps } from './followup-deps.js';
+import { zapiszWynik, ustawPowodKontroli as _ustawPowodKontroli, zakonczSesjeStan, syncKontrola } from './followup-state.js';
 
 function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
 function hintsHIT(canal, ear){
@@ -477,9 +480,82 @@ function goStep(i,autostart){
   if(wykonanySekwencyjnie(zKroku,i,n)) markConsumed(state);
   render();
 }
-// Jawne zakończenie serii (przycisk ✓ na ostatnim etapie) — to jest DEKLARACJA wykonania,
-// więc tu `markConsumed` idzie bezwarunkowo.
-function zakonczSerie(){ markConsumed(state); backToSetup(); }
+/* Jawne zakończenie serii (przycisk ✓ na ostatnim etapie) — to jest DEKLARACJA wykonania,
+   więc tu `markConsumed` idzie bezwarunkowo.
+
+   KRYTERIUM ODBIORU NR 1 BLOKU 11: „aplikacja nie wraca automatycznie do początku po zakończeniu
+   manewru". Dotąd wołaliśmy tu `backToSetup()`, czyli seria kończyła się dokładnie tam, gdzie się
+   zaczęła — na liście kanałów, bez jednego zdania o tym, co się przed chwilą wydarzyło, i bez
+   miejsca na wynik kontroli. Teraz prowadzi do kroku „Kontrola". Licznik i blokadę ekranu i tak
+   trzeba zdjąć (robił to `backToSetup`), więc robimy to tutaj jawnie. */
+function zakonczSerie(){
+  markConsumed(state); syncKontrola(state);
+  state.running=false; releaseWake();
+  state.zakonczeniePyta=false; state.kontrolaBlad=null;
+  state.screen="followup"; render();
+}
+
+/* ============ Krok „Kontrola" po manewrze (Blok 11) ============ */
+function goKontrola(){ syncKontrola(state); state.zakonczeniePyta=false; state.screen="followup"; render(); }
+// Wróć TAM, skąd kontrola ma sens: do przewodnika, gdy plan istnieje; do doboru, gdy go nie ma.
+// renderGuide czyta plan.steps[state.step] PRZED przypisaniem innerHTML, więc wejście na przewodnik
+// bez planu to TypeError i zawis aplikacji bez śladu (ta sama pułapka, którą złapał man:dom).
+function wrocDoManewru(){ state.screen = state.plan ? "guide" : "setup"; render(); }
+
+/* Zapis wyniku idzie przez JEDNĄ drogę (followup-state), a ta przez STRAŻNIKA DANYCH. Odmowę
+   trzeba pokazać, a nie połknąć: „zapisałem" nad niezapisanym wynikiem jest gorsze od błędu. */
+function ustawWynikKontroli(id){
+  const r = zapiszWynik(state, id, followupDeps());
+  state.kontrolaBlad = r.ok ? null : r.powody.join("; ");
+  syncKontrola(state); render();
+}
+function ustawPowodKontroli(p){ _ustawPowodKontroli(state, p, followupDeps()); syncKontrola(state); render(); }
+
+/* POWTÓRZENIE MANEWRU to NOWE WYKONANIE, nie powrót do poprzedniego: odcisk przebiegu powstaje od
+   nowa (`markManeuver`), więc powtórka dostaje własny wpis w historii serii i własną kontrolę.
+   Bez tego druga próba nadpisywałaby wynik pierwszej i seria trzech powtórzeń wyglądałaby w
+   podsumowaniu jak jedno podejście. Drogę dojścia dziedziczymy — kto doszedł tu z interpretacji,
+   nie przestaje mieć jej za sobą przez to, że powtarza manewr. */
+function powtorzManewrKontroli(){
+  const m = state.flow && state.flow.maneuver;
+  if(!m || !m.key) return;
+  const key = m.key, strona = m.planSide || state.side, via = !!m.viaInterpret;
+  state.maneuverKey=key; state.canal=CANAL_OF[key]; state.side=strona;
+  markManeuver(state,key,via);
+  state.plan=przebudujPlan(key,strona,{zachowajCzasy:false});
+  state.step=0; state.autostart=false; state.running=false; releaseWake();
+  syncKontrola(state);
+  state.screen="guide"; render();
+}
+// Alternatywa idzie przez `zmienManewr` (Blok 10), który już robi wszystko, co trzeba — dokładamy
+// wyłącznie przejście na ekran przewodnika, bo stąd manewru nie widać.
+function kontrolaAlternatywa(k){ if(!state.plan) return; state.screen="guide"; zmienManewr(k); }
+
+function kontrolaAkcja(a){
+  const cel = celAkcji(a, state);
+  if(a==="powtorzManewr") return powtorzManewrKontroli();
+  if(a==="ponownaInterpretacja"){
+    if(cel==="interpret") return goInterpret();
+    // Tryb ekspercki nie ma próby, więc „ustal kanał i stronę od nowa" znaczy ekran doboru.
+    state.mode="treat"; state.screen="setup"; return render();
+  }
+  if(a==="powtorzProbe"){
+    if(cel==="obs") return goObs();
+    state.mode="diag"; state.screen="setup"; return render();
+  }
+  if(a==="zakonczSesje") return pytajOZakonczeniu(true);
+}
+
+/* ZAKOŃCZENIE SESJI (kryterium odbioru nr 3). Dwustopniowe, bo kasuje dane przypadku — i BEZ
+   ŻADNEGO warunku wstępnego: nie ma pola do wypełnienia, nie trzeba zaznaczyć wyniku kontroli,
+   nie pytamy o nic o pacjencie. Ekran startowy jest tu celem świadomego gestu, a nie automatycznym
+   powrotem po manewrze (to dwie różne rzeczy, patrz kryterium nr 1). */
+function pytajOZakonczeniu(v){ state.zakonczeniePyta=!!v; render(); }
+function zakonczSesje(){
+  zakonczSesjeStan(state);
+  releaseWake();
+  state.screen="start"; state.area="start"; render();
+}
 
 // Potwierdzenie przerwy w obserwacji (kryterium odbioru nr 3). To JAWNY gest czlowieka: aplikacja
 // zna czas, ale nie wie, czy pacjent utrzymal pozycje, gdy nikt nie patrzyl na ekran.
@@ -559,8 +635,8 @@ function setLangUI(lang){
 }
 
 
-export { potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
