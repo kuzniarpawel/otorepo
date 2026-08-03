@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
+import { SIDE, sideN, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
          computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds,
          DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
@@ -12,8 +12,10 @@ import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wniosk
          OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI } from '../app/obs-model.js';
 import { nietypowy, interpretuj, sugerowaneProby, POWODY_NIETYPOWOSCI, POWODY_ZGODNOSCI, CECHY_KIERUNKU, CECHY_DYNAMIKI } from '../app/interp-model.js';
 import { interpDeps as _interpDeps } from '../app/interp-deps.js';
+import { doborEkspercki, podpisWyboru, POLA_WYBORU, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny, POWOD_BRAKU_TRYBU, POWODY_CZASU, KRYTERIA, WYJSCIE_ZLOGA } from '../app/man-model.js';
+import { manDeps } from '../app/man-deps.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
-import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
+import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, pickSide, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
 import { activeQuestions, nextQuestionId, triageComplete, triageResult, czerwoneFlagi } from '../app/triage-model.js';
 import { t } from '../i18n.js';
@@ -1236,20 +1238,60 @@ function renderTriage(){
                               '<b>The triage selects an EXAMINATION PATHWAY, not a diagnosis.</b> It follows the timing-and-triggers taxonomy of the GRACE-3 guideline (Edlow et al., <i>Acad Emerg Med</i> 2023). It does not replace examination or clinician judgment.')}</div>`;
 }
 
+/* ============ TRYB EKSPERCKI (Blok 10) ============
+   Dokument: „szybki tryb dla użytkownika, który JUŻ ZNA kanał, stronę i mechanizm" + kryterium
+   odbioru nr 1 („dobór kanału, strony i mechanizmu aktualizuje manewr bez przeładowania strony").
+   Dotąd ten ekran miał wyłącznie kanał i płaską listę manewrów: bez strony, bez mechanizmu i bez
+   odróżnienia manewru pierwszego rzutu od alternatyw.
+
+   NAPIS KARTY JEST UCZCIWY. Mockup pisze „najwyższa zgodność z rozpoznaniem" — model nie liczy
+   zgodności z rozpoznaniem TEGO pacjenta i nie wolno mu tego udawać (dyscyplina Bloku 9: żadnych
+   liczb pewności, żadnego rankingu wprowadzonego typografią). `recommend()` koduje pierwszy rzut
+   wg wytycznych DLA PODANEGO kanału i mechanizmu — i dokładnie tak to nazywamy, wymieniając przy
+   tym, które z trzech wartości pochodzą naprawdę od użytkownika (podpisWyboru). */
+function kartaDoboru(){
+  const d = doborEkspercki(state.canal, state.variant, manDeps());
+  if(!d) return "";
+  const p = podpisWyboru(state);
+  const nazwa = (k)=>`${MANEUVERS[k].label} — ${MANEUVERS[k].desc}`;
+  const lista = (arr)=>arr.map(k=>`<button class="recoalt" onclick="openMan('${k}')">${t("Alternatywa: ","Alternative: ")}${nazwa(k)}</button>`).join("");
+  const wymien = (klucze)=>klucze.map(x=>t(POLA_WYBORU[x].pl, POLA_WYBORU[x].en)).join(", ");
+  const atrybucja = p.komplet
+    ? t(`Kanał, stronę i mechanizm podałeś Ty — to nie jest wniosek z próby.`,
+        `You provided the canal, side and mechanism — this is not a conclusion from a test.`)
+    : (p.podane.length
+        ? t(`Od Ciebie pochodzi: ${wymien(p.podane)}. Pozostałe (${wymien(p.domyslne)}) to wartości domyślne — nie potwierdziłeś ich.`,
+            `Provided by you: ${wymien(p.podane)}. The rest (${wymien(p.domyslne)}) are defaults — you have not confirmed them.`)
+        : t(`Wszystkie trzy wartości są domyślne — nie potwierdziłeś żadnej.`,
+            `All three values are defaults — you have confirmed none of them.`));
+  return `<div class="reco reco--ekspert" data-dobor>
+      <h4>${t("Zalecany manewr","Recommended maneuver")}</h4>
+      <div class="ekspert__pierwszy">
+        <b>${MANEUVERS[d.pierwszy].label}</b>
+        <span class="ekspert__rzut">${t("pierwszy rzut dla podanego kanału i mechanizmu","first-line for the given canal and mechanism")}</span>
+      </div>
+      <div class="note">${d.uwaga||""}</div>
+      <div class="note ekspert__atryb">${atrybucja}</div>
+      <button class="recoprimary" onclick="openMan('${d.pierwszy}')">${t("Rozpocznij manewr","Start the maneuver")}: ${MANEUVERS[d.pierwszy].label}</button>
+      ${d.alternatywy.length?`<div class="ekspert__alt"><span class="eyebrow">${t("Alternatywy","Alternatives")}</span>${lista(d.alternatywy)}</div>`:""}
+    </div>`;
+}
 function renderSetup(){
   let body="";
   if(state.mode==="treat"){
     const canalOpt=k=>{const c=CANALS[k];return `<button class="opt" aria-pressed="${state.canal===k}" onclick="pickCanal('${k}')">
         <span class="canaldot" style="background:${c.color}"></span>${c.label}<small>${c.note}</small></button>`;};
-    let man="";
-    if(state.canal){const keys=CANALS[state.canal].maneuvers;
-      man=`<div class="group"><div class="label"><span class="eyebrow">${t("Manewr","Maneuver")}</span><span class="hint">${t("dobrany do kanału","matched to canal")}</span></div>
-        <div class="seg ${keys.length===2?'two':''}">${keys.map(k=>`<button class="opt" aria-pressed="${state.maneuverKey===k}" onclick="openMan('${k}')">${MANEUVERS[k].label}<small>${MANEUVERS[k].desc}</small></button>`).join("")}</div></div>`;}
+    // Strona i mechanizm to DEKLARACJE, więc ich kafelki niosą informację, czy zostały potwierdzone.
+    const stronaOpt=s=>`<button class="opt" data-side="${s}" aria-pressed="${state.sideZrodlo?state.side===s:false}" onclick="pickSide('${s}')">${t("Ucho","Ear")} ${sideN(s,"mianN")}<small>${t("strona pacjenta","patient's side")}</small></button>`;
+    const mechOpt=v=>`<button class="opt" aria-pressed="${state.variantZrodlo?state.variant===v:false}" onclick="setVariant('${v}')">${NAZWA_MECH(v)}<small>${v==="canalo"?t("złóg swobodny w kanale","free-floating debris"):t("złóg na osklepku","debris on the cupula")}</small></button>`;
+    const grupa=(tytul,podpis,html,klasa)=>`<div class="group"><div class="label"><span class="eyebrow">${tytul}</span><span class="hint">${podpis}</span></div><div class="seg ${klasa||""}">${html}</div></div>`;
     // Rozmiar złogu ustawia się w PRZEWODNIKU manewru (renderGuide → .sizerow), w kontekście trwającej
     // repozycji — nie na ekranie wyboru. Domyślnie state.size="medium" (genPlan przy starcie manewru).
-    body=`<div class="group"><div class="label"><span class="eyebrow">${t("Kanał półkolisty","Semicircular canal")}</span><span class="hint">${t("zajęty kanał","affected canal")}</span></div>
-        <div class="seg three">${canalOpt("posterior")}${canalOpt("horizontal")}${canalOpt("anterior")}</div></div>
-      ${man}`;
+    body=`<p class="ekspert__lead">${t("Tryb ekspercki — szybki wybór manewru, gdy kanał, stronę i mechanizm już znasz.","Expert mode — quick maneuver choice when you already know the canal, side and mechanism.")}</p>
+      ${grupa(t("Kanał półkolisty","Semicircular canal"), t("zajęty kanał","affected canal"), `${canalOpt("posterior")}${canalOpt("horizontal")}${canalOpt("anterior")}`, "three")}
+      ${grupa(t("Strona","Side"), t("ucho zajęte — zawsze strona PACJENTA","affected ear — always the PATIENT's side"), `${stronaOpt("L")}${stronaOpt("P")}`, "two")}
+      ${grupa(t("Mechanizm","Mechanism"), t("postać złogu","form of the debris"), `${mechOpt("canalo")}${mechOpt("cupulo")}`, "two")}
+      ${state.canal?kartaDoboru():`<div class="note">${t("Wybierz kanał, żeby zobaczyć zalecany manewr.","Choose a canal to see the recommended maneuver.")}</div>`}`;
   } else if(state.mode==="hints"){
     const famOf=k=> k==="normal"?"normal": k==="strokeCentral"?"stroke":"neuritis";
     const curFam=famOf(state.hintsScenario);

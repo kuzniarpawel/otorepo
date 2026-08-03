@@ -115,6 +115,9 @@ const HANDLE_NAMES = [
   // Blok 5 — potrzebne warstwie `shell`. Brak któregokolwiek = handleMissing = twardy exit(1),
   // czyli sytuacja „powłoka przestała być sterowalna z testu" jest błędem, a nie cichą degradacją.
   'goArea', 'syncShell', 'toggleDiagCentral',
+  // Blok 10 — tryb ekspercki sterowany AKCJAMI. Brak = handleMissing = twardy exit(1), czyli
+  // „ekran doboru przestal byc sterowalny z testu" jest bledem, a nie cicha degradacja.
+  'pickCanal', 'pickSide', 'openMan', 'goStep', 'pickSize', 'zakonczSerie',
   // Blok 6 — kwalifikacja wstępna. Brak = handleMissing = twardy exit(1).
   'openTriage', 'setTriage', 'toggleTriageFlaga', 'resetTriage',
   // Blok 8 — krok „Oczopląs". Brak = handleMissing = twardy exit(1), czyli „ekranu obserwacji
@@ -326,6 +329,33 @@ function domOracle(h, win) {
 
   // setup
   grab('setup', () => { h.state.screen = 'setup'; h.state.mode = 'treat'; h.render(); });
+
+  /* TRYB EKSPERCKI (Blok 10) — sterowany PRAWDZIWYMI AKCJAMI, nie wstrzyknięciem stanu.
+     Powód: klucz `setup` powyżej jest zrzucany przy `state.canal === null`, więc karta doboru
+     w ogóle się w nim nie renderuje — cała nowa powierzchnia (trzy selektory, manewr pierwszego
+     rzutu odróżniony od alternatyw, zdanie o AUTORSTWIE kanału/strony/mechanizmu) miałaby w złotym
+     wzorcu zero stanów i `snapshot:check` świeciłby na zielono nad ekranem, którego głównej treści
+     nigdy nie widział. Akcje, a nie Object.assign: napis o autorstwie stoi na `sideZrodlo`
+     i `variantZrodlo`, które ustawiają WYŁĄCZNIE akcje — wstrzyknięty stan przypiąłby zdanie,
+     do którego aplikacja nie ma drogi. Wzorzec z sekcji `obs/*`. */
+  {
+    const czystyEkspert = () => {
+      Object.assign(h.state, { screen: 'setup', mode: 'treat', canal: null, maneuverKey: null,
+        plan: null, step: 0, side: 'P', sideZrodlo: null, variant: 'canalo', variantZrodlo: null, testKey: null,
+        flow: { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null } });
+    };
+    // sam kanał — reszta DOMYŚLNA (zdanie o autorstwie musi to przyznać)
+    grab('setup/ekspert/kanal-tylko', () => { czystyEkspert(); h.pickCanal('posterior'); });
+    // komplet trzech deklaracji, kanał tylny × kanalolitiaza (pierwszy rzut: Epley, alternatywa: Semont)
+    grab('setup/ekspert/tylny-kanalo', () => { czystyEkspert(); h.pickCanal('posterior'); h.pickSide('L'); h.setVariant('canalo'); });
+    // kupulolitiaza kanału tylnego — pierwszym rzutem jest INNY manewr (Semont), z dwiema alternatywami
+    grab('setup/ekspert/tylny-kupulo', () => { czystyEkspert(); h.pickCanal('posterior'); h.pickSide('P'); h.setVariant('cupulo'); });
+    // kanał poziomy apogeotropowy — pierwszym rzutem manewr KONWERSJI (Gufoni apo)
+    grab('setup/ekspert/poziomy-kupulo', () => { czystyEkspert(); h.pickCanal('horizontal'); h.pickSide('P'); h.setVariant('cupulo'); });
+    // kanał przedni — JEDEN manewr, więc sekcja alternatyw nie ma prawa się pojawić
+    grab('setup/ekspert/przedni', () => { czystyEkspert(); h.pickCanal('anterior'); h.pickSide('L'); h.setVariant('canalo'); });
+    czystyEkspert();
+  }
 
   // guide: manewr × strona × wszystkie kroki (rozmiar medium)
   const CANAL_OF = h.CANAL_OF ||

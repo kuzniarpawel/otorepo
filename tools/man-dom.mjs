@@ -233,8 +233,58 @@ T('KO1/sygnal', /konwersj/i.test(win.document.querySelector('#flowalert').innerH
 czysty(); st.canal = 'posterior'; A('startManeuver')('epley'); A('zakonczSerie')(); A('syncShell')();
 T('KO2/czulosc-ten-sam-kanal', win.document.querySelector('#flowalert').hidden, 'bez zmiany kanału pasek milczy');
 
-/* ═══════════ K. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 40;
+/* ═══════════ K. KRYTERIUM ODBIORU NR 1 ═══════════
+   „Dobór kanału, strony i mechanizmu aktualizuje manewr bez przeładowania strony."
+   Sprawdzamy DOSŁOWNIE: po każdym dotknięciu czytamy #app i patrzymy, czy zalecenie się zmieniło.
+   Do tego dwa twierdzenia o UCZCIWOŚCI karty, bo to one decydują, czy ekran mówi prawdę:
+   manewr pierwszego rzutu odróżniony od alternatyw ORAZ zdanie o autorstwie trzech wartości. */
+const zalecany = () => { const m = app().match(/class="ekspert__pierwszy">\s*<b>([^<]+)<\/b>/); return m ? m[1].trim() : null; };
+czysty();
+A('pickCanal')('posterior');
+eq('K1a/tylny-kanalo', zalecany(), 'Epley');
+A('setVariant')('cupulo');
+eq('K1b/mechanizm-zmienia-manewr', zalecany(), 'Semont');
+A('pickCanal')('horizontal');
+eq('K1c/kanal-zmienia-manewr', zalecany(), 'Gufoni (apogeotropowy)');
+A('setVariant')('canalo');
+eq('K1d/z-powrotem-geotropowy', zalecany(), 'Lempert (BBQ)');
+A('pickSide')('L');
+eq('K1e/strona-nie-zmienia-manewru', zalecany(), 'Lempert (BBQ)');
+T('K1f/strona-widoczna', /aria-pressed="true"[^>]*onclick="pickSide\('L'\)"|onclick="pickSide\('L'\)"[^>]*aria-pressed="true"/.test(app())
+  || /data-side="L"[^>]*aria-pressed="true"/.test(app()), 'wybrana strona musi być zaznaczona');
+// UCZCIWOŚĆ 1: dopóki użytkownik nie dotknął strony i mechanizmu, karta NIE MOŻE przypisywać
+// mu tych wartości. To literały ze state.js, nie decyzje.
+czysty(); A('pickCanal')('posterior');
+T('K1g/atrybucja-domyslne', /wartości domyślne — nie potwierdziłeś ich/.test(app()),
+  'karta musi przyznać, że strona i mechanizm są domyślne');
+T('K1h/atrybucja-nie-klamie', !/Kanał, stronę i mechanizm podałeś Ty/.test(app()),
+  'nie wolno przypisywać użytkownikowi wartości, których nie dotknął');
+// KONTROLA CZUŁOŚCI: po dotknięciu obu zdanie MUSI się zmienić.
+A('pickSide')('P'); A('setVariant')('canalo');
+T('K1i/atrybucja-komplet', /Kanał, stronę i mechanizm podałeś Ty/.test(app()), 'po trzech gestach karta wymienia komplet');
+/* UCZCIWOŚĆ 2: żadnej liczby pewności ani słowa o prawdopodobieństwie NA KARCIE DOBORU.
+   Zakres celowo zawężony do samej karty, a nie do całego ekranu: kafelki kanałów niosą
+   EPIDEMIOLOGIĘ („najczęstszy ~85%", „~10%", „rzadki ~1–2%"), czyli częstość w populacji, i to
+   jest uczciwa informacja dydaktyczna. Ta sama liczba OBOK nazwy zalecanego manewru czytałaby się
+   jako prawdopodobieństwo rozpoznania u TEGO pacjenta — a tego model nie liczy. Pierwsza wersja
+   tej bramki skanowała cały ekran i zapaliła się właśnie na epidemiologii; zawężenie jest
+   świadome, nie jest ucieczką przed czerwonym. */
+{
+  const i = app().indexOf('reco--ekspert');
+  const karta = i < 0 ? '' : app().slice(i);
+  T('K1j/bez-liczb-pewnosci', karta.length > 0 && !/\d+\s*%|prawdopodobie|zgodność z rozpoznaniem/i.test(karta),
+    'karta doboru nie ma prawa podawać liczby pewności — model nie liczy prawdopodobieństw');
+  // KONTROLA CZUŁOŚCI: wzorzec MUSI trafiać w tekst, który naprawdę łamie regułę.
+  T('K1j2/czulosc', /\d+\s*%|prawdopodobie|zgodność z rozpoznaniem/i.test('najwyzsza zgodność z rozpoznaniem (92%)'),
+    'kontrola: wzorzec musi łapać napis z mockupu, którego świadomie nie użyliśmy');
+}
+// Kanał o JEDNYM manewrze nie ma sekcji alternatyw (pusta sekcja sugerowałaby, że coś przemilczano).
+czysty(); A('pickCanal')('anterior');
+T('K1k/przedni-bez-alternatyw', !/ekspert__alt/.test(app()), 'kanał przedni ma jeden manewr — brak sekcji alternatyw');
+T('K1l/przedni-yacovino', zalecany() === 'Yacovino', 'kanał przedni → Yacovino');
+
+/* ═══════════ L. LICZNOŚĆ ═══════════ */
+const OCZEKIWANE = 53;
 if (bledy.length) {
   console.error(`✗ man:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

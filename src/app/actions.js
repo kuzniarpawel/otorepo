@@ -211,7 +211,23 @@ function przebudujPlan(key, side, opcje){
   if(o.zachowajCzasy !== false && state.plan) przeniesCzasy(state.plan, nowy);
   return nowy;
 }
-function pickSide(s){ state.side=s; render(); }
+/* Wybór strony w TRYBIE EKSPERCKIM (Blok 10). Trzy rzeczy naraz, i każda z powodu:
+   • `sideZrodlo` — strona przestaje być literałem ze state.js i staje się deklaracją użytkownika.
+     Bez tego karta doboru pisałaby „stronę podałeś Ty" nad wartością, której nikt nie dotknął.
+   • przebudowa planu, GDY ISTNIEJE — inaczej powstaje dokładnie ten rozjazd, który Blok 10
+     naprawia gdzie indziej: `state.side` mówi jedno, `plan.side` drugie, a pigułka na ekranie
+     manewru czyta plan i przestaje reagować.
+   • `patchManeuverSide` — plan jest po tej akcji najświeższym elementem stanu, więc pasek nie ma
+     prawa krzyczeć „zmieniono stronę" nad planem właśnie przeliczonym. */
+function pickSide(s){
+  if(state.side===s && state.sideZrodlo) return;
+  state.side=s; state.sideZrodlo="wybrany";
+  if(state.plan){
+    state.plan=przebudujPlan(state.plan.key||state.maneuverKey, s);
+    state.step=0; state.autostart=false; patchManeuverSide(state,s);
+  }
+  render();
+}
 /* Wybór kanału NIE wybiera manewru za użytkownika. Dotąd kanał o jednym manewrze (przedni →
    Yacovino) uzbrajał go samym dotknięciem kafelka kanału, przez co `state.maneuverKey` i
    `state.plan` opisywały dwa różne manewry. Plan porzuconego kanału znika razem z nim — inaczej

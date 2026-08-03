@@ -54,6 +54,28 @@ export function doborEkspercki(kanal, mechanizm, deps) {
   return { proba, pierwszy: rec.primary, alternatywy, uwaga: rec.note || null, poza, rozbiezneProby };
 }
 
+/* ============ 2b. CZYJE SĄ TE TRZY WARTOŚCI ============
+   Karta doboru chce napisać, skąd wziął się zalecany manewr. Zdanie „kanał, stronę i mechanizm
+   podałeś Ty" jest przy pierwszym wejściu NIEPRAWDĄ: `state.side` ma literał 'P', a `state.variant`
+   literał 'canalo' — obie wartości istnieją, bo animacja musi coś rysować, i żadnej użytkownik nie
+   dotknął. Blok 9 zbudował `variantZrodlo` dokładnie po to, żeby takich rzeczy nie zlepiać;
+   `sideZrodlo` jest jego symetrycznym uzupełnieniem. Kanał ma źródło wbudowane: literał to `null`,
+   więc każda niepusta wartość pochodzi od użytkownika.
+   Karta wymienia WYŁĄCZNIE pola z niepustym źródłem, a o reszcie mówi wprost, że jest domyślna. */
+export const POLA_WYBORU = {
+  kanal:     { pl: 'kanał',     en: 'canal' },
+  strona:    { pl: 'strona',    en: 'side' },
+  mechanizm: { pl: 'mechanizm', en: 'mechanism' },
+};
+export function podpisWyboru(stan) {
+  const s = stan || {};
+  const podane = [], domyslne = [];
+  (s.canal ? podane : domyslne).push('kanal');
+  (s.sideZrodlo ? podane : domyslne).push('strona');
+  (s.variantZrodlo ? podane : domyslne).push('mechanizm');
+  return { podane, domyslne, komplet: domyslne.length === 0 };
+}
+
 /* ============ 3. Etapy manewru ============
    Dokument: „Każdy etap pokazuje pozycję, kąt, stronę, czas i ewentualne kryterium przejścia dalej".
    Wszystkie pięć pochodzi z danych, których manewr już dostarcza — kryterium NIE jest napisem

@@ -37,6 +37,7 @@ const state={
                                                  // Blok 6: odpowiedzi kwalifikacji wstępnej {przebieg, wyzwalacz, oczoplas, flagi[]}. Czyta je src/app/triage-model.js (czysty)
   // Blok 8: rekordy obserwacji KLUCZOWANE PRÓBĄ (obs.dix, obs.roll, …) — zapis kliniczny nie
   // znika przez sam akt nawigacji między próbami. Pisze do nich WYŁĄCZNIE src/app/obs-state.js.
+  sideZrodlo:null,     // Blok 10: czy STRONA jest deklaracja uzytkownika, czy literalem "P" ze stanu poczatkowego. Symetryczne do variantZrodlo — bez tego karta doboru w trybie eksperckim pisalaby "strone podales Ty" nad wartoscia, ktorej nikt nie dotknal
   variantZrodlo:null,   // Blok 9: SKAD sie wzial state.variant — "wyprowadzony" (z opisu obserwacji) | "nadpisany" (recznie) | null (hipoteza modelu: ostatnia wartosc, bo animacja musi cos rysowac). Bez tego pola trzy rozne sytuacje wygladaly identycznie
   obs:{}, obsGrupa:null, obsPorownanie:false,                         // obsGrupa: rozwinięta grupa pytań na telefonie (czytana przez renderObs)
   obsOdciski:{},       // Blok 9: odcisk opisu per próba (pola wagi 3, bez kwarantannowanych). Liczy go obs-state.js przy KAŻDEJ mutacji rekordu; czyta decisionInputs — dzięki temu skasowanie opisu po wyborze manewru zapala „wymaga ponownego przeliczenia"

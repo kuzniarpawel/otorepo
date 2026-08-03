@@ -8,7 +8,33 @@ import { t } from '../i18n.js';
 
 const SIDE = {L:"lewa", P:"prawa"};
 const SIDE_EN = {L:"left", P:"right"};
-const sideN = a => t(SIDE[a], SIDE_EN[a]);   // reaktywna nazwa strony (PL/EN) do wplatania w instrukcje kroków
+/* ODMIANA NAZWY STRONY (Blok 10). `SIDE` jest MIANOWNIKIEM i był wklejany w biernik, celownik
+   i dopełniacz, przez co instrukcje manewrów czytały się „w stronę lewa", „na bok prawa",
+   „ku uchu lewa", „po stronie prawa". Angielski nie ma tego problemu (left/right działa
+   w każdej pozycji), więc tabela dotyczy wyłącznie polskiego.
+   `forma` jest na razie OPCJONALNA i domyślnie mianownikowa — dzięki temu dołożenie tabeli nie
+   rusza ani jednego napisu; przejście call-site po call-site jest osobnym, świadomym krokiem
+   (inaczej „poprawka odmiany" i „przebudowa ekranu" wpadłyby do jednego rebaseline i nie dałoby
+   się rozdzielić, co którą zmianę wywołało). */
+const SIDE_FORMY = {
+  mian:  {L:"lewa",    P:"prawa"},     // „Strona lewa"            (mianownik ż.)
+  bier:  {L:"lewą",    P:"prawą"},     // „w stronę lewą"          (biernik ż.)
+  bierM: {L:"lewy",    P:"prawy"},     // „na bok lewy"            (biernik m.)
+  dop:   {L:"lewej",   P:"prawej"},    // „po stronie lewej"       (dopełniacz/miejscownik ż.)
+  cel:   {L:"lewemu",  P:"prawemu"},   // „ku uchu lewemu"         (celownik n.)
+  dopN:  {L:"lewego",  P:"prawego"},   // „ucha lewego"            (dopełniacz n.)
+  mianN: {L:"lewe",    P:"prawe"},     // „Ucho lewe"              (mianownik n.)
+  przysl:{L:"w lewo",  P:"w prawo"},   // „skręć w lewo"           (przysłówek kierunku)
+};
+const SIDE_EN_FORMY = {
+  mian:"", bier:"", bierM:"", dop:"", cel:"", dopN:"", mianN:"",   // EN: jedna forma wystarczy
+  przysl:{L:"to the left", P:"to the right"},
+};
+const sideN = (a, forma) => {
+  const f = forma || "mian";
+  const en = SIDE_EN_FORMY[f];
+  return t((SIDE_FORMY[f] || SIDE_FORMY.mian)[a], (en && en[a]) || SIDE_EN[a]);
+};
 const otherSide = s => s==="L" ? "P" : "L";
 // prawe ucho pacjenta po lewej stronie badającego -> ekranowy kierunek
 const earToScreen = s => s==="P" ? -1 : 1;
@@ -715,7 +741,7 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { XI_OKNO_PRZEMIJAJACY, XI_OKNO_UPORCZYWY, SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { XI_OKNO_PRZEMIJAJACY, XI_OKNO_UPORCZYWY, SIDE, SIDE_FORMY, sideN, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

@@ -82,3 +82,26 @@
 /* Wejście na ekran interpretacji z ekranu próby. Dziedziczy wygląd `.obsgo`, bo jest tym samym
    gestem („idź do kroku, który to rozstrzyga") — różni się tylko celem. */
 .interpgo{ margin-top:6px; }
+
+/* ---- TRYB EKSPERCKI (Blok 10) ----
+   Karta doboru zajmuje miejsce dawnej płaskiej listy manewrów. Manewr PIERWSZEGO RZUTU jest
+   odróżniony od alternatyw (wymóg dokumentu), ale odróżnienie idzie przez WIELKOŚĆ I POZYCJĘ,
+   nie przez liczbę „zgodności": model nie liczy prawdopodobieństw i nie wolno mu ich udawać.
+   Alternatywy zostają w pełni klikalne — to nadal manewry z wytycznych, nie gorszy sort. */
+.ekspert__lead{ font-size:13px; color:var(--muted); line-height:1.45; margin:0 0 var(--sp-3); }
+.reco--ekspert{ margin-top:var(--sp-3); }
+.ekspert__pierwszy{ display:flex; align-items:baseline; flex-wrap:wrap; gap:var(--sp-2); margin-bottom:6px; }
+.ekspert__pierwszy b{ font-family:var(--display); font-size:22px; line-height:1.15; color:var(--primary); }
+.ekspert__rzut{ font-size:12.5px; color:var(--muted); }
+/* Atrybucja: KTÓRE z trzech wartości pochodzą od użytkownika. To jedyne zdanie na tej karcie,
+   które mówi o pewności — i mówi wyłącznie o autorstwie, nigdy o prawdopodobieństwie. */
+.ekspert__atryb{ border-left:2px solid var(--line-strong); padding-left:10px; color:var(--faint); }
+.ekspert__alt{ margin-top:var(--sp-3); padding-top:var(--sp-2); border-top:1px solid var(--line); }
+.ekspert__alt .eyebrow{ display:block; margin-bottom:6px; }
+.ekspert__alt .recoalt{
+  appearance:none; cursor:pointer; display:block; width:100%; text-align:left;
+  min-height:var(--tap); padding:var(--sp-2) var(--sp-3); margin-bottom:6px;
+  background:transparent; color:var(--text);
+  border:1px solid var(--line-strong); border-radius:var(--r-md); font:inherit; font-size:13.5px;
+}
+.ekspert__alt .recoalt:hover{ border-color:var(--primary); }
