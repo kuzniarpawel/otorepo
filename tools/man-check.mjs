@@ -19,6 +19,7 @@ import {
   opisPozycji, POZYCJE_CIALA, USTAWIENIA_TWARZY,
 } from '../src/app/man-model.js';
 import { manDeps } from '../src/app/man-deps.js';
+import { nowyZegar, startZegara, pauzaZegara, wznowZegar, resetZegara, odliczono, ustawOdliczono, odnotujLuke, PROG_LUKI_MS } from '../src/runtime/hold-clock.js';
 import { MANEUVERS, CANALS, CANAL_OF, DIAG, recommend, sizedSeconds, LEAN_G, BASE_G } from '../src/pose/maneuvers.js';
 import { state } from '../src/app/state.js';
 
@@ -247,10 +248,67 @@ T('WY7/czulosc', (0 === 5 - 1) === false && (4 === 5 - 1) === true, 'kontrola: r
     .every(k => typeof D[k] === 'function'), 'wstrzykiwacz musi dostarczyć komplet zależności');
 }
 
+/* ═══════════ J2. ZEGAR UTRZYMANIA POZYCJI (kryterium odbioru nr 3) ═══════════
+   Sekwencja z krytyki, liczona DETERMINISTYCZNIE (czas wchodzi argumentem, w module nie ma
+   ani jednego Date.now): „start → 10 s → ukrycie 4 s → powrót" musi dać 14 000 ms.
+   Wersja z podwójnym liczeniem (kotwica ORAZ akumulacja dt) dałaby 18 000 — i to jest dokładnie
+   ten błąd, przed którym ta sekcja chroni. */
+{
+  const z = nowyZegar();
+  startZegara(z, 1000, 0);
+  eq('ZE1/po-10s', odliczono(z, 11000), 10000);
+  // Przerwa w widoczności: czas biegnie dalej (pacjent leży), ale luka jest ODNOTOWANA.
+  const l = odnotujLuke(z, 11000, 15000);
+  eq('ZE2/luka-4s', [l.ms, l.istotna], [4000, true]);
+  eq('ZE3/czas-po-powrocie', odliczono(z, 15000), 14000);
+  T('ZE4/bez-podwojnego-liczenia', odliczono(z, 15000) !== 18000, 'kotwica NIE dolicza przerwy drugi raz');
+  // Pauza nie liczy się do utrzymania pozycji — pacjent w niej nie leży w pozycji prowokującej.
+  pauzaZegara(z, 15000);
+  eq('ZE5/pauza-zamraza', odliczono(z, 200000), 14000);
+  wznowZegar(z, 200000);
+  eq('ZE6/wznowienie', odliczono(z, 201000), 15000);
+  eq('ZE7/pauza-3-min-nie-liczy', odliczono(z, 201000), 15000);
+  // Krótkie mrugnięcie (powiadomienie systemowe) NIE jest luką: alarmowanie o nim uczyłoby
+  // ignorowania komunikatu, a to jest ten sam mechanizm, przez który `dixRep` nie wszedł do odcisku.
+  const k = odnotujLuke(z, 201000, 202000);
+  eq('ZE8/krotkie-mrugniecie', [k.ms, k.istotna], [1000, false]);
+  eq('ZE9/prog', PROG_LUKI_MS, 3000);
+  // Suwak skracający czas poniżej odliczonego przesuwa KOTWICĘ — dwa źródła prawdy o tym samym
+  // czasie rozjechałyby się przy pierwszej pauzie.
+  const z2 = nowyZegar(); startZegara(z2, 0, 0);
+  ustawOdliczono(z2, 50000, 20000);
+  eq('ZE10/ustawienie-czasu', odliczono(z2, 50000), 20000);
+  eq('ZE11/biegnie-dalej', odliczono(z2, 51000), 21000);
+  eq('ZE12/reset', odliczono(resetZegara(z2), 60000), 0);
+  eq('ZE13/bez-startu-zero', odliczono(nowyZegar(), 99999), 0);
+  // KONTROLA CZUŁOŚCI: model z akumulacją klatek (to, co było) NA TEJ SAMEJ sekwencji daje 18 s.
+  {
+    let elapsed = 0, last = 1000;
+    for (const t2 of [11000, 15000]) { elapsed += t2 - last; last = t2; }   // klatka po powrocie dostaje CAŁE 4 s
+    T('ZE14/czulosc-suma-klatek', elapsed === 14000, 'kontrola: sama suma klatek też daje 14 s — różnica jest w KASKADZIE');
+    // Prawdziwa różnica: przy sumie klatek warunek końca etapu odpala się w TEJ SAMEJ klatce
+    // i auto-przejście leci dalej. Zegar ścienny zatrzymuje odliczanie na istotnej luce.
+    T('ZE15/luka-zatrzymuje', l.istotna === true, 'istotna luka MUSI być sygnałem do zatrzymania, nie tłem');
+  }
+  /* Zero odczytu zegara w module — inaczej wyrocznia nie byłaby deterministyczna.
+     SKANUJEMY KOD, NIE KOMENTARZE: pierwsza wersja tej bramki zapaliła się na własnym akapicie
+     wyjaśniającym, dlaczego `Date.now()` jest tu zakazane. To już trzeci raz w tym projekcie
+     (CZ6 w Bloku 9, skan `t()` w Bloku 6), więc usuwanie komentarzy jest teraz częścią wzorca. */
+  const bezKomentarzy = (txt) => txt.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const src = bezKomentarzy(readFileSync(resolve(ROOT, 'src/runtime/hold-clock.js'), 'utf8'));
+  T('ZE16/bez-zegara-w-module', !/Date\.now|performance\.now|new Date\(/.test(src), 'czas MUSI wchodzić argumentem');
+  T('ZE17/bez-importow', !/^\s*import\s/m.test(src), 'hold-clock.js jest czysty');
+  // KONTROLA CZUŁOŚCI: usuwanie komentarzy nie może zjadać KODU.
+  T('ZE18/czulosc-skanu', /Date\.now/.test(bezKomentarzy('/* Date.now jest zakazane */\nconst x = Date.now();')),
+    'kontrola: skan musi widzieć wywołanie w kodzie, a nie widzieć go w komentarzu');
+  T('ZE19/czulosc-komentarz', !/Date\.now/.test(bezKomentarzy('/* Date.now jest zakazane */\nconst x = 1;')),
+    'kontrola: sam komentarz nie może wywalać bramki');
+}
+
 /* ═══════════ K. LICZNOŚĆ ═══════════
    Zapadka na cichy ubytek przypadków: skasowanie sekcji przy refaktorze zostawiłoby wyrocznię
    zieloną i pustą. Ta sama bramka złapała w torze VOG spadek 253→228. */
-const OCZEKIWANE = 158;
+const OCZEKIWANE = 177;
 if (bledy.length) {
   console.error(`✗ man:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

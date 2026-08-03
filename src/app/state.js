@@ -37,6 +37,7 @@ const state={
                                                  // Blok 6: odpowiedzi kwalifikacji wstępnej {przebieg, wyzwalacz, oczoplas, flagi[]}. Czyta je src/app/triage-model.js (czysty)
   // Blok 8: rekordy obserwacji KLUCZOWANE PRÓBĄ (obs.dix, obs.roll, …) — zapis kliniczny nie
   // znika przez sam akt nawigacji między próbami. Pisze do nich WYŁĄCZNIE src/app/obs-state.js.
+  zegar:null, ukryteOd:null, luka:0, wakeOK:null,   // Blok 10 (kryterium 3): zegar SCIENNY utrzymania pozycji (hold-clock.js), moment ukrycia ekranu, dlugosc niepotwierdzonej przerwy, wynik FAKTYCZNEJ proby blokady ekranu (null = jeszcze nie probowano)
   trybCzasu:"staly",   // Blok 10: tryb licznika pozycji — "staly" (czas protokolarny) | "doUstapienia" (protokol PODNIESIONY do przewidywanego czasu oczoplasu + zapas; nigdy skrocony)
   sideZrodlo:null,     // Blok 10: czy STRONA jest deklaracja uzytkownika, czy literalem "P" ze stanu poczatkowego. Symetryczne do variantZrodlo — bez tego karta doboru w trybie eksperckim pisalaby "strone podales Ty" nad wartoscia, ktorej nikt nie dotknal
   variantZrodlo:null,   // Blok 9: SKAD sie wzial state.variant — "wyprowadzony" (z opisu obserwacji) | "nadpisany" (recznie) | null (hipoteza modelu: ostatnia wartosc, bo animacja musi cos rysowac). Bez tego pola trzy rozne sytuacje wygladaly identycznie

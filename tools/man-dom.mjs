@@ -37,7 +37,7 @@ win.cancelAnimationFrame = () => {};
 
 const h = win.__OTOREPO_TEST__;
 const A = (n) => (h && h[n]) || win[n];
-const POTRZEBNE = ['state', 'render', 'startManeuver', 'setGuideSide', 'openTest', 'setDixObs', 'pickCanal', 'pickSize', 'goStep', 'zakonczSerie', 'setVariant', 'syncShell', 'setLangUI', 'openMan', 'ustawTrybCzasu', 'zmienManewr'];
+const POTRZEBNE = ['state', 'render', 'startManeuver', 'setGuideSide', 'openTest', 'setDixObs', 'pickCanal', 'pickSize', 'goStep', 'zakonczSerie', 'setVariant', 'syncShell', 'setLangUI', 'openMan', 'ustawTrybCzasu', 'zmienManewr', 'potwierdzPrzerwe'];
 const brak = POTRZEBNE.filter(n => typeof A(n) === 'undefined');
 if (errs.length || brak.length) {
   console.error('✗ BLAD LADOWANIA — wyrocznia niewazna.');
@@ -333,8 +333,25 @@ T('ME5/alternatywy-bez-biezacego', !/altman__b[^>]*>Epley/.test(app()), 'lista a
 czysty(); A('startManeuver')('yacovino');
 T('ME7/yacovino-bez-alternatyw', !/altman/.test(app()), 'kanał przedni ma jeden manewr');
 
-/* ═══════════ N. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 69;
+/* ═══════════ N. KRYTERIUM ODBIORU NR 3 NA EKRANIE ═══════════
+   Model liczy dobrze (man:check, sekcja ZE) — tu pytamy, czy klinicysta to ZOBACZY. */
+czysty(); A('startManeuver')('epley');
+T('K3a/bez-luki-cisza', !/lukanote/.test(app()), 'bez przerwy nie ma komunikatu');
+T('K3b/bez-proby-blokady-cisza', !/wakenote/.test(app()), 'dopoki nikt nie nacisnal Start, nie ma o czym ostrzegac');
+st.luka = 12000; A('render')();
+T('K3c/luka-widoczna', /lukanote/.test(app()) && /0:12/.test(app()), 'przerwa musi byc pokazana z dlugoscia');
+T('K3d/luka-wymaga-gestu', /potwierdzPrzerwe\(\)/.test(app()), 'przerwe potwierdza CZLOWIEK, nie zegar');
+T('K3e/luka-mowi-czego-nie-wie', /nie wie, czy pacjent utrzymal pozycje|nie wie, czy pacjent utrzymał pozycję/.test(app()),
+  'komunikat musi nazwac granice wiedzy aplikacji, nie tylko fakt przerwy');
+A('potwierdzPrzerwe')();
+T('K3f/po-potwierdzeniu-znika', !/lukanote/.test(app()), 'potwierdzona przerwa znika');
+st.wakeOK = false; A('render')();
+T('K3g/brak-blokady-ostrzega', /wakenote/.test(app()), 'gdy platforma nie da blokady ekranu — ostrzezenie');
+st.wakeOK = true; A('render')();
+T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, nie strasz bez powodu');
+
+/* ═══════════ O. LICZNOŚĆ ═══════════ */
+const OCZEKIWANE = 77;
 if (bledy.length) {
   console.error(`✗ man:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

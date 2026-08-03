@@ -48,16 +48,34 @@ const lerp=(a,b,t)=>a+(b-a)*t;
    Blokada aktywna WYŁĄCZNIE gdy licznik biegnie (state.running); zwalniana przy pauzie/resecie/końcu/
    wyjściu. System zwalnia blokadę po zejściu apki w tło → ponawiamy przy powrocie, jeśli licznik trwa. */
 let _wakeLock=null;
+/* `state.wakeOK` ustawiamy z FAKTYCZNEJ PRÓBY, nie z detekcji na boocie — i to jest różnica
+   merytoryczna, nie stylistyczna. Detekcja odpowiada na pytanie „czy API istnieje", a klinicystę
+   interesuje „czy ekran naprawdę nie zgaśnie". Blokada bywa odrzucona (brak secure context,
+   polityka systemu, oszczędzanie energii) mimo obecnego API. Przy okazji: `wakeOK` zostaje `null`
+   dopóki nikt nie nacisnął „Start", więc złoty wzorzec — który nigdy go nie naciska — nie przypina
+   ostrzeżenia jako stanu normalnego. */
 async function acquireWake(){
-  try{ if('wakeLock' in navigator && !_wakeLock){
-    _wakeLock = await navigator.wakeLock.request('screen');
-    _wakeLock.addEventListener('release', ()=>{ _wakeLock=null; });
-  } }catch(e){ /* nieobsługiwane / odrzucone → brak działania */ }
+  if(!('wakeLock' in navigator)){ state.wakeOK=false; return; }
+  try{
+    if(!_wakeLock){
+      _wakeLock = await navigator.wakeLock.request('screen');
+      _wakeLock.addEventListener('release', ()=>{ _wakeLock=null; });
+    }
+    state.wakeOK=true;
+  }catch(e){ state.wakeOK=false; }
 }
 async function releaseWake(){ try{ const w=_wakeLock; _wakeLock=null; if(w) await w.release(); }catch(e){} }
 function syncWake(){ if(state.running) acquireWake(); else releaseWake(); }   // spina blokadę ze stanem licznika
+/* PRZERWA W WIDOCZNOŚCI. Do Bloku 10 ten handler tylko ponawiał blokadę; sam licznik sumował `dt`
+   z klatek rAF, więc pierwsza klatka po powrocie doliczała CAŁĄ przerwę jednym skokiem — razem
+   z warunkiem końca etapu i auto-przejściem, w skrajnym przypadku kaskadą aż do `markConsumed`.
+   Teraz notujemy MOMENT ukrycia; przeliczeniem zajmuje się hold-clock (czas ścienny), a decyzją,
+   czy przerwę wolno zaliczyć jako utrzymaną pozycję — człowiek. */
 if (typeof document !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && state.running) acquireWake(); });
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='hidden'){ if(state.running) state.ukryteOd=Date.now(); return; }
+  if(state.running) acquireWake();
+});
 
 /* ============ Dźwięk ============ */
 let audioCtx=null;

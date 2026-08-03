@@ -14,6 +14,7 @@ import { nietypowy, interpretuj, sugerowaneProby, POWODY_NIETYPOWOSCI, POWODY_ZG
 import { interpDeps as _interpDeps } from '../app/interp-deps.js';
 import { doborEkspercki, podpisWyboru, POLA_WYBORU, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny, POWOD_BRAKU_TRYBU, POWODY_CZASU, KRYTERIA, WYJSCIE_ZLOGA, opisPozycji } from '../app/man-model.js';
 import { manDeps } from '../app/man-deps.js';
+import { nowyZegar, startZegara, pauzaZegara, resetZegara, odliczono, ustawOdliczono, odnotujLuke, potwierdzLuke, PROG_LUKI_MS } from '../runtime/hold-clock.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, pickSide, openMan, openTest, zmienManewr, ustawTrybCzasu, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
@@ -585,30 +586,56 @@ function setupGuideAnim(){
     } else {
       placeOtolith(canal, fFrom+(fTo-fFrom)*easeInOut(ot), 0);
     }
-    // TIMER (pasek liniowy + odliczanie) — czyta state.total na żywo (suwak działa od razu)
+    /* TIMER — czyta state.total na żywo (suwak działa od razu).
+       CZAS ŚCIENNY, NIE SUMA KLATEK (Blok 10, kryterium odbioru nr 3). Sumowanie `dt` wyglądało
+       na „licznik stoi przy zgaszonym ekranie", ale w rzeczywistości pierwsza klatka po powrocie
+       dostawała `dt` równe CAŁEJ przerwie i nadrabiała ją jednym skokiem — razem z sygnałem
+       i auto-przejściem, w skrajnym razie kaskadą aż do `markConsumed`. `dt` zostaje wyłącznie
+       animacji (wyżej), a odczyt licznika bierze się z kotwicy zegara ściennego. */
     const T=state.total;
     if(T>0){
-      if(state.running) state.elapsedMs+=dt;
+      const teraz=Date.now();
+      // PRZERWA W WIDOCZNOŚCI. Czas i tak jest policzony prawdziwie, ale aplikacja NIE UMIE
+      // stwierdzić, czy pacjent utrzymał pozycję, gdy nikt na ekran nie patrzył — więc zatrzymuje
+      // odliczanie i pyta. To jest druga połowa kryterium: „wyraźnie ostrzega przed przerwaniem".
+      if(state.ukryteOd!=null){
+        const l=odnotujLuke(state.zegar, state.ukryteOd, teraz);
+        state.ukryteOd=null;
+        if(l.istotna && state.running){ state.running=false; pauzaZegara(state.zegar, teraz); render(); return false; }
+      }
+      if(state.running) state.elapsedMs=odliczono(state.zegar, teraz);
       const frac=Math.min(1,state.elapsedMs/1000/T);
       const remaining=Math.max(0,Math.ceil(T-state.elapsedMs/1000));
       if(remaining!==lastSec){ lastSec=remaining; const r=$("#tread"); if(r)r.textContent=fmtClock(remaining); }
       const bar=$("#tprog"); if(bar) bar.style.width=((1-frac)*100)+"%";
-      if(state.running && state.elapsedMs/1000>=T){ state.running=false; updateGoBtn(); beep();
+      if(state.running && state.elapsedMs/1000>=T){ state.running=false; pauzaZegara(state.zegar, teraz); updateGoBtn(); beep();
         if(state.autoAdvance) goStep(state.step+1,true); }
     }
     return true;
   });
 }
 function updateGoBtn(){ const b=$("#btnGo"); if(b){ b.textContent=state.running?t("Pauza","Pause"):"Start"; b.classList.toggle("run",state.running);} syncWake(); }
-function toggleTimer(){ if(!state.running && state.elapsedMs/1000>=state.total) state.elapsedMs=0; state.running=!state.running; updateGoBtn(); }
-function resetTimer(){ state.elapsedMs=0; state.running=false; updateGoBtn(); }
+/* Start/pauza idzie przez zegar SCIENNY. Kotwica jest JEDNYM zrodlem prawdy o czasie utrzymania
+   pozycji; `state.elapsedMs` zostaje wylacznie jako ODCZYT dla petli animacji i markupu. Dwa
+   niezalezne liczniki tego samego czasu rozjechalyby sie przy pierwszej pauzie. */
+function toggleTimer(){
+  const teraz=Date.now();
+  if(!state.zegar) state.zegar=nowyZegar();
+  if(!state.running && state.elapsedMs/1000>=state.total){ state.elapsedMs=0; resetZegara(state.zegar); }
+  state.running=!state.running;
+  if(state.running) startZegara(state.zegar, teraz, state.elapsedMs);
+  else { pauzaZegara(state.zegar, teraz); state.elapsedMs=odliczono(state.zegar, teraz); }
+  updateGoBtn();
+}
+function resetTimer(){ state.elapsedMs=0; state.running=false; if(state.zegar) resetZegara(state.zegar); state.luka=0; updateGoBtn(); }
 function adjust(d){ state.total=Math.max(5,state.total+d); const st=state.plan.steps[state.step]; st.seconds=state.total;
   if(state.elapsedMs/1000>state.total) state.elapsedMs=state.total*1000; const r=$("#tread"); if(r)r.textContent=fmt(Math.ceil(state.total-state.elapsedMs/1000)); }
 // Liniowy suwak czasu kroku (0–2:00, snap co 15 s). Aktualizuje state.total (pętla czyta na żywo).
 function setStepSeconds(v){
   v=Math.max(15,Math.min(120,Math.round(v/15)*15));
   state.total=v; const st=state.plan.steps[state.step]; st.seconds=v;
-  if(state.elapsedMs/1000>v) state.elapsedMs=v*1000;
+  // Skrocenie czasu suwakiem ponizej juz odliczonego przesuwa KOTWICE, a nie osobne pole.
+  if(state.elapsedMs/1000>v){ state.elapsedMs=v*1000; if(state.zegar) ustawOdliczono(state.zegar, Date.now(), state.elapsedMs); }
   const p=v/120*100, k=$("#knob"), f=$("#fill"); if(k)k.style.left=p+"%"; if(f)f.style.width=p+"%";
   const r=$("#tread"); if(r)r.textContent=fmtClock(Math.max(0,Math.ceil(v-state.elapsedMs/1000)));
   // ARIA musi iść za wartością — inaczej czytnik ekranu podaje wartość z chwili renderu.
@@ -1496,6 +1523,26 @@ function renderGuide(){
               : t("Czasy z protokołu manewru. Suwak niżej pozwala je zmienić ręcznie.","Times from the maneuver protocol. The slider below lets you change them manually."))
           : t(POWOD_BRAKU_TRYBU[dost.powod].pl, POWOD_BRAKU_TRYBU[dost.powod].en)}</div>
       </div>`;
+    })()}
+    ${(()=>{ /* KRYTERIUM ODBIORU NR 3 — dwa zdania, każde o czym innym.
+         (a) LUKA: odliczanie było prowadzone, gdy nikt nie patrzył na ekran. Czas jest policzony
+             prawdziwie (zegar ścienny), ale aplikacja NIE UMIE stwierdzić, czy pacjent utrzymał
+             pozycję — więc zatrzymuje licznik i pyta. Bez tego przerwa dłuższa niż etap odpalała
+             auto-przejście, w skrajnym razie kaskadę aż do „manewr wykonany".
+         (b) BLOKADA EKRANU: gdy platforma jej nie daje, ekran zgaśnie w środku repozycji.
+             Flaga pochodzi z FAKTYCZNEJ próby, nie z detekcji API — blokada bywa odrzucona mimo
+             obecnego `wakeLock` (brak secure context, polityka systemu, oszczędzanie energii). */
+      let out="";
+      if(state.luka>0){
+        const sek=Math.round(state.luka/1000);
+        out+=`<div class="lukanote" role="status"><b>${t("Przerwa w obserwacji","Gap in observation")}: ${fmtClock(sek)}</b>
+          <span>${t("Ekran był niewidoczny, więc odliczanie zatrzymano. Licznik zna czas, ale nie wie, czy pacjent utrzymał pozycję — potwierdź to sam, zanim ruszysz dalej.","The screen was not visible, so the countdown was stopped. The timer knows the elapsed time but not whether the patient held the position — confirm that yourself before moving on.")}</span>
+          <button class="lukanote__ok" onclick="potwierdzPrzerwe()">${t("Potwierdzam","Confirm")}</button></div>`;
+      }
+      if(state.wakeOK===false){
+        out+=`<div class="wakenote" role="status">${t("Ta platforma nie pozwala utrzymać ekranu włączonego — ekran może zgasnąć w trakcie odliczania. Licznik nadrobi czas po powrocie i zapyta o potwierdzenie.","This platform does not allow keeping the screen on — it may go dark during the countdown. The timer will catch up on return and ask you to confirm.")}</div>`;
+      }
+      return out;
     })()}
     ${timerBlock}
     <p class="footnote">${t("Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.","When finished, wait per protocol and consider repeating the positional test.")}</p>
