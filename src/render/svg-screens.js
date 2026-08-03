@@ -12,10 +12,10 @@ import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wniosk
          OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI } from '../app/obs-model.js';
 import { nietypowy, interpretuj, sugerowaneProby, POWODY_NIETYPOWOSCI, POWODY_ZGODNOSCI, CECHY_KIERUNKU, CECHY_DYNAMIKI } from '../app/interp-model.js';
 import { interpDeps as _interpDeps } from '../app/interp-deps.js';
-import { doborEkspercki, podpisWyboru, POLA_WYBORU, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny, POWOD_BRAKU_TRYBU, POWODY_CZASU, KRYTERIA, WYJSCIE_ZLOGA } from '../app/man-model.js';
+import { doborEkspercki, podpisWyboru, POLA_WYBORU, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny, POWOD_BRAKU_TRYBU, POWODY_CZASU, KRYTERIA, WYJSCIE_ZLOGA, opisPozycji } from '../app/man-model.js';
 import { manDeps } from '../app/man-deps.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
-import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, pickSide, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
+import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, pickSide, openMan, openTest, zmienManewr, ustawTrybCzasu, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
 import { activeQuestions, nextQuestionId, triageComplete, triageResult, czerwoneFlagi } from '../app/triage-model.js';
 import { t } from '../i18n.js';
@@ -1359,7 +1359,22 @@ function renderGuide(){
   const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step, state.size), p.mechanism==="cupulo");
   const gn = (_gn && _gn.strength >= 0.10) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
   const gravArrow = gn ? gravArrowFor(ps) : "";
-  const dots=p.steps.map((_,i)=>`<i class="${i<state.step?'done':i===state.step?'cur':''}"></i>`).join("");
+  /* OŚ ETAPÓW Z PODPISAMI (mockup D4/M4: „Wszystkie etapy manewru widoczne jako pozioma oś").
+     Zastępuje bezimienne kropki: klinicysta widzi, co go czeka, i może wrócić o etap bez
+     resetowania manewru (kryterium odbioru nr 4). Dotknięcie to zwykłe `goStep` — a że SKOK po
+     osi nie liczy się już jako wykonanie manewru (man-model.wykonanySekwencyjnie), zaglądanie
+     w przód jest bezpieczne. Bez tamtej poprawki ta oś byłaby jednym dotknięciem do trwałego
+     wyciszenia wszystkich alarmów. */
+  const etapy = etapyManewru(p, manDeps(), state.size);
+  const os = `<ol class="osetapow" aria-label="${t("Etapy manewru","Maneuver stages")}">${etapy.map((e,i)=>{
+      const stan = i<state.step?'done':i===state.step?'cur':'todo';
+      return `<li class="osetap osetap--${stan}">
+        <button type="button" onclick="goStep(${i})" ${i===state.step?'aria-current="step"':''}>
+          <span class="osetap__n" aria-hidden="true">${e.nr}</span>
+          <span class="osetap__t">${e.tytul}</span>
+          ${e.wyjscieZloga?`<span class="osetap__wy" title="${t(WYJSCIE_ZLOGA[e.wyjscieZeSchematu?'schemat':'fizyka'].pl, WYJSCIE_ZLOGA[e.wyjscieZeSchematu?'schemat':'fizyka'].en)}">◆</span>`:''}
+        </button></li>`;
+    }).join("")}</ol>`;
   const tgIcons = `<div class="tg">
       <button class="ic" role="switch" aria-checked="${state.autoAdvance}" aria-label="${t("Auto‑przejście po odliczeniu","Auto-advance after countdown")}" title="${t("Auto‑przejście","Auto-advance")}" onclick="toggleAuto(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M5 5l10 7-10 7V5z" fill="currentColor"/><path d="M18.6 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
       <button class="ic" role="switch" aria-checked="${state.sound}" aria-label="${t("Sygnał dźwiękowy i wibracja","Sound signal and vibration")}" title="${t("Sygnał dźwiękowy","Sound signal")}" onclick="toggleSound(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M5 9v6h4l5 4V5L9 9H5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M17 9.5a4 4 0 0 1 0 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
@@ -1402,7 +1417,7 @@ function renderGuide(){
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${p.name}</b><span>${CANALS[p.canal].label}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${p.side==='L'}" onclick="setGuideSide('L')">L</button><button data-s="P" aria-pressed="${p.side==='P'}" onclick="setGuideSide('P')">${t("P","R")}</button></div></div></div>
-    <div class="steps-dots">${dots}</div>
+    ${os}
     <div class="sizerow"><span class="lbl">${t("Rozmiar złogu","Debris size")}</span>
       <div class="sizepill">${["small","medium","big"].map(k=>`<button aria-pressed="${state.size===k}" onclick="pickSize('${k}')">${SIZE_LABELS[k]}</button>`).join("")}</div></div>
     ${state.size==="small"
@@ -1433,7 +1448,55 @@ function renderGuide(){
           : `<button class="stepnav fin" onclick="zakonczSerie()" aria-label="${t("Zakończ serię","Finish series")}"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
       </div>
       <div class="title">${st.title}</div>
-      <div class="instr">${st.instr}</div></div>
+      <div class="instr">${st.instr}</div>
+      ${(()=>{ /* DANE ETAPU (dokument: „Każdy etap pokazuje pozycję, kąt, stronę, czas
+           i ewentualne kryterium przejścia dalej"). Wszystkie pięć pochodzi z modelu, nie z
+           napisów przypisanych manewrowi — `kryterium` jest odczytem z fizyki, a nie etykietą. */
+        const e = etapy[state.step]; if(!e) return "";
+        const op = opisPozycji(e.pozycja.body, e.pozycja.face);
+        const poz = op ? t(op.pl, op.en) : `${e.pozycja.body}/${e.pozycja.face}`;
+        const kat = `${e.kat>0?"+":""}${e.kat}°`;
+        const czas = e.sekundy==null ? t("bez odliczania","no countdown") : fmtClock(e.sekundy);
+        return `<dl class="etapdane">
+          <div><dt>${t("Pozycja","Position")}</dt><dd>${poz}</dd></div>
+          <div><dt>${t("Skręt głowy","Head rotation")}</dt><dd>${kat}</dd></div>
+          <div><dt>${t("Strona","Side")}</dt><dd>${t("ucho","ear")} ${sideN(e.strona,"mianN")} ${t("(pacjenta)","(patient's)")}</dd></div>
+          <div><dt>${t("Czas","Time")}</dt><dd>${czas}</dd></div>
+          <div class="etapdane--szer"><dt>${t("Przejście dalej","Moving on")}</dt><dd>${t(KRYTERIA[e.kryterium].pl, KRYTERIA[e.kryterium].en)}${
+            e.wyjscieZloga?` · ${t(WYJSCIE_ZLOGA[e.wyjscieZeSchematu?'schemat':'fizyka'].pl, WYJSCIE_ZLOGA[e.wyjscieZeSchematu?'schemat':'fizyka'].en)}`:""}</dd></div>
+        </dl>`;
+      })()}</div>
+    ${(()=>{ /* ALTERNATYWY BEZ OPUSZCZANIA EKRANU (mockup D4). Manewr pierwszego rzutu dla
+         BIEŻĄCEGO kanału i mechanizmu jest odróżniony — ale odróżnienie mówi „pierwszy rzut wg
+         wytycznych", nie „lepszy". */
+      const d = doborEkspercki(p.canal, state.variant, manDeps());
+      // : plan zbudowany poza akcjami (harness golden) nie ma stempla,
+      // a lista alternatyw, ktora zawiera BIEZACY manewr, jest po prostu falszywa.
+      const biezacy = p.key||state.maneuverKey;
+      const inne = (CANALS[p.canal].maneuvers||[]).filter(k=>k!==biezacy);
+      if(!inne.length) return "";
+      return `<div class="altman"><span class="eyebrow">${t("Inny manewr tego kanału","Another maneuver for this canal")}</span>
+        ${inne.map(k=>`<button class="altman__b" onclick="zmienManewr('${k}')">${MANEUVERS[k].label}${d&&d.pierwszy===k?` <em>${t("pierwszy rzut","first-line")}</em>`:""}</button>`).join("")}</div>`;
+    })()}
+    ${(()=>{ /* TRYB TIMERA (dokument: „stały czas albo «do ustąpienia oczopląsu + zapas»").
+         Drugi tryb WYŁĄCZNIE PODNOSI czas protokolarny — patrz man-model.czasUtrzymania. Przy
+         kupulolitiazie jest niedostępny z podanym powodem: oczopląs w niej nie wygasa, więc
+         zdanie „do ustąpienia" nie ma desygnatu. */
+      const dost = trybDoUstapieniaDostepny(p);
+      const tryb = state.trybCzasu||"staly";
+      return `<div class="trybczasu">
+        <span class="eyebrow">${t("Czas utrzymania pozycji","Position hold time")}</span>
+        <div class="trybczasu__seg">
+          <button aria-pressed="${tryb==="staly"}" onclick="ustawTrybCzasu('staly')">${t("czas protokołu","protocol time")}</button>
+          <button aria-pressed="${tryb==="doUstapienia"}" ${dost.dostepny?"":"disabled"} onclick="ustawTrybCzasu('doUstapienia')">${t("do ustąpienia oczopląsu + zapas","until nystagmus subsides + margin")}</button>
+        </div>
+        <div class="note">${dost.dostepny
+          ? (tryb==="doUstapienia"
+              ? t("Model podnosi czas protokołu tam, gdzie przewiduje dłuższy oczopląs. NIGDY go nie skraca — przewidywany czas pochodzi z okna symulacji, nie z obserwacji pacjenta.","The model raises the protocol time where it predicts a longer nystagmus. It NEVER shortens it — the predicted duration comes from the simulation window, not from observing the patient.")
+              : t("Czasy z protokołu manewru. Suwak niżej pozwala je zmienić ręcznie.","Times from the maneuver protocol. The slider below lets you change them manually."))
+          : t(POWOD_BRAKU_TRYBU[dost.powod].pl, POWOD_BRAKU_TRYBU[dost.powod].en)}</div>
+      </div>`;
+    })()}
     ${timerBlock}
     <p class="footnote">${t("Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.","When finished, wait per protocol and consider repeating the positional test.")}</p>
     </div></div>`;

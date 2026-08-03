@@ -37,7 +37,7 @@ win.cancelAnimationFrame = () => {};
 
 const h = win.__OTOREPO_TEST__;
 const A = (n) => (h && h[n]) || win[n];
-const POTRZEBNE = ['state', 'render', 'startManeuver', 'setGuideSide', 'openTest', 'setDixObs', 'pickCanal', 'pickSize', 'goStep', 'zakonczSerie', 'setVariant', 'syncShell', 'setLangUI', 'openMan'];
+const POTRZEBNE = ['state', 'render', 'startManeuver', 'setGuideSide', 'openTest', 'setDixObs', 'pickCanal', 'pickSize', 'goStep', 'zakonczSerie', 'setVariant', 'syncShell', 'setLangUI', 'openMan', 'ustawTrybCzasu', 'zmienManewr'];
 const brak = POTRZEBNE.filter(n => typeof A(n) === 'undefined');
 if (errs.length || brak.length) {
   console.error('✗ BLAD LADOWANIA — wyrocznia niewazna.');
@@ -56,6 +56,7 @@ function czysty() {
   st.variant = 'canalo'; st.variantZrodlo = null; st.dixObs = null; st.dixRep = 0;
   st.diagCentral = false; st.size = 'medium'; st.plan = null; st.step = 0;
   st.running = false; st.elapsedMs = 0; st.total = 0; st.autoAdvance = false;
+  st.trybCzasu = 'staly'; st.sideZrodlo = null;   // KAZDE nowe pole stanu MUSI tu trafic — inaczej przypadki przechodza przez kolejnosc blokow, a nie przez kod aplikacji (TC3 przeszlo wlasnie na tym przeoczeniu)
   st.obs = {}; st.obsOdciski = {}; st.decisionSeq = 0;
   st.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
   A('render')();
@@ -283,8 +284,57 @@ czysty(); A('pickCanal')('anterior');
 T('K1k/przedni-bez-alternatyw', !/ekspert__alt/.test(app()), 'kanał przedni ma jeden manewr — brak sekcji alternatyw');
 T('K1l/przedni-yacovino', zalecany() === 'Yacovino', 'kanał przedni → Yacovino');
 
-/* ═══════════ L. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 53;
+/* ═══════════ L. TRYB LICZNIKA: PODŁOGA, NIGDY SKRÓCENIE ═══════════
+   To najgroźniejsza możliwa pomyłka tego bloku. Semont ma w instrukcji „Utrzymaj 1–3 min"
+   i `seconds=90`, a model przewiduje 18,5 s (okno dynamiki zakorkowane capem). Tryb, który
+   ustawiałby tę liczbę wprost, skróciłby rzut o ~70 s poniżej dolnej granicy WŁASNEJ instrukcji
+   aplikacji — a przy włączonym auto-przejściu sam przesunąłby pacjenta dalej. */
+czysty(); A('startManeuver')('semont');
+const protokolSemont = st.plan.steps.map(x => x.seconds);
+A('ustawTrybCzasu')('doUstapienia');
+T('TC1/semont-nie-skrocony', st.plan.steps.every((x, i) => x.seconds == null || x.seconds >= protokolSemont[i]),
+  'tryb „do ustąpienia" nie ma prawa skrócić ani jednego etapu poniżej protokołu');
+eq('TC2/semont-bez-zmian', st.plan.steps.map(x => x.seconds), protokolSemont);
+// Lempert k5: model daje 39,8 s przy protokole 30 s — TU tryb ma realnie wydłużyć.
+czysty(); A('startManeuver')('lempert');
+const protokolLempert = st.plan.steps.map(x => x.seconds);
+A('ustawTrybCzasu')('doUstapienia');
+T('TC3/lempert-wydluzony', st.plan.steps.some((x, i) => x.seconds != null && x.seconds > protokolLempert[i]),
+  'gdzieś tryb MUSI wydłużać — inaczej jest ozdobnikiem');
+T('TC4/lempert-nigdy-krocej', st.plan.steps.every((x, i) => x.seconds == null || x.seconds >= protokolLempert[i]),
+  'i nadal nigdzie nie skraca');
+// Krok BEZ odliczania zostaje bez odliczania — tryb licznika nie zmienia samego manewru.
+T('TC5/plynne-zostaje-plynne', st.plan.steps.filter((x, i) => protokolLempert[i] == null).every(x => x.seconds == null),
+  'etap „wykonaj płynnie" nie może stać się odliczany');
+// Powrót do „stałego" przywraca protokół.
+A('ustawTrybCzasu')('staly');
+eq('TC6/powrot-do-protokolu', st.plan.steps.map(x => x.seconds), protokolLempert);
+// KUPULOLITIAZA: tryb NIEDOSTĘPNY, bo oczopląs nie wygasa — i ekran musi podać powód.
+czysty(); A('startManeuver')('bascule');
+T('TC7/cupulo-przycisk-wylaczony', /onclick="ustawTrybCzasu\('doUstapienia'\)"/.test(app())
+  && /disabled[^>]*onclick="ustawTrybCzasu\('doUstapienia'\)"|onclick="ustawTrybCzasu\('doUstapienia'\)"[^>]*disabled/.test(app().replace(/\n/g, ' ')),
+  'przy kupulolitiazie tryb musi być wyłączony');
+T('TC8/cupulo-powod', /oczopląs nie wygasa/.test(app()), 'wyłączenie bez podania powodu to milczenie, nie ostrzeżenie');
+const przedB = st.plan.steps.map(x => x.seconds);
+A('ustawTrybCzasu')('doUstapienia');
+eq('TC9/cupulo-nie-rusza-czasow', st.plan.steps.map(x => x.seconds), przedB);
+
+/* ═══════════ M. OŚ ETAPÓW I DANE ETAPU ═══════════ */
+czysty(); A('startManeuver')('epley');
+T('ME1/os-z-podpisami', /osetapow/.test(app()) && /Pozycja wyjściowa/.test(app()), 'oś etapów musi nieść podpisy, nie same kropki');
+T('ME2/dane-etapu', /etapdane/.test(app()), 'wiersz danych etapu istnieje');
+T('ME3/bez-identyfikatorow', !/supineHang|leanR|sitFront/.test(app().split('etapdane')[1].slice(0, 800)),
+  'na ekranie nie ma prawa być identyfikatora silnika zamiast nazwy pozycji');
+T('ME4/strona-pacjenta', /\(pacjenta\)/.test(app()), 'strona zawsze opisana jako strona PACJENTA');
+T('ME5/alternatywy-bez-biezacego', !/altman__b[^>]*>Epley/.test(app()), 'lista alternatyw nie może zawierać bieżącego manewru');
+{ const i = app().indexOf('altman'); const blok = i < 0 ? '' : app().slice(i, i + 600);
+  T('ME6/alternatywy-sa', /Semont/.test(blok) && /Bascule/.test(blok), 'alternatywy kanału tylnego muszą być dostępne'); }
+// Kanał o JEDNYM manewrze nie pokazuje pustej sekcji alternatyw.
+czysty(); A('startManeuver')('yacovino');
+T('ME7/yacovino-bez-alternatyw', !/altman/.test(app()), 'kanał przedni ma jeden manewr');
+
+/* ═══════════ N. LICZNOŚĆ ═══════════ */
+const OCZEKIWANE = 69;
 if (bledy.length) {
   console.error(`✗ man:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

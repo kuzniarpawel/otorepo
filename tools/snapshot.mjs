@@ -363,7 +363,9 @@ function domOracle(h, win) {
   for (const key of Object.keys(h.MANEUVERS || {})) {
     for (const side of ['P', 'L']) {
       let plan;
-      try { plan = h.genPlan(key, side); } catch (e) { out[`guide/${key}/${side}`] = 'ERR:' + e.message; continue; }
+      //  stempluje w aplikacji przebudujPlan (actions.js); harness buduje plan wprost,
+      // wiec musi zrobic to samo — inaczej ekran manewru widzi plan bez tozsamosci.
+      try { plan = h.genPlan(key, side); plan.key = key; } catch (e) { out[`guide/${key}/${side}`] = 'ERR:' + e.message; continue; }
       const n = (plan.steps || []).length || 0;
       for (let s = 0; s < n; s++) {
         grab(`guide/${key}/${side}/step${s}`, () => {

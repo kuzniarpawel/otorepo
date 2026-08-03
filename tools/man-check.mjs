@@ -16,9 +16,10 @@ import {
   probyKanalu, probaKanalu, doborEkspercki, etapyManewru, KRYTERIA,
   czasUtrzymania, ZAPAS_S, trybDoUstapieniaDostepny, POWOD_BRAKU_TRYBU,
   spojnoscPlanu, ROZJAZDY, wykonanySekwencyjnie, sygnalKonwersji, przeniesCzasy,
+  opisPozycji, POZYCJE_CIALA, USTAWIENIA_TWARZY,
 } from '../src/app/man-model.js';
 import { manDeps } from '../src/app/man-deps.js';
-import { MANEUVERS, CANALS, CANAL_OF, DIAG, recommend, sizedSeconds } from '../src/pose/maneuvers.js';
+import { MANEUVERS, CANALS, CANAL_OF, DIAG, recommend, sizedSeconds, LEAN_G, BASE_G } from '../src/pose/maneuvers.js';
 import { state } from '../src/app/state.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -100,6 +101,32 @@ for (const k of ['epley', 'semont', 'yacovino']) {
   const e = etapyManewru(plan('epley', 'P'), D, 'medium').find(x => x.wyjscieZloga);
   T('ET9/epley-wyjscie-bez-odliczania', !!e && e.kryterium === 'plynne' && e.sekundy === null,
     'Epley: etap wyjścia złogu jest jednocześnie etapem bez odliczania — obie cechy muszą przetrwać');
+}
+
+/* ═══════════ C2. NAZWA POZYCJI — ODWRÓCENIE lean* ═══════════
+   `sideL` = na boku LEWYM, ale `leanL` = na boku PRAWYM (pozy Semonta nazwane od strony PRZECHYŁU,
+   nie od boku, na którym pacjent leży). Pomyłka wypisałaby klinicyście przy kozetce odwrotne ucho,
+   a fizyka by na to nie zareagowała, bo nazwa nie wchodzi do symulacji — czyli żadna inna
+   wyrocznia by tego nie złapała. */
+{
+  const pl = (b, f) => (opisPozycji(b, f) || {}).pl;
+  T('PZ1/sideL-lewy', /boku lewym/.test(pl('sideL', 'fwd')), 'sideL to bok LEWY');
+  T('PZ2/sideR-prawy', /boku prawym/.test(pl('sideR', 'fwd')), 'sideR to bok PRAWY');
+  T('PZ3/leanL-PRAWY', /boku prawym/.test(pl('leanL', 'fwd')), 'leanL to bok PRAWY — odwrócenie względem sideL');
+  T('PZ4/leanR-LEWY', /boku lewym/.test(pl('leanR', 'fwd')), 'leanR to bok LEWY — odwrócenie względem sideR');
+  // Sprawdzenie wobec FIZYKI, a nie wobec komentarza: gHead dla pozy na boku ma znak wzdłuż osi
+  // usznej (x>0 = grawitacja ku PRAWEMU uchu = pacjent leży na prawym boku).
+  const g = (b) => LEAN_G[b + '|fwd'] || BASE_G[b + '|fwd'];
+  T('PZ5/zgodne-z-fizyka', g('leanL')[0] > 0 && g('leanR')[0] < 0 && g('sideL')[0] < 0 && g('sideR')[0] > 0,
+    'nazwy boków muszą zgadzać się ze znakiem grawitacji w ramce głowy, nie z intuicją');
+  T('PZ6/komplet', Object.keys(POZYCJE_CIALA).every(b => !!pl(b, 'fwd')), 'każda poza ciała ma nazwę');
+  T('PZ7/dwujezyczne', Object.values(POZYCJE_CIALA).every(o => o.pl && o.en)
+    && Object.values(USTAWIENIA_TWARZY).every(o => o.pl && o.en), 'nazwy dwujęzyczne');
+  // Każde `body` używane przez JAKIKOLWIEK manewr musi mieć nazwę — inaczej na ekranie zostanie
+  // identyfikator silnika (zmierzone: „supineHang/up" trafiło na ekran przy pierwszym podejściu).
+  const uzywane = new Set();
+  for (const k of KLUCZE) for (const s of ['P', 'L']) plan(k, s).steps.forEach(x => uzywane.add(x.body));
+  eq('PZ8/bez-luk', [...uzywane].filter(b => !POZYCJE_CIALA[b]), []);
 }
 
 /* ═══════════ D. „DO USTĄPIENIA OCZOPLĄSU + ZAPAS" — PODŁOGA, NIGDY SKRÓCENIE ═══════════ */
@@ -223,7 +250,7 @@ T('WY7/czulosc', (0 === 5 - 1) === false && (4 === 5 - 1) === true, 'kontrola: r
 /* ═══════════ K. LICZNOŚĆ ═══════════
    Zapadka na cichy ubytek przypadków: skasowanie sekcji przy refaktorze zostawiłoby wyrocznię
    zieloną i pustą. Ta sama bramka złapała w torze VOG spadek 253→228. */
-const OCZEKIWANE = 150;
+const OCZEKIWANE = 158;
 if (bledy.length) {
   console.error(`✗ man:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

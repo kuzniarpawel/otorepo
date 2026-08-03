@@ -96,6 +96,39 @@ export const WYJSCIE_ZLOGA = {
   fizyka:  { pl: 'w tym etapie złóg opuszcza kanał', en: 'at this stage the debris leaves the canal' },
   schemat: { pl: 'etap kuracyjny wg schematu manewru (nie z symulacji)', en: 'curative stage per the maneuver scheme (not from the simulation)' },
 };
+/* NAZWA POZYCJI PO LUDZKU. Klucze `body` są identyfikatorami silnika (`supineHang`, `leanR`)
+   i na ekranie klinicysty nie mają czego szukać.
+   UWAGA NA ODWRÓCENIE, i to jest powód, dla którego ta tabela ma własny przypadek w wyroczni:
+   `sideL` znaczy „na boku LEWYM", ale `leanL` znaczy „na boku PRAWYM" — pozy Semonta są nazwane
+   od strony PRZECHYŁU, nie od boku, na którym pacjent leży (maneuvers.js, TORSO_Q: „leanL = prawy
+   bok w dół"). Pomyłka w tym miejscu wypisałaby klinicyście przy kozetce odwrotne ucho. */
+export const POZYCJE_CIALA = {
+  sit:            { pl: 'siad',                              en: 'sitting' },
+  sitFront:       { pl: 'siad twarzą do badającego',         en: 'sitting, facing the examiner' },
+  supineFlat:     { pl: 'na plecach',                        en: 'supine' },
+  supineHang:     { pl: 'na plecach, głowa poza krawędzią',  en: 'supine, head beyond the edge' },
+  supineDeepHang: { pl: 'na plecach, głowa głęboko odchylona', en: 'supine, head hanging deeply' },
+  supineChin:     { pl: 'na plecach, broda do klatki',       en: 'supine, chin to chest' },
+  sideL:          { pl: 'na boku lewym',                     en: 'on the left side' },
+  sideR:          { pl: 'na boku prawym',                    en: 'on the right side' },
+  leanL:          { pl: 'na boku prawym',                    en: 'on the right side' },   // ODWRÓCONE — patrz wyżej
+  leanR:          { pl: 'na boku lewym',                     en: 'on the left side' },    // ODWRÓCONE — patrz wyżej
+  prone:          { pl: 'na brzuchu',                        en: 'prone' },
+};
+export const USTAWIENIA_TWARZY = {
+  fwd:   { pl: 'głowa w linii ciała',   en: 'head in line with the body' },
+  up:    { pl: 'nos ku górze',          en: 'nose up' },
+  down:  { pl: 'nos ku podłodze',       en: 'nose toward the floor' },
+  chin:  { pl: 'broda przy klatce',     en: 'chin to the chest' },
+  ceil:  { pl: 'nos ku sufitowi',       en: 'nose toward the ceiling' },
+  floor: { pl: 'nos ku podłodze',       en: 'nose toward the floor' },
+};
+export function opisPozycji(body, face) {
+  const b = POZYCJE_CIALA[body], f = USTAWIENIA_TWARZY[face];
+  if (!b) return null;
+  return f ? { pl: `${b.pl}, ${f.pl}`, en: `${b.en}, ${f.en}` } : b;
+}
+
 export function etapyManewru(plan, deps, rozmiar) {
   if (!plan || !plan.steps) return [];
   const man = deps && typeof deps.symulacja === 'function' ? deps.symulacja(plan, rozmiar) : null;

@@ -12,7 +12,8 @@ import { setObsWystapil as _setObsWystapil, setObsPole as _setObsPole, oznaczObs
          przyjmijObserwacje } from './obs-state.js';
 import { interpretuj } from './interp-model.js';
 import { interpDeps } from './interp-deps.js';
-import { wykonanySekwencyjnie, przeniesCzasy } from './man-model.js';
+import { wykonanySekwencyjnie, przeniesCzasy, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny } from './man-model.js';
+import { manDeps } from './man-deps.js';
 
 function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
 function hintsHIT(canal, ear){
@@ -479,6 +480,48 @@ function goStep(i,autostart){
 // Jawne zakończenie serii (przycisk ✓ na ostatnim etapie) — to jest DEKLARACJA wykonania,
 // więc tu `markConsumed` idzie bezwarunkowo.
 function zakonczSerie(){ markConsumed(state); backToSetup(); }
+
+/* ============ Ekran manewru — zachowania wspólne Bloku 10 ============ */
+
+/* ALTERNATYWA BEZ OPUSZCZANIA EKRANU (dokument: „Alternatywne manewry dostępne bez opuszczania
+   ekranu"). Podmiana manewru to NOWA DECYZJA, nie korekta widoku, więc odcisk przebiegu powstaje
+   od nowa (`markManeuver`) — inaczej pasek meldowałby manewr, którego nikt już nie wykonuje.
+   Drogę dojścia (`viaInterpret`) dziedziczymy z poprzedniego rekordu: klinicysta, który doszedł
+   tu z interpretacji próby, nie przestaje mieć jej za sobą przez to, że wziął alternatywę. */
+function zmienManewr(k){
+  if(!state.plan || k===state.plan.key) return;
+  const via = !!(state.flow && state.flow.maneuver && state.flow.maneuver.viaInterpret);
+  const strona = state.plan.side;
+  state.maneuverKey=k; state.canal=CANAL_OF[k]; state.side=strona;
+  markManeuver(state,k,via);
+  state.plan=przebudujPlan(k,strona,{zachowajCzasy:false});
+  state.step=0; state.autostart=false; state.running=false; releaseWake();
+  render();
+}
+
+/* TRYB TIMERA (dokument: „Timer można ustawić na stały czas lub «do ustąpienia oczopląsu + zapas»").
+   Liczbę bierze MODEL z ξ(t) silnika, ale wyłącznie jako PODŁOGĘ — patrz man-model.czasUtrzymania:
+   okno dynamiki jest zakorkowane capem, więc przewidywany czas oczopląsu nigdy nie przekracza
+   ~19 s, a Semont ma w instrukcji „Utrzymaj 1–3 min". Tryb może zatem tylko WYDŁUŻAĆ.
+   Przełączenie z powrotem na „stały" przywraca czasy protokolarne, bo inaczej wydłużenia zostałyby
+   w planie jako wartości bez właściciela. */
+function ustawTrybCzasu(tryb){
+  const t2 = tryb==="doUstapienia" ? "doUstapienia" : "staly";
+  if(state.trybCzasu===t2) return;
+  state.trybCzasu=t2;
+  if(state.plan){
+    const key=state.plan.key||state.maneuverKey;
+    state.plan=przebudujPlan(key, state.plan.side, {zachowajCzasy:false});
+    if(t2==="doUstapienia" && trybDoUstapieniaDostepny(state.plan).dostepny){
+      const etapy=etapyManewru(state.plan, manDeps(), state.size);
+      state.plan.steps.forEach((st2,i)=>{
+        const w=czasUtrzymania(st2.seconds, etapy[i] && etapy[i].sekundyOczoplasu, {});
+        if(w.sekundy!=null) st2.seconds=w.sekundy;
+      });
+    }
+  }
+  render();
+}
 function toggleAuto(el){ state.autoAdvance=!state.autoAdvance; el.setAttribute("aria-checked",state.autoAdvance); }
 function toggleSound(el){ state.sound=!state.sound; el.setAttribute("aria-checked",state.sound); if(state.sound)beep(); }
 // Etap 3: przełącznik karty „Ułożenie" SVG ↔ Three.js (WebGL). Pełny render — montaż canvasa robi hook w renderGuide/renderDiag.
@@ -512,8 +555,8 @@ function setLangUI(lang){
 }
 
 
-export { zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
