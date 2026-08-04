@@ -230,6 +230,30 @@ export function kontrolaMozliwa(stan) {
        porównanie, które robi man-model.sygnalKonwersji) — dwie sprzeczne rzeczy naraz.
    Sprzeczność nie blokuje zapisu: klinicysta ma prawo mieć rację wbrew stanowi aplikacji. Ma być
    NAZWANA. */
+/* ============ 4b. TOLERANCJA MANEWRU (Blok 15) ============
+   Dokument Bloku 15 wymaga, żeby opis badania niósł TOLERANCJĘ — a zmierzone przed napisaniem
+   czegokolwiek: aplikacja nie zbierała jej NIGDZIE (wpis kontroli miał 9 pól, żadne jej nie
+   niosło). Generator opisu nie ma prawa jej wymyślić, więc dana musi powstać przy pacjencie.
+
+   Mieszka WE WPISIE KONTROLI, a nie w sesji, i to nie jest szczegół techniczny: seria to jeden
+   wpis na manewr, a tolerancja bywa różna w kolejnych powtórzeniach. Jedno pole „na sesję"
+   pisałoby „zniósł dobrze" nad serią, w której trzecie powtórzenie skończyło się wymiotami.
+
+   Słownik jest ZAMKNIĘTY i krótki. Pole tekstowe „uwagi o tolerancji" byłoby pierwszym miejscem
+   w całej aplikacji, w którym da się wpisać nazwisko — a strażnik danych osobowych stoi na tym,
+   że KAŻDA wartość pochodzi ze słownika. */
+export const TOLERANCJE = [
+  { id: 'dobra', przerwany: false, pl: 'dobra — bez istotnych dolegliwości', en: 'good — no significant complaints' },
+  { id: 'zawroty', przerwany: false, pl: 'nasilone zawroty w trakcie, manewr dokończono', en: 'intense vertigo during the maneuver, completed' },
+  { id: 'nudnosci', przerwany: false, pl: 'nudności', en: 'nausea' },
+  { id: 'wymioty', przerwany: false, pl: 'wymioty', en: 'vomiting' },
+  { id: 'lek', przerwany: false, pl: 'lęk lub niepokój utrudniający ułożenie', en: 'anxiety or agitation hampering positioning' },
+  { id: 'ograniczenieRuchomosci', przerwany: false, pl: 'ograniczenie ruchomości szyi lub kręgosłupa wymusiło modyfikację ułożenia', en: 'restricted neck or spine mobility forced a modified position' },
+  { id: 'przerwano', przerwany: true, pl: 'manewru nie dokończono', en: 'the maneuver was not completed' },
+];
+export const TOLERANCJA_IDS = TOLERANCJE.map(x => x.id);
+export function tolerancjaKontroli(id) { return TOLERANCJE.find(x => x.id === id) || null; }
+
 export const SPRZECZNOSCI = {
   konwersjaBezKanalu: {
     pl: 'zaznaczono konwersję kanałową, ale kanał w aplikacji jest nadal ten sam co leczony — wskaż nowy kanał w kroku „Interpretacja”',
@@ -243,6 +267,12 @@ export const SPRZECZNOSCI = {
     pl: 'nie podano powodu niewiarygodności — bez niego zapis mówi tylko „nie wiadomo”',
     en: 'no reason for unreliability was given — without it the record says only "unknown"',
   },
+  /* Manewru nie dokończono, a wynik przypisano JEMU. Objaw mógł ustąpić — ale nie wiadomo, po
+     czym, bo zabiegu, którego dotyczy pytanie, nie wykonano do końca. */
+  wynikPoPrzerwanym: {
+    pl: 'manewru nie dokończono — wynik kontroli nie mówi o skuteczności TEGO manewru',
+    en: 'the maneuver was not completed — the control result says nothing about the efficacy of THIS maneuver',
+  },
 };
 export function spojnoscWyniku(id, stan, deps) {
   const out = [];
@@ -253,6 +283,11 @@ export function spojnoscWyniku(id, stan, deps) {
   if (id === 'konwersja' && !innyKanal) out.push({ pole: 'konwersjaBezKanalu', ...SPRZECZNOSCI.konwersjaBezKanalu });
   if (id === 'ustapienie' && innyKanal) out.push({ pole: 'ustapienieMimoInnegoKanalu', ...SPRZECZNOSCI.ustapienieMimoInnegoKanalu });
   if (id === 'niewiarygodne' && !(s.kontrolaPowod)) out.push({ pole: 'niewiarygodneBezPowodu', ...SPRZECZNOSCI.niewiarygodneBezPowodu });
+  const idx = m ? m.kontrolaIdx : null;
+  const biezacy = idx != null && Array.isArray(s.kontrole) ? s.kontrole[idx] : null;
+  const przerwany = !!(biezacy && tolerancjaKontroli(biezacy.tolerancja) && tolerancjaKontroli(biezacy.tolerancja).przerwany);
+  const w = wynikKontroli(id);
+  if (przerwany && w && w.wiarygodny) out.push({ pole: 'wynikPoPrzerwanym', ...SPRZECZNOSCI.wynikPoPrzerwanym });
   return out;
 }
 
@@ -285,6 +320,10 @@ export function wpisKontroli(stan, wynikId, deps) {
     czasySkad: s.trybCzasu === 'doUstapienia' ? 'planPodniesiony' : 'plan',
     wynik: wynikId || null,
     powod: wynikId === 'niewiarygodne' ? (s.kontrolaPowod || null) : null,
+    /* Tolerancja NIE powstaje tutaj: wpis jest przebudowywany przy każdej zmianie wyniku, a ona
+       jest odpowiedzią na osobne pytanie. Przenosi ją jedyny pisarz (followup-state.zapiszWynik),
+       żeby zmiana wyniku nie kasowała po cichu odnotowanej reakcji pacjenta. */
+    tolerancja: null,
     viaInterpret: !!m.viaInterpret,
   };
 }
@@ -299,7 +338,7 @@ export function wpisKontroli(stan, wynikId, deps) {
    `assertNoPersonalData`). Reguła jest strukturalna, nie słownikowa — nie szukamy imion, tylko
    wymagamy, żeby KAŻDA wartość pochodziła z zamkniętego zbioru albo była liczbą. Napis, którego
    nie ma w słowniku, jest naruszeniem NIEZALEŻNIE od tego, co znaczy. */
-export const POLA_WPISU = ['manewr', 'kanal', 'strona', 'mechanizm', 'czasy', 'czasySkad', 'wynik', 'powod', 'viaInterpret'];
+export const POLA_WPISU = ['manewr', 'kanal', 'strona', 'mechanizm', 'czasy', 'czasySkad', 'wynik', 'powod', 'tolerancja', 'viaInterpret'];
 export function bezDanychOsobowych(wpis, deps) {
   const powody = [];
   if (!wpis || typeof wpis !== 'object') return { czysty: false, powody: ['wpis nie jest obiektem'] };
@@ -321,6 +360,7 @@ export function bezDanychOsobowych(wpis, deps) {
       : klucz === 'powod' ? dozwolonePowody
       : klucz === 'strona' ? ['L', 'P']
       : klucz === 'mechanizm' ? ['canalo', 'cupulo']
+      : klucz === 'tolerancja' ? TOLERANCJA_IDS
       : klucz === 'czasySkad' ? ['plan', 'planPodniesiony']
       : klucz === 'kanal' ? ['posterior', 'horizontal', 'anterior']
       : klucz === 'manewr' ? (deps && typeof deps.manewry === 'function' ? deps.manewry() : null)
@@ -355,7 +395,7 @@ export function podsumowanieSesji(stan, deps) {
     mechanizm: s.variant || null,
     mechanizmZrodlo: s.variantZrodlo || null,
     obrazOsrodkowy: !!s.diagCentral,
-    kontrole: kontrole.map(k => ({ manewr: k.manewr, kanal: k.kanal, strona: k.strona, wynik: k.wynik, powod: k.powod || null })),
+    kontrole: kontrole.map(k => ({ manewr: k.manewr, kanal: k.kanal, strona: k.strona, wynik: k.wynik, powod: k.powod || null, tolerancja: k.tolerancja || null })),
     // Manewr wybrany, ale bez zapisanej kontroli — najczęstsza dziura w opisie badania.
     manewrBezKontroli: !!(f.maneuver && f.maneuver.key && f.maneuver.kontrolaIdx == null),
     czasySkad: kontrole.length ? kontrole[kontrole.length - 1].czasySkad : null,

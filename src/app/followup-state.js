@@ -35,6 +35,10 @@ export function zapiszWynik(state, wynikId, deps) {
 
   const wpis = wpisKontroli(state, nowy, deps);
   if (!wpis) return { ok: false, powody: ['brak manewru'] };
+  // TOLERANCJA PRZEŻYWA ZMIANĘ WYNIKU. Wpis jest przebudowywany od zera, więc bez tego jednego
+  // wiersza odnotowane „wymioty" znikałyby po zmianie odpowiedzi o skuteczności — czyli akurat
+  // wtedy, gdy klinicysta poprawia wynik po namyśle.
+  if (idx != null && state.kontrole[idx] && state.kontrole[idx].tolerancja) wpis.tolerancja = state.kontrole[idx].tolerancja;
   const straz = bezDanychOsobowych(wpis, deps);
   if (!straz.czysty) return { ok: false, powody: straz.powody };
 
@@ -55,9 +59,33 @@ export function ustawPowodKontroli(state, powod, deps) {
   const idx = m ? m.kontrolaIdx : null;
   if (idx != null && state.kontrole && state.kontrole[idx] && state.kontrole[idx].wynik === 'niewiarygodne') {
     const wpis = wpisKontroli(state, 'niewiarygodne', deps);
+    if (state.kontrole[idx].tolerancja) wpis.tolerancja = state.kontrole[idx].tolerancja;
     const straz = bezDanychOsobowych(wpis, deps);
     if (straz.czysty) state.kontrole[idx] = wpis;
   }
+}
+
+/* TOLERANCJA MANEWRU (Blok 15). Osobne pytanie i osobny gest, więc osobny pisarz — ale ten sam
+   wpis, bo tolerancja opisuje TEN manewr, a nie sesję.
+
+   Wpis powstaje także wtedy, gdy wyniku kontroli jeszcze nie ma: klinicysta widzi reakcję
+   pacjenta ZARAZ po manewrze, a wynik kontroli dopiero po ponownej próbie. Wymuszanie kolejności
+   „najpierw wynik, potem tolerancja" kazałoby zapamiętać obserwację i wrócić do niej później. */
+export function ustawTolerancje(state, id, deps) {
+  const m = f(state).maneuver;
+  if (!m || !m.key) return { ok: false, powody: ['brak manewru'] };
+  if (!Array.isArray(state.kontrole)) state.kontrole = [];
+  const idx = m.kontrolaIdx;
+  const istnieje = idx != null && state.kontrole[idx] ? state.kontrole[idx] : null;
+  const wpis = wpisKontroli(state, istnieje ? istnieje.wynik : null, deps);
+  if (!wpis) return { ok: false, powody: ['brak manewru'] };
+  // Ponowne dotknięcie tej samej odpowiedzi ją COFA — ten sam gest, co przy wyniku i przy `wystapil`.
+  wpis.tolerancja = (istnieje && istnieje.tolerancja === id) ? null : id;
+  const straz = bezDanychOsobowych(wpis, deps);
+  if (!straz.czysty) return { ok: false, powody: straz.powody };
+  if (istnieje) state.kontrole[idx] = wpis;
+  else { state.kontrole.push(wpis); m.kontrolaIdx = state.kontrole.length - 1; }
+  return { ok: true, tolerancja: wpis.tolerancja, powody: [] };
 }
 
 /* ============ KRYTERIUM ODBIORU NR 3 ============

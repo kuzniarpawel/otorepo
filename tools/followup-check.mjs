@@ -15,7 +15,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import {
-  WYNIKI, WYNIK_IDS, wynikKontroli, AKCJE, AKCJA_IDS, ZAWSZE_DOSTEPNE, POWODY_ZAKAZU, REGULY_KROKOW,
+  WYNIKI, WYNIK_IDS, TOLERANCJA_IDS, wynikKontroli, AKCJE, AKCJA_IDS, ZAWSZE_DOSTEPNE, POWODY_ZAKAZU, REGULY_KROKOW,
   nastepneKroki, celAkcji, kontrolaMozliwa, POWODY_BRAKU_KONTROLI, spojnoscWyniku, SPRZECZNOSCI,
   wpisKontroli, POLA_WPISU, bezDanychOsobowych, podsumowanieSesji, streszczenieKontroli,
 } from '../src/app/followup-model.js';
@@ -340,7 +340,8 @@ eq('CE7/cel-glownego-w-wyniku', nastepneKroki('konwersja', stanPo('epley', { tes
   const dozwolone = new Set([...WYNIK_IDS, ...KANALY, ...Object.keys(MANEUVERS), ...POWODY_NIEWIARYGODNOSCI.map(x => x.id),
     'L', 'P', 'canalo', 'cupulo', 'dix', 'roll', 'bowlean', 'headhang', 'plan', 'planPodniesiony',
     'tEVS', 'diag', 'wysoka', 'wybrany', 'wyprowadzony', 'nadpisany',
-    ...Object.keys(p), 'manewr', 'kanal', 'strona', 'wynik', 'powod', 'kategoria', 'sciezka', 'pewnosc', 'czerwona']);
+    ...Object.keys(p), 'manewr', 'kanal', 'strona', 'wynik', 'powod', 'tolerancja', 'kategoria', 'sciezka', 'pewnosc', 'czerwona',
+    ...TOLERANCJA_IDS]);
   const obce = napisy.filter(x => x && !dozwolone.has(x));
   eq('PS11/bez-wolnego-tekstu', obce, []);
 }
