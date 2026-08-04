@@ -10,7 +10,7 @@ import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wniosk
          POWODY_NIEWIARYGODNOSCI,
          OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
          ETYKIETY_OSI, nieuzyte, porownajZPredykcja, WERDYKTY_POROWNANIA, fazaDIAG,
-         OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI } from '../app/obs-model.js';
+         OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI, rozbijKlucz } from '../app/obs-model.js';
 import { nietypowy, interpretuj, sugerowaneProby, POWODY_NIETYPOWOSCI, POWODY_ZGODNOSCI, CECHY_KIERUNKU, CECHY_DYNAMIKI } from '../app/interp-model.js';
 import { interpDeps as _interpDeps } from '../app/interp-deps.js';
 import { doborEkspercki, podpisWyboru, POLA_WYBORU, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny, POWOD_BRAKU_TRYBU, POWODY_CZASU, KRYTERIA, WYJSCIE_ZLOGA, opisPozycji } from '../app/man-model.js';
@@ -23,6 +23,14 @@ import { ELEMENTY, ELEMENT_IDS, elementHints, opcjaHints, kwalifikacjaHints, STA
          podsumowanieHints, odpowiedziHints, postepBadania, wagaOdpowiedzi } from '../app/hints-model.js';
 import { hintsDeps } from '../app/hints-deps.js';
 import { biezacyKrok } from '../app/hints-state.js';
+import { POZIOMY, POZIOM_IDS, RODZAJE, RODZAJ_IDS, ETAPY, ETAP_IDS, ETAPY_PYTAJACE, etapNauki,
+         WERDYKTY, POWODY_BLEDU, ODPOWIEDZI_WLASNE, BIBLIOTEKA, przypadek as przypadekNauki, przypadki,
+         kluczPrzypadku, opcjeEtapu, werdyktyEtapu, mocRozstrzygajaca, wskazowka, RODZAJE_WSKAZOWEK,
+         odsloniete, informacjaZwrotna, wolnoDalej, postepLekcji, koniecPrzypadku, wynikPrzypadku,
+         OCENY, postepBiblioteki, probyPrzypadku, probaGlowna } from '../app/nauka-model.js';
+import { naukaDeps } from '../app/nauka-deps.js';
+import { POWODY_ODMOWY } from '../app/nauka-state.js';
+import { POWODY_ZAPISU } from '../app/nauka-store.js';
 import { nowyZegar, startZegara, pauzaZegara, resetZegara, odliczono, ustawOdliczono, odnotujLuke, potwierdzLuke, PROG_LUKI_MS } from '../runtime/hold-clock.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, pickSide, openMan, openTest, zmienManewr, ustawTrybCzasu, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -708,6 +716,8 @@ function render(){
   else if(state.screen==="hintsKwal") renderHintsKwal();
   else if(state.screen==="hintsBad") renderHintsBad();
   else if(state.screen==="hintsWyn") renderHintsWyn();
+  else if(state.screen==="naukaBib") renderNaukaBib();
+  else if(state.screen==="naukaLekcja") renderNaukaLekcja();
   else if(state.screen==="hints") renderHints();
   else renderDiag();
   /* ZASIĘG ZEGARA WIZUALIZACJI = EKRAN, KTÓRY MA PILOTA (naprawa po krytyce Bloku 7).
@@ -2796,7 +2806,257 @@ function sideSel(current, fn, lbl){
   return `<div class="sidesel"><span class="lbl">${lbl}</span><div class="tabs">${opt('L')}${opt('P')}</div></div>`;
 }
 
-export { renderObs, syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
+
+/* ============ TRYB NAUKI (Blok 13) ============
+   Dwa ekrany: BIBLIOTEKA i LEKCJA. Układ z mockupu D3 — opis i odpowiedzi po lewej, ilustracja
+   i informacja zwrotna po prawej — powstaje z tej samej siatki `.pagegrid`, co Bloki 10-12,
+   więc na telefonie kolumny znikają (`display:contents`) i wszystko układa się sekwencyjnie,
+   dokładnie jak w M3.
+
+   ═══ CZEGO TU CELOWO NIE MA ═══
+   Animacji silnika ani figury 3D. Obie stoją na `state.side`, `state.canal`, `state.variant`,
+   `state.maneuverKey`, `state.plan` — czyli na polach opisujących PRAWDZIWEGO pacjenta. Żeby
+   pokazać w lekcji manewr Epleya, trzeba by je nadpisać, a po wyjściu z nauki klinicysta
+   zastałby na karcie ułożenia cudzy przypadek, przy `variantZrodlo` nadal mówiącym
+   „wyprowadzony z opisu obserwacji". Ilustracją przypadku jest więc ZAPIS OBSERWACJI złożony
+   z tych samych słowników, co formularz Bloku 8 — nic, co wymagałoby zapisu do stanu pacjenta. */
+
+function nDeps(){ return naukaDeps(przypadekNauki(state.naukaPrzypadek)); }
+const nOcena = (id) => ((state.naukaPostep||{})[id]||{}).ocena || null;
+
+/* Napis wartości pola obserwacji — z PRAWDZIWEGO słownika Bloku 8, nigdy z własnej kopii. */
+function nWartosc(pole, v){
+  const def = OBS_POLA[pole]; if(!def) return v;
+  const w = (def.wartosci||[]).find(x=>x.id===v);
+  return w ? t(w.pl, w.en) : v;
+}
+/* Wzorzec kierunku (opcja etapu „przewidywanie") opisany słowami formularza. */
+function nWzorzec(o){
+  const czesci = (o.fazy||[]).map(f=>{
+    const kier = ['poziom','pion','torsja']
+      .filter(pole=>f[pole] && f[pole]!=='zero')
+      .map(pole=>nWartosc(pole, f[pole]));
+    const opis = kier.length ? kier.join(" + ") : t("bez oczopląsu w tej pozycji","no nystagmus in this position");
+    const faza = OBS_FAZY_OPIS[f.fazaId];
+    return (o.fazy.length>1 && faza) ? `<b>${t(faza.pl,faza.en)}:</b> ${opis}` : opis;
+  });
+  const rel = o.relacja==='pierwsza' ? t("silniejszy w pierwszej pozycji","stronger in the first position")
+    : o.relacja==='druga' ? t("silniejszy w drugiej pozycji","stronger in the second position")
+    : o.relacja==='rowne' ? t("porównywalny w obu pozycjach","comparable in both positions") : null;
+  return czesci.join(" · ") + (rel ? ` · ${rel}` : "");
+}
+function nOpcjaNapis(etapId, o){
+  if(o.typ==='wlasna') return t(ODPOWIEDZI_WLASNE[o.v].pl, ODPOWIEDZI_WLASNE[o.v].en);
+  if(etapId==='przewidywanie') return nWzorzec(o);
+  if(etapId==='rozpoznanie') return `${CANALS[o.kanal].label} — ${t("strona","side")} ${t(SIDE[o.strona], o.strona==='P'?'right':'left')}`;
+  if(etapId==='mechanizm'){ const k=kluczPrzypadku(przypadekNauki(state.naukaPrzypadek), nDeps());
+    return variantLabels(k.interp.kanal||'posterior')[o.v]; }
+  if(etapId==='manewr') return `${MANEUVERS[o.v].label} — ${MANEUVERS[o.v].desc}`;
+  if(etapId==='kontrola') return t(AKCJE[o.v].pl, AKCJE[o.v].en);
+  return o.v;
+}
+
+/* ── EKRAN 1: BIBLIOTEKA ── */
+function nKafelPrzypadku(p){
+  const ocena = nOcena(p.id);
+  const stan = ocena ? t(OCENY[ocena].pl, OCENY[ocena].en) : t("nierozpoczęty","not started");
+  return `<li><button type="button" class="nkafel nkafel--${ocena||'nowy'}" data-nprz="${p.id}" onclick="otworzPrzypadek('${p.id}')">
+      <span class="nkafel__t">${t(p.tytulPl,p.tytulEn)}</span>
+      <span class="nkafel__m"><span class="npill npill--poz">${t(POZIOMY[p.poziom].pl,POZIOMY[p.poziom].en)}</span>
+        <span class="npill npill--rodz">${t(RODZAJE[p.rodzaj].pl,RODZAJE[p.rodzaj].en)}</span></span>
+      <span class="nkafel__s">${stan}</span>
+      <span class="nkafel__go" aria-hidden="true">›</span></button></li>`;
+}
+function nFiltrHTML(pole, slownik, ids){
+  const akt = (state.naukaFiltr||{})[pole] || null;
+  return `<div class="nfiltr" role="group" aria-label="${pole==='poziom'?t("Poziom","Level"):t("Rodzaj","Kind")}">
+      ${ids.map(id=>`<button type="button" class="nfiltr__b" aria-pressed="${akt===id}"
+          onclick="ustawFiltrNauki('${pole}','${id}')">${t(slownik[id].pl, slownik[id].en)}</button>`).join("")}
+    </div>`;
+}
+function renderNaukaBib(){
+  const filtr = state.naukaFiltr || {poziom:null, rodzaj:null};
+  const lista = przypadki(filtr);
+  const pb = postepBiblioteki(state.naukaPostep, filtr);
+  const zapisBlad = state.naukaZapisBlad
+    ? `<p class="nzapisblad">${t(POWODY_ZAPISU[state.naukaZapisBlad].pl, POWODY_ZAPISU[state.naukaZapisBlad].en)}</p>` : "";
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="goArea('start')" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Nauka — biblioteka przypadków","Learning — case library")}</b><span>${t("przewidywanie · decyzja · informacja zwrotna","prediction · decision · feedback")}</span></div></div>
+    <div class="pagegrid ngrid">
+      <div class="col col--ctl">
+        <p class="nlead">${t("Każdy przypadek prowadzi przez sześć etapów: opis, przewidywanie oczopląsu, rozpoznanie, mechanizm, manewr i kontrolę. Odpowiedź trzeba wybrać ZANIM zobaczysz werdykt.",
+                             "Every case runs through six stages: description, predicting the nystagmus, recognition, mechanism, maneuver and follow-up. You must choose an answer BEFORE you see the verdict.")}</p>
+        ${nFiltrHTML('poziom', POZIOMY, POZIOM_IDS)}
+        ${nFiltrHTML('rodzaj', RODZAJE, RODZAJ_IDS)}
+        <ul class="nlista" data-nlista>${lista.map(nKafelPrzypadku).join("")}</ul>
+      </div>
+      <div class="col col--viz">
+        <section class="card npostep" data-npostep>
+          <h3>${t("Postęp","Progress")}</h3>
+          <p class="npostep__l">${t(`Rozwiązane: ${pb.rozwiazane} z ${pb.wszystkich}`, `Solved: ${pb.rozwiazane} of ${pb.wszystkich}`)}</p>
+          <p class="npostep__l">${t(`Z błędami: ${pb.zBledami}`, `With errors: ${pb.zBledami}`)}</p>
+          ${pb.nieznaneWpisy ? `<p class="note">${t(`W pamięci są ${pb.nieznaneWpisy} wpisy przypadków, których już nie ma w bibliotece. Nie liczą się do postępu i nie są kasowane po cichu.`,
+                                                    `Memory holds ${pb.nieznaneWpisy} entries for cases no longer in the library. They do not count toward progress and are not deleted silently.`)}</p>` : ""}
+          ${zapisBlad}
+          <p class="note">${t("Postęp zapisuje się w tej przeglądarce. Nie ma w nim niczego o pacjencie — przypadki są syntetyczne, a zapis niesie wyłącznie identyfikatory etapów i werdyktów.",
+                              "Progress is stored in this browser. It contains nothing about a patient — the cases are synthetic and the record carries only stage and verdict identifiers.")}</p>
+          <button type="button" class="recoalt nkasuj" onclick="wyczyscPostepNauki()">${t("Wyczyść postęp nauki","Clear learning progress")}</button>
+        </section>
+      </div>
+    </div>
+    <div class="disclaimer">${t('<b>Przypadki są syntetyczne.</b> Klucz odpowiedzi nie jest wpisany do biblioteki — liczy go ten sam model, którego używa ścieżka kliniczna, więc lekcja nie może rozejść się z aplikacją.',
+                              '<b>The cases are synthetic.</b> The answer key is not written into the library — it is computed by the same model the clinical path uses, so the lesson cannot drift from the app.')}</div>`;
+}
+
+/* ── EKRAN 2: LEKCJA ── */
+function nOsEtapow(){
+  return ETAP_IDS.map((id,n)=>{
+    const e = etapNauki(id);
+    const zrobiony = !e.pyta || ((state.naukaOdp||{})[id] != null);
+    const dostepny = wolnoDalej(state, ETAP_IDS[Math.max(0,n-1)]);
+    return `<button type="button" class="netap${id===state.naukaEtap?' netap--biezacy':''}${zrobiony?' netap--gotowy':''}"
+        aria-current="${id===state.naukaEtap}" ${dostepny?"":'disabled aria-disabled="true"'}
+        onclick="goEtapNauki('${id}')"><span class="netap__n">${n+1}</span><span class="netap__t">${t(e.pl,e.en)}</span></button>`;
+  }).join("");
+}
+/* ZAPIS OBSERWACJI jako ilustracja przypadku. ODSŁANIANY dopiero po przewidywaniu — inaczej etap
+   przewidywania byłby pytaniem o to, co widać obok. */
+function nZapisObserwacji(p){
+  return probyPrzypadku(p).map(proba=>{
+    const rek = p.obs[proba];
+    const fazy = OBS_FAZY[proba]||[];
+    const wiersze = [];
+    for(const f of fazy){
+      const kier = ['poziom','pion','torsja'].map(pole=>{
+        const v = wartoscInstancji(rek, `${pole}#${f}`);
+        return v ? `${t(OBS_POLA[pole].pytanie.pl.split(' —')[0], OBS_POLA[pole].pytanie.en.split(' —')[0])}: ${nWartosc(pole,v)}` : null;
+      }).filter(Boolean);
+      const op = OBS_FAZY_OPIS[f];
+      wiersze.push(`<tr><th scope="row">${op?t(op.pl,op.en):f}</th><td>${kier.join("<br>")}</td></tr>`);
+    }
+    for(const pole of ['nasilenie','latencja','czasTrwania','meczliwosc','przebieg','pozycjaNeutralna','fiksacja']){
+      const v = wartoscInstancji(rek, pole);
+      if(!v) continue;
+      wiersze.push(`<tr><th scope="row">${t(OBS_POLA[pole].pytanie.pl.split(' —')[0], OBS_POLA[pole].pytanie.en.split(' —')[0])}</th><td>${nWartosc(pole,v)}</td></tr>`);
+    }
+    return `<section class="card nzapis"><h4>${t("Zapis obserwacji","Observation record")} — ${proba}</h4>
+        <table class="nzapis__t"><tbody>${wiersze.join("")}</tbody></table></section>`;
+  }).join("");
+}
+function nOpcjeHTML(etapId, p, d){
+  const wybrana = (state.naukaOdp||{})[etapId];
+  const zamrozona = wybrana != null;
+  return `<div class="nopcje">${opcjeEtapu(etapId, p, d).map(o=>
+    `<button type="button" class="nopcja${o.typ==='wlasna'?' nopcja--wlasna':''}" aria-pressed="${wybrana===o.v}"
+        ${zamrozona?'disabled aria-disabled="true"':''} data-nopcja="${o.v}"
+        onclick="odpowiedzNauki('${etapId}','${String(o.v).replace(/'/g,"\\'")}')">
+        <span class="nopcja__box" aria-hidden="true"></span>
+        <span class="nopcja__txt">${nOpcjaNapis(etapId,o)}</span></button>`).join("")}</div>`;
+}
+/* Informacja zwrotna — DZIELONA NA TRZY, dokładnie jak chce dokument: Dlaczego / Pułapka / Co dalej. */
+function nFeedbackHTML(etapId, p, d){
+  const iz = informacjaZwrotna(etapId, p, d, state);
+  if(!iz) return "";                                   // ← kryterium odbioru nr 1: nie ma czego odsłonić
+  const kon = koniecPrzypadku(p, d, iz.klucz);
+  const powod = iz.powod && POWODY_BLEDU[iz.powod] ? t(POWODY_BLEDU[iz.powod].pl, POWODY_BLEDU[iz.powod].en) : null;
+  const moc = mocRozstrzygajaca(etapId, p, d, iz.klucz);
+  const rozstrz = kon.rozstrzygajaca
+    ? t(`Cechą rozstrzygającą jest tu: ${rozbijKlucz(kon.rozstrzygajaca.klucz).pole}.`,
+        `The decisive feature here is: ${rozbijKlucz(kon.rozstrzygajaca.klucz).pole}.`)
+    : t("Ten opis nie ma cechy, która sama rozstrzygałaby obraz.","This description has no feature that settles the picture on its own.");
+  const coDalej = kon.nastepny.rodzaj==='proba'
+      ? t(`Następny krok: wykonaj próbę, która rozdzieli pozostałe hipotezy (${kon.nastepny.proby.join(', ')}).`,
+          `Next step: perform the provocation that separates the remaining hypotheses (${kon.nastepny.proby.join(', ')}).`)
+    : kon.nastepny.rodzaj==='akcja' ? t(`Następny krok: ${AKCJE[kon.nastepny.akcja].pl}.`, `Next step: ${AKCJE[kon.nastepny.akcja].en}.`)
+    : kon.nastepny.rodzaj==='manewr' ? t(`Następny krok: manewr ${MANEUVERS[kon.nastepny.manewr].label}.`, `Next step: the ${MANEUVERS[kon.nastepny.manewr].label} maneuver.`)
+    : t("Następny krok: oceń przyczynę ośrodkową, zanim wrócisz do repozycji.","Next step: assess a central cause before returning to repositioning.");
+  return `<section class="card nfeed nfeed--${iz.werdykt}" id="naukaFeedback" data-nwerdykt="${iz.werdykt}" tabindex="-1">
+      <div class="nfeed__w">${t(WERDYKTY[iz.werdykt].pl, WERDYKTY[iz.werdykt].en)}</div>
+      <p class="nfeed__o">${t(WERDYKTY[iz.werdykt].opisPl, WERDYKTY[iz.werdykt].opisEn)}${powod?` — ${powod}`:""}</p>
+      ${(iz.niejednoznaczny || iz.nierozdzielone) ? `<p class="nfeed__nj" data-nniejedn="1">${iz.niejednoznaczny ? t("Na tym etapie model NIE ZNA jedynej odpowiedzi — więcej niż jedna jest do obrony, a wynik nie stoi na jednej wartości.","At this stage the model does NOT know a single answer — more than one is defensible, and the result does not rest on one value.") : t("Model nie ODDZIELA tej odpowiedzi od innych — obok trafnej stoją tu odpowiedzi, których ten opis nie pozwala podważyć.","The model does not SEPARATE this answer from the others — alongside the correct one stand answers this description cannot refute.")}</p>` : ""}
+      ${moc.bezNosnikaBledu ? `<p class="nfeed__nj">${t("Na tym etapie nie ma odpowiedzi błędnej: sam wywiad nie niesie ani kanału, ani strony. Właśnie dlatego wykonuje się próbę.",
+                                                       "There is no incorrect answer at this stage: the history alone carries neither canal nor side. That is exactly why the provocation is performed.")}</p>` : ""}
+      <details class="ndet" open><summary>${t("Dlaczego","Why")}</summary><p>${rozstrz}</p></details>
+      <details class="ndet"><summary>${t("Pułapka","The trap")}</summary><p>${t(p.pulapkaPl,p.pulapkaEn)}</p></details>
+      <details class="ndet"><summary>${t("Co dalej","What next")}</summary><p>${coDalej}</p></details>
+    </section>`;
+}
+function renderNaukaLekcja(){
+  const p = przypadekNauki(state.naukaPrzypadek);
+  if(!p){ renderNaukaBib(); return; }
+  const d = nDeps();
+  const etapId = state.naukaEtap || 'opis';
+  const e = etapNauki(etapId) || ETAPY[0];
+  const post = postepLekcji(p, state);
+  const odslonZapis = ((state.naukaOdp||{}).przewidywanie != null);
+  const wsk = wskazowka(etapId, p, d);
+  const uzyta = (state.naukaWskazowki||[]).includes(etapId);
+  const odmowa = state.naukaBlad && POWODY_ODMOWY[state.naukaBlad]
+    ? `<p class="nodmowa" role="status">${t(POWODY_ODMOWY[state.naukaBlad].pl, POWODY_ODMOWY[state.naukaBlad].en)}</p>` : "";
+
+  const wskTekst = wsk.rodzaj==='flaga' && FLAGI[wsk.flaga]
+      ? `${t(RODZAJE_WSKAZOWEK.flaga.pl, RODZAJE_WSKAZOWEK.flaga.en)} ${t(FLAGI[wsk.flaga].pl, FLAGI[wsk.flaga].en)}`
+      : `${t(RODZAJE_WSKAZOWEK[wsk.rodzaj].pl, RODZAJE_WSKAZOWEK[wsk.rodzaj].en)}${wsk.klucz?` (${rozbijKlucz(wsk.klucz).pole})`:""}`;
+
+  const pytanie = e.pyta ? `<section class="card npyt" data-netap="${etapId}">
+        <h3 class="npyt__q">${t(e.pytaniePl, e.pytanieEn)}</h3>
+        <p class="npyt__w">${t(e.wstepPl, e.wstepEn)}</p>
+        ${etapId==='kontrola' && p.kontrolaWynik ? `<p class="npyt__k"><b>${t("Wynik kontroli","Follow-up result")}:</b> ${t(wynikKontroli(p.kontrolaWynik).pl, wynikKontroli(p.kontrolaWynik).en)} — ${t(wynikKontroli(p.kontrolaWynik).pytaniePl, wynikKontroli(p.kontrolaWynik).pytanieEn)}</p>` : ""}
+        ${nOpcjeHTML(etapId, p, d)}
+        ${odmowa}
+        <div class="nwsk">
+          <button type="button" class="nwsk__b" aria-pressed="${uzyta}" onclick="wskazowkaNauki('${etapId}')">${t("Wskazówka","Hint")}</button>
+          ${uzyta?`<p class="nwsk__t" data-nwskazowka="1">${wskTekst}</p>`:""}
+        </div>
+      </section>`
+    : `<section class="card nopis">
+        <h3>${t(p.tytulPl,p.tytulEn)}</h3>
+        <p class="nopis__k">${t(p.kontekstPl,p.kontekstEn)}</p>
+        <p class="npyt__w">${t(e.wstepPl, e.wstepEn)}</p>
+      </section>`;
+
+  const kolejny = ETAP_IDS[ETAP_IDS.indexOf(etapId)+1] || null;
+  const nawigacja = `<div class="nnaw">
+      <button class="recoalt" onclick="${ETAP_IDS.indexOf(etapId)===0?"wrocDoBiblioteki()":`goEtapNauki('${ETAP_IDS[ETAP_IDS.indexOf(etapId)-1]}')`}">${ETAP_IDS.indexOf(etapId)===0?t("Wróć do biblioteki","Back to the library"):t("Poprzedni etap","Previous stage")}</button>
+      ${kolejny
+        ? `<button class="${wolnoDalej(state,etapId)?'recoprimary':'recoalt'}" ${wolnoDalej(state,etapId)?'':'disabled aria-disabled="true"'} onclick="goEtapNauki('${kolejny}')">${t("Następny etap","Next stage")}</button>`
+        : `<button class="${post.ukonczona?'recoprimary':'recoalt'}" ${post.ukonczona?'':'disabled aria-disabled="true"'} onclick="zakonczPrzypadek()">${t("Zakończ przypadek","Finish the case")}</button>`}
+    </div>`;
+
+  const wynik = post.ukonczona ? (()=>{ const w = wynikPrzypadku(p, d, state);
+    return `<section class="card nwynik nwynik--${w.ocena}" data-nocena="${w.ocena}">
+        <h4>${t("Wynik przypadku","Case result")}</h4>
+        <p class="nwynik__o">${t(OCENY[w.ocena].pl, OCENY[w.ocena].en)} — ${t(OCENY[w.ocena].opisPl, OCENY[w.ocena].opisEn)}</p>
+        <ul class="nwynik__l">${w.etapy.map(x=>`<li><b>${t(etapNauki(x.etap).pl, etapNauki(x.etap).en)}</b>: ${t(WERDYKTY[x.werdykt].pl, WERDYKTY[x.werdykt].en)}${x.niejednoznaczny?` — ${t("etap niejednoznaczny","ambiguous stage")}`:""}${x.zeWskazowka?` · ${t("ze wskazówką","with a hint")}`:""}</li>`).join("")}</ul>
+      </section>`; })() : "";
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="wrocDoBiblioteki()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t(p.tytulPl,p.tytulEn)}</b><span>${t(POZIOMY[p.poziom].pl,POZIOMY[p.poziom].en)} · ${t(RODZAJE[p.rodzaj].pl,RODZAJE[p.rodzaj].en)} · ${t(`etap ${ETAP_IDS.indexOf(etapId)+1} z ${ETAP_IDS.length}`,`stage ${ETAP_IDS.indexOf(etapId)+1} of ${ETAP_IDS.length}`)}</span></div></div>
+    <nav class="nos" aria-label="${t("Etapy lekcji","Lesson stages")}">${nOsEtapow()}</nav>
+    <div class="pagegrid ngrid">
+      <div class="col col--ctl">
+        ${etapId!=='opis' ? `<p class="nkontekst">${t(p.kontekstPl,p.kontekstEn)}</p>` : ""}
+        ${pytanie}
+        ${nFeedbackHTML(etapId, p, d)}
+        ${nawigacja}
+      </div>
+      <div class="col col--viz">
+        ${odslonZapis ? nZapisObserwacji(p) : `<section class="card nzaslona" data-nzaslona="1">
+            <h4>${t("Zapis obserwacji","Observation record")}</h4>
+            <p class="note">${t("Zapis odsłoni się po Twoim przewidywaniu. To jest cały sens tego etapu: przewidujesz, zanim zobaczysz.",
+                                "The record will appear after your prediction. That is the whole point of this stage: you predict before you see.")}</p>
+          </section>`}
+        ${wynik}
+      </div>
+    </div>
+    <div class="disclaimer">${t('<b>Przypadek jest syntetyczny.</b> Rozwiązywanie go nie zapisuje niczego o pacjencie i nie zmienia żadnego pola sesji klinicznej.',
+                              '<b>The case is synthetic.</b> Solving it records nothing about a patient and changes no field of the clinical session.')}</div>`;
+}
+
+export { renderObs, syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable, renderNaukaBib, renderNaukaLekcja };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

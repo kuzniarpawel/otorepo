@@ -1,0 +1,159 @@
+/* OTOREPO — tryb nauki i biblioteka przypadków (Blok 13).
+ *
+ * DWIE ZASADY WYGLĄDU, obie wynikają wprost z kryteriów odbioru:
+ * 1. WERDYKT NIGDY SAMYM KOLOREM. „Dopuszczalna" nie jest złagodzonym „źle" i nie ma prawa
+ *    wyglądać jak żółte ostrzeżenie — jest twierdzeniem, że model tych odpowiedzi nie rozdziela.
+ *    Każdy werdykt niesie SŁOWO i własny kształt obrysu, tak jak „nie można ocenić" w Bloku 12.
+ * 2. NIC NIE PRZEWIJA SIĘ W POZIOMIE (kryterium odbioru nr 3). Oś etapów ma sześć pozycji i jest
+ *    jedynym miejscem, gdzie przewijanie w poziomie byłoby kuszące — dlatego jest siatką, która
+ *    ZAWIJA, a nie paskiem `overflow-x:auto`. Tabela zapisu obserwacji dostaje `table-layout:fixed`
+ *    i łamanie długich wartości, bo to ona pierwsza rozpycha wiersz na 360 px.
+ *
+ * PUŁAPKA ROZMIARU PRZYCISKÓW (czwarty raz w tym projekcie: Bloki 6, 11, 12): `.recoprimary`
+ * i `.recoalt` mają w legacy.css rozmiar zadeklarowany WYŁĄCZNIE wewnątrz `.recobtns`, więc
+ * każdy ekran używający ich poza nią ustawia rozmiar sam, zakresowo po własnym kontenerze.
+ */
+
+.nnaw .recoprimary, .nnaw .recoalt, .nkasuj{
+  appearance:none; cursor:pointer; min-height:var(--tap); padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--r-md); font:inherit; font-size:13.5px; font-weight:700; text-align:center;
+}
+.nnaw .recoalt, .nkasuj{ background:var(--panel2); color:var(--text); border:1px solid var(--line-strong); }
+.nnaw .recoprimary{ background:var(--primary); color:var(--ink); border:none; }
+.nnaw button[disabled]{ opacity:.55; cursor:not-allowed; }
+
+/* ══════════ 1. BIBLIOTEKA ══════════ */
+.nlead{ margin:0 0 var(--sp-3); font-size:13.5px; line-height:1.5; color:var(--muted); }
+.nfiltr{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:var(--sp-2); }
+.nfiltr__b{
+  appearance:none; cursor:pointer; min-height:40px; padding:6px var(--sp-3);
+  font:inherit; font-size:12.5px; background:var(--panel2); color:var(--muted);
+  border:1px solid var(--line); border-radius:var(--r-pill);
+}
+.nfiltr__b[aria-pressed="true"]{ border-color:var(--acc); border-width:2px; color:var(--text); font-weight:700; }
+
+.nlista{ list-style:none; margin:var(--sp-3) 0 0; padding:0; display:grid; gap:8px; }
+.nkafel{
+  appearance:none; cursor:pointer; display:grid; width:100%; text-align:left;
+  grid-template-columns:1fr auto; gap:4px var(--sp-2); align-items:center;
+  min-height:56px; padding:var(--sp-2) var(--sp-3);
+  background:var(--panel2); color:var(--text); border:1px solid var(--line-strong);
+  border-radius:var(--r-md); font:inherit; font-size:13.5px; line-height:1.35;
+}
+.nkafel__t{ grid-column:1; font-weight:700; overflow-wrap:anywhere; }
+.nkafel__m{ grid-column:1; display:flex; flex-wrap:wrap; gap:4px; }
+.nkafel__s{ grid-column:1; font-size:12px; color:var(--muted); }
+.nkafel__go{ grid-column:2; grid-row:1 / span 3; color:var(--muted); font-size:18px; }
+.npill{
+  display:inline-block; padding:1px 7px; font-size:10.5px; font-weight:700;
+  border:1px solid var(--line-strong); border-radius:var(--r-pill); color:var(--muted);
+}
+/* Stan przypadku niesiony obrysem I słowem w `.nkafel__s` — nigdy samym kolorem. */
+.nkafel--rozwiazany{ border-color:var(--ok); }
+.nkafel--zeWskazowka{ border-color:var(--ok); border-style:dashed; }
+.nkafel--zBledami{ border-color:var(--warn); }
+.nkafel--nieukonczony{ border-style:dotted; }
+
+.npostep{ margin-top:var(--gap-card); }
+.npostep__l{ margin:4px 0 0; font-size:13.5px; color:var(--text); }
+.npostep .note{ margin-top:var(--sp-2); }
+.nzapisblad{
+  margin-top:var(--sp-2); padding:var(--sp-2); font-size:12.8px; line-height:1.45;
+  border:1px solid var(--warn); border-radius:var(--r-sm); color:var(--text);
+}
+.nkasuj{ display:block; width:100%; margin-top:var(--sp-3); }
+
+/* ══════════ 2. LEKCJA ══════════ */
+/* OŚ ETAPÓW ZAWIJA, NIE PRZEWIJA SIĘ. Sześć etapów przy 360 px to ~600 px w jednym rzędzie;
+   `overflow-x:auto` schowałoby połowę lekcji za krawędzią i złamało kryterium odbioru nr 3. */
+.nos{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:6px;
+  padding:var(--sp-2) 0; margin-bottom:var(--sp-2);
+}
+.netap{
+  appearance:none; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:0;
+  min-height:44px; padding:6px var(--sp-2); font:inherit; font-size:11.5px;
+  background:var(--panel2); color:var(--muted); border:1px solid var(--line); border-radius:var(--r-md);
+}
+.netap__n{ flex:0 0 auto; font-weight:700; }
+.netap__t{ min-width:0; overflow-wrap:anywhere; }
+.netap--gotowy{ color:var(--text); border-color:var(--line-strong); }
+.netap--gotowy .netap__n::after{ content:"✓"; }
+.netap--biezacy{ border-color:var(--acc); border-width:2px; color:var(--text); font-weight:700; }
+.netap[disabled]{ opacity:.45; cursor:not-allowed; }
+
+.nkontekst{ margin:0 0 var(--sp-3); font-size:13px; line-height:1.5; color:var(--muted); }
+.nopis__k{ margin:var(--sp-2) 0 0; font-size:14px; line-height:1.55; color:var(--text); }
+.npyt__q{ margin:0; font-size:16px; line-height:1.3; color:var(--text); }
+.npyt__w{ margin:var(--sp-2) 0 0; font-size:13px; line-height:1.5; color:var(--muted); }
+.npyt__k{
+  margin:var(--sp-3) 0 0; padding:var(--sp-2) var(--sp-3); font-size:13px; line-height:1.45;
+  background:var(--panel2); border-left:3px solid var(--line-strong); border-radius:var(--r-sm);
+}
+
+.nopcje{ display:grid; gap:6px; margin-top:var(--sp-3); }
+/* „Duże wybory" z dokumentu — 56 px, tak samo jak w badaniu HINTS. */
+.nopcja{
+  appearance:none; cursor:pointer; display:flex; align-items:flex-start; gap:var(--sp-2);
+  width:100%; text-align:left; min-height:56px; padding:var(--sp-2) var(--sp-3);
+  background:var(--panel2); color:var(--text); border:1px solid var(--line-strong);
+  border-radius:var(--r-md); font:inherit; font-size:13.5px; line-height:1.4; overflow-wrap:anywhere;
+}
+.nopcja__box{ flex:0 0 auto; width:18px; height:18px; margin-top:2px; border:2px solid var(--line-strong); border-radius:50%; }
+.nopcja[aria-pressed="true"]{ border-color:var(--acc); border-width:2px; background:var(--panel); font-weight:700; }
+.nopcja[aria-pressed="true"] .nopcja__box{ border-color:var(--acc); background:var(--acc); }
+/* Odpowiedź WŁASNA („nie da się przewidzieć", „obraz nietypowy") ma inny kształt pola: to nie jest
+   ucieczka od odpowiedzi, tylko odpowiedź innego rodzaju, i ma się od nich odróżniać kształtem,
+   zanim ktokolwiek przeczyta napis. */
+.nopcja--wlasna .nopcja__box{ border-radius:var(--r-xs); }
+.nopcja[disabled]{ cursor:default; }
+.nopcja[disabled]:not([aria-pressed="true"]){ opacity:.6; }
+
+.nodmowa{
+  margin:var(--sp-2) 0 0; padding:var(--sp-2); font-size:12.8px; line-height:1.45;
+  border:1px dashed var(--warn); border-radius:var(--r-sm); color:var(--text);
+}
+.nwsk{ margin-top:var(--sp-3); padding-top:var(--sp-2); border-top:1px solid var(--line); }
+.nwsk__b{
+  appearance:none; cursor:pointer; min-height:40px; padding:6px var(--sp-3); font:inherit; font-size:12.5px;
+  background:var(--panel2); color:var(--text); border:1px dashed var(--line-strong); border-radius:var(--r-md);
+}
+.nwsk__b[aria-pressed="true"]{ border-style:solid; border-color:var(--acc); font-weight:700; }
+.nwsk__t{ margin:var(--sp-2) 0 0; font-size:12.8px; line-height:1.5; color:var(--muted); }
+
+/* ── INFORMACJA ZWROTNA ── */
+.nfeed{ margin-top:var(--gap-card); border-width:2px; }
+.nfeed--trafna{ border-color:var(--ok); }
+.nfeed--dopuszczalna{ border-color:var(--acc); border-style:dashed; }
+.nfeed--bledna{ border-color:var(--warn); }
+.nfeed__w{ font-size:15px; font-weight:700; color:var(--text); text-transform:uppercase; letter-spacing:.02em; }
+.nfeed__o{ margin:var(--sp-2) 0 0; font-size:13.5px; line-height:1.5; color:var(--text); }
+.nfeed__nj{
+  margin:var(--sp-2) 0 0; padding:var(--sp-2); font-size:12.8px; line-height:1.5;
+  background:var(--panel2); border-left:3px solid var(--acc); border-radius:var(--r-sm); color:var(--text);
+}
+/* Dłuższe wyjaśnienia podzielone na Dlaczego / Pułapka / Co dalej — wprost z dokumentu. */
+.ndet{ margin-top:var(--sp-2); }
+.ndet summary{ cursor:pointer; font-size:12.8px; font-weight:700; color:var(--muted); min-height:32px; }
+.ndet p{ margin:6px 0 0; font-size:13px; line-height:1.55; color:var(--text); overflow-wrap:anywhere; }
+
+.nnaw{ display:flex; flex-wrap:wrap; gap:var(--sp-2); margin-top:var(--gap-card); }
+.nnaw button{ flex:1 1 160px; min-width:0; }
+
+/* ── ZAPIS OBSERWACJI (ilustracja przypadku) ── */
+.nzaslona{ border-style:dashed; }
+.nzapis{ margin-top:var(--gap-card); }
+/* `table-layout:fixed` + łamanie: to ta tabela pierwsza rozpychała wiersz przy 360 px. */
+.nzapis__t{ width:100%; table-layout:fixed; border-collapse:collapse; margin-top:var(--sp-2); font-size:12.5px; }
+.nzapis__t th, .nzapis__t td{ padding:6px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+.nzapis__t th{ width:38%; font-weight:400; color:var(--muted); }
+.nzapis__t td{ color:var(--text); }
+
+.nwynik{ margin-top:var(--gap-card); border-width:2px; }
+.nwynik--rozwiazany{ border-color:var(--ok); }
+.nwynik--zeWskazowka{ border-color:var(--ok); border-style:dashed; }
+.nwynik--zBledami{ border-color:var(--warn); }
+.nwynik--nieukonczony{ border-color:var(--line-strong); }
+.nwynik__o{ margin:var(--sp-2) 0 0; font-size:13.5px; line-height:1.5; color:var(--text); }
+.nwynik__l{ margin:var(--sp-2) 0 0; padding-left:20px; font-size:13px; line-height:1.6; color:var(--text); }
+.nwynik__l li{ margin-bottom:4px; overflow-wrap:anywhere; }
