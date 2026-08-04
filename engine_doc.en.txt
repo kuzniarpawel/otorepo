@@ -1336,3 +1336,158 @@ WHAT THIS BLOCK DOES NOT DO
     record (the golden snapshot must stay deterministic + the time of the examination is patient data).
   • It does not judge the components for the user, and there is NOT A SINGLE text field on any of the
     three screens, so entering patient data is structurally impossible.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+LEARNING MODE AND CASE LIBRARY — THE KEY IS COMPUTED, NOT WRITTEN IN (Block 13)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Gates: npm run nauka:check (pure model, bare Node) and npm run nauka:dom (jsdom, the real module
+graph). Acceptance criteria K1, K2 and K4 are claims about the model and the screen; K3 needs
+a layout engine, so it was MEASURED IN THE BROWSER and the result is recorded below.
+
+THE PRINCIPLE: A CASE CARRIES NO ANSWER KEY
+A library of teaching cases is the most natural place for this app to start lying. It would be
+enough to write a field `diagnosis: 'posterior canal, right, canalithiasis'` into a case — and from
+that moment there would be a SIXTH description of the same clinical knowledge (after the engine,
+`baranyClassify`, `interp-model`, `man-model` and `followup-model`). It would drift at the first
+parameter change while the quiz stayed green, because it would be checking agreement with its own
+answer. A case therefore carries the HISTORY (the `triage-model` vocabulary) and the OBSERVATION
+(the `obs-model` vocabulary), and the key to each of the six stages is COMPUTED by the same model
+the clinical path uses:
+
+  stage "prediction"   → direction patterns from `odciskPredykcji` for this provocation and side
+  stage "recognition"  → `interpretuj().pozostale`, gated by `nietypowy()`
+  stage "mechanism"    → `interpretuj().mechanizm` (null = the model does not settle it)
+  stage "maneuver"     → `recommend(provocation, mechanism)` via `doborZProby`
+  stage "follow-up"    → `REGULY_KROKOW[result]` from Block 11, with its prohibitions and reasons
+
+A change in the engine changes the lesson or turns an oracle red; there is no third option. Gate A8
+forbids a case to carry a field named `rozpoznanie`, `kanal`, `strona`, `mechanizm`, `manewr` and
+six others, and section B proves BY MEASUREMENT that the key comes from the engine: reversing one
+torsion field in the record reverses the side in the key, and swapping the dynamics changes the
+maneuver from Epley to Semont.
+
+FOUR END-OF-CASE FIELDS — THREE COMPUTED, ONE AUTHORED
+The document requires every case to end with a decisive feature, a trap, an alternative and a next
+step. Three of them the model already computes (`rozstrzygajaca`, `wykluczone`/`pozostale`,
+`sugerowaneProby` or `REGULY_KROKOW`). Only the TRAP is authored — and that is why it is the one
+field the oracle polices by CONTENT: it must point at a feature or a flag genuinely present in that
+case (A9), so that no moral unrelated to the picture can be attached.
+
+ACCEPTANCE CRITERION 1 — THE ANSWER IS NOT HIDDEN, IT DOES NOT EXIST
+`informacjaZwrotna()` returns null until a decision has been made, and it is the ONLY entry to the
+verdict, so the screen has nothing to hide or reveal. The jsdom oracle measures this on
+`#app.innerHTML`: before the decision there is no feedback card, no `data-nwerdykt` attribute and
+no observation record (that one is COVERED until the prediction — otherwise the prediction stage
+would be a question about what is visible next to it).
+The hint is the third route straight from the document, but it POINTS AT A FEATURE and never gives
+the result (gate D10 checks that it carries no canal, side, mechanism or maneuver); it is recorded
+and enters the case result.
+AN ADDITION THE DOCUMENT DID NOT ASK FOR: an answer once given is FROZEN. Without it, "a decision
+before the answer is revealed" would be a fiction — it would be enough to click anything, read the
+verdict and correct it. The refusal to record is visible and carries a reason.
+
+ACCEPTANCE CRITERION 4 — A THREE-VALUED VERDICT
+`correct` (the only answer this description allows to be proven) / `defensible` (the model does NOT
+SEPARATE it from the others) / `incorrect` (the description excludes it). The defensible set comes
+from `pozostale` and `alternatywy`, not from an author's declaration — ambiguity is a PROPERTY OF
+THE MODEL, not an opinion about the case. The screen names two different kinds of it: "the model
+does not know a single answer" (no correct option at all) and "the model does not separate this
+answer from the others" (a correct one exists, but irrefutable answers stand beside it). Without
+that second signal the screen would fall silent exactly where the whole lesson of the case is to
+name the boundary of knowledge.
+
+WHAT THE CRITIQUE FOUND BEFORE THE SCREEN EXISTED
+The first version of the model marked as INCORRECT "a pattern this provocation cannot produce".
+That was untrue and the most dangerous mistake of the whole block: it promoted a SIMPLIFICATION OF
+THE ENGINE into a clinical claim. The model predicts a pure downbeat with no torsional component
+for the anterior canal, so a textbook torsional-vertical anterior-canal nystagmus would have been
+marked "impossible" for the learner; and a Dix-Hallpike lays the head back and can provoke another
+canal too. The carrier of error is therefore the EAR, not "impossibility": the pattern of the other
+ear in a one-sided provocation is incorrect, because that is the single mistake that sends
+a clinician to the wrong ear. The reason "impossible pattern" was REMOVED from the dictionary and
+gate F1 keeps it from coming back.
+Second repair: a candidate THAT SURVIVED is never an incorrect answer — not even when the picture
+carries a central feature. Otherwise every downbeat in a Dix-Hallpike (which raises `flagaOsrodkowa`)
+would erase anterior-canal BPPV from the differential and the learner would leave with the sentence
+"downbeat = never BPPV". The app says otherwise: on the diagnostic screen it NAMES the anterior
+canal and AT THE SAME TIME withholds treatment. The lesson mirrors exactly that — "atypical picture"
+is the correct answer, the candidate stays defensible.
+Third repair: at the maneuver stage, "I do not reposition" and any maneuver must never both be
+non-incorrect. The app's own model treats observation and repositioning as MUTUALLY EXCLUSIVE
+(`REGULY_KROKOW.residual`: `obserwuj` as the main step AND an explicit prohibition on repositioning
+with a stated reason), so a lesson allowing both would invert the semantics of its own program.
+With an atypical picture, holding back is correct and EVERY maneuver is incorrect; with a typical
+picture the reverse. Thanks to this, the case whose entire lesson is to stay one's hand stopped
+giving the same verdict to the learner who stopped and the one who did not.
+
+THE DISCRIMINATING-POWER GATE — AND A THRESHOLD REJECTED AFTER MEASUREMENT
+A stage on which no answer is incorrect measures nothing while looking assessed. The first threshold
+read "at most half the answers may be non-incorrect" and it threw out ALL 13 cases, including those
+that faithfully mirror the app's model: for the follow-up result "partial improvement", Block 11
+permits four actions out of six. The threshold measured an intuition about quiz sharpness rather
+than a property of the model, so it was rejected. What remains is checkable: every stage must have
+a CARRIER OF ERROR, with two exceptions stated outright and computed from the model — prediction in
+a BILATERAL provocation (there is no ear to be wrong about) and the mechanism when BOTH variants
+survive (there is nothing to exclude). On top of that: at least three of the five stages must have
+a correct answer.
+
+THE LIBRARY — 13 CASES
+Three levels (basic 3, clinical 5, expert 5) and four kinds (classic 4, near-typical 4, multicanal 2,
+central 3). The history of the CENTRAL cases looks like BPPV — episodic, positional, no red flags —
+and that is their point: if centrality could be read from the history, the case would teach reading
+the history rather than the nystagmus. Red flags are taught by Block 6. Gate H8 requires a case in
+which NOT A SINGLE candidate survives to carry a flag (f1/f2/f3) — otherwise "matches no pattern"
+would pose as a claim about a central cause, while it is only a gap in the engine's vocabulary.
+
+ACCEPTANCE CRITERION 2 — PROGRESS SAVED LOCALLY
+All contact with browser storage lives in `nauka-store.js` (the block's only dirty module), so the
+pure model runs in bare Node and the golden snapshot stays deterministic: progress is read ONCE,
+at boot, outside rendering, and the golden scenarios pin it explicitly. The store is versioned,
+resistant to private mode and to a full quota (the refusal is VISIBLE, not silent), and carries only
+identifiers from the vocabularies: case, result, stage verdicts, hints used. The guard
+`bezDanychOsobowychNauka` checks this before writing and REJECTS the record rather than cleaning it —
+silent sanitization would look like a save that never happened. There is no clock: solving time is
+data about the user, and the golden snapshot has to stay deterministic anyway.
+Entries for cases no longer in the library DO NOT DISAPPEAR silently — they are counted separately
+(`nieznaneWpisy`) and shown, because a counter that moves backwards on its own is worse than a number
+the user does not understand.
+
+ACCEPTANCE CRITERION 5 (MINE, NOT FROM THE DOCUMENT) — LEARNING DOES NOT TOUCH THE PATIENT
+The learning track and the patient track share one state object, and contamination would be PARTLY
+IRREVERSIBLE: `decisionSeq` is explicitly monotonic, `obsOdciski` is derived from `obs`, and
+`kontrole` is a series history indexed by `flow.maneuver.kontrolaIdx`. The reflex mitigation — "save
+the state, run the lesson, restore" — works for none of those three fields and fails silently. The
+separation is therefore STRUCTURAL: `nauka-state.js` writes only to `nauka*` fields, the key is
+computed on the frozen literal PACJENT_ZERO (never on a spread of the state), and the learning
+modules are forbidden to import `state.js`. The oracle takes a fingerprint of 32 fields describing
+the patient before and after the lesson — including `decisionSeq` and `obsOdciski`, precisely the two
+that any snapshot breaks — and requires them to be identical. The reverse direction too: an ongoing
+patient session does not change the content of the lesson.
+A consequence of this rule is what the lesson DELIBERATELY LACKS: engine animation and the 3D figure.
+Both stand on `state.side`, `state.canal`, `state.variant`, `state.maneuverKey` and `state.plan`, so
+showing a maneuver would require overwriting them — and on leaving the learning area the clinician
+would find someone else's case on the positioning card, with `variantZrodlo` still saying "derived
+from the observation record". The illustration of a case is the OBSERVATION RECORD assembled from
+the Block 8 vocabularies.
+
+ACCEPTANCE CRITERION 3 — MEASURED IN THE BROWSER
+jsdom has no layout engine, so "no horizontal scrolling" cannot be checked by an oracle.
+The measurement: 13 cases × 6 stages, before and after the answer, plus the two library screens.
+At 360×720 — 145 measurements, 0 overflows, the furthest right edge exactly 360 px.
+At 320×640 — 144 measurements, 0 overflows, the furthest right edge exactly 320 px.
+The six-stage axis WRAPS (an `auto-fit` grid) instead of scrolling horizontally: at 360 px, six
+items in one row is ~600 px, i.e. half the lesson beyond the edge. The observation-record table uses
+`table-layout:fixed` and breaks long values, because that table was the first to widen the row.
+At 1280 px the D3 layout was measured: control column 296..676, illustration column 696..1217, both
+in one row; the option touch targets are 56 px.
+
+WHAT THIS BLOCK DOES NOT DO
+  • It makes no diagnosis and does not grade the clinician. The verdict concerns an answer to
+    a SYNTHETIC case and is computed against a model whose limits the same screen names.
+  • It shows no result as a number or a percentage. A case result is a PROFILE of stages, because
+    a single number would lie in both directions: it would reward hitting where there was nothing to
+    hit, and penalize a defensible answer.
+  • There is not a single text field on any learning screen, so entering patient data is structurally
+    impossible — the same principle as in Blocks 8, 11 and 12.
+  • It does not measure solving time and stores nothing beyond identifiers from the vocabularies.

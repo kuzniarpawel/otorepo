@@ -1312,3 +1312,152 @@ CZEGO TEN BLOK NIE ROBI
     (determinizm złotego wzorca + godzina badania to dana pacjenta).
   • Nie ocenia składowych za użytkownika i nie ma ANI JEDNEGO pola tekstowego na żadnym z trzech
     ekranów, więc wpisanie danych pacjenta jest strukturalnie niemożliwe.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+TRYB NAUKI I BIBLIOTEKA PRZYPADKÓW — KLUCZ LICZONY, NIE WPISANY (Blok 13)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Bramki: npm run nauka:check (czysty model, gołe Node) i npm run nauka:dom (jsdom, prawdziwy graf
+modułów). Kryteria odbioru K1, K2 i K4 są zdaniami o modelu i o ekranie; K3 wymaga silnika układu,
+więc został ZMIERZONY W PRZEGLĄDARCE i wynik zapisano niżej.
+
+ZASADA: PRZYPADEK NIE NIESIE KLUCZA ODPOWIEDZI
+Biblioteka przypadków dydaktycznych to najbardziej naturalne miejsce, w którym ta aplikacja mogłaby
+zacząć kłamać. Wystarczyłoby wpisać do przypadku pole `rozpoznanie: 'kanał tylny, prawy,
+kanalolitiaza'` — i od tej chwili istniałby SZÓSTY opis tej samej wiedzy klinicznej (po silniku,
+`baranyClassify`, `interp-model`, `man-model` i `followup-model`). Rozjechałby się przy pierwszej
+zmianie parametru, a quiz świeciłby dalej na zielono, bo sprawdzałby zgodność z własną odpowiedzią.
+Przypadek niesie więc WYWIAD (słownik `triage-model`) i OBSERWACJĘ (słownik `obs-model`), a klucz
+do każdego z sześciu etapów LICZY ten sam model, którego używa ścieżka kliniczna:
+
+  etap „przewidywanie" → wzorce kierunku z `odciskPredykcji` dla kandydatur tej próby i tej strony
+  etap „rozpoznanie"   → `interpretuj().pozostale`, bramkowane przez `nietypowy()`
+  etap „mechanizm"     → `interpretuj().mechanizm` (null = model nie rozstrzyga)
+  etap „manewr"        → `recommend(próba, mechanizm)` przez `doborZProby`
+  etap „kontrola"      → `REGULY_KROKOW[wynik]` z Bloku 11, wraz z zakazami i ich powodami
+
+Zmiana w silniku zmienia lekcję albo zapala wyrocznię; trzeciej możliwości nie ma. Bramka A8
+zabrania przypadkowi nieść pole o nazwie `rozpoznanie`, `kanal`, `strona`, `mechanizm`, `manewr`
+i sześciu innych, a bramka B dowodzi POMIAREM, że klucz idzie z silnika: odwrócenie jednego pola
+skrętu w rekordzie odwraca stronę w kluczu, a podmiana dynamiki zmienia manewr z Epleya na Semonta.
+
+CZTERY POLA KOŃCA PRZYPADKU — TRZY WYLICZANE, JEDNO AUTORSKIE
+Dokument wymaga, by przypadek kończył się cechą rozstrzygającą, pułapką, alternatywą i następnym
+krokiem. Trzy z nich model już liczy (`rozstrzygajaca`, `wykluczone`/`pozostale`, `sugerowaneProby`
+albo `REGULY_KROKOW`). Autorska jest wyłącznie PUŁAPKA — i dlatego jest jedynym polem, którego
+wyrocznia pilnuje po TREŚCI: musi wskazywać cechę albo flagę realnie obecną w tym przypadku (A9),
+żeby nie dało się dopisać morału niezwiązanego z obrazem.
+
+KRYTERIUM ODBIORU NR 1 — ODPOWIEDŹ NIE JEST UKRYTA, JEJ NIE MA
+`informacjaZwrotna()` zwraca null, dopóki nie padła decyzja, i jest JEDYNYM wejściem do werdyktu,
+więc ekran nie ma czego schować ani odsłonić. Wyrocznia jsdom mierzy to na `#app.innerHTML`:
+przed decyzją nie ma tam ani karty informacji zwrotnej, ani atrybutu `data-nwerdykt`, ani zapisu
+obserwacji (ten jest ZASŁONIĘTY do chwili przewidywania — inaczej etap przewidywania byłby
+pytaniem o to, co widać obok).
+Wskazówka jest trzecią drogą wprost z dokumentu, ale WSKAZUJE CECHĘ, nigdy nie podaje wyniku
+(bramka D10 sprawdza, że nie niesie kanału, strony, mechanizmu ani manewru), zostaje zapisana
+i wchodzi do oceny przypadku.
+DOPOWIEDZENIE, KTÓREGO DOKUMENT NIE ŻĄDAŁ: odpowiedź raz udzielona jest ZAMROŻONA. Bez tego
+„decyzja przed odsłonięciem odpowiedzi" byłaby fikcją — wystarczyłoby kliknąć cokolwiek,
+przeczytać werdykt i poprawić. Odmowa zapisu jest widoczna i ma powód.
+
+KRYTERIUM ODBIORU NR 4 — WERDYKT TRÓJWARTOŚCIOWY
+`trafna` (jedyna odpowiedź, jaką ten opis pozwala udowodnić) / `dopuszczalna` (model NIE ROZDZIELA
+jej od innych) / `bledna` (opis ją wyklucza). Zbiór dopuszczalnych bierze się z `pozostale`
+i `alternatywy`, a nie z deklaracji autora — niejednoznaczność jest WŁASNOŚCIĄ MODELU, nie opinią
+o przypadku. Ekran nazywa dwa różne jej rodzaje: „model nie zna jedynej odpowiedzi" (brak trafnej
+w ogóle) oraz „model nie oddziela tej odpowiedzi od innych" (trafna istnieje, ale obok stoją
+odpowiedzi nie do podważenia). Bez tego drugiego sygnału ekran milczałby dokładnie tam, gdzie cała
+lekcja przypadku polega na nazwaniu granicy wiedzy.
+
+CO ZNALAZŁA KRYTYKA, ZANIM POWSTAŁ EKRAN
+Pierwsza wersja modelu oznaczała jako BŁĘDNY „wzorzec, którego ta próba nie potrafi dać". Była to
+nieprawda i najgroźniejsza pomyłka całego bloku: awansowała UPROSZCZENIE SILNIKA do twierdzenia
+klinicznego. Model przewiduje dla kanału przedniego czysty downbeat bez składowej skrętnej, więc
+podręcznikowy oczopląs skrętno-pionowy kanału przedniego zostałby uczniowi oznaczony jako
+„niemożliwy"; próba Dix-Hallpike'a kładzie głowę do tyłu i potrafi sprowokować także inny kanał.
+Nośnikiem błędu jest więc UCHO, nie „niemożliwość": wzorzec drugiego ucha przy próbie jednostronnej
+jest błędny, bo to jedyna pomyłka, która wysyła klinicystę na manewr niewłaściwej strony.
+Powód „niemożliwy wzorzec" został ze słownika USUNIĘTY, a bramka F1 pilnuje, żeby nie wrócił.
+Druga naprawa: kandydatura, KTÓRA PRZEŻYŁA, nie jest odpowiedzią błędną nigdy — także wtedy, gdy
+obraz niesie cechę ośrodkową. Inaczej każdy downbeat w Dix-Hallpike'u (a on zapala `flagaOsrodkowa`)
+kasowałby BPPV kanału przedniego z różnicowania i uczeń wychodziłby ze zdaniem „downbeat = nigdy
+BPPV". Aplikacja mówi co innego: na ekranie diagnostyki NAZYWA kanał przedni i RÓWNOCZEŚNIE
+wstrzymuje leczenie. Lekcja odbija to dokładnie — „obraz nietypowy" jest trafną, kandydatura
+zostaje dopuszczalną.
+Trzecia naprawa: na etapie manewru nie wolno, by „nie repozycjonuję" i jakikolwiek manewr były
+równocześnie nie-błędne. Model aplikacji traktuje obserwację i repozycję jako WYKLUCZAJĄCE SIĘ
+(`REGULY_KROKOW.residual`: `obserwuj` jako główny ORAZ jawny zakaz repozycji z powodem), więc
+lekcja, która dopuszczałaby obie, odwracałaby semantykę własnego programu. Przy obrazie nietypowym
+trafną jest wstrzymanie się i KAŻDY manewr jest błędny; przy obrazie typowym odwrotnie. Dzięki temu
+przypadek, którego cała lekcja polega na wstrzymaniu ręki, przestał dawać ten sam werdykt temu,
+kto się zatrzymał, i temu, kto nie.
+
+BRAMKA MOCY ROZSTRZYGAJĄCEJ — I PRÓG, KTÓRY ODRZUCONO PO POMIARZE
+Etap, na którym żadna odpowiedź nie jest błędna, nie mierzy niczego, a wygląda na oceniony.
+Pierwszy próg brzmiał „odpowiedzi nie-błędnych najwyżej połowa" i wywalił WSZYSTKIE 13 przypadków,
+w tym te, które wiernie odbijają model aplikacji: przy wyniku kontroli „częściowa poprawa" Blok 11
+dopuszcza cztery akcje z sześciu. Próg mierzył intuicję o ostrości quizu, a nie własność modelu,
+więc został odrzucony. Zostało wymaganie sprawdzalne: każdy etap ma mieć NOŚNIK BŁĘDU, z dwoma
+wyjątkami wypowiedzianymi wprost i wyliczanymi z modelu — przewidywanie przy próbie OBUSTRONNEJ
+(nie ma ucha, o które można się pomylić) oraz mechanizm, gdy przeżyły OBA warianty (nie ma czego
+wykluczyć). Do tego: co najmniej trzy z pięciu etapów muszą mieć odpowiedź trafną.
+
+BIBLIOTEKA — 13 PRZYPADKÓW
+Trzy poziomy (podstawowy 3, kliniczny 5, ekspercki 5) i cztery rodzaje (klasyczne 4, prawie typowe
+4, wielokanałowe 2, ośrodkowe 3). Wywiad przypadków OŚRODKOWYCH wygląda na BPPV — napadowo,
+pozycyjnie, bez czerwonych flag — i to jest ich sens: gdyby ośrodkowość dało się odczytać
+z wywiadu, przypadek uczyłby czytania wywiadu, a nie oczopląsu. Czerwonych flag uczy Blok 6.
+Bramka H8 wymaga, by przypadek, w którym nie zostaje ANI JEDNA kandydatura, niósł flagę (f1/f2/f3)
+— inaczej „nie pasuje do wzorca" udawałoby twierdzenie o ośrodku, a jest tylko luką w słowniku
+silnika.
+
+KRYTERIUM ODBIORU NR 2 — POSTĘP ZAPISANY LOKALNIE
+Cały kontakt z pamięcią przeglądarki mieszka w `nauka-store.js` (jedyny brudny moduł bloku), więc
+czysty model działa w gołym Node, a złoty wzorzec zostaje deterministyczny: postęp wczytuje się RAZ,
+na boocie, poza renderem, a scenariusze złotego wzorca przypinają go jawnie. Zapis jest wersjonowany,
+odporny na tryb prywatny i brak miejsca (odmowa jest WIDOCZNA, nie cicha), i niesie wyłącznie
+identyfikatory ze słowników: przypadek, ocena, werdykty etapów, użyte wskazówki. Strażnik
+`bezDanychOsobowychNauka` sprawdza to przed zapisem i ODRZUCA wpis, zamiast go czyścić — cicha
+sanitacja wyglądałaby jak zapis, którego nie było. Zegara nie ma: czas rozwiązywania jest daną
+o użytkowniku, a złoty wzorzec i tak musi zostać deterministyczny.
+Wpisy przypadków, których już nie ma w bibliotece, NIE ZNIKAJĄ po cichu — są liczone osobno
+(`nieznaneWpisy`) i pokazywane, bo licznik cofający się sam z siebie jest gorszy niż liczba,
+której użytkownik nie rozumie.
+
+KRYTERIUM ODBIORU NR 5 (MOJE, NIE Z DOKUMENTU) — NAUKA NIE DOTYKA PACJENTA
+Tor nauki i tor pacjenta dzielą jeden obiekt stanu, a skażenie byłoby CZĘŚCIOWO NIEODWRACALNE:
+`decisionSeq` jest jawnie monotoniczny, `obsOdciski` jest pochodny od `obs`, a `kontrole` to
+historia serii indeksowana przez `flow.maneuver.kontrolaIdx`. Odruchowa mitygacja — „zapisz stan,
+uruchom lekcję, przywróć" — nie działa dla żadnego z tych trzech pól i zawodzi po cichu. Separacja
+jest więc STRUKTURALNA: `nauka-state.js` pisze wyłącznie do pól `nauka*`, klucz liczy się na
+zamrożonym literale PACJENT_ZERO (nigdy na spreadzie stanu), a moduły nauki mają zakaz importu
+`state.js`. Wyrocznia bierze odcisk 32 pól opisujących pacjenta przed lekcją i po niej — w tym
+`decisionSeq` i `obsOdciski`, bo to właśnie te dwa psuje każdy snapshot — i wymaga, żeby były
+identyczne. Kierunek odwrotny też: trwająca sesja pacjenta nie zmienia treści lekcji.
+Konsekwencją tej zasady jest to, czego w lekcji CELOWO NIE MA: animacji silnika ani figury 3D.
+Obie stoją na `state.side`, `state.canal`, `state.variant`, `state.maneuverKey` i `state.plan`,
+więc pokazanie manewru wymagałoby ich nadpisania — a po wyjściu z nauki klinicysta zastałby na
+karcie ułożenia cudzy przypadek, przy `variantZrodlo` nadal mówiącym „wyprowadzony z opisu
+obserwacji". Ilustracją przypadku jest ZAPIS OBSERWACJI złożony ze słowników Bloku 8.
+
+KRYTERIUM ODBIORU NR 3 — ZMIERZONE W PRZEGLĄDARCE
+jsdom nie ma silnika układu, więc „bez poziomego przewijania" nie da się sprawdzić wyrocznią.
+Pomiar: 13 przypadków × 6 etapów, przed odpowiedzią i po niej, plus dwa ekrany biblioteki.
+Przy 360×720 — 145 pomiarów, 0 przewinięć, najdalsza prawa krawędź dokładnie 360 px.
+Przy 320×640 — 144 pomiary, 0 przewinięć, najdalsza prawa krawędź dokładnie 320 px.
+Oś sześciu etapów ZAWIJA (siatka `auto-fit`), a nie przewija się w poziomie: przy 360 px sześć
+pozycji w jednym rzędzie to ~600 px, czyli połowa lekcji za krawędzią. Tabela zapisu obserwacji
+ma `table-layout:fixed` i łamanie długich wartości, bo to ona pierwsza rozpychała wiersz.
+Na 1280 px zmierzono układ D3: kolumna sterowania 296..676, kolumna ilustracji 696..1217, obie
+w jednym wierszu; pola dotykowe opcji mają 56 px.
+
+CZEGO TEN BLOK NIE ROBI
+  • Nie stawia rozpoznania i nie ocenia klinicysty. Werdykt dotyczy odpowiedzi na przypadek
+    SYNTETYCZNY i jest liczony wobec modelu, którego granice ten sam ekran nazywa.
+  • Nie pokazuje wyniku jako liczby ani procentu. Wynik przypadku jest PROFILEM etapów, bo
+    pojedyncza liczba kłamałaby w obie strony: nagradzałaby trafienie tam, gdzie trafiać nie było
+    czym, i karałaby odpowiedź obronną.
+  • Nie ma ani jednego pola tekstowego na żadnym z ekranów nauki, więc wpisanie danych pacjenta
+    jest strukturalnie niemożliwe — ta sama zasada, co w Blokach 8, 11 i 12.
+  • Nie mierzy czasu rozwiązywania i nie zapisuje niczego poza identyfikatorami ze słowników.
