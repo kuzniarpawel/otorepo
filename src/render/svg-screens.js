@@ -1192,7 +1192,11 @@ function refreshHintsComp(){
 // pokazywałyby drobny sub-progowy DRYF SPOJRZENIOWY (np. τ=25 → 0.8°/s, klinicznie niewidoczny). [Fix 2026-07-10]
 function neuroNysParams(nys, gazeDeg){
   const camRx=Scene3D.CAMERAS.frontal.right[0];
-  const VISFRAC=(NeuroVOR.VIS_THRESH||2)/(NeuroVOR.SPV_MAX||12);           // próg widoczności przeniesiony na strength (~0.17)
+  // Próg widoczności przeniesiony na skalę `strength` (VIS_THRESH/SPV_MAX = 2/30 ≈ 0.067).
+  // BEZ fallbacków „||2 / ||12": obie stałe są zawsze eksportowane z NeuroVOR, więc gałąź zapasowa była
+  // martwa, a jej „12" po zmianie SPV_MAX na 30 stało się cichą kopią nieaktualnej wartości — dokładnie
+  // ten rodzaj rozjazdu stała↔kopia, który silnik pilnuje tripwire'ami. Jedno źródło prawdy.
+  const VISFRAC=NeuroVOR.VIS_THRESH/NeuroVOR.SPV_MAX;
   let sH=Math.max(0,Math.min(1,nys.strength||0));                          // siła składowej POZIOMEJ
   let sV=Math.max(0,Math.min(1, nys.strengthV!=null ? nys.strengthV : (nys.dir?0:nys.strength)||0));  // PIONOWO-skrętnej
   if(sH<VISFRAC) sH=0;                                                     // poniżej progu → nie animuj (spójne z etykietą)
