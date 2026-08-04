@@ -133,6 +133,9 @@ const HANDLE_NAMES = [
   // Blok 11 — krok „Kontrola" po manewrze. Brak = handleMissing = twardy exit(1): ekran, ktorego
   // nie da sie wysterowac z testu, nie bylby przypiety zadna wyrocznia.
   'goKontrola', 'ustawWynikKontroli', 'ustawPowodKontroli', 'kontrolaAkcja', 'pytajOZakonczeniu', 'zakonczSesje',
+  // Blok 15 — generator opisu badania. Brak = handleMissing = twardy exit(1): ekran, ktorego
+  // nie da sie wysterowac z testu, nie bylby przypiety zadna wyrocznia.
+  'goOpis', 'przelaczSekcjeOpisu', 'edytujOpis', 'ustawTolerancjeKontroli',
   // Blok 13 — tryb nauki. Ekran, ktorego nie da sie wysterowac z testu, nie bylby przypiety zadna
   // wyrocznia; brak uchwytu = handleMissing = twardy exit(1), a nie ciche zwezenie pokrycia.
   'goNauka', 'otworzPrzypadek', 'wrocDoBiblioteki', 'ustawFiltrNauki', 'goEtapNauki',
@@ -548,6 +551,33 @@ function domOracle(h, win) {
       h.ustawWynikKontroli('ustapienie');
     });
     fu('zakonczenie', () => { poManewrze(); h.ustawWynikKontroli('ustapienie'); h.pytajOZakonczeniu(true); });
+
+    /* GENERATOR OPISU BADANIA (Blok 15). Cztery stany, i kazdy pilnuje INNEGO zdania:
+       • `opis/pelny` — pelny opis po domknietym przebiegu; tu widac cala tresc naraz,
+       • `opis/bez-strony` — NAJWAZNIEJSZY. Strona i mechanizm bez ZRODLA nie maja prawa
+         pojawic sie jako ustalenie: `state.side` ma literal 'P', ktorego nikt nie dotknal.
+         Ciche zamienienie „nieustalone" na „prawe" wlozyloby stronnosc do dokumentacji
+         medycznej — dlatego to zdanie jest PRZYPIETE, a nie tylko przetestowane,
+       • `opis/wylaczone` — przelaczniki sekcji z dokumentu (uklad telefonu),
+       • `opis/edycja` — jedyne pole tekstowe w calej aplikacji RAZEM z ostrzezeniem, ze
+         wpisany tekst nigdzie nie jest zapisywany. Ostrzezenie ma stac przy polu, a nie
+         w stopce, wiec jego zniknieciе musi zapalic wyrocznie. */
+    if (h.goOpis) {
+      const opisPoPelnym = (tol) => {
+        poManewrze(); h.ustawWynikKontroli('ustapienie');
+        if (tol && h.ustawTolerancjeKontroli) h.ustawTolerancjeKontroli(tol);
+        h.goOpis();
+      };
+      grab('opis/pelny', () => { h.state.sideZrodlo = 'wybrany'; h.state.variantZrodlo = 'wyprowadzony'; opisPoPelnym('nudnosci'); h.render(); });
+      grab('opis/bez-strony', () => { opisPoPelnym('dobra'); h.state.sideZrodlo = null; h.state.variantZrodlo = null; h.render(); });
+      grab('opis/wylaczone', () => {
+        opisPoPelnym('dobra');
+        if (h.przelaczSekcjeOpisu) { h.przelaczSekcjeOpisu('kwalifikacja'); h.przelaczSekcjeOpisu('oczoplas'); }
+        h.render();
+      });
+      grab('opis/edycja', () => { opisPoPelnym('dobra'); if (h.edytujOpis) h.edytujOpis(); h.render(); });
+      czystaKontrola(); h.state.opisSekcje = null; h.state.opisEdycja = null;
+    }
     czystaKontrola();
   }
 
