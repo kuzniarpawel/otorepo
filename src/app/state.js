@@ -32,6 +32,18 @@ const state={
   hintsPrzeszkolenie:null,  // deklaracja badajacego: 'tak' | 'nie' | null (GRACE-3: HINTS bez przeszkolenia bywa mylacy)
   hintsKrok:null,           // telefon: skladowa pokazywana w tej chwili (null = pierwsza nieodpowiedziana)
   hintsBlad:null,           // powod ODMOWY wejscia przez bramke — ekran musi powiedziec, ze nie wpuscil i dlaczego
+  // --- Blok 13: TRYB NAUKI I BIBLIOTEKA PRZYPADKOW. Czyta je src/app/nauka-model.js (czysty),
+  //     pisze WYLACZNIE src/app/nauka-state.js. Zaden inny modul nie ma prawa ich tknac, i to
+  //     jest cala separacja torow: rozwiazanie przypadku nie zmienia ANI JEDNEGO pola opisujacego
+  //     prawdziwego pacjenta (obs, triage, flow, kontrole, decisionSeq, obsOdciski).
+  naukaPrzypadek:null,      // id rozwiazywanego przypadku (null = ekran biblioteki)
+  naukaEtap:null,           // aktywny etap lekcji: opis|przewidywanie|rozpoznanie|mechanizm|manewr|kontrola
+  naukaOdp:{},              // odpowiedzi per etap — RAZ UDZIELONA jest zamrozona (kryterium odbioru nr 1)
+  naukaWskazowki:[],        // etapy, w ktorych uzyto wskazowki; wchodza do oceny przypadku
+  naukaFiltr:{poziom:null, rodzaj:null},   // filtr biblioteki; null = bez ograniczenia
+  naukaPostep:{},           // postep per przypadek. Literal PUSTY: pamiec przegladarki wczytuje sie RAZ na boocie (nauka-store.js), wiec zloty wzorzec zostaje deterministyczny
+  naukaBlad:null,           // powod ODMOWY zapisu odpowiedzi — ekran musi powiedziec, ze nie przyjal i dlaczego
+  naukaZapisBlad:null,      // powod odmowy zapisu postepu (straznik danych albo brak pamieci)
   view3d:false,                                    // karta „Ułożenie": 3D (WebGL) vs SVG. Literał=false (golden bez WebGL); Etap 5: main.js ustawia true na boot gdy webglAvailable()
   lang:"en",                                       // język UI: 'en' (domyślny) | 'pl'. Literał=EN; main.js initLang() ustawia wg locale/wyboru na boot. t(pl,en) w src/i18n.js czyta to pole (golden przypina 'pl' w snapshot.mjs)
   // --- Powłoka aplikacji (Blok 1/3). Pola czytane WYŁĄCZNIE przez src/app/shell.js; żadna

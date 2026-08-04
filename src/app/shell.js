@@ -63,11 +63,17 @@ function applyArea(id) {
     A.releaseWake && A.releaseWake();
     state.screen = 'setup';
   }
+  /* Blok 13: „Nauka" przestała być zaślepką. Zaślepka (`#stubview`) zostaje w powłoce jako
+     bezpiecznik — pokazujemy ją tylko wtedy, gdy tryb nauki nie został podpięty (np. starszy
+     bundel bez tej akcji). Wcześniej ten obszar CHOWAŁ `#app`, więc cały moduł nauki był
+     niewidoczny dla złotego wzorca, który czyta wyłącznie `#app.innerHTML`. */
   const stub = $('#stubview'), app = $('#app');
   const naNauke = id === 'learn';
-  if (stub) stub.hidden = !naNauke;
-  if (app) app.hidden = naNauke;
-  if (naNauke) { A.render && A.render(); syncShell(); return; }
+  const braknauki = naNauke && !A.goNauka;
+  if (stub) stub.hidden = !braknauki;
+  if (app) app.hidden = braknauki;
+  if (braknauki) { A.render && A.render(); syncShell(); return; }
+  if (naNauke) { A.goNauka(); syncShell(); return; }
   // „Start" to ekran oparty na CELU (Blok 4), nie skrót do modułu repozycji.
   if (id === 'start') { state.screen = 'start'; A.render && A.render(); }
   else {

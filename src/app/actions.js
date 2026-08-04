@@ -18,6 +18,10 @@ import { celAkcji } from './followup-model.js';
 import { followupDeps } from './followup-deps.js';
 import { zapiszWynik, ustawPowodKontroli as _ustawPowodKontroli, zakonczSesjeStan, syncKontrola } from './followup-state.js';
 import { wolnoBadac, nastepnyElement, ELEMENT_IDS } from './hints-model.js';
+import { przypadek as przypadekNauki } from './nauka-model.js';
+import { naukaDeps } from './nauka-deps.js';
+import { zacznijPrzypadek, zamknijPrzypadek, ustawOdpowiedz, uzyjWskazowki, ustawEtap, ustawFiltr, zapiszPostepDoStanu, wyczyscPostepStanu } from './nauka-state.js';
+import { wczytajPostep, zapiszPostep, wyczyscPostep } from './nauka-store.js';
 import { hintsDeps } from './hints-deps.js';
 import { zapiszSkladowa, ustawPowodNiewiar as _ustawPowodNiewiar, ustawPrzeszkolenie as _ustawPrzeszkolenie,
          ustawPominiecie as _ustawPominiecie, cofnijPominiecieStan, wyczyscBadanie as _wyczyscBadanie, ustawKrok, biezacyKrok } from './hints-state.js';
@@ -691,6 +695,63 @@ function syncLangBar(){
 // Przenoszenie idzie przez `przebudujPlan`, czyli po TOŻSAMOŚCI kroku: kopiowanie po indeksie
 // przepisywało 120 s z kroku 2 jednego manewru na krok 2 drugiego, gdyby plan i `state.maneuverKey`
 // zdążyły się rozjechać.
+/* ============ TRYB NAUKI (Blok 13) ============
+   Wszystkie akcje lekcji przechodzą przez `nauka-state.js`, który pisze WYŁĄCZNIE do pól
+   `nauka*`. Żadna z nich nie woła `markDecision`, `markSeen`, `zapiszWynik` ani pisarzy
+   obserwacji — i to jest cała separacja torów: rozwiązanie przypadku nie zmienia ani jednego
+   pola opisującego prawdziwego pacjenta. Wyrocznia bierze odcisk stanu przed lekcją i po niej. */
+function nDeps(){ return naukaDeps(przypadekNauki(state.naukaPrzypadek)); }
+
+function goNauka(){
+  state.area="learn"; state.mode="nauka"; state.screen="naukaBib";
+  zamknijPrzypadek(state);
+  render();
+}
+function otworzPrzypadek(id){
+  if(!zacznijPrzypadek(state, id)){ render(); return; }
+  state.area="learn"; state.mode="nauka"; state.screen="naukaLekcja";
+  render();
+}
+function wrocDoBiblioteki(){ goNauka(); }
+function ustawFiltrNauki(pole, wartosc){ ustawFiltr(state, pole, wartosc); render(); }
+function goEtapNauki(id){ ustawEtap(state, id); render(); }
+
+/* ODPOWIEDŹ. Po jej przyjęciu przechodzimy do informacji zwrotnej TEGO SAMEGO etapu — nie do
+   następnego. Dokument mówi wprost: „po udzieleniu odpowiedzi ekran automatycznie przewija się
+   do informacji zwrotnej". Automatyczne przeskoczenie dalej zabrałoby uczniowi to, po co ten
+   blok w ogóle powstał. */
+function odpowiedzNauki(etap, wartosc){
+  ustawOdpowiedz(state, etap, wartosc, nDeps());
+  render();
+  try{ const el=$("#naukaFeedback"); if(el && el.scrollIntoView) el.scrollIntoView({block:"nearest"}); }catch(e){}
+}
+function wskazowkaNauki(etap){ uzyjWskazowki(state, etap); render(); }
+
+/* KONIEC PRZYPADKU. Zapis idzie DWUSTOPNIOWO: najpierw do stanu (przez strażnika danych),
+   potem do pamięci przeglądarki. Rozdzielenie ma powód: gdy pamięć odmówi (tryb prywatny,
+   brak miejsca), lekcja i tak ma poprawny wynik na ekranie, a użytkownik dostaje informację,
+   że postęp nie został zapisany — zamiast cichego udawania, że został. */
+function zakonczPrzypadek(){
+  const wpis = zapiszPostepDoStanu(state, nDeps());
+  if(wpis){
+    const r = zapiszPostep(state.naukaPostep);
+    state.naukaZapisBlad = r.ok ? null : r.powod;
+  }
+  state.screen="naukaBib";
+  zamknijPrzypadek(state);
+  render();
+}
+function wyczyscPostepNauki(){
+  wyczyscPostepStanu(state);
+  const r = wyczyscPostep();
+  state.naukaZapisBlad = r.ok ? null : r.powod;
+  render();
+}
+/* Boot: postęp z pamięci wczytujemy RAZ, poza renderem. Gdyby ekran czytał `localStorage` sam,
+   złoty wzorzec przestałby być deterministyczny — a to jest jedyna wyrocznia, która widzi cały
+   DOM naraz. */
+function wczytajPostepNauki(){ try{ state.naukaPostep = wczytajPostep(); }catch(e){ state.naukaPostep = {}; } }
+
 function setLangUI(lang){
   setLang(lang);
   if(state.plan && state.screen==="guide"){
@@ -704,8 +765,8 @@ function setLangUI(lang){
 }
 
 
-export { goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
