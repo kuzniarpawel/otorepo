@@ -31,7 +31,9 @@
     "hints:check": "node tools/hints-check.mjs",
     "hints:dom": "node tools/hints-dom.mjs",
     "nauka:check": "node tools/nauka-check.mjs",
-    "nauka:dom": "node tools/nauka-dom.mjs"
+    "nauka:dom": "node tools/nauka-dom.mjs",
+    "lab:check": "node tools/lab-check.mjs",
+    "lab:dom": "node tools/lab-dom.mjs"
   },
   "repository": {
     "type": "git",
