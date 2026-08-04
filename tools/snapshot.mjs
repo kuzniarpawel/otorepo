@@ -137,6 +137,9 @@ const HANDLE_NAMES = [
   // wyrocznia; brak uchwytu = handleMissing = twardy exit(1), a nie ciche zwezenie pokrycia.
   'goNauka', 'otworzPrzypadek', 'wrocDoBiblioteki', 'ustawFiltrNauki', 'goEtapNauki',
   'odpowiedzNauki', 'wskazowkaNauki', 'zakonczPrzypadek', 'wyczyscPostepNauki',
+  // Blok 14 — Laboratorium. Brak uchwytu = handleMissing = twardy exit(1).
+  'goLab', 'otworzEksperymentLab', 'wrocDoEksperymentow', 'ustawStanowiskoLab',
+  'przelaczPorownanieLab', 'ustawParametrLab', 'resetLab', 'opisParametruLab',
 ];
 function makeHandle(win) {
   if (win.__OTOREPO_TEST__) return win.__OTOREPO_TEST__;
@@ -725,6 +728,34 @@ function domOracle(h, win) {
     czystyN();
   }
 
+  /* ═══ BLOK 14 — LABORATORIUM ═══
+     Sterowane AKCJAMI. Stanowiska przypinane jawnie, bo pacjent Laboratorium powstaje ze
+     scenariusza silnika i musi byc deterministyczny. */
+  if (h.goLab && h.otworzEksperymentLab) {
+    const czystyL = () => {
+      h.state.labEksperyment = null; h.state.labStanowisko = 'A';
+      h.state.labA = null; h.state.labB = null; h.state.labPorownanie = false;
+      h.state.labOstatniaZmiana = null; h.state.labParametr = null;
+    };
+    grab('lab/lista', () => { czystyL(); h.goLab(); });
+    grab('lab/eksperyment', () => { czystyL(); h.otworzEksperymentLab('jednostronny'); });
+    // Opis parametru rozwiniety — kryterium odbioru nr 2 w DOM (jednostka, zakres, granica modelu).
+    grab('lab/opis-parametru', () => { czystyL(); h.otworzEksperymentLab('jednostronny'); h.opisParametruLab('gainR'); });
+    // Pomiar skutku zmiany — kryterium odbioru nr 3.
+    grab('lab/skutek', () => { czystyL(); h.otworzEksperymentLab('jednostronny'); h.ustawParametrLab('gainR', '0.3'); });
+    // Zmiana BEZ skutku, nazwana wprost.
+    grab('lab/bez-skutku', () => { czystyL(); h.otworzEksperymentLab('trzecieOkno'); h.ustawParametrLab('otrTorsion', '10'); });
+    // Porownanie dwoch stanowisk — uklad „komputer" z dokumentu.
+    grab('lab/porownanie', () => {
+      czystyL(); h.otworzEksperymentLab('dysocjacja'); h.ustawParametrLab('caloricGainR', '0.2');
+      h.ustawStanowiskoLab('B'); h.ustawParametrLab('gainR', '0.3'); h.przelaczPorownanieLab();
+    });
+    grab('lab/po-resecie', () => {
+      czystyL(); h.otworzEksperymentLab('nerw'); h.ustawParametrLab('sacculeR', '0'); h.resetLab();
+    });
+    czystyL();
+  }
+
   return out;
 }
 
@@ -771,6 +802,10 @@ function shellOracle(h, win) {
     st.naukaPrzypadek = null; st.naukaEtap = null; st.naukaOdp = {}; st.naukaWskazowki = [];
     st.naukaFiltr = { poziom: null, rodzaj: null }; st.naukaPostep = {};
     st.naukaBlad = null; st.naukaZapisBlad = null;
+    // Blok 14: stanowiska Laboratorium tez PRZEZYWAJA nawigacje — bez wyzerowania tutaj
+    // scenariusze wyciekalyby jeden na drugi.
+    st.labEksperyment = null; st.labStanowisko = 'A'; st.labA = null; st.labB = null;
+    st.labPorownanie = false; st.labOstatniaZmiana = null; st.labParametr = null;
     try { if (h.resetTriage) h.resetTriage(); } catch { }
   };
 
@@ -789,10 +824,22 @@ function shellOracle(h, win) {
   // który krzyczy zawsze, przestaje być czytany.
   grab('guide/epley/P', () => { czysty(); h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P'); h.startManeuver && h.startManeuver('epley'); h.syncShell && h.syncShell(); });
   grab('learn', () => { czysty(); h.goArea && h.goArea('learn'); });
-  grab('hints', () => { czysty(); h.goArea && h.goArea('lab'); });
+  /* Ten klucz ma pokazywac chrom nad SYMULATOREM, a nie nad kwalifikacja — i przez caly czas go
+     NIE pokazywal: `goHintsKwal()` wola render(), ale nie syncShell(), wiec atrybuty powloki
+     zostawaly z poprzedniego przejscia. Wchodzimy pelna, prawdziwa droga i domykamy syncShell(). */
+  grab('hints', () => {
+    czysty(); h.goArea && h.goArea('diag'); h.goHintsKwal && h.goHintsKwal();
+    h.pomijajKwalifikacje && h.pomijajKwalifikacje('symulacja');
+    h.otworzSymulatorHints && h.otworzSymulatorHints(); h.syncShell && h.syncShell();
+  });
   /* Blok 13 — chrom nad LEKCJA. Ta sama rzecz, ktorej pilnujemy nad HINTS: pasek szesciu krokow
      przebiegu klinicznego nie ma prawa stanac nad przypadkiem dydaktycznym. */
   grab('naukaLekcja', () => { czysty(); h.goArea && h.goArea('learn'); h.otworzPrzypadek && h.otworzPrzypadek('pc-p-klasyk'); h.syncShell && h.syncShell(); });
+  /* Blok 14 — chrom nad Laboratorium. Pilnujemy tu rzeczy, ktorej nie widzi warstwa dom:
+     nawigacja ma podswietlac „Laboratorium", a nie „Diagnostyke". Zmierzone przed naprawa:
+     `goArea('lab')` konczyl z data-area="diag", bo syncShell PRZEPISUJE state.area wynikiem
+     areaZeStanu, a ta nie znala trybu 'lab'. */
+  grab('labLista', () => { czysty(); h.goArea && h.goArea('lab'); h.syncShell && h.syncShell(); });
   /* Blok 12 — chrom nad trzema nowymi ekranami. Pilnujemy tu JEDNEJ rzeczy, której nie widzi
      żadna inna warstwa: pasek sześciu kroków przebiegu klinicznego NIE MA PRAWA pojawić się nad
      HINTS. Ten pasek opisuje ścieżkę BPPV („Krok 2 z 6 — Próba"); postawiony nad różnicowaniem
@@ -803,9 +850,12 @@ function shellOracle(h, win) {
      wiec bez jednej zmiany w kodzie ekranow HINTS, czyli dokladnie ta sama pulapka „kolejnosc
      blokow w tym pliku", ktora naprawiono juz przy kluczu `start`. Wchodzimy PRAWDZIWA droga:
      `goArea('lab')` prowadzi do kwalifikacji (Blok 12), wiec scenariusz mowi, co znaczy. */
-  grab('hintsKwal', () => { czysty(); h.goArea && h.goArea('lab'); h.syncShell && h.syncShell(); });
+  /* Blok 14 przestawil znaczenie obszaru „Laboratorium", wiec te dwa klucze wchodza teraz
+     zakladka HINTS: `goArea('diag')` przypina obszar jawnie, a `goHintsKwal()` otwiera drzwi
+     modulu. Sens bramki zostaje ten sam — scenariusz mowi, skad przyszedl, zamiast dziedziczyc. */
+  grab('hintsKwal', () => { czysty(); h.goArea && h.goArea('diag'); h.goHintsKwal && h.goHintsKwal(); h.syncShell && h.syncShell(); });
   grab('hintsBad', () => {
-    czysty(); h.goArea && h.goArea('lab'); h.pomijajKwalifikacje && h.pomijajKwalifikacje('nauka');
+    czysty(); h.goArea && h.goArea('diag'); h.goHintsKwal && h.goHintsKwal(); h.pomijajKwalifikacje && h.pomijajKwalifikacje('nauka');
     h.zacznijBadanieHints && h.zacznijBadanieHints(); h.syncShell && h.syncShell();
   });
   /* Blok 8 — krok „Oczopląs" na WŁASNYM ekranie. Pasek przebiegu żyje w chromie POZA #app,
