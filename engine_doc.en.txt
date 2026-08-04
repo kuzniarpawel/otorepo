@@ -1491,3 +1491,120 @@ WHAT THIS BLOCK DOES NOT DO
   • There is not a single text field on any learning screen, so entering patient data is structurally
     impossible — the same principle as in Blocks 8, 11 and 12.
   • It does not measure solving time and stores nothing beyond identifiers from the vocabularies.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+THE NEUROTOLOGY LABORATORY — A BENCH, NOT A PATIENT (Block 14)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Gates: npm run lab:check (pure model, bare Node, 557 cases) and npm run lab:dom (jsdom, the real
+module graph, 47 cases).
+
+WHAT WAS MEASURED BEFORE ANYTHING WAS WRITTEN
+  · Acceptance criterion 1 WAS ALREADY MET: across nine screens of the clinical pathway there are
+    zero laboratory controls, and the full run history → provocation → nystagmus → interpretation →
+    maneuver → follow-up completes without touching the mathematical patient’s state. The work was
+    therefore to turn that measurement into a STANDING GATE before some future block quietly breaks it.
+  · Acceptance criterion 2 was not met at all: the engine has 27 parameters in 8 groups; all have
+    a range, but 14 had no unit, and the DESCRIPTION count was 0 of 27. Groups had one sentence of
+    help each; parameters had nothing.
+  · Acceptance criterion 3 turned out to be COMPUTABLE: `clinicalReadout` returns fourteen fields,
+    and the difference between two readouts states outright what moved.
+
+THE PRINCIPLE: THE EFFECT IS MEASURED, NOT WRITTEN IN
+It was tempting to build a "parameter → effect" table. That would be a SECOND definition of the
+physiology beside the engine, and it would drift at the first change of an equation. Instead the
+laboratory computes the clinical picture BEFORE and AFTER the change and shows the difference:
+which examination changed its result, and which sentence of the findings arrived or disappeared.
+Gate G9 forbids such a table from ever being created.
+Over 27 parameters × 2 extremes × 2 clinical contexts, the oracle checks that every parameter
+either MOVES SOMETHING or itself declares what is missing for it to become visible. A slider that
+does nothing and does not say why teaches that physiology is arbitrary.
+
+NO EFFECT IS A RESULT, NOT A FAULT
+Measured: fixation suppression in a healthy patient changes nothing, because there is no nystagmus
+to suppress. The screen states this outright and gives a reason from a closed vocabulary
+(`brakOczoplasu`, `brakStronyChorej`, `brakObrotu`, `brakBodzca`, `brakSpojrzeniaBocznego`). The
+reason is a field of the PARAMETER, not a guess after the fact — guessing ("probably because…")
+would be inventing physiology the model never computed.
+
+FOUR LIMITS OF THE MODEL THAT THE CRITIQUE FOUND — AND WHY THEY WERE NAMED, NOT FIXED
+The physiology critique ran the engine and showed four places where a parameter description would
+be UNTRUE if written plainly. The engine was NOT changed in this block — changing the equations is
+the user’s clinical decision, not interface work. Each limit is instead NAMED in the parameter’s
+description and PINNED by a gate (section H of the oracle), so that repairing the engine will turn
+the oracle red and force the description to be updated, rather than leaving a comment that quietly
+went out of date:
+  1. AFFERENT SATURATION. Above about 167 Hz of tone, vHIT starts coming out abnormal DESPITE an
+     intact canal (measured: tone 200 Hz + gain 1.0 → measured gain 0.63). This strikes at the
+     module’s most important dissociation: the irritative phase of Ménière’s disease (~150 Hz) has
+     a NORMAL vHIT, and that is its distinguishing feature.
+  2. A SLIDER IS NOT A READING. `gain` is the canal’s TRANSDUCTION gain; the gain MEASURED on
+     a head impulse also depends on tone. The engine itself represents a COMPLETE loss as 0.35,
+     not 0 — zero is a limit of the model, not a clinical state.
+  3. VEMP IS AN ASYMMETRY. Zeroing both saccules DELETES the VEMP sentence from the findings,
+     because the asymmetry ratio falls silent. The caloric test has a separate gate for this (it
+     states a bilateral deficit outright); VEMP in this engine does not. Without naming this limit
+     the laboratory would teach that adding a deficit on the other side REPAIRS the first one.
+  4. VERTICAL CANALS. An isolated vertical-canal loss yields both a peripheral localization
+     (a nerve branch) and the entry "isolated vertical-torsional nystagmus — classically suspicious
+     for a central cause", because the HINTS battery computes the nystagmus from the HORIZONTAL
+     component only. That is a contradiction in the engine, not in the user’s reasoning — and the
+     screen says so.
+
+THE LABORATORY SHOWS NO VERDICT AND NO LOCALIZATION
+`clinicalReadout` computes them, and in the clinical pathway they make sense: there the picture
+comes FROM THE PATIENT and the model interprets it. In the laboratory the direction is REVERSED —
+the user sets the pathology with sliders, so "diagnosis: central" above those sliders is an echo of
+the input, not a result. The model keeps an explicit list of forbidden fields
+(`POLA_ZAKAZANE_W_LAB`) and the DOM oracle checks that none of them reached the screen. The screen
+shows the EXAMINATION FINDINGS and states outright that this is not a diagnosis.
+
+ACCEPTANCE CRITERION 1 — TWO MEASUREMENTS INSTEAD OF A LIST OF SCREENS
+A hand-written list of screens always goes stale, so the gate measures something else:
+  1. the full clinical pathway closes without entering the laboratory and without touching its state;
+  2. an ENTIRE experiment — opening it, sliders, the second bench, the comparison, the reset,
+     expanding a description — changes NOT ONE of the 29 fields describing the patient and NOT ONE
+     of the 16 fields of the HINTS simulator.
+The second measurement cannot be evaded by adding a new control. Its precondition was giving the
+laboratory ITS OWN state fields (`labA`, `labB`, `labEksperyment`, …) instead of writing to
+`hintsCustom`: had the experiment written to the simulator’s fields, the leak would live in the
+DATA MODEL and there would be no two things to compare.
+
+TWO BENCHES
+Comparing two pathologies, as the desktop layout requires, needs TWO patients at once, so the
+laboratory has benches A and B. A single global parameter set could not carry it: the user would
+convert one pathology into the other and compare it against memory.
+
+REFERENCE SCENARIOS — ALWAYS AS A COPY
+The eight experiments stand on the ENGINE’s scenarios (`normal`, `neuritisR`, `strokeCentral`,
+`bvh`), not on their own definitions of the pathologies. The injector hands out a scenario ONLY as
+a copy: `NeuroVOR.SCENARIOS` is a shared constant, and a reference that can be changed is not
+a reference — the "return to the reference" button would then return to an already poisoned value.
+The reset is checkable: after it, the list of deviations must be EMPTY. And every deviation carries
+its OWN counterfactual measurement: what changes if that ONE parameter returns to the reference.
+Without it, the list of deviations would teach false causality — the reader would attribute the
+whole picture to each deviation separately.
+
+WHAT THE GATES CAUGHT ALONG THE WAY
+  · The navigation highlighted "Diagnostics" while the user stood in the laboratory: `syncShell`
+    OVERWRITES `state.area` with the result of `areaZeStanu`, which did not know the `lab` mode
+    (measured: `goLab()` gave area='lab', while `goArea('lab')` ended with area='diag').
+  · A golden key named `hints` had long been capturing the chrome of the QUALIFICATION screen
+    rather than the simulator — `goHintsKwal()` calls `render()` but not `syncShell()`, so the
+    shell attributes stayed from the previous pass. The scenario now takes the full route and
+    closes with `syncShell()`.
+  · The module purity gate fired on the clinical "third window": superior canal dehiscence IS
+    a third window of the labyrinth and that phrase has every right to stand in a parameter
+    description. The gate now looks for USE IN CODE (`window.`) rather than the word — with
+    a sensitivity control in both directions.
+  · The first version of the "what is normal" gate demanded the word "normal" and threw out two
+    parameters that HAVE no normal: compensation 0–1 is not a deviation from health but two equally
+    true states. The gate now measures the property, not the word: a description must PIN
+    A SPECIFIC NUMBER TO A MEANING.
+
+WHAT THIS BLOCK DOES NOT DO
+  · It changes not a single number in the engine and adds not a single parameter.
+  · It makes no diagnosis and shows no verdict.
+  · It has not a single text field (a range slider is not a text field).
+  · It is not needed to complete basic diagnostics — and that is measured by two independent
+    measurements, not declared.

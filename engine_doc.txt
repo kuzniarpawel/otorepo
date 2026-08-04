@@ -1461,3 +1461,112 @@ CZEGO TEN BLOK NIE ROBI
   • Nie ma ani jednego pola tekstowego na żadnym z ekranów nauki, więc wpisanie danych pacjenta
     jest strukturalnie niemożliwe — ta sama zasada, co w Blokach 8, 11 i 12.
   • Nie mierzy czasu rozwiązywania i nie zapisuje niczego poza identyfikatorami ze słowników.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+LABORATORIUM NEUROOTOLOGICZNE — STANOWISKO, NIE PACJENT (Blok 14)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Bramki: npm run lab:check (czysty model, gołe Node, 557 przypadków) i npm run lab:dom (jsdom,
+prawdziwy graf modułów, 47 przypadków).
+
+CO ZMIERZONO PRZED NAPISANIEM CZEGOKOLWIEK
+  · Kryterium odbioru nr 1 BYŁO JUŻ SPEŁNIONE: na dziewięciu ekranach ścieżki klinicznej jest zero
+    kontrolek laboratoryjnych, a pełny przebieg wywiad → próba → oczopląs → interpretacja → manewr
+    → kontrola przechodzi bez tknięcia stanu matematycznego pacjenta. Robota polegała więc na
+    zamienieniu tego pomiaru w STAŁĄ BRAMKĘ, zanim któryś przyszły blok cicho go złamie.
+  · Kryterium odbioru nr 2 NIE BYŁO spełnione w ogóle: silnik ma 27 parametrów w 8 grupach,
+    wszystkie mają zakres, ale 14 nie miało jednostki, a OPIS miał 0 z 27. Grupy miały po jednym
+    zdaniu pomocy; parametry nie miały nic.
+  · Kryterium odbioru nr 3 okazało się WYLICZALNE: `clinicalReadout` zwraca czternaście pól,
+    a różnica dwóch odczytów mówi wprost, co się ruszyło.
+
+ZASADA: SKUTEK JEST MIERZONY, A NIE WPISANY
+Kusiło, żeby zrobić tabelę „parametr → skutek". Byłaby to DRUGA definicja fizjologii obok silnika
+i rozjechałaby się przy pierwszej zmianie równania. Zamiast tego Laboratorium liczy obraz kliniczny
+PRZED zmianą i PO niej, i pokazuje różnicę: które badanie zmieniło wynik i które zdanie opisu
+przyszło albo zniknęło. Bramka G9 zabrania wprost, żeby taka tabela kiedykolwiek powstała.
+Z 27 parametrów × 2 krańce × 2 konteksty kliniczne wyrocznia sprawdza, że każdy parametr albo
+COŚ RUSZA, albo sam deklaruje, czego brakuje, żeby go było widać. Suwak, który nic nie robi i nie
+mówi dlaczego, uczy, że fizjologia jest przypadkowa.
+
+BRAK SKUTKU JEST WYNIKIEM, NIE AWARIĄ
+Zmierzone: supresja fiksacyjna u zdrowego nie zmienia obrazu, bo nie ma oczopląsu, który dałoby się
+stłumić. Ekran mówi to wprost i podaje powód ze słownika (`brakOczoplasu`, `brakStronyChorej`,
+`brakObrotu`, `brakBodzca`, `brakSpojrzeniaBocznego`). Powód jest polem PARAMETRU, a nie domysłem
+po fakcie — zgadywanie („pewnie dlatego, że…") byłoby wymyślaniem fizjologii, której model nie
+policzył.
+
+CZTERY GRANICE MODELU, KTÓRE ZNALAZŁA KRYTYKA — I DLACZEGO ZOSTAŁY NAZWANE, A NIE NAPRAWIONE
+Krytyka fizjologiczna uruchomiła silnik i pokazała cztery miejsca, w których opis parametru byłby
+NIEPRAWDĄ, gdyby napisać go wprost. Silnika w tym bloku NIE ZMIENIANO — zmiana równań jest decyzją
+kliniczną użytkownika, nie robotą przy interfejsie. Każda granica jest za to NAZWANA w opisie
+parametru i PRZYPIĘTA bramką (sekcja H wyroczni), więc naprawa silnika zapali wyrocznię i wymusi
+poprawkę opisu, zamiast zostawić komentarz, który po cichu stracił ważność:
+  1. NASYCENIE AFERENTU. Powyżej ok. 167 Hz tonu vHIT zaczyna wychodzić patologicznie MIMO
+     sprawnego kanału (zmierzone: ton 200 Hz + wzmocnienie 1,0 → zmierzony gain 0,63). To uderza
+     w najważniejszą dysocjację modułu: faza drażnienia w chorobie Ménière’a (~150 Hz) ma vHIT
+     PRAWIDŁOWY i to jest jej cecha odróżniająca.
+  2. SUWAK TO NIE ODCZYT. `gain` jest wzmocnieniem TRANSDUKCJI kanału; gain ZMIERZONY w pchnięciu
+     zależy dodatkowo od tonu. Sam silnik odwzorowuje PEŁNE wypadnięcie jako 0,35, a nie 0 —
+     zero jest krańcem modelu, nie stanem klinicznym.
+  3. VEMP JEST ASYMETRIĄ. Wyzerowanie obu woreczków KASUJE zdanie o VEMP z opisu badania, bo
+     wskaźnik asymetrii milknie. Próba kaloryczna ma na to osobną bramkę (mówi wprost o ubytku
+     obustronnym), VEMP w tym silniku jej nie ma. Bez nazwania tej granicy Laboratorium uczyłoby,
+     że dołożenie ubytku po drugiej stronie NAPRAWIA pierwszy.
+  4. KANAŁY PIONOWE. Izolowane wypadnięcie kanału pionowego daje równocześnie lokalizację obwodową
+     (gałąź nerwu) i wpis „izolowany oczopląs pionowo-skrętny — klasycznie podejrzany o ośrodek",
+     bo zestaw HINTS liczy oczopląs wyłącznie ze składowej POZIOMEJ. To sprzeczność w silniku,
+     nie w rozumowaniu użytkownika — i ekran tak ją nazywa.
+
+LABORATORIUM NIE POKAZUJE WERDYKTU ANI LOKALIZACJI
+`clinicalReadout` je liczy i w ścieżce klinicznej mają sens: tam obraz przychodzi OD PACJENTA,
+a model go interpretuje. W Laboratorium kierunek jest ODWROTNY — to użytkownik ustawia patologię
+suwakami, więc „rozpoznanie: ośrodkowe" nad tymi suwakami jest echem wejścia, a nie wynikiem.
+Model trzyma jawną listę pól zakazanych (`POLA_ZAKAZANE_W_LAB`), a wyrocznia DOM sprawdza, że
+żadne z nich nie trafiło na ekran. Ekran pokazuje OPIS BADANIA i mówi wprost, że to nie rozpoznanie.
+
+KRYTERIUM ODBIORU NR 1 — DWA POMIARY ZAMIAST LISTY EKRANÓW
+Ręczna lista ekranów zawsze się zestarzeje, więc bramka mierzy co innego:
+  1. pełny przebieg kliniczny domyka się bez wejścia do Laboratorium i bez tknięcia jego stanu;
+  2. CAŁY eksperyment — otwarcie, suwaki, drugie stanowisko, porównanie, reset, rozwinięcie opisu —
+     nie zmienia ANI JEDNEGO z 29 pól opisujących pacjenta ANI JEDNEGO z 16 pól symulatora HINTS.
+Drugiego pomiaru nie da się obejść, dokładając nową kontrolkę. Warunkiem jego istnienia było
+oddanie Laboratorium WŁASNYCH pól stanu (`labA`, `labB`, `labEksperyment`, …) zamiast pisania do
+`hintsCustom`: gdyby eksperyment pisał do pól symulatora, przeciek siedziałby w MODELU DANYCH
+i nie byłoby dwóch rzeczy, które można porównać.
+
+DWA STANOWISKA
+Porównanie dwóch patologii z układu „komputer" wymaga DWÓCH pacjentów naraz, więc Laboratorium ma
+stanowiska A i B. Jeden globalny zestaw parametrów by tego nie udźwignął: użytkownik przestawiałby
+jedną patologię w drugą i porównywał ją z pamięcią.
+
+SCENARIUSZE REFERENCYJNE — ZAWSZE JAKO KOPIA
+Osiem eksperymentów stoi na scenariuszach SILNIKA (`normal`, `neuritisR`, `strokeCentral`, `bvh`),
+nie na własnych definicjach patologii. Wstrzykiwacz wydaje scenariusz WYŁĄCZNIE jako kopię:
+`NeuroVOR.SCENARIOS` to współdzielona stała, a referencja, którą da się zmienić, nie jest
+referencją — przycisk „wróć do referencji" wracałby wtedy do wartości już zatrutej.
+Reset jest sprawdzalny: po nim lista odchyleń musi być PUSTA. A każde odchylenie niesie WŁASNY
+pomiar kontrfaktyczny: co zmieni się, jeśli ten JEDEN parametr wróci do referencji. Bez tego lista
+odchyleń uczyłaby fałszywej przyczynowości — czytelnik przypisywałby cały obraz każdemu
+odchyleniu z osobna.
+
+CO ZŁAPAŁY BRAMKI PO DRODZE
+  · Nawigacja podświetlała „Diagnostykę", gdy użytkownik stał w Laboratorium: `syncShell`
+    PRZEPISUJE `state.area` wynikiem `areaZeStanu`, a ta nie znała trybu `lab` (zmierzone:
+    `goLab()` dawał area='lab', a `goArea('lab')` kończył z area='diag').
+  · Klucz złotego wzorca o nazwie `hints` od dawna zrzucał chrom EKRANU KWALIFIKACJI, a nie
+    symulatora — `goHintsKwal()` woła `render()`, ale nie `syncShell()`, więc atrybuty powłoki
+    zostawały z poprzedniego przejścia. Teraz scenariusz wchodzi pełną drogą i domyka `syncShell()`.
+  · Bramka czystości modułu zapaliła się na klinicznym „third window": dehiscencja kanału górnego
+    JEST trzecim oknem błędnika i to słowo ma prawo stać w opisie parametru. Bramka szuka teraz
+    UŻYCIA W KODZIE (`window.`), a nie słowa — z kontrolą czułości w obie strony.
+  · Pierwsza wersja bramki „co jest normą" wymagała słowa „norma" i wywaliła dwa parametry, które
+    normy NIE MAJĄ: kompensacja 0–1 to nie odchylenie od zdrowia, tylko dwa równie prawdziwe stany.
+    Bramka mierzy teraz własność, a nie słowo: opis ma PRZYPIĄĆ KONKRETNĄ LICZBĘ DO ZNACZENIA.
+
+CZEGO TEN BLOK NIE ROBI
+  · Nie zmienia ani jednej liczby w silniku i nie dokłada ani jednego parametru.
+  · Nie stawia rozpoznania i nie pokazuje werdyktu.
+  · Nie ma ani jednego pola tekstowego (suwak zakresu nie jest polem tekstowym).
+  · Nie jest potrzebny do zakończenia podstawowej diagnostyki — i to jest zmierzone dwoma
+    niezależnymi pomiarami, a nie zadeklarowane.
