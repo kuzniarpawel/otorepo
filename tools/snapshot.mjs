@@ -133,6 +133,10 @@ const HANDLE_NAMES = [
   // Blok 11 — krok „Kontrola" po manewrze. Brak = handleMissing = twardy exit(1): ekran, ktorego
   // nie da sie wysterowac z testu, nie bylby przypiety zadna wyrocznia.
   'goKontrola', 'ustawWynikKontroli', 'ustawPowodKontroli', 'kontrolaAkcja', 'pytajOZakonczeniu', 'zakonczSesje',
+  // Blok 13 — tryb nauki. Ekran, ktorego nie da sie wysterowac z testu, nie bylby przypiety zadna
+  // wyrocznia; brak uchwytu = handleMissing = twardy exit(1), a nie ciche zwezenie pokrycia.
+  'goNauka', 'otworzPrzypadek', 'wrocDoBiblioteki', 'ustawFiltrNauki', 'goEtapNauki',
+  'odpowiedzNauki', 'wskazowkaNauki', 'zakonczPrzypadek', 'wyczyscPostepNauki',
 ];
 function makeHandle(win) {
   if (win.__OTOREPO_TEST__) return win.__OTOREPO_TEST__;
@@ -665,6 +669,62 @@ function domOracle(h, win) {
     czystyH();
   }
 
+  /* ═══ BLOK 13 — TRYB NAUKI ═══
+     Dwa ekrany i cala lekcja przypinane AKCJAMI, nie wstrzyknieciem stanu: kryterium odbioru
+     nr 1 mowi o tym, czego NIE MA w DOM przed decyzja, wiec scenariusz musi przejsc dokladnie ta
+     droga, ktora idzie uzytkownik. Postep NIE jest czytany z pamieci przegladarki — `czystyN`
+     przypina go jawnie, zeby zloty wzorzec zostal deterministyczny. */
+  if (h.goNauka && h.otworzPrzypadek) {
+    const czystyN = () => {
+      h.state.naukaPrzypadek = null; h.state.naukaEtap = null; h.state.naukaOdp = {};
+      h.state.naukaWskazowki = []; h.state.naukaFiltr = { poziom: null, rodzaj: null };
+      h.state.naukaPostep = {}; h.state.naukaBlad = null; h.state.naukaZapisBlad = null;
+    };
+    grab('nauka/biblioteka', () => { czystyN(); h.goNauka(); });
+    grab('nauka/filtr-osrodkowy', () => { czystyN(); h.goNauka(); h.ustawFiltrNauki('rodzaj', 'osrodkowy'); });
+    grab('nauka/filtr-podstawowy', () => { czystyN(); h.goNauka(); h.ustawFiltrNauki('poziom', 'podstawowy'); });
+    // Etap „opis" — zapis obserwacji ZASLONIETY. To jest kryterium odbioru nr 1 w DOM.
+    grab('nauka/opis', () => { czystyN(); h.otworzPrzypadek('pc-p-klasyk'); });
+    grab('nauka/przewidywanie-przed', () => { czystyN(); h.otworzPrzypadek('pc-p-klasyk'); h.goEtapNauki('przewidywanie'); });
+    grab('nauka/wskazowka', () => { czystyN(); h.otworzPrzypadek('pc-p-klasyk'); h.goEtapNauki('przewidywanie'); h.wskazowkaNauki('przewidywanie'); });
+    grab('nauka/przewidywanie-trafna', () => {
+      czystyN(); h.otworzPrzypadek('pc-p-klasyk'); h.goEtapNauki('przewidywanie');
+      h.odpowiedzNauki('przewidywanie', '0,1,1#-');
+    });
+    grab('nauka/przewidywanie-zla-strona', () => {
+      czystyN(); h.otworzPrzypadek('pc-p-klasyk'); h.goEtapNauki('przewidywanie');
+      h.odpowiedzNauki('przewidywanie', '0,1,-1#-');
+    });
+    // Etap rozpoznania na przypadku OSRODKOWYM: kandydatura przezyla, wiec jest dopuszczalna,
+    // a trafna jest „obraz nietypowy". To jest najwazniejszy pojedynczy ekran calego bloku.
+    grab('nauka/osrodkowy-rozpoznanie', () => {
+      czystyN(); h.otworzPrzypadek('downbeat-staly'); h.goEtapNauki('przewidywanie');
+      h.odpowiedzNauki('przewidywanie', '0,-1,0#-'); h.goEtapNauki('rozpoznanie');
+      h.odpowiedzNauki('rozpoznanie', 'anterior:P');
+    });
+    grab('nauka/osrodkowy-manewr', () => {
+      czystyN(); h.otworzPrzypadek('downbeat-staly'); h.goEtapNauki('przewidywanie');
+      h.odpowiedzNauki('przewidywanie', '0,-1,0#-'); h.goEtapNauki('rozpoznanie');
+      h.odpowiedzNauki('rozpoznanie', 'obrazNietypowy'); h.goEtapNauki('mechanizm');
+      h.odpowiedzNauki('mechanizm', 'nieRozstrzygaSie'); h.goEtapNauki('manewr');
+      h.odpowiedzNauki('manewr', 'yacovino');
+    });
+    // Mechanizm NIEROZSTRZYGNIETY — ekran musi to nazwac (kryterium odbioru nr 4).
+    grab('nauka/mechanizm-nierozstrzygniety', () => {
+      czystyN(); h.otworzPrzypadek('pc-bez-dynamiki'); h.goEtapNauki('przewidywanie');
+      h.odpowiedzNauki('przewidywanie', '0,1,1#-'); h.goEtapNauki('rozpoznanie');
+      h.odpowiedzNauki('rozpoznanie', 'posterior:P'); h.goEtapNauki('mechanizm');
+      h.odpowiedzNauki('mechanizm', 'canalo');
+    });
+    // Przypadek rozwiazany do konca — karta wyniku jako PROFIL etapow, nigdy jako liczba.
+    grab('nauka/wynik', () => {
+      czystyN(); h.otworzPrzypadek('pc-p-klasyk');
+      const odp = { przewidywanie: '0,1,1#-', rozpoznanie: 'posterior:P', mechanizm: 'canalo', manewr: 'epley', kontrola: 'zakonczSesje' };
+      for (const [e, v] of Object.entries(odp)) { h.goEtapNauki(e); h.odpowiedzNauki(e, v); }
+    });
+    czystyN();
+  }
+
   return out;
 }
 
@@ -705,6 +765,12 @@ function shellOracle(h, win) {
     // Blok 12: odpowiedzi badania HINTS i pominięcie kwalifikacji też PRZEŻYWAJĄ nawigację.
     st.hintsBadanie = {}; st.hintsPowodNiewiar = null; st.hintsPominiecie = null;
     st.hintsPrzeszkolenie = null; st.hintsKrok = null; st.hintsBlad = null; st.hintsCustom = null;
+    // Blok 13: postep nauki i odpowiedzi lekcji tez PRZEZYWAJA nawigacje (postep celowo, bo jest
+    // wczytywany z pamieci przegladarki). Bez wyzerowania TUTAJ scenariusze wyciekalyby jeden na
+    // drugi, a zloty wzorzec zaczalby zalezec od kolejnosci blokow w tym pliku.
+    st.naukaPrzypadek = null; st.naukaEtap = null; st.naukaOdp = {}; st.naukaWskazowki = [];
+    st.naukaFiltr = { poziom: null, rodzaj: null }; st.naukaPostep = {};
+    st.naukaBlad = null; st.naukaZapisBlad = null;
     try { if (h.resetTriage) h.resetTriage(); } catch { }
   };
 
@@ -724,13 +790,22 @@ function shellOracle(h, win) {
   grab('guide/epley/P', () => { czysty(); h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P'); h.startManeuver && h.startManeuver('epley'); h.syncShell && h.syncShell(); });
   grab('learn', () => { czysty(); h.goArea && h.goArea('learn'); });
   grab('hints', () => { czysty(); h.goArea && h.goArea('lab'); });
+  /* Blok 13 — chrom nad LEKCJA. Ta sama rzecz, ktorej pilnujemy nad HINTS: pasek szesciu krokow
+     przebiegu klinicznego nie ma prawa stanac nad przypadkiem dydaktycznym. */
+  grab('naukaLekcja', () => { czysty(); h.goArea && h.goArea('learn'); h.otworzPrzypadek && h.otworzPrzypadek('pc-p-klasyk'); h.syncShell && h.syncShell(); });
   /* Blok 12 — chrom nad trzema nowymi ekranami. Pilnujemy tu JEDNEJ rzeczy, której nie widzi
      żadna inna warstwa: pasek sześciu kroków przebiegu klinicznego NIE MA PRAWA pojawić się nad
      HINTS. Ten pasek opisuje ścieżkę BPPV („Krok 2 z 6 — Próba"); postawiony nad różnicowaniem
      ostrego zespołu przedsionkowego mówiłby, że użytkownik jest w środku innego badania. */
-  grab('hintsKwal', () => { czysty(); h.goHintsKwal && h.goHintsKwal(); h.syncShell && h.syncShell(); });
+  /* OBSZAR PRZYPINANY JAWNIE (naprawa wykryta przez Blok 13). Te dwa klucze wolaly samo
+     `goHintsKwal()` i DZIEDZICZYLY `data-area` po poprzednim scenariuszu: dopoki obszar „Nauka"
+     byl zaslepka, wychodzilo z tego `lab`, a po ozywieniu nauki — `learn`. Wartosc zmieniala sie
+     wiec bez jednej zmiany w kodzie ekranow HINTS, czyli dokladnie ta sama pulapka „kolejnosc
+     blokow w tym pliku", ktora naprawiono juz przy kluczu `start`. Wchodzimy PRAWDZIWA droga:
+     `goArea('lab')` prowadzi do kwalifikacji (Blok 12), wiec scenariusz mowi, co znaczy. */
+  grab('hintsKwal', () => { czysty(); h.goArea && h.goArea('lab'); h.syncShell && h.syncShell(); });
   grab('hintsBad', () => {
-    czysty(); h.goHintsKwal && h.goHintsKwal(); h.pomijajKwalifikacje && h.pomijajKwalifikacje('nauka');
+    czysty(); h.goArea && h.goArea('lab'); h.pomijajKwalifikacje && h.pomijajKwalifikacje('nauka');
     h.zacznijBadanieHints && h.zacznijBadanieHints(); h.syncShell && h.syncShell();
   });
   /* Blok 8 — krok „Oczopląs" na WŁASNYM ekranie. Pasek przebiegu żyje w chromie POZA #app,
