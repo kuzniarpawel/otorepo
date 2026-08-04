@@ -15,9 +15,13 @@ import { nietypowy, interpretuj, sugerowaneProby, POWODY_NIETYPOWOSCI, POWODY_ZG
 import { interpDeps as _interpDeps } from '../app/interp-deps.js';
 import { doborEkspercki, podpisWyboru, POLA_WYBORU, etapyManewru, czasUtrzymania, trybDoUstapieniaDostepny, POWOD_BRAKU_TRYBU, POWODY_CZASU, KRYTERIA, WYJSCIE_ZLOGA, opisPozycji } from '../app/man-model.js';
 import { manDeps } from '../app/man-deps.js';
-import { WYNIKI, AKCJE, wynikKontroli, nastepneKroki, kontrolaMozliwa, spojnoscWyniku,
+import { WYNIKI, TOLERANCJE, AKCJE, wynikKontroli, nastepneKroki, kontrolaMozliwa, spojnoscWyniku,
          podsumowanieSesji, streszczenieKontroli } from '../app/followup-model.js';
 import { followupDeps } from '../app/followup-deps.js';
+import { raport, tekst, sekcja as sekcjaOpisu, domyslneSekcje, podpisSesji } from '../app/opis-model.js';
+import { opisDeps } from '../app/opis-deps.js';
+import { KOMUNIKATY_OPISU, BLEDY_OPISU } from '../app/opis-state.js';
+import { POWODY_ZAPISU_SESJI } from '../app/opis-store.js';
 import { ELEMENTY, ELEMENT_IDS, elementHints, opcjaHints, kwalifikacjaHints, STANY_KWALIFIKACJI,
          POWODY_POMINIECIA, PRZESZKOLENIE, POWODY_NIEWIARYGODNOSCI_HINTS, SPRZEZENIA,
          podsumowanieHints, odpowiedziHints, postepBadania, wagaOdpowiedzi } from '../app/hints-model.js';
@@ -717,6 +721,7 @@ function render(){
   else if(state.screen==="obs") renderObs();
   else if(state.screen==="interpret") renderInterpret();
   else if(state.screen==="followup") renderFollowup();
+  else if(state.screen==="opis") renderOpis();
   else if(state.screen==="hintsKwal") renderHintsKwal();
   else if(state.screen==="hintsBad") renderHintsBad();
   else if(state.screen==="hintsWyn") renderHintsWyn();
@@ -1323,6 +1328,21 @@ function renderFollowup(){
     </div>`;
   };
 
+  /* TOLERANCJA MANEWRU (Blok 15). Osobna karta, bo to osobne pytanie: „co widzisz teraz" dotyczy
+     oczopląsu, a to — pacjenta. Stoi PRZED kartą „Co dalej", bo klinicysta widzi reakcję zaraz po
+     manewrze, a wynik kontroli dopiero po ponownej próbie. Brak odpowiedzi zostaje BRAKIEM:
+     opis badania napisze „nie odnotowano", a nie „zniósł dobrze". */
+  const kartaTolerancji = ()=>{
+    if(!mozliwa.mozliwa) return "";
+    const idx = m ? m.kontrolaIdx : null;
+    const biezacy = idx!=null && (state.kontrole||[])[idx] ? state.kontrole[idx] : null;
+    const wybrana = biezacy ? biezacy.tolerancja : null;
+    return `<div class="card futol" data-futol><h4>${t("Jak pacjent zniósł manewr?","How did the patient tolerate the maneuver?")}</h4>
+      <div class="note">${t("Odpowiedź dotyczy TEGO manewru, nie całej sesji — w serii powtórzeń tolerancja bywa różna. Pytanie jest nieobowiązkowe; bez odpowiedzi opis badania napisze „nie odnotowano”.","The answer concerns THIS maneuver, not the whole session — in a series of repetitions tolerance can differ. The question is optional; without an answer the report will say “not recorded”.")}</div>
+      <div class="futol__l">${TOLERANCJE.map(x=>`<button type="button" class="futol__b" aria-pressed="${wybrana===x.id}" onclick="ustawTolerancjeKontroli('${x.id}')">${t(x.pl, x.en)}</button>`).join("")}</div>
+    </div>`;
+  };
+
   const kartaDalej = ()=>{
     if(!wybrany || !kroki) return "";
     const przycisk = (a, klasa)=>`<button class="${klasa}" onclick="kontrolaAkcja('${a}')">${t(AKCJE[a].pl, AKCJE[a].en)}</button>`;
@@ -1396,8 +1416,13 @@ function renderFollowup(){
     return `<div class="card fukonczenie"><h4>${t("Zakończyć sesję?","End the session?")}</h4>
       <dl class="fupods">${poz.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
       ${p.manewrBezKontroli?`<div class="note">${t("Ostatni manewr nie ma zapisanej kontroli — w podsumowaniu zostanie luka.","The last maneuver has no recorded control — the summary will have a gap.")}</div>`:""}
-      <div class="note">${t("Podsumowanie żyje wyłącznie w tej sesji: aplikacja nie zapisuje go na urządzeniu i nigdzie nie wysyła. Zakończenie kasuje dane przypadku i zostawia ustawienia narzędzia. Nigdzie nie pytamy o dane pacjenta i nie ma gdzie ich wpisać.","The summary lives only in this session: the app does not store it on the device and does not send it anywhere. Ending clears the case data and keeps the tool's settings. We never ask for patient data and there is nowhere to enter it.")}</div>
+      ${/* ZDANIE POPRAWIONE W BLOKU 15. Do tego bloku brzmiało „aplikacja nie zapisuje go na
+            urządzeniu" — i było prawdą, bo nie było czym zapisać. Od Bloku 15 zapis istnieje,
+            więc zdanie stałoby się nieprawdziwe dokładnie w miejscu, w którym użytkownik pyta
+            o prywatność. Zapis jest DOBROWOLNY i lokalny, i tak to teraz brzmi. */""}
+      <div class="note">${t("Aplikacja nie wysyła niczego poza urządzenie. Przypadek zostaje w pamięci przeglądarki TYLKO wtedy, gdy sam zapiszesz sesję; bez tego zakończenie kasuje dane przypadku i zostawia ustawienia narzędzia. Nigdzie nie pytamy o dane pacjenta i nie ma gdzie ich wpisać.","The app sends nothing off the device. The case stays in the browser's storage ONLY if you save the session yourself; otherwise ending clears the case data and keeps the tool's settings. We never ask for patient data and there is nowhere to enter it.")}</div>
       <div class="fukonczenie__r">
+        <button class="recoalt" onclick="goOpis()">${t("Opis badania i zapis","Report and save")}</button>
         <button class="recoprimary" onclick="zakonczSesje()">${t("Zakończ i wyczyść","End and clear")}</button>
         <button class="recoalt" onclick="pytajOZakonczeniu(false)">${t("Wróć","Back")}</button>
       </div>
@@ -1409,14 +1434,114 @@ function renderFollowup(){
       <div class="ttl"><b>${t("Kontrola po manewrze","Post-maneuver control")}</b><span>${podpis}</span></div></div>
     <div class="pagegrid"><div class="col col--ctl">
       ${kartaPytania()}
+      ${kartaTolerancji()}
       ${kartaDalej()}
       ${kartaZakonczenia()}
       ${kartaKoniec()}
     </div><div class="col col--viz">
       ${fuPorownanie(m)}
       ${kartaSerii()}
+      ${kartaOpisu()}
     </div></div>
     <p class="footnote">${t("Wynik kontroli nie jest rozpoznaniem ani oceną skuteczności leczenia. Narzędzie jest edukacyjne — rozstrzyga badanie kliniczne.","A control result is neither a diagnosis nor an assessment of treatment efficacy. This is an educational tool — the clinical examination decides.")}</p>`;
+}
+
+/* ============ GENERATOR OPISU BADANIA I ZAPIS SESJI (Blok 15) ============
+   Dokument, komputer: „Podgląd opisu i formularz znajdują się obok siebie. Możliwa edycja tekstu
+   przed skopiowaniem". Telefon: „Podgląd jako osobny ekran z dużym przyciskiem »Kopiuj«. Sekcje
+   opisu można włączać i wyłączać przełącznikami".
+
+   CAŁA treść opisu pochodzi z opis-model.js. Ten ekran nie skleja ANI JEDNEGO zdania klinicznego
+   — gdyby sklejał, opis w podglądzie mógłby się różnić od skopiowanego, a to jest dokładnie ten
+   błąd, którego w dokumentacji medycznej nikt nie zauważy. */
+/* Ucieczka HTML. Potrzebna PIERWSZY RAZ w tej aplikacji dopiero tutaj, bo dopiero tutaj do
+   dokumentu trafia napis, którego nie napisał programista: tekst opisu po ręcznej edycji. */
+const esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const oDeps = () => opisDeps(state);
+function raportBiezacy(){ return raport(state, oDeps()); }
+export function tekstOpisu(){
+  return tekst(raportBiezacy(), { wlaczone: state.opisSekcje || domyslneSekcje() });
+}
+// Tekst DO SKOPIOWANIA: wersja użytkownika, jeśli edytował; inaczej wyliczona. Jedno miejsce,
+// żeby podgląd i schowek nie mogły się rozjechać.
+export function tekstOpisuDoKopiowania(){ return state.opisEdycja != null ? state.opisEdycja : tekstOpisu(); }
+
+function kartaOpisu(){
+  const r = raportBiezacy();
+  return `<div class="card opiskarta" data-opiskarta><h4>${t("Opis badania","Examination report")}</h4>
+    <div class="note">${t("Opis powstaje z tego, co zapisano w krokach — nie jest osobnym dokumentem i nie da się w nim niczego dopisać na stałe.","The report is built from what the steps recorded — it is not a separate document and nothing can be permanently added to it.")}</div>
+    <div class="opiskarta__n">${t("Sekcje z treścią","Sections with content")}: <b>${r.zNoweTresci}</b> / ${r.sekcje.length}</div>
+    <button class="recoprimary" onclick="goOpis()">${t("Otwórz opis badania","Open the report")}</button>
+  </div>`;
+}
+
+function renderOpis(){
+  const r = raportBiezacy();
+  const wl = state.opisSekcje || domyslneSekcje();
+  const edytuje = state.opisEdycja != null;
+  const podglad = tekstOpisuDoKopiowania();
+  const sesje = Array.isArray(state.opisSesje) ? state.opisSesje : [];
+
+  const kartaPrzelacznikow = ()=>`<div class="card opissek"><h4>${t("Sekcje opisu","Report sections")}</h4>
+    <div class="note">${t("Wyłączona sekcja znika z tekstu w całości. Zastrzeżenia o charakterze narzędzia wyłączyć się nie da.","A disabled section disappears from the text entirely. The disclaimer about the tool's nature cannot be disabled.")}</div>
+    <ul class="opissek__l">${r.sekcje.map(sek=>{
+      const zawartosc = sek.wiersze.filter(w=>w.wartosc!=null).length;
+      const on = sek.obowiazkowa || wl.includes(sek.id);
+      return `<li><button type="button" class="opissek__b" role="switch" aria-checked="${on}" ${sek.obowiazkowa?'disabled':''}
+        onclick="przelaczSekcjeOpisu('${sek.id}')" data-osek="${sek.id}">
+        <span class="opissek__n">${t(sek.tytul.pl, sek.tytul.en)}</span>
+        <span class="opissek__c">${sek.obowiazkowa?t("zawsze","always"):`${zawartosc}/${sek.wiersze.length}`}</span></button></li>`;
+    }).join("")}</ul></div>`;
+
+  const kartaDzialan = ()=>`<div class="card opisakcje"><h4>${t("Co dalej z opisem","What to do with the report")}</h4>
+    <button class="cta opisakcje__kop" onclick="kopiujOpis()">${t("Kopiuj opis","Copy the report")}</button>
+    <div class="opisakcje__r">
+      <button class="recoalt" onclick="eksportujOpis()">${t("Eksportuj zapis ustrukturyzowany","Export a structured record")}</button>
+      <button class="recoalt" onclick="zapiszSesjeOpisu()">${t("Zapisz sesję na tym urządzeniu","Save the session on this device")}</button>
+    </div>
+    ${state.opisKomunikat?`<div class="opiskom" role="status" data-okom>${t(KOMUNIKATY_OPISU[state.opisKomunikat].pl, KOMUNIKATY_OPISU[state.opisKomunikat].en)}</div>`:""}
+    ${state.opisBlad?`<div class="opisblad" role="status" data-oblad>${(()=>{const b=POWODY_ZAPISU_SESJI[state.opisBlad]||BLEDY_OPISU[state.opisBlad]; return b?t(b.pl,b.en):state.opisBlad;})()}</div>`:""}
+    <div class="note">${t("Kopiowanie i eksport to JAWNE gesty — dopóki ich nie wykonasz, opis nie opuszcza tej karty przeglądarki. Aplikacja nie wysyła niczego do sieci.","Copying and exporting are EXPLICIT gestures — until you make one, the report does not leave this browser tab. The app sends nothing over the network.")}</div>
+  </div>`;
+
+  /* PODGLĄD I EDYCJA. Pole tekstowe jest pierwszym i jedynym w całej aplikacji — dlatego ekran
+     mówi WPROST, zanim ktoś zacznie pisać, że tekst nie jest zapisywany. */
+  const kartaPodgladu = ()=>`<div class="card opispodglad"><h4>${t("Podgląd opisu","Report preview")}</h4>
+    ${edytuje
+      ? `<textarea class="opispodglad__e" data-oedycja rows="18" spellcheck="false"
+           oninput="ustawEdycjeOpisu(this.value)">${esc(podglad)}</textarea>
+         <div class="opisostrz" data-oostrz>${t("Tekst zmieniony ręcznie NIE jest nigdzie zapisywany: nie wchodzi do zapisanej sesji ani do eksportu i zniknie po wyjściu z tego ekranu. Nie wpisuj danych identyfikujących pacjenta.","Manually edited text is NOT stored anywhere: it does not go into the saved session or the export, and it disappears when you leave this screen. Do not type patient-identifying data.")}</div>
+         <button class="recoalt" onclick="wrocDoWyliczonego()">${t("Wróć do wyliczonego opisu","Back to the generated report")}</button>`
+      : `<pre class="opispodglad__t" data-opodglad>${esc(podglad)}</pre>
+         <button class="recoalt" onclick="edytujOpis()">${t("Edytuj tekst przed skopiowaniem","Edit the text before copying")}</button>`}
+  </div>`;
+
+  const kartaSesji = ()=>`<div class="card opissesje"><h4>${t("Zapisane sesje","Saved sessions")}</h4>
+    <div class="note">${t("Zapis leży w pamięci tej przeglądarki i niesie WYŁĄCZNIE identyfikatory ze słowników aplikacji — nie ma w nim miejsca na dane pacjenta. Wszystkie zapisy skasujesz w ustawieniach.","The record lives in this browser's storage and carries ONLY identifiers from the app dictionaries — there is no place in it for patient data. You can delete all records in the settings.")}</div>
+    ${sesje.length
+      ? `<ul class="opissesje__l">${sesje.slice().reverse().map(rek=>{
+          const p = podpisSesji(rek, oDeps());
+          const napisy = (p||[]).map(x=> typeof x === 'string' ? x : t(x.pl, x.en));
+          return `<li data-osesja="${rek.id}"><span class="opissesje__p">${napisy.length?esc(napisy.join(" · ")):t("przypadek bez ustaleń","case with no findings")}</span>
+            <span class="opissesje__r">
+              <button type="button" class="recoalt" onclick="przywrocSesjeOpisu('${rek.id}')">${t("Odtwórz","Restore")}</button>
+              <button type="button" class="recoalt" onclick="usunSesjeOpisu('${rek.id}')">${t("Usuń","Delete")}</button>
+            </span></li>`;
+        }).join("")}</ul>`
+      : `<div class="opissesje__brak">${t("Nie ma jeszcze żadnego zapisu.","There are no saved records yet.")}</div>`}
+  </div>`;
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="goKontrola()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Opis badania i zapis sesji","Report and session record")}</b><span>${t("wyliczany na bieżąco ze stanu kroków","computed live from the state of the steps")}</span></div></div>
+    <div class="pagegrid"><div class="col col--ctl">
+      ${kartaPrzelacznikow()}
+      ${kartaDzialan()}
+      ${kartaSesji()}
+    </div><div class="col col--viz">
+      ${kartaPodgladu()}
+    </div></div>
+    <p class="footnote">${t("Opis jest zapisem tego, co wprowadzono w aplikacji, a nie rozpoznaniem. Narzędzie jest edukacyjne — rozstrzyga badanie kliniczne.","The report is a record of what was entered in the app, not a diagnosis. This is an educational tool — the clinical examination decides.")}</p>`;
 }
 
 /* ============ HINTS/HINTS+ Z KWALIFIKACJĄ (Blok 12) — trzy ekrany ============

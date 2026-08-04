@@ -56,6 +56,15 @@ const state={
   naukaPostep:{},           // postep per przypadek. Literal PUSTY: pamiec przegladarki wczytuje sie RAZ na boocie (nauka-store.js), wiec zloty wzorzec zostaje deterministyczny
   naukaBlad:null,           // powod ODMOWY zapisu odpowiedzi — ekran musi powiedziec, ze nie przyjal i dlaczego
   naukaZapisBlad:null,      // powod odmowy zapisu postepu (straznik danych albo brak pamieci)
+  // --- Blok 15: GENERATOR OPISU I ZAPIS SESJI. Czyta je src/app/opis-model.js (czysty), pisze
+  //     WYLACZNIE src/app/opis-state.js. Zadne z tych pol nie trzyma GOTOWEGO TEKSTU opisu poza
+  //     `opisEdycja` — opis jest LICZONY przy kazdym renderze, bo tekst zapamietany przezyje
+  //     zmiane rozpoznania i uzytkownik skopiuje do dokumentacji zdanie, ktore przestalo byc prawda.
+  opisSekcje:null,          // wlaczone sekcje opisu (null = wszystkie nieobowiazkowe)
+  opisEdycja:null,          // ULOTNA reczna wersja tekstu; NIGDY nie trafia do pamieci ani eksportu
+  opisSesje:[],             // wczytane zapisy sesji. Literal PUSTY: pamiec czytamy RAZ na boocie
+  opisBlad:null,            // powod ODMOWY zapisu/odtworzenia — ekran ma powiedziec, ze nie zapisal
+  opisKomunikat:null,       // pokwitowanie wykonanej czynnosci (zapisano/przywrocono/usunieto)
   view3d:false,                                    // karta „Ułożenie": 3D (WebGL) vs SVG. Literał=false (golden bez WebGL); Etap 5: main.js ustawia true na boot gdy webglAvailable()
   lang:"en",                                       // język UI: 'en' (domyślny) | 'pl'. Literał=EN; main.js initLang() ustawia wg locale/wyboru na boot. t(pl,en) w src/i18n.js czyta to pole (golden przypina 'pl' w snapshot.mjs)
   // --- Powłoka aplikacji (Blok 1/3). Pola czytane WYŁĄCZNIE przez src/app/shell.js; żadna

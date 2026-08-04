@@ -139,6 +139,11 @@ function syncSheet() {
     b.setAttribute('aria-pressed', String(b.getAttribute('data-lang-set') === state.lang)));
   const m = s.querySelector('[data-motion-toggle]');
   if (m) m.setAttribute('aria-checked', String(!!state.reducedMotion));
+  // Liczba zapisow i etykieta kasowania odbijaja STAN, a nie chwile zbudowania arkusza.
+  const ile = s.querySelector('[data-sesje-ile]');
+  if (ile) ile.textContent = String((state.opisSesje || []).length);
+  const del = s.querySelector('[data-sesje-usun]');
+  if (del) { del.removeAttribute('data-potwierdz'); del.textContent = t('Usun wszystkie', 'Delete all'); }
 }
 
 // Ograniczenie ruchu: własny przełącznik NIEZALEŻNY od ustawienia systemowego (klinicysta może
@@ -200,6 +205,15 @@ export function mountNav(deps = {}) {
             <div class="pillseg"><button type="button" data-lang-set="pl" aria-pressed="false">PL</button><button type="button" data-lang-set="en" aria-pressed="false">EN</button></div></div>
           <div class="switchrow"><span>${t('Ogranicz animacje', 'Reduce motion')}</span>
             <button type="button" class="toggle" role="switch" data-motion-toggle aria-checked="false" aria-label="${t('Ogranicz animacje', 'Reduce motion')}"></button></div>
+          ${/* BLOK 15, KRYTERIUM ODBIORU NR 3: „użytkownik może usunąć wszystkie zapisane sesje
+                z ustawień". Miejsce nie jest kosmetyką — kasowanie danych ma być tam, gdzie się go
+                szuka, a nie na ekranie, do którego trzeba wejść przez zakończoną sesję. Liczba
+                zapisów stoi przy przycisku, bo „usuń wszystko" bez powiedzenia ILE jest gestem
+                w ciemno. */''}
+          <div class="switchrow"><span>${t('Zapisane sesje', 'Saved sessions')} <b data-sesje-ile>${(state.opisSesje || []).length}</b></span>
+            <button type="button" class="toggle toggle--del" data-sesje-usun>${t('Usuń wszystkie', 'Delete all')}</button></div>
+          <p class="note" data-sesje-nota>${t('Zapisy leżą wyłącznie w pamięci tej przeglądarki i niosą same identyfikatory ze słowników aplikacji. Usunięcie jest nieodwracalne.',
+                                              'The records live only in this browser and carry nothing but identifiers from the app dictionaries. Deletion cannot be undone.')}</p>
           <p class="note">${t('Narzędzie dydaktyczne dla personelu medycznego. Nie zastępuje badania ani decyzji klinicysty.',
                               'An educational tool for medical staff. It does not replace examination or clinician judgment.')}</p>
           <button type="button" class="cta" data-sheet-close>${t('Zamknij', 'Close')}</button>
@@ -208,6 +222,20 @@ export function mountNav(deps = {}) {
         b.addEventListener('click', () => { A.setLangUI && A.setLangUI(b.getAttribute('data-lang-set')); }));
       const mt = s.querySelector('[data-motion-toggle]');
       if (mt) mt.addEventListener('click', () => setReducedMotion(!state.reducedMotion));
+      const del = s.querySelector('[data-sesje-usun]');
+      if (del) del.addEventListener('click', () => {
+        /* Kasowanie jest NIEODWRACALNE, wiec idzie przez potwierdzenie w dwoch krokach — ten sam
+           gest, co przy zakonczeniu sesji. Bez tego jedno dotkniecie sasiadujace z przelacznikiem
+           jezyka kasuje caly dorobek. */
+        if (del.getAttribute('data-potwierdz') !== '1') {
+          del.setAttribute('data-potwierdz', '1');
+          del.textContent = t('Na pewno usunac?', 'Really delete?');
+          return;
+        }
+        if (A.usunWszystkieSesjeOpisu) A.usunWszystkieSesjeOpisu();
+        del.removeAttribute('data-potwierdz');
+        syncSheet();
+      });
       s.querySelector('[data-sheet-close]').addEventListener('click', closeSheet);
     }
   } catch { /* jw. */ }
