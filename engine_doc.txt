@@ -1570,3 +1570,133 @@ CZEGO TEN BLOK NIE ROBI
   · Nie ma ani jednego pola tekstowego (suwak zakresu nie jest polem tekstowym).
   · Nie jest potrzebny do zakończenia podstawowej diagnostyki — i to jest zmierzone dwoma
     niezależnymi pomiarami, a nie zadeklarowane.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+GENERATOR OPISU BADANIA I ZAPIS SESJI — OPIS LICZONY, NIE PRZECHOWYWANY (Blok 15)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Bramki: npm run opis:check (czysty model, gołe Node, 353 przypadki) i npm run opis:dom (jsdom,
+prawdziwy graf modułów i prawdziwa pamięć przeglądarki, 95 przypadków).
+
+CO ZMIERZONO PRZED NAPISANIEM CZEGOKOLWIEK
+  · Na dziewięciu ekranach ścieżki klinicznej było ZERO kontrolek opisu, kopiowania i eksportu:
+    aplikacja nie produkowała ani jednego zdania do wklejenia w dokumentację.
+  · Po pełnym przebiegu wywiad → kontrola pamięć przeglądarki była PUSTA — przypadek nie
+    przeżywał odświeżenia karty.
+  · Wpis kontroli miał dziewięć pól i żadne nie niosło TOLERANCJI, której dokument wymaga
+    w opisie. Danej, której się nie zbiera, generator nie ma prawa wymyślić — więc powstało
+    jedno pytanie ze słownikiem zamkniętym, zadawane przy kontroli.
+  · W całym `src/` nie było ani jednego `fetch`, `XMLHttpRequest`, `sendBeacon` ani `WebSocket`
+    i nadal nie ma — pilnuje tego bramka skanująca tor zapisu.
+
+ZASADA: OPIS JEST LICZONY PRZY KAŻDYM RENDERZE
+Najprostszym sposobem złamania kryterium odbioru nr 1 („opis aktualizuje po zmianie rozpoznania")
+byłoby TRZYMANIE gotowego tekstu w stanie: każda zmiana rozpoznania zostawia wtedy w pamięci
+zdanie, które przestało być prawdą, a użytkownik kopiuje je do dokumentacji. Dlatego opis nie ma
+żadnego miejsca zapisu. Wyrocznia mierzy to mutacją: piętnaście zmian klinicznie znaczących
+(kanał, wartość i ŹRÓDŁO strony, mechanizm, obraz ośrodkowy, wynik kontroli, tolerancja, manewr,
+opis oczopląsu, wywiad, druga próba, druga kontrola) MUSI zmienić tekst, a sześć zmian
+nieklinicznych (tryb 3D, obszar, mapa kroków, rozwinięta grupa pytań, stanowisko Laboratorium,
+licznik decyzji) NIE MOŻE go ruszyć. Bez tej drugiej połowy bramka przechodziłaby też dla
+generatora, który wypisuje cały stan bez wyboru.
+
+ANI JEDNEGO SŁOWA KLINICZNEGO WŁASNEGO
+Generator nie zna nazwy żadnego kanału, manewru ani cechy oczopląsu — wszystkie etykiety wchodzą
+przez wstrzykiwacz ze słowników, z których korzystają ekrany. Własne napisy byłyby SZÓSTYM opisem
+tej samej wiedzy, a rozjazd trafiałby prosto do dokumentacji. Wyrocznia nie czyta kodu, tylko
+mierzy zachowanie: podmiana etykiety w słowniku MUSI zmienić tekst opisu (osiem etykiet + wartości
+opisu oczopląsu). Kontrola czułości pilnuje, żeby ten sam stan bez podmiany dawał tekst identyczny.
+
+NAJWAŻNIEJSZE ZDANIE TEGO BLOKU: „STRONA ZAJĘTA — NIEUSTALONE"
+`state.side` ma literał 'P', a `state.variant` literał 'canalo'. Obie wartości istnieją tylko
+dlatego, że animacja musi coś rysować, i żadnej użytkownik nie musi dotknąć — Blok 9 i 10
+zbudowały na to `variantZrodlo` i `sideZrodlo`. Generator, który wypisałby je jak ustalenia,
+wkładałby STRONNOŚĆ do dokumentacji medycznej na podstawie wartości domyślnej. Reguła jest więc
+twarda: w części „Interpretacja" strona i mechanizm pojawiają się WYŁĄCZNIE ze źródłem; bez źródła
+sekcja mówi „nieustalone" i nie podaje wartości. Stan `opis/bez-strony` jest PRZYPIĘTY w złotym
+wzorcu, więc ciche zamienienie tego zdania na „prawe" zapali wyrocznię.
+Osobną rzeczą jest strona WYKONANEGO manewru — to fakt („zrobiono to uchu prawemu"), a nie
+wniosek, więc wolno ją napisać. Zestawienie obu zdań jest informacją, a nie sprzecznością: leczono
+stronę, której nikt nie potwierdził.
+
+CZEGO OPIS NIE NIESIE
+  · Rad aplikacji. Model kwalifikacji niesie akapity zaleceń („rozważ MRI DWI") — one są dla
+    użytkownika NA EKRANIE. Opis badania jest zapisem tego, co zrobiono i co stwierdzono;
+    wklejanie do dokumentacji cudzych zaleceń podpisanych nazwiskiem klinicysty jest czymś innym.
+    Do opisu wchodzi TYTUŁ kwalifikacji, nie jej uzasadnienie.
+  · Instancji odrzuconych jako niewiarygodne — te wchodzą jako „opisano i odrzucono, powód X",
+    a nie jako stwierdzenie. Milczenie czytałoby się jako „nie patrzyliśmy".
+  · Znacznika czasu. Data badania jest daną dokumentacji, a nie odczytem z przeglądarki.
+  · Rozpoznania. Zastrzeżenie o charakterze narzędzia jest sekcją OBOWIĄZKOWĄ, której nie da się
+    wyłączyć przełącznikiem — także wtedy, gdy użytkownik wyłączy wszystkie pozostałe.
+
+PIERWSZE POLE TEKSTOWE W CAŁEJ APLIKACJI
+Dokument wymaga edycji tekstu przed skopiowaniem. Pole tekstowe jest jedynym miejscem, w które da
+się wpisać nazwisko pacjenta — do Bloku 15 nie było ich zero przez przypadek. Rozwiązaniem nie
+jest odmowa ani filtrowanie wpisanego tekstu (filtr nazwisk jest niemożliwy i wygląda jak
+obietnica), tylko TRWAŁOŚĆ:
+  · edycja żyje w `state.opisEdycja` i nie jest nigdzie zapisywana,
+  · zapis sesji bierze POLA PRZYPADKU, a nie tekst,
+  · eksport ustrukturyzowany bierze te same pola i przechodzi przez strażnika,
+  · wyjście z ekranu edycję kasuje, a ostrzeżenie stoi PRZY POLU, zanim ktoś zacznie pisać.
+Wyrocznia mierzy to BAJTAMI: po wpisaniu znacznika w pole i zapisaniu sesji pamięć przeglądarki
+nie może go zawierać. Osobna bramka pilnuje, że pól tekstowych jest DOKŁADNIE JEDNO: zero na
+ośmiu ekranach klinicznych i w modułach Nauki i Laboratorium, zero na ekranie opisu przed gestem
+„Edytuj", jedno po nim.
+
+STRAŻNIK DANYCH: REGUŁA STRUKTURALNA, NIE SŁOWNIKOWA
+Nie szukamy imion — wymagamy, żeby KAŻDA wartość zapisu była liczbą, wartością logiczną albo
+napisem ZE SŁOWNIKA. Napis spoza słownika jest naruszeniem niezależnie od tego, co znaczy, więc
+wpisanie nazwiska w jakiekolwiek pole nie ma jak przejść (40 prób w wyroczni, każda przez inną
+furtkę: pola przypadku, rekordy obserwacji, instancje, wywiad, wpisy kontroli, przebieg, wejścia
+odcisku). Strażnik ODRZUCA i mówi dlaczego, zamiast po cichu czyścić — cicha sanitacja wygląda jak
+zapis, którego nie było. Odcisk opisu (jedyna wartość wyliczana, a nie słownikowa) jest
+PRZELICZANY z rekordu i musi się zgadzać.
+
+CO ZAPISUJE SESJA, A CZEGO NIE ZAPISUJE
+Lista 29 pól przypadku — ta sama, którą Blok 14 bierze na odcisk, żeby udowodnić, że Laboratorium
+nie tyka pacjenta — jest teraz w JEDNYM miejscu i podzielona na dwie rozłączne części: 19 pól
+zapisu i 10 ulotnych. Wyrocznia sprawdza, że suma jest równa całości, więc pole dołożone
+w przyszłym bloku nie wypadnie z zapisu po cichu.
+Zegar i plan są ulotne NIE dla oszczędności miejsca: odtworzenie sesji z licznikiem w biegu
+mierzyłoby czas utrzymania pozycji, w której pacjenta dawno nie ma. Po odtworzeniu licznik stoi,
+plan jest przebudowany z klucza manewru, a ekran pokwitowania mówi wprost, że licznika NIE
+wznowiono.
+
+STRESZCZENIA SĄ WYLICZANE, A NIE ZAPISYWANE
+`flow.triage` niesie obok identyfikatorów gotowy TYTUŁ wyniku w obu językach, bo pasek przebiegu
+musi go wypisać bez wołania modelu. Do zapisu wchodzą wyłącznie identyfikatory — zdanie przeliczy
+`syncTriage` po odtworzeniu. To PROJEKCJA przy zapisie, a nie czyszczenie naruszenia: strażnik
+dalej odrzuca wpis, w którym takie zdanie się pojawi.
+
+NAJDROŻSZY BŁĄD TEGO BLOKU I ZAPADKA NA NIEGO
+Strażnik powstał na przypadku ZBUDOWANYM RĘCZNIE i nie wiedział o trzech rzeczach, które prawdziwy
+przebieg wkłada do `flow`: streszczeniu kwalifikacji, streszczeniu kontroli i opisie SPRZED
+manewru. Odrzucał więc KAŻDY prawdziwy zapis — czyli „zapisz sesję" nie zadziałało ani razu, przy
+353 zielonych przypadkach wyroczni modelu. Znalazła to dopiero wyrocznia ekranu, na prawdziwym
+grafie modułów (ta sama lekcja, co przy eksporcie na torze VOG: strażnik chodził wyłącznie po
+wpisie napisanym ręcznie).
+Sama naprawa nie wystarczy, bo następny blok dołoży kolejne streszczenie. Dlatego wyrocznia mierzy
+teraz POKRYCIE: każdy klucz prawdziwego `flow`, `flow.maneuver`, `flow.maneuver.inputs`, wpisu
+kontroli i streszczenia kwalifikacji musi być na liście strażnika — z kontrolą czułości w obie
+strony i z żądaniem, żeby prawdziwy zapis przez strażnika PRZESZEDŁ.
+
+ZDANIE O PRYWATNOŚCI, KTÓRE BLOK 15 CZYNIŁ NIEPRAWDĄ
+Karta zakończenia sesji mówiła: „aplikacja nie zapisuje go na urządzeniu i nigdzie nie wysyła".
+Do tego bloku było to prawdą, bo nie było czym zapisać. Zapis istnieje, więc zdanie musiało się
+zmienić — i zmieniło się dokładnie tam, gdzie użytkownik pyta o prywatność: aplikacja nadal nie
+wysyła niczego poza urządzenie, a przypadek zostaje w pamięci przeglądarki TYLKO wtedy, gdy
+użytkownik sam zapisze sesję. Bramka pilnuje, żeby stare zdanie nie wróciło.
+
+KRYTERIUM ODBIORU NR 3 — KASOWANIE TAM, GDZIE SIĘ GO SZUKA
+„Usuń wszystkie zapisane sesje" stoi w USTAWIENIACH, a nie na ekranie, do którego trzeba wejść
+przez zakończoną sesję. Przy przycisku stoi LICZBA zapisów, bo „usuń wszystko" bez powiedzenia ile
+jest gestem w ciemno, a samo kasowanie idzie przez potwierdzenie w dwóch krokach — sąsiaduje
+z przełącznikiem języka. Kasujemy KLUCZ, a nie zawartość: pusta lista w pamięci wygląda jak zapis.
+
+CZEGO TEN BLOK NIE ROBI
+  · Nie zmienia ani jednej liczby w silniku i nie dokłada ani jednego parametru.
+  · Nie stawia rozpoznania i nie ocenia skuteczności leczenia.
+  · Nie wysyła niczego do sieci i nie ma czym — w torze zapisu nie ma ani jednego wywołania sieci.
+  · Nie zapisuje nic samo z siebie: otwarcie ekranu opisu, przełączanie sekcji i edycja tekstu
+    zostawiają pamięć przeglądarki dokładnie taką, jaka była (zmierzone bajt po bajcie).

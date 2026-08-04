@@ -1608,3 +1608,138 @@ WHAT THIS BLOCK DOES NOT DO
   · It has not a single text field (a range slider is not a text field).
   · It is not needed to complete basic diagnostics — and that is measured by two independent
     measurements, not declared.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+EXAMINATION REPORT GENERATOR AND SESSION RECORD — COMPUTED, NOT STORED (Block 15)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Gates: npm run opis:check (pure model, bare Node, 353 cases) and npm run opis:dom (jsdom, the real
+module graph and real browser storage, 95 cases).
+
+WHAT WAS MEASURED BEFORE ANYTHING WAS WRITTEN
+  · Across the nine screens of the clinical pathway there were ZERO report, copy or export
+    controls: the app produced not one sentence that could be pasted into a record.
+  · After a full run history → follow-up, browser storage was EMPTY — the case did not survive
+    a page reload.
+  · The control entry had nine fields and none of them carried TOLERANCE, which the document
+    requires in the report. A generator may not invent data that is never collected — so one
+    question with a closed vocabulary was added at the control step.
+  · Nowhere in `src/` was there a single `fetch`, `XMLHttpRequest`, `sendBeacon` or `WebSocket`,
+    and there still is not — a gate scans the whole save path.
+
+THE PRINCIPLE: THE REPORT IS RECOMPUTED ON EVERY RENDER
+The simplest way to break acceptance criterion 1 ("the report updates after a change of
+diagnosis") would be to STORE the finished text in state: every change of diagnosis then leaves
+in memory a sentence that has stopped being true, and the user copies it into the record. So the
+report has no storage at all. The oracle measures this by mutation: fifteen clinically meaningful
+changes (canal, the value and the SOURCE of the side, mechanism, central picture, control result,
+tolerance, maneuver, nystagmus description, history, a second test, a second control) MUST change
+the text, and six non-clinical ones (3D mode, area, step map, expanded question group, laboratory
+bench, decision counter) MUST NOT touch it. Without that second half the gate would also pass for
+a generator that simply dumps the whole state.
+
+NOT ONE CLINICAL WORD OF ITS OWN
+The generator knows the name of no canal, no maneuver and no nystagmus feature — every label comes
+in through the injector from the dictionaries the screens use. Its own strings would be a SIXTH
+description of the same knowledge, and the drift would go straight into medical documentation. The
+oracle does not read the code, it measures behaviour: replacing a label in a dictionary MUST
+change the report text (eight labels plus the nystagmus values). A sensitivity control checks that
+the same state without the replacement yields an identical text.
+
+THE MOST IMPORTANT SENTENCE OF THIS BLOCK: "AFFECTED SIDE — NOT ESTABLISHED"
+`state.side` holds the literal 'P' and `state.variant` the literal 'canalo'. Both values exist
+only because the animation has to draw something, and the user need not have touched either —
+Blocks 9 and 10 built `variantZrodlo` and `sideZrodlo` for exactly this. A generator that printed
+them as findings would put LATERALITY into medical documentation on the strength of a default. The
+rule is therefore hard: in the "Interpretation" part the side and the mechanism appear ONLY with a
+source; without one the section says "not established" and gives no value. The `opis/bez-strony`
+state is PINNED in the golden snapshot, so silently turning that sentence into "right" turns the
+oracle red.
+The side of the PERFORMED maneuver is a different thing — it is a fact ("this was done to the
+right ear"), not a conclusion, so it may be written. The two sentences side by side are
+information, not a contradiction: a side was treated that nobody confirmed.
+
+WHAT THE REPORT DOES NOT CARRY
+  · The app's advice. The triage model carries paragraphs of recommendations ("consider MRI DWI")
+    — those are for the user ON SCREEN. An examination report records what was done and what was
+    found; pasting someone else's recommendations into a record signed by a clinician is a
+    different thing. The report carries the triage TITLE, not its justification.
+  · Instances rejected as unreliable — they appear as "described and rejected, reason X", never as
+    a finding. Silence would read as "we did not look".
+  · A timestamp. The date of an examination belongs to the documentation, not to a browser clock.
+  · A diagnosis. The disclaimer about the nature of the tool is a MANDATORY section that no switch
+    can disable — including when the user disables every other one.
+
+THE FIRST TEXT FIELD IN THE WHOLE APP
+The document requires editing the text before copying. A text field is the only place where a
+patient's name can be typed — up to Block 15 there were zero of them, and not by accident. The
+answer is neither refusal nor filtering the typed text (a name filter is impossible and looks like
+a promise), but PERSISTENCE:
+  · the edit lives in `state.opisEdycja` and is stored nowhere,
+  · saving a session takes the CASE FIELDS, not the text,
+  · the structured export takes the same fields and passes the guard,
+  · leaving the screen clears the edit, and the warning stands NEXT TO THE FIELD, before anyone
+    starts typing.
+The oracle measures this in BYTES: after typing a marker into the field and saving the session,
+browser storage must not contain it. A separate gate keeps the count at EXACTLY ONE: zero on the
+eight clinical screens and in the Learning and Laboratory modules, zero on the report screen
+before the "Edit" gesture, one after it.
+
+THE DATA GUARD: A STRUCTURAL RULE, NOT A WORD LIST
+We do not look for names — we require EVERY value in the record to be a number, a boolean or a
+string FROM A DICTIONARY. A string outside the dictionaries is a violation regardless of what it
+means, so a name typed into any field has no way through (40 attempts in the oracle, each through
+a different door: case fields, observation records, instances, history, control entries, flow,
+fingerprint inputs). The guard REFUSES and says why instead of quietly cleaning — silent
+sanitisation looks like a save that never happened. The observation fingerprint (the only computed
+rather than dictionary value) is RECOMPUTED from the record and must match.
+
+WHAT A SESSION SAVES AND WHAT IT DOES NOT
+The list of 29 case fields — the same one Block 14 fingerprints to prove the Laboratory does not
+touch the patient — now lives in ONE place and is split into two disjoint parts: 19 saved fields
+and 10 volatile ones. The oracle checks that the sum equals the whole, so a field added by a future
+block cannot silently drop out of the record.
+The clock and the plan are volatile NOT to save space: restoring a session with a running counter
+would be measuring how long a patient is held in a position they left long ago. After a restore the
+counter is stopped, the plan is rebuilt from the maneuver key, and the receipt says outright that
+the timer was NOT resumed.
+
+SUMMARIES ARE COMPUTED, NOT SAVED
+`flow.triage` carries, next to its identifiers, the finished TITLE of the result in both languages,
+because the flow bar must print it without calling the model. Only identifiers go into the record —
+`syncTriage` recomputes the sentence after a restore. This is a PROJECTION at save time, not the
+cleaning of a violation: the guard still rejects a record in which such a sentence appears.
+
+THE MOST EXPENSIVE MISTAKE OF THIS BLOCK, AND THE TRIPWIRE FOR IT
+The guard was written against a HAND-BUILT case and therefore did not know about three things the
+real pathway puts into `flow`: the triage summary, the control summary and the description from
+BEFORE the maneuver. It rejected EVERY real save — that is, "save the session" never worked once,
+with 353 green cases in the model oracle. Only the screen oracle, on the real module graph, found
+it (the same lesson as the export on the VOG track: the guard had only ever walked a hand-written
+record).
+Fixing it is not enough, because the next block will add another summary. So the oracle now
+measures COVERAGE: every key of the real `flow`, `flow.maneuver`, `flow.maneuver.inputs`, the
+control entry and the triage summary must be on the guard's list — with sensitivity controls in
+both directions and a demand that a real record PASS the guard.
+
+THE PRIVACY SENTENCE THIS BLOCK MADE UNTRUE
+The session-ending card said: "the app does not store it on the device and does not send it
+anywhere". Up to this block that was true, because there was nothing to store with. Storage now
+exists, so the sentence had to change — and it changed exactly where the user asks about privacy:
+the app still sends nothing off the device, and the case stays in browser storage ONLY if the user
+saves the session themselves. A gate keeps the old sentence from coming back.
+
+ACCEPTANCE CRITERION 3 — DELETION WHERE PEOPLE LOOK FOR IT
+"Delete all saved sessions" sits in the SETTINGS, not on a screen reachable only through a finished
+session. The NUMBER of records stands next to the button, because "delete everything" without
+saying how much is a gesture in the dark, and the deletion itself takes two steps — it neighbours
+the language switch. We delete the KEY, not its contents: an empty list in storage still looks like
+something was saved.
+
+WHAT THIS BLOCK DOES NOT DO
+  · It changes not a single number in the engine and adds not a single parameter.
+  · It makes no diagnosis and does not judge treatment efficacy.
+  · It sends nothing over the network and has nothing to send it with — the save path contains not
+    one network call.
+  · It saves nothing on its own: opening the report screen, toggling sections and editing the text
+    leave browser storage exactly as it was (measured byte for byte).
