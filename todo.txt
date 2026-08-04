@@ -117,6 +117,30 @@ FAZA SILNIK (walidacja offline node; wstecznie zgodna — HC = toneL/R,gainL/R; 
         (sakada vHIT przedniego/pion/SCDS mają spójny skręt); #6 reverseDissociation (vHIT+/kaloryka− = ubytek HF);
         #7 readout reużywa hints (bez podwójnego observe/skew/HC). #4 (ton→vHIT przy R_SAT) ŚWIADOMIE zostawione
         (nasycenie realne; do decyzji). t17 (27); ŁĄCZNIE 511/511 + przeglądarka.
+ [x] PRZEGLĄD NEUROFIZJOLOGICZNY silnika NeuroVOR (t20) — pełna krytyka warstwy tonicznej/ośrodkowej.
+        7 błędów usuniętych, każdy najpierw ODTWORZONY liczbowo na sondzie, potem naprawiony, potem sonda
+        powtórzona; konwencje potwierdzone jako POPRAWNE (COWS, Jongkees CP/DP, obcięcie Ewalda ~112°/s,
+        podział covert/overt, kierunek Tullio, velocity storage, wagi fuzji) zostały bez zmian.
+        #1 hints() widziało tylko oś POZIOMĄ → neuronitis nerwu DOLNEGO dawał verdict „normal" przy
+           9–12°/s oczoplątem pionowo-skrętnym, a clinicalReadout zwracał ten werdykt OBOK własnej listy
+           centralSigns z czerwoną flagą (werdykt przeczył objawom na jednym ekranie). Teraz ny.horizontal/
+           ny.vertical + infarct.isolatedVertical bramkowany vHIT-em RALP/LARP (obwód≠ośrodek).
+        #2 ZNAK OTR odwrócony (oko po stronie chorej stało WYŻEJ zamiast NIŻEJ) — nerveBranchLesion
+           i preset udaru; OTR obwodowy i pniowy poniżej skrzyżowania jest IPSIWERSYJNY [H7].
+        #3 svv() ignorowało tor OŚRODKOWY → jawny OTR miał SVV 0.0°; każdy przechył szedł do peripheralSigns.
+        #4 ton spoczynkowy zjadał zapas do R_SAT → vHIT patologiczny przy gain=1.0 (patrz DECYZJA #4 niżej).
+        #5 spontaneous() mieszało jednostkowy ZNAK poziomu z MAGNITUDĄ pionu (zły `kind`, odwracany tdir).
+        #6 obustronnie zniesione VEMP niewidoczne w odczycie; UI pisało „funkcja otolitowa zachowana".
+        #7 SCDS bez odbicia w VEMP (sufit 1.0); meniere() bez strony chorej → kompensacja szła na ucho
+           ZDROWE; flaga `bechterew` zapalała się na samej zmianie drażniącej (bez ładunku pacemakera).
+        KALIBRACJA: SPV_MAX 12→30°/s (ostry UVH 20–40°/s; przy 12 neuronitis dawał w świetle 1.1°/s,
+        czyli PONIŻEJ własnego progu VIS_THRESH = patologia „niewidoczna" przy łóżku).
+        ZOSTAWIONE ŚWIADOMIE (opisane w engine_doc „OGRANICZENIA"): prawo Alexandra tylko jakościowe
+        (z dryfu integratora, ±0.8°/s — kierunek dobry, brak stopni I/II/III), fixationGain 0.9 = indeks
+        fiksacji 0.1 (klinicznie 0.3–0.6), pacemakerBias wymaga jawnego lesionEar po powrocie symetrii,
+        kompensacja modeluje wyłącznie HIPOfunkcję (gap=max(0,·)).
+        ZAKRES (wyrocznie): engine.neuro 12/12, dom 18/91 (wyłącznie ekrany HINTS); pose 360/360
+        i plans 14/14 BEZ ZMIAN — fizyka BPPV nietknięta. 3 wyrocznie zielone, build OK, 0 błędów konsoli.
  [x] PRZEGLĄD DOKUMENTACJI + HIGIENA (2026-07-09) — naprawione rozjazdy dok↔kod (tabele zbiorcze nieaktualne
         mimo poprawnego changelogu): GEXC przednie (RA/LA = -e1), quickPhase anterior API ({0,-1,0}, torsja→qpFull),
         REALNE PROPORCJE tylny (v0.93:t1.00), opis sakady (qpFull+skręt), sygnatury skew(central)/caloricBattery
@@ -145,6 +169,13 @@ FAZA UI (po silniku, budowana raz z pełnym zakresem) — ZROBIONE 2026-07-10 (t
         refreshHintsCustom. [#17]
         >>> DECYZJA #4: wybrano (1) — zakres tonu bez zmian (max 200); sprzężenie ton→vHIT (R_SAT) już
         objaśnia ambiguity `reverseDissociation` w clinicalReadout. <<<
+        >>> WERYFIKACJA (przegląd neurofizjologiczny t20): decyzja ODWRÓCONA. Sprzężenie NIE było
+        neutralne — ton ≥167 Hz przy gain=1.0 dawał vHIT PATOLOGICZNY bez żadnego ubytku wzmocnienia,
+        a ton do 200 Hz jest w zasięgu tego właśnie suwaka. Przeczyło to tezie modułu o zachowanym vHIT
+        w fazie drażnienia Ménière'a [H20], czyli kasowało cechę różnicującą, której miało uczyć.
+        Zakres tonu ZOSTAJE (max 200); zmieniono model: modulacja pobudzeniowa ograniczona zakresem
+        dynamicznym aferentu MOD_MAX=R_SAT−R0, a nie liczona jako rate−tone (helper excited()).
+        Nasycenie nadal działa tam, gdzie fizjologiczne — przy bardzo dużej prędkości głowy. <<<
  [x] U3 — vHIT RALP/LARP: selektor płaszczyzny (HC/RALP/LARP) + przyciski pchnięcia per kanał (PLANE_CANALS);
         startHIT UOGÓLNIONY na 2D + torsję z wektora hi.saccade {h,v,t} (HC bez zmian: uy=0,tor=0→rotate(0)=no-op);
         hitLabel opisuje kierunek sakady (pozioma / ku górze/dołowi + skręt). hintsHIT(canal,ear) wstecznie zgodne.

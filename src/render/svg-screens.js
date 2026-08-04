@@ -1034,7 +1034,10 @@ function hintsVerdictHTML(H){
   const hiNA = !H.ny.hasSpontaneous && !H.hi.abnormal;                 // brak AVS → HIT nieinformacyjny do różnicowania
   const hiRow = H.hi.abnormal
     ? [tag("ok","HI"), tr(`Head-Impulse: sakada korygująca po stronie ${H.hi.side==="P"?"prawej":"lewej"} (kanał chory) — <b>obwodowy</b>.`,`Head impulse: corrective saccade on the ${H.hi.side==="P"?"right":"left"} side (affected canal) — <b>peripheral</b>.`)]
-    : H.ny.hasSpontaneous
+    // Kryterium „Impulse Normal" bierzemy z silnika (H.infarct), a NIE z hasSpontaneous: HIT bada kanaly
+    // POZIOME, wiec grozny jest tylko oczoplas POZIOMY przy prawidlowym HIT. Oczoplas pionowo-skretny
+    // z ubytku kanalu pionowego (neuronitis n. dolnego) jest OBWODOWY i nie moze zapalac tej flagi.
+    : H.infarct.impulseNormal
       ? [tag("bad","HI"), tr(`Head-Impulse: prawidłowy MIMO oczopląsu — <b>groźny</b> (ośrodek).`,`Head impulse: normal DESPITE nystagmus — <b>dangerous</b> (central).`)]
       : [tag("","HI"), tr(`Head-Impulse: prawidłowy.`,`Head impulse: normal.`)];
   const nyRow = H.ny.pattern==="directionChanging"
@@ -1361,28 +1364,38 @@ function svvSVG(sv){
     <text x="8" y="123" fill="var(--muted)" font-size="10">${tr("P","R")}</text><text x="127" y="123" fill="var(--muted)" font-size="10">L</text>
   </svg>`;
 }
+const SIDE_GEN = {L:"lewej", P:"prawej"};   // dopelniacz: „ku stronie prawEJ" (SIDE[] jest w mianowniku — „prawa")
 function otolithInner(p){
   const sv=NeuroVOR.svv(p), ve=NeuroVOR.vemp(p);
-  const svLabel = sv.abnormal
-    ? tr(`SVV: przechył pionu <b>${sv.deg.toFixed(1)}°</b> ku stronie <b>${SIDE[sv.tiltSide]}</b> — grawiceptywny, ipsiwersyjny (obwodowo ku stronie chorej).`,`SVV: vertical tilt <b>${sv.deg.toFixed(1)}°</b> toward the <b>${sv.tiltSide==="P"?"right":"left"}</b> side — graviceptive, ipsiversive (peripheral, toward the affected side).`)
-    : tr(`SVV prawidłowa (≤2°) — pion postrzegany zgodnie z grawitacją.`,`SVV normal (≤2°) — vertical perceived in line with gravity.`);
+  // SVV NIE jest swoista dla obwodu — ta sama os grawiceptywna biegnie przez pien (OTR). Zrodlo z sv.central.
+  const svLabel = !sv.abnormal
+    ? tr(`SVV prawidłowa (≤2°) — pion postrzegany zgodnie z grawitacją.`,`SVV normal (≤2°) — vertical perceived in line with gravity.`)
+    : sv.central
+      ? tr(`SVV: przechył pionu <b>${sv.deg.toFixed(1)}°</b> ku stronie <b>${SIDE_GEN[sv.tiltSide]}</b> — oś grawiceptywna <b>ośrodkowa</b> (razem z odchyleniem skośnym / OTR).`,`SVV: vertical tilt <b>${sv.deg.toFixed(1)}°</b> toward the <b>${sv.tiltSide==="P"?"right":"left"}</b> side — <b>central</b> graviceptive axis (together with skew deviation / OTR).`)
+      : tr(`SVV: przechył pionu <b>${sv.deg.toFixed(1)}°</b> ku stronie <b>${SIDE_GEN[sv.tiltSide]}</b> — grawiceptywny, ipsiwersyjny (obwodowo ku stronie chorej).`,`SVV: vertical tilt <b>${sv.deg.toFixed(1)}°</b> toward the <b>${sv.tiltSide==="P"?"right":"left"}</b> side — graviceptive, ipsiversive (peripheral, toward the affected side).`);
+  const VB_FS=1.5;                                                  // skala paska: do 1.5 — miesci WZMOZENIE (trzecie okno), nie tylko ubytek
   const vbar=(name,ear,amp,stat)=>{
-    const pct=Math.round(Math.max(0,Math.min(1,amp))*100);
-    const col= amp>=0.65?"#7fe3c4":amp>=0.3?"#ffcf8f":"#ff9bab";   // kolor z AMPLITUDY (odporny na tlumaczenie 'stat')
+    const pct=Math.round(Math.max(0,Math.min(1,amp/VB_FS))*100);
+    const col= amp>=1.35?"#c9b6ff":amp>=0.65?"#7fe3c4":amp>=0.3?"#ffcf8f":"#ff9bab";   // kolor z AMPLITUDY (odporny na tlumaczenie 'stat')
     return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
       <span style="min-width:82px;font-size:12px">${name} ${ear}</span>
       <div style="flex:1;height:9px;border-radius:5px;background:var(--panel2);position:relative;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${col};transition:width .3s"></div>
-        <div style="position:absolute;left:30%;top:0;bottom:0;width:1px;background:var(--line)" title="próg"></div></div>
+        <div style="position:absolute;left:${Math.round(0.3/VB_FS*100)}%;top:0;bottom:0;width:1px;background:var(--line)" title="próg"></div></div>
       <span style="min-width:74px;font-size:11px;color:${col};text-align:right">${stat}</span></div>`;
   };
   const c=ve.cVEMP, o=ve.oVEMP;
   const vempNote=(()=>{ const parts=[];
-    if(c.weakEar) parts.push(tr(`cVEMP obniżony po stronie ${SIDE[c.weakEar]} → <b>woreczek / nerw DOLNY</b>`,`cVEMP reduced on the ${c.weakEar==="P"?"right":"left"} side → <b>saccule / INFERIOR nerve</b>`));
-    if(o.weakEar) parts.push(tr(`oVEMP obniżony po stronie ${SIDE[o.weakEar]} → <b>łagiewka / nerw GÓRNY</b>`,`oVEMP reduced on the ${o.weakEar==="P"?"right":"left"} side → <b>utricle / SUPERIOR nerve</b>`));
-    return parts.length ? parts.join("; ")+"." : tr("VEMP symetryczne — funkcja otolitowa zachowana obustronnie.","VEMP symmetric — otolith function preserved bilaterally.");
+    if(c.weakEar) parts.push(tr(`cVEMP obniżony po stronie ${SIDE_GEN[c.weakEar]} → <b>woreczek / nerw DOLNY</b>`,`cVEMP reduced on the ${c.weakEar==="P"?"right":"left"} side → <b>saccule / INFERIOR nerve</b>`));
+    if(o.weakEar) parts.push(tr(`oVEMP obniżony po stronie ${SIDE_GEN[o.weakEar]} → <b>łagiewka / nerw GÓRNY</b>`,`oVEMP reduced on the ${o.weakEar==="P"?"right":"left"} side → <b>utricle / SUPERIOR nerve</b>`));
+    // WZMOZENIE = trzecie okno, nie ubytek — inaczej SCDS czytalby sie jako „prawidlowo".
+    if(c.strongEar||o.strongEar) parts.push(tr(`VEMP <b>wzmożony</b> po stronie ${SIDE_GEN[o.strongEar||c.strongEar]} → <b>trzecie okno (SCDS)</b>`,`VEMP <b>enhanced</b> on the ${(o.strongEar||c.strongEar)==="P"?"right":"left"} side → <b>third window (SCDS)</b>`));
+    if(parts.length) return parts.join("; ")+".";
+    // OBUSTRONNE zniesienie daje AR%≈0: bez tej galezi „symetryczne" czytalo sie jak „zachowane" (jak CP przy BVH).
+    if(c.bilateralWeak||o.bilateralWeak) return tr("VEMP zniesione OBUSTRONNIE — asymetria międzyuszna ≈0 mimo ubytku (jak CP przy BVH).","VEMP absent BILATERALLY — interaural asymmetry ≈0 despite the deficit (like CP in BVH).");
+    return tr("VEMP symetryczne — funkcja otolitowa zachowana obustronnie.","VEMP symmetric — otolith function preserved bilaterally.");
   })();
-  const scdsNote = p.dehiscence ? `<div class="note">${tr('SCDS klinicznie: VEMP o <b>niskim progu / dużej amplitudzie</b> (trzecie okno). W tym modelu SCDS oddana jest oczoplasem trzeciego okna (panel „Oczopląs samoistny"), nie amplitudą VEMP.','Clinical SCDS: VEMP with a <b>low threshold / large amplitude</b> (third window). In this model SCDS is rendered via third-window nystagmus (the "Spontaneous nystagmus" panel), not by VEMP amplitude.')}</div>` : "";
+  const scdsNote = p.dehiscence ? `<div class="note">${tr('SCDS: VEMP o <b>niskim progu / dużej amplitudzie</b> (trzecie okno) — model podnosi amplitudę po stronie dehiscencji, obok oczopląsu trzeciego okna (panel „Oczopląs samoistny").','SCDS: VEMP with a <b>low threshold / large amplitude</b> (third window) — the model raises the amplitude on the dehiscent side, alongside third-window nystagmus (the "Spontaneous nystagmus" panel).')}</div>` : "";
   return `
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
       <div style="flex:0 0 auto">${svvSVG(sv)}</div>

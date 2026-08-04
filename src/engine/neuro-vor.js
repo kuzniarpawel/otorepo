@@ -21,13 +21,28 @@ import { t as tr } from '../i18n.js';   // alias 'tr' — lokalne 't' (param tes
 export const NeuroVOR = (()=>{
   const R0 = 90;         // spoczynkowa częstotliwość aferentów kanału (Hz) — zdrowy błędnik
   const R_SAT = 300;     // sufit pobudzenia (Hz) — aferent nie przekracza ~3× spoczynku (nasycenie)
-  const SPV_MAX = 12;    // faza wolna (°/s) przy pełnej asymetrii (błędnik 0 Hz) — rząd kliniczny UVH w ciemności
+  const SPV_MAX = 30;    // faza wolna (°/s) przy pełnej asymetrii (błędnik 0 Hz) — OSTRY UVH w ciemności bije
+                         // ~20–40°/s (neuronitis, pierwsze doby); dawne 12 było sufitem PONIŻEJ realnego zakresu
+                         // i przy fixationGain 0.9 dawało w świetle 1.1°/s, czyli PONIŻEJ własnego progu VIS_THRESH
+                         // — ostry neuronitis wychodził „niewidoczny" przy łóżku. [H1][H2]
   const TORS_FRAC = 0.5; // udział składowej skrętnej wzgl. poziomej w oczopląsie obwodowym (poglądowo — oczopląs poziomo-skrętny)
   const camRx = ()=>Scene3D.CAMERAS.frontal.right[0];   // odbicie kamery obserwatora (=-1)
 
   // Aferent po REKTYFIKACJI: prawo Ewalda — obcięcie hamowania (firing ≥ 0) + nasycenie (≤ R_SAT).
   // Wspólny prymityw: spoczynek (drive=0) i pchnięcie głowy (drive≠0, etap 3). drive w Hz-równoważnych.
   function afferent(tone, drive){ return Math.max(0, Math.min(R_SAT, tone + drive)); }
+
+  // ZAKRES DYNAMICZNY aferentu = jego własność (R_SAT − R0), a NIE funkcja bieżącego tonu spoczynkowego.
+  // Modulacja pobudzeniowa jest więc ograniczona zakresem, po czym dodawana do tonu (rate może dobić do R_SAT).
+  // DLACZEGO tak, a nie „mod = rate − tone": patologiczny bias toniczny (wodniak) NIE zjada wzmocnienia VOR.
+  // Przy dawnym liczeniu ton ≥167 Hz przy gain=1.0 sam z siebie dawał vHIT PATOLOGICZNY (sufit R_SAT zjadał
+  // modulację), co przeczyło własnej tezie modułu: w fazie DRAŻNIENIA Ménière'a gain jest zachowany, więc
+  // vHIT pozostaje prawidłowy — i to jest cecha RÓŻNICUJĄCA tę jednostkę od ubytku obwodowego. [H20]
+  const MOD_MAX = R_SAT - R0;
+  function excited(tone, gain, Ohm){
+    const mod = Math.min(gain*S_HZ*Ohm, MOD_MAX);   // nasycenie nadal działa — przy bardzo dużej prędkości głowy
+    return { mod, rate: afferent(tone, mod) };
+  }
 
   // Pełny (NIEmaskowany) kierunek szybkiej fazy kanału z geometrii Vestibular.nysMag — skręt kanału PRZEDNIEGO
   // ZACHOWANY (maska kliniczna quickPhase zeruje go dla BPPV). Wspólne źródło dla: sakady korygującej vHIT,
@@ -81,7 +96,11 @@ export const NeuroVOR = (()=>{
       o[pk.gain] = 1 - sev*0.65;                          // gain → ~0.35 przy pełnym (jak preset neuritis)
     }
     if(branch==="superior"){
-      o.skewTone = (ear==="P"?1:-1)*1.5*sev;                       // łagiewka (utriculus) → MAŁY skew (obwodowy, < próg ośrodkowy SKEW_CENTRAL)
+      // ŁAGIEWKA (utriculus) → MAŁY skew (obwodowy, < próg ośrodkowy SKEW_CENTRAL). ZNAK: reakcja pochylenia
+      // ocznego z ubytku OBWODOWEGO jest IPSIWERSYJNA — głowa przechyla się KU stronie chorej, a oko po TEJ
+      // stronie stoi NIŻEJ (hipotropia ipsilateralna); oko wyżej = strona ZDROWA. skewTone>0 = oko P wyżej,
+      // więc ubytek ucha P daje skewTone UJEMNY. (Dawniej odwrotnie → silnik wskazywał złą stronę.) [H7]
+      o.skewTone = (ear==="P"?-1:+1)*1.5*sev;
       o[ear==="P"?"caloricGainR":"caloricGainL"] = 1-sev;           // HC = nerw GÓRNY → kaloryka osłabiona (zgodnie z vHIT)
       o[ear==="P"?"utricleR":"utricleL"] = 1-sev;                   // ŁAGIEWKA → oVEMP osłabiony (n. górny); cVEMP zachowany [H22]
     }                                                                // n. DOLNY: HC oszczędzony → kaloryka PRAWIDŁOWA (emergent)
@@ -127,8 +146,9 @@ export const NeuroVOR = (()=>{
     const cLoss = opts.caloricLoss!=null ? Math.max(0,Math.min(1,opts.caloricLoss)) : 0.55;  // PRZEWLEKŁY ubytek LF (0 = wczesny Ménière)
     const o = {}; o[pk.tone] = tone; o[pk.gain] = gain;
     o[ear==="L"?"caloricGainL":"caloricGainR"] = 1-cLoss;    // gain HF (vHIT) zachowany + kaloryka osłabiona = DYSOCJACJA
-    return o;
-  }
+    o.lesionEar = ear;                                       // ucho CHORE podane WPROST: w fazie DRAŻNIENIA jest ono
+    return o;                                                // AKTYWNIEJSZE, więc heurystyka „chory = słabszy błędnik"
+  }                                                          // wskazałaby ucho ZDROWE (i tam skierowała kompensację).
 
   // ETAP 7 — vHIT PER-KANAŁOWY: pary WSPÓŁPŁASZCZYZNOWE. Szybkie pchnięcie w płaszczyźnie kanału POBUDZA
   // jeden kanał (przepływ ampullopetalny, Ewald II) i HAMUJE koplanarny z drugiej strony (obcięcie na 0 →
@@ -177,7 +197,12 @@ export const NeuroVOR = (()=>{
     let vnL=rL, vnR=rR, clampAmt=0, paceAmt=0;
     if(c>0 && lesion){
       const intactRate = lesion==="L" ? rR : rL, lesionRate = lesion==="L" ? rL : rR;
-      const gap = Math.max(0, intactRate - lesionRate);      // asymetria ostra do zniesienia
+      // Asymetria ostra do zniesienia. max(0,·) jest CELOWE: [H10][H11] opisują kompensację ubytku
+      // (HIPOfunkcji). Gdy strona chora jest AKTYWNIEJSZA od zdrowej (faza DRAŻNIENIA Ménière'a), gap=0
+      // i model nie kompensuje — co jest zgodne z kliniką (napad trwa minuty–godziny, czyli o rzędy
+      // wielkości za krótko na kompensację statyczną) i lepsze niż dawne „podnoszenie ucha zdrowego
+      // do poziomu chorego", które wychodziło z heurystyki „chory = słabszy błędnik".
+      const gap = Math.max(0, intactRate - lesionRate);
       const restored = c*gap;                                // ile asymetrii już zniesiono (0→gap)
       const clampShare = Math.exp(-c/CLAMP_TAU);             // udział clampu (wczesny) vs pacemakera (późny)
       clampAmt = restored*clampShare;                        // obniżenie zdrowego jądra (przejściowe)
@@ -252,17 +277,27 @@ export const NeuroVOR = (()=>{
     const spv = SPV_MAX*asym;                      // °/s — surowa faza wolna (bez fiksacji)
     const beatSign = -Math.sign(imbalance) || 0;   // head-frame: +1 ku P, −1 ku L (ku silniejszemu uchu)
     const beatEar   = beatSign>0 ? "P" : beatSign<0 ? "L" : null;   // ucho z wyższą aktywnością jądra (kierunek bicia)
-    const lesionEar = imbalance>0 ? "P" : imbalance<0 ? "L" : null; // ucho z niższą aktywnością jądra
-    // Bechterew: bicie ku uchu PIERWOTNIE choremu (błędnik wrócił, pacemaker wciąż naładowany) — etap 6b.
-    const bechterew = !!(cmp.lesionEar && beatEar===cmp.lesionEar && asym>0);
-    // składowe head-frame: poziom ku silniejszemu uchu + śladowy skręt (biegun górny ku niemu).
-    // PION/SKRĘT z kanałów pionowych (E3) sumują się wektorowo; kompensacja ośrodkowa znosi je tak samo
-    // jak poziom (skala 1−c → przy pełnej kompensacji cały oczopląs samoistny znika, także pionowo-skrętny).
+    // UWAGA NA NAZWĘ: `lesionEar` to ucho o NIŻSZEJ aktywności jądra — pokrywa się z uchem chorym tylko przy
+    // ubytku. Przy zmianie DRAŻNIĄCEJ (Ménière irritative) chore ucho jest aktywniejsze, więc te dwa pola się
+    // ROZJEŻDŻAJĄ: stronę faktycznie chorą niesie `trueLesionEar` (z compensate → p.lesionEar).
+    const lesionEar = imbalance>0 ? "P" : imbalance<0 ? "L" : null;
+    // Bechterew: bicie ku uchu PIERWOTNIE choremu, NAPĘDZANE zatrzaśniętym ładunkiem pacemakera (błędnik
+    // wrócił, jądro wciąż naładowane) — etap 6b. Warunek pacemakerBias>0 jest ISTOTNY: bez niego bicie ku
+    // uchu choremu oznacza po prostu zmianę DRAŻNIĄCĄ (Ménière irritative), a nie oczopląs powrotny.
+    const bechterew = !!(cmp.pacemakerBias>0 && cmp.lesionEar && beatEar===cmp.lesionEar && asym>0);
+    // Składowe head-frame: poziom ku silniejszemu uchu + skręt (biegun górny ku niemu), plus PION/SKRĘT
+    // z kanałów pionowych (E3) sumowane wektorowo. Kompensacja ośrodkowa znosi je tak samo jak poziom
+    // (skala 1−c → przy pełnej kompensacji cały oczopląs samoistny znika, także pionowo-skrętny).
+    // SKALA: składowe pionowe niosą INTENSYWNOŚĆ (imbalans pary /R0), więc składowe poziome też muszą —
+    // inaczej śladowy oczopląs poziomy (asym≈0,01) wnosił do sumy skrętu PEŁNE 0,5 i potrafił ODWRÓCIĆ
+    // wypadkowy kierunek skrętu (tdir) silnego oczopląsu pionowo-skrętnego. Stąd mnożnik `asym`.
     const vb = verticalBeat(p), compFac = 1 - Math.max(0, Math.min(1, p.comp||0));
-    const h=beatSign, tH=beatSign*TORS_FRAC;                  // poziomo-skrętna składowa (bez zmian → backward compat)
+    const h=beatSign, tH=beatSign*TORS_FRAC*asym;             // skręt poziomy ważony WŁASNĄ intensywnością
     const v=vb.v*compFac, tV=vb.t*compFac, t=tH+tV, spvV=vb.spvV*compFac;
     const strengthV=Math.min(1, spvV/SPV_MAX);
-    const kind=(strengthV>0 && Math.abs(v)>Math.abs(h)) ? "verticalTorsional" : "horizontalTorsional";
+    // Rodzaj oczopląsu rozstrzyga porównanie WIDOCZNYCH prędkości fazy wolnej (°/s), a nie magnitudy `v`
+    // z jednostkowym znakiem `h` — ten drugi zawsze wynosi ±1, więc 0,1°/s poziomu „wygrywało" z 12°/s pionu.
+    const kind=(spvV > spv) ? "verticalTorsional" : "horizontalTorsional";
     return { kind, h, v, t, tH, tV,
       dir:  Math.sign(h*camRx()) || 0,             // znak EKRANOWY poziomu (jak nysFromDyn)
       tdir: Math.sign(t*camRx()) || 0,             // znak EKRANOWY skrętu (poziomy + pionowy)
@@ -320,7 +355,7 @@ export const NeuroVOR = (()=>{
     const c = Math.max(0, Math.min(1, p.comp||0)), Ohm = headVel||200;
     const ex = canalSpec(spec), pk = CANAL_PARAM[ex.canal][ex.ear];   // kanał POBUDZANY (dowolny z 6) niesie sygnał w HIT
     const gEx = p[pk.gain], toneEx = p[pk.tone];             // horizontal 'P'/'L' → gainR/gainL, toneR/toneL (bez zmian)
-    const rateEx = afferent(toneEx, +gEx*S_HZ*Ohm);
+    const rateEx = excited(toneEx, gEx, Ohm).rate;          // ten sam prymityw co w headImpulse (spójny zapas)
     const headroom = Math.max(0, (R_SAT - rateEx)/R_SAT);   // zapas do nasycenia: 1=pełny, 0=nasycony (utrata informacji)
     const canalRel = Math.max(0, Math.min(1, gEx)) * (0.5 + 0.5*headroom);  // wiarygodność kanału (gain × zapas)
     const neckRel  = c*(1 - canalRel);                       // propriocepcja/efference: rośnie z c, celuje w „martwe pole" kanału
@@ -342,9 +377,10 @@ export const NeuroVOR = (()=>{
     const pkEx = CANAL_PARAM[ex.canal][ex.ear], pkIn = CANAL_PARAM[inh.canal][inh.ear];
     const gEx = p[pkEx.gain], gIn = p[pkIn.gain];            // horizontal 'P' → gainR/gainL (bez zmian numerycznych)
     const toneEx = p[pkEx.tone], toneIn = p[pkIn.tone];
-    const rateEx = afferent(toneEx, +gEx*S_HZ*Ohm);          // pobudzany (może nasycać ≤R_SAT)
+    const ex1 = excited(toneEx, gEx, Ohm);                   // pobudzany: modulacja z ZAKRESU aferentu (nie z sufitu)
+    const rateEx = ex1.rate, modEx = ex1.mod;
     const rateIn = afferent(toneIn, -gIn*S_HZ*Ohm);          // hamowany (obcięcie na 0)
-    const modEx = rateEx - toneEx, modIn = rateIn - toneIn;  // modulacje względem spoczynku (+ / −)
+    const modIn = rateIn - toneIn;                           // modulacja hamująca — ograniczona tonem (Ewald II)
     // Przy prędkości vHIT kanał hamowany jest obcięty → prędkość VOR niesie kanał pobudzany.
     // gain = modulacja pobudzana / modulacja idealna (gEx=1 bez nasycenia → gain 1).
     const gain = Math.max(0, Math.min(1.25, modEx/(S_HZ*Ohm)));
@@ -442,29 +478,59 @@ export const NeuroVOR = (()=>{
   // pion przechyla się KU STRONIE CHOREJ (ipsiwersyjnie). Neuronitis DOLNY (utrata tylnego) daje MAŁY przechył
   // ku choremu, mimo prawidłowego odchylenia skośnego (skew z łagiewki = 0) — zgodne z Musat 2025. Symetria
   // (BVH) → 0. NIE wpływa na werdykt HINTS (to odczyt uzupełniający, nie składowa INFARCT).
+  // SVV i odchylenie skośne leżą na TEJ SAMEJ osi grawiceptywnej (triada OTR: przechył głowy — torsja —
+  // skew), a SVV jest jej NAJCZULSZYM składnikiem. Dlatego przechył musi wynikać z OBU źródeł asymetrii:
+  //   • OBWODOWEGO — łagiewka + kanały pionowe (ubytek → pion ku stronie chorej, ipsiwersyjnie);
+  //   • OŚRODKOWEGO — skewTone (droga otolitowo-pniowa / MLF, ta sama, która daje skew i torsję).
+  // Dawniej svv() czytało wyłącznie tor obwodowy, więc pacjent z jawnym OTR (skew 3°, torsja 4°) miał
+  // SVV = 0,0° = „prawidłowe" — skew bez przechyłu SVV klinicznie praktycznie nie występuje. [H7][H22]
   const SVV_MAX=12, SVV_UTRICLE=1.5, SVV_VCANAL=1.0, SVV_GAIN=5, SVV_THRESH=2;
+  const SVV_SKEW=1.6;   // ° przechyłu SVV na 1° odchylenia skośnego (SVV czulszy niż skew → współczynnik >1)
   function svv(p){
     const g = e => Math.max(0,Math.min(1,p["utricle"+e]))*SVV_UTRICLE
       + ((afferent(p["toneAc"+e],0)+afferent(p["tonePc"+e],0))/(2*R0))*SVV_VCANAL;   // grawiceptywna „siła" ucha
-    const gR=g("R"), gL=g("L"), imb=gR-gL;                   // >0 prawa mocniejsza → pion ku LEWEJ (słabszej/chorej)
-    const tiltSide = imb>1e-6?"L" : imb<-1e-6?"P" : null;    // KU STRONIE CHOREJ (słabszej grawiceptywnie)
-    const deg = Math.min(SVV_MAX, Math.abs(imb)*SVV_GAIN);
-    return { tiltSide, deg, abnormal: deg>=SVV_THRESH };
+    const gR=g("R"), gL=g("L");
+    const periph = (gR-gL)*SVV_GAIN;         // >0 prawa mocniejsza → pion ku LEWEJ (słabszej/chorej)
+    // skewTone>0 = oko P wyżej ⇒ oko L niżej ⇒ przechył głowy/pionu KU LEWEJ — ten sam zwrot co periph>0.
+    const central = (p.skewTone||0)*SVV_SKEW;
+    const towardL = periph + central;
+    const tiltSide = towardL>1e-6?"L" : towardL<-1e-6?"P" : null;   // ipsiwersyjnie: KU stronie chorej
+    const deg = Math.min(SVV_MAX, Math.abs(towardL));
+    return { tiltSide, deg, abnormal: deg>=SVV_THRESH,
+      peripheralDeg: Math.abs(periph), centralDeg: Math.abs(central),
+      central: Math.abs(central) > Math.abs(periph) };   // KTÓRY tor dominuje → clinicalReadout nie zgaduje
   }
 
   // ETAP 7 ([H22]) — VEMP: przedsionkowe miogenne potencjały wywołane. cVEMP (szyjny) ≈ WORECZEK (n. DOLNY),
   // ipsilateralnie; oVEMP (oczny) ≈ ŁAGIEWKA (n. GÓRNY). Rozdziela gałęzie nerwu: neuronitis DOLNY → cVEMP↓ +
   // oVEMP prawidłowy; GÓRNY → odwrotnie. Amplituda z funkcji narządu (0..1). AR% = asymetria międzyuszna.
   const VEMP_THRESH=0.3;    // amplituda < 0.3 → „zniesiony"; 0.3..0.65 → „obniżony"; ≥0.65 → „prawidłowy"
+  const VEMP_HIGH=1.35;     // ≥1.35 → „wzmożony" — VEMP mierzy w OBIE strony, nie tylko w dół
+  const VEMP_SCDS=2.0;      // TRZECIE OKNO (SCDS) → wzrost amplitudy VEMP ipsilateralnie (niski próg cVEMP,
+                            // duże n10 oVEMP). To ROZPOZNAWCZA para SCDS; wcześniej sufit amplitudy = 1.0
+                            // strukturalnie uniemożliwiał jej pokazanie i modelowana dehiscencja dawała
+                            // „VEMP prawidłowy" — czyli uczyła odwrotności tego, co widać w gabinecie. [H18]
   function vemp(p){
-    const clamp = x => Math.max(0, Math.min(1, x));
-    const stat = a => a>=0.65 ? tr("prawidłowy","normal") : a>=VEMP_THRESH ? tr("obniżony","reduced") : tr("zniesiony","absent");
+    const clamp = x => Math.max(0, Math.min(2.5, x));
+    const stat = a => a>=VEMP_HIGH ? tr("wzmożony","enhanced") : a>=0.65 ? tr("prawidłowy","normal")
+                    : a>=VEMP_THRESH ? tr("obniżony","reduced") : tr("zniesiony","absent");
     const asym = (L,R) => (L+R)>0 ? Math.abs(L-R)/(L+R) : 0;                     // AR% (0..1)
-    const weak = (L,R) => Math.abs(L-R)<0.1 ? null : (L<R?"L":"P");
-    const cL=clamp(p.sacculeL), cR=clamp(p.sacculeR), oL=clamp(p.utricleL), oR=clamp(p.utricleR);
+    // weakEar nazywa ucho tylko wtedy, gdy jego amplituda jest FAKTYCZNIE poniżej normy. Sama różnica
+    // międzyuszna nie wystarcza: przy wzmocnieniu SCDS po jednej stronie druga (prawidłowa!) byłaby
+    // inaczej raportowana jako „obniżona".
+    const weak   = (L,R) => (Math.abs(L-R)>=0.1 && Math.min(L,R)<0.65) ? (L<R?"L":"P") : null;
+    const strong = (L,R) => (Math.abs(L-R)>=0.1 && Math.max(L,R)>=VEMP_HIGH) ? (L>R?"L":"P") : null;
+    // OBUSTRONNE zniesienie (otoksyczność/BVH) daje AR%≈0 — dokładnie ta sama pułapka maskowania, którą
+    // kaloryka obsługuje przez bilateralWeak. Bez tej flagi „brak asymetrii" czytało się jak „prawidłowo".
+    const bilat  = (L,R) => L<VEMP_THRESH && R<VEMP_THRESH;
+    const boost = ear => (p.dehiscence===ear ? VEMP_SCDS : 1);
+    const cL=clamp(p.sacculeL*boost("L")), cR=clamp(p.sacculeR*boost("P"));
+    const oL=clamp(p.utricleL*boost("L")), oR=clamp(p.utricleR*boost("P"));
     return {
-      cVEMP:{ organ:tr("woreczek","saccule"), nerve:tr("dolny","inferior"), L:stat(cL), R:stat(cR), ampL:cL, ampR:cR, asym:asym(cL,cR), weakEar:weak(cL,cR) },
-      oVEMP:{ organ:tr("łagiewka","utricle"), nerve:tr("górny","superior"), L:stat(oL), R:stat(oR), ampL:oL, ampR:oR, asym:asym(oL,oR), weakEar:weak(oL,oR) }
+      cVEMP:{ organ:tr("woreczek","saccule"), nerve:tr("dolny","inferior"), L:stat(cL), R:stat(cR), ampL:cL, ampR:cR,
+              asym:asym(cL,cR), weakEar:weak(cL,cR), strongEar:strong(cL,cR), bilateralWeak:bilat(cL,cR) },
+      oVEMP:{ organ:tr("łagiewka","utricle"), nerve:tr("górny","superior"), L:stat(oL), R:stat(oR), ampL:oL, ampR:oR,
+              asym:asym(oL,oR), weakEar:weak(oL,oR), strongEar:strong(oL,oR), bilateralWeak:bilat(oL,oR) }
     };
   }
 
@@ -534,7 +600,9 @@ export const NeuroVOR = (()=>{
     strokeCentral:{ get label(){return tr("Udar móżdżku / pnia (OŚRODEK)","Cerebellar / brainstem stroke (CENTRAL)");}, side:"P",
       // kanały SPRAWNE (gain≈1 → HIT prawidłowy), łagodny ton asymetryczny ośrodkowy (oczopląs samoistny),
       // integrator „leaky" (oczopląs zmienny kierunkowo), asymetria grawiceptywna (skew + torsja).
-      params:{ toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:3, otrTorsion:4 } },
+      // skewTone UJEMNY: udar pniowo-móżdżkowy dający AVS to najczęściej zawał boczny opuszki (Wallenberg),
+      // a OTR poniżej skrzyżowania jest IPSIWERSYJNY — przy zmianie po stronie P oko P stoi NIŻEJ. [H7]
+      params:{ toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:-3, otrTorsion:4 } },
     bvh:          { get label(){return tr("Obustronna westybulopatia / otoksyczność (BVH)","Bilateral vestibulopathy / ototoxicity (BVH)");}, side:null,
       // SYMETRYCZNY ubytek OBU błędników → brak oczopląsu samoistnego (symetria!), ale vHIT patologiczny
       // OBUSTRONNIE we wszystkich płaszczyznach. Objawy: oscylopsja przy ruchu głowy, chód po ciemku (nie okoruch).
@@ -548,25 +616,39 @@ export const NeuroVOR = (()=>{
     const hiAbnormal = hiR.abnormal || hiL.abnormal;
     const hiSide = hiR.abnormal ? "P" : hiL.abnormal ? "L" : null;
     const dark = observe(p,false), lit = observe(p,true);
-    const hasSpont = dark.spv >= VIS_THRESH;                  // AVS = obecny oczopląs samoistny
+    // Oczopląs samoistny ma DWIE składowe: POZIOMĄ (płaszczyzna, którą bada bedside'owa triada HINTS) oraz
+    // PIONOWO-SKRĘTNĄ z kanałów pionowych. Dawniej liczyła się wyłącznie pozioma, więc pacjent z 9–12°/s
+    // oczopląsem pionowo-skrętnym (np. neuronitis nerwu DOLNEGO [H22]) dostawał werdykt „normal" — i to
+    // OBOK własnej listy centralSigns clinicalReadout, która ten sam oczopląs zgłaszała jako czerwoną flagę.
+    const hasSpontH = dark.spv >= VIS_THRESH;                 // AVS w płaszczyźnie poziomej
+    const hasSpontV = (dark.spvV||0) >= VIS_THRESH;           // składowa pionowo-skrętna
+    const hasSpont  = hasSpontH || hasSpontV;
     const dirChanging = directionChanging(p, true);
     const ts = skew(p);
+    // Płaszczyzny skośne odróżniają oczopląs pionowo-skrętny OBWODOWY (jest ubytek kanału pionowego, widoczny
+    // w vHIT RALP/LARP) od OŚRODKOWEGO (pion BEZ ubytku kanałów) — to dokładny pionowy odpowiednik „Impulse
+    // Normal". Bez tego rozróżnienia neuronitis dolny (obwód!) byłby znakowany jako ośrodek.
+    const ralp = vhitPlane(p,"RALP"), larp = vhitPlane(p,"LARP");
+    const vertCanalDeficit = ralp.abnormal || larp.abnormal;
     const nyPattern = dirChanging ? "directionChanging" : (hasSpont ? "unidirectional" : "none");
     // INFARCT — ważny w kontekście AVS (obecny oczopląs samoistny):
-    const impulseNormalDanger = hasSpont && !hiAbnormal;      // HIT prawidłowy MIMO oczopląsu = ośrodek
-    const anyFinding = hasSpont || dirChanging || ts.present || hiAbnormal;
+    const impulseNormalDanger = hasSpontH && !hiAbnormal;     // HIT prawidłowy MIMO oczopląsu = ośrodek (oś POZIOMA)
+    const isolatedVertical = hasSpontV && !hasSpontH && !vertCanalDeficit;   // ten sam wniosek na osi PIONOWEJ
+    const anyFinding = hasSpont || dirChanging || ts.present || hiAbnormal || vertCanalDeficit;
     const centralSigns = [];
     if(impulseNormalDanger) centralSigns.push(tr("HIT prawidłowy mimo oczopląsu samoistnego (Impulse Normal)","HIT normal despite spontaneous nystagmus (Impulse Normal)"));
+    if(isolatedVertical)    centralSigns.push(tr("izolowany oczopląs pionowo-skrętny przy PRAWIDŁOWYM vHIT kanałów pionowych","isolated vertical-torsional nystagmus with NORMAL vertical-canal vHIT"));
     if(dirChanging)         centralSigns.push(tr("oczopląs zmienny kierunkowo (Fast-phase Alternating)","direction-changing nystagmus (Fast-phase Alternating)"));
     if(ts.central)          centralSigns.push(tr("dodatni Test of Skew — pionowa sakada przy odsłanianiu (Refixation on Cover Test)","positive Test of Skew — vertical saccade on uncovering (Refixation on Cover Test)"));   // tylko ZNACZĄCY skew (mały = obwodowy)
     const verdict = !anyFinding ? "normal" : (centralSigns.length ? "central" : "peripheral");
     return {
       verdict,
       hi: { abnormal:hiAbnormal, side:hiSide, right:hiR, left:hiL },
-      ny: { pattern:nyPattern, hasSpontaneous:hasSpont, directionChanging:dirChanging,
-            suppresses:lit.suppressed, dark, lit },
+      vhitVertical: { RALP:ralp, LARP:larp, abnormal:vertCanalDeficit },   // liczone RAZ — clinicalReadout reużywa
+      ny: { pattern:nyPattern, hasSpontaneous:hasSpont, horizontal:hasSpontH, vertical:hasSpontV,
+            directionChanging:dirChanging, suppresses:lit.suppressed, dark, lit },
       ts,
-      infarct: { impulseNormal:impulseNormalDanger, fastAlternating:dirChanging, refixationCover:ts.central },
+      infarct: { impulseNormal:impulseNormalDanger, isolatedVertical, fastAlternating:dirChanging, refixationCover:ts.central },
       centralSigns
     };
   }
@@ -622,7 +704,7 @@ export const NeuroVOR = (()=>{
     const h = hints(p), cal = caloricBattery(p);
     const dark = h.ny.dark, lit = h.ny.lit, sk = h.ts;         // Fix7: reuse z hints (bez ponownego observe/skew)
     const hc = { plane:"HC", tests:[h.hi.right, h.hi.left], abnormal:h.hi.abnormal };  // HC = te same pchnięcia co w hints
-    const ralp = vhitPlane(p,"RALP"), larp = vhitPlane(p,"LARP");  // płaszczyzny pionowe — liczone raz
+    const ralp = h.vhitVertical.RALP, larp = h.vhitVertical.LARP;  // płaszczyzny pionowe — reuse z hints (jedno źródło)
     const scds = p.dehiscence ? pressureStimulus(p,{type:"sound"}) : null;
     const findings = [], peripheralSigns = [], centralSigns = [], ambiguities = [];
 
@@ -635,7 +717,10 @@ export const NeuroVOR = (()=>{
       const f = lit.suppressionFactor, supp = f<=0.5 && (dark.spv>0.5 || (dark.spvV||0)>0.5);  // supresja poziomu LUB pionu
       findings.push(tr(`Oczopląs samoistny: ${parts.join(" + ")}; ${supp?"tłumiony":"NIEtłumiony"} fiksacją.`,`Spontaneous nystagmus: ${parts.join(" + ")}; ${supp?"suppressed":"NOT suppressed"} by fixation.`));
       (supp ? peripheralSigns : centralSigns).push(supp ? tr("oczopląs tłumiony fiksacją","nystagmus suppressed by fixation") : tr("oczopląs NIEtłumiony fiksacją","nystagmus NOT suppressed by fixation"));
-      if(vSpont && !hSpont) centralSigns.push(tr("izolowany oczopląs pionowo-skrętny (klasycznie podejrzany o ośrodek)","isolated vertical-torsional nystagmus (classically suspicious for a central cause)"));
+      // Izolowany pion jest czerwoną flagą tylko wtedy, gdy NIE tłumaczy go ubytek kanału pionowego. Ten sam
+      // obraz przy patologicznym vHIT RALP/LARP to neuronitis nerwu DOLNEGO — jednostka OBWODOWA [H22].
+      if(h.infarct.isolatedVertical) centralSigns.push(tr("izolowany oczopląs pionowo-skrętny przy prawidłowym vHIT kanałów pionowych (podejrzenie ośrodka)","isolated vertical-torsional nystagmus with normal vertical-canal vHIT (suspicious for a central cause)"));
+      else if(vSpont && !hSpont)     peripheralSigns.push(tr("oczopląs pionowo-skrętny z ubytkiem kanału pionowego (obwodowy)","vertical-torsional nystagmus with a vertical-canal deficit (peripheral)"));
     } else findings.push(tr("Brak oczopląsu samoistnego w spoczynku.","No spontaneous nystagmus at rest."));
     if(h.ny.directionChanging){ findings.push(tr("Oczopląs zmienia kierunek ze spojrzeniem (spojrzeniowy).","Nystagmus changes direction with gaze (gaze-evoked).")); centralSigns.push(tr("oczopląs zmienny kierunkowo","direction-changing nystagmus")); }
 
@@ -665,10 +750,29 @@ export const NeuroVOR = (()=>{
     // SVV / przechył pionu — grawiceptywny (łagiewka + kanały pionowe); OBWODOWY, ku stronie chorej. Czulszy niż
     // odchylenie skośne: neuronitis DOLNY daje mały przechył SVV mimo prawidłowego skew (skew z łagiewki=0). [H22]
     const sv = svv(p);
-    if(sv.abnormal){ findings.push(tr(`SVV: przechył pionu ku stronie ${side(sv.tiltSide)} (${R1(sv.deg)}°) — grawiceptywny, obwodowy${sk.present?"":" (odchylenie skośne prawidłowe)"}.`,`SVV: vertical tilt toward the ${side(sv.tiltSide)} side (${R1(sv.deg)}°) — graviceptive, peripheral${sk.present?"":" (skew deviation normal)"}.`)); peripheralSigns.push(tr("przechył SVV ku stronie chorej","SVV tilt toward the affected side")); }
+    if(sv.abnormal){
+      // Przechył SVV NIE jest swoisty dla obwodu — to najczulszy składnik OTR i wychyla się także przy
+      // uszkodzeniu drogi grawiceptywnej w pniu. Źródło rozstrzyga svv().central, a nie domysł.
+      findings.push(sv.central
+        ? tr(`SVV: przechył pionu ku stronie ${side(sv.tiltSide)} (${R1(sv.deg)}°) — oś grawiceptywna OŚRODKOWA (razem z odchyleniem skośnym / OTR).`,`SVV: vertical tilt toward the ${side(sv.tiltSide)} side (${R1(sv.deg)}°) — CENTRAL graviceptive axis (together with skew deviation / OTR).`)
+        : tr(`SVV: przechył pionu ku stronie ${side(sv.tiltSide)} (${R1(sv.deg)}°) — grawiceptywny, obwodowy${sk.present?"":" (odchylenie skośne prawidłowe)"}.`,`SVV: vertical tilt toward the ${side(sv.tiltSide)} side (${R1(sv.deg)}°) — graviceptive, peripheral${sk.present?"":" (skew deviation normal)"}.`));
+      (sv.central ? centralSigns : peripheralSigns).push(sv.central
+        ? tr("przechył SVV z ośrodkowej osi grawiceptywnej","SVV tilt from the central graviceptive axis")
+        : tr("przechył SVV ku stronie chorej","SVV tilt toward the affected side"));
+    }
 
     // VEMP — cVEMP ≈ WORECZEK (n. DOLNY), oVEMP ≈ ŁAGIEWKA (n. GÓRNY): rozdziela gałęzie nerwu. [H22]
     const ve = vemp(p);
+    // OBUSTRONNE zniesienie daje AR%≈0 — bez własnej flagi „brak asymetrii" czytałoby się jak „prawidłowo"
+    // (ta sama pułapka maskowania co CP≈0 przy BVH). WZMOŻENIE = trzecie okno (SCDS), nie ubytek. [H18][H19]
+    if(ve.cVEMP.bilateralWeak && ve.oVEMP.bilateralWeak) findings.push(tr("VEMP: OBUSTRONNIE zniesione (cVEMP i oVEMP) — asymetria międzyuszna ≈0 MIMO ubytku (jak CP przy BVH).","VEMP: BILATERALLY absent (cVEMP and oVEMP) — interaural asymmetry ≈0 DESPITE the deficit (like CP in BVH)."));
+    else if(ve.cVEMP.bilateralWeak) findings.push(tr("cVEMP: obustronnie zniesiony (woreczek / nerw dolny) — brak asymetrii mimo ubytku.","cVEMP: bilaterally absent (saccule / inferior nerve) — no asymmetry despite the deficit."));
+    else if(ve.oVEMP.bilateralWeak) findings.push(tr("oVEMP: obustronnie zniesiony (łagiewka / nerw górny) — brak asymetrii mimo ubytku.","oVEMP: bilaterally absent (utricle / superior nerve) — no asymmetry despite the deficit."));
+    if(ve.cVEMP.strongEar || ve.oVEMP.strongEar){
+      const se = ve.oVEMP.strongEar || ve.cVEMP.strongEar;
+      findings.push(tr(`VEMP WZMOŻONY po stronie ${side(se)} (duże n10 oVEMP / niski próg cVEMP) — wzorzec TRZECIEGO OKNA, nie ubytku.`,`VEMP ENHANCED on the ${side(se)} side (large oVEMP n10 / low cVEMP threshold) — a THIRD WINDOW pattern, not a deficit.`));
+      peripheralSigns.push(tr("VEMP wzmożony (trzecie okno)","VEMP enhanced (third window)"));
+    }
     if(ve.cVEMP.weakEar){ findings.push(tr(`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.cVEMP.weakEar)} — woreczek (nerw DOLNY).`,`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} on the ${side(ve.cVEMP.weakEar)} side — saccule (INFERIOR nerve).`)); peripheralSigns.push(tr("cVEMP obniżony (woreczek — n. dolny)","cVEMP reduced (saccule — inferior nerve)")); }
     if(ve.oVEMP.weakEar){ findings.push(tr(`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.oVEMP.weakEar)} — łagiewka (nerw GÓRNY).`,`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} on the ${side(ve.oVEMP.weakEar)} side — utricle (SUPERIOR nerve).`)); peripheralSigns.push(tr("oVEMP obniżony (łagiewka — n. górny)","oVEMP reduced (utricle — superior nerve)")); }
 

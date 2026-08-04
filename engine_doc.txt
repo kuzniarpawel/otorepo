@@ -484,6 +484,11 @@ KONWENCJE
    fixationGain   : zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0.              [H3]
    integratorTau  : stała czasowa integratora nerwowego [s]; zdrowy ~25, ośrodek „leaky" ~1–3. [H6]
    skewTone       : grawiceptywna asymetria pionowa [°, ze znakiem]; + = oko P wyżej.          [H7]
+                    ZNAK vs STRONA CHORA: reakcja pochylenia ocznego (OTR) przy ubytku OBWODOWYM
+                    (i przy zmianie pniowej PONIŻEJ skrzyżowania, np. Wallenberg) jest IPSIWERSYJNA —
+                    oko po stronie CHOREJ stoi NIŻEJ. Ubytek ucha P ⇒ skewTone UJEMNY. Poprawka
+                    z przeglądu neurofizjologicznego: wcześniej nerveBranchLesion i preset udaru
+                    dawały znak odwrotny, więc silnik wskazywał złą stronę.
    otrTorsion     : torsja OTR [°] (bieguny górne ku oku niższemu).                            [H7]
    sacculeL/R     : funkcja WORECZKA (0..1, zdrowy=1) → cVEMP; n. DOLNY.                       [H22]
    utricleL/R     : funkcja ŁAGIEWKI (0..1, zdrowy=1) → oVEMP + współtworzy SVV; n. GÓRNY.     [H22]
@@ -506,11 +511,25 @@ API PUBLICZNE (zwracane z modułu)
    ETAP 1 — oczopląs SAMOISTNY z asymetrii tonicznej (push-pull). Mózg szacuje prędkość głowy
    z różnicy aferentów pary poziomej: Ω_est ∝ (rateL − rateR). Asymetria toniczna udaje stały
    obrót → faza WOLNA ku błędnikowi słabszemu, faza SZYBKA (widoczny beat) ku silniejszemu.
-   spv = SPV_MAX·|toneL−toneR|/R0 (SPV_MAX=12°/s, R0=90). Oczopląs poziomo-skrętny (tH = 0.5·h).
+   spv = SPV_MAX·|toneL−toneR|/R0 (SPV_MAX=30°/s, R0=90). Oczopląs poziomo-skrętny (tH = 0.5·h·asym).
    Kierunek STAŁY niezależnie od spojrzenia — cecha OBWODOWA.
    ETAP 7 (E3): do poziomej dochodzi składowa PIONOWO-SKRĘTNA z par kanałów pionowych (verticalBeat) —
    pola v/vdir, tV, t=tH+tV, spvV/strengthV; kind="verticalTorsional" gdy pion dominuje. Kanały pionowe
    zdrowe → v=0, spvV=0 (poziomy przypadek bez zmian). Zob. verticalBeat (ETAP 7).
+   DWIE POPRAWKI SKALI z przeglądu neurofizjologicznego:
+     • SPV_MAX 12→30°/s. Ostry UVH w ciemności bije ~20–40°/s (neuronitis, pierwsze doby), więc dawny
+       SUFIT modelu (12°/s przy zupełnie niemym błędniku) leżał PONIŻEJ realnego zakresu. Skutek był
+       widoczny na ekranie: przy fixationGain 0.9 ostry neuronitis dawał w świetle 1.1°/s, czyli mniej
+       niż własny próg VIS_THRESH=2 — patologia wychodziła „niewidoczna" przy łóżku. Teraz 2.8°/s.
+     • tH ważone intensywnością (·asym). Składowe PIONOWE niosą intensywność (imbalans pary /R0),
+       a pozioma niosła jednostkowy znak — sumowanie t=tH+tV mieszało więc kierunek z magnitudą.
+       Skutek: śladowy oczopląs poziomy (asym≈0.01) wnosił PEŁNE 0.5 i potrafił ODWRÓCIĆ wypadkowy
+       kierunek skrętu (tdir, czyli to, co rysuje renderer) silnego oczopląsu pionowo-skrętnego.
+   `kind` rozstrzyga porównanie WIDOCZNYCH prędkości (spvV vs spv), a nie |v| vs |h| — h zawsze wynosi
+   ±1, więc 0.1°/s poziomu „wygrywało" z 12°/s pionu.
+   UWAGA NA NAZWĘ `lesionEar`: to ucho o NIŻSZEJ aktywności jądra — pokrywa się z uchem chorym tylko
+   przy ubytku. Przy zmianie DRAŻNIĄCEJ (Ménière irritative) chore ucho jest AKTYWNIEJSZE, więc stronę
+   faktycznie chorą niesie `trueLesionEar` (z compensate ← p.lesionEar, ustawiane m.in. przez meniere()).
 
  suppressionFactor(p, fixOn) -> [0..~1.5]                                                       [H3]
  observe(p, fixOn) -> spontaneous(p) z nałożoną supresją {spv,spvRaw,suppressionFactor,suppressed,...}
@@ -525,6 +544,13 @@ API PUBLICZNE (zwracane z modułu)
    (ipsilateralny). gain = modulacja pobudzana / idealna. deficit → SAKADA korygująca (overt gdy
    ≥2.5° ≈ gain<0.83), skierowana przeciwnie do pchnięcia (`saccadeToSide`). OŚRODEK: gainy≈1 →
    HIT prawidłowy (groźny). Kalibracja S_HZ=0.8 → obcięcie ~tone/S≈112°/s < prędkości vHIT.
+   ZAKRES DYNAMICZNY aferentu (poprawka z przeglądu): modulacja pobudzeniowa jest ograniczona WŁASNOŚCIĄ
+   aferentu MOD_MAX=R_SAT−R0=210 Hz (helper excited(), wspólny z fusionWeights), a nie liczona jako
+   rate−tone. Dawniej wysoki ton spoczynkowy sam zjadał zapas do sufitu: ton ≥167 Hz przy gain=1.0 dawał
+   vHIT PATOLOGICZNY bez żadnego ubytku wzmocnienia — a ton do 200 Hz jest osiągalny suwakiem w
+   Laboratorium. Przeczyło to własnej tezie modułu: w fazie DRAŻNIENIA Ménière'a gain jest zachowany,
+   więc vHIT pozostaje PRAWIDŁOWY, i to jest cecha RÓŻNICUJĄCA tę jednostkę [H20]. Nasycenie nadal
+   działa tam, gdzie ma fizjologiczny sens — przy bardzo dużej prędkości głowy (Ω>262°/s dla gain 1.0).
    ETAP 7 (E2): drugi argument POLIMORFICZNY — 'P'/'L' (poziomy, jw., liczbowo bez zmian) LUB {canal,ear}
    (dowolny z 6 kanałów; płaszczyzny HC/RALP/LARP). Zwraca też canal/ear/plane/coplanar/saccade{h,v,t}. Zob. vhitPlane.
 
@@ -542,28 +568,53 @@ API PUBLICZNE (zwracane z modułu)
    central gdy |skewTone|≥SKEW_CENTRAL(2.5°) — dopiero ZNACZĄCY skew liczony jako cecha OŚRODKOWA (INFARCT);
    mały skew (np. łagiewka n. górnego) present, ale NIE central (unika fałszywego „udaru" — poprawka z przeglądu).
    Test naprzemiennego zasłaniania: odsłonięte oko łapie fiksację PIONOWĄ SAKADĄ = TS dodatni = ośrodek.
- svv(p) -> {tiltSide, deg, abnormal}                                                             [H22]
-   ETAP 7 — SUBIEKTYWNA PIONOWA (SVV): grawiceptywny przechył = f(łagiewka utricle + kanały PIONOWE AC/PC).
-   Pion przechyla się KU STRONIE CHOREJ (słabszej grawiceptywnie). CZULSZY niż odchylenie skośne: neuronitis
-   DOLNY daje ~2.5° przechyłu MIMO prawidłowego skew (skew z łagiewki=0). Symetria (BVH)→0. abnormal gdy ≥2°.
-   NIE wpływa na werdykt HINTS (odczyt uzupełniający).
- vemp(p) -> {cVEMP:{L,R,ampL,ampR,asym,weakEar,organ,nerve}, oVEMP:{...}}                         [H22]
+ svv(p) -> {tiltSide, deg, abnormal, peripheralDeg, centralDeg, central}                          [H7][H22]
+   ETAP 7 — SUBIEKTYWNA PIONOWA (SVV). Przechył grawiceptywny liczony z DWÓCH torów tej samej osi:
+     • OBWODOWY — łagiewka (utricle) + kanały PIONOWE AC/PC; pion przechyla się KU STRONIE CHOREJ;
+     • OŚRODKOWY — skewTone (droga otolitowo-pniowa/MLF, ta sama, która daje skew i torsję), SVV_SKEW=1.6°/1°.
+   `central` mówi, KTÓRY tor dominuje — clinicalReadout na tej podstawie przypisuje objaw obwodowi albo
+   ośrodkowi, zamiast (jak dawniej) zawsze obwodowi. Poprawka z przeglądu: svv() czytało wyłącznie tor
+   obwodowy, więc pacjent z jawnym OTR (skew 3°, torsja 4°) miał SVV=0.0° = „prawidłowe" — a skew bez
+   przechyłu SVV klinicznie praktycznie nie występuje (SVV to NAJCZULSZY składnik triady OTR).
+   CZULSZY niż odchylenie skośne: neuronitis DOLNY daje przechył MIMO prawidłowego skew (skew z łagiewki=0).
+   Symetria (BVH)→0. abnormal gdy ≥2°. NIE wpływa na werdykt HINTS (odczyt uzupełniający).
+ vemp(p) -> {cVEMP:{L,R,ampL,ampR,asym,weakEar,strongEar,bilateralWeak,organ,nerve}, oVEMP:{...}}  [H18][H22]
    ETAP 7 — VEMP: cVEMP(szyjny)≈WORECZEK→n.DOLNY (ipsi); oVEMP(oczny)≈ŁAGIEWKA→n.GÓRNY. Amplituda z funkcji
-   narządu (sacculeL/R, utricleL/R ∈0..1). Status: ≥0.65 prawidłowy / ≥0.3 obniżony / <0.3 zniesiony. Rozdziela
-   gałęzie: neuronitis DOLNY→cVEMP↓+oVEMP norma; GÓRNY→odwrotnie; BVH→oba obustronnie. weakEar = ucho słabsze.
+   narządu (sacculeL/R, utricleL/R) × wzmocnienie TRZECIEGO OKNA (dehiscence ⇒ ×VEMP_SCDS=2.0 ipsilateralnie).
+   Status: ≥1.35 wzmożony / ≥0.65 prawidłowy / ≥0.3 obniżony / <0.3 zniesiony. Rozdziela gałęzie: neuronitis
+   DOLNY→cVEMP↓+oVEMP norma; GÓRNY→odwrotnie. Dwie poprawki z przeglądu:
+     • bilateralWeak — OBUSTRONNE zniesienie (BVH/otoksyczność) daje AR%≈0, więc sam brak asymetrii czytał
+       się jak „prawidłowo"; to ta sama pułapka maskowania, którą kaloryka obsługuje flagą bilateralWeak;
+     • strongEar / status „wzmożony" — SCDS klinicznie ZWIĘKSZA amplitudę (duże n10 oVEMP, niski próg cVEMP),
+       a dawny sufit amplitudy 1.0 strukturalnie to uniemożliwiał: modelowana dehiscencja pokazywała
+       „VEMP prawidłowy", czyli odwrotność rozpoznawczej pary SCDS. weakEar nazywa ucho tylko wtedy, gdy jego
+       amplituda jest FAKTYCZNIE < 0.65 (inaczej wzmocnienie po jednej stronie „obniżałoby" zdrową drugą).
 
  SCENARIOS, scenario(key) -> patient                                                            [H8]
    Presety: normal · neuritisR/neuritisL (OBWÓD: tone↓ + gain↓ chorego kanału, kłaczek sprawny,
    integrator prawidłowy, brak skew) · strokeCentral (OŚRODEK: kanały SPRAWNE gain≈1 → HIT prawidłowy,
-   łagodny ton asymetryczny, integrator „leaky", skew+torsja). KLUCZ: ton STATYCZNY (oczopląs) i
+   łagodny ton asymetryczny, integrator „leaky", skew+torsja; skewTone=−3 = OTR ipsiwersyjny dla zmiany
+   po stronie P, czyli wariant opuszkowy/Wallenberg — najczęstsza naczyniowa przyczyna AVS). KLUCZ: ton STATYCZNY (oczopląs) i
    wzmocnienie DYNAMICZNE (HIT) to OSOBNE parametry — dlatego udar daje oczopląs przy prawidłowym HIT.
 
- hints(p) -> {verdict, hi, ny, ts, infarct, centralSigns}                                       [H8]
+ hints(p) -> {verdict, hi, vhitVertical, ny, ts, infarct, centralSigns}                          [H8][H22]
    ETAP 5 — synteza HINTS. verdict: "normal" | "peripheral" (uspokajający) | "central" (groźny).
    Cechy ośrodkowe (INFARCT): Impulse Normal (HIT prawidłowy MIMO oczopląsu samoistnego) ·
-   Fast-phase Alternating (oczopląs zmienny kierunkowo) · Refixation on Cover Test (dodatni skew).
+   Fast-phase Alternating (oczopląs zmienny kierunkowo) · Refixation on Cover Test (dodatni skew) ·
+   isolatedVertical (izolowany oczopląs pionowo-skrętny przy PRAWIDŁOWYM vHIT kanałów pionowych).
    Obecność którejkolwiek → "central". Triada uspokajająca (patolog. HIT + jednokierunkowy tłumiony
    fiksacją + brak skew) → "peripheral".
+   DWIE OSIE OCZOPLĄSU (poprawka z przeglądu). ny.horizontal / ny.vertical rozdzielają składową poziomą
+   od pionowo-skrętnej; ny.hasSpontaneous = suma. Wcześniej liczyła się TYLKO pozioma, więc pacjent
+   z 9–12°/s oczopląsem pionowo-skrętnym (neuronitis nerwu DOLNEGO [H22]) dostawał verdict "normal" —
+   i to OBOK listy centralSigns z clinicalReadout, która ten sam oczopląs zgłaszała jako czerwoną flagę.
+   Werdykt i lista objawów zaprzeczały sobie na jednym ekranie.
+   Kryteria są PER OŚ, bo HIT bada kanały POZIOME:
+     • Impulse Normal ← oczopląs POZIOMY przy prawidłowym HIT poziomym;
+     • isolatedVertical ← oczopląs PIONOWY przy prawidłowym vHIT RALP/LARP (vhitVertical) — dokładny
+       pionowy odpowiednik tego samego rozumowania. Warunek „prawidłowy vHIT pionowy" jest KONIECZNY:
+       ten sam oczopląs Z ubytkiem kanału pionowego to neuronitis nerwu DOLNEGO, czyli OBWÓD.
+   vhitVertical {RALP, LARP, abnormal} liczone RAZ i reużywane przez clinicalReadout (jedno źródło).
 
  --- ETAP 6: KOMPENSACJA OŚRODKOWA (neuroplastyczność pnia/móżdżku) — dodano 2026-07-08 ---
 
@@ -705,13 +756,19 @@ API PUBLICZNE (zwracane z modułu)
    „nieokreślona".
 
 STAŁE EKSPORTOWANE (w publicznym obiekcie NeuroVOR — używane też przez UI, np. R0, VIS_THRESH): R0=90
-   (spoczynek), R_SAT=300 (nasycenie), SPV_MAX=12 (°/s przy pełnej asymetrii), VIS_THRESH=2 (°/s — próg
-   widoczności oczopląsu), CLAMP_TAU=0.32 (rozkład udziału clampu w c), DVS_FRAC=0.67 (maks. skrócenie
-   velocity storage).
-STAŁE WEWNĘTRZNE (nieeksportowane): TORS_FRAC=0.5 (udział skrętu poziomo-skrętnego), S_HZ=0.8 (czułość
-   aferentu Hz/°·s⁻¹), CAL_NORMAL=20 (°/s norma irygacji), CAL_BILAT=6 (°/s próg obustronny/ucho),
-   CP_THRESH=25%, DP_THRESH=30%, SKEW_CENTRAL=2.5 (° — próg skew dla flagi OŚRODKOWEJ; mały skew < progu =
-   obwodowy, np. łagiewka n. górnego).
+   (spoczynek), R_SAT=300 (nasycenie), SPV_MAX=30 (°/s przy pełnej asymetrii — ostry UVH w ciemności),
+   VIS_THRESH=2 (°/s — próg widoczności oczopląsu), CLAMP_TAU=0.32 (rozkład udziału clampu w c),
+   DVS_FRAC=0.67 (maks. skrócenie velocity storage).
+STAŁE WEWNĘTRZNE (nieeksportowane): TORS_FRAC=0.5 (udział skrętu poziomo-skrętnego), MOD_MAX=210 (zakres
+   dynamiczny aferentu = R_SAT−R0), S_HZ=0.8 (czułość aferentu Hz/°·s⁻¹), CAL_NORMAL=20 (°/s norma
+   irygacji), CAL_BILAT=6 (°/s próg obustronny/ucho), CP_THRESH=25%, DP_THRESH=30%, SKEW_CENTRAL=2.5
+   (° — próg skew dla flagi OŚRODKOWEJ; mały skew < progu = obwodowy, np. łagiewka n. górnego),
+   SVV_SKEW=1.6 (° przechyłu SVV na 1° skew — tor OŚRODKOWY osi grawiceptywnej), VEMP_HIGH=1.35
+   (próg statusu „wzmożony"), VEMP_SCDS=2.0 (wzmocnienie VEMP przez trzecie okno).
+UWAGA O SKALI: SPV_MAX=30 > CAL_NORMAL=20, więc w OSTRYM ubytku oczopląs samoistny przewyższa każdą
+   pojedynczą odpowiedź kaloryczną i SUROWY wskaźnik CP spada do ~0 (pełne maskowanie). Jest to zgodne
+   z kliniką i dokładnie ten powód, dla którego istnieje CPcorrected — i to CPcorrected, nie CP, karmi
+   weakEar/caloricWeak/dissociation. Wskaźniki lokalizujące pozostają więc odporne.
 
 STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+Scene3D+NeuroVOR z HTML):
  [x] Etap 1: symetria→0; wypadnięcie P→bije w lewo (ekran +1), spv 12; L→lustro; liniowość z asymetrią;
@@ -762,9 +819,32 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      vhitPlane w NeuroVOR); dt<=0 nie zawiesza (RangeError). UWAGA: walidacja `variant` w position() musi
      dopuszczać KONWENCJĘ APLIKACJI "canalo"|"cupulo" (nie "canalith"!) — inaczej łamie diagnostykę (nysFromGeom
      woła position z state.variant="canalo"). t19 pilnuje "canalo" jako POPRAWNEGO. ŁĄCZNIE 552/552 (t1–t19).
-     ŁĄCZNIE 511/511 (t1–t17). [#4 sprzężenie ton→vHIT przy nasyceniu R_SAT (ton >~170 → gain vHIT zaniżony
-     mimo gain=1.0; ton 150 Ménière bezpieczny, gain 0.94) — świadomie ZOSTAWIONE do decyzji przy suwaku tonu
-     w fazie UI/U2 (patrz todo.txt, blok U2). Nasycenie jest fizjologiczne; to trade-off dydaktyka↔fizjologia.]
+     ŁĄCZNIE 511/511 (t1–t17). [#4 sprzężenie ton→vHIT przy nasyceniu R_SAT — ZAMKNIĘTE w przeglądzie t20
+     (patrz niżej): modulacja pobudzeniowa ograniczona MOD_MAX=R_SAT−R0, nie liczona jako rate−tone.]
+ [x] PRZEGLĄD NEUROFIZJOLOGICZNY (t20) — pełna krytyka warstwy NeuroVOR; 7 błędów usuniętych, każdy
+     najpierw ODTWORZONY liczbowo na sondzie, potem naprawiony, potem sonda powtórzona:
+     #1 hints() widziało TYLKO oś poziomą → neuronitis nerwu DOLNEGO (9–12°/s oczopląs pionowo-skrętny)
+        dawał verdict "normal", a clinicalReadout zwracał ten sam werdykt OBOK własnej listy centralSigns,
+        która ten oczopląs zgłaszała jako czerwoną flagę. Teraz ny.horizontal/ny.vertical + infarct.
+        isolatedVertical bramkowany vHIT-em kanałów pionowych (obwód↔ośrodek rozróżniony, nie zgadywany).
+     #2 ZNAK OTR odwrócony: nerveBranchLesion(superior) i preset udaru stawiały WYŻEJ oko po stronie
+        chorej; OTR obwodowy i pniowy poniżej skrzyżowania jest IPSIWERSYJNY (oko chore NIŻEJ). [H7]
+     #3 svv() ignorowało tor OŚRODKOWY (skewTone) → pacjent z jawnym OTR miał SVV 0.0° = „prawidłowe";
+        dodatkowo KAŻDY przechył SVV trafiał do peripheralSigns, choć SVV nie jest swoista dla obwodu.
+     #4 ton spoczynkowy zjadał zapas do R_SAT → vHIT patologiczny przy gain=1.0 (ton ≥167 Hz, osiągalny
+        suwakiem) — wprost przeciw tezie o zachowanym vHIT w drażnieniu Ménière'a. [H20]
+     #5 spontaneous() mieszało jednostkowy ZNAK poziomu z MAGNITUDĄ pionu: `kind` klasyfikowany przez
+        |v| vs |h| (h zawsze ±1), a t=tH+tV sumowało 0.5 z pełną wagą — śladowy poziom odwracał tdir.
+     #6 obustronnie zniesione VEMP (BVH) były NIEWIDOCZNE w odczycie (AR%≈0), a UI pisało wprost
+        „funkcja otolitowa zachowana obustronnie" — ta sama pułapka maskowania co CP≈0 przy BVH.
+     #7 modelowana dehiscencja (SCDS) nie miała ŻADNEGO odbicia w VEMP (sufit amplitudy 1.0), choć
+        niski próg cVEMP / duże n10 oVEMP to jej para rozpoznawcza; meniere() nie podawało strony chorej,
+        więc heurystyka „chory = słabszy błędnik" wskazywała w drażnieniu ucho ZDROWE i tam kierowała
+        kompensację; flaga `bechterew` zapalała się na samej zmianie drażniącej (bez ładunku pacemakera).
+     KALIBRACJA: SPV_MAX 12→30°/s (ostry UVH w ciemności 20–40°/s; przy 12 ostry neuronitis dawał
+     w świetle 1.1°/s = PONIŻEJ własnego progu VIS_THRESH, czyli patologię „niewidoczną").
+     ZAKRES ZMIAN (wyrocznie): engine.neuro = 12/12 pacjentów, dom = 18/91 ekranów (wyłącznie HINTS),
+     pose 360/360 i plans 14/14 BEZ ZMIAN — fizyka BPPV nietknięta. bridge/view:check zielone.
  [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; suwak kompensacji steruje CAŁĄ
      fizjologią na żywo (oczopląs SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain nienaprawialny,
      sakada UKRYTA w trakcie pchnięcia (błąd śródpchnięciowy 18→10 px), regeneracja→Bechterew; werdykt spójny.
@@ -894,7 +974,24 @@ UPROSZCZENIA / ZASTRZEŻENIA:
   - vHIT: pojedyncza wartość gain (kanał pobudzany); sakady covert/overt jako PODZIAŁ czasowy całkowitej
     korekty (udział z fuzji szyjno-ocznej), bez pełnej dynamiki prędkości gałki;
   - integrator liniowy (dryf θ/τ) bez asymetrii poziom/pion i bez rebound nystagmus;
-  - skew jako skalarny rozjazd pionowy; brak pełnej geometrii OTR (pochylenie głowy, cyklotorsja);
+  - PRAWO ALEXANDRA tylko JAKOŚCIOWO i za słabo. Modelujemy je pośrednio — oczopląs samoistny sumuje się
+    z dryfem integratora, więc przy spojrzeniu W KIERUNKU fazy szybkiej bije mocniej (neuritisR: 3.6°/s
+    przy spojrzeniu −20°, 2.8°/s na wprost, 2.0°/s przy +20°) — kierunek zmian jest POPRAWNY. Ale zdrowy
+    integrator daje tylko ±0.8°/s, więc nie ma tu klinicznych stopni I/II/III (oczopląs widoczny dopiero
+    przy spojrzeniu w stronę fazy szybkiej). Osobny człon adaptacyjny → ewentualny kolejny etap;
+  - skew jako skalarny rozjazd pionowy; brak pełnej geometrii OTR (pochylenie głowy, cyklotorsja) —
+    modelujemy oś grawiceptywną jako JEDNĄ liczbę (skewTone) wspólną dla skew i SVV, bez rozdzielenia
+    poziomu zmiany (opuszka=ipsiwersyjny vs śródmózgowie/INC=kontrawersyjny); preset udaru przyjmuje
+    wariant OPUSZKOWY (Wallenberg) jako najczęstszą przyczynę AVS pochodzenia naczyniowego;
+  - fixationGain domyślnie 0.9 → indeks fiksacji 0.1, czyli supresja MOCNIEJSZA niż typowa obwodowa
+    (klinicznie ~0.3–0.6; próg failsSuppression w silniku = 0.5). Zostawione: próg i tak rozdziela
+    obwód od ośrodka, a zmiana przesunęłaby wszystkie odczyty „tłumiony/NIEtłumiony";
+  - pacemakerBias (Bechterew) wymaga JAWNEGO lesionEar, gdy oba błędniki wróciły do symetrii: po
+    wyrównaniu tonów strony chorej NIE DA SIĘ odtworzyć z samych parametrów (brak informacji), więc
+    ładunek bez wskazanej strony pozostaje bezczynny — to ograniczenie modelu, nie błąd wyprowadzenia;
+  - kompensacja modeluje wyłącznie ubytek (HIPOfunkcję): gap=max(0,·). Asymetria DRAŻNIĄCA (ton strony
+    chorej > zdrowej) nie jest kompensowana — zgodne z kliniką (napad Ménière'a trwa minuty–godziny,
+    o rzędy wielkości za krótko na kompensację statyczną), ale to założenie, nie wynik;
   - kompensacja: pojedynczy skalar c (bez osi czasu godziny↔tygodnie); clamp/pacemaker jako czyste funkcje c;
     ładunek pacemakera (Bechterew) jako sticky parametr (nośnik historii), bo skalar c nie niesie pamięci;
   - fuzja szyjno-oczna i velocity storage: fenomenologiczne (waga ∝ wiarygodność / c), bez pełnego filtru

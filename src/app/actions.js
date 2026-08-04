@@ -52,7 +52,9 @@ const HINTS_PRESETS = {
   meniereL:{ get label(){return t("Ménière — drażnienie L","Ménière — irritative L");}, make:()=>NeuroVOR.meniere("L",{phase:"irritative"}) },
   scdsP:   { get label(){return t("SCDS P","SCDS R");},              make:()=>({dehiscence:"P"}) },
   scdsL:   { label:"SCDS L",              make:()=>({dehiscence:"L"}) },
-  stroke:  { get label(){return t("Udar (ośrodek)","Stroke (central)");},      make:()=>({toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:3, otrTorsion:4}) }
+  // skewTone UJEMNY — OTR poniżej skrzyżowania (Wallenberg) jest IPSIWERSYJNY: przy zmianie P oko P NIŻEJ.
+  // Musi zgadzać się z NeuroVOR.SCENARIOS.strokeCentral (ten sam pacjent, dwa wejścia do UI).
+  stroke:  { get label(){return t("Udar (ośrodek)","Stroke (central)");},      make:()=>({toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:-3, otrTorsion:4}) }
 };
 function loadHintsPreset(k){
   const pr=HINTS_PRESETS[k]; if(!pr) return;
