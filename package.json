@@ -33,7 +33,9 @@
     "nauka:check": "node tools/nauka-check.mjs",
     "nauka:dom": "node tools/nauka-dom.mjs",
     "lab:check": "node tools/lab-check.mjs",
-    "lab:dom": "node tools/lab-dom.mjs"
+    "lab:dom": "node tools/lab-dom.mjs",
+    "opis:check": "node tools/opis-check.mjs",
+    "opis:dom": "node tools/opis-dom.mjs"
   },
   "repository": {
     "type": "git",
