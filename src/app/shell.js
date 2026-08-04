@@ -86,7 +86,11 @@ function applyArea(id) {
        kwalifikacji — użytkownik nie dowiedziałby się, że jakaś istnieje. Prowadzimy więc na ekran
        kwalifikacji, gdzie „nie badam pacjenta, chcę zobaczyć wzorce na modelu" to jedno dotknięcie
        i zostaje zapisane w wyniku. Drzwi do modułu są JEDNE. */
-    else if (id === 'lab') { A.goHintsKwal && A.goHintsKwal(); }
+    /* Blok 14: obszar „Laboratorium" przestal byc skrotem do matematycznego pacjenta i stal sie
+       STANOWISKIEM FIZJOLOGICZNYM. Gwarancja Bloku 12 nie oslabla, tylko sie wzmocnila: z tego
+       obszaru nie da sie juz wejsc do modulu HINTS W OGOLE, a nie tylko „nie da sie bez
+       kwalifikacji". Matematyczny pacjent zostal tam, gdzie byl — za kwalifikacja. */
+    else if (id === 'lab') { A.goLab ? A.goLab() : (A.goHintsKwal && A.goHintsKwal()); }
   }
   syncShell();
 }
@@ -486,6 +490,11 @@ function areaZeStanu() {
   /* Blok 12: wejście z „Laboratorium" ląduje teraz na ekranie kwalifikacji, na którym matematycznego
      pacjenta jeszcze NIE MA — bez tej linii dotknięcie „Laboratorium" podświetlałoby „Diagnostykę",
      czyli nawigacja mówiłaby, że użytkownik jest gdzie indziej, niż go właśnie posłała. */
+  /* Blok 14: Laboratorium ma WŁASNY tryb. Bez tej linii `syncShell` (który PRZEPISUJE `state.area`
+     wynikiem tej funkcji) sprowadzał obszar do „Diagnostyki" natychmiast po wejściu — zmierzone:
+     `goLab()` ustawiał area='lab', a `goArea('lab')` kończył z area='diag'. Nawigacja mówiłaby, że
+     użytkownik jest w module klinicznym, stojąc na stanowisku fizjologicznym. */
+  if (state.mode === 'lab') return 'lab';
   if (state.mode === 'hints' && state.area === 'lab') return 'lab';
   if (state.mode === 'hints') return state.hintsCustom ? 'lab' : 'diag';
   // Repozycja (tryb treat) NIE jest osobnym obszarem: dokument umieszcza manewry wewnątrz

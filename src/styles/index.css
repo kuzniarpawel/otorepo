@@ -17,5 +17,6 @@
 @import './interp.css';    /* interpretacja: obraz nietypowy, kandydatury (Blok 9) */
 @import './followup.css';  /* krok „Kontrola" po manewrze: siedem odpowiedzi, seria, koniec sesji (Blok 11) */
 @import './hints-exam.css';
-@import './nauka.css';/* tryb nauki: biblioteka przypadkow i lekcja (Blok 13) */
+@import './nauka.css';     /* tryb nauki: biblioteka przypadkow i lekcja (Blok 13) */
+@import './lab.css';       /* Laboratorium neurootologiczne: eksperymenty i parametry (Blok 14) */
 @import './a11y.css';      /* pola dotykowe, fokus, stan nie-tylko-kolorem, ograniczenie ruchu */

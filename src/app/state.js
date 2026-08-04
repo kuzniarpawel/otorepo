@@ -32,6 +32,18 @@ const state={
   hintsPrzeszkolenie:null,  // deklaracja badajacego: 'tak' | 'nie' | null (GRACE-3: HINTS bez przeszkolenia bywa mylacy)
   hintsKrok:null,           // telefon: skladowa pokazywana w tej chwili (null = pierwsza nieodpowiedziana)
   hintsBlad:null,           // powod ODMOWY wejscia przez bramke — ekran musi powiedziec, ze nie wpuscil i dlaczego
+  // --- Blok 14: LABORATORIUM NEUROOTOLOGICZNE. WLASNE pola, a NIE hintsCustom symulatora.
+  //     Powod jest mierzalny: gdyby Laboratorium pisalo do pol symulatora HINTS, „oddzielenie
+  //     zaawansowanych modeli od sciezki klinicznej" byloby deklaracja, ktorej nie da sie
+  //     sprawdzic — przeciek siedzialby w modelu danych, a nie w kodzie. Osobne pola sprawiaja,
+  //     ze wyrocznia moze wziac odcisk stanu pacjenta i stanu symulatora, i zazadac, zeby caly
+  //     eksperyment ich nie tknal. Pisze do nich WYLACZNIE src/app/lab-state.js.
+  labEksperyment:null,      // aktywny eksperyment (null = lista eksperymentow)
+  labStanowisko:'A',        // ktore stanowisko jest edytowane: A|B
+  labA:null, labB:null,     // dwa NIEZALEZNE pacjenty — porownanie dwoch patologii wymaga obu naraz
+  labPorownanie:false,      // czy pokazac panel porownania (uklad „komputer" z dokumentu)
+  labOstatniaZmiana:null,   // {parametr, obserwable[], zdaniaDodane[], ...} — POMIAR skutku ostatniej zmiany (kryterium odbioru nr 3)
+  labParametr:null,         // parametr rozwiniety do opisu (jednostka + zakres) — kryterium odbioru nr 2
   // --- Blok 13: TRYB NAUKI I BIBLIOTEKA PRZYPADKOW. Czyta je src/app/nauka-model.js (czysty),
   //     pisze WYLACZNIE src/app/nauka-state.js. Zaden inny modul nie ma prawa ich tknac, i to
   //     jest cala separacja torow: rozwiazanie przypadku nie zmienia ANI JEDNEGO pola opisujacego

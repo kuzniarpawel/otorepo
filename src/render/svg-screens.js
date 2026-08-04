@@ -30,6 +30,10 @@ import { POZIOMY, POZIOM_IDS, RODZAJE, RODZAJ_IDS, ETAPY, ETAP_IDS, ETAPY_PYTAJA
          OCENY, postepBiblioteki, probyPrzypadku, probaGlowna } from '../app/nauka-model.js';
 import { naukaDeps } from '../app/nauka-deps.js';
 import { POWODY_ODMOWY } from '../app/nauka-state.js';
+import { PARAMETRY, POWODY_BEZ_SKUTKU, OBSERWABLE, obserwabla, EKSPERYMENTY, eksperyment,
+         odchyleniaZeSkutkiem, porownanie, wolnoPokazac, STANOWISKA, STANOWISKO_IDS } from '../app/lab-model.js';
+import { labDeps } from '../app/lab-deps.js';
+import { pacjentStanowiska } from '../app/lab-state.js';
 import { POWODY_ZAPISU } from '../app/nauka-store.js';
 import { nowyZegar, startZegara, pauzaZegara, resetZegara, odliczono, ustawOdliczono, odnotujLuke, potwierdzLuke, PROG_LUKI_MS } from '../runtime/hold-clock.js';
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
@@ -716,6 +720,8 @@ function render(){
   else if(state.screen==="hintsKwal") renderHintsKwal();
   else if(state.screen==="hintsBad") renderHintsBad();
   else if(state.screen==="hintsWyn") renderHintsWyn();
+  else if(state.screen==="labLista") renderLabLista();
+  else if(state.screen==="labEksp") renderLabEksp();
   else if(state.screen==="naukaBib") renderNaukaBib();
   else if(state.screen==="naukaLekcja") renderNaukaLekcja();
   else if(state.screen==="hints") renderHints();
@@ -3056,7 +3062,200 @@ function renderNaukaLekcja(){
                               '<b>The case is synthetic.</b> Solving it records nothing about a patient and changes no field of the clinical session.')}</div>`;
 }
 
-export { renderObs, syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable, renderNaukaBib, renderNaukaLekcja };
+
+/* ============ LABORATORIUM NEUROOTOLOGICZNE (Blok 14) ============
+   Dwa ekrany: LISTA EKSPERYMENTÓW i EKSPERYMENT. Układ „komputer" z dokumentu — panel parametrów
+   stale widoczny obok obrazu — powstaje z tej samej siatki `.pagegrid`, co Bloki 10-13, więc na
+   telefonie kolumny znikają i zostaje jeden eksperyment na ekranie.
+
+   ═══ CZEGO TU NIE MA I DLACZEGO ═══
+   Werdyktu ani lokalizacji. `clinicalReadout` je liczy, ale w Laboratorium kierunek wnioskowania
+   jest ODWROTNY niż w ścieżce klinicznej: to użytkownik ustawia patologię suwakami, więc „werdykt:
+   ośrodkowy" nad tymi suwakami jest echem wejścia, a nie wynikiem — kartą rozpoznania, która
+   powtarza to, co przed chwilą wpisano. Model trzyma listę pól zakazanych (`POLA_ZAKAZANE_W_LAB`),
+   a wyrocznia DOM sprawdza, że żadne z nich tu nie trafiło. */
+
+function lDeps(){ return labDeps(); }
+const lPacjent = (id) => pacjentStanowiska(state, id);
+const lObraz = (id) => lDeps().obraz(lPacjent(id));
+
+function lKafelEksperymentu(e){
+  return `<li><button type="button" class="lkafel" data-leks="${e.id}" onclick="otworzEksperymentLab('${e.id}')">
+      <span class="lkafel__t">${t(e.pl,e.en)}</span>
+      <span class="lkafel__q">${t(e.pytaniePl,e.pytanieEn)}</span>
+      <span class="lkafel__go" aria-hidden="true">›</span></button></li>`;
+}
+function renderLabLista(){
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="goArea('start')" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Laboratorium neurootologiczne","Neurotology laboratory")}</b><span>${t("fizjologia na stanowisku — nie badanie pacjenta","physiology at a bench — not a patient examination")}</span></div></div>
+    <div class="pagegrid lgrid">
+      <div class="col col--ctl">
+        <p class="llead">${t("Każdy eksperyment zaczyna się od scenariusza referencyjnego i wraca do niego jednym przyciskiem. Zmiana parametru jest MIERZONA: aplikacja pokazuje, które badanie zmieniło wynik — a kiedy nic się nie zmieniło, mówi, czego brakuje, żeby ten parametr było widać.",
+                             "Every experiment starts from a reference scenario and returns to it with one button. A parameter change is MEASURED: the app shows which examination changed its result — and when nothing changed, it says what is missing for that parameter to become visible.")}</p>
+        <ul class="llista" data-llista>${EKSPERYMENTY.map(lKafelEksperymentu).join("")}</ul>
+      </div>
+      <div class="col col--viz">
+        <section class="card lozakres">
+          <h3>${t("Co to jest, a czym nie jest","What this is, and what it is not")}</h3>
+          <p>${t("Laboratorium jest stanowiskiem fizjologicznym: ustawiasz liczby modelu i patrzysz, co robią z obrazem klinicznym. NIE jest narzędziem rozpoznania — kierunek wnioskowania jest tu odwrotny niż przy pacjencie.",
+                 "The laboratory is a physiology bench: you set the model’s numbers and watch what they do to the clinical picture. It is NOT a diagnostic tool — the direction of reasoning here is the reverse of the one at the bedside.")}</p>
+          <p class="note">${t("Podstawowa diagnostyka nie potrzebuje tego obszaru. Przebieg wywiad → próba → oczopląs → interpretacja → manewr → kontrola domyka się bez wejścia tutaj i nic tu ustawionego go nie zmienia.",
+                              "Basic diagnostics does not need this area. The pathway history → provocation → nystagmus → interpretation → maneuver → follow-up closes without entering here, and nothing set here changes it.")}</p>
+        </section>
+      </div>
+    </div>
+    <div class="disclaimer">${t('<b>Model jest uproszczeniem.</b> Opis każdego parametru mówi, gdzie leży granica tego uproszczenia — bo suwak, który zachowuje się inaczej niż fizjologia, uczy nieprawdy szybciej niż brak suwaka.',
+                              '<b>The model is a simplification.</b> Every parameter’s description states where that simplification ends — because a slider that behaves unlike physiology teaches falsehood faster than no slider at all.')}</div>`;
+}
+
+/* ── PANEL PARAMETRÓW (kryterium odbioru nr 2) ──
+   Każdy parametr rozwija się do pełnego opisu: co to jest, jednostka, znaczenie krańców, a gdy
+   model ma w tym miejscu ZMIERZONĄ granicę — także ona. */
+function lOpisParametru(key){
+  const p = PARAMETRY[key]; if(!p) return "";
+  return `<div class="lopis" data-lopis="${key}">
+      <p class="lopis__co">${t(p.coToPl,p.coToEn)}</p>
+      <dl class="lopis__dl">
+        <dt>${t("Jednostka","Unit")}</dt><dd data-ljedn>${t(p.jednostkaPl,p.jednostkaEn)}</dd>
+        <dt>${t("Zakres","Range")}</dt><dd data-lzakres>${t(p.zakresPl,p.zakresEn)}</dd>
+      </dl>
+      ${p.granicaPl?`<p class="lgranica" data-lgranica="1">${t(p.granicaPl,p.granicaEn)}</p>`:""}
+    </div>`;
+}
+function lSuwak(key){
+  const spec = lDeps().spec(key); if(!spec) return "";
+  const p = PARAMETRY[key], pac = lPacjent();
+  const v = pac ? pac[key] : spec.def;
+  const rozwiniety = state.labParametr===key;
+  const pole = spec.type==="select"
+    ? `<div class="lwybor">${[["null",t("brak","none")],["L",t("lewa","left")],["P",t("prawa","right")]].map(([o,lab])=>
+        `<button type="button" class="lwybor__b" aria-pressed="${String(v)===o||(v==null&&o==='null')}" onclick="ustawParametrLab('${key}','${o}')">${lab}</button>`).join("")}</div>`
+    : `<input type="range" class="lsuwak" min="${spec.min}" max="${spec.max}" step="${spec.step}" value="${v}"
+         aria-label="${t(p.pl,p.en)}" oninput="ustawParametrLab('${key}',this.value)">`;
+  return `<div class="lparam" data-lparam="${key}">
+      <div class="lparam__g">
+        <button type="button" class="lparam__n" aria-expanded="${rozwiniety}" onclick="opisParametruLab('${key}')">${t(p.pl,p.en)}<span class="lparam__i" aria-hidden="true">?</span></button>
+        <span class="lparam__v" data-lwart="${key}">${fmtParamVal(v,spec)}</span>
+      </div>
+      ${pole}
+      ${rozwiniety?lOpisParametru(key):""}
+    </div>`;
+}
+
+/* ── CO SIĘ ZMIENIŁO (kryterium odbioru nr 3) ── */
+function lSkutekHTML(){
+  const s = state.labOstatniaZmiana;
+  if(!s) return `<section class="card lskutek lskutek--pusty" data-lskutek="0">
+      <h4>${t("Co się zmieniło","What changed")}</h4>
+      <p class="note">${t("Przesuń dowolny parametr — tutaj pojawi się pomiar: które badanie zmieniło wynik i które zdanie opisu przyszło albo zniknęło.",
+                          "Move any parameter — a measurement will appear here: which examination changed its result, and which sentence of the findings arrived or disappeared.")}</p>
+    </section>`;
+  const p = PARAMETRY[s.parametr];
+  const naglowek = t(`Zmieniono: ${p?p.pl:s.parametr}`, `Changed: ${p?p.en:s.parametr}`);
+  if(s.bezSkutku){
+    const powod = POWODY_BEZ_SKUTKU[s.powodBezSkutku];
+    return `<section class="card lskutek lskutek--nic" data-lskutek="1" data-lbezskutku="1">
+        <h4>${t("Co się zmieniło","What changed")}</h4>
+        <p class="lskutek__p">${naglowek}</p>
+        <p class="lskutek__nic">${t("W obrazie klinicznym nie zmieniło się nic — i to jest wynik, nie usterka.",
+                                    "Nothing changed in the clinical picture — and that is a result, not a fault.")}</p>
+        <p class="lskutek__powod">${powod?t(powod.pl,powod.en):""}</p>
+      </section>`;
+  }
+  const lista = s.obserwable.filter(id=>wolnoPokazac(id)).map(id=>{
+    const o = obserwabla(id);
+    return `<li data-lobs="${id}"><b>${t(o.pl,o.en)}</b><span>${t(o.badaniePl,o.badanieEn)}</span></li>`;
+  }).join("");
+  return `<section class="card lskutek" data-lskutek="1">
+      <h4>${t("Co się zmieniło","What changed")}</h4>
+      <p class="lskutek__p">${naglowek}</p>
+      <ul class="lskutek__l">${lista}</ul>
+      ${s.zdaniaDodane.length?`<div class="lzdania lzdania--plus"><span class="eyebrow">${t("Pojawiło się w opisie badania","Appeared in the findings")}</span>
+        <ul>${s.zdaniaDodane.map(z=>`<li>${z}</li>`).join("")}</ul></div>`:""}
+      ${s.zdaniaZniklo.length?`<div class="lzdania lzdania--minus"><span class="eyebrow">${t("Zniknęło z opisu badania","Disappeared from the findings")}</span>
+        <ul>${s.zdaniaZniklo.map(z=>`<li>${z}</li>`).join("")}</ul></div>`:""}
+    </section>`;
+}
+
+/* ── OBRAZ KLINICZNY STANOWISKA — bez werdyktu i bez lokalizacji ── */
+function lObrazHTML(id){
+  const r = lObraz(id);
+  const zd = (r.findings||[]).map(z=>`<li>${z}</li>`).join("");
+  return `<section class="card lobraz" data-lobraz="${id||state.labStanowisko}">
+      <h4>${t("Obraz kliniczny","Clinical picture")} — ${t(STANOWISKA[id||state.labStanowisko].pl, STANOWISKA[id||state.labStanowisko].en)}</h4>
+      <ul class="lobraz__l">${zd||`<li>${t("bez odchyleń","no abnormalities")}</li>`}</ul>
+      <p class="note">${t("To jest opis BADANIA wyliczony z ustawionych liczb — nie rozpoznanie. Rozpoznanie stawia się u pacjenta, a nie na stanowisku.",
+                          "This is a description of the EXAMINATION computed from the numbers you set — not a diagnosis. A diagnosis is made in a patient, not at a bench.")}</p>
+    </section>`;
+}
+
+function renderLabEksp(){
+  const e = eksperyment(state.labEksperyment);
+  if(!e){ renderLabLista(); return; }
+  const D = lDeps();
+  const ref = D.pacjentReferencyjny(e.referencja);
+  const odch = odchyleniaZeSkutkiem(lPacjent(), ref, D);
+  const grupy = D.grupy();
+
+  const stanowiska = STANOWISKO_IDS.map(id=>
+    `<button type="button" class="lstan" aria-pressed="${state.labStanowisko===id}" data-lstan="${id}" onclick="ustawStanowiskoLab('${id}')">${t(STANOWISKA[id].pl,STANOWISKA[id].en)}</button>`).join("");
+
+  const glowne = e.parametry.map(lSuwak).join("");
+  const pozostale = grupy.map(g=>{
+    const klucze = g.klucze.filter(k=>!e.parametry.includes(k));
+    if(!klucze.length) return "";
+    return `<details class="lgrupa"><summary>${g.grupa}</summary>
+        <p class="lgrupa__h">${g.pomoc||""}</p>${klucze.map(lSuwak).join("")}</details>`;
+  }).join("");
+
+  const odchHTML = odch.length
+    ? `<ul class="lodch">${odch.map(o=>{
+        const p = PARAMETRY[o.key];
+        const sk = o.skutekPowrotu;
+        const co = sk.bezSkutku
+          ? t("powrót tego parametru nic by nie zmienił","putting this one back would change nothing")
+          : t(`powrót zmieniłby: ${sk.obserwable.filter(wolnoPokazac).map(x=>obserwabla(x).pl).join(", ")}`,
+              `putting it back would change: ${sk.obserwable.filter(wolnoPokazac).map(x=>obserwabla(x).en).join(", ")}`);
+        return `<li data-lodch="${o.key}"><b>${t(p.pl,p.en)}</b>: ${o.referencja==null?"—":o.referencja} → ${o.teraz==null?"—":o.teraz}<em>${co}</em></li>`;
+      }).join("")}</ul>`
+    : `<p class="note" data-lodch-brak="1">${t("Stanowisko stoi dokładnie na scenariuszu referencyjnym.","The bench is exactly at the reference scenario.")}</p>`;
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="wrocDoEksperymentow()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t(e.pl,e.en)}</b><span>${t("scenariusz referencyjny","reference scenario")}: ${D.scenariusz(e.referencja).label}</span></div></div>
+    <nav class="lstany" aria-label="${t("Stanowiska","Benches")}">${stanowiska}
+      <button type="button" class="lstan lstan--por" aria-pressed="${!!state.labPorownanie}" onclick="przelaczPorownanieLab()">${t("Porównaj A i B","Compare A and B")}</button></nav>
+    <div class="pagegrid lgrid">
+      <div class="col col--ctl">
+        <section class="card lpyt"><h3>${t(e.pytaniePl,e.pytanieEn)}</h3></section>
+        <section class="card lparams" data-lparams>
+          <h4>${t("Parametry eksperymentu","Experiment parameters")}</h4>
+          ${glowne}
+          <div class="lreszta"><span class="eyebrow">${t("Pozostałe parametry modelu","The model’s other parameters")}</span>${pozostale}</div>
+        </section>
+        <section class="card lref">
+          <h4>${t("Odchylenia od referencji","Deviations from the reference")}</h4>
+          ${odchHTML}
+          <button type="button" class="recoalt lreset" onclick="resetLab()">${t("Wróć do scenariusza referencyjnego","Return to the reference scenario")}</button>
+        </section>
+      </div>
+      <div class="col col--viz">
+        ${lSkutekHTML()}
+        ${lObrazHTML(state.labStanowisko)}
+        ${state.labPorownanie?(()=>{ const por = porownanie(lObraz('A'), lObraz('B'));
+          return `${lObrazHTML(state.labStanowisko==='A'?'B':'A')}
+            <section class="card lpor" data-lpor="1"><h4>${t("Czym się różnią","How they differ")}</h4>
+              ${por.identyczne?`<p class="note">${t("Oba stanowiska dają identyczny obraz.","Both benches give an identical picture.")}</p>`
+                : `<ul class="lpor__l">${por.rozne.filter(wolnoPokazac).map(id=>`<li>${t(obserwabla(id).pl,obserwabla(id).en)}</li>`).join("")}</ul>`}
+            </section>`; })():""}
+      </div>
+    </div>
+    <div class="disclaimer">${t('<b>Stanowisko, nie pacjent.</b> Aplikacja nie stawia tu rozpoznania i nie pokazuje werdyktu — pokazuje, co zmieniło się w BADANIU, gdy zmieniłeś liczbę w modelu.',
+                              '<b>A bench, not a patient.</b> The app makes no diagnosis here and shows no verdict — it shows what changed in the EXAMINATION when you changed a number in the model.')}</div>`;
+}
+
+export { renderObs, syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable, renderNaukaBib, renderNaukaLekcja, renderLabLista, renderLabEksp };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

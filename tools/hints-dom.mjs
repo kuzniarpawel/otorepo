@@ -89,7 +89,6 @@ const WEJSCIA = [
   ['openHints-neuritis', () => A('openHints')('neuritisR')],
   ['openHints-udar', () => A('openHints')('strokeCentral')],
   ['openHintsCustom', () => A('openHintsCustom')()],
-  ['obszar-laboratorium', () => A('goArea')('lab')],
   ['symulator-z-kwalifikacji', () => A('otworzSymulatorHints')()],
   ['laboratorium-z-kwalifikacji', () => A('otworzLaboratorium')()],
 ];
@@ -97,6 +96,20 @@ for (const [nazwa, akcja] of WEJSCIA) {
   czysty(); akcja();
   T(`A/${nazwa}`, !W_MODULE(), `wejscie ${nazwa} weszlo do modulu przy pustej kwalifikacji (screen=${st.screen})`);
   eq(`A/${nazwa}/laduje-na-kwalifikacji`, st.screen, 'hintsKwal');
+}
+/* SIÓDME WEJŚCIE ZMIENIŁO ZNACZENIE W BLOKU 14, I DLATEGO ZMIENIŁA SIĘ TU BRAMKA, A NIE POMIAR.
+   Do Bloku 13 obszar „Laboratorium" BYŁ matematycznym pacjentem, więc `goArea('lab')` było jednym
+   z siedmiu wejść do modułu HINTS i musiało lądować na kwalifikacji. Blok 14 rozdzielił te dwie
+   rzeczy: Laboratorium jest stanowiskiem fizjologicznym, które NIE POKAZUJE werdyktu HINTS ani
+   lokalizacji, a matematyczny pacjent został tam, gdzie był — za kwalifikacją, pod przyciskiem
+   na jej ekranie. Gwarancja Bloku 12 nie osłabła, tylko wzmocniła się: z tego obszaru nie da się
+   już wejść do modułu W OGÓLE, a nie tylko „nie da się wejść bez kwalifikacji". */
+{
+  czysty(); A('goArea')('lab');
+  T('A/obszar-laboratorium-nie-jest-hints', !W_MODULE(),
+    `obszar Laboratorium wszedl do modulu HINTS (screen=${st.screen})`);
+  T('A/obszar-laboratorium-ma-swoj-ekran', st.screen === 'labLista' || st.screen === 'labEksp',
+    `obszar Laboratorium powinien miec wlasny ekran, jest screen=${st.screen}`);
 }
 // Kwalifikacja wstepna Bloku 6 tez prowadzi na ekran kwalifikacji HINTS, a nie do symulatora.
 czysty(); A('setTriage')('przebieg', 'ciagle'); A('setTriage')('oczoplas', 'obecny'); A('toggleTriageFlaga')('brak');
