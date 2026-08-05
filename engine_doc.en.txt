@@ -650,7 +650,21 @@ REMAINING (pending decision):
        to replace.
 
 
- R5. stepXiPeak IS NOT A "PER-STEP" MEASURE [found 2026-08-05 while unifying the geometry].
+ R5. [RE-MEASURED 2026-08-05 after R7 — audit of 64 steps] THE PHYSICAL DEFECT IS GONE; A DISPLAY
+     DECISION REMAINS. The original charge — a step's label computed from the PREVIOUS step's response,
+     with an INVERTED sign — no longer occurs in ANY of the 64 steps (7 maneuvers × 2 sides). Longer
+     derived holds (R4b) and inertia (R7) fixed it: every step now produces a response larger than what
+     it inherited.
+     2 steps out of 64 remain: Bascule step 5 (both sides), where the reported 0.19 is the inherited
+     value. But there the debris ALREADY LEFT AT STEP 4 (φ 140→319), so step 5 has no response of its
+     own — 0.19 is the decaying tail of the expulsion transient, i.e. a REAL signal. Showing it at
+     "return to sitting" is defensible rather than wrong: clinically a fading liberatory nystagmus is
+     seen after the debris is released.
+     FOR DECISION (display, not physics): whether the last step should show the fading tail or
+     "no nystagmus". The description below is kept as a record of the pre-R4b/R7 state; its numbers
+     come from the old geometry.
+
+ R5-OLD. stepXiPeak IS NOT A "PER-STEP" MEASURE [found 2026-08-05 while unifying the geometry].
      It takes max|ξ| over a window that STARTS at the segment boundary, so it also picks up ξ INHERITED
      from the previous step (the cupula relaxes with tauC=5 s while maneuver steps last 6-12 s — the tail
      has no time to decay). A step's nystagmus label can therefore be computed from the PREVIOUS step's

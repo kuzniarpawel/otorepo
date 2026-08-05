@@ -631,7 +631,18 @@ POZOSTAŁE (do decyzji):
        start) zmieni e1 i φ_start, a więc — wprost z powyższego wzoru — ruszy też liczby R3. Kalibrację R3
        rób WTEDY PO przebudowie geometrii, inaczej dostroisz stałe do geometrii, którą zaraz wymienisz.
 
- R5. stepXiPeak NIE JEST MIARĄ „PER KROK" [znalezione 2026-08-05 przy uzgadnianiu geometrii].
+ R5. [PRZEMIERZONE 2026-08-05 po R7 — audyt 64 kroków] WADA FIZYCZNA ZNIKNĘŁA, ZOSTAŁA DECYZJA WIDOKU.
+     Pierwotny zarzut — etykieta kroku liczona z odpowiedzi kroku POPRZEDNIEGO, z ODWRÓCONYM znakiem —
+     nie występuje już w ŻADNYM ze 64 kroków (7 manewrów × 2 strony). Naprawiły to dłuższe, wyprowadzone
+     holdy (R4b) i bezwładność (R7): każdy krok wypracowuje teraz odpowiedź większą niż to, co odziedziczył.
+     ZOSTAŁY 2 kroki na 64: Bascule krok 5 (obie strony), gdzie raport 0.19 to wartość odziedziczona.
+     Ale tam złóg WYSZEDŁ JUŻ W KROKU 4 (φ 140→319), więc krok 5 nie ma własnej odpowiedzi — 0.19 to
+     zanikający ogon transjentu ekspulsji, czyli sygnał PRAWDZIWY. Wyświetlanie go przy „powrocie do
+     siadu" jest obroną, nie błędem: klinicznie po uwolnieniu widuje się dogasający oczopląs liberacyjny.
+     DO DECYZJI (widok, nie fizyka): czy ostatni krok ma pokazywać dogasający ogon, czy „bez oczopląsu".
+     Poniższy opis zostawiam jako zapis stanu sprzed R4b/R7 — jego liczby pochodzą ze starej geometrii.
+
+ R5-STARE. stepXiPeak NIE JEST MIARĄ „PER KROK" [znalezione 2026-08-05 przy uzgadnianiu geometrii].
      Funkcja bierze max|ξ| po oknie, które ZACZYNA SIĘ na granicy segmentu, więc łapie także ξ ODZIEDZICZONE
      po kroku poprzednim (osklepek relaksuje z tauC=5 s, a kroki manewru trwają 6–12 s — ogon nie zdąża opaść).
      Etykieta oczopląsu danego kroku bywa więc wyliczana z odpowiedzi kroku POPRZEDNIEGO.
