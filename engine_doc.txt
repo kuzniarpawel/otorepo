@@ -224,20 +224,46 @@ qmul, qconj, qaxis(ax,deg), rotv(q,v), dot3, nrm3, nrm4 — algebra wektorów/kw
 slerpQ(a,b,t) — interpolacja sferyczna kwaternionów (z obsługą półkuli i przypadku bliskiego).
 Q_SUPINE = qaxis([1,0,0],-100) — baza orientacji supine head-hanging.
 
-GEXC — osie pobudzenia kanałów PIONOWYCH (w płaszczyźnie kanału; g·GEXC>0 = ampullofugalny; oś = -e1):
-   RP: norm(1,0,-1)  LP: norm(-1,0,-1)  RA: norm(-1,0,-1)  LA: norm(1,0,-1)   (przednie = -e1, spójne z CANAL_GEOM/poprawką ROZWIĄZANE niżej)
-uHC(side) — oś ampullopetalna kanału POZIOMEGO (międzyuszna + przednio-tylna):
-   P: norm(0.87,0,0.5)   L: norm(-0.87,0,0.5)
+GEOMETRIA KANAŁU — JEDNO ŹRÓDŁO [2026-08-05, gałąź feature/vestibular]
+   Do tej daty silnik miał DWIE niezależne geometrie tego samego kanału: zmierzone CANAL_NORMALS
+   (Wu 2021) do magnitud oczopląsu ORAZ osobną, RĘCZNIE wpisaną idealizację 45° (CANAL_GEOM/GEXC/uHC)
+   do dynamiki złogu. Rozjeżdżały się o 15–20° na KAŻDYM kanale:
+       tylny P 16.8° · L 15.5°   przedni P 20.3° · L 20.2°   poziomy P 17.4° · L 16.3°
+   Silnik liczył więc przepływ endolimfy w innej płaszczyźnie niż tę, wokół której wyprowadzał ruch oka.
+   TERAZ płaszczyzna pochodzi WYŁĄCZNIE z CANAL_NORMALS, a CANAL_GEOM, GEXC i uHC są z niej WYPROWADZONE
+   (duplikacja usunięta; rozbieżność płaszczyzn = 0.00° we wszystkich 6 kanałach).
+
+   wuToHead(n) = [-n0, n2, n1]   (Wu: x=lewo, y=przednio-tylny, z=góra → głowa: x=prawo, y=góra, z=nos)
+     Kontrola przeliczenia osi: normalna kanału poziomego wychodzi ≈[0.02, 0.95, −0.30] (w górę, lekko
+     ku tyłowi) = kanoniczne nachylenie ~30° kanału bocznego; koplanarność RP∥LA (0.988), RA∥LP (0.985).
+
+   AMPULLA_DIR — kierunek bańki (φ=0). ZAŁOŻENIE ANATOMICZNE, NIE POMIAR: Wu podaje wyłącznie orientacje
+     PŁASZCZYZN, a nie położenie bańki wzdłuż pętli. Używany jest tylko RZUT tych wektorów na zmierzoną
+     płaszczyznę. To JEDYNE pozostałe wejście geometryczne spoza pomiaru — i brakująca dana dla R1.
+       posterior P(-1,0,1) L(1,0,1) · anterior P(1,0,1) L(-1,0,1) · horizontal P(0.87,0,0.5) L(-0.87,0,0.5)
+   ARC_SPIN — znak normalnej przypinający konwencję „rosnące φ = ampullofugalne" (e2 = n × e1). Pomiar go
+     nie ustala (płaszczyzna = normalna z dokładnością do znaku). 6 bitów konwencji, nie geometria.
+       posterior P+1 L−1 · anterior P−1 L+1 · horizontal P+1 L−1
+
+CANAL_GEOM — WYPROWADZONE: {e1, e2, exc}; e1 = rzut AMPULLA_DIR na zmierzoną płaszczyznę, e2 = n × e1,
+             exc = +1 kanały pionowe (Ewald III) / −1 poziomy (Ewald II). Wartości wynikowe:
+   posterior  P:{e1 (-0.731,-0.010, 0.682), e2 ( 0.203,-0.958, 0.203)}
+              L:{e1 ( 0.727,-0.008, 0.687), e2 (-0.188,-0.964, 0.188)}
+   anterior   P:{e1 ( 0.621, 0.040, 0.783), e2 (-0.231,-0.945, 0.231)}
+              L:{e1 (-0.632, 0.035, 0.774), e2 ( 0.234,-0.944, 0.234)}
+   horizontal P:{e1 ( 0.877, 0.129, 0.462), e2 ( 0.480,-0.270,-0.835)}
+              L:{e1 (-0.876, 0.113, 0.469), e2 (-0.482,-0.256,-0.838)}
+GEXC — WYPROWADZONE jako −e1 kanału pionowego (styczna ampullofugalna przy φ=90°; g·GEXC>0 = pobudzenie).
+uHC(side) — WYPROWADZONE jako +e1 kanału poziomego (grawitacja KU bańce = przepływ ampullopetalny = Ewald II).
 CK — mapowanie {canal,side} → klucz GEXC dla kanałów pionowych.
 
-CANAL_GEOM — geometria łuku dla dynamiki (e1=kierunek ampułki φ=0, e2=druga oś płaszczyzny,
-             exc=znak pobudzenia):
-   posterior  P:{e1 norm(-1,0,1),  e2 (0,-1,0), exc +1}   L:{e1 norm(1,0,1),  e2 (0,-1,0), exc +1}
-   horizontal P:{e1 norm(0.87,0,0.5), e2 norm(0.5,0,-0.87), exc -1}
-              L:{e1 norm(-0.87,0,0.5), e2 norm(-0.5,0,-0.87), exc -1}
-   anterior   P:{e1 norm(1,0,1),   e2 (0,-1,0), exc +1}   L:{e1 norm(-1,0,1), e2 (0,-1,0), exc +1}
-   Uwaga: ampułki kanału tylnego i przedniego po przeciwnych stronach (e1 odwrotne) —
-   wynik kalibracji do przepływu ampullofugalnego w pozycji prowokującej.
+   SKUTKI ZMIANY (zmierzone): kalibracja kanału tylnego BEZ ZMIAN (latencja 1.95 s, szczyt 0.807 @9.25 s,
+   trwanie 25.3 s). R3 poprawiony CZĘŚCIOWO i samoistnie: przedni latencja 3.15→2.80 s, szczyt ξ 0.668→0.817;
+   poziomy 2.30→2.20 s, 0.518→0.550. Wszystkie kierunki kliniczne bez zmian (Dix, Roll geo/apo, Bow & Lean,
+   deep head-hang), position()↔simulateCanalith zgodne 6/6, manewry czyszczą jak dotąd (gufoniApo i bascule
+   nadal nie — zgodnie z R2). Złoty snapshot: 2 z 91 ekranów (patrz R5), reszta bajtowo bez zmian.
+   NIE NAPRAWIA R1 — R1 to DŁUGOŚĆ łuku, nie orientacja płaszczyzny (φ_eq tylny 190.0→189.6, przedni
+   194.0→207.1, czyli dla przedniego nawet dalej od końca łuku).
 
 --------------------------------------------------------------------------
  STATUS WALIDACJI (offline, node)
@@ -453,6 +479,22 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05) — NIE
        rusza R3 (zmierzone). Naprawa R1 przez PRZEPARAMETRYZOWANIE łuku (inna rozpiętość kątowa, inny
        start) zmieni e1 i φ_start, a więc — wprost z powyższego wzoru — ruszy też liczby R3. Kalibrację R3
        rób WTEDY PO przebudowie geometrii, inaczej dostroisz stałe do geometrii, którą zaraz wymienisz.
+
+ R5. stepXiPeak NIE JEST MIARĄ „PER KROK" [znalezione 2026-08-05 przy uzgadnianiu geometrii].
+     Funkcja bierze max|ξ| po oknie, które ZACZYNA SIĘ na granicy segmentu, więc łapie także ξ ODZIEDZICZONE
+     po kroku poprzednim (osklepek relaksuje z tauC=5 s, a kroki manewru trwają 6–12 s — ogon nie zdąża opaść).
+     Etykieta oczopląsu danego kroku bywa więc wyliczana z odpowiedzi kroku POPRZEDNIEGO.
+     DOWÓD (Bascule krok 5, jedyny manewr oscylujący dość mocno, by to ujawnić):
+       stara geometria: ξ_start −0.50, własna odpowiedź kroku +0.59  → stepXiPeak = +0.59 („pierwotny")
+       nowa  geometria: ξ_start −0.75, własna odpowiedź kroku +0.50  → stepXiPeak = −0.75 („ODWRÓCONY, słaby")
+     Kierunek FIZYKI jest w obu przypadkach TEN SAM (własna odpowiedź kroku dodatnia, φ rośnie 4→49°);
+     odwróciło się wyłącznie rozstrzygnięcie „co jest większe co do modułu". To jedyna różnica, jaką
+     uzgodnienie geometrii wprowadziło do złotego snapshotu (2 z 91 ekranów: guide/bascule/{P,L}/step4).
+     TEN SAM KORZEŃ co maskowanie opisane w R4b: krótki hold + długa stała osklepka = ogon udający odpowiedź.
+     NAPRAWA: liczyć szczyt kroku po ξ ODJĘTYM od wartości odziedziczonej albo dopiero od chwili, gdy
+     |ξ| przestaje monotonicznie maleć. Ruszy etykiety w kilku krokach kilku manewrów → osobny commit
+     + weryfikacja per krok w przeglądarce.
+
 
 
 === MANEWRY JAKO OSIE CZASU KWATERNIONÓW (wejście do dynamiki) ===

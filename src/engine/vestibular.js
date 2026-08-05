@@ -69,6 +69,7 @@ export const Vestibular = (()=>{
   const rotv=(q,v)=>{const r=qmul(qmul(q,[0,v[0],v[1],v[2]]),qconj(q));return [r[1],r[2],r[3]];};
   const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
   const nrm3=v=>{const n=Math.hypot(v[0],v[1],v[2])||1;return [v[0]/n,v[1]/n,v[2]/n];};
+  const cross3=(a,b)=>[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
   const nrm4=q=>{const n=Math.hypot(q[0],q[1],q[2],q[3])||1;return [q[0]/n,q[1]/n,q[2]/n,q[3]/n];};
   // walidacja + normalizacja kwaternionu na publicznych wejściach: rotv(q,·) skaluje wektor o |q|²,
   // więc q≠jednostkowy psuje normę grawitacji (rzut → mag → cała dynamika). Zwraca q znormalizowane.
@@ -86,10 +87,55 @@ export const Vestibular = (()=>{
   const Q_SUPINE=qaxis([1,0,0],-100);                   // supine head-hanging
   const qSupineYaw=deg=>qmul(Q_SUPINE, qaxis([0,1,0],deg)); // skręt wokół osi czaszki
   const qPitch=deg=>qaxis([1,0,0],deg);                  // +deg = skłon (bow), -deg = odchylenie (lean)
-  // osie pobudzenia kanałów pionowych (w płaszczyźnie kanału, kalibrowane do Dix–Hallpike)
-  const GEXC={ RP:nrm3([1,0,-1]), LP:nrm3([-1,0,-1]), RA:nrm3([-1,0,-1]), LA:nrm3([1,0,-1]) }; // oś pobudzenia = -e1 (ampullofugalna); przednie poprawione (był błędnie +e1)
-  // oś ampullopetalna kanału poziomego: międzyuszna (ku choremu uchu) + przednio-tylna (przód = ampullopetalny)
-  const uHC = side => side==="P" ? nrm3([0.87,0,0.5]) : nrm3([-0.87,0,0.5]);
+  /* ---- GEOMETRIA KANAŁU: JEDNO ŹRÓDŁO (2026-08-05) ----
+     Do tej daty silnik miał DWIE niezależne geometrie tego samego kanału: zmierzone CANAL_NORMALS
+     (Wu 2021) do magnitud oczopląsu ORAZ osobną, RĘCZNIE wpisaną idealizację 45° (CANAL_GEOM/GEXC/uHC)
+     do dynamiki złogu. Rozjeżdżały się o 15–20° na KAŻDYM kanale (tylny 16.8°/15.5°, przedni 20.3°/20.2°,
+     poziomy 17.4°/16.3°), czyli silnik liczył przepływ endolimfy w innej płaszczyźnie niż tę, wokół
+     której wyprowadzał ruch oka. Teraz płaszczyzna pochodzi WYŁĄCZNIE z CANAL_NORMALS, a CANAL_GEOM,
+     GEXC i uHC są z niej WYPROWADZONE — duplikacja usunięta.
+     Układ Wu: x=lewo, y=przednio-tylny, z=góra  →  ramka głowy: x=prawo, y=góra, z=nos.
+     Kontrola przeliczenia osi: normalna kanału poziomego wychodzi ≈[0.02, 0.95, −0.30] (w górę, lekko
+     ku tyłowi) = kanoniczne nachylenie ~30° kanału bocznego; koplanarność RP∥LA (0.988) i RA∥LP (0.985)
+     zachowana. NIE naprawia to R1 (patrz engine_doc): R1 to długość łuku, nie orientacja płaszczyzny. */
+  const wuToHead = n => [-n[0], n[2], n[1]];
+  // KIERUNEK BAŃKI (φ=0) — ZAŁOŻENIE ANATOMICZNE, NIE POMIAR. Wu podaje wyłącznie orientacje PŁASZCZYZN
+  // (normalne); tego, gdzie WZDŁUŻ pętli leży bańka względem ujścia do łagiewki, źródło nie podaje.
+  // To JEDYNE pozostałe wejście geometryczne spoza pomiaru. Używamy wyłącznie RZUTU tych wektorów na
+  // zmierzoną płaszczyznę (składowa prostopadła jest odrzucana), więc niosą one tylko KIERUNEK bańki
+  // w płaszczyźnie kanału — nie jej położenie kątowe względem ujścia. To drugie jest brakującą daną R1.
+  const AMPULLA_DIR = {
+    posterior: { P:[-1,0,1],     L:[1,0,1]       },
+    anterior:  { P:[1,0,1],      L:[-1,0,1]      },
+    horizontal:{ P:[0.87,0,0.5], L:[-0.87,0,0.5] } };
+  // ZWROT OBIEGU ŁUKU: znak normalnej przypina konwencję „rosnące φ = ampullofugalne" (e2 = n × e1).
+  // Pomiar go NIE ustala — źródło nie podaje znaków osi, a płaszczyzna jest definiowana przez normalną
+  // z dokładnością do znaku. To 6 bitów konwencji, nie geometria.
+  const ARC_SPIN = { posterior:{P:+1,L:-1}, anterior:{P:-1,L:+1}, horizontal:{P:+1,L:-1} };
+  function canalBasis(canal, ear){
+    const n0=nrm3(wuToHead(CANAL_NORMALS[canal][ear])), s=ARC_SPIN[canal][ear];
+    const n=[s*n0[0], s*n0[1], s*n0[2]], a=AMPULLA_DIR[canal][ear], k=dot3(a,n);
+    const e1=nrm3([a[0]-k*n[0], a[1]-k*n[1], a[2]-k*n[2]]);   // rzut kierunku bańki na ZMIERZONĄ płaszczyznę
+    return { e1, e2:nrm3(cross3(n,e1)) };
+  }
+  // geometria łuku kanału (płaszczyzna e1,e2); e1 = kierunek ampułki (φ=0); exc = znak pobudzenia
+  // exc=+1: kanały pionowe — pobudza przepływ ampullofugalny (+dφ/dt, Ewald III)
+  // exc=-1: kanał poziomy — pobudza przepływ ampullopetalny (Ewald II)
+  const CANAL_GEOM=(()=>{
+    const EXC={posterior:1, anterior:1, horizontal:-1}, out={};
+    for(const canal of ["posterior","horizontal","anterior"]){
+      out[canal]={};
+      for(const ear of ["P","L"]){ const b=canalBasis(canal,ear); out[canal][ear]={e1:b.e1, e2:b.e2, exc:EXC[canal]}; }
+    }
+    return out;
+  })();
+  // osie pobudzenia kanałów pionowych — WYPROWADZONE: oś pobudzenia = −e1 (styczna ampullofugalna przy φ=90°)
+  const neg3=v=>[-v[0],-v[1],-v[2]];
+  const GEXC={ RP:neg3(CANAL_GEOM.posterior.P.e1), LP:neg3(CANAL_GEOM.posterior.L.e1),
+               RA:neg3(CANAL_GEOM.anterior.P.e1),  LA:neg3(CANAL_GEOM.anterior.L.e1) };
+  // oś ampullopetalna kanału poziomego — WYPROWADZONA: to wprost kierunek bańki (+e1), bo grawitacja
+  // ciągnąca KU bańce daje przepływ ampullopetalny = pobudzenie (Ewald II).
+  const uHC = side => CANAL_GEOM.horizontal[side].e1;
   const CK={posterior:{P:"RP",L:"LP"}, anterior:{P:"RA",L:"LA"}};
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
@@ -117,14 +163,7 @@ export const Vestibular = (()=>{
     if(d>0.9995){return nrm4([a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1]),a[2]+t*(b[2]-a[2]),a[3]+t*(b[3]-a[3])]);}
     const th=Math.acos(d),s=Math.sin(th),w0=Math.sin((1-t)*th)/s,w1=Math.sin(t*th)/s;
     return [w0*a[0]+w1*b[0],w0*a[1]+w1*b[1],w0*a[2]+w1*b[2],w0*a[3]+w1*b[3]];}
-  // geometria łuku kanału (płaszczyzna e1,e2); e1 = kierunek ampułki (φ=0); exc = znak pobudzenia
-  // exc=+1: kanały pionowe — pobudza przepływ ampullofugalny (+dφ/dt, Ewald III)
-  // exc=-1: kanał poziomy — pobudza przepływ ampullopetalny (Ewald II)
-  const CANAL_GEOM={
-    posterior: { P:{e1:nrm3([-1,0,1]), e2:[0,-1,0], exc:1},  L:{e1:nrm3([1,0,1]),  e2:[0,-1,0], exc:1} },
-    horizontal:{ P:{e1:nrm3([0.87,0,0.5]), e2:nrm3([0.5,0,-0.87]), exc:-1},
-                 L:{e1:nrm3([-0.87,0,0.5]), e2:nrm3([-0.5,0,-0.87]), exc:-1} },
-    anterior:  { P:{e1:nrm3([1,0,1]),  e2:[0,-1,0], exc:1},  L:{e1:nrm3([-1,0,1]), e2:[0,-1,0], exc:1} } };
+  // (CANAL_GEOM jest teraz WYPROWADZONE z CANAL_NORMALS — patrz „GEOMETRIA KANAŁU: JEDNO ŹRÓDŁO" wyżej)
   // ROZMIAR/GĘSTOŚĆ CZĄSTKI jako mnożnik promienia r (medium=1 = kalibracja bazowa, r=1 → wynik identyczny):
   //   tauP ∝ r⁻²  (prędkość osiadania Stokesa v ∝ r² → szybszy przepływ);
   //   gc   ∝ r³   (wyparta objętość/masa endolimfy → wychylenie osklepka);
@@ -284,6 +323,6 @@ export const Vestibular = (()=>{
   }
   return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
           simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS, CUP_WEAK};
+          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS, CANAL_GEOM, CUP_WEAK};
 })();
 

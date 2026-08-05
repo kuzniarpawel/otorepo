@@ -225,20 +225,47 @@ qmul, qconj, qaxis(ax,deg), rotv(q,v), dot3, nrm3, nrm4 — vector/quaternion al
 slerpQ(a,b,t) — spherical quaternion interpolation (with hemisphere handling and the near case).
 Q_SUPINE = qaxis([1,0,0],-100) — base of the supine head-hanging orientation.
 
-GEXC — excitation axes of the VERTICAL canals (in the canal plane; g·GEXC>0 = ampullofugal; axis = -e1):
-   RP: norm(1,0,-1)  LP: norm(-1,0,-1)  RA: norm(-1,0,-1)  LA: norm(1,0,-1)   (anterior = -e1, consistent with CANAL_GEOM / the RESOLVED fix below)
-uHC(side) — the ampullopetal axis of the HORIZONTAL canal (interaural + antero-posterior):
-   P: norm(0.87,0,0.5)   L: norm(-0.87,0,0.5)
+CANAL GEOMETRY — SINGLE SOURCE [2026-08-05, branch feature/vestibular]
+   Until that date the engine carried TWO independent geometries of the same canal: the measured
+   CANAL_NORMALS (Wu 2021) for nystagmus magnitudes AND a separate, HAND-written 45° idealization
+   (CANAL_GEOM/GEXC/uHC) for the debris dynamics. They disagreed by 15-20° on EVERY canal:
+       posterior P 16.8° · L 15.5°   anterior P 20.3° · L 20.2°   horizontal P 17.4° · L 16.3°
+   The engine therefore computed endolymph flow in one plane and derived eye motion about another.
+   NOW the plane comes SOLELY from CANAL_NORMALS, and CANAL_GEOM, GEXC and uHC are DERIVED from it
+   (duplication removed; plane discrepancy = 0.00° across all 6 canals).
+
+   wuToHead(n) = [-n0, n2, n1]   (Wu: x=left, y=antero-posterior, z=up → head: x=right, y=up, z=nose)
+     Axis-conversion check: the horizontal-canal normal comes out ≈[0.02, 0.95, −0.30] (up, slightly
+     posterior) = the canonical ~30° pitch of the lateral canal; coplanarity RP∥LA (0.988), RA∥LP (0.985).
+
+   AMPULLA_DIR — ampulla direction (φ=0). AN ANATOMICAL ASSUMPTION, NOT A MEASUREMENT: Wu gives only
+     PLANE orientations, not the ampulla's position along the loop. Only the PROJECTION of these vectors
+     onto the measured plane is used. This is the ONLY remaining non-measured geometric input — and the
+     datum missing for R1.
+       posterior P(-1,0,1) L(1,0,1) · anterior P(1,0,1) L(-1,0,1) · horizontal P(0.87,0,0.5) L(-0.87,0,0.5)
+   ARC_SPIN — the normal's sign, pinning the convention "increasing φ = ampullofugal" (e2 = n × e1). The
+     measurement does not fix it (a plane is a normal up to sign). 6 bits of convention, not geometry.
+       posterior P+1 L−1 · anterior P−1 L+1 · horizontal P+1 L−1
+
+CANAL_GEOM — DERIVED: {e1, e2, exc}; e1 = projection of AMPULLA_DIR onto the measured plane, e2 = n × e1,
+             exc = +1 vertical canals (Ewald III) / −1 horizontal (Ewald II). Resulting values:
+   posterior  P:{e1 (-0.731,-0.010, 0.682), e2 ( 0.203,-0.958, 0.203)}
+              L:{e1 ( 0.727,-0.008, 0.687), e2 (-0.188,-0.964, 0.188)}
+   anterior   P:{e1 ( 0.621, 0.040, 0.783), e2 (-0.231,-0.945, 0.231)}
+              L:{e1 (-0.632, 0.035, 0.774), e2 ( 0.234,-0.944, 0.234)}
+   horizontal P:{e1 ( 0.877, 0.129, 0.462), e2 ( 0.480,-0.270,-0.835)}
+              L:{e1 (-0.876, 0.113, 0.469), e2 (-0.482,-0.256,-0.838)}
+GEXC — DERIVED as −e1 of the vertical canal (ampullofugal tangent at φ=90°; g·GEXC>0 = excitation).
+uHC(side) — DERIVED as +e1 of the horizontal canal (gravity TOWARD the ampulla = ampullopetal = Ewald II).
 CK — mapping {canal,side} → GEXC key for the vertical canals.
 
-CANAL_GEOM — arc geometry for the dynamics (e1=ampulla direction φ=0, e2=second plane axis,
-             exc=sign of excitation):
-   posterior  P:{e1 norm(-1,0,1),  e2 (0,-1,0), exc +1}   L:{e1 norm(1,0,1),  e2 (0,-1,0), exc +1}
-   horizontal P:{e1 norm(0.87,0,0.5), e2 norm(0.5,0,-0.87), exc -1}
-              L:{e1 norm(-0.87,0,0.5), e2 norm(-0.5,0,-0.87), exc -1}
-   anterior   P:{e1 norm(1,0,1),   e2 (0,-1,0), exc +1}   L:{e1 norm(-1,0,1), e2 (0,-1,0), exc +1}
-   Note: the ampullae of the posterior and anterior canals are on opposite sides (e1 reversed) —
-   a result of calibration to ampullofugal flow in the provoking position.
+   EFFECTS (measured): posterior-canal calibration UNCHANGED (latency 1.95 s, peak 0.807 @9.25 s,
+   duration 25.3 s). R3 partially and spontaneously improved: anterior latency 3.15→2.80 s, peak ξ
+   0.668→0.817; horizontal 2.30→2.20 s, 0.518→0.550. All clinical directions unchanged (Dix, Roll
+   geo/apo, Bow & Lean, deep head-hang), position()↔simulateCanalith consistent 6/6, maneuvers clear as
+   before (gufoniApo and bascule still do not — per R2). Golden snapshot: 2 of 91 screens (see R5), the
+   rest byte-identical. DOES NOT FIX R1 — R1 is the arc LENGTH, not the plane orientation (φ_eq posterior
+   190.0→189.6, anterior 194.0→207.1, i.e. for the anterior canal even further past the arc end).
 
 --------------------------------------------------------------------------
  VALIDATION STATUS (offline, node)
@@ -457,6 +484,22 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05) - NOT FIXED, pe
        phi_start, and hence - directly from the formula above - will move R3's numbers too. In that case
        calibrate R3 AFTER the geometry rebuild, or you will tune constants against geometry you are about
        to replace.
+
+
+ R5. stepXiPeak IS NOT A "PER-STEP" MEASURE [found 2026-08-05 while unifying the geometry].
+     It takes max|ξ| over a window that STARTS at the segment boundary, so it also picks up ξ INHERITED
+     from the previous step (the cupula relaxes with tauC=5 s while maneuver steps last 6-12 s — the tail
+     has no time to decay). A step's nystagmus label can therefore be computed from the PREVIOUS step's
+     response. EVIDENCE (Bascule step 5, the only maneuver oscillating hard enough to expose it):
+       old geometry: ξ_start −0.50, the step's own response +0.59 → stepXiPeak = +0.59 ("primary")
+       new geometry: ξ_start −0.75, the step's own response +0.50 → stepXiPeak = −0.75 ("REVERSED, weak")
+     The PHYSICS direction is the SAME in both cases (own response positive, φ rises 4→49°); only the
+     "which is larger in magnitude" tie-break flipped. This is the ONLY difference the geometry unification
+     introduced into the golden snapshot (2 of 91 screens: guide/bascule/{P,L}/step4).
+     SAME ROOT as the masking described in R4b: short hold + long cupular time constant = a tail posing as
+     a response. FIX: compute the step peak on ξ MINUS the inherited value, or only from the moment |ξ|
+     stops decreasing monotonically. It will move labels in several steps of several maneuvers → separate
+     commit + per-step verification in the browser.
 
 
 

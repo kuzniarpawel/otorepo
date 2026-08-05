@@ -451,6 +451,18 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
         DECYZJA: NIE przywracać (byłoby wpisaniem artefaktu w materiał dydaktyczny + pogłębieniem nierówności
         obcięcia). Twierdzenie usunięte, zastąpione zmierzonymi PROGAMI HOLDU — jedyny realny margines to
         Yacovino+small (33 s przy nominale 30 s, ratuje sizedSeconds ×1,6 → 45 s).
+ [x] R5-fix GEOMETRIA UZGODNIONA 2026-08-05 (gałąź feature/vestibular). CANAL_GEOM/GEXC/uHC są teraz
+        WYPROWADZONE z CANAL_NORMALS (Wu 2021) — duplikacja usunięta, rozbieżność płaszczyzn 0.00°/6 kanałów
+        (było 15-20° na każdym). Poza pomiarem zostały DWA jawne wejścia: AMPULLA_DIR (kierunek bańki —
+        założenie anatomiczne, bo praca podaje tylko orientacje płaszczyzn) i ARC_SPIN (6 bitów konwencji
+        obiegu). Skutki: kalibracja kanału tylnego bez zmian; R3 poprawiony CZĘŚCIOWO I SAMOISTNIE (przedni
+        3,15→2,80 s i ξ 0,668→0,817; poziomy 2,30→2,20 s i 0,518→0,550); wszystkie kierunki kliniczne bez
+        zmian; manewry czyszczą jak dotąd. R1 NIENARUSZONE — to długość łuku, nie orientacja płaszczyzny.
+        CZEKA NA DANE UŻYTKOWNIKA: pomiary położenia BAŃKI i ŁAGIEWKI → podmiana AMPULLA_DIR + rozpiętość
+        łuku = jedyna droga do R1.
+ [ ] R5 stepXiPeak NIE JEST miarą per-krok — łapie ξ odziedziczone po kroku poprzednim (dowód: Bascule k5,
+        ξ_start −0,75 przebija własną odpowiedź kroku +0,50 → etykieta „ODWRÓCONY", choć fizyka kroku jest
+        dodatnia). Ten sam korzeń co maskowanie z R4b. Naprawa ruszy etykiety w kilku krokach → osobny commit.
  [ ] R4b HOLDY WYPROWADZONE Z SILNIKA — ZAPROJEKTOWANE I PRZELICZONE, WDROŻENIE ODŁOŻONE (decyzja USERA
         2026-08-05). Zastąpić `cap` w maneuverTimeline holdem wyprowadzonym z silnika. Cały rachunek niżej
         jest zmierzony — przy wdrożeniu NIE trzeba go odtwarzać, trzeba tylko domknąć LUKI 1-3.
