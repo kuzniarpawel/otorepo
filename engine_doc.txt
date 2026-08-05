@@ -431,7 +431,63 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      WYPROWADZANY z silnika, maneuverTimeline). Epley/Semont/Lempert/Gufoni geo/Bascule czyszczą.
      NIE ZAMKNIĘTE: YACOVINO — patrz R6 niżej.
 
- R6. YACOVINO NIE CZYŚCI KANAŁU PRZEDNIEGO przy anatomicznie poprawnym łuku [2026-08-05, OTWARTE].
+ >>> R6 ZAMKNIĘTE 2026-08-05 (gałąź feature/vestibular). Yacovino czyści: φ 3 → 133 → 262 → 281(ujście). <<<
+     Hipoteza robocza z R6 była TRAFNA co do miejsca (AMPULLA_DIR kanału przedniego), ale rozwiązaniem
+     nie był obrót o −35°, tylko POMIAR. Atlas IE-Map dał komplet z jednej rekonstrukcji: normalną (PCA
+     punktów osi), środek bańki, ujście i ZWROT OBIEGU (monotoniczność Q0→Q4 — usunęła tabelę ARC_SPIN,
+     6 bitów konwencji). Łuk 318.8/281.1/267.3.
+     Przy okazji odpadła cała R6-owa „anomalia kanału przedniego": minimum grawitacyjne kanału przedniego
+     w postawie pionowej (304.7°) leży ZA ujściem (281.1°) — czyli kanał przedni NIE MA stabilnego
+     spoczynku w pionie, wolny złóg sam z niego wypada. To nie usterka, tylko odtworzenie znanego faktu
+     (AC-BPPV ~1–2%). Złóg utrzymuje się w nim tylko dociśnięty do osklepka i STAMTĄD startuje (φ=3°).
+     Wcześniejszy wniosek „head-hang wychodzi hamujący przy każdym pochyleniu" był MOIM BŁĘDEM ODNIESIENIA:
+     liczyłem napęd w pozycji spoczynkowej 304.7°, a nie tam, gdzie złóg naprawdę leży. Od osklepka
+     head-hang pcha go ampullofugalnie → pobudzenie → DOWNBEAT, zgodnie z kliniką.
+
+ R7. SEMONT I BASCULE NIE CZYSZCZĄ — MODEL NIE MA CZŁONU BEZWŁADNOŚCIOWEGO [2026-08-05, OTWARTE].
+     To NIE jest błąd geometrii ani pozy — to twierdzenie strukturalne. Obrót ciała o 180° odwraca
+     grawitację w ramce głowy DOKŁADNIE (Rz(180) przeprowadza (0,−1,0) w (0,+1,0), niezależnie od tego,
+     jak głowa jest ustawiona względem tułowia). Semont i Bascule z definicji przerzucają pacjenta
+     o 180° „bez zmiany ustawienia głowy", więc minimum grawitacyjne drugiej pozycji leży DOKŁADNIE
+     180° od pierwszej. Zmierzone: rzut 1 → 139.8°, rzut 2 → 319.8°, różnica 180.000°.
+     Cząstka, która osiadła w pierwszym minimum, ląduje w drugiej pozycji w punkcie NIESTABILNYM:
+     styczna składowa grawitacji = 0. Sama grawitacja nie ruszy jej NIGDY — skrócenie przejścia nie
+     pomaga (sprawdzone tTrans 0.8/0.4/0.2 s: φ stoi na 140°).
+     Wniosek: manewr, który klinicznie nazywa się LIBERACYJNYM i którego cała skuteczność zależy od
+     SZYBKOŚCI rzutu, jest nieodwzorowywalny w modelu czysto grawitacyjnym. Dotychczasowe „działanie"
+     Semonta brało się z ręcznie dopisanej do LEAN_G składowej ku czubkowi głowy (+0.6), która łamała
+     symetrię o 27° — czyli poza była nagięta, żeby zastąpić brakującą fizykę.
+     KIERUNEK NAPRAWY (nie wdrożony): cząstka reaguje na SIŁĘ WŁAŚCIWĄ f = g − a (zasada równoważności),
+     a nie na samo g. Podczas rzutu błędnik jedzie po łuku o promieniu = odległość od osi obrotu, więc
+     a jest wyliczalne z samej osi kroku i szkieletu (SK: miednica→głowa = 42+15+15 jednostek, przy
+     udzie 33 i podudziu 29 → ok. 0.8 m). To NIE wymaga nowej stałej dopasowywanej — wymaga decyzji,
+     czy wprowadzamy człon bezwładnościowy do dynamiki w świetle kanału. Ten sam człon rozwiązuje
+     drugi przypadek graniczny: start kanału przedniego od osklepka (napęd 0.012 < próg 0.04).
+
+ R8. TEST BOW & LEAN JEST W TYM MODELU PODPROGOWY [2026-08-05, OTWARTE — decyzja kliniczna].
+     Napęd styczny: skłon 0.026, odchylenie 0.022, przy progu zerwania adhezji fStat 0.04 i przy
+     0.131 dla testu Roll — czyli 5× słabszy niż Roll i poniżej progu. Symulacja daje ξ = 0.000.
+     Powód jest geometryczny i odporny na parametry: kanał poziomy leży prawie w płaszczyźnie ziemi,
+     a jego oś bańka↔antypoda prawie w płaszczyźnie strzałkowej. Skłon i odchylenie obracają grawitację
+     WŁAŚNIE w tej płaszczyźnie, więc minimum przesuwa się wzdłuż osi przechodzącej przez punkt
+     spoczynku (10° ↔ 190°, spoczynek 199.8°) — składowa styczna zostaje mała przy KAŻDYM kącie
+     skłonu (sprawdzone 30–120°). To spójne z tym, że kanał poziomy bada się ROLLEM, a nie skłonem,
+     i z tym, że Bow & Lean uchodzi za test pomocniczy o dyskusyjnej trafności.
+     ROZBIEŻNOŚĆ: znak, jaki mimo wszystko wychodzi, jest PRZECIWNY do reguły Choung (skłon ku chorej,
+     odchylenie ku zdrowej), którą karta testu twierdzi tekstem. Margines wynosi ~10° położenia
+     spoczynkowego — mieści się w zmienności osobniczej pojedynczego atlasu.
+     DO DECYZJI KLINICZNEJ (nie moja): (a) karta przestaje rysować strzałkę, gdy napęd < progu
+     i mówi „model nie rozstrzyga"; (b) kierunek bierzemy z reguły klinicznej, jawnie, jako regułę
+     a nie wynik fizyki; (c) zostaje jak jest. NIE wybieram sam, bo każda opcja zmienia treść kliniczną.
+
+ R9. NACHYLENIE KANAŁU BOCZNEGO 10.4° ZAMIAST KANONICZNYCH ~30° [2026-08-05, ODNOTOWANE].
+     Atlas jest w ramce skanu, kanon opisuje POSTAWĘ NATURALNĄ. Sprawdzone, czy godzi je jeden obrót
+     ramki: NIE. Nachylenie ma MINIMUM przy +10° (spada do 1.8°) i rośnie dopiero przy ujemnych, a każde
+     pochylenie ≠ 0 psuje albo test Roll, albo head-hang, albo oba (sonda 39: przy +10° i dalej gubimy
+     Roll, gufoniGeo i Yacovino). Ramka atlasu zostaje bez obrotu. To druga, niezależna próba tej samej
+     hipotezy „brakującego pochylenia" — i drugie jej obalenie, tym razem przy pozach wyprowadzonych.
+
+ R6-STARE. YACOVINO NIE CZYŚCI KANAŁU PRZEDNIEGO przy anatomicznie poprawnym łuku [ZAMKNIĘTE — wyżej].
      Minimum grawitacyjne w jego najgłębszym kroku (deep head-hang) to 233.8°, a ujście leży na 266°.
      Kolejne kroki cofają złóg: broda do klatki → 115.8°, siad → 53.6°. Żaden hold ani żadne tauP tego
      nie naprawi (sprawdzone tauP 6.5→2: φ końcowe zostaje 54–61°, cząstka tylko szybciej wraca).

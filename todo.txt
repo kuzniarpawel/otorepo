@@ -571,6 +571,29 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
             ARC_SPIN — DO USUNIĘCIA (zwrot wynika z monotoniczności osi Q0→Q4).
             Konwersja: pozycje RAS→głowa (X,Z,Y); normalna = wektor OSIOWY, det=−1 → znak odwrócony.
 
+        >>> ROZSTRZYGNIĘTE 2026-08-05 (commit b5f55b1): POZY WYPROWADZONE Z OPISÓW. <<<
+          Podejrzenie było trafne. 18 z 27 póz nie zgadzało się z instrukcją pokazywaną klinicyście,
+          sześć o ponad 50°. Trzy tabele (BASE_G/LEAN_G · SUPINE_PITCH · TORSO_Q/NECK_DEG) zastąpione
+          jedną: roll/trunk/pitch/dyaw, każda liczba ze zdania opisu. composeHead == stepHeadQ.
+          Razem z tym wszedł komplet IE-Map (ARC_SPIN usunięty — zwrot z monotoniczności Q0→Q4)
+          oraz WYPROWADZONY start złogu (restPhi: 48.8 / 199.8 / 3 zamiast wpisanego 90 dla wszystkich).
+          Ta sama stała 90 siedziała w position(): karta testu liczyła kierunek styczną w φ=90 i potrafiła
+          pokazać kierunek PRZECIWNY do symulacji tej samej pozy — teraz obie liczą to samo.
+          DZIAŁA: Epley (49→158→230→307→319), Yacovino (3→133→262→281, DOWNBEAT zamiast upbeat),
+            Lempert, Gufoni geo, Dix–Hallpike z odwróceniem Bárány, Roll z lateralizacją Ewald II,
+            postać apogeotropowa. bridge:check i view:check PASS (view poprawił się 14.12°→12.77°).
+          ZOSTAJE (engine_doc R7/R8/R9):
+            R7 Semont+Bascule — obie pozycje rzutu DOKŁADNIE 180° od siebie (własność obrotu ciała
+               o 180°, nie usterka danych), więc złóg ląduje w punkcie NIESTABILNYM. Brakuje członu
+               BEZWŁADNOŚCIOWEGO (siła właściwa f = g − a). Dotychczasowe „działanie" Semonta brało
+               się z ręcznie dopisanej składowej w LEAN_G, która łamała tę symetrię o 27°.
+               Ten sam człon domyka drugi przypadek graniczny (start kanału przedniego od osklepka).
+               Promień do wyliczenia a JEST w aplikacji (szkielet SK) — to nie nowa stała do dopasowania.
+            R8 Bow & Lean podprogowy (napęd 0.026 vs próg 0.04 i 0.131 dla Roll) — DECYZJA KLINICZNA
+               USERA, bo każda opcja zmienia treść karty.
+            R9 nachylenie kanału bocznego 10.4° vs kanoniczne 30° — hipoteza pochylenia ramki obalona
+               PO RAZ DRUGI, teraz przy pozach wyprowadzonych.
+
           POZOSTAŁY PODEJRZANY: POZY MANEWRÓW (BASE_G / LEAN_G / SUPINE_PITCH) były kalibrowane pod
           STARĄ, błędną geometrię — tak samo jak AMPULLA_DIR był współ-dostrojony z phi=90. Jeśli
           geometria jest teraz poprawna, pozy trzeba wyprowadzić na nowo z opisów klinicznych, a nie
