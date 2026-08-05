@@ -137,6 +137,23 @@ export const Vestibular = (()=>{
   // ciągnąca KU bańce daje przepływ ampullopetalny = pobudzenie (Ewald II).
   const uHC = side => CANAL_GEOM.horizontal[side].e1;
   const CK={posterior:{P:"RP",L:"LP"}, anterior:{P:"RA",L:"LA"}};
+  // ZAKRES ŁUKU: od ŚRODKA BAŃKI (φ=0) do ujścia do przedsionka/łagiewki (φ=phiExit) — POMIAR, nie idealizacja.
+  // Źródło: Cárdenas-Serna & Jeffery — współrzędne anatomiczne 96 ludzkich błędników kostnych (48 dorosłych),
+  //   Zenodo doi:10.5281/zenodo.4818568 (opis: PMC8819049). Wartości = duży łuk od środka bańki do
+  //   przeciwległego ujścia, po rzucie kanału na jego najlepiej dopasowaną płaszczyznę:
+  //     przedni → ujście odnogi wspólnej   265.8° ± 7.1°  (zakres 249.2–279.4)
+  //     tylny   → ujście odnogi wspólnej   307.0° ± 5.3°  (zakres 295.1–319.5)
+  //     boczny  → ujście niebańkowe        236.8° ± 10.1° (zakres 213.4–254.5)
+  //   Zgodne kierunkowo z θs Bradshaw i wsp. 2010 (JARO, doi:10.1007/s10162-009-0195-6): 271.7/324.7/249.2°
+  //   dla błędnika błoniastego — θs liczone między GRANICAMI przedsionkowymi, nie od środka bańki, stąd
+  //   systematycznie wyższe (od granicy bańka–przedsionek nasze wartości rosną do 281.5/320.4/255.8°).
+  // TO ZAMYKA R1: do 2026-08-05 model miał JEDEN globalny phiExit=178°, czyli ujście DOKŁADNIE naprzeciw
+  //   bańki. Anatomicznie oba końce przewodu uchodzą do łagiewki — leżą OBOK siebie — a pętla biegnie
+  //   między nimi długą drogą (~2/3 do 5/6 okręgu). Skutkiem było to, że minimum grawitacyjne w KAŻDEJ
+  //   pozycji prowokującej (φ_eq: tylny 189.6°, przedni 207.1°) leżało POZA końcem łuku, więc złóg zawsze
+  //   dobijał do odnogi. Przy zmierzonym zakresie φ_eq leży W ŚRODKU łuku dla wszystkich 6 kanałów.
+  // UWAGA: to dane błędnika KOSTNEGO — „przedsionek" jest anatomicznym przybliżeniem ujścia do łagiewki.
+  const ARC_SPAN = { anterior:266, posterior:307, horizontal:237 };
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
     reqCanal(canal, side, "position");
@@ -224,8 +241,10 @@ export const Vestibular = (()=>{
   //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
-  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}){
+  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}){
     reqCanal(canal, side, "simulateCanalith");
+    if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
+    if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCanalith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCanalith: dt musi być liczbą > 0 (podano "+dt+")");   // dt<=0 → nieskończona pętla
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)

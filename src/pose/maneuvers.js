@@ -121,7 +121,9 @@ function yacovino(side){
   return {name:t("Głębokie odchylenie głowy (Yacovino)","Deep head-hang (Yacovino)"),canal:"anterior",side,headCamera:"topDownBehind",steps:[
     {title:t("Pozycja wyjściowa","Starting position"),body:"sit",yaw:0,face:"fwd",seconds:null,progress:0.02,
      instr:t(`Pacjent siada na środku kozetki, głowa prosto.`,`The patient sits in the middle of the couch, head straight.`)},
-    {title:t("Głębokie odchylenie głowy","Deep head-hang"),body:"supineDeepHang",yaw:0,face:"up",seconds:30,dynHold:22,progress:0.30,
+    // (był tu `dynHold:22` — obejście zaszytego cap=12 s; usunięte 2026-08-05, bo hold jest teraz WYPROWADZANY
+    //  z silnika i nie ma czego obchodzić. Zostawiony SKRACAŁBY ten krok z holdu wyprowadzonego do 22 s.)
+    {title:t("Głębokie odchylenie głowy","Deep head-hang"),body:"supineDeepHang",yaw:0,face:"up",seconds:30,progress:0.30,
      instr:t(`Szybko połóż pacjenta na plecach z głową głęboko odchyloną w dół (znacznie poniżej poziomu). Utrzymaj — złóg opuszcza kanał w tej pozycji.`,`Quickly lay the patient supine with the head hanging deeply downward (well below horizontal). Hold — the debris leaves the canal in this position.`)},
     {title:t("Przygięcie brody do klatki (leżąc)","Chin to chest (while supine)"),body:"supineChin",yaw:0,face:"up",seconds:30,progress:0.70,
      instr:t(`NIE sadzając pacjenta, przygnij jego głowę do przodu — broda do klatki (~45°). Pacjent nadal leży. Utrzymaj.`,`WITHOUT sitting the patient up, flex their head forward — chin to chest (~45°). The patient remains supine. Hold.`)},
@@ -449,17 +451,43 @@ const sizeRadius=s=>({small:0.78, medium:1.0, big:1.35})[s]!==undefined?({small:
 // pozycji (uzasadnienie ~30 s holdów w CRP: Hain, Squires & Stone 2005). medium/big = bez zmian (bezpieczne).
 const holdMult=s=> s==="small"?1.6:1;
 function sizedSeconds(sec, size){ if(sec==null) return null; const v=sec*holdMult(size); return Math.max(15, Math.min(120, Math.round(v/15)*15)); }
-// oś czasu manewru: [{q,tTrans,tHold}] — wejście do simulateCanalith/Cupulolith
+/* oś czasu manewru: [{q,tTrans,tHold}] — wejście do simulateCanalith/Cupulolith
+   HOLD WYPROWADZONY Z SILNIKA [2026-08-05, R4b]. Do tej daty hold dynamiki był OBCIĘTY do zaszytego
+   `cap` (12 s, dla small 12/r²), niezależnie od tego, ile kroku realnie potrzeba. Obcięcie było głębokie
+   i NIERÓWNE (semont 20% zaleconego holdu, gufoniGeo 30%, lempert 44%, epley 53%, yacovino 77%), więc
+   „czy manewr czyści" częściowo mierzyło agresywność obcięcia, a nie geometrię kanału. Po wprowadzeniu
+   ZMIERZONEGO zakresu łuku (ARC_SPAN w silniku, R1) łuk kanału tylnego urósł 178°→307° i przy 12 s Epley
+   dochodził do φ 305,5 z 307 — nie wychodził o włos. Teraz hold jest LICZONY: najmniejsza wartość
+   z HOLD_STEPS, przy której silnik wyprowadza złóg do łagiewki.
+     • krok Z TIMEREM  → hold wyprowadzony (podłoga 30 s = minimum kliniczne CRP, Hain [2]; krok 15 s)
+     • krok BEZ TIMERA → UNTIMED_HOLD. Uzasadnienie, nie magiczna liczba: w takim kroku albo nic się nie
+       dzieje (pozycja wyjściowa — złóg stoi), albo zachodzi EKSPULSJA z odnogi, która trwa EXPEL_DUR=1,2 s
+       — 6 s daje 5× zapasu. To istotne: krok kuracyjny EPLEYA (k5 „Powrót do siadu") NIE MA timera.
+     • manewr, który NIE czyści przy ŻADNYM kandydacie → hold ZALECONY KLINICZNIE (st.seconds). Dotyczy
+       Gufoniego apo (manewr KONWERSJI — z założenia nie czyści), Bascule i dziś także Yacovino (R1-open). */
+const HOLD_STEPS=[30,45,60,75,90,105,120], UNTIMED_HOLD=6;
+const holdKey=(plan,size)=>[plan.canal,plan.side,size,plan.steps.map(s=>`${s.body}|${s.yaw}|${s.face}|${s.seconds}`).join(";")].join("#");
+const _holdMemo=new Map();                                   // szukanie holdu = do 7 symulacji; pamiętamy per (kanał,strona,rozmiar,pozy)
+function timelineWithHold(plan, h){
+  return plan.steps.map(st=>({ q: stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8,
+    tHold: st.seconds!=null ? h : UNTIMED_HOLD }));
+}
+// najmniejszy hold z HOLD_STEPS, przy którym manewr wyprowadza złóg; null gdy żaden nie wystarcza
+function derivedHold(plan, size){
+  const k=holdKey(plan,size); if(_holdMemo.has(k)) return _holdMemo.get(k);
+  let out=null;
+  for(const h of HOLD_STEPS){
+    const sim=Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, size, timeline:timelineWithHold(plan,h)});
+    if(sim.length && sim[sim.length-1].exited){ out=h; break; }
+  }
+  _holdMemo.set(k,out); return out;
+}
 function maneuverTimeline(plan, size="medium"){
-  const r=sizeRadius(size), cap = r>=1 ? 12 : Math.round(12/(r*r));   // małe złogi osiadają wolniej → dłuższy hold dynamiki (medium/big=12, regresja)
+  const h=derivedHold(plan,size);
   return plan.steps.map(st=>({
     q: stepHeadQ(st.body, st.yaw, st.face),
     tTrans: 0.8,
-    // dynHold: override czasu DYNAMIKI dla pojedynczego kroku (Yacovino: głęboki zwis czyści anterior
-    // dopiero po ~22 s — dłużej niż domyślny cap; NIE zmienia to innych manewrów). Skalujemy tak jak cap
-    // (małe złogi osiadają wolniej → cap=12/r², medium/big=12): dynHold·(cap/12) — small ~37 s, medium 22 s;
-    // sprawdzone: φ→178 exited dla small/medium/big. Timer wyświetlany (st.seconds) niezależny.
-    tHold: st.dynHold!=null ? st.dynHold * (cap/12) : Math.max(6, Math.min(cap, st.seconds!=null ? st.seconds : 6))
+    tHold: st.seconds==null ? UNTIMED_HOLD : (h!=null ? h : st.seconds)   // fallback: hold zalecony klinicznie
   }));
 }
 // pełna symulacja manewru → φ(t) cząstki w kanale (dynamika repozycji)

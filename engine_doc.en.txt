@@ -416,7 +416,41 @@ SIMPLIFICATIONS RELATIVE TO FULL MODELS:
     particles with different trajectories; cupulolithiasis is deliberately without fatigability (a differentiating feature) [12].
 
 
-KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05) - NOT FIXED, pending decision:
+KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
+
+ >>> R1 CLOSED 2026-08-05 (branch feature/vestibular) - see ARC_SPAN in the constants section. <<<
+     The missing datum was the angular ampulla-to-opening separation. Supplied: Cardenas-Serna & Jeffery
+     (48 adult bony labyrinths, Zenodo doi:10.5281/zenodo.4818568) - anterior 265.8+-7.1, posterior
+     307.0+-5.3, lateral 236.8+-10.1 from the ampulla CENTRE. Entered as ARC_SPAN {266, 307, 237}
+     replacing the global 178 deg. VERIFIED AFTER THE CHANGE:
+       - the gravitational minimum lies INSIDE the arc for all 6 canals (was OUTSIDE for 4 of 6);
+       - THE REVERSAL ON SITTING UP is back: after Dix-Hallpike xi -0.782 (was +0.312 = none), the
+         debris returns to phi 90.9 and does NOT exit - the Barany criterion is reproduced;
+       - diagnostics stopped curing: the roll with the healthy ear down no longer empties the canal;
+       - R1(b) is gone - the Epley works at EVERY step: phi travel k2 97.9 / k3 73.2 / k4 33.8 / k5 12.0
+         (was 74.0 / 1.8 / 0.0 INERT / 12.0). In the app step 4 finally shows a nystagmus;
+       - latencies and peaks UNCHANGED; the attack lengthened to 34-41 s (still < 60 s, Barany).
+     THE COST was that maneuvers now need holds >=30 s - closed in parallel by R4b (hold DERIVED from
+     the engine in maneuverTimeline). Epley/Semont/Lempert/Gufoni geo/Bascule all clear.
+     NOT CLOSED: YACOVINO - see R6 below.
+
+ R6. YACOVINO DOES NOT CLEAR THE ANTERIOR CANAL with an anatomically correct arc [2026-08-05, OPEN].
+     The gravitational minimum at its deepest step (deep head-hang) is 233.8 deg while the opening is at
+     266 deg. Later steps pull the debris back: chin-to-chest -> 115.8, sitting -> 53.6. No hold and no
+     tauP fixes this (tested tauP 6.5->2: final phi stays 54-61 deg, the particle merely returns faster).
+     EVERY other maneuver has a step whose minimum lies BEYOND the opening: Epley 320 > 307, Semont
+     326 > 307, Gufoni geo 265 > 237, Lempert 345 > 237. Yacovino alone does not.
+     Its former "success" was an artefact of the too-short arc: at 178 deg the 233.8 minimum lay past the
+     end, so the debris was pushed out of the canal. Same mechanism as the removed R4 property.
+     WORKING HYPOTHESIS: the cause is the anterior canal's AMPULLA_DIR - an ASSUMPTION, not a
+     measurement. Rotating the ampulla direction by about -35 deg in the canal plane puts step 2's minimum
+     at 268.8 > 266 and Yacovino starts clearing. We do NOT guess that value: fitting an assumption so
+     that one maneuver passes is exactly the mechanism that produced the R1 and R4 artefacts. Awaiting a
+     measurement of the ampulla position (the same Cardenas-Serna data contains the three ampulla centres).
+     IMPORTANT: nystagmus direction comes from CANAL_NORMALS (nysMag/quickPhase), NOT from AMPULLA_DIR -
+     correcting the ampulla shifts only where the debris sits along the arc, touching no clinical direction.
+
+REMAINING (pending decision):
 
  R1. THE MODEL ARC IS SHORTER THAN THE REAL CANAL -> the provoking position does the maneuver's work.
      The arc is modelled as 180 deg (ampulla phi=0 -> utricle phi=178). In EVERY provoking position the

@@ -413,7 +413,41 @@ UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI:
     cząstek o różnych trajektoriach; kupulolitiaza celowo bez męczliwości (cecha różnicująca) [12].
 
 
-ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05) — NIENAPRAWIONE, do decyzji:
+ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
+
+ >>> R1 ZAMKNIĘTE 2026-08-05 (gałąź feature/vestibular) — patrz ARC_SPAN w sekcji stałych. <<<
+     Brakującą daną był kątowy odstęp bańka↔ujście. Dostarczona: Cárdenas-Serna & Jeffery (48 dorosłych
+     błędników kostnych, Zenodo doi:10.5281/zenodo.4818568) — przedni 265.8°±7.1, tylny 307.0°±5.3,
+     boczny 236.8°±10.1 od ŚRODKA bańki. Wstawione jako ARC_SPAN {266, 307, 237} zamiast globalnego 178°.
+     ZWERYFIKOWANE PO ZMIANIE:
+       • minimum grawitacyjne leży W ŁUKU we wszystkich 6 kanałach (było POZA w 4 z 6);
+       • ODWRÓCENIE OCZOPLĄSU PRZY SIADANIU wróciło: po Dix–Hallpike ξ −0.782 (było +0.312 = brak),
+         złóg wraca do φ 90.9 i NIE wychodzi — kryterium Bárány odtworzone;
+       • diagnostyka przestała leczyć: roll z uchem zdrowym w dole nie opróżnia kanału (φ 211.7 < 237);
+       • R1(b) zniknęło — Epley pracuje KAŻDYM krokiem: ruch φ k2 97.9° · k3 73.2° · k4 33.8° · k5 12.0°
+         (było 74.0 · 1.8 · 0.0 JAŁOWY · 12.0). W aplikacji krok 4 pokazuje wreszcie oczopląs;
+       • latencje i szczyty BEZ ZMIAN; napad wydłużył się do 34–41 s (nadal < 60 s, kryterium Bárány).
+     CENĄ było to, że manewry wymagają teraz holdów ≥30 s — domknięte równolegle przez R4b (hold
+     WYPROWADZANY z silnika, maneuverTimeline). Epley/Semont/Lempert/Gufoni geo/Bascule czyszczą.
+     NIE ZAMKNIĘTE: YACOVINO — patrz R6 niżej.
+
+ R6. YACOVINO NIE CZYŚCI KANAŁU PRZEDNIEGO przy anatomicznie poprawnym łuku [2026-08-05, OTWARTE].
+     Minimum grawitacyjne w jego najgłębszym kroku (deep head-hang) to 233.8°, a ujście leży na 266°.
+     Kolejne kroki cofają złóg: broda do klatki → 115.8°, siad → 53.6°. Żaden hold ani żadne tauP tego
+     nie naprawi (sprawdzone tauP 6.5→2: φ końcowe zostaje 54–61°, cząstka tylko szybciej wraca).
+     Każdy INNY manewr ma krok, którego minimum leży ZA ujściem: Epley 320 > 307, Semont 326 > 307,
+     Gufoni geo 265 > 237, Lempert 345 > 237. Yacovino jako jedyny nie ma.
+     Dawne „działanie" Yacovino było artefaktem za krótkiego łuku: przy 178° minimum 233.8° leżało za
+     końcem, więc złóg był wypychany poza kanał. Ten sam mechanizm co usunięta cecha z R4.
+     HIPOTEZA ROBOCZA: przyczyną jest AMPULLA_DIR kanału przedniego — ZAŁOŻENIE, nie pomiar. Obrót
+     kierunku bańki o ≈ −35° w płaszczyźnie kanału ustawia minimum kroku 2 na 268.8° > 266 i Yacovino
+     zaczyna czyścić. NIE ZGADUJEMY tej wartości: dopasowanie założenia tak, by jeden manewr przeszedł,
+     to dokładnie mechanizm, który wyprodukował artefakty R1 i R4. Czekamy na pomiar położenia bańki
+     (te same dane Cárdenas-Serna zawierają środki trzech baniek).
+     WAŻNE: kierunek oczopląsu bierze się z CANAL_NORMALS (nysMag/quickPhase), a NIE z AMPULLA_DIR —
+     korekta bańki przesunie tylko położenie złogu wzdłuż łuku, nie ruszy ani jednego kierunku klinicznego.
+
+POZOSTAŁE (do decyzji):
 
  R1. ŁUK MODELU JEST KRÓTSZY NIŻ REALNY KANAŁ → pozycja prowokująca robi robotę manewru.
      Łuk modelujemy jako 180° (ampułka φ=0 → łagiewka φ=178). W KAŻDEJ pozycji prowokującej minimum
