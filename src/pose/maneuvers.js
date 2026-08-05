@@ -234,8 +234,13 @@ function provokeQ(canal, side){
 }
 // przebieg ξ(t) z silnika: kanalolitiaza = PRZEJŚCIOWY (wygasa, cząstka wychodzi, NIE wraca);
 // kupulolitiaza = uporczywy (trzyma się, dopóki pozycja utrzymana).
+// OKNO OBSERWACJI (tHold) — to ONO, przez xiEnvelope→tEnd, ustala jak długo gra animacja oczopląsu.
+//   Kupulolitiaza NIE wygasa, więc jej tEnd = całe okno; kanalolitiaza wygasa sama w ~30–40 s. Okno 18 s dla
+//   postaci uporczywej dawało tEnd 18,5 s przeciw 29,8–39,8 s dla przejściowej, czyli oczopląs „uporczywy"
+//   zatrzymywał się PIERWSZY — dokładne odwrócenie cechy różnicującej, której uczy ta sama karta
+//   („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno 60 s = próg kliniczny 1 min z kryteriów Bárány.
 function engineXi(canal, side, persistent, q){
-  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?18:40}];
+  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:40}];
   return persistent
     ? Vestibular.simulateCupulolith({canal, side, timeline})
     : Vestibular.simulateCanalith({canal, side, timeline});

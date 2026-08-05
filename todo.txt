@@ -406,3 +406,43 @@ MIGRACJA MODUŁOWA + 3D:
  [ ] (PRZYSZŁOŚĆ) Model GLB zamiast proceduralnego rigu — użytkownik wybrał proceduralny; adapter kości
        gotowy (mount przez PoseSpec). Wymiana = ten sam interfejs show(spec,side).
  [ ] (PRZYSZŁOŚĆ) Pomiar wydajności 3D na realnym telefonie (środowisko dev było desktopowe).
+
+=== PRZEGLĄD NEUROFIZJOLOGICZNY SILNIKA `Vestibular` (fizyka BPPV) — 2026-08-05 ===
+Odpowiednik przeglądu `engine.neuro` z b82081a, tym razem dla warstwy złogu otolitowego.
+Każdy punkt najpierw ODTWORZONY liczbowo na sondzie, potem naprawiony/udokumentowany, potem sonda powtórzona.
+
+NAPRAWIONE:
+ [x] #1 Postać UPORCZYWA gasła SZYBCIEJ niż przejściowa. engineXi trzymało kupulolitiazę 18 s, a kanalolitiazę
+        40 s; tEnd (z xiEnvelope) steruje CZASEM ANIMACJI oczopląsu, więc na karcie diagnostycznej oczopląs
+        „uporczywy" zatrzymywał się jako PIERWSZY (18,5 s vs 29,8–39,8 s) — odwrócenie cechy różnicującej,
+        której uczy ta sama karta („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno = 60 s (próg Bárány).
+ [x] #2 Ekspulsja BEZWŁADNOŚCIOWA z odnogi ignorowała CZAS: przerzut 180° trwający 20 s (9 °/s) wyrzucał złóg
+        tak samo jak rzut Semonta. Bezwładność jest funkcją prędkości — dodano bramkę crusFlingRate=180 °/s
+        obok crusFling=145°. Dobrane tak, by przy jednolitym tTrans=0,8 s aplikacji NIC się nie zmieniło
+        (42 kombinacje manewr×strona×rozmiar bit-identyczne; żaden krok planu nie leży w pasie 140–150°).
+ [x] #3 Komentarze renderu twierdziły, że Bascule „WYCHODZI (man.exited) → pełna liberacja". Nie wychodzi
+        (patrz R2 niżej) — komentarze doprowadzone do stanu faktycznego.
+
+DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE zmieniam bez zgody):
+ [ ] R1 ŁUK 180° JEST KRÓTSZY NIŻ REALNY KANAŁ — minimum grawitacyjne w pozycji prowokującej leży poza końcem
+        łuku (Dix φ_eq≈190°, head-hang ≈194°, roll ≈210°), więc cząstka zawsze dobija do odnogi. Skutki:
+        brak ODWRÓCENIA przy siadaniu po Dix–Hallpike'u (kryterium Bárány, deklarowane w engine_doc);
+        kroki 3–4 Epleya fizycznie jałowe (ξ 0,06 → aplikacja nie pokazuje oczopląsu w kroku 4);
+        test roll z uchem zdrowym w dole OPRÓŻNIA kanał poziomy. phiExit=240 naprawia część, ale psuje
+        Semonta/Yacovino/Gufoniego geo → potrzebna skoordynowana rekalibracja, nie zmiana jednej stałej.
+ [ ] R2 BASCULE NIGDY NIE CZYŚCI (φ 90→11→78→3→51, exited=false) i wpada w gałąź renderu od Gufoniego apo,
+        choć instrukcja kroku obiecuje przeniesienie złogu do łagiewki. Mechanizmem Bascule jest bezwładnościowe
+        oderwanie od osklepka — model przetłumiony, grawitacyjny, tego nie zawiera.
+ [ ] R3 STAŁE SKALIBROWANE TYLKO DLA KANAŁU TYLNEGO. Kanał poziomy wychodzi z latencją 2,30 s (dłuższą niż
+        tylny 1,95 s) i najsłabszym oczoplątem (ξ 0,518 vs 0,810), a klinicznie HC-BPPV ma latencję
+        najkrótszą/nieobecną i oczopląs najsilniejszy.
+ [ ] R4 engine_doc deklarował, że small NIE czyści Semonta/Yacovino — nieaktualne (skalowanie holdów cap=12/r²
+        to skompensowało). Cecha dydaktyczna zniknęła po cichu; przywrócić albo usunąć z materiału.
+
+BEZ ZMIAN (sprawdzone, potwierdzone jako poprawne): prawa Ewalda I/II/III i maska NYS_SHOW; magnitudy
+ z CANAL_NORMALS (tylny 0,93:0,41:1,00 · przedni 1,00:0,44:0,78 · poziomy 0,02:1,00:0,31); odwracanie geo/apo
+ TYLKO dla kanału poziomego (kanały pionowe słusznie bez odwrócenia — ciężki osklepek odchyla się w tę samą
+ stronę co swobodny złóg); zgodność position()↔simulateCanalith 6/6 kanałów; kierunki Bow & Lean 4/4;
+ kupulolitiaza bez latencji (0,05 s) i uporczywa przez 60 s we wszystkich kanałach; fatigueFactor (0,81→0,51→
+ 0,33→0,22→0,15) i jego brak w kupulolitiazie; skalowanie rozmiarem (tauP∝r⁻², gc∝r³, adh∝r); φ=90 jako
+ stabilna pozycja spoczynkowa w siadzie; kalibracja kanału tylnego (lat 1,95 s, szczyt 0,810 @9,3 s, 25,3 s).

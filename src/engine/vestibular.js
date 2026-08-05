@@ -178,12 +178,14 @@ export const Vestibular = (()=>{
   //     • GRAWITACYJNA (wolna): przy głowie pionowej (siad) łagiewka jest POD odnogą → złóg wpada. Warunek
   //       −gHead_y > crusGrav (gHead·[0,−1,0]). To daje ekspulsję Epleya PRZY SIADZIE + oczopląs liberacyjny.
   //     • BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut o duży kąt (Semont ~180°) wyrzuca złóg z odnogi siłami
-  //       bezwładności, niezależnie od grawitacji. Proxy: kąt przejścia segmentu > crusFling (przy ~jednolitym
-  //       czasie przejścia duży kąt = duża prędkość kątowa). To utrzymuje ekspulsję Semonta PRZY RZUCIE.
+  //       bezwładności, niezależnie od grawitacji. Proxy: kąt przejścia segmentu > crusFling ORAZ prędkość
+  //       kątowa kąt/tTrans > crusFlingRate. Sam kąt NIE wystarczy — bezwładność jest funkcją PRĘDKOŚCI, więc
+  //       ten sam przerzut 180° wykonany POWOLI (np. tTrans 20 s) nie może wyrzucać złogu. To utrzymuje
+  //       ekspulsję Semonta PRZY RZUCIE (155° w 0,8 s ≈ 194°/s), a odrzuca powolne przetoczenia.
   //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
-  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145}){
+  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}){
     reqCanal(canal, side, "simulateCanalith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCanalith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCanalith: dt musi być liczbą > 0 (podano "+dt+")");   // dt<=0 → nieskończona pętla
@@ -199,7 +201,11 @@ export const Vestibular = (()=>{
     let phi=90*D, xi=0, t=0, exited=false, stuck=true, inCrus=false, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
-      const flingDeg = 2*Math.acos(Math.min(1,Math.abs(q4dot(qPrev,sq))))*180/Math.PI;   // kąt przejścia INTO tego segmentu (proxy prędkości kątowej → bezwładność)
+      const flingDeg = 2*Math.acos(Math.min(1,Math.abs(q4dot(qPrev,sq))))*180/Math.PI;   // kąt przejścia INTO tego segmentu
+      // PRĘDKOŚĆ kątowa przejścia [°/s] — bezwładność zależy od NIEJ, nie od samego kąta. tTrans=0 (skok
+      // orientacji) = przejście natychmiastowe → prędkość nieskończona (zachowuje dawne zachowanie kąt-only).
+      const flingRate = seg.tTrans>0 ? flingDeg/seg.tTrans : Infinity;
+      const flung = flingDeg>crusFling && flingRate>crusFlingRate;   // gwałtowny przerzut (Semont): duży kąt SZYBKO
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
@@ -208,7 +214,7 @@ export const Vestibular = (()=>{
         if(!exited){
           if(crusGate && inCrus){
             // złóg w KOMORZE ODNOGI WSPÓLNEJ — poza czułym kanałem (osklepek relaksuje). Czeka na ekspulsję do łagiewki.
-            if(!expelling && (-g[1] > crusGrav || flingDeg > crusFling)) expelling=true;   // GRAWITACYJNA (siad: łagiewka pod odnogą) LUB BEZWŁADNOŚCIOWA (szybki przerzut, np. Semont)
+            if(!expelling && (-g[1] > crusGrav || flung)) expelling=true;   // GRAWITACYJNA (siad: łagiewka pod odnogą) LUB BEZWŁADNOŚCIOWA (szybki przerzut, np. Semont)
             if(expelling){                                     // transjent ekspulsji: φ pcrus→pex → oczopląs liberacyjny (ampullofugalny, TEN SAM znak co pierwotny)
               dphi=expelRate; let nphi=phi+dphi*dt;
               if(nphi>=pex){nphi=pex; exited=true; expelling=false;}   // wpadł do łagiewki (jednokierunkowo)

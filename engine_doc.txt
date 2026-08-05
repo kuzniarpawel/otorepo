@@ -102,7 +102,7 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — ETAP 2 (dynamika cząstki) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}) -> [{t, xi, phi, exited}, ...]
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
    [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
     oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
@@ -136,8 +136,14 @@ simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=
              −gHead_y > crusGrav (rzut grawitacji na oś odnoga→łagiewka ≈ [0,−1,0]). Daje ekspulsję Epleya PRZY
              SIADZIE (krok 5) + oczopląs LIBERACYJNY tam, gdzie klinicznie występuje.
            – BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut o duży kąt (Semont ~180°) wyrzuca złóg z odnogi siłami
-             bezwładności niezależnie od grawitacji. Proxy: kąt przejścia segmentu > crusFling (przy ~jednolitym
-             czasie przejścia duży kąt ≈ duża prędkość kątowa). Utrzymuje ekspulsję Semonta PRZY RZUCIE (krok 3).
+             bezwładności niezależnie od grawitacji. Proxy DWUCZŁONOWY: kąt przejścia > crusFling ORAZ prędkość
+             kątowa kąt/tTrans > crusFlingRate [°/s]. [2026-08-05] Sam kąt NIE wystarcza — bezwładność jest
+             funkcją PRĘDKOŚCI, a poprzedni warunek kąt-only wyrzucał złóg także przy przerzucie 180° trwającym
+             20 s (9 °/s), co nie jest zjawiskiem bezwładnościowym. Domyślne 180 °/s dobrano tak, by przy
+             jednolitym tTrans=0.8 s aplikacji (maneuverTimeline) zachowanie WSZYSTKICH manewrów było
+             bit-identyczne (Semont krok 3: 155° / 0,8 s = 194 °/s → nadal wyrzuca; żaden krok planu nie leży
+             w pasie ryzyka 140–150°). tTrans=0 (skok orientacji) = przejście natychmiastowe → prędkość ∞.
+             Utrzymuje ekspulsję Semonta PRZY RZUCIE (krok 3).
          Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w ~EXPEL_DUR(1.2 s) → TRANSJENT oczopląsu ampullofugalny
          (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. exited=true jednokierunkowo (blokuje fazę odwróconą).
        Ruch wsteczny w świetle kanału (dφ/dt<0, przed odnogą) → ξ<0 → oczopląs ODWRÓCONY.
@@ -255,6 +261,12 @@ CANAL_GEOM — geometria łuku dla dynamiki (e1=kierunek ampułki φ=0, e2=druga
        medium/big — Epley/Semont/Yacovino/Lempert osiągają φ=178° (exited); small — Epley/Lempert tak,
        Semont (φmax 157) i Yacovino (φmax 128) NIE czyszczą w skróconych holdach (emergentne, klinicznie
        spójne: wolne odłamki → rozważ powtórzenie / dłuższe holdy).
+     >>> NIEAKTUALNE [zweryfikowane 2026-08-05, także na kodzie sprzed przeglądu]: po wprowadzeniu komory odnogi
+         ORAZ skalowania holdów rozmiarem (maneuverTimeline: cap = 12/r² → small dostaje 20 s zamiast 12 s)
+         small CZYŚCI Semonta i Yacovino (φ=178, exited). Emergentna cecha „wolne odłamki nie czyszczą w
+         skróconych holdach" ZNIKŁA z modelu, choć dokument nadal ją deklarował. Dodatkowo bascule|big
+         czyści (exited=true), a bascule|medium/small nie. Do decyzji: przywrócić cechę (nie skalować cap
+         rozmiarem) albo usunąć ją z materiału dydaktycznego. <<<
 
 --------------------------------------------------------------------------
  PRZYKŁADY UŻYCIA
@@ -356,6 +368,52 @@ UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI:
   - męczliwość (rozproszenie zbitego złogu przy powtórzeniach) MODELOWANA jako czynnik skalujący
     amplitudę (fatigueFactor / parametr rep w simulateCanalith) — NIE jako jawna symulacja wielu
     cząstek o różnych trajektoriach; kupulolitiaza celowo bez męczliwości (cecha różnicująca) [12].
+
+
+ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05) — NIENAPRAWIONE, do decyzji:
+
+ R1. ŁUK MODELU JEST KRÓTSZY NIŻ REALNY KANAŁ → pozycja prowokująca robi robotę manewru.
+     Łuk modelujemy jako 180° (ampułka φ=0 → łagiewka φ=178). W KAŻDEJ pozycji prowokującej minimum
+     grawitacyjne łuku (punkt, w którym cząstka ma spocząć) leży POZA końcem łuku:
+        Dix–Hallpike / kanał tylny .............. φ_eq ≈ 190°   (koniec łuku: 178°)
+        deep head-hang / kanał przedni .......... φ_eq ≈ 194°
+        roll, ucho ZDROWE w dole / kan. poziomy . φ_eq ≈ 210°
+     Cząstka nie ma więc gdzie spocząć w kanale i zawsze dobija do odnogi/wyjścia. Skutki (odtworzone):
+       a) Diagnostyczny Dix–Hallpike wprowadza złóg do odnogi wspólnej po ~13 s. ODWRÓCENIE OCZOPLĄSU
+          PRZY POWROCIE DO SIADU — objaw z kryteriów Bárány i zapowiadany wprost wyżej w tym dokumencie
+          („Ruch wsteczny w świetle kanału → ξ<0 → oczopląs ODWRÓCONY") — jest dla kanału tylnego
+          NIEOSIĄGALNE przy realistycznym holdzie: obecne do holdu ~12 s, znika od 13 s (aplikacja
+          trzyma 40 s). Zamiast odwrócenia model daje przy siadaniu transjent w kierunku PIERWOTNYM.
+       b) W Epleyu cząstka osiąga odnogę już w KROKU 2 (pozycja Dix–Hallpike'a). Kroki 3 i 4 przesuwają
+          φ 164→166→166 przy ξ 0.74→0.06, czyli są fizycznie jałowe; cały manewr redukuje się do
+          „sprowokuj i posadź". Widoczny skutek: w kroku 4 (bok zdrowy, nos w dół) ξ=0.06 → strength
+          poniżej progu 0.10 → aplikacja NIE pokazuje oczopląsu, choć klinicznie ten krok często
+          prowokuje wyraźny zryw. (Karta „wędrówka otolitów" tego nie ujawnia — rysuje syntetyczną
+          rampę 0.15→1.0, nie realne φ.)
+       c) 30-sekundowy test roll z uchem ZDROWYM w dole OPRÓŻNIA kanał poziomy (exited=true) — test
+          diagnostyczny leczy pacjenta.
+       d) Asymetria roll jest odwrócona na poziomie osklepka: |ξ| ucho chore w dole 0.518 vs ucho zdrowe
+          0.910. Klinicznie poprawną kolejność ratuje dopiero rektyfikacja Ewalda II w dynNystagmus
+          (0.518 vs 0.409) — margines 27% chroni główną regułę lateralizacji silnika.
+     NIE JEST TO POPRAWKA JEDNOSTAŁOWA: phiExit=240 przywraca (a) i (c), ale psuje czyszczenie Semonta,
+     Yacovino i Gufoniego geotropowego (zweryfikowane). Wymaga skoordynowanej rekalibracji łuk+holdy+stałe.
+
+ R2. BASCULE NIGDY NIE CZYŚCI KANAŁU. maneuverSim liczy KAŻDY plan przez simulateCanalith, więc Bascule
+     (manewr uwalniający kupulolitiazę kanału tylnego) jest liczony jako złóg swobodny: φ 90→11→78→3→51,
+     exited=false — złóg jest spychany KU BAŃCE i kończy w połowie kanału. Ponieważ plan ma
+     mechanism:"cupulo", render wpada w gałąź KONWERSJI (tę od Gufoniego apo): wędrówka zatrzymuje się na
+     0.72 ścieżki, exitStep=-1, a krok 1 trzyma złóg przyklejony do osklepka. Instrukcja kroku obiecuje
+     natomiast przeniesienie złogu do łagiewki. Przyczyna jest fizyczna: mechanizmem Bascule jest
+     BEZWŁADNOŚCIOWE oderwanie złogu od osklepka, a model przetłumiony (bez bezwładności, napędzany samą
+     grawitacją) takiego zjawiska nie zawiera — poza wąskim proxy ekspulsji z odnogi (crusFling).
+
+ R3. STAŁE SKALIBROWANO WYŁĄCZNIE DLA KANAŁU TYLNEGO; kanały poziomy i przedni dziedziczą je bez własnej
+     walidacji i wychodzą klinicznie na odwrót:
+        latencja:   tylny 1.95 s · POZIOMY 2.30 s · przedni 3.15 s
+        szczyt ξ:   tylny 0.810 · POZIOMY 0.518 · przedni 0.668
+     Klinicznie BPPV kanału poziomego ma latencję NAJKRÓTSZĄ (często nieobecną) i oczopląs NAJSILNIEJSZY —
+     model daje mu latencję pośrednią i najsłabszy oczopląs. (Kupulolitiaza: latencja 0.05 s i pełna
+     uporczywość na 60 s dla wszystkich trzech kanałów — poprawnie.)
 
 
 === MANEWRY JAKO OSIE CZASU KWATERNIONÓW (wejście do dynamiki) ===

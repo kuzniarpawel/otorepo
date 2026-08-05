@@ -103,7 +103,7 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — STAGE 2 (particle dynamics) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}) -> [{t, xi, phi, exited}, ...]
    Simulation of CANALITHIASIS: the otolith as a particle on the canal arc.
    [PHENOMENOLOGICAL MODEL — a proxy for the dynamics, not full hydrodynamics; see the "MODEL NATURE" header
     and "SIMPLIFICATIONS RELATIVE TO FULL MODELS".]
@@ -137,8 +137,14 @@ simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=
              −gHead_y > crusGrav (projection of gravity onto the crus→utricle axis ≈ [0,−1,0]). Gives Epley expulsion AT
              SITTING (step 5) + a LIBERATORY nystagmus where it clinically occurs.
            – INERTIAL (fast): an abrupt flip through a large angle (Semont ~180°) throws the debris out of the crus by inertial
-             forces regardless of gravity. Proxy: segment transition angle > crusFling (with a ~uniform transition
-             time, a large angle ≈ a large angular velocity). Sustains Semont expulsion AT THE FLING (step 3).
+             forces regardless of gravity. TWO-PART proxy: transition angle > crusFling AND angular velocity
+             angle/tTrans > crusFlingRate [°/s]. [2026-08-05] The angle alone is NOT enough — inertia is a
+             function of SPEED, and the previous angle-only test also expelled the debris on a 180° flip taking
+             20 s (9 °/s), which is not an inertial phenomenon. The 180 °/s default is chosen so that at the
+             app-wide uniform tTrans=0.8 s (maneuverTimeline) the behaviour of EVERY maneuver is bit-identical
+             (Semont step 3: 155° / 0.8 s = 194 °/s → still expels; no plan step falls in the 140–150° risk
+             band). tTrans=0 (orientation jump) = instantaneous transition → infinite velocity.
+             Sustains Semont expulsion AT THE FLING (step 3).
          Expulsion advances φ: (phiExit−crusArc)→phiExit over ~EXPEL_DUR(1.2 s) → an ampullofugal nystagmus TRANSIENT
          (the SAME sign as the original) = liberatory/confirmatory. exited=true one-way (blocks the reversed phase).
        Backward motion in the canal lumen (dφ/dt<0, before the crus) → ξ<0 → REVERSED nystagmus.
@@ -256,6 +262,12 @@ CANAL_GEOM — arc geometry for the dynamics (e1=ampulla direction φ=0, e2=seco
        medium/big — Epley/Semont/Yacovino/Lempert reach φ=178° (exited); small — Epley/Lempert do,
        Semont (φmax 157) and Yacovino (φmax 128) do NOT clear in the shortened holds (emergent, clinically
        consistent: slow fragments → consider repetition / longer holds).
+     >>> OUT OF DATE [verified 2026-08-05, on the pre-review code as well]: after the common-crus chamber AND
+         size-scaled holds were introduced (maneuverTimeline: cap = 12/r² → small gets 20 s instead of 12 s),
+         small DOES clear Semont and Yacovino (φ=178, exited). The emergent property "slow fragments do not
+         clear in shortened holds" has DISAPPEARED from the model although the document still claimed it.
+         Additionally bascule|big clears (exited=true) while bascule|medium/small do not. To decide: restore
+         the property (stop scaling cap with size) or drop it from the teaching material. <<<
 
 --------------------------------------------------------------------------
  USAGE EXAMPLES
@@ -357,6 +369,54 @@ SIMPLIFICATIONS RELATIVE TO FULL MODELS:
   - fatigability (dispersion of the compact debris on repetition) MODELED as a factor scaling
     amplitude (fatigueFactor / the rep parameter in simulateCanalith) — NOT as an explicit simulation of many
     particles with different trajectories; cupulolithiasis is deliberately without fatigability (a differentiating feature) [12].
+
+
+KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05) - NOT FIXED, pending decision:
+
+ R1. THE MODEL ARC IS SHORTER THAN THE REAL CANAL -> the provoking position does the maneuver's work.
+     The arc is modelled as 180 deg (ampulla phi=0 -> utricle phi=178). In EVERY provoking position the
+     arc's gravitational minimum (where the particle should come to rest) lies BEYOND the end of the arc:
+        Dix-Hallpike / posterior canal .......... phi_eq ~ 190 deg   (arc end: 178 deg)
+        deep head-hang / anterior canal ......... phi_eq ~ 194 deg
+        roll, HEALTHY ear down / horizontal ..... phi_eq ~ 210 deg
+     The particle therefore has nowhere to settle inside the canal and always runs to the crus/exit.
+     Consequences (all reproduced):
+       a) A diagnostic Dix-Hallpike drives the debris into the common crus after ~13 s. THE REVERSAL OF
+          NYSTAGMUS ON SITTING UP - a Barany-criteria feature, and one this very document promises
+          ("Backward motion in the canal lumen -> xi<0 -> REVERSED nystagmus") - is UNREACHABLE for the
+          posterior canal at any realistic hold: present up to a ~12 s hold, gone from 13 s on (the app
+          holds 40 s). Instead of a reversal the model produces a PRIMARY-direction transient on sitting.
+       b) In the Epley the particle reaches the crus already at STEP 2 (the Dix-Hallpike position). Steps
+          3 and 4 move phi 164->166->166 with xi 0.74->0.06, i.e. they are physically inert; the whole
+          maneuver collapses to "provoke, then sit up". Visible effect: at step 4 (healthy side, nose down)
+          xi=0.06 -> strength below the 0.10 threshold -> the app shows NO nystagmus, although clinically
+          that step frequently provokes a distinct burst. (The "otolith travel" card hides this - it draws
+          a synthetic 0.15->1.0 ramp, not the real phi.)
+       c) A 30-second roll test with the HEALTHY ear down EMPTIES the horizontal canal (exited=true) - the
+          diagnostic test cures the patient.
+       d) The roll asymmetry is inverted at the cupular level: |xi| affected ear down 0.518 vs healthy ear
+          down 0.910. The clinically correct ordering is rescued only by the Ewald-II rectification in
+          dynNystagmus (0.518 vs 0.409) - a 27% margin protecting the engine's main lateralization rule.
+     THIS IS NOT A ONE-CONSTANT FIX: phiExit=240 restores (a) and (c) but breaks clearing for Semont,
+     Yacovino and geotropic Gufoni (verified). It needs a coordinated arc+holds+constants recalibration.
+
+ R2. BASCULE NEVER CLEARS THE CANAL. maneuverSim runs EVERY plan through simulateCanalith, so Bascule (a
+     liberatory maneuver for posterior-canal cupulolithiasis) is computed as free-floating debris:
+     phi 90->11->78->3->51, exited=false - the debris is pushed TOWARD THE AMPULLA and ends mid-canal.
+     Because the plan carries mechanism:"cupulo", the renderer falls into the CONVERSION branch (the
+     Gufoni-apo one): travel stops at 0.72 of the path, exitStep=-1, and step 1 keeps the debris glued to
+     the cupula. The step text, meanwhile, promises transport into the utricle. The cause is physical: the
+     Bascule mechanism is INERTIAL detachment of debris from the cupula, and an overdamped, purely
+     gravity-driven model contains no such phenomenon - beyond the narrow crus-expulsion proxy (crusFling).
+
+ R3. THE CONSTANTS WERE CALIBRATED FOR THE POSTERIOR CANAL ONLY; the horizontal and anterior canals inherit
+     them without their own validation and come out clinically backwards:
+        latency:  posterior 1.95 s . HORIZONTAL 2.30 s . anterior 3.15 s
+        peak xi:  posterior 0.810 . HORIZONTAL 0.518 . anterior 0.668
+     Clinically horizontal-canal BPPV has the SHORTEST latency (often absent) and the STRONGEST nystagmus -
+     the model gives it an intermediate latency and the weakest nystagmus. (Cupulolithiasis: latency 0.05 s
+     and full persistence over 60 s for all three canals - correct.)
+
 
 
 === MANEUVERS AS QUATERNION TIMELINES (entry into the dynamics) ===

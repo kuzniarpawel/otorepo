@@ -551,14 +551,20 @@ function manExitStep(man){
 // czystą, monotoniczną progresję 0.15→1.0 (wyjście). Krok kuracyjny:
 //  • kanały PIONOWE (model komory odnogi) → REALNY krok ekspulsji z fizyki (manExitStep): Epley = SIAD (k5),
 //    Semont = rzut (k3), Yacovino = broda (k3). Spójne z oczoplątem liberacyjnym generowanym w tym kroku.
-//  • kanał POZIOMY (bez odnogi, φ front-loaded ku bańce) i KUPULO (Bascule) → schemat n-2 (przedostatni krok).
+//  • kanał POZIOMY (bez odnogi, φ front-loaded ku bańce) → schemat n-2 (przedostatni krok).
+// UWAGA (przegląd neurofizjologiczny 2026-08-05): gałąź „cupulo && !exited" obejmuje DZIŚ NIE TYLKO Gufoniego
+//   apo, ale też BASCULE — bo maneuverSim liczy KAŻDY plan jako kanalolitiazę (simulateCanalith), a złóg
+//   swobodny w sekwencji Bascule wraca ku bańce (φ 90→11→78→3→51) i NIE wychodzi do łagiewki. Bascule jest
+//   więc rysowany jak manewr KONWERSJI, choć jego instrukcja obiecuje pełną liberację do łagiewki. Przyczyna
+//   jest fizyczna, nie renderowa: mechanizmem Bascule jest bezwładnościowe ODERWANIE złogu od osklepka,
+//   którego przetłumiony model grawitacyjny nie zawiera. Patrz engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R2.
 function manFractions(man, plan){
   const n=plan.steps.length;
-  if(plan.mechanism==="cupulo" && !man.exited){   // GUFONI APO (konwersja apo→geo): złóg WBITY w osklepek (krok1) → ODKLEJA się (krok2) →
+  if(plan.mechanism==="cupulo" && !man.exited){   // GUFONI APO (konwersja apo→geo) ORAZ BASCULE (patrz wyżej): złóg WBITY w osklepek (krok1) → ODKLEJA się (krok2) →
     return {fr: plan.steps.map((_,i)=> i===0?0.04 : i===1?0.34 : 0.72), exitStep:-1};   // WĘDRUJE do pozycji GEOTROPOWEJ w kanale (krok3) i tam zostaje (bez wyjścia do łagiewki).
   }
   if(!man.exited){          // KONWERSJA nie-kupulityczna: ruch wg φ z silnika, złóg NIE wychodzi do łagiewki.
-    return {fr: plan.steps.map((_,i)=>phiToFrac(manPhi(man,i,1))), exitStep:-1};   // Bascule (kupulo) WYCHODZI (man.exited) → nie tu, tylko rampa niżej.
+    return {fr: plan.steps.map((_,i)=>phiToFrac(manPhi(man,i,1))), exitStep:-1};
   }
   const vertical = plan.canal!=="horizontal" && plan.mechanism!=="cupulo";
   const physExit = vertical ? manExitStep(man) : -1;     // pionowy: realny krok ekspulsji; poziomy/kupulo: schemat
@@ -587,7 +593,7 @@ function setupGuideAnim(){
   const blendOnly = exited && state.step>sched.exitStep;                  // krok po wyjściu — spoczynek w łagiewce
   // KUPULOLITIAZA (mechanism:"cupulo"): 1. krok = etap przylegania/odklejania złogu od osklepka, potem zwykła wędrówka.
   const cupuloAdh = state.plan.mechanism==="cupulo" && state.step===0;
-  const holdAdh = cupuloAdh && !man.exited;   // KONWERSJA (Gufoni apo): krok 1 = złóg WBITY w osklepek — TRZYMA się (bez odklejania/wędrówki). Bascule (wychodzi) → pełna liberacja.
+  const holdAdh = cupuloAdh && !man.exited;   // krok 1 = złóg WBITY w osklepek — TRZYMA się (bez odklejania/wędrówki). Dotyczy Gufoniego apo I Bascule: oba mają dziś exited=false (patrz manFractions).
   const cupuloDetach = state.plan.mechanism==="cupulo" && !man.exited && state.step===1;   // GUFONI APO krok 2: ODKLEJANIE od osklepka (błona prostuje się) + start wędrówki złogu w kanale.
   const EA=0.04, CUP_ANG=17;                                             // pozycja złogu na osklepku (ułamek ścieżki, tuż przy bańce/grzebieniu) + kąt odgięcia błony
   if(cupuloAdh){ placeOtolith(canal, EA, 0); const c0=document.getElementById("labcupula"); if(c0) c0.setAttribute("transform",`rotate(${CUP_ANG} ${cupPivot})`); }
