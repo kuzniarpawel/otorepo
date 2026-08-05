@@ -500,6 +500,21 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      DISCREPANCY: the sign that does come out is OPPOSITE to the Choung rule (bow toward the affected
      ear, lean toward the healthy ear) that the test card asserts in text. The margin is ~10° of resting
      position — within the individual variability of a single atlas.
+     ADDENDUM 2026-08-05 (after R7, probes r8/r8b) — the picture is sharper than I first recorded:
+       • CANALITHIASIS (geotropic form): the debris DOES NOT MOVE AT ALL. ξ = 0.000 at EVERY speed
+         (tTrans 1.5/0.8/0.4/0.2 s) and for both rotation axes; φ stays at 199.8. R7's inertia does NOT
+         rescue it — and not by accident: bowing rotates the head about the interaural axis, so the
+         centrifugal force points toward the VERTEX, i.e. exactly along the horizontal canal's NORMAL.
+         A force perpendicular to the ring's plane cannot move anything around the ring. That is why the
+         same term rescued Semont (posterior canal, a different axis) and does nothing here.
+       • CUPULOLITHIASIS (apogeotropic form): there IS a response, because the cupula is heavy and reacts
+         to the DIRECTION of gravity alone, with no debris travel — but a weak one: ξ 0.100 (bow) and
+         −0.087 (lean), against ~0.7 in the Roll test. Seven times smaller.
+       • THE DIRECTION is opposite to the Choung rule in BOTH forms, not only the geotropic one.
+     THE CONSEQUENCE THAT NEEDS A DECISION: the test card currently draws a direction arrow for the
+       geotropic form even though the dynamics say no nystagmus arises there. That is the same class of
+       problem as the stepXiPeak fabrication removed on 2026-08-05: the screen asserts something the
+       model did not compute.
      FOR CLINICAL DECISION (not mine): (a) the card stops drawing an arrow when the drive is below
      threshold and says "the model does not resolve this"; (b) the direction is taken from the clinical
      rule, explicitly, as a rule rather than a physics result; (c) leave as is. I am not choosing,

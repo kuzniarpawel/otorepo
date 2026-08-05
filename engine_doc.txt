@@ -490,6 +490,20 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      ROZBIEŻNOŚĆ: znak, jaki mimo wszystko wychodzi, jest PRZECIWNY do reguły Choung (skłon ku chorej,
      odchylenie ku zdrowej), którą karta testu twierdzi tekstem. Margines wynosi ~10° położenia
      spoczynkowego — mieści się w zmienności osobniczej pojedynczego atlasu.
+     UZUPEŁNIENIE 2026-08-05 (po R7, sondy r8/r8b) — obraz jest ostrzejszy, niż pierwotnie zapisałem:
+       • KANALOLITIAZA (postać geotropowa): złóg NIE RUSZA SIĘ W OGÓLE. ξ = 0.000 przy KAŻDYM tempie
+         (tTrans 1.5/0.8/0.4/0.2 s) i przy obu osiach obrotu, φ zostaje 199.8. Bezwładność z R7 tego
+         NIE ratuje — i to nie przypadek: skłon obraca głowę wokół osi usznej, więc siła odśrodkowa
+         celuje ku CZUBKOWI głowy, czyli dokładnie wzdłuż NORMALNEJ kanału poziomego. Siła prostopadła
+         do płaszczyzny pierścienia nie może nic po nim przesunąć. Dlatego ten sam człon uratował
+         Semonta (kanał tylny, inna oś) i nie robi tu nic.
+       • KUPULOLITIAZA (postać apogeotropowa): odpowiedź JEST, bo osklepek jest ciężki i reaguje na sam
+         KIERUNEK grawitacji, bez wędrówki złogu — ale słaba: ξ 0.100 (skłon) i −0.087 (odchylenie),
+         wobec ~0.7 w teście Roll. To siedem razy mniej.
+       • KIERUNEK jest przeciwny do reguły Choung w OBU postaciach, nie tylko w geotropowej.
+     KONSEKWENCJA, która wymaga decyzji: karta testu rysuje dziś strzałkę kierunku dla postaci
+       geotropowej, choć dynamika mówi, że żaden oczopląs tam nie powstaje. To ta sama klasa problemu,
+       co usunięta 2026-08-05 fabrykacja w stepXiPeak: ekran twierdzi coś, czego model nie policzył.
      DO DECYZJI KLINICZNEJ (nie moja): (a) karta przestaje rysować strzałkę, gdy napęd < progu
      i mówi „model nie rozstrzyga"; (b) kierunek bierzemy z reguły klinicznej, jawnie, jako regułę
      a nie wynik fizyki; (c) zostaje jak jest. NIE wybieram sam, bo każda opcja zmienia treść kliniczną.
