@@ -460,6 +460,44 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
         zmian; manewry czyszczą jak dotąd. R1 NIENARUSZONE — to długość łuku, nie orientacja płaszczyzny.
         CZEKA NA DANE UŻYTKOWNIKA: pomiary położenia BAŃKI i ŁAGIEWKI → podmiana AMPULLA_DIR + rozpiętość
         łuku = jedyna droga do R1.
+ [ ] R6 YACOVINO + DANE IE-MAP: pomiar OTRZYMANY 2026-08-05, NIE ZASTOSOWANY — kontrola go odrzuciła.
+        USER dostarczył C (środek okręgu), A (centroid bańki), O (ujście) dla 6 kanałów w przestrzeni
+        IE-Map (RAS, mm; +X prawo, +Y przód, +Z góra; lewe uszy odbite z prawych).
+        KONTROLA PRZED UŻYCIEM — NIE PRZESZŁA, i dobrze, że była:
+          • (A−C)×(O−C) daje płaszczyzny kanałów odległe o 51–57°, a kanały są ~ORTOGONALNE (Wu: 83–89°).
+            To porównanie NIE zależy od układu współrzędnych, więc nie jest błędem konwersji. Przyczyna:
+            A i O NIE leżą na dopasowanym okręgu (|A−C| vs |O−C| różni się o 0,32 / 0,94 / 1,14 mm) — są
+            centroidami ZGRUBIEŃ (bańka, ujście), a okrąg dopasowano do SMUKŁEJ części przewodu.
+            → z tych trzech punktów NIE DA SIĘ odtworzyć płaszczyzny, więc nie da się zwalidować mapowania.
+          • Kierunek bańki rzutowany na płaszczyznę Wu różni się od dotychczasowego ZAŁOŻENIA o:
+                tylny P 39,7° · tylny L 39,8° · przedni P 39,9° · przedni L 40,0° · poziomy P −71,5° · L −71,2°
+            Cztery kanały pionowe zgadzają się ze sobą co do 0,3° — to systematyczne, nie szum.
+          • Test „czy to przesunięcie RAMKI (Reid vs ramka silnika)": obrót wokół osi międzyusznej 0–70°.
+            Rozrzut MINIMALNY przy 0° (111,5°) i tylko rośnie → NIE jest to błąd ramki ani pitchu.
+        CO BY SIĘ STAŁO PO WSTAWIENIU (dlatego nie wstawiłem):
+          • test ROLL ODWRÓCONY: g·e1 przy uchu chorym w dole −0,122 zamiast +0,886 → geotropowy staje się
+            apogeotropowym;
+          • EPLEY PRZESTAJE CZYŚCIĆ: minima kroków [50, 150, 234, 280, 50], a ujście na 307 — maks. 280 < 307;
+          • YACOVINO GORZEJ, nie lepiej: minimum kroku 2 spada 233,8 → 193,9 (potrzeba ≥266). Korekta idzie
+            w STRONĘ PRZECIWNĄ do wymaganych −35°.
+          • kanały pionowe zachowują poprawny ZNAK pobudzenia (Dix 0,865; head-hang 0,838 — nawet lepiej).
+        ROZPOZNANIE: `AMPULLA_DIR` w silniku NIGDY nie był kierunkiem bańki. Jest współ-dostrojony ze
+        SZTYWNYM startem `phi=90` w simulateCanalith tak, żeby testy kliniczne wychodziły. GEXC=−e1 i
+        uHC=+e1 to styczna do łuku W PUNKCIE SPOCZYNKU ZŁOGU, a nie oś związana z bańką. Dwa założenia
+        dopasowano razem — podmiana jednego bez drugiego rozspaja parę.
+        DLATEGO TO NIE JEST BRAK DANYCH, TYLKO DŁUG STRUKTURALNY. Zanim pomiar da się użyć, trzeba:
+          1. przestać zaszywać `phi=90` — wyprowadzać POZYCJĘ SPOCZYNKOWĄ złogu z geometrii (minimum
+             grawitacyjne w postawie pionowej; dla kanałów pionowych liczalne, dla POZIOMEGO NIE —
+             jego płaszczyzna jest wtedy pozioma, więc grawitacja nie ma składowej w płaszczyźnie
+             i punkt spoczynku jest wolnym parametrem);
+          2. zakotwiczyć zakres łuku i kierunek bańki w JEDNYM zbiorze (dziś mieszamy Cárdenas-Serna
+             n=48 kostny z IE-Map/David n=1 błoniasty — inne definicje „środka bańki" i „ujścia");
+          3. dopiero wtedy wstawić pomiar i przeliczyć całość.
+        CZEGO BRAKUJE OD USERA, gdyby chciał domknąć drogę pomiarową:
+          • normalna płaszczyzny PCA per kanał Z TEGO SAMEGO dopasowania co C (mają ją — liczyli okrąg
+            po rzucie na płaszczyznę PCA). Bez niej nie da się zwalidować mapowania RAS→ramka głowy.
+          • uporządkowane punkty linii środkowej od końca bańkowego do niebańkowego (3–5 wystarczy) —
+            przypina kierunek obiegu i pozwala usunąć ARC_SPIN (dziś 6 bitów konwencji).
  [ ] R5 stepXiPeak NIE JEST miarą per-krok — łapie ξ odziedziczone po kroku poprzednim (dowód: Bascule k5,
         ξ_start −0,75 przebija własną odpowiedź kroku +0,50 → etykieta „ODWRÓCONY", choć fizyka kroku jest
         dodatnia). Ten sam korzeń co maskowanie z R4b. Naprawa ruszy etykiety w kilku krokach → osobny commit.
