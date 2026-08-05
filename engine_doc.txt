@@ -444,7 +444,21 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      liczyłem napęd w pozycji spoczynkowej 304.7°, a nie tam, gdzie złóg naprawdę leży. Od osklepka
      head-hang pcha go ampullofugalnie → pobudzenie → DOWNBEAT, zgodnie z kliniką.
 
- R7. SEMONT I BASCULE NIE CZYSZCZĄ — MODEL NIE MA CZŁONU BEZWŁADNOŚCIOWEGO [2026-08-05, OTWARTE].
+ >>> R7 ZAMKNIĘTE 2026-08-05 (8dd18b5). Semont i Bascule czyszczą; 12/12 manewrów terapeutycznych. <<<
+     Wdrożone dokładnie tak, jak zapowiadał kierunek naprawy: złóg reaguje na SIŁĘ WŁAŚCIWĄ f = g − a.
+     ω bierze się z tej samej interpolacji, która steruje pozą; człon styczny (α×d) pominięty, bo przy
+     stałym tempie α=0 poza granicami segmentów — to zaniżenie bezwładności, nie zawyżenie.
+     POTWIERDZENIE ILOŚCIOWE: ręcznie wpisany do LEAN_G wektor ku czubkowi głowy (+0.6) okazał się TĄ
+     SAMĄ WIELKOŚCIĄ. Dla rzutu 180° w 0,8 s przy ramieniu 0,75 m wychodzi ω²L/g = 1,2 g w tym samym
+     kierunku; 0,6 g odpowiada rzutowi w ~1,16 s. Ktoś kiedyś zmierzył tę fizykę okiem i wpisał wynik.
+     Jedyne nowe wejście to RAMIĘ (antropometria: biodra 0,75 m · szyja 0,12 m · półrozstaw uszu 0,075 m),
+     a OŚ obrotu kroku wyprowadza się z POSE_SPEC (zmiana roll/trunk = rusza ciało; inaczej sama głowa).
+     PRZY OKAZJI wyprowadzony STAN POCZĄTKOWY ADHEZJI — patrz restDrive. Kanał przedni jest jedyny,
+     w którym spoczynek nie jest minimum: złóg leży DOCIŚNIĘTY do osklepka siłą 0,131 przy progu 0,04,
+     więc nie trzyma go wiązanie tylko grawitacja i rusza bez zrywania adhezji. Model przewiduje z tego
+     BRAK LATENCJI w kanale przednim (0,50 s = sam czas przejścia) — zgodnie z opisami AC-BPPV.
+
+ R7-STARE. SEMONT I BASCULE NIE CZYSZCZĄ — MODEL NIE MA CZŁONU BEZWŁADNOŚCIOWEGO [ZAMKNIĘTE — wyżej].
      To NIE jest błąd geometrii ani pozy — to twierdzenie strukturalne. Obrót ciała o 180° odwraca
      grawitację w ramce głowy DOKŁADNIE (Rz(180) przeprowadza (0,−1,0) w (0,+1,0), niezależnie od tego,
      jak głowa jest ustawiona względem tułowia). Semont i Bascule z definicji przerzucają pacjenta
@@ -545,7 +559,37 @@ POZOSTAŁE (do decyzji):
      BEZWŁADNOŚCIOWE oderwanie złogu od osklepka, a model przetłumiony (bez bezwładności, napędzany samą
      grawitacją) takiego zjawiska nie zawiera — poza wąskim proxy ekspulsji z odnogi (crusFling).
 
- R3. [PRZEMIERZONE 2026-08-05 po b5f55b1] CZĘŚCIOWO ZAMKNIĘTE.
+ R3. [ROZSTRZYGNIĘTE POMIAREM 2026-08-05 po R7] NIE JEST DŁUGIEM KALIBRACYJNYM — TO SKUTEK R9.
+     ZAMKNIĘTE: (a) asymetria Roll na poziomie osklepka — |ξ| ucho CHORE w dole 0.70 vs ZDROWE 0.59,
+       kolejność poprawna już w fizyce, bez ratunku z rektyfikacji Ewalda II (było 0.518 vs 0.910,
+       odwrotnie); (b) latencja kanału PRZEDNIEGO — 0.50 s, WYPROWADZONA (brak adhezji przy złogu
+       dociśniętym do osklepka), nie dostrojona; zgodna z klinicznym „latencja krótka/nieobecna".
+     ZOSTAŁO: kanał poziomy ma latencję 2.40 s (tylny 2.20) i szczyt 0.70 (tylny 0.87), a klinicznie
+       powinien mieć latencję NAJKRÓTSZĄ i oczopląs najsilniejszy.
+     PRZYCZYNA — ZMIERZONA, nie zgadnięta. Cała różnica siedzi w ułamku grawitacji, który wpada
+       w PŁASZCZYZNĘ kanału w pozycji prowokującej: tylny w Dix-Hallpike dostaje 0.999, poziomy w Roll
+       tylko 0.855. Rozkład napędu (sonda 42): tylny |g|_pł 0.999 → napęd 0.144 → lat 2.20;
+       poziomy 0.855 → 0.131 → 2.40. Nic więcej się nie różni.
+     SKĄD 0.855: z przygięcia karku o 30°, które nakazuje opis testu. Sonda 44 — zależność jest
+       MONOTONICZNA i to instrukcja szkodzi:
+         zgięcie  0° → |g|_pł 1.000 → latencja 1.90 s → szczyt 0.81
+         zgięcie 30° → |g|_pł 0.855 → latencja 2.40 s → szczyt 0.70   (opis aplikacji)
+         zgięcie 60° → |g|_pł 0.499 → latencja 5.80 s → szczyt 0.43
+       Przy 0° kolejność latencji jest JUŻ POPRAWNA (poziomy 1.90 < tylny 2.20), bez dotykania stałych.
+     DLACZEGO NIE WOLNO TEGO „NAPRAWIĆ" ZMIANĄ POZY: kliniczne 30° istnieje dokładnie dlatego, że kanał
+       boczny jest kanonicznie nachylony ~30° nosem w górę — przygięcie ma go ustawić optymalnie.
+       Nasz atlas daje 10.4° (R9), więc model żąda ~0° z tego samego powodu, dla którego klinika żąda 30°.
+       U realnego pacjenta 30° POMAGA. Zmiana instrukcji byłaby przeniesieniem błędu ramki atlasu
+       na zalecenie dla klinicysty.
+     DLACZEGO NIE WOLNO TEGO „NAPRAWIĆ" STAŁĄ PER KANAŁ: sprawdziłem najbardziej obiecującą —
+       promień łuku, ZMIERZONY na tym samym atlasie (tylny 3.50 · przedni 3.32 · boczny 2.68 mm;
+       literatura Curthoys & Oman: 3.3 / 3.2 / 2.4 — zgodność co do kolejności i rzędu). Skalowanie
+       tauP ∝ R skraca latencję kanału bocznego, ALE spójna fizyka wymaga też gc ∝ R (objętość wypartej
+       endolimfy ∝ R·Δφ), a wtedy szczyt SPADA. Efekt netto zależy od tego, którą z dwóch interpretacji
+       fenomenologicznego ξ się wybierze — czyli byłby to wybór pod pożądany wynik, nałożony na znany
+       błąd geometryczny. Nie dodaję tej stałej.
+     WNIOSEK: R3 zamyka się razem z R9, a nie osobno. Kalibracja stałych per kanał jest OD TEGO MOMENTU
+       ODRADZANA: zabetonowałaby rozbieżność 10.4 vs 30° w liczbach, które potem trudno odkręcić.
      ZAMKNIĘTE: asymetria Roll na poziomie osklepka. |ξ| ucho CHORE w dole 0.70 vs ZDROWE 0.59 —
        kolejność klinicznie POPRAWNA już na poziomie osklepka, bez ratunku z rektyfikacji Ewalda II
        (było 0.518 vs 0.910, czyli odwrotnie). Naprawił to wyprowadzony start złogu, nie strojenie stałych.

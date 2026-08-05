@@ -589,6 +589,16 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
                się z ręcznie dopisanej składowej w LEAN_G, która łamała tę symetrię o 27°.
                Ten sam człon domyka drugi przypadek graniczny (start kanału przedniego od osklepka).
                Promień do wyliczenia a JEST w aplikacji (szkielet SK) — to nie nowa stała do dopasowania.
+            R7 ZAMKNIĘTE 2026-08-05 (8dd18b5) — siła właściwa f = g − a wdrożona; 12/12 manewrów
+               czyści. Wpisane w LEAN_G „+0.6 ku czubkowi" okazało się TĄ SAMĄ wielkością (ω²L/g = 1.2 g
+               dla rzutu 180° w 0.8 s). Ramię = antropometria, oś obrotu wyprowadzona z POSE_SPEC.
+            R3 ROZSTRZYGNIĘTE POMIAREM — to NIE dług kalibracyjny, tylko skutek R9. Cała różnica
+               (poziomy lat 2.40 / szczyt 0.70 vs tylny 2.20 / 0.87) siedzi w ułamku grawitacji
+               wpadającym w płaszczyznę kanału: 0.855 vs 0.999. Ten 0.855 bierze się z przygięcia karku
+               o 30°, które opis nakazuje, bo kanon mówi o kanale nachylonym 30° — nasz atlas daje 10.4°.
+               Przy zgięciu 0° kolejność latencji JEST poprawna (1.90 < 2.20) bez ruszania stałych.
+               NIE kalibruję stałych per kanał: zabetonowałyby rozbieżność 10.4 vs 30°.
+               → R3 zamknie się razem z R9. NASTĘPNY KROK to R9, nie kalibracja.
             R8 Bow & Lean podprogowy (napęd 0.026 vs próg 0.04 i 0.131 dla Roll) — DECYZJA KLINICZNA
                USERA, bo każda opcja zmienia treść karty.
             R9 nachylenie kanału bocznego 10.4° vs kanoniczne 30° — hipoteza pochylenia ramki obalona

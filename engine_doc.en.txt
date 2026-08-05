@@ -449,7 +449,25 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      ERROR: I evaluated the drive at the resting position 304.7° rather than where the debris actually
      lies. From the cupula the head-hang drives it ampullofugally → excitation → DOWNBEAT, as in clinic.
 
- R7. SEMONT AND BASCULE DO NOT CLEAR — THE MODEL HAS NO INERTIAL TERM [2026-08-05, OPEN].
+ >>> R7 CLOSED 2026-08-05 (8dd18b5). Semont and Bascule clear; 12/12 therapeutic maneuvers. <<<
+     Implemented exactly as the repair direction predicted: the particle responds to the SPECIFIC FORCE
+     f = g − a. ω comes from the same interpolation that drives the pose; the tangential term (α×d) is
+     omitted because with a constant rate α=0 away from segment boundaries — that under-states inertia
+     rather than over-stating it.
+     QUANTITATIVE CONFIRMATION: the vertex-ward vector hand-written into LEAN_G (+0.6) turned out to be
+     THE SAME QUANTITY. For a 180° swing in 0.8 s with a 0.75 m lever, ω²L/g = 1.2 g in the same
+     direction; 0.6 g corresponds to a swing in ~1.16 s. Someone once measured this physics by eye and
+     wrote down the result.
+     The only new input is the LEVER (anthropometry: hips 0.75 m · neck 0.12 m · interaural half 0.075 m),
+     and the step's rotation AXIS is derived from POSE_SPEC (roll/trunk changed = the body moves;
+     otherwise the head alone).
+     ALSO DERIVED along the way: the INITIAL ADHESION STATE — see restDrive. The anterior canal is the
+     only one whose rest is not a minimum: the debris lies PRESSED against the cupula with a force of
+     0.131 against a 0.04 threshold, so it is held by gravity rather than by a bond and moves without
+     breaking adhesion. The model therefore predicts NO LATENCY in the anterior canal (0.50 s = the
+     transition time alone) — matching descriptions of AC-BPPV.
+
+ R7-OLD. SEMONT AND BASCULE DO NOT CLEAR — THE MODEL HAS NO INERTIAL TERM [CLOSED — above].
      This is NOT a geometry or pose error; it is a structural statement. A 180° body rotation reverses
      gravity in the head frame EXACTLY (Rz(180) maps (0,−1,0) to (0,+1,0), whatever the head's relation
      to the trunk). Semont and Bascule swing the patient through 180° "without changing the head
@@ -555,7 +573,39 @@ REMAINING (pending decision):
      Bascule mechanism is INERTIAL detachment of debris from the cupula, and an overdamped, purely
      gravity-driven model contains no such phenomenon - beyond the narrow crus-expulsion proxy (crusFling).
 
- R3. [RE-MEASURED 2026-08-05 after b5f55b1] PARTLY CLOSED.
+ R3. [SETTLED BY MEASUREMENT 2026-08-05 after R7] NOT A CALIBRATION DEBT — IT IS A CONSEQUENCE OF R9.
+     CLOSED: (a) the Roll asymmetry at cupular level — |ξ| affected ear down 0.70 vs healthy 0.59, the
+       order correct in the physics itself, without the rescue from Ewald II rectification (it was
+       0.518 vs 0.910, inverted); (b) the ANTERIOR canal's latency — 0.50 s, DERIVED (no adhesion for
+       debris pressed against the cupula), not tuned; matching the clinical "latency short/absent".
+     REMAINING: the horizontal canal has a latency of 2.40 s (posterior 2.20) and a peak of 0.70
+       (posterior 0.87), whereas clinically it should have the SHORTEST latency and the strongest
+       nystagmus.
+     CAUSE — MEASURED, not guessed. The whole difference sits in the fraction of gravity that falls
+       into the canal's PLANE in the provoking position: posterior in Dix-Hallpike gets 0.999, the
+       horizontal in the Roll only 0.855. Drive decomposition (probe 42): posterior |g|_plane 0.999 →
+       drive 0.144 → latency 2.20; horizontal 0.855 → 0.131 → 2.40. Nothing else differs.
+     WHERE 0.855 COMES FROM: the 30° neck flexion the test description prescribes. Probe 44 — the
+       relation is MONOTONIC and it is the instruction that hurts:
+         flexion  0° → |g|_plane 1.000 → latency 1.90 s → peak 0.81
+         flexion 30° → |g|_plane 0.855 → latency 2.40 s → peak 0.70   (the app's description)
+         flexion 60° → |g|_plane 0.499 → latency 5.80 s → peak 0.43
+       At 0° the latency ordering is ALREADY correct (horizontal 1.90 < posterior 2.20), with no
+       constant touched.
+     WHY WE MUST NOT "FIX" THIS BY CHANGING THE POSE: the clinical 30° exists precisely because the
+       lateral canal is canonically pitched ~30° nose-up — the flexion is meant to set it optimally.
+       Our atlas gives 10.4° (R9), so the model asks for ~0° for the same reason clinic asks for 30°.
+       In a real patient 30° HELPS. Changing the instruction would push an atlas-frame error out into
+       advice given to a clinician.
+     WHY WE MUST NOT "FIX" IT WITH A PER-CANAL CONSTANT: I checked the most promising one — the arc
+       radius, MEASURED on the same atlas (posterior 3.50 · anterior 3.32 · lateral 2.68 mm; literature
+       Curthoys & Oman: 3.3 / 3.2 / 2.4 — agreeing in order and magnitude). Scaling tauP ∝ R shortens
+       the lateral canal's latency, BUT consistent physics also requires gc ∝ R (displaced endolymph
+       volume ∝ R·Δφ), and then the peak FALLS. The net effect depends on which of two readings of the
+       phenomenological ξ one adopts — i.e. it would be a choice made for the desired answer, layered
+       on top of a known geometric error. I am not adding that constant.
+     CONCLUSION: R3 closes together with R9, not separately. Per-canal calibration is DISCOURAGED from
+       here on: it would set the 10.4-vs-30° discrepancy in numbers that are hard to unpick later.
      CLOSED: the Roll asymmetry at cupular level. |ξ| affected ear down 0.70 vs healthy 0.59 — the order
        is clinically CORRECT already at cupular level, without needing the rescue from Ewald II
        rectification (it was 0.518 vs 0.910, i.e. inverted). The derived particle start fixed this, not
