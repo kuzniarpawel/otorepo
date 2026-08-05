@@ -533,6 +533,40 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
              spójnej geometrii. Lempert (325>270) i Gufoni geo (336>270) też.
           WNIOSEK: dane są UŻYTECZNE i droga jest otwarta, ale wdrożenie to przebudowa (wyprowadzenie
           startu + przepięcie całej geometrii na jeden zbiór + rekalibracja), nie podmiana stałej.
+
+        >>> AKTUALIZACJA 2: UPORZĄDKOWANE PUNKTY OSI Q0..Q4 OTRZYMANE — GEOMETRIA DOMKNIĘTA. <<<
+          • ZWROT OBIEGU WYPROWADZONY Z DANYCH: przyrosty kąta wzdłuż osi są monotonicznie DODATNIE
+            dla wszystkich trzech kanałów (tylny 11.4/130.6/132.9/43.9 · przedni 15.7/105.2/113.4/46.7 ·
+            boczny 21.6/107.9/113.3/24.6). ARC_SPIN (6 bitów konwencji) można USUNĄĆ — kierunek
+            „rosnące φ = ampullofugalne" wynika teraz z pomiaru.
+          • ZAKRES ŁUKU potwierdzony DWIEMA metodami: suma po polilinii == prosty kąt A→O co do 0.1°
+            (tylny 318.8 · przedni 281.1 · boczny 267.3). Kanał jest dobrze opisany okręgiem;
+            promienie |Qi−C| 2.3–3.9 mm bez odstających.
+          • Komplet do wklejenia jest więc gotowy: N (płaszczyzna) + A (bańka) + O (ujście) + zwrot,
+            wszystko z JEDNEGO zbioru IE-Map.
+          CO NADAL BLOKUJE (i to NIE są braki danych):
+           1. KANAŁ PRZEDNI — pozycja spoczynkowa 304.7° leży ZA ujściem 281.1°. Sprawdzone przy
+              pochyleniu atlasu od −30° do +40°: pozostaje POZA kanałem wszędzie poza dopasowanym −30°.
+              deep head-hang wychodzi HAMUJĄCY przy KAŻDYM pochyleniu. Interpretacja do rozstrzygnięcia:
+              albo model mówi, że kanał przedni SAM SIĘ OPRÓŻNIA w postawie pionowej (co byłoby zgodne
+              z rzadkością AC-BPPV ~1–2% i z tym, że AC-BPPV pojawia się po długim leżeniu), albo
+              pozy manewru/testu kanału przedniego są źle zdefiniowane.
+           2. EPLEY i SEMONT nie sięgają ujścia (271 i 282 przy 318.8).
+           3. HIPOTEZA „brakuje pochylenia atlas(Reid)→postawa naturalna" — OBALONA. Pochylenie −30°
+              naprawiłoby Epleya (319/319) i pozycję spoczynkową przedniego (279.5<281), ALE:
+                – nie naprawia head-hang (błąd przy każdej wartości),
+                – ŁAMIE niezależną kotwicę anatomiczną: nachylenie kanału bocznego wychodzi wtedy ~40°,
+                  a w postawie naturalnej ma być ~30° (to daje pochylenie +40°, przy którym z kolei
+                  Epley i Roll się psują).
+              Kotwica anatomiczna i zachowanie manewrów WSKAZUJĄ PRZECIWNE STRONY → sztywny obrót nie
+              jest wyjaśnieniem, a −30° byłoby dopasowaniem parametru do wyniku.
+          POZOSTAŁY PODEJRZANY: POZY MANEWRÓW (BASE_G / LEAN_G / SUPINE_PITCH) były kalibrowane pod
+          STARĄ, błędną geometrię — tak samo jak AMPULLA_DIR był współ-dostrojony z phi=90. Jeśli
+          geometria jest teraz poprawna, pozy trzeba wyprowadzić na nowo z opisów klinicznych, a nie
+          z tego, co pasowało do dawnego łuku. To jest następny krok, nie kolejny pomiar.
+          (Uwaga metodyczna: pierwsza wersja tego przeglądu pochylenia była BŁĘDNA — liczyłem kąt na
+           wektorach NIErzutowanych na płaszczyznę kanału, przez co zakresy wyszły 77/40 zamiast
+           281/319. Poprawione; kontrola „pitch=0 musi odtworzyć 318.8/281.1/267.3" przechodzi.)
  [ ] R5 stepXiPeak NIE JEST miarą per-krok — łapie ξ odziedziczone po kroku poprzednim (dowód: Bascule k5,
         ξ_start −0,75 przebija własną odpowiedź kroku +0,50 → etykieta „ODWRÓCONY", choć fizyka kroku jest
         dodatnia). Ten sam korzeń co maskowanie z R4b. Naprawa ruszy etykiety w kilku krokach → osobny commit.
