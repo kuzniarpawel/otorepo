@@ -11,17 +11,27 @@ export const Vestibular = (()=>{
   // Ewald I (swoistość płaszczyzny): oś szybkiej fazy dla POBUDZENIA kanału,
   // ipsiwersyjnie do pobudzonego ucha.
   // --- Realne wektory normalne kanałów (magnitudy oczopląsu zamiast idealnych 45°) ---
-  // Źródło: Wu, Lin, Zheng, Zhou, Liu, Yang (2021) "Measurement of Human Semicircular Canal
-  //   Spatial Attitude", Front. Neurol. 12:741948, doi:10.3389/fneur.2021.741948 (MRI, n=55).
-  //   Kierunkowo zgodne z kanonem: Della Santina i wsp. (2005), JARO 6:191-206,
-  //   doi:10.1007/s10162-005-0003-x. Dane potwierdzają koplanarność LARP/RALP (RA∥LP, RP∥LA).
-  // Układ Wu: x=lewo, y=przednio-tylny, z=góra. Magnitudy biorę z |składowych| (znak osi Wu
-  //   nieistotny dla proporcji; kierunki bicia zostają z konwencji klinicznej poniżej):
-  //   PION ∝ |x|(międzyuszna) · POZIOM ∝ |z|(czaszkowa) · SKRĘT ∝ |y|(nosowo-potyliczna).
+  // Źródło: atlas IE-Map (ludzki błędnik, 3D Slicer) — dla każdego kanału dopasowana płaszczyzna PCA
+  //   przez uporządkowane punkty osi przewodu. TA SAMA rekonstrukcja, z której pochodzą AMPULLA_DIR
+  //   i ARC_SPAN, więc płaszczyzna, położenie bańki i długość łuku mówią o jednym i tym samym kanale.
+  //   Wcześniej normalne brano z Wu i wsp. 2021 (Front. Neurol. 12:741948, MRI n=55) — uśrednienie
+  //   populacyjne bez informacji o położeniu bańki wzdłuż pętli; zgodność obu źródeł 17.1°.
+  //   Kanon kierunkowy: Della Santina i wsp. (2005), JARO 6:191-206, doi:10.1007/s10162-005-0003-x.
+  // Ramka GŁOWY (x=prawo, y=góra, z=nos) — bez przeliczania osi. Magnitudy z |składowych|:
+  //   PION ∝ |x|(międzyuszna) · POZIOM ∝ |y|(czaszkowa) · SKRĘT ∝ |z|(nosowo-potyliczna).
+  // ZNAK normalnej NIE jest konwencją: wybrany tak, by przejście bańka→ujście wzdłuż zmierzonej osi
+  //   dawało DODATNI przyrost kąta (reguła prawej dłoni) — to on definiuje „rosnące φ = ampullofugalne".
+  // Kontrole: kanały wzajemnie prostopadłe (87.8/87.5/89.8°), koplanarność RA∥LP i RP∥LA 16.0° (Della
+  //   Santina podaje realne odchylenie tego rzędu — idealna koplanarność jest idealizacją), L = idealne
+  //   lustro P (0.000°). Nachylenie kanału bocznego od poziomu wychodzi 10.4°, nie kanoniczne ~30°:
+  //   kanon opisuje POSTAWĘ NATURALNĄ, atlas jest w ramce skanu. Sprawdzone (sonda 39), czy da się to
+  //   pogodzić jednym pochyleniem ramki — NIE: nachylenie ma MINIMUM przy +10° i rośnie dopiero przy
+  //   ujemnych, a każde pochylenie ≠0 psuje test Roll albo head-hang. Ramka atlasu zostaje bez obrotu;
+  //   różnica 10.4 vs 30° jest ODNOTOWANĄ ROZBIEŻNOŚCIĄ (patrz engine_doc R8), nie ukrytą poprawką.
   const CANAL_NORMALS = {
-    posterior: { P:[-0.651, 0.702, 0.287], L:[ 0.660, 0.702, 0.266] },
-    anterior:  { P:[ 0.749, 0.577, 0.324], L:[-0.739, 0.588, 0.329] },
-    horizontal:{ P:[-0.017,-0.299, 0.954], L:[ 0.025,-0.279, 0.960] }
+    posterior: { P:[ 0.622019, 0.161240, 0.766221], L:[ 0.622019,-0.161240,-0.766221] },
+    anterior:  { P:[-0.803765, 0.039133, 0.593659], L:[-0.803765,-0.039133,-0.593659] },
+    horizontal:{ P:[-0.030350, 0.983446,-0.178642], L:[-0.030350,-0.983446, 0.178642] }
   };
   // WALIDACJA WEJŚCIA — jasny błąd zamiast wyjątku „undefined" lub niemego złego wyniku (np. literówka w side
   // dawała cichy dryf ipsi=-1; literówka w canal udawała kanał pionowy w isExcitatory). Kanały: klucze CANAL_NORMALS. Strona: "L"|"P".
@@ -35,7 +45,7 @@ export const Vestibular = (()=>{
   // magnitudy {v,h,t} z normalnej, znormalizowane do max=1
   function nysMag(canal, ear){
     reqCanal(canal, ear, "nysMag");
-    const n=CANAL_NORMALS[canal][ear], v=Math.abs(n[0]), h=Math.abs(n[2]), t=Math.abs(n[1]);
+    const n=CANAL_NORMALS[canal][ear], v=Math.abs(n[0]), h=Math.abs(n[1]), t=Math.abs(n[2]);   // ramka głowy: x=międzyuszna, y=czaszkowa, z=nosowo-potyliczna
     const m=Math.max(v,h,t)||1; return {v:v/m, h:h/m, t:t/m};
   }
   // MASKA KLINICZNA — geometria daje magnitudy, ale konwencja kliniczna decyduje, KTÓRE składowe
@@ -87,35 +97,33 @@ export const Vestibular = (()=>{
   const Q_SUPINE=qaxis([1,0,0],-100);                   // supine head-hanging
   const qSupineYaw=deg=>qmul(Q_SUPINE, qaxis([0,1,0],deg)); // skręt wokół osi czaszki
   const qPitch=deg=>qaxis([1,0,0],deg);                  // +deg = skłon (bow), -deg = odchylenie (lean)
-  /* ---- GEOMETRIA KANAŁU: JEDNO ŹRÓDŁO (2026-08-05) ----
-     Do tej daty silnik miał DWIE niezależne geometrie tego samego kanału: zmierzone CANAL_NORMALS
-     (Wu 2021) do magnitud oczopląsu ORAZ osobną, RĘCZNIE wpisaną idealizację 45° (CANAL_GEOM/GEXC/uHC)
-     do dynamiki złogu. Rozjeżdżały się o 15–20° na KAŻDYM kanale (tylny 16.8°/15.5°, przedni 20.3°/20.2°,
-     poziomy 17.4°/16.3°), czyli silnik liczył przepływ endolimfy w innej płaszczyźnie niż tę, wokół
-     której wyprowadzał ruch oka. Teraz płaszczyzna pochodzi WYŁĄCZNIE z CANAL_NORMALS, a CANAL_GEOM,
-     GEXC i uHC są z niej WYPROWADZONE — duplikacja usunięta.
-     Układ Wu: x=lewo, y=przednio-tylny, z=góra  →  ramka głowy: x=prawo, y=góra, z=nos.
-     Kontrola przeliczenia osi: normalna kanału poziomego wychodzi ≈[0.02, 0.95, −0.30] (w górę, lekko
-     ku tyłowi) = kanoniczne nachylenie ~30° kanału bocznego; koplanarność RP∥LA (0.988) i RA∥LP (0.985)
-     zachowana. NIE naprawia to R1 (patrz engine_doc): R1 to długość łuku, nie orientacja płaszczyzny. */
-  const wuToHead = n => [-n[0], n[2], n[1]];
-  // KIERUNEK BAŃKI (φ=0) — ZAŁOŻENIE ANATOMICZNE, NIE POMIAR. Wu podaje wyłącznie orientacje PŁASZCZYZN
-  // (normalne); tego, gdzie WZDŁUŻ pętli leży bańka względem ujścia do łagiewki, źródło nie podaje.
-  // To JEDYNE pozostałe wejście geometryczne spoza pomiaru. Używamy wyłącznie RZUTU tych wektorów na
-  // zmierzoną płaszczyznę (składowa prostopadła jest odrzucana), więc niosą one tylko KIERUNEK bańki
-  // w płaszczyźnie kanału — nie jej położenie kątowe względem ujścia. To drugie jest brakującą daną R1.
+  /* ---- GEOMETRIA KANAŁU: JEDNO ŹRÓDŁO, W CAŁOŚCI ZMIERZONE (2026-08-05) ----
+     Etap 1 (rano): silnik miał DWIE niezależne geometrie tego samego kanału — zmierzone normalne do
+       magnitud oczopląsu ORAZ ręczną idealizację 45° do dynamiki złogu, rozjechane o 15–20° na KAŻDYM
+       kanale. Płaszczyznę ujednolicono: CANAL_GEOM, GEXC i uHC są z niej WYPROWADZONE.
+     Etap 2 (ten): zniknęły trzy ostatnie wpisy ręczne. Kierunek bańki (AMPULLA_DIR) był ZAŁOŻENIEM
+       anatomicznym, zwrot obiegu (ARC_SPIN) — sześcioma bitami konwencji, a zakres łuku brano z innej
+       pracy niż normalne. Wszystkie trzy pochodzą teraz z jednej rekonstrukcji: normalna z PCA punktów
+       osi, bańka z (A−C), ujście z (O−C), zwrot z monotoniczności Q0→Q4.
+     Zostaje JEDNO wejście spoza pomiaru: reguły Ewalda II/III (która strona przepływu pobudza) —
+       to fizjologia, nie geometria. */
+  // KIERUNEK BAŃKI (φ=0) — ZMIERZONY (2026-08-05), już nie założony. Atlas IE-Map: dla każdego kanału
+  // środek okręgu C, środek bańki A, ujście O oraz UPORZĄDKOWANE punkty osi Q0=A → Q4=O. e1 = rzut (A−C)
+  // na płaszczyznę PCA kanału. Przeliczenie ze Slicer-RAS do ramki głowy: pozycje (X,Z,Y); normalna jest
+  // wektorem OSIOWYM, a odwzorowanie ma wyznacznik −1, więc jej znak się odwraca.
+  // Weryfikacja: kanały wzajemnie prostopadłe (87.8/87.5/89.8°), zgodność z normalnymi Wu 17.1°
+  // (alternatywne przypisania osi dawały 80–85°), lewa strona = idealne lustro prawej (różnica 0.000°).
   const AMPULLA_DIR = {
-    posterior: { P:[-1,0,1],     L:[1,0,1]       },
-    anterior:  { P:[1,0,1],      L:[-1,0,1]      },
-    horizontal:{ P:[0.87,0,0.5], L:[-0.87,0,0.5] } };
-  // ZWROT OBIEGU ŁUKU: znak normalnej przypina konwencję „rosnące φ = ampullofugalne" (e2 = n × e1).
-  // Pomiar go NIE ustala — źródło nie podaje znaków osi, a płaszczyzna jest definiowana przez normalną
-  // z dokładnością do znaku. To 6 bitów konwencji, nie geometria.
-  const ARC_SPIN = { posterior:{P:+1,L:-1}, anterior:{P:-1,L:+1}, horizontal:{P:+1,L:-1} };
-  function canalBasis(canal, ear){
-    const n0=nrm3(wuToHead(CANAL_NORMALS[canal][ear])), s=ARC_SPIN[canal][ear];
-    const n=[s*n0[0], s*n0[1], s*n0[2]], a=AMPULLA_DIR[canal][ear], k=dot3(a,n);
-    const e1=nrm3([a[0]-k*n[0], a[1]-k*n[1], a[2]-k*n[2]]);   // rzut kierunku bańki na ZMIERZONĄ płaszczyznę
+    posterior: { P:[-0.5174,-0.6498,0.5568], L:[0.5174,-0.6498,0.5568] },
+    anterior:  { P:[0.4703,-0.5693,0.6743],  L:[-0.4703,-0.5693,0.6743] },
+    horizontal:{ P:[-0.1794,0.1705,0.9689],  L:[0.1794,0.1705,0.9689] } };
+  // ZWROT OBIEGU ŁUKU — też WYPROWADZONY: przyrosty kąta wzdłuż uporządkowanej osi Q0→Q4 są monotonicznie
+  // DODATNIE dla wszystkich trzech kanałów obu stron (tylny 11.4/130.6/132.9/43.9 · przedni 15.7/105.2/
+  // 113.4/46.7 · boczny 21.6/107.9/113.3/24.6), więc „rosnące φ = ampullofugalne" wynika z pomiaru.
+  // Znosi to dawną tabelę ARC_SPIN = 6 bitów konwencji wpisanych ręcznie.
+  function canalBasis(canal, ear){                      // baza łuku: e1 = bańka (φ=0), e2 = n × e1 (rosnące φ)
+    const n=nrm3(CANAL_NORMALS[canal][ear]), a=AMPULLA_DIR[canal][ear], k=dot3(a,n);
+    const e1=nrm3([a[0]-k*n[0], a[1]-k*n[1], a[2]-k*n[2]]);   // rzut kierunku bańki na zmierzoną płaszczyznę
     return { e1, e2:nrm3(cross3(n,e1)) };
   }
   // geometria łuku kanału (płaszczyzna e1,e2); e1 = kierunek ampułki (φ=0); exc = znak pobudzenia
@@ -129,14 +137,17 @@ export const Vestibular = (()=>{
     }
     return out;
   })();
-  // osie pobudzenia kanałów pionowych — WYPROWADZONE: oś pobudzenia = −e1 (styczna ampullofugalna przy φ=90°)
+  // OŚ POBUDZENIA — nie tabela, tylko STYCZNA do łuku w miejscu, gdzie złóg naprawdę leży.
+  // Dawniej: GEXC (kanały pionowe) = −e1 i uHC (poziomy) = +e1, czyli styczna liczona w φ=90° —
+  // tej samej wpisanej stałej, którą usunął restPhi. Przy zmierzonym łuku złóg spoczywa w 48.8°/199.8°/3°,
+  // więc oś pobudzenia liczona w 90° opisywała inne miejsce kanału niż to, którym rusza symulacja:
+  // kierunek oczopląsu w karcie testu potrafił być PRZECIWNY do wyniku dynamiki tej samej pozy.
+  const tangAt=(G,phiDeg)=>{ const r=phiDeg*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
+    return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]]; };
+  // zachowane dla zgodności API (oś pobudzenia w konwencji „styczna przy φ=90")
   const neg3=v=>[-v[0],-v[1],-v[2]];
   const GEXC={ RP:neg3(CANAL_GEOM.posterior.P.e1), LP:neg3(CANAL_GEOM.posterior.L.e1),
                RA:neg3(CANAL_GEOM.anterior.P.e1),  LA:neg3(CANAL_GEOM.anterior.L.e1) };
-  // oś ampullopetalna kanału poziomego — WYPROWADZONA: to wprost kierunek bańki (+e1), bo grawitacja
-  // ciągnąca KU bańce daje przepływ ampullopetalny = pobudzenie (Ewald II).
-  const uHC = side => CANAL_GEOM.horizontal[side].e1;
-  const CK={posterior:{P:"RP",L:"LP"}, anterior:{P:"RA",L:"LA"}};
   // ZAKRES ŁUKU: od ŚRODKA BAŃKI (φ=0) do ujścia do przedsionka/łagiewki (φ=phiExit) — POMIAR, nie idealizacja.
   // Źródło: Cárdenas-Serna & Jeffery — współrzędne anatomiczne 96 ludzkich błędników kostnych (48 dorosłych),
   //   Zenodo doi:10.5281/zenodo.4818568 (opis: PMC8819049). Wartości = duży łuk od środka bańki do
@@ -153,20 +164,37 @@ export const Vestibular = (()=>{
   //   pozycji prowokującej (φ_eq: tylny 189.6°, przedni 207.1°) leżało POZA końcem łuku, więc złóg zawsze
   //   dobijał do odnogi. Przy zmierzonym zakresie φ_eq leży W ŚRODKU łuku dla wszystkich 6 kanałów.
   // UWAGA: to dane błędnika KOSTNEGO — „przedsionek" jest anatomicznym przybliżeniem ujścia do łagiewki.
-  const ARC_SPAN = { anterior:266, posterior:307, horizontal:237 };
+  const ARC_SPAN = { anterior:281.1, posterior:318.8, horizontal:267.3 };   // ZMIERZONE na tym samym atlasie co AMPULLA_DIR
+  // Kontrola: suma kątów po polilinii Q0→Q4 zgadza się z prostym kątem A→O co do 0.1° (kanał jest dobrze
+  // opisany okręgiem; promienie |Qi−C| 2.3–3.9 mm bez odstających). Wartości Cárdenas-Serna (265.8/307.0/
+  // 236.8) mierzą to samo na 48 błędnikach i leżą w tym samym zakresie — atlas wybrano, bo daje KOMPLET
+  // (płaszczyzna + bańka + ujście + zwrot) z JEDNEGO źródła, bez zszywania trzech prac.
+  const CUPULA_DEG=3;                                   // złóg nie przechodzi przez osklepek — kres łuku od strony bańki
+  /* SPOCZYNEK ZŁOGU — WYPROWADZONY, nie wpisany (2026-08-05).
+     Silnik startował KAŻDĄ symulację od φ=90°: stałej dobranej pod dawny łuk 178° (środek pętli).
+     Przy zmierzonym łuku 267–319° to punkt bez znaczenia anatomicznego, a dla kanału poziomego
+     wręcz taki, w którym styczna składowa grawitacji nie przekracza tarcia statycznego — Roll test
+     nie ruszał złogu w ogóle. Teraz start = MINIMUM GRAWITACYJNE w postawie pionowej (tam, gdzie
+     osad leży, zanim badanie się zacznie), a gdy to minimum wypada POZA łukiem — osklepek.
+     Wychodzi: tylny 48.8° (tuż za bańką — klasyczny opis), poziomy 199.8° (ramię niebańkowe),
+     przedni 3° (osklepek: minimum kanału przedniego leży w przedsionku, więc kanał NIE MA
+     stabilnego spoczynku w pionie — to samo, czym tłumaczy się rzadkość BPPV kanału przedniego). */
+  function restPhi(canal, side){
+    const G=CANAL_GEOM[canal][side], g=gHead([1,0,0,0]);
+    const a=Math.atan2(dot3(g,G.e2), dot3(g,G.e1))*180/Math.PI, eq=((a%360)+360)%360;
+    return (eq>CUPULA_DEG && eq<ARC_SPAN[canal]) ? eq : CUPULA_DEG;
+  }
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
     reqCanal(canal, side, "position");
     if(variant!=null && variant!=="cupulo" && variant!=="canalo") throw new TypeError('position: nieznany variant "'+variant+'" (dozwolone: "cupulo"|"canalo"|brak)');
     q=reqQuat(q, "position");            // waliduje (skończony, dł. 4) i normalizuje
-    const g=gHead(q); let proj, excited;
-    if(canal==="horizontal"){
-      proj=dot3(g, uHC(side));                           // międzyuszna + przednio-tylna
-      excited = variant==="cupulo" ? proj<0 : proj>0;    // Ewald II: geo/apo odwracają się
-    } else {
-      proj=dot3(g, GEXC[CK[canal][side]]);               // + = ampullofugalny = pobudzenie (Ewald III)
-      excited = proj>0;                                  // kanały pionowe: bez odwrócenia geo/apo
-    }
+    const g=gHead(q), G=CANAL_GEOM[canal][side];
+    // napęd styczny TAM, GDZIE ZŁÓG LEŻY (restPhi) — ta sama wielkość, którą całkuje simulateCanalith,
+    // więc karta testu i symulacja nie mogą już pokazać przeciwnych kierunków.
+    const drive=dot3(g, tangAt(G, restPhi(canal, side)));   // >0 = ampullofugalny (rosnące φ)
+    let proj=G.exc*drive;                                   // exc: +1 pionowe (Ewald III), −1 poziomy (Ewald II)
+    const excited = (canal==="horizontal" && variant==="cupulo") ? proj<0 : proj>0;   // geo/apo odwracają się tylko w kanale poziomym
     const q0=quickPhase(canal, side), s=excited?1:-1, mag=Math.abs(proj);
     return {excited, mag, h:q0.h*s, v:q0.v*s, t:q0.t*s};
   }
@@ -241,7 +269,7 @@ export const Vestibular = (()=>{
   //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
-  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}){
+  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}){
     reqCanal(canal, side, "simulateCanalith");
     if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
     if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
@@ -256,7 +284,7 @@ export const Vestibular = (()=>{
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
     // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
     // 1. segment = pozycja startowa, a jego tTrans to czas W tej pozycji (NIE przejście z neutralnej). Wsteczna zgodność.
-    let phi=90*D, xi=0, t=0, exited=false, stuck=true, inCrus=false, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=0, t=0, exited=false, stuck=true, inCrus=false, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const flingDeg = 2*Math.acos(Math.min(1,Math.abs(q4dot(qPrev,sq))))*180/Math.PI;   // kąt przejścia INTO tego segmentu
@@ -287,7 +315,7 @@ export const Vestibular = (()=>{
               dphi=drive; let nphi=phi+dphi*dt;
               if(crusGate){ if(nphi>=pcrus){ dphi=Math.max(0,pcrus-phi)/dt; nphi=pcrus; inCrus=true; } }   // dotarł do odnogi → PARKUJE (opuszcza czuły kanał); dphi = realny dojazd
               else if(nphi>=pex){ nphi=pex; exited=true; }     // POZIOMY: brak odnogi — wyjście wprost do łagiewki
-              if(nphi<3*D){nphi=3*D; dphi=0;}                  // nie przechodzi przez osklepek
+              if(nphi<CUPULA_DEG*D){nphi=CUPULA_DEG*D; dphi=0;} // nie przechodzi przez osklepek
               phi=nphi; flow=gc*G.exc*dphi;                    // ruch wsteczny → przepływ odwrócony → ξ<0
             }
           }
@@ -342,6 +370,6 @@ export const Vestibular = (()=>{
   }
   return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
           simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS, CANAL_GEOM, CUP_WEAK};
+          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, CUP_WEAK};
 })();
 

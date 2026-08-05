@@ -297,7 +297,7 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
     couch=`<rect x="14" y="118" width="172" height="10" rx="3" fill="${P}"/>
       <rect x="14" y="128" width="8" height="20" fill="#1c2935"/><rect x="178" y="128" width="8" height="20" fill="#1c2935"/>`;
   }
-  const label={supineHang:t("Na plecach, głowa w dół","Supine, head down"),supineFlex:t("Na plecach, głowa przygięta ~30°","Supine, head flexed ~30°"),supineFlat:t("Na plecach, głowa płasko","Supine, head flat"),supineChin:t("Na plecach, broda do klatki","Supine, chin to chest"),prone:t("Na brzuchu","Prone"),sideL:t("Na boku lewym","On the left side"),sideR:t("Na boku prawym","On the right side")}[body]||"";
+  const label={supineHang:t("Na plecach, głowa w dół ~20°","Supine, head down ~20°"),supineDeepHang:t("Na plecach, głowa głęboko w dół ~30°","Supine, head deep down ~30°"),supineFlex:t("Na plecach, głowa przygięta ~30°","Supine, head flexed ~30°"),supineFlat:t("Na plecach, głowa płasko","Supine, head flat"),supineChin:t("Na plecach, broda do klatki","Supine, chin to chest"),prone:t("Na brzuchu","Prone"),sideL:t("Na boku lewym","On the left side"),sideR:t("Na boku prawym","On the right side")}[body]||"";
   return `<svg viewBox="0 0 200 160" role="img" aria-label="${t("Ułożenie","Position")}: ${label}, ${viewLbl}">
     <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${viewLbl}</text>
     ${couch}${fig}

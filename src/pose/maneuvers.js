@@ -229,10 +229,10 @@ function nysFromDyn(canal, side, xiPeak, apo){
 }
 
 // pozycja prowokująca kanał (konwencje silnika) — wejście do dynamiki ξ(t)
-function provokeQ(canal, side){
-  if(canal==="horizontal") return Vestibular.qSupineYaw(side==="P"? 90 : -90); // ucho chore w dół
-  if(canal==="anterior")  return Vestibular.qSupineYaw(0);                      // głębokie odchylenie (strona przez skręt)
-  return Vestibular.qSupineYaw(side==="P"? 45 : -45);                           // tylny (Dix-Hallpike)
+function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POSE_SPEC co ekran testu (było: własne qSupineYaw,
+  if(canal==="horizontal") return stepHeadQ("supineFlex", side==="P"? 90 : -90, "up");   // które ignorowało pochylenie z opisu — Roll liczony
+  if(canal==="anterior")  return stepHeadQ("supineDeepHang", 0, "up");                   // przy 10° WYPROSTU zamiast opisanych 30° ZGIĘCIA)
+  return stepHeadQ("supineHang", side==="P"? 45 : -45, "up");                            // tylny (Dix-Hallpike)
 }
 // przebieg ξ(t) z silnika: kanalolitiaza = PRZEJŚCIOWY (wygasa, cząstka wychodzi, NIE wraca);
 // kupulolitiaza = uporczywy (trzyma się, dopóki pozycja utrzymana).
@@ -243,9 +243,12 @@ function provokeQ(canal, side){
 //   („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno 60 s = próg kliniczny 1 min z kryteriów Bárány.
 function engineXi(canal, side, persistent, q){
   const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:40}];
+  // q0 = POZYCJA WYJŚCIOWA (siad): bez niej pierwszy segment interpolował „z samego siebie", czyli test
+  // zaczynał się już W pozycji prowokującej — złóg nie dostawał przejścia, które go w ogóle rusza.
+  const q0=[1,0,0,0];
   return persistent
-    ? Vestibular.simulateCupulolith({canal, side, timeline})
-    : Vestibular.simulateCanalith({canal, side, timeline});
+    ? Vestibular.simulateCupulolith({canal, side, timeline, q0})
+    : Vestibular.simulateCanalith({canal, side, timeline, q0});
 }
 // znormalizowana obwiednia czasowa z ξ(t): env(sekundy)∈[0,1] oraz tEnd (gdy |ξ|<3% szczytu po szczycie)
 function xiEnvelope(sim){
@@ -267,99 +270,78 @@ function xiEnvelope(sim){
    Walidacja offline (cząstka osiąga φ=178°=wyjście, obie strony):
      Epley ✓ · Yacovino ✓ · Lempert ✓ · Semont ✓ · Gufoni geotropowy ✓
      Gufoni apogeotropowy ✗ — POPRAWNIE: to manewr KONWERSJI (apo→geo), nie czyści wprost. */
-function qFromG(g){                                   // kwaternion head→świat t.że gHead(q)=g
-  const a=[0,-1,0], n=Math.hypot(g[0],g[1],g[2])||1, b=[g[0]/n,g[1]/n,g[2]/n];
-  const d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
-  if(d>0.9999) return [1,0,0,0];
-  if(d<-0.9999) return [0,1,0,0];
-  const c=[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
-  const q=[1+d,c[0],c[1],c[2]], m=Math.hypot(q[0],q[1],q[2],q[3]);
-  return Vestibular.qconj([q[0]/m,q[1]/m,q[2]/m,q[3]/m]);
-}
-const rotYg=(g,deg)=>{ const r=deg*Math.PI/180, c=Math.cos(r), s=Math.sin(r); // obrót grawitacji wokół osi czaszki (skręt szyi)
-  return [g[0]*c+g[2]*s, g[1], -g[0]*s+g[2]*c]; };
-// grawitacja w ramce głowy dla yaw=0 (skręt nakładany osobno)
-const BASE_G={ "sit|fwd":[0,-1,0], "sit|down":[0,0.9,0.45], "sit|up":[0,-0.5,-0.85],
-  "sit|chin":[0,-0.64,0.77],   // broda przy klatce (~50° przygięcia; Yacovino krok 4) — NIE głęboki skłon „down" (Bow&Lean)
-  "prone|down":[0,0.3,0.95], "sideL|fwd":[-1,0,0], "sideR|fwd":[1,0,0],
-  "sideL|down":[-0.5,0.6,0.6], "sideR|down":[0.5,0.6,0.6], "sideL|up":[-0.6,-0.5,-0.6], "sideR|up":[0.6,-0.5,-0.6],
-  "sitFront|fwd":[0,-1,0] };
-// Semont (rzuty boczne leanL/leanR) — gHead KOŃCOWE (skręt szyi wbudowany), lustro wg strony.
-// |down: nos ~46° POD poziomem (składowa nosa 0.72) — twarz wyraźnie ku podłodze/materacowi (rzut skośny
-// pokazuje wtedy tył/czubek głowy). Zweryfikowane: Semont dalej CZYŚCI L i P (φ→178); audyt #1 zachowany
-// (composeHead czerpie z LEAN_G → gHead(composeHead)==stepGravity). Było [±0.4,0.85,0.3] (nos ~18°, mylący profil w górę).
-const LEAN_G={ "leanL|up":[0.5,-0.2,-0.8], "leanR|up":[-0.5,-0.2,-0.8],
-  "leanR|down":[-0.35,0.6,0.72], "leanL|down":[0.35,0.6,0.72],
-  // GŁOWA NEUTRALNA na boku (Gufoni: kładziemy na bok chory, głowa w linii ciała — NIE skręcona jak w Semoncie).
-  // Grawitacja czysto boczna: leanL = bok PRAWY w dół (gHead +x), leanR = bok LEWY w dół (gHead −x) — DOKŁADNIE
-  // ta sama fizyka co sideR|fwd / sideL|fwd (kanał poziomy prowokowany), ale poza rzutowana FRONTALNIE (jak Semont).
-  "leanL|fwd":[1,0,0], "leanR|fwd":[-1,0,0],
-  // NOS KU SUFITOWI (Gufoni apo krok 3): pacjent na boku CHORYM skręca głowę ~90° tak, że nos celuje PROSTO
-  // W GÓRĘ (∥ świat +y). Grawitacja w ramce głowy pada wtedy wzdłuż osi nosowo-potylicznej: gHead=[0,0,-1]
-  // (identyczne dla obu boków — kierunek nosa nie zależy od rolla wokół osi nosa). Poza rzutowana FRONTALNIE.
-  "leanL|ceil":[0,0,-1], "leanR|ceil":[0,0,-1],
-  // NOS KU PODŁODZE (Gufoni geo krok 3): pacjent na boku ZDROWYM obraca głowę nosem w dół. Grawitacja MATCHUJE
-  // sideX|down — FIZYKA/oczopląs BEZ ZMIAN, zmienia się tylko KAMERA na frontalną (leanH leży na boku zdrowym:
-  // leanR↔sideL dla P, leanL↔sideR dla L → leanL|floor=sideR|down, leanR|floor=sideL|down).
-  "leanL|floor":[0.5,0.6,0.6], "leanR|floor":[-0.5,0.6,0.6] };
-// Pochylenie głowy wokół osi ucha dla póz supine (° do qSupineYaw). Ta sama q dla stepHeadQ (fizyka)
-// i composeHead (render) → zero rozjazdu (audyt #1). ZGŁOSZENIE Yacovino (screeny z markerami):
-//   • supineChin (krok 3): −75° dawało nos POZIOMO KU ŚCIANIE za głową (czubek w materac) — absurd
-//     anatomiczny. +75° = broda do klatki: nos w górę-ku-stopom (nos_świat≈[0,0.42,0.90]).
-//   • supineDeepHang (krok 2): −30° = GŁĘBOKI zwis (nos ku górze-i-w-tył, gHead≈[0,0.64,−0.77]),
-//     głębszy niż wspólny supineHang (Epley/Dix, ~10° poniżej poziomu). To ODSŁONIŁO ukryty błąd:
-//     stary silnik „czyścił" anterior tylko przy anatomicznie ODWROTNEJ pozie (grawitacja ku czubkowi).
-//     Poprawka: głęboki zwis czyści kanał W TRAKCIE zwisu (φ→178 przy holdzie dynamiki ~22 s — dynHold
-//     na kroku), a broda/siad już tylko wyprowadzają (exited zostaje). NIE tknięto geometrii kanału.
-const SUPINE_PITCH={ supineChin:+75, supineDeepHang:-30 };
-function supineHeadQ(body, yaw){          // orientacja głowy dla póz supine (opcjonalny pitch brody)
-  const q=Vestibular.qSupineYaw(yaw), p=SUPINE_PITCH[body];
-  return p ? Vestibular.qmul(q, Vestibular.qaxis([1,0,0], p)) : q;
-}
-function stepGravity(body, yaw, face){               // gHead dla kroku manewru
-  if(body.startsWith("supine")) return Vestibular.rotate(Vestibular.qconj(supineHeadQ(body,yaw)), [0,-1,0]);  // supineHang/Flex/Flat/Chin
-  const key=body+"|"+face;
-  if(body==="leanL"||body==="leanR") return LEAN_G[key]||[0,-1,0];   // yaw wbudowany
-  const g=BASE_G[key]||BASE_G[body+"|fwd"]||[0,-1,0];
-  return rotYg(g, -yaw);
-}
-function stepHeadQ(body, yaw, face){                  // orientacja głowy (head→świat) dla kroku
-  return body.startsWith("supine") ? supineHeadQ(body,yaw) : qFromG(stepGravity(body,yaw,face));
-}
-// ===== MODEL 3D — Krok 1: orientacja CIAŁA + złożenie głowy = ciało ∘ pitch(twarz) ∘ skręt szyi(yaw) =====
-// Zgodne z silnikiem: gHead(composeHead) == stepGravity (zweryfikowane offline dla wszystkich kombinacji).
-// Daje też POPRAWNY roll anatomiczny (w przeciwieństwie do qFromG, gdzie roll jest dowolny) — to jest
-// niezbędne do rzutu szkieletu 3D (Krok 2-3). Na razie NIE podłączone do renderu.
-const BODY_Q = {                                     // orientacja głowy (head→świat) przy neutralnej twarzy, yaw=0
-  sit:[1,0,0,0], sitFront:[1,0,0,0],
-  sideL:Vestibular.qaxis([0,0,1],90), sideR:Vestibular.qaxis([0,0,1],-90),
-  prone:Vestibular.qmul(Vestibular.qaxis([0,0,1],180),Vestibular.qaxis([1,0,0], Math.atan2(-BASE_G["prone|down"][2],BASE_G["prone|down"][1])*180/Math.PI))   // twarz w dół; pitch WYPROWADZONY z BASE_G["prone|down"] → gHead(composeHead)==stepGravity (było -107.5°, rozjazd 35° — audyt #1)
+/* ===== POZY WYPROWADZONE Z OPISU KLINICZNEGO (2026-08-05) =====
+   Do tej daty poza kroku była RĘCZNIE WPISANYM wektorem grawitacji (BASE_G/LEAN_G), obok drugiej tabeli
+   pochyleń (SUPINE_PITCH) i trzeciej — dla szkieletu 3D (TORSO_Q/NECK_DEG). Trzy tabele rozjeżdżały się
+   ze sobą I z instrukcją pokazywaną klinicyście: 18 z 27 póz nie zgadzało się z własnym opisem, sześć
+   o ponad 50°. Najgorsze przypadki:
+     • test Roll — opis „na plecach, głowa zgięta ~30°", silnik liczył 10° WYPROSTU: 40° i ODWROTNY ZNAK;
+     • Semont „nos ku podłodze" — rozjazd 70°, z dopisaną składową ku czubkowi głowy, której nie ma
+       w żadnym opisie (patrz niżej: bez niej manewr w tym modelu nie czyścił, więc pozę nagięto do wyniku);
+     • Bow & Lean — ta sama faza testu miała 153° w tabeli pozy (rysunek) i 90° w prowokacji (fizyka);
+     • Yacovino — „broda do klatki (~45°)" liczone jako 65° w kroku 3 i 50° w kroku 4, mimo że opis
+       obu kroków mówi o TYM SAMYM przygięciu karku.
+   Teraz poza to TRZY KĄTY ANATOMICZNE, każdy wprost ze zdania instrukcji:
+     roll  — obrót wokół osi długiej ciała: przewrót na bok/brzuch (±90/180) albo upadek boczny (Semont)
+     trunk — kąt TUŁOWIA w płaszczyźnie strzałkowej: siad 0°, leżenie −90°, skłon w biodrach +45°
+     pitch — kąt CAŁEJ GŁOWY = trunk + kark (wyprost <0 / zgięcie >0); to on daje grawitację
+     dyaw  — skręt karku ZAWARTY w opisie pozy (dodawany do yaw kroku)
+   headQ = Rz(roll)·Rx(pitch)·Ry(yaw+dyaw) — kolejność jak w dotychczasowym qSupineYaw = Rx(−100)·Ry(yaw):
+   skręt karku jest WEWNĘTRZNY (wokół osi czaszki), pochylenie ZEWNĘTRZNE (kładzenie odbywa się
+   w płaszczyźnie strzałkowej pokoju, całym ciałem). Grawitacja, szkielet i rysunek czerpią z TEJ JEDNEJ
+   tabeli, więc rozjazd silnik↔widok↔instrukcja jest strukturalnie niemożliwy.
+   [UZUP] = opis w aplikacji był jakościowy; liczbę dopisano z definicji manewru I WNIESIONO DO OPISU,
+   żeby instrukcja i silnik dalej mówiły to samo. */
+const POSE_SPEC = {
+  // ---- siad ----
+  "sit|fwd":       {roll:0,   trunk:0,   pitch:0,    dyaw:0},   // „głowa prosto"
+  "sitFront|fwd":  {roll:0,   trunk:0,   pitch:0,    dyaw:0},   // „siedzi na środku kozetki, twarzą do badającego"
+  "sit|chin":      {roll:0,   trunk:0,   pitch:+45,  dyaw:0},   // Yacovino krok 4: „utrzymując brodę przy klatce" = te same 45° co krok 3
+  "sit|down":      {roll:0,   trunk:+45, pitch:+90,  dyaw:0},   // Bow: „skłon tułowia w przód ~45°, nos ku podłodze" = 45° biodra + 45° kark
+  "sit|up":        {roll:0,   trunk:0,   pitch:-60,  dyaw:0},   // Lean: odchylenie do tyłu [UZUP 60°]
+  // ---- leżenie na plecach: pitch = −90 − zwis (lub −90 + zgięcie) ----
+  "supineFlat|up": {roll:0,   trunk:-90, pitch:-90,  dyaw:0},   // Lempert: „leży na plecach" — płasko, bez zwisu
+  "supineHang|up": {roll:0,   trunk:-90, pitch:-110, dyaw:0},   // Dix–Hallpike / Epley: „~20° poniżej poziomu"
+  "supineFlex|up": {roll:0,   trunk:-90, pitch:-60,  dyaw:0},   // Roll test: „głowa zgięta ~30°"
+  "supineDeepHang|up":{roll:0,trunk:-90, pitch:-120, dyaw:0},   // deep head-hang: „~30° poniżej poziomu"
+  "supineChin|up": {roll:0,   trunk:-90, pitch:-45,  dyaw:0},   // Yacovino krok 3: „broda do klatki (~45°)", pacjent nadal leży
+  // ---- przewrót na bok/brzuch z leżenia (Epley krok 4, Lempert) ----
+  "sideL|fwd":     {roll:+90, trunk:-90, pitch:-90,  dyaw:0},   // „obróć o 90°" — głowa w linii ciała
+  "sideR|fwd":     {roll:-90, trunk:-90, pitch:-90,  dyaw:0},
+  "sideL|down":    {roll:+90, trunk:-90, pitch:-110, dyaw:0},   // Epley krok 4: obraca się CIAŁO; kark bez zmiany, „nos ku podłodze" wychodzi z przewrotu
+  "sideR|down":    {roll:-90, trunk:-90, pitch:-110, dyaw:0},
+  "sideL|up":      {roll:+90, trunk:-90, pitch:-90,  dyaw:0},
+  "sideR|up":      {roll:-90, trunk:-90, pitch:-90,  dyaw:0},
+  "prone|down":    {roll:180, trunk:-90, pitch:-110, dyaw:0},   // Lempert: „na brzuchu, nos ku podłodze"
+  // ---- upadek boczny Z SIADU (Semont/Bascule/Gufoni): tułów NIE kładzie się na plecy ----
+  // Skręt karku 45° (Semont/Bascule) przychodzi z pola yaw kroku — opis mówi „bez zmiany ustawienia głowy",
+  // więc obie pozycje rzutu mają IDENTYCZNY kark i różnią się wyłącznie bokiem, na którym leży pacjent.
+  "leanL|fwd":     {roll:-90, trunk:0,   pitch:0,    dyaw:0},   // leanL = prawy bok w dół
+  "leanR|fwd":     {roll:+90, trunk:0,   pitch:0,    dyaw:0},
+  "leanL|up":      {roll:-90, trunk:0,   pitch:0,    dyaw:0},
+  "leanR|up":      {roll:+90, trunk:0,   pitch:0,    dyaw:0},
+  "leanL|down":    {roll:-90, trunk:0,   pitch:0,    dyaw:0},
+  "leanR|down":    {roll:+90, trunk:0,   pitch:0,    dyaw:0},
+  "leanL|ceil":    {roll:-90, trunk:0,   pitch:0,    dyaw:-90},  // Gufoni apo krok 3: „obróć głowę o ~90°, nos prosto ku górze"
+  "leanR|ceil":    {roll:+90, trunk:0,   pitch:0,    dyaw:+90},
+  "leanL|floor":   {roll:-90, trunk:0,   pitch:0,    dyaw:+45},  // Gufoni geo krok 3: „nos ku podłodze" [UZUP 45° — Gufoni/Appiani]
+  "leanR|floor":   {roll:+90, trunk:0,   pitch:0,    dyaw:-45},
 };
-const BODY_NEUTRAL = { sit:"fwd", sitFront:"fwd", sideL:"fwd", sideR:"fwd", prone:"down" };
-function qFromToVec(a,b){                             // najkrótsza rotacja wektora a→b (samo normalizuje wejście)
-  const la=Math.hypot(a[0],a[1],a[2])||1, lb=Math.hypot(b[0],b[1],b[2])||1;
-  a=[a[0]/la,a[1]/la,a[2]/la]; b=[b[0]/lb,b[1]/lb,b[2]/lb];
-  const d=Math.max(-1,Math.min(1, a[0]*b[0]+a[1]*b[1]+a[2]*b[2]));
-  if(d>0.99999) return [1,0,0,0];
-  const cx=[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
-  const cl=Math.hypot(cx[0],cx[1],cx[2]);
-  if(cl<1e-6) return Vestibular.qaxis(Math.abs(a[0])>0.9?[0,1,0]:[1,0,0], 180);  // antyrównoległe
-  return Vestibular.qaxis([cx[0]/cl,cx[1]/cl,cx[2]/cl], Math.acos(d)*180/Math.PI);
+const poseOf=(body,face)=>POSE_SPEC[body+"|"+face] || POSE_SPEC[body+"|fwd"] || POSE_SPEC["sit|fwd"];
+const headQOf=(roll,pitch,yaw)=>Vestibular.qmul(Vestibular.qmul(
+  Vestibular.qaxis([0,0,1],roll), Vestibular.qaxis([1,0,0],pitch)), Vestibular.qaxis([0,1,0],yaw));
+function stepHeadQ(body, yaw, face){                  // orientacja głowy (head→świat) dla kroku
+  const s=poseOf(body,face); return headQOf(s.roll, s.pitch, yaw + s.dyaw);
 }
-function headPitchQ(body,face){                      // pitch szyi: neutral→face (z BASE_G); rotate(qconj(P),g0)=gFace
-  const n=BODY_NEUTRAL[body]; if(!n||face===n) return [1,0,0,0];
-  const g0=BASE_G[body+"|"+n], gf=BASE_G[body+"|"+face]; if(!g0||!gf) return [1,0,0,0];
-  return Vestibular.qconj(qFromToVec(g0, gf));
-}
-function composeHead(body,yaw,face){                 // orientacja głowy (head→świat) z ciała+pitch+szyi
-  if(body.startsWith("supine")) return supineHeadQ(body,yaw);                   // = qSupineYaw (+ pitch brody dla supineChin)
-  if(body==="leanL"||body==="leanR"){                                          // Semont: głowa leżąca na boku; grawitacja = LEAN_G (źródło prawdy silnika)
-    const T=TORSO_Q[body], g=LEAN_G[body+"|"+face]||[0,-1,0];                   // roll z tułowia-na-boku + minimalna korekta orientacji do grawitacji kroku
-    return Vestibular.qmul(T, qFromToVec(g, Vestibular.gHead(T)));              // gHead(composeHead)==LEAN_G z konstrukcji (było skręt 45°, rozjazd 17.6°/59.9° — audyt #1)
-  }
-  const B=BODY_Q[body]||[1,0,0,0];
-  return Vestibular.qmul(Vestibular.qmul(B, headPitchQ(body,face)), Vestibular.qaxis([0,1,0],yaw));
-}
+// Grawitacja jest teraz WYPROWADZANA z pozy (było odwrotnie: poza odtwarzana z wpisanej grawitacji przez
+// qFromG, co gubiło roll anatomiczny i pozwalało obu opisom żyć własnym życiem).
+function stepGravity(body, yaw, face){ return Vestibular.gHead(stepHeadQ(body, yaw, face)); }
+// ===== MODEL 3D — Krok 1: orientacja głowy do RYSOWANIA =====
+// Dawniej osobna ścieżka (BODY_Q + headPitchQ wyprowadzane wstecz z BASE_G), pilnowana inwariantem
+// „gHead(composeHead) == stepGravity" (audyt #1) — czyli dwie konstrukcje, które trzeba było ZGADZAĆ.
+// Po wyprowadzeniu pozy z opisu headQOf daje od razu POPRAWNY roll anatomiczny, więc rysunek i fizyka
+// biorą DOKŁADNIE tę samą orientację: inwariant nie jest już pilnowany, tylko TOŻSAMOŚCIOWY.
+const composeHead = stepHeadQ;
 // ===== MODEL 3D — Krok 2: szkielet (offsety stawów w układzie ciała) + kinematyka prosta (FK) =====
 // Układ ciała: x=prawo, y=góra(czaszka), z=przód(brzuch/nos). Długości spójne z figSide.
 // Drzewo stawów [nazwa, rodzic, offset-w-ramce-rodzica] dla NEUTRALNEJ postawy (stojąca/wyprostowana).
@@ -393,27 +375,23 @@ const POSE3D={
         kneeL:Vestibular.qaxis([1,0,0],90), kneeR:Vestibular.qaxis([1,0,0],90) }, // siad na krawędzi: uda w przód, podudzia w dół
   sitFront:{}, supine:{}, side:{}, prone:{}, lean:{}   // sitFront: nogi w dół (widok z przodu)
 };
-// orientacja TUŁOWIA (torso→świat) per ciało. Głowa osobno przez composeHead (Krok 3).
-const TORSO_Q={
-  sit:[1,0,0,0], sitFront:[1,0,0,0],
-  sideL:Vestibular.qmul(Vestibular.qaxis([0,0,1],90), Vestibular.qaxis([1,0,0],-90)),   // na boku: supine + roll wokół osi długiej
-  sideR:Vestibular.qmul(Vestibular.qaxis([0,0,1],-90),Vestibular.qaxis([1,0,0],-90)),
-  prone:Vestibular.qmul(Vestibular.qaxis([0,0,1],180),Vestibular.qaxis([1,0,0],-90)),   // na brzuchu = supine + obrót 180° wokół osi długiej: twarz w dół, głowa NIE odwrócona
-  supineHang:Vestibular.qaxis([1,0,0],-90), supineDeepHang:Vestibular.qaxis([1,0,0],-90), supineFlex:Vestibular.qaxis([1,0,0],-90), supineFlat:Vestibular.qaxis([1,0,0],-90), supineChin:Vestibular.qaxis([1,0,0],-90),
-  leanL:Vestibular.qaxis([0,0,1],-90), leanR:Vestibular.qaxis([0,0,1],90)   // Semont: POZIOME leżenie na boku (widok odgórny); leanL=prawy bok w dół, leanR=lewy bok w dół
-};
-// kąt szyi per ciało (stopnie, wokół osi usznej x): <0 = wyprost (głowa do tyłu/zwis), >0 = zgięcie (broda do mostka).
-// Wszystkie supine* mają identyczny gHead (silnik ich nie różnicuje) → różnica Hang/Flex/Flat jest TU, w pozie szyi.
-const NECK_DEG={ supineHang:-34, supineDeepHang:-52, supineFlex:28, supineFlat:12, supineChin:45 };   // supineChin: kark mocno przygięty (broda do klatki); supineDeepHang: głębszy wyprost niż zwykły zwis (Yacovino)
+// orientacja TUŁOWIA (torso→świat) per ciało — WYPROWADZONA z POSE_SPEC: Rz(roll)·Rx(trunk).
+// Dawniej wpisana ręcznie obok BASE_G, przez co szkielet mógł opisywać inną pozę niż fizyka (i opisywał:
+// supineFlat miał tułów −90° przy grawitacji liczonej dla −100°, a kark „prostował" tę różnicę).
+const TORSO_Q=(()=>{ const out={};
+  for(const key of Object.keys(POSE_SPEC)){ const body=key.split("|")[0]; if(out[body]) continue;
+    const s=poseOf(body,"fwd");
+    out[body]=Vestibular.qmul(Vestibular.qaxis([0,0,1],s.roll), Vestibular.qaxis([1,0,0],s.trunk)); }
+  return out; })();
 function bodyClass(b){ return b.startsWith("supine")?"supine":(b==="sideL"||b==="sideR")?"side":(b==="leanL"||b==="leanR")?"lean":b; }
 function bodyJoints(body,face){                       // pozycje 3D stawów po orientacji w przestrzeni (pre-kamera)
   const pose=Object.assign({}, POSE3D[bodyClass(body)]||{});
-  let nd=(NECK_DEG[body]||0);                          // wyprost/zgięcie szyi (<0 wyprost, >0 zgięcie do klatki)
-  if(body==="sit"){ if(face==="down") nd+=30; else if(face==="up") nd-=30; else if(face==="chin") nd+=45; }   // dynamiczny kark: skłon (bow) / odchylenie / broda do klatki (Yacovino)
+  const s=poseOf(body,face);
+  const nd=s.pitch - s.trunk;                          // KARK = kąt głowy − kąt tułowia (<0 wyprost, >0 zgięcie do mostka) — wprost z tabeli pozy
   if(nd) pose.neckBase=Vestibular.qaxis([1,0,0], nd);
-  if(body==="sit" && face==="down"){                    // Skłon w przód (Bow): ZAWIAS BIODROWY — cały tułów pada do przodu (~45°, nad uda),
-    const F=45;                                         // głowa dołem, nos ku podłodze. Same zgięcie karku nie oddaje tej pozy (patrz rycina Bow & Lean).
-    pose.pelvis=Vestibular.qaxis([1,0,0], F);            // tułów w przód (zawias w biodrach)
+  const F=s.trunk - poseOf(body,"fwd").trunk;          // ZAWIAS BIODROWY: o ile tułów tej pozy odchyla się od neutralnej (Bow & Lean: +45°)
+  if(F){                                               // sam kark nie oddaje skłonu — pada CAŁY tułów nad uda (patrz rycina Bow & Lean)
+    pose.pelvis=Vestibular.qaxis([1,0,0], F);           // tułów w przód (zawias w biodrach)
     pose.hipL=Vestibular.qaxis([1,0,0], -90-F); pose.hipR=Vestibular.qaxis([1,0,0], -90-F);   // uda niezmienione — kontr-obrót znosi obrót miednicy (nogi zostają)
     pose.shL=Vestibular.qaxis([1,0,0], -F); pose.shR=Vestibular.qaxis([1,0,0], -F);            // ramiona zwisają pionowo (kontr-obrót barków)
   }
@@ -509,7 +487,7 @@ const DIAG={
     phases:(A,v)=>[{
       ptitle:t("Strona chora w dole","Affected side down"), ppos:t("Na plecach, głowa 45° ku stronie chorej, ~20° poniżej poziomu","Supine, head 45° toward the affected side, ~20° below horizontal"),
       body:"supineHang", yaw:yawToA(A), face:"up",
-      nys: nysFromGeom("posterior", A, v, Vestibular.qSupineYaw(A==="P"?45:-45)),
+      nys: nysFromGeom("posterior", A, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),
       label:t(`ku górze + skrętny ku uchu choremu (${sideN(A)})`,`upbeat + torsional toward the affected ear (${sideN(A)})`),
       note: v==="canalo"
         ? t("po latencji, narasta i wygasa; wyczerpuje się przy powtórzeniu.","after a latency, crescendos and fades; fatigues on repetition.")
@@ -527,7 +505,7 @@ const DIAG={
         const strong = geo ? (down===A) : (down===H);
         return {ptitle:t(`Ucho ${down==="L"?"lewe":"prawe"} w dole`,`${down==="L"?"Left":"Right"} ear down`), ppos:t(`Głowa obrócona 90° ku stronie ${sideN(down)}`,`Head turned 90° toward the ${sideN(down)} side`),
           body:"supineFlex", yaw: down==="P"?90:-90, face:"up",
-          nys: nysFromGeom("horizontal", A, v, Vestibular.qSupineYaw(down==="P"?90:-90), "asym"),
+          nys: nysFromGeom("horizontal", A, v, stepHeadQ("supineFlex", down==="P"?90:-90, "up"), "asym"),
           label: geo ? t(`geotropowy — ku uchu w dole (${sideN(down)})`,`geotropic — toward the lower ear (${sideN(down)})`) : t(`apogeotropowy — ku uchu w górze (${sideN(up)})`,`apogeotropic — toward the upper ear (${sideN(up)})`),
           note: strong ? t("Reakcja silniejsza w tej pozycji.","Stronger response in this position.") : t("Reakcja słabsza w tej pozycji.","Weaker response in this position.")};
       };
@@ -544,12 +522,12 @@ const DIAG={
       return [
         {ptitle:t("Skłon w przód (bow)","Forward bend (bow)"), ppos:t("Siad, skłon tułowia w przód ~45°, nos ku podłodze","Sitting, trunk bent forward ~45°, nose toward the floor"),
          body:"sit", yaw:0, face:"down",
-         nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(90), "flat"),
+         nys: nysFromGeom("horizontal", A, v, stepHeadQ("sit", 0, "down"), "flat"),
          label: geo?t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`):t(`bije ku stronie zdrowej (${sideN(H)})`,`beats toward the healthy side (${sideN(H)})`),
          note: geo?t("Geotropowy: skłon wskazuje stronę chorą.","Geotropic: the bow indicates the affected side."):t("Apogeotropowy: kierunek odwrócony.","Apogeotropic: direction reversed.")},
         {ptitle:t("Odchylenie do tyłu (lean)","Backward tilt (lean)"), ppos:t("Siad, głowa odchylona do tyłu","Sitting, head tilted back"),
          body:"sit", yaw:0, face:"up",
-         nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(-90), "flat"),
+         nys: nysFromGeom("horizontal", A, v, stepHeadQ("sit", 0, "up"), "flat"),
          label: geo?t(`bije ku stronie zdrowej (${sideN(H)})`,`beats toward the healthy side (${sideN(H)})`):t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`),
          note: geo?t("Przy odchyleniu kierunek odwraca się (ku zdrowej).","On leaning back, the direction reverses (toward the healthy side)."):t("Apogeotropowy: odchylenie bije ku chorej.","Apogeotropic: the lean beats toward the affected side.")},
       ];
@@ -563,8 +541,8 @@ const DIAG={
       : t(`Kupulolitiaza kanału przedniego (bardzo rzadka): downbeat uporczywy, bez latencji. Strony nie da się pewnie ustalić oczopląsem.`,`Anterior-canal cupulolithiasis (very rare): persistent downbeat, no latency. The side cannot be reliably established by nystagmus.`),
     phases:(A,v)=>[{
       ptitle:t("Głowa głęboko w tył","Head deep back"), ppos:t("Na plecach, głowa prosto, głęboko odchylona (~30° poniżej poziomu)","Supine, head straight, extended deeply (~30° below horizontal)"),
-      body:"supineHang", yaw:0, face:"up",
-      nys: nysFromGeom("anterior", A, v, Vestibular.qSupineYaw(0)),
+      body:"supineDeepHang", yaw:0, face:"up",   // było supineHang (20°) przy opisie mówiącym 30° — poza szła za opisem
+      nys: nysFromGeom("anterior", A, v, stepHeadQ("supineDeepHang", 0, "up")),
       label:t(`ku dołowi — czysty downbeat (bez wyraźnej torsji)`,`downward — pure downbeat (no clear torsion)`),
       note: v==="canalo"
         ? t("po latencji: czysty downbeat, narasta i wygasa, wyczerpuje się przy powtórzeniu. Oczopląsu nie używaj do ustalenia strony — torsja bywa śladowa/nieobecna.","after a latency: pure downbeat, crescendos and fades, fatigues on repetition. Do not use the nystagmus to establish the side — torsion may be trace/absent.")
@@ -622,8 +600,8 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, rotYg, BASE_G, LEAN_G, SUPINE_PITCH, supineHeadQ, stepGravity, stepHeadQ, BODY_Q, BODY_NEUTRAL, qFromToVec, headPitchQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, NECK_DEG, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, qFromG, supineHeadQ, stepGravity, stepHeadQ, qFromToVec, headPitchQ, composeHead, fkJoints, bodyClass, bodyJoints, gravArrowFor, sizedSeconds, maneuverTimeline, maneuverSim, variantLabels, recommend });
+Object.assign(window, { makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepGravity, stepHeadQ, composeHead, fkJoints, bodyClass, bodyJoints, gravArrowFor, sizedSeconds, maneuverTimeline, maneuverSim, variantLabels, recommend });
