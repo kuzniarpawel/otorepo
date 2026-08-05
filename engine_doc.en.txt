@@ -540,7 +540,13 @@ REMAINING (pending decision):
      THIS IS NOT A ONE-CONSTANT FIX: phiExit=240 restores (a) and (c) but breaks clearing for Semont,
      Yacovino and geotropic Gufoni (verified). It needs a coordinated arc+holds+constants recalibration.
 
- R2. BASCULE NEVER CLEARS THE CANAL. maneuverSim runs EVERY plan through simulateCanalith, so Bascule (a
+ R2. [RE-MEASURED 2026-08-05 after b5f55b1] DIAGNOSIS CONFIRMED, NUMBERS OBSOLETE — this is R7.
+     Bascule still does not clear (φ max 137 against an exit of 318.8), but it does NOT "push the debris
+     toward the ampulla": it stalls at the UNSTABLE point of the second drop. The cause named back then
+     (no inertia) is the same one as in R7 and applies to Semont too — see R7. The description below is
+     kept as a record of the pre-rebuild state; its numbers (φ 90→11→78→3→51) come from the old arc and
+     the φ=90 start.
+ R2-OLD. BASCULE NEVER CLEARS THE CANAL. maneuverSim runs EVERY plan through simulateCanalith, so Bascule (a
      liberatory maneuver for posterior-canal cupulolithiasis) is computed as free-floating debris:
      phi 90->11->78->3->51, exited=false - the debris is pushed TOWARD THE AMPULLA and ends mid-canal.
      Because the plan carries mechanism:"cupulo", the renderer falls into the CONVERSION branch (the
@@ -549,7 +555,20 @@ REMAINING (pending decision):
      Bascule mechanism is INERTIAL detachment of debris from the cupula, and an overdamped, purely
      gravity-driven model contains no such phenomenon - beyond the narrow crus-expulsion proxy (crusFling).
 
- R3. THE CONSTANTS WERE CALIBRATED FOR THE POSTERIOR CANAL ONLY; the horizontal and anterior canals inherit
+ R3. [RE-MEASURED 2026-08-05 after b5f55b1] PARTLY CLOSED.
+     CLOSED: the Roll asymmetry at cupular level. |ξ| affected ear down 0.70 vs healthy 0.59 — the order
+       is clinically CORRECT already at cupular level, without needing the rescue from Ewald II
+       rectification (it was 0.518 vs 0.910, i.e. inverted). The derived particle start fixed this, not
+       constant tuning.
+     OPEN: the latency ordering. Posterior 2.30 s / |ξ| 0.87 · horizontal 2.65 s / 0.70 · anterior no
+       response (drive 0.012 < threshold — that is R7, not R3). The horizontal canal still does NOT have
+       the shortest latency or the strongest nystagmus, as clinic requires.
+     OBSOLETE, however, is the whole MECHANISM below: it derived its numbers from the φ=90 start, which
+       no longer exists (restPhi: 48.8 / 199.8 / 3). The formula lat ≈ adh/(|g·e1|/tauP − fStat) no longer
+       applies — the tangent is now taken at the resting position, not at φ=90. The caveat "calibrate R3
+       AFTER rebuilding the geometry" STANDS and has just become actionable: the geometry is measured and
+       closed, so R3 can finally be calibrated, but it must be RECOMPUTED from scratch.
+ R3-OLD. THE CONSTANTS WERE CALIBRATED FOR THE POSTERIOR CANAL ONLY; the horizontal and anterior canals inherit
      them without their own validation and come out clinically backwards:
         latency:  posterior 1.95 s . HORIZONTAL 2.30 s . anterior 3.15 s
         peak xi:  posterior 0.810 . HORIZONTAL 0.518 . anterior 0.668
@@ -599,26 +618,37 @@ REMAINING (pending decision):
 
 
 === MANEUVERS AS QUATERNION TIMELINES (entry into the dynamics) ===
-The maneuver plan → engine bridge. simulateCanalith uses ONLY gHead (gravity in the head frame),
-so we define a step by the target gHead and build a quaternion qFromG(g).
+The maneuver plan → engine bridge. simulateCanalith uses ONLY gHead (gravity in the head frame).
+Since 2026-08-05 (b5f55b1) the direction of dependency is REVERSED: a step defines a POSE (anatomical
+angles taken from the clinical description) and gravity is DERIVED from it. Previously the opposite
+held — a step supplied a hand-written gHead vector and the pose was reconstructed from it via qFromG
+(which lost the anatomical roll and let the drawing, the physics and the instruction drift apart
+independently; the drift reached 70°).
 Head frame: x=right ear, y=skull(+crown), z=nose.
 Functions (after xiEnvelope in the file):
-- qFromG(g) → a head→world quaternion such that gHead(q)=g.
-- rotYg(g,deg) → rotation of gravity about the skull axis (neck yaw).
-- BASE_G[body|face] → gHead for yaw=0 (sit/sideL/sideR/prone/sitFront). Yaw: rotYg(g,-yaw).
-- LEAN_G[leanL/R|up/down] → FINAL gHead for the Semont flings (neck yaw built in; mirrored by side).
-- stepGravity(body,yaw,face) → the step's gHead (supineHang: via qSupineYaw — validated).
-- stepHeadQ(body,yaw,face) → the step's head orientation (head→world).
-- maneuverTimeline(plan) → [{q,tTrans:0.8,tHold:6–12}] (hold limited for the dynamics).
+- POSE_SPEC[body|face] → {roll, trunk, pitch, dyaw} in DEGREES, each number from a sentence of the
+  instruction shown to the clinician:
+    roll  = rotation about the body's long axis (side ±90 / prone 180 / Semont's lateral drop)
+    trunk = trunk angle in the sagittal plane (sitting 0, lying −90, hip hinge +45)
+    pitch = angle of the WHOLE HEAD = trunk + neck; neck = pitch − trunk (this feeds the skeleton)
+    dyaw  = neck rotation contained in the pose description (added to the step's yaw)
+- stepHeadQ(body,yaw,face) → Rz(roll)·Rx(pitch)·Ry(yaw+dyaw); head→world head orientation.
+- stepGravity(body,yaw,face) → gHead(stepHeadQ(...)) — gravity is DERIVED from the pose.
+- composeHead == stepHeadQ — drawing and physics are one function (audit #1's invariant is an identity).
+- TORSO_Q[body] → Rz(roll)·Rx(trunk), derived from the same table (was written out separately).
+- maneuverTimeline(plan,size) → [{q,tTrans:0.8,tHold}] with the hold DERIVED (R4b).
 - maneuverSim(plan) → simulateCanalith over the timeline → φ(t) of the particle in the canal.
-  [2026-07-02] Lempert STEP 1 (head turn toward the affected side, horizontal canal): yaw must be ±90° — at 45°
-  ξ_peak≈0 (no provocation). The clinical instruction says "90°"; the code was inconsistent (45°), fixed.
-KEY PHYSICAL PRINCIPLE: the "nose down" therapeutic steps have a +crown component in gHead
-(the crown of the head drops → the otolith is carried through the common crus). Without this the particle backs up.
-VALIDATION (offline, real generated plans, both sides — the particle reaches φ=178°=exit):
-  Epley ✓✓ · Yacovino ✓✓ · Lempert ✓✓ · Semont ✓✓ · Gufoni geotropic ✓✓
+  [2026-07-02] Lempert STEP 1 (head turned toward the affected side, horizontal canal): yaw must be ±90° —
+  at 45° ξ_peak≈0 (no provocation). The clinical instruction says "90°"; the code said 45°, fixed.
+PARTICLE START: not a constant but restPhi(canal,side) = the gravitational minimum in the upright
+posture, or the cupula when that minimum lies outside the arc. Posterior 48.8° · horizontal 199.8° ·
+anterior 3°.
+VALIDATION (offline, real generated plans, both sides, exit = measured ARC_SPAN):
+  Epley ✓✓ (49→158→230→307→319) · Yacovino ✓✓ (3→133→262→281) · Lempert ✓✓ · Gufoni geo ✓✓
   Gufoni apogeotropic ✗✗ — CORRECTLY: a CONVERSION maneuver (apo→geo), it does not clear directly
-  (φmax 90°), followed by a Roll test and treatment of the geotropic form.
+  Semont ✗✗ and Bascule ✗✗ — see R7 (no inertial term); these are the ONLY maneuvers that stopped
+  clearing once the poses were derived, and they have a named physical cause, not a data defect.
+
 
 === ANTERIOR-CANAL TEST (deep head-hang) + a note on consistency ===
 Diagnostics: the 'headhang' test (deep head-hang, supineHang/yaw0/face:up) → DOWNbeat nystagmus + torsional

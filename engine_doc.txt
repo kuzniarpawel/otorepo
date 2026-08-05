@@ -531,7 +531,12 @@ POZOSTAŁE (do decyzji):
      NIE JEST TO POPRAWKA JEDNOSTAŁOWA: phiExit=240 przywraca (a) i (c), ale psuje czyszczenie Semonta,
      Yacovino i Gufoniego geotropowego (zweryfikowane). Wymaga skoordynowanej rekalibracji łuk+holdy+stałe.
 
- R2. BASCULE NIGDY NIE CZYŚCI KANAŁU. maneuverSim liczy KAŻDY plan przez simulateCanalith, więc Bascule
+ R2. [PRZEMIERZONE 2026-08-05 po b5f55b1] DIAGNOZA POTWIERDZONA, LICZBY NIEAKTUALNE — to jest R7.
+     Bascule nadal nie czyści (φ max 137 przy ujściu 318.8), ale NIE „spycha złogu ku bańce": zatrzymuje
+     się w punkcie NIESTABILNYM drugiego rzutu. Przyczyna nazwana wtedy poprawnie (brak bezwładności)
+     jest tą samą co w R7 i dotyczy też Semonta — patrz R7. Poniższy opis zostawiam jako zapis stanu
+     sprzed przebudowy; jego liczby (φ 90→11→78→3→51) pochodzą ze starego łuku i startu φ=90.
+ R2-STARE. BASCULE NIGDY NIE CZYŚCI KANAŁU. maneuverSim liczy KAŻDY plan przez simulateCanalith, więc Bascule
      (manewr uwalniający kupulolitiazę kanału tylnego) jest liczony jako złóg swobodny: φ 90→11→78→3→51,
      exited=false — złóg jest spychany KU BAŃCE i kończy w połowie kanału. Ponieważ plan ma
      mechanism:"cupulo", render wpada w gałąź KONWERSJI (tę od Gufoniego apo): wędrówka zatrzymuje się na
@@ -540,7 +545,19 @@ POZOSTAŁE (do decyzji):
      BEZWŁADNOŚCIOWE oderwanie złogu od osklepka, a model przetłumiony (bez bezwładności, napędzany samą
      grawitacją) takiego zjawiska nie zawiera — poza wąskim proxy ekspulsji z odnogi (crusFling).
 
- R3. STAŁE SKALIBROWANO WYŁĄCZNIE DLA KANAŁU TYLNEGO; kanały poziomy i przedni dziedziczą je bez własnej
+ R3. [PRZEMIERZONE 2026-08-05 po b5f55b1] CZĘŚCIOWO ZAMKNIĘTE.
+     ZAMKNIĘTE: asymetria Roll na poziomie osklepka. |ξ| ucho CHORE w dole 0.70 vs ZDROWE 0.59 —
+       kolejność klinicznie POPRAWNA już na poziomie osklepka, bez ratunku z rektyfikacji Ewalda II
+       (było 0.518 vs 0.910, czyli odwrotnie). Naprawił to wyprowadzony start złogu, nie strojenie stałych.
+     OTWARTE: kolejność latencji. Tylny 2.30 s / |ξ| 0.87 · poziomy 2.65 s / 0.70 · przedni brak
+       odpowiedzi (napęd 0.012 < próg — to R7, nie R3). Kanał poziomy nadal NIE ma najkrótszej latencji
+       ani najsilniejszego oczopląsu, jak każe klinika.
+     NIEAKTUALNY jest natomiast cały poniższy MECHANIZM: wyprowadzał liczby ze startu φ=90, który już
+       nie istnieje (restPhi: 48.8 / 199.8 / 3). Wzoru lat ≈ adh/(|g·e1|/tauP − fStat) nie da się już
+       stosować — styczna liczy się teraz w miejscu spoczynku, nie w φ=90. Zastrzeżenie „kalibrację R3
+       rób PO przebudowie geometrii" ZOSTAJE W MOCY i właśnie stało się wykonalne: geometria jest
+       zmierzona i zamknięta, więc R3 można wreszcie kalibrować, ale trzeba go PRZELICZYĆ od zera.
+ R3-STARE. STAŁE SKALIBROWANO WYŁĄCZNIE DLA KANAŁU TYLNEGO; kanały poziomy i przedni dziedziczą je bez własnej
      walidacji i wychodzą klinicznie na odwrót:
         latencja:   tylny 1.95 s · POZIOMY 2.30 s · przedni 3.15 s
         szczyt ξ:   tylny 0.810 · POZIOMY 0.518 · przedni 0.668
@@ -588,26 +605,34 @@ POZOSTAŁE (do decyzji):
 
 
 === MANEWRY JAKO OSIE CZASU KWATERNIONÓW (wejście do dynamiki) ===
-Most plan manewru → silnik. simulateCanalith używa WYŁĄCZNIE gHead (grawitacji w ramce głowy),
-więc krok definiujemy przez docelowy gHead i budujemy kwaternion qFromG(g).
+Most plan manewru → silnik. simulateCanalith używa WYŁĄCZNIE gHead (grawitacji w ramce głowy).
+Od 2026-08-05 (b5f55b1) kierunek zależności jest ODWRÓCONY: krok definiuje POZĘ (kąty anatomiczne
+z opisu klinicznego), a grawitacja jest z niej WYPROWADZANA. Wcześniej było odwrotnie — krok podawał
+wpisany ręcznie wektor gHead, a pozę odtwarzano z niego przez qFromG (co gubiło roll anatomiczny
+i pozwalało rysunkowi, fizyce i instrukcji rozjechać się niezależnie; rozjazd sięgał 70°).
 Ramka głowy: x=prawe ucho, y=czaszka(+czubek), z=nos.
 Funkcje (po xiEnvelope w pliku):
-- qFromG(g) → kwaternion head→świat taki, że gHead(q)=g.
-- rotYg(g,deg) → obrót grawitacji wokół osi czaszki (skręt szyi).
-- BASE_G[body|face] → gHead dla yaw=0 (sit/sideL/sideR/prone/sitFront). Skręt: rotYg(g,-yaw).
-- LEAN_G[leanL/R|up/down] → gHead KOŃCOWE dla rzutów Semonta (skręt szyi wbudowany; lustro wg strony).
-- stepGravity(body,yaw,face) → gHead kroku (supineHang: z qSupineYaw — zwalidowane).
-- stepHeadQ(body,yaw,face) → orientacja głowy (head→świat) kroku.
-- maneuverTimeline(plan) → [{q,tTrans:0.8,tHold:6–12}] (hold ograniczony do dynamiki).
+- POSE_SPEC[body|face] → {roll, trunk, pitch, dyaw} w STOPNIACH, każda liczba ze zdania instrukcji:
+    roll  = obrót wokół osi długiej ciała (bok ±90 / brzuch 180 / upadek boczny Semonta)
+    trunk = kąt tułowia w płaszczyźnie strzałkowej (siad 0, leżenie −90, skłon w biodrach +45)
+    pitch = kąt CAŁEJ GŁOWY = trunk + kark; kark = pitch − trunk (to on trafia do szkieletu)
+    dyaw  = skręt karku zawarty w opisie pozy (dodawany do yaw kroku)
+- stepHeadQ(body,yaw,face) → Rz(roll)·Rx(pitch)·Ry(yaw+dyaw); orientacja głowy head→świat.
+- stepGravity(body,yaw,face) → gHead(stepHeadQ(...)) — grawitacja jest POCHODNĄ pozy.
+- composeHead == stepHeadQ — rysunek i fizyka to jedna funkcja (inwariant audytu #1 jest tożsamością).
+- TORSO_Q[body] → Rz(roll)·Rx(trunk), wyprowadzone z tej samej tabeli (było wpisane osobno).
+- maneuverTimeline(plan,size) → [{q,tTrans:0.8,tHold}] z holdem WYPROWADZANYM (R4b).
 - maneuverSim(plan) → simulateCanalith po osi czasu → φ(t) cząstki w kanale.
   [2026-07-02] Lempert KROK 1 (obrót głowy w stronę chorą, kanał poziomy): yaw musi być ±90° — przy 45°
   ξ_peak≈0 (nie prowokuje). Instrukcja kliniczna mówi "90°"; kod był niespójny (45°), poprawiony.
-KLUCZOWA ZASADA FIZYCZNA: kroki kuracyjne "nos w dół" mają składową +czaszka w gHead
-(czubek głowy opada → otolit przenoszony przez odnogę wspólną). Bez tego cząstka się cofa.
-WALIDACJA (offline, realne plany gen, obie strony — cząstka osiąga φ=178°=wyjście):
-  Epley ✓✓ · Yacovino ✓✓ · Lempert ✓✓ · Semont ✓✓ · Gufoni geotropowy ✓✓
+START CZĄSTKI: nie stała, tylko restPhi(canal,side) = minimum grawitacyjne w postawie pionowej,
+a gdy leży poza łukiem — osklepek. Tylny 48.8° · poziomy 199.8° · przedni 3°.
+WALIDACJA (offline, realne plany gen, obie strony, ujście = zmierzony ARC_SPAN):
+  Epley ✓✓ (49→158→230→307→319) · Yacovino ✓✓ (3→133→262→281) · Lempert ✓✓ · Gufoni geo ✓✓
   Gufoni apogeotropowy ✗✗ — POPRAWNIE: manewr KONWERSJI (apo→geo), nie czyści wprost
-  (φmax 90°), po nim Roll test i leczenie postaci geotropowej.
+  Semont ✗✗ i Bascule ✗✗ — patrz R7 (brak członu bezwładnościowego); to JEDYNE manewry, które
+  przestały czyścić po wyprowadzeniu póz, i mają nazwaną przyczynę fizyczną, nie usterkę danych.
+
 
 === TEST KANAŁU PRZEDNIEGO (deep head-hang) + uwaga o spójności ===
 Diagnostyka: test 'headhang' (deep head-hang, supineHang/yaw0/face:up) → oczopląs DOWNbeat + skrętny
