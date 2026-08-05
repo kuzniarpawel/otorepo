@@ -451,13 +451,83 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
         DECYZJA: NIE przywracać (byłoby wpisaniem artefaktu w materiał dydaktyczny + pogłębieniem nierówności
         obcięcia). Twierdzenie usunięte, zastąpione zmierzonymi PROGAMI HOLDU — jedyny realny margines to
         Yacovino+small (33 s przy nominale 30 s, ratuje sizedSeconds ×1,6 → 45 s).
- [ ] R4b (OPCJONALNE, dotyka KODU) podnieść albo zdjąć `cap` w maneuverTimeline, żeby symulacja szła holdem
-        realnie zaleconym (dziś: semont 20%, gufoniGeo 30%, lempert 44%, epley 53%, yacovino 77% realnego
-        holdu). Sprawdzone jako bezpieczne dla zwalidowanych kroków kuracyjnych: Epley k5, Semont k3,
-        Yacovino k3 bez zmian dla small/medium/big; jedyna zmiana to gufoniGeo k3→k2, NIEWIDOCZNA w UI
-        (kanał poziomy nie idzie przez manExitStep — `vertical` fałszem — więc render używa schematu n-2).
-        Ruszy natomiast stepXiPeak per krok, czyli MOŻE zmienić, w których krokach pojawia się oczopląs —
-        to wymaga osobnej weryfikacji w przeglądarce + przebiegu wyroczni przed commitem.
+ [ ] R4b HOLDY WYPROWADZONE Z SILNIKA — ZAPROJEKTOWANE I PRZELICZONE, WDROŻENIE ODŁOŻONE (decyzja USERA
+        2026-08-05). Zastąpić `cap` w maneuverTimeline holdem wyprowadzonym z silnika. Cały rachunek niżej
+        jest zmierzony — przy wdrożeniu NIE trzeba go odtwarzać, trzeba tylko domknąć LUKI 1-3.
+
+     SPEC (USER): hold = najmniejsza wartość z {30,45,60,75,90,105,120} s, przy której silnik wyprowadza złóg
+        do łagiewki. Czyli: próg silnika → zaokrąglenie W GÓRĘ do kroku 15 s → podłoga 30 s.
+        Manewr, który NIE czyści przy żadnej wartości → hold ZALECONY KLINICZNIE. Bascule → 30 s.
+
+     CO TA REGUŁA WYLICZA (zmierzone):
+        epley 30/30/30 · semont 30/30/30 · lempert 30/30/30 · gufoniGeo 30/30/30 · yacovino 45/30/30
+        (kolejność small/medium/big)
+        UWAGA: podłoga 30 s zjada wyliczenie w 14 z 15 przypadków — progi silnika to 3-33 s, więc po ceil15
+        i max(30,·) wszystko poza Yacovino+small ląduje na podłodze. Reguła jest efektywnie stałą „30 s,
+        wyjątek Yacovino small 45 s"; silnik odzywa się RAZ. Jeśli intencją było „hold ma wynikać z silnika",
+        to podłoga 30 s tę zależność w praktyce kasuje — do rozważenia niższa podłoga (15 s) albo świadome
+        przyjęcie, że 30 s to minimum KLINICZNE (Hain [2]), a silnik tylko je podnosi tam, gdzie trzeba.
+
+     ZYSK (pokrycie holdu zaleconego klinicznie, medium): epley 40%→100% · lempert 40%→100% ·
+        yacovino 57%→100% · gufoniGeo 20%→50% · semont 13%→33%. Znika `cap=12` ORAZ hack `cap=12/r²`.
+        Kroki ekspulsji BEZ ZMIAN (Epley k5, Semont k3, Yacovino k3 dla wszystkich rozmiarów);
+        jedyna zmiana gufoniGeo k3→k2 jest NIEWIDOCZNA w UI (kanał poziomy nie idzie przez manExitStep —
+        `vertical` fałszem — więc render używa schematu n-2).
+
+     DECYZJE PODJĘTE:
+      • gufoniApo (nigdy nie czyści) → hold kliniczny. ZWERYFIKOWANE: przy 60 s (small 90 s) nadal nie czyści
+        (φ 119,9), więc semantyka manewru KONWERSJI zostaje nienaruszona. Ta część jest kompletna.
+      • Bascule → 30 s. PATRZ LUKA 3 — ta decyzja nie robi tego, na co wygląda.
+
+     LUKA 1 — 13 z 32 kroków NIE MA REGUŁY (kroki bez timera, `seconds: null`; regułą objęte 18, plus 1 z
+        dynHold). Zostaje im zaszyte 6 s. NIE jest to kosmetyka: EKSPULSJA EPLEYA DZIEJE SIĘ WŁAŚNIE W TAKIM
+        KROKU — k5 „Powrót do siadu": φ 166,0→178,0, ruch 12°, [wyjście do łagiewki]. Czyli krok kuracyjny
+        najważniejszego manewru jedzie na liczbie bez właściciela. Pozostałe 12 kroków bez timera to pozycje
+        wyjściowe (ruch 0,0°) i powroty do siadu po już dokonanym wyjściu — tam 6 s jest nieszkodliwe.
+        Obrona 6 s jest łatwa (EXPEL_DUR = 1,2 s, zapas 5×) — rzecz w tym, żeby ZAPISAĆ ją jako regułę
+        z uzasadnieniem + tripwire „Epley nadal wychodzi w k5", a nie zostawić magiczną szóstkę.
+
+     LUKA 2 — `dynHold` (Yacovino k2 = 22 s) nadpisuje dziś wszystko i jest skalowany przez `cap/12`. Gdy
+        `cap` znika, nie ma czym skalować. Co więcej `dynHold` powstał WŁAŚNIE dlatego, że domyślne 12 s było
+        za krótkie — przy holdzie wyprowadzonym (30 s, small 45 s) jest zbędny, a zostawiony SKRÓCIŁBY ten
+        krok z 30 do 22 s, czyli nadpisał regułę. Decyzja: usunąć `dynHold` czy podporządkować regule.
+
+     LUKA 3 — „Bascule 30 s" jest niejednoznaczne i NIE zachowuje R2:
+          bascule|small : hold kliniczny (45 s po sizedSeconds) → CZYŚCI | literalne 30 s → nie (φ 34,6)
+          bascule|medium: hold kliniczny (30 s)                 → CZYŚCI | literalne 30 s → CZYŚCI
+          bascule|big   : hold kliniczny (30 s)                 → CZYŚCI | literalne 30 s → CZYŚCI
+        sizedSeconds podnosi 30 s do 45 s dla small, więc „hold kliniczny" i „30 s" to dla drobnego złogu DWIE
+        RÓŻNE liczby. Niezależnie od lektury medium i big CZYSZCZĄ → objaw R2 znika w 2 z 3 rozmiarów, a
+        lektura literalna daje rozjazd bez podstawy klinicznej (Bascule „działa" dla dużego i średniego złogu,
+        „nie działa" dla drobnego). Jeśli R2 ma zostać widocznym długiem → Bascule POZA ścieżką wyprowadzoną,
+        przypięty do dzisiejszego `cap`. Jeśli akceptujemy → PRZEPISAĆ R2 zanim reguła wejdzie.
+
+     POZA maneuverTimeline są jeszcze DWA zestawy holdów (do decyzji, czy zasada je obejmuje):
+      • diagnostyka `engineXi` — zaszyte 40 s (kanalolitiaza) / 60 s (kupulolitiaza). Osobna ścieżka.
+      • wyświetlany timer `sizedSeconds` (×1,6, ceil do 15 s, widełki 15-120) — liczba, którą widzi klinicysta.
+        Już dziś rozjeżdża się z symulacją (Semont pokazuje 90 s, liczy 30 s). Opcja spójna:
+        wyświetlany = max(nominał kliniczny, hold wyprowadzony) — nigdy nie skraca poniżej literatury.
+
+     >>> MAPA ZALEŻNOŚCI (to jest powód, dla którego R4b NIE jest pierwszy w kolejce) <<<
+        R4b —(odsłania)→ R1 :  dzisiejszy hold 12 s jest KRÓTSZY niż zanik osklepka (tauC = 5 s), więc ξ nie
+           zdąży opaść i aplikacja pokazuje OGON kroku poprzedniego jako oczopląs kroku bieżącego. Zmierzone:
+             epley k3  ruch złogu 1,8°  ξ_start 0,74 → ξ_szczyt 0,74   = czysty ogon
+             epley k4  ruch złogu 0,0°  ξ 0,06                          = czysty ogon
+             gufoniGeo k3 ruch 6,8°  ξ_start −0,90 → −0,92              = czysty ogon
+           (Semont k3 to WYJĄTEK — tam 29° realnego ruchu, prawdziwa odpowiedź.)
+           Po wydłużeniu holdu ogon znika i pod spodem NIE MA NIC: epley k3/k4 → ruch 0,0°, ξ 0,00–0,02, bo
+           złóg dotarł do odnogi już w k2 (to jest R1(b)). Aplikacja PRZESTAŁABY pokazywać oczopląs w kroku 3
+           Epleya — a instrukcja gufoniGeo k3 wprost obiecuje „możliwy krótki oczopląs liberacyjny".
+           DZIŚ DWA BŁĘDY SIĘ MASKUJĄ: za krótki hold produkuje fałszywy oczopląs dokładnie tam, gdzie za
+           krótki łuk zabrał prawdziwy. Naprawa jednego bez drugiego = wynik uczciwszy, ale gorszy dla usera.
+        R4b —(kasuje dowód na)→ R2 : patrz LUKA 3 — objaw R2 znika bez naprawy mechanizmu.
+        R4b —(niezależny od)→ R3 : progi holdu nie zależą od latencji/amplitudy per kanał.
+        R1 —(nie zależy od)→ R3 : zweryfikowane osobno (phiExit 178/240/270 → liczby R3 identyczne).
+
+     KOLEJNOŚĆ REKOMENDOWANA: R1 → R4b → weryfikacja per-krok w przeglądarce (które kroki pokazują oczopląs).
+        Wtedy krok 3 Epleya dostanie oczopląs z REALNEGO ruchu złogu, a nie z niedoliczonego ogona.
+        Wdrożenie R4b PRZED R1 jest możliwe, ale wymaga: domknięcia LUK 1-3 + przepisania R2 + wpisania do
+        docs, że oczopląs znika z kroków 3-4 Epleya i z kroku 3 Gufoniego geo do czasu naprawy R1.
 
 BEZ ZMIAN (sprawdzone, potwierdzone jako poprawne): prawa Ewalda I/II/III i maska NYS_SHOW; magnitudy
  z CANAL_NORMALS (tylny 0,93:0,41:1,00 · przedni 1,00:0,44:0,78 · poziomy 0,02:1,00:0,31); odwracanie geo/apo
