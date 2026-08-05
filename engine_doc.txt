@@ -392,9 +392,9 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05) — NIE
           rampę 0.15→1.0, nie realne φ.)
        c) 30-sekundowy test roll z uchem ZDROWYM w dole OPRÓŻNIA kanał poziomy (exited=true) — test
           diagnostyczny leczy pacjenta.
-       d) Asymetria roll jest odwrócona na poziomie osklepka: |ξ| ucho chore w dole 0.518 vs ucho zdrowe
-          0.910. Klinicznie poprawną kolejność ratuje dopiero rektyfikacja Ewalda II w dynNystagmus
-          (0.518 vs 0.409) — margines 27% chroni główną regułę lateralizacji silnika.
+     (Punkt „d) asymetria roll" figurował tu do 2026-08-05 — BŁĘDNIE PRZYPISANY. Przeniesiony do R3:
+      przeżywa wydłużenie łuku bez najmniejszej zmiany, więc nie jest skutkiem R1. Nie odkładaj go
+      za tę rekalibrację.)
      NIE JEST TO POPRAWKA JEDNOSTAŁOWA: phiExit=240 przywraca (a) i (c), ale psuje czyszczenie Semonta,
      Yacovino i Gufoniego geotropowego (zweryfikowane). Wymaga skoordynowanej rekalibracji łuk+holdy+stałe.
 
@@ -414,6 +414,28 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05) — NIE
      Klinicznie BPPV kanału poziomego ma latencję NAJKRÓTSZĄ (często nieobecną) i oczopląs NAJSILNIEJSZY —
      model daje mu latencję pośrednią i najsłabszy oczopląs. (Kupulolitiaza: latencja 0.05 s i pełna
      uporczywość na 60 s dla wszystkich trzech kanałów — poprawnie.)
+     TU NALEŻY TEŻ (przeniesione z R1 dnia 2026-08-05): ASYMETRIA ROLL ODWRÓCONA NA POZIOMIE OSKLEPKA —
+       |ξ| ucho chore w dole 0.518 vs ucho zdrowe 0.910. Klinicznie poprawną kolejność ratuje dopiero
+       rektyfikacja Ewalda II w dynNystagmus (0.518 vs 0.409) — margines 27% chroni główną regułę
+       lateralizacji silnika.
+     MECHANIZM (wspólny dla całego R3) — liczby rodzą się w PUNKCIE STARTU φ=90, nie na końcu łuku:
+       drive(90°) = |g·e1| / tauP        (tang(90°) = −e1)      latencja ≈ adh / (drive − fStat)
+         tylny   |g·e1|=0.985 → drive 0.1515 → lat teor. 1.79 s (realna 1.95)
+         POZIOMY |g·e1|=0.854 → drive 0.1314 → lat teor. 2.19 s (realna 2.30)
+         przedni |g·e1|=0.696 → drive 0.1071 → lat teor. 2.98 s (realna 3.15)
+       Kolejność latencji wynika WYŁĄCZNIE z tego, jak pozycja prowokująca ustawia grawitację wzdłuż
+       kierunku bańki e1 przy φ=90. Kanał przedni wypada najgorzej, bo deep head-hang wkłada w jego
+       płaszczyznę tylko 0.72 grawitacji (tylny w Dix: 1.00).
+     NIEZALEŻNOŚĆ OD R1 — ZWERYFIKOWANA: przy phiExit 178 / 240 / 270 wszystkie sześć liczb (latencja
+       i szczyt ξ dla trzech kanałów) jest IDENTYCZNE co do cyfry; tak samo asymetria roll. Koniec łuku
+       nie występuje w powyższym rachunku. R3 można więc naprawić OSOBNO i TANIO — jedną stałą per kanał:
+       poziomy przy tauP=4.0 → lat 1.25 s / ξ 0.670; przy tauP=3.0 → lat 0.90 s / ξ 0.766 (jeden parametr
+       porządkuje oba objawy; dociągnięcie ξ powyżej tylnego wymaga jeszcze gc).
+     ZASTRZEŻENIE CO DO KOLEJNOŚCI: R1 i R3 nie są w relacji przyczyna–skutek, ale mają wspólny korzeń —
+       wyidealizowaną parametryzację (e1,e2) ze sztywnym startem φ=90. Naprawa R1 przez samo phiExit nie
+       rusza R3 (zmierzone). Naprawa R1 przez PRZEPARAMETRYZOWANIE łuku (inna rozpiętość kątowa, inny
+       start) zmieni e1 i φ_start, a więc — wprost z powyższego wzoru — ruszy też liczby R3. Kalibrację R3
+       rób WTEDY PO przebudowie geometrii, inaczej dostroisz stałe do geometrii, którą zaraz wymienisz.
 
 
 === MANEWRY JAKO OSIE CZASU KWATERNIONÓW (wejście do dynamiki) ===

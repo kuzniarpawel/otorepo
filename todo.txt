@@ -434,8 +434,15 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
         choć instrukcja kroku obiecuje przeniesienie złogu do łagiewki. Mechanizmem Bascule jest bezwładnościowe
         oderwanie od osklepka — model przetłumiony, grawitacyjny, tego nie zawiera.
  [ ] R3 STAŁE SKALIBROWANE TYLKO DLA KANAŁU TYLNEGO. Kanał poziomy wychodzi z latencją 2,30 s (dłuższą niż
-        tylny 1,95 s) i najsłabszym oczoplątem (ξ 0,518 vs 0,810), a klinicznie HC-BPPV ma latencję
-        najkrótszą/nieobecną i oczopląs najsilniejszy.
+        tylny 1,95 s) i najsłabszym oczopląsem (ξ 0,518 vs 0,810), a klinicznie HC-BPPV ma latencję
+        najkrótszą/nieobecną i oczopląs najsilniejszy. Należy tu TEŻ odwrócona asymetria rollu (|ξ| chore
+        0,518 vs zdrowe 0,910) — 2026-08-05 przeniesiona z R1, gdzie ją BŁĘDNIE przypisałem: przeżywa
+        wydłużenie łuku bez zmiany, więc nie jest skutkiem R1 i nie ma na co czekać.
+        NIEZALEŻNE OD R1/R2/R4 (zmierzone): przy phiExit 178/240/270 wszystkie liczby R3 identyczne co do
+        cyfry. Mechanizm siedzi w punkcie startu: drive(90°)=|g·e1|/tauP, latencja ≈ adh/(drive−fStat);
+        |g·e1| = 0,985 tylny / 0,854 poziomy / 0,696 przedni. Naprawa TANIA — jedna stała per kanał
+        (poziomy tauP=3,0 → lat 0,90 s, ξ 0,766). ALE: jeśli R1 naprawiasz PRZEPARAMETRYZOWANIEM łuku
+        (nie samym phiExit), to e1 i φ_start się zmienią → kalibruj R3 dopiero PO tej przebudowie.
  [ ] R4 engine_doc deklarował, że small NIE czyści Semonta/Yacovino — nieaktualne (skalowanie holdów cap=12/r²
         to skompensowało). Cecha dydaktyczna zniknęła po cichu; przywrócić albo usunąć z materiału.
 
