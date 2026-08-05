@@ -597,12 +597,23 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
                wpadającym w płaszczyznę kanału: 0.855 vs 0.999. Ten 0.855 bierze się z przygięcia karku
                o 30°, które opis nakazuje, bo kanon mówi o kanale nachylonym 30° — nasz atlas daje 10.4°.
                Przy zgięciu 0° kolejność latencji JEST poprawna (1.90 < 2.20) bez ruszania stałych.
-               NIE kalibruję stałych per kanał: zabetonowałyby rozbieżność 10.4 vs 30°.
-               → R3 zamknie się razem z R9. NASTĘPNY KROK to R9, nie kalibracja.
+               KOREKTA (sonda 47): powiązanie R3→R9 BYŁO BŁĘDNE. Optimum zgięcia to −2° przy KAŻDYM
+               pochyleniu ramki, bo decyduje o nim międzyuszna składowa normalnej (n_x≈−0.03), której
+               obrót wokół osi usznej nie rusza. Pochylenie do kanonicznych 30.3° skraca latencję
+               tylko 2.40→2.30 (tylny 2.20). R3 jest OTWARTE i NIEZALEŻNE od R9.
+               NIE kalibruję stałych per kanał: zasłoniłyby lukę zamiast ją wyjaśnić.
             R8 Bow & Lean podprogowy (napęd 0.026 vs próg 0.04 i 0.131 dla Roll) — DECYZJA KLINICZNA
                USERA, bo każda opcja zmienia treść karty.
-            R9 nachylenie kanału bocznego 10.4° vs kanoniczne 30° — hipoteza pochylenia ramki obalona
-               PO RAZ DRUGI, teraz przy pozach wyprowadzonych.
+            R9 nachylenie kanału bocznego 10.4° vs kanoniczne 30° — NIE błąd danych, tylko niewiadoma
+               RAMKI. Wszystko, co niezależne od ramki, się zgadza (ortogonalność 87.8/89.8/87.5,
+               koplanarność 16.0, promienie 3.50/3.32/2.68 vs Curthoys 3.3/3.2/2.4, kąt do strzałkowej
+               44.0, lustro L/P 0.000); odstaje tylko wielkość BEZWZGLĘDNA, której atlas izolowanej
+               kości skroniowej nie niesie. Drugie źródło (Wu, MRI n=55) daje 17.4° — też poniżej kanonu,
+               a sam kanon 30° pochodzi z konwencji kalorycznej, więc nie jest niezależnym pomiarem.
+               KOREKTA: "obalona po raz drugi" było BŁĘDEM — na silniku po R7 pochylenie −20° daje
+               kanoniczne 30.3° i NIE psuje niczego (12/12, Dix, head-hang, Roll). Pochylenie jest dziś
+               parametrem WOLNYM; 0° to wybór, nie wynik. Zamknie je dopiero pomiar wiążący błędnik
+               z postawą nawykową głowy (płaszczyzna Frankfurta/Reida w tym samym układzie współrzędnych).
 
           POZOSTAŁY PODEJRZANY: POZY MANEWRÓW (BASE_G / LEAN_G / SUPINE_PITCH) były kalibrowane pod
           STARĄ, błędną geometrię — tak samo jak AMPULLA_DIR był współ-dostrojony z phi=90. Jeśli

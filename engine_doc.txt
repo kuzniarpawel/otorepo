@@ -494,12 +494,30 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      i mówi „model nie rozstrzyga"; (b) kierunek bierzemy z reguły klinicznej, jawnie, jako regułę
      a nie wynik fizyki; (c) zostaje jak jest. NIE wybieram sam, bo każda opcja zmienia treść kliniczną.
 
- R9. NACHYLENIE KANAŁU BOCZNEGO 10.4° ZAMIAST KANONICZNYCH ~30° [2026-08-05, ODNOTOWANE].
-     Atlas jest w ramce skanu, kanon opisuje POSTAWĘ NATURALNĄ. Sprawdzone, czy godzi je jeden obrót
-     ramki: NIE. Nachylenie ma MINIMUM przy +10° (spada do 1.8°) i rośnie dopiero przy ujemnych, a każde
-     pochylenie ≠ 0 psuje albo test Roll, albo head-hang, albo oba (sonda 39: przy +10° i dalej gubimy
-     Roll, gufoniGeo i Yacovino). Ramka atlasu zostaje bez obrotu. To druga, niezależna próba tej samej
-     hipotezy „brakującego pochylenia" — i drugie jej obalenie, tym razem przy pozach wyprowadzonych.
+ R9. NACHYLENIE KANAŁU BOCZNEGO 10.4° ZAMIAST KANONICZNYCH ~30° [2026-08-05, OTWARTE].
+     TO NIE JEST BŁĄD DANYCH — to niewiadoma RAMKI. Rozstrzygnięte rozdzieleniem wielkości względnych
+     od bezwzględnych (sonda 45):
+       NIEZALEŻNE OD RAMKI, wszystkie się zgadzają: kanały wzajemnie prostopadłe 87.8/89.8/87.5°,
+         koplanarność RA∥LP i RP∥LA 16.0° (realny zakres 10–20°), promienie łuku 3.50/3.32/2.68 mm
+         wobec Curthoys & Oman 3.3/3.2/2.4, średni kąt kanałów pionowych do strzałkowej 44.0° (kanon 45°),
+         lewa strona = idealne lustro prawej (0.000°).
+       ZALEŻNE OD RAMKI, jedyne co odstaje: bezwzględne nachylenie kanału bocznego.
+     Atlas izolowanej kości skroniowej NIE NIESIE informacji o postawie nawykowej głowy — nie ma w nim
+     punktu odniesienia, który by ją wiązał. Żadna kontrola wewnętrzna nie może więc pochylenia ani
+     potwierdzić, ani obalić (sprawdzone: ortogonalność i kąt do strzałkowej są NIEZMIENNE przy obrocie
+     wokół osi usznej).
+     DRUGIE ŹRÓDŁO ZGADZA SIĘ Z ATLASEM, NIE Z KANONEM: Wu 2021 (MRI, n=55, średnia populacyjna) daje
+     17.4°. Dwa niezależne pomiary — 10.4° i 17.4° — obydwa PONIŻEJ kanonicznych 30°, obydwa w ramkach
+     skanu. Sam kanon 30° pochodzi z konwencji kalorycznej („uniesienie głowy o 30° ustawia kanał boczny
+     pionowo"), więc jest wnioskiem z założenia o postawie, a nie niezależnym pomiarem.
+     KOREKTA WCZEŚNIEJSZEGO ZAPISU: pisałem, że hipoteza pochylenia jest OBALONA. Opierało się to na
+     sondzie 39, która badała silnik SPRZED R7 i głównie pochylenia dodatnie. Powtórzone na obecnym
+     silniku (sonda 46): pochylenie −20° daje dokładnie kanoniczne 30.3° i NIE PSUJE NICZEGO — manewry
+     12/12, Dix ✓, head-hang ✓, Roll geotropowy z lateralizacją ✓. Pochylenie ramki jest więc dziś
+     parametrem WOLNYM: model nie odróżnia 0° od −20°. Zostawiam 0°, bo to jedyna wartość, której nie
+     trzeba zakładać — ale to WYBÓR, nie wynik, i tak należy go czytać.
+     CZEGO POTRZEBA, ŻEBY ZAMKNĄĆ: pomiaru wiążącego błędnik z postawą nawykową głowy — np. położenia
+     płaszczyzny Frankfurta/Reida w tym samym zbiorze współrzędnych co punkty osi kanałów.
 
  R6-STARE. YACOVINO NIE CZYŚCI KANAŁU PRZEDNIEGO przy anatomicznie poprawnym łuku [ZAMKNIĘTE — wyżej].
      Minimum grawitacyjne w jego najgłębszym kroku (deep head-hang) to 233.8°, a ujście leży na 266°.
@@ -576,11 +594,18 @@ POZOSTAŁE (do decyzji):
          zgięcie 30° → |g|_pł 0.855 → latencja 2.40 s → szczyt 0.70   (opis aplikacji)
          zgięcie 60° → |g|_pł 0.499 → latencja 5.80 s → szczyt 0.43
        Przy 0° kolejność latencji jest JUŻ POPRAWNA (poziomy 1.90 < tylny 2.20), bez dotykania stałych.
-     DLACZEGO NIE WOLNO TEGO „NAPRAWIĆ" ZMIANĄ POZY: kliniczne 30° istnieje dokładnie dlatego, że kanał
-       boczny jest kanonicznie nachylony ~30° nosem w górę — przygięcie ma go ustawić optymalnie.
-       Nasz atlas daje 10.4° (R9), więc model żąda ~0° z tego samego powodu, dla którego klinika żąda 30°.
-       U realnego pacjenta 30° POMAGA. Zmiana instrukcji byłaby przeniesieniem błędu ramki atlasu
-       na zalecenie dla klinicysty.
+     KOREKTA 2026-08-05 (sonda 47): POWIĄZANIE Z R9 BYŁO MOIM BŁĘDEM. Napisałem wcześniej, że model
+       żąda 0° dlatego, że jego kanał boczny ma 10.4° zamiast 30°, więc R3 zamknie się razem z R9.
+       SPRAWDZONE I NIEPRAWDA: optimum zgięcia wychodzi −2° przy KAŻDYM pochyleniu ramki (0/−10/−20/−30°),
+       bo decyduje o nim MIĘDZYUSZNA składowa normalnej kanału bocznego (n_x ≈ −0.03), a obrót ramki
+       wokół osi usznej jej nie rusza. Pochylenie do kanonicznych 30.3° podnosi |g|_pł tylko 0.855→0.889
+       i skraca latencję 2.40→2.30 s — nadal powyżej tylnego (2.20). R3 NIE jest skutkiem R9.
+       (Odrzucona też druga hipoteza: że 30° służy IZOLACJI kanału poziomego. Stosunek napędu
+        tylny/poziomy w pozycji Roll jest PŁASKI ~0.79 przy każdym zgięciu — przygięcie niczego nie
+        izoluje; zeruje jedynie kanał przedni w okolicy 20°.)
+     ZMIANY INSTRUKCJI I TAK NIE ROBIĘ: 30° to powszechna praktyka kliniczna, a model nie potrafi
+       wskazać, co ta praktyka kupuje — jego niezgodność jest argumentem za dalszym badaniem MODELU,
+       nie za zmienianiem zalecenia dla klinicysty.
      DLACZEGO NIE WOLNO TEGO „NAPRAWIĆ" STAŁĄ PER KANAŁ: sprawdziłem najbardziej obiecującą —
        promień łuku, ZMIERZONY na tym samym atlasie (tylny 3.50 · przedni 3.32 · boczny 2.68 mm;
        literatura Curthoys & Oman: 3.3 / 3.2 / 2.4 — zgodność co do kolejności i rzędu). Skalowanie
@@ -588,8 +613,10 @@ POZOSTAŁE (do decyzji):
        endolimfy ∝ R·Δφ), a wtedy szczyt SPADA. Efekt netto zależy od tego, którą z dwóch interpretacji
        fenomenologicznego ξ się wybierze — czyli byłby to wybór pod pożądany wynik, nałożony na znany
        błąd geometryczny. Nie dodaję tej stałej.
-     WNIOSEK: R3 zamyka się razem z R9, a nie osobno. Kalibracja stałych per kanał jest OD TEGO MOMENTU
-       ODRADZANA: zabetonowałaby rozbieżność 10.4 vs 30° w liczbach, które potem trudno odkręcić.
+     WNIOSEK (po korekcie): R3 zostaje OTWARTE i NIEZALEŻNE od R9. Znany jest mechanizm (15% napędu
+       traci się na przygięciu 30°), nieznane jest, co to przygięcie daje w zamian — model nie odtwarza
+       żadnej korzyści, którą klinika mu przypisuje. Kalibracja stałych per kanał nadal ODRADZANA:
+       zasłoniłaby tę lukę liczbą, zamiast ją wyjaśnić.
      ZAMKNIĘTE: asymetria Roll na poziomie osklepka. |ξ| ucho CHORE w dole 0.70 vs ZDROWE 0.59 —
        kolejność klinicznie POPRAWNA już na poziomie osklepka, bez ratunku z rektyfikacji Ewalda II
        (było 0.518 vs 0.910, czyli odwrotnie). Naprawił to wyprowadzony start złogu, nie strojenie stałych.

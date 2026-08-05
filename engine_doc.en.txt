@@ -505,13 +505,31 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      rule, explicitly, as a rule rather than a physics result; (c) leave as is. I am not choosing,
      because every option changes clinical content.
 
- R9. LATERAL-CANAL PITCH 10.4° INSTEAD OF THE CANONICAL ~30° [2026-08-05, RECORDED].
-     The atlas is in the scan frame; the canon describes the NATURAL HEAD POSTURE. Checked whether one
-     frame rotation reconciles them: NO. The pitch has a MINIMUM at +10° (falling to 1.8°) and only
-     grows again for negative values, and any non-zero pitch breaks the Roll test, the head-hang, or
-     both (probe 39: from +10° on we lose Roll, Gufoni geo and Yacovino). The atlas frame stays
-     unrotated. This is the second independent test of the same "missing pitch" hypothesis — and its
-     second refutation, this time with derived poses.
+ R9. LATERAL-CANAL PITCH 10.4° INSTEAD OF THE CANONICAL ~30° [2026-08-05, OPEN].
+     THIS IS NOT A DATA ERROR — it is a FRAME unknown. Settled by separating relative from absolute
+     quantities (probe 45):
+       FRAME-INDEPENDENT, all in agreement: canals mutually orthogonal 87.8/89.8/87.5°, coplanarity
+         RA∥LP and RP∥LA 16.0° (real range 10–20°), arc radii 3.50/3.32/2.68 mm against Curthoys &
+         Oman 3.3/3.2/2.4, mean vertical-canal angle to the sagittal 44.0° (canon 45°), left side a
+         perfect mirror of the right (0.000°).
+       FRAME-DEPENDENT, the only outlier: the absolute pitch of the lateral canal.
+     An atlas of an isolated temporal bone CARRIES NO information about habitual head posture — there is
+     no landmark in it that ties the two. So no internal check can either confirm or refute the pitch
+     (verified: orthogonality and the angle to the sagittal are INVARIANT under rotation about the
+     interaural axis).
+     THE SECOND SOURCE AGREES WITH THE ATLAS, NOT WITH THE CANON: Wu 2021 (MRI, n=55, population mean)
+     gives 17.4°. Two independent measurements — 10.4° and 17.4° — both BELOW the canonical 30°, both in
+     scan frames. The 30° canon itself comes from the caloric convention ("raising the head 30° brings
+     the lateral canal vertical"), so it is an inference from an assumption about posture rather than an
+     independent measurement.
+     CORRECTION TO THE EARLIER ENTRY: I wrote that the pitch hypothesis was REFUTED. That rested on
+     probe 39, which examined the PRE-R7 engine and mostly positive pitches. Repeated on the current
+     engine (probe 46): a −20° pitch gives exactly the canonical 30.3° and BREAKS NOTHING — maneuvers
+     12/12, Dix ✓, head-hang ✓, geotropic Roll with lateralization ✓. The frame pitch is therefore a FREE
+     parameter today: the model cannot tell 0° from −20°. I leave it at 0° because that is the only value
+     that need not be assumed — but it is a CHOICE, not a result, and should be read as one.
+     WHAT WOULD CLOSE IT: a measurement tying the labyrinth to habitual head posture — e.g. the position
+     of the Frankfort/Reid plane in the same coordinate set as the canal centreline points.
 
  R6-OLD. YACOVINO DOES NOT CLEAR THE ANTERIOR CANAL with an anatomically correct arc [CLOSED — above].
      The gravitational minimum at its deepest step (deep head-hang) is 233.8 deg while the opening is at
@@ -592,11 +610,19 @@ REMAINING (pending decision):
          flexion 60° → |g|_plane 0.499 → latency 5.80 s → peak 0.43
        At 0° the latency ordering is ALREADY correct (horizontal 1.90 < posterior 2.20), with no
        constant touched.
-     WHY WE MUST NOT "FIX" THIS BY CHANGING THE POSE: the clinical 30° exists precisely because the
-       lateral canal is canonically pitched ~30° nose-up — the flexion is meant to set it optimally.
-       Our atlas gives 10.4° (R9), so the model asks for ~0° for the same reason clinic asks for 30°.
-       In a real patient 30° HELPS. Changing the instruction would push an atlas-frame error out into
-       advice given to a clinician.
+     CORRECTION 2026-08-05 (probe 47): THE LINK TO R9 WAS MY ERROR. I wrote earlier that the model asks
+       for 0° because its lateral canal is 10.4° rather than 30°, so R3 would close together with R9.
+       CHECKED AND FALSE: the optimal flexion comes out at −2° for EVERY frame pitch (0/−10/−20/−30°),
+       because it is governed by the INTERAURAL component of the lateral canal's normal (n_x ≈ −0.03),
+       which a rotation about the interaural axis does not touch. Pitching to the canonical 30.3° raises
+       |g|_plane only from 0.855 to 0.889 and shortens the latency 2.40→2.30 s — still above the
+       posterior canal's 2.20. R3 is NOT a consequence of R9.
+       (A second hypothesis was also rejected: that the 30° serves to ISOLATE the horizontal canal. The
+        posterior/horizontal drive ratio in the Roll position is FLAT at ~0.79 for every flexion — the
+        flexion isolates nothing; it only nulls the anterior canal near 20°.)
+     I AM STILL NOT CHANGING THE INSTRUCTION: 30° is widespread clinical practice, and the model cannot
+       say what that practice buys — its disagreement argues for further study of the MODEL, not for
+       changing advice given to a clinician.
      WHY WE MUST NOT "FIX" IT WITH A PER-CANAL CONSTANT: I checked the most promising one — the arc
        radius, MEASURED on the same atlas (posterior 3.50 · anterior 3.32 · lateral 2.68 mm; literature
        Curthoys & Oman: 3.3 / 3.2 / 2.4 — agreeing in order and magnitude). Scaling tauP ∝ R shortens
@@ -604,8 +630,10 @@ REMAINING (pending decision):
        volume ∝ R·Δφ), and then the peak FALLS. The net effect depends on which of two readings of the
        phenomenological ξ one adopts — i.e. it would be a choice made for the desired answer, layered
        on top of a known geometric error. I am not adding that constant.
-     CONCLUSION: R3 closes together with R9, not separately. Per-canal calibration is DISCOURAGED from
-       here on: it would set the 10.4-vs-30° discrepancy in numbers that are hard to unpick later.
+     CONCLUSION (after correction): R3 stays OPEN and INDEPENDENT of R9. The mechanism is known (15% of
+       the drive is lost to the 30° flexion); what that flexion buys in return is not — the model
+       reproduces none of the benefit clinic attributes to it. Per-canal calibration remains DISCOURAGED:
+       it would paper over that gap with a number instead of explaining it.
      CLOSED: the Roll asymmetry at cupular level. |ξ| affected ear down 0.70 vs healthy 0.59 — the order
        is clinically CORRECT already at cupular level, without needing the rescue from Ewald II
        rectification (it was 0.518 vs 0.910, i.e. inverted). The derived particle start fixed this, not
