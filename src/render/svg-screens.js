@@ -513,20 +513,17 @@ function manStepEnv(man, step){
 }
 // szczyt ξ (ZE ZNAKIEM) dla kroku z ciągłej symulacji; przy luce (model nie re-prowokuje) — świeży provoke
 // z FAKTYCZNEJ orientacji kroku (neutralny start → pozycja kroku). Znak steruje kierunkiem (odwróceniem) w nysFromDyn.
-function stepXiPeak(man, plan, step, size="medium"){
+function stepXiPeak(man, plan, step){
   let xi=0;
   const seg = man && man.segs ? man.segs[step] : null;
   if(seg){ const i0=Math.round(seg.t0/man.dt), i1=Math.round((seg.t0+seg.dur)/man.dt);
     for(let k=i0;k<=i1 && k<man.sim.length;k++){ if(Math.abs(man.sim[k].xi)>Math.abs(xi)) xi=man.sim[k].xi; } }
-  if(Math.abs(xi) < 0.06){                                  // luka: świeży provoke z orientacji kroku
-    const st=plan.steps[step];
-    const pre = stepHeadQ(st.body, 0, st.face==="down"?"up":st.face);
-    const q   = stepHeadQ(st.body, st.yaw, st.face);
-    const psim = Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, size,
-      timeline:[{q:pre,tTrans:0,tHold:1},{q,tTrans:0.8,tHold:12}]});
-    let pp=0; for(const s of psim){ if(Math.abs(s.xi)>Math.abs(pp)) pp=s.xi; }
-    if(Math.abs(pp) > Math.abs(xi)) xi=pp;
-  }
+  // (USUNIĘTE 2026-08-05) Była tu ścieżka awaryjna: gdy |ξ| kroku < 0.06, budowała POZĘ, której NIE MA
+  // w manewrze (odwracając face "down"→"up"), symulowała od niej świeżą prowokację i wpisywała wynik.
+  // Miała łatać kroki bez odpowiedzi, ale PRODUKOWAŁA oczopląs tam, gdzie fizyka mówi zero: Lempert krok 5
+  // (ξ realne −0.000 → wpisywane 1.003, etykieta pełnej siły, choć złóg wyszedł już w kroku 3) i Gufoni
+  // geo krok 3 (−0.021 → −0.928). Odpalała się w 24 z 64 kroków, z czego 4 razy fabrykowała. Krok bez
+  // własnej odpowiedzi ma pokazywać brak odpowiedzi.
   return xi;
 }
 function manPhi(man, step, frac){                       // φ realne dla danego kroku i ułamka timera
@@ -577,7 +574,7 @@ function manFractions(man, plan){
 // startNys/startDialNys w renderGuide (envOv=manStepEnv(...) z fallbackiem na świeży xiEnvelope(engineXi(...))).
 // Zwraca sekundy albo null, gdy krok nie ma oczopląsu (sygnał < próg). Wędrówkę otolitu wiążemy z tą wartością.
 function guideNysSeconds(plan, man, step, size){
-  const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step, size), plan.mechanism==="cupulo");
+  const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step), plan.mechanism==="cupulo");
   if(!_gn || _gn.strength < 0.10) return null;
   const r = manStepEnv(man, step) || xiEnvelope(engineXi(_gn.canal, _gn.side, _gn.persistent, _gn.q));
   return r ? r.tEnd : null;
@@ -784,7 +781,7 @@ function renderGuide(){
   const ps=poseSpec(st);                                   // kanoniczna poza kroku (Etap 2) — jedyne źródło dla sylwetki/dialu/strzałki
   const can3d = true;                                      // Etap 4: 3D dla WSZYSTKICH manewrów (kamera wg reguł posture: bok/frontal/topDown)
   const _man = currentManSim();
-  const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step, state.size), p.mechanism==="cupulo");
+  const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step), p.mechanism==="cupulo");
   const gn = (_gn && _gn.strength >= 0.10) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
   const gravArrow = gn ? gravArrowFor(ps) : "";
   const dots=p.steps.map((_,i)=>`<i class="${i<state.step?'done':i===state.step?'cur':''}"></i>`).join("");
@@ -915,7 +912,7 @@ function renderDiag(){
   const effCanal = antMode ? "anterior" : D.canal;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
   const phases = D.phases(A,v).map(ph => antMode
-    ? { ...ph, nys: nysFromGeom("anterior", effSide, v, Vestibular.qSupineYaw(A==="P"?45:-45)),
+    ? { ...ph, nys: nysFromGeom("anterior", effSide, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),   // TA SAMA poza co reszta aplikacji (było własne qSupineYaw = zwis 10° zamiast opisanych 20°)
         label: t("ku dołowi — czysty downbeat (kanał przedni)","downward — pure downbeat (anterior canal)"),
         note: t(`To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.`,`This is NOT the posterior canal. Downbeat in the Dix-Hallpike indicates the ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}) — the same plane as the posterior canal of the lower ear (LARP/RALP). Head positioning unchanged; only the observed nystagmus differs.`) }
     : ph);

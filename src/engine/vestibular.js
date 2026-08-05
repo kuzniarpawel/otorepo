@@ -100,9 +100,9 @@ export const Vestibular = (()=>{
   }
   // q obraca wektory głowy → świata; grawitacja świata = (0,-1,0)
   const gHead=q=>rotv(qconj(reqQuat(q,"gHead")),[0,-1,0]);
-  const Q_SUPINE=qaxis([1,0,0],-100);                   // supine head-hanging
-  const qSupineYaw=deg=>qmul(Q_SUPINE, qaxis([0,1,0],deg)); // skręt wokół osi czaszki
-  const qPitch=deg=>qaxis([1,0,0],deg);                  // +deg = skłon (bow), -deg = odchylenie (lean)
+  // (Q_SUPINE/qSupineYaw/qPitch USUNIĘTE 2026-08-05: kodowały starą konwencję pozy — stały zwis −100°
+  //  dla WSZYSTKICH póz leżących. Pozy pochodzą teraz z POSE_SPEC w pose/maneuvers.js, gdzie każdy kąt
+  //  ma źródło w zdaniu instrukcji. Zostawione dawałyby drugą, cichą drogę do tej samej rozbieżności.)
   /* ---- GEOMETRIA KANAŁU: JEDNO ŹRÓDŁO, W CAŁOŚCI ZMIERZONE (2026-08-05) ----
      Etap 1 (rano): silnik miał DWIE niezależne geometrie tego samego kanału — zmierzone normalne do
        magnitud oczopląsu ORAZ ręczną idealizację 45° do dynamiki złogu, rozjechane o 15–20° na KAŻDYM
@@ -150,10 +150,6 @@ export const Vestibular = (()=>{
   // kierunek oczopląsu w karcie testu potrafił być PRZECIWNY do wyniku dynamiki tej samej pozy.
   const tangAt=(G,phiDeg)=>{ const r=phiDeg*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
     return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]]; };
-  // zachowane dla zgodności API (oś pobudzenia w konwencji „styczna przy φ=90")
-  const neg3=v=>[-v[0],-v[1],-v[2]];
-  const GEXC={ RP:neg3(CANAL_GEOM.posterior.P.e1), LP:neg3(CANAL_GEOM.posterior.L.e1),
-               RA:neg3(CANAL_GEOM.anterior.P.e1),  LA:neg3(CANAL_GEOM.anterior.L.e1) };
   // ZAKRES ŁUKU: od ŚRODKA BAŃKI (φ=0) do ujścia do przedsionka/łagiewki (φ=phiExit) — POMIAR, nie idealizacja.
   // Źródło: Cárdenas-Serna & Jeffery — współrzędne anatomiczne 96 ludzkich błędników kostnych (48 dorosłych),
   //   Zenodo doi:10.5281/zenodo.4818568 (opis: PMC8819049). Wartości = duży łuk od środka bańki do
@@ -277,14 +273,14 @@ export const Vestibular = (()=>{
   // KOMORA ODNOGI WSPÓLNEJ + ŁAGIEWKA (kanały PIONOWE: tylny+przedni; poziomy NIE ma odnogi → wyjście wprost).
   //   Anatomicznie „dotarcie do końca łuku" (φ=phiExit) ≠ „wpadnięcie do łagiewki" — to DWA zdarzenia. Złóg po
   //   dojściu do odnogi (φ≥phiExit−crusArc) WCHODZI DO KOMORY ODNOGI i PARKUJE: opuszcza czuły kanał, osklepek
-  //   relaksuje (brak oczopląsu), czeka na ekspulsję do łagiewki. Ekspulsja ma DWIE fizjologiczne drogi:
-  //     • GRAWITACYJNA (wolna): przy głowie pionowej (siad) łagiewka jest POD odnogą → złóg wpada. Warunek
-  //       −gHead_y > crusGrav (gHead·[0,−1,0]). To daje ekspulsję Epleya PRZY SIADZIE + oczopląs liberacyjny.
-  //     • BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut o duży kąt (Semont ~180°) wyrzuca złóg z odnogi siłami
-  //       bezwładności, niezależnie od grawitacji. Proxy: kąt przejścia segmentu > crusFling ORAZ prędkość
-  //       kątowa kąt/tTrans > crusFlingRate. Sam kąt NIE wystarczy — bezwładność jest funkcją PRĘDKOŚCI, więc
-  //       ten sam przerzut 180° wykonany POWOLI (np. tTrans 20 s) nie może wyrzucać złogu. To utrzymuje
-  //       ekspulsję Semonta PRZY RZUCIE (155° w 0,8 s ≈ 194°/s), a odrzuca powolne przetoczenia.
+  //   relaksuje (brak oczopląsu), czeka na ekspulsję do łagiewki. Warunek ekspulsji: −g[1] > crusGrav,
+  //   gdzie g to SIŁA WŁAŚCIWA (R7). Jeden warunek obejmuje obie drogi fizjologiczne:
+  //     • GRAWITACYJNA (wolna): przy głowie pionowej (siad) łagiewka jest POD odnogą → złóg wpada.
+  //       To daje ekspulsję Epleya PRZY SIADZIE + oczopląs liberacyjny.
+  //     • BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut (Semont ~180°) wyrzuca złóg siłami bezwładności.
+  //       Do 2026-08-05 stało tu osobne PROXY (kąt > crusFling ORAZ tempo > crusFlingRate) — ręczny
+  //       zamiennik brakującej fizyki. Po wprowadzeniu siły właściwej jest zbędne: sprawdzone, że bez
+  //       niego manewry czyszczą dalej 12/12. Usunięte, żeby jedna wielkość nie miała dwóch modeli.
   //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
@@ -322,7 +318,7 @@ export const Vestibular = (()=>{
     const c1=cross3(wv,d), a=cross3(wv,c1);
     return [g[0]-a[0]/G0, g[1]-a[1]/G0, g[2]-a[2]/G0];
   }
-  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}){
+  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
     reqCanal(canal, side, "simulateCanalith");
     if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
     if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
@@ -332,7 +328,6 @@ export const Vestibular = (()=>{
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D, pcrus=(phiExit-crusArc)*D;
     const crusGate=(canal==="posterior"||canal==="anterior");   // odnoga wspólna TYLKO dla kanałów pionowych; poziomy → wyjście wprost
     const EXPEL_DUR=1.2, expelRate=(pex-pcrus)/EXPEL_DUR;        // tempo ekspulsji odnoga→łagiewka (transjent liberacyjny)
-    const q4dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];  // do kąta przejścia (bezwładność)
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
     // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
@@ -342,11 +337,6 @@ export const Vestibular = (()=>{
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const wv = angVel(qPrev, sq, seg.tTrans);          // prędkość kątowa przejścia (stała — slerp o stałym tempie)
       const pivot = seg.pivot || "body";                  // oś obrotu kroku: "body" (biodra/kozetka) | "neck" (sama głowa)
-      const flingDeg = 2*Math.acos(Math.min(1,Math.abs(q4dot(qPrev,sq))))*180/Math.PI;   // kąt przejścia INTO tego segmentu
-      // PRĘDKOŚĆ kątowa przejścia [°/s] — bezwładność zależy od NIEJ, nie od samego kąta. tTrans=0 (skok
-      // orientacji) = przejście natychmiastowe → prędkość nieskończona (zachowuje dawne zachowanie kąt-only).
-      const flingRate = seg.tTrans>0 ? flingDeg/seg.tTrans : Infinity;
-      const flung = flingDeg>crusFling && flingRate>crusFlingRate;   // gwałtowny przerzut (Semont): duży kąt SZYBKO
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
@@ -356,7 +346,11 @@ export const Vestibular = (()=>{
         if(!exited){
           if(crusGate && inCrus){
             // złóg w KOMORZE ODNOGI WSPÓLNEJ — poza czułym kanałem (osklepek relaksuje). Czeka na ekspulsję do łagiewki.
-            if(!expelling && (-g[1] > crusGrav || flung)) expelling=true;   // GRAWITACYJNA (siad: łagiewka pod odnogą) LUB BEZWŁADNOŚCIOWA (szybki przerzut, np. Semont)
+            // g to już SIŁA WŁAŚCIWA (R7), więc ten jeden warunek obejmuje ekspulsję grawitacyjną (siad:
+            // łagiewka pod odnogą) I bezwładnościową (szybki przerzut). Dawne proxy crusFling/crusFlingRate
+            // — „kąt > 145° ORAZ tempo > 180°/s" — USUNIĘTE 2026-08-05: sprawdzone, że bez niego manewry
+            // czyszczą dalej 12/12, bo prawdziwy człon bezwładnościowy go zastąpił.
+            if(!expelling && -g[1] > crusGrav) expelling=true;
             if(expelling){                                     // transjent ekspulsji: φ pcrus→pex → oczopląs liberacyjny (ampullofugalny, TEN SAM znak co pierwotny)
               dphi=expelRate; let nphi=phi+dphi*dt;
               if(nphi>=pex){nphi=pex; exited=true; expelling=false;}   // wpadł do łagiewki (jednokierunkowo)
@@ -386,7 +380,7 @@ export const Vestibular = (()=>{
   // ξ (odchylenie osklepka) → składowe oczopląsu (kierunek z etapu 0, znak z pobudzenia)
   function dynNystagmus(canal, side, xi){
     const q0=quickPhase(canal,side), exc=xi>0, s=exc?1:-1;
-    const m=Math.min(1, Math.abs(xi)*(exc?1:0.45));   // Ewald II: rektyfikacja — odpowiedź hamująca słabsza
+    const m=Math.min(1, Math.abs(xi)*(exc?1:EWALD_INHIB));   // Ewald II: rektyfikacja — odpowiedź hamująca słabsza
     return {excited:exc, intensity:m, h:q0.h*s, v:q0.v*s, t:q0.t*s};
   }
   // klasyfikacja fazy oczopląsu względem kierunku prowokującego (ξ>0 = pierwotny/liberatoryjny)
@@ -400,6 +394,10 @@ export const Vestibular = (()=>{
   //   z „mniej intensywny, bardziej uporczywy" i z zakresem SPV apogeotropowy ≈ 0.4–0.7× geotropowy (kan. poziomy);
   //   NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik (uproszczenie: nie per-kanał/per-geometria).
   const CUP_WEAK=0.6;
+  // REKTYFIKACJA EWALDA II — o ile słabsza jest odpowiedź HAMUJĄCA niż pobudzająca. Jedno źródło: ta sama
+  // stała rządzi dynamiką (dynNystagmus) i kartą testu (nysFromGeom w pose/maneuvers.js), gdzie do
+  // 2026-08-05 stały DWA niezależne literalne 0.45.
+  const EWALD_INHIB=0.45;
   // symulacja KUPULOLITIAZY: otolity na osklepku → ciężki osklepek odchylany WPROST grawitacją.
   // Brak cząstki w świetle kanału → brak latencji i uporczywość (trzyma się, dopóki pozycja utrzymana).
   // ξ relaksuje do celu statycznego (rzut grawitacji, znak z reguły Ewalda) z krótką stałą tauCup.
@@ -424,8 +422,8 @@ export const Vestibular = (()=>{
     }
     return out;
   }
-  return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
+  return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, position,
           simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, CUP_WEAK};
+          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, CUP_WEAK, EWALD_INHIB};
 })();
 
