@@ -501,6 +501,23 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
          KIERUNEK grawitacji, bez wędrówki złogu — ale słaba: ξ 0.100 (skłon) i −0.087 (odchylenie),
          wobec ~0.7 w teście Roll. To siedem razy mniej.
        • KIERUNEK jest przeciwny do reguły Choung w OBU postaciach, nie tylko w geotropowej.
+     GDZIE DOKŁADNIE LEŻY SPÓR (sonda r8c, rozbiór rozumowania klinicznego krok po kroku):
+       ZGODA co do pozycji — w skłonie kanał staje PIONOWO (|g| w jego płaszczyźnie 0.98) i najniższym
+         punktem jest BAŃKA (φ_eq 10.0°); w odchyleniu też pionowo (0.94), a najniższy punkt leży
+         NAPRZECIW bańki (φ_eq 191.0°). Dokładnie to, co mówi opis kliniczny.
+       SPÓR dotyczy JEDNEJ rzeczy, której w rozumowaniu klinicznym nie ma wprost: GDZIE ZŁÓG LEŻY PRZED
+         TESTEM. Szczyt (punkt niestabilny) skłonu wypada na 190.0°. Dla KAŻDEGO startu φ < 190° — czyli
+         w ~70% łuku — skłon daje przepływ DOAMPUŁKOWY, a odchylenie ODAMPUŁKOWY, dokładnie jak w regule.
+         Silnik stawia złóg w 199.8°, czyli 9.8° ZA szczytem — i tylko dlatego wszystko się odwraca.
+       SKĄD 199.8: to najniższy punkt kanału w postawie pionowej. Bańka leży nieco POWYŻEJ środka
+         płaszczyzny kanału, więc punkt najniższy nie wypada dokładnie naprzeciw niej, tylko kilka stopni dalej.
+       MARGINES JEST MAŁY I ODPORNY NA ZNAK: przy pochyleniu ramki 0/−5/−10/−15/−20/−30° (nachylenie kanału
+         10.4–40.3°) margines wynosi 9.8/6.8/5.3/4.5/4.0/3.5° — maleje, ale NIGDY nie zmienia znaku.
+         Kanoniczne 30° też go nie odwraca. To NIE jest więc kwestia R9.
+       DLACZEGO TO SŁABA PODSTAWA: w siadzie |g| w płaszczyźnie kanału to tylko 0.18 (= sin 10.4°), czyli
+         kanał jest prawie płaski i „najniższy punkt" jest ledwie określony — całe ramię niebańkowe leży
+         niemal na tej samej wysokości. Model mówi więc nie tyle „reguła Choung jest błędna", ile „złóg
+         siedzi na wododziale i nie umiem rozstrzygnąć, w którą stronę spadnie".
      KONSEKWENCJA, która wymaga decyzji: karta testu rysuje dziś strzałkę kierunku dla postaci
        geotropowej, choć dynamika mówi, że żaden oczopląs tam nie powstaje. To ta sama klasa problemu,
        co usunięta 2026-08-05 fabrykacja w stepXiPeak: ekran twierdzi coś, czego model nie policzył.

@@ -511,6 +511,25 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
          to the DIRECTION of gravity alone, with no debris travel — but a weak one: ξ 0.100 (bow) and
          −0.087 (lean), against ~0.7 in the Roll test. Seven times smaller.
        • THE DIRECTION is opposite to the Choung rule in BOTH forms, not only the geotropic one.
+     WHERE EXACTLY THE DISAGREEMENT SITS (probe r8c, the clinical reasoning taken apart step by step):
+       AGREEMENT about the position — in the bow the canal stands VERTICAL (|g| in its plane 0.98) and its
+         lowest point is the AMPULLA (φ_eq 10.0°); in the lean it is vertical too (0.94) with the lowest
+         point OPPOSITE the ampulla (φ_eq 191.0°). Exactly what the clinical account says.
+       THE DISAGREEMENT is about ONE thing the clinical reasoning does not state explicitly: WHERE THE
+         DEBRIS LIES BEFORE THE TEST. The bow's summit (unstable point) falls at 190.0°. For EVERY start
+         φ < 190° — about 70% of the arc — the bow gives AMPULLOPETAL flow and the lean AMPULLOFUGAL,
+         exactly as the rule says. The engine puts the debris at 199.8°, i.e. 9.8° PAST the summit — and
+         that alone flips everything.
+       WHERE 199.8 COMES FROM: it is the canal's lowest point in the upright posture. The ampulla sits
+         slightly ABOVE the centre of the canal plane, so the lowest point is not exactly opposite it but
+         a few degrees further along.
+       THE MARGIN IS SMALL BUT SIGN-ROBUST: for frame pitches 0/−5/−10/−15/−20/−30° (canal tilt 10.4–40.3°)
+         the margin is 9.8/6.8/5.3/4.5/4.0/3.5° — it shrinks but NEVER changes sign. The canonical 30°
+         does not flip it either. So this is NOT an R9 issue.
+       WHY THAT IS A WEAK BASIS: sitting, |g| in the canal plane is only 0.18 (= sin 10.4°), i.e. the canal
+         is nearly flat and its "lowest point" is barely defined — the whole non-ampullary arm lies at
+         almost the same height. So the model is saying less "the Choung rule is wrong" than "the debris
+         sits on the watershed and I cannot tell which way it will fall".
      THE CONSEQUENCE THAT NEEDS A DECISION: the test card currently draws a direction arrow for the
        geotropic form even though the dynamics say no nystagmus arises there. That is the same class of
        problem as the stepXiPeak fabrication removed on 2026-08-05: the screen asserts something the
