@@ -539,6 +539,29 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      rule, explicitly, as a rule rather than a physics result; (c) leave as is. I am not choosing,
      because every option changes clinical content.
 
+ R10. THE ENGINE HAS NO POSITION MEMORY — the debris start is an ASSUMPTION, not a state [2026-08-05, OPEN].
+     Came out of taking R8 apart. restPhi computes the resting point for the UPRIGHT posture as if that
+     were a property of the anatomy. It is not — it is a property of the patient's last hour. Measured φ
+     at the start of a Bow & Lean test (horizontal canal P; the bow's summit is 190°, and which side the
+     debris lies on decides the direction):
+       long sitting alone (the engine's assumption)   199.8°   past the summit
+       supine for 5 min, then sat up                  199.8°   past
+       slept on the AFFECTED side, then sat up        132.3°   BEFORE — agrees with the Choung rule
+       slept on the HEALTHY side, then sat up         267.3°   past (right at the opening)
+       after a Roll test of both sides, then sat up   267.3°   past (right at the opening)
+       after a Dix-Hallpike, then sat up              164.9°   BEFORE — agrees with the Choung rule
+     A spread of 132–267° is ALMOST THE WHOLE ARC, and two of six realistic scenarios land on the
+     "clinical" side. The engine picks one of them and reports it as a result.
+     A SIDE EFFECT MORE IMPORTANT THAN BOW & LEAN ITSELF: entering the Roll position THE WAY IT IS
+     ACTUALLY PERFORMED (lie supine first, then turn the head) makes the debris LEAVE THE CANAL after
+     21 s with the HEALTHY ear down. The R1 check ("the diagnostic does not treat") passes only because
+     engineXi jumps sitting→Roll without the lying-down stage. Directionally this matches therapy
+     (Vannucchi's forced prolonged position = lying on the HEALTHY side), but the timescale differs:
+     21 s against hours.
+     WHAT TO DO: the engine already takes a timeline — what is missing is modelling THE EXAMINATION AS A
+     CONTINUOUS SEQUENCE, where each test starts where the previous one left off. A design change, not
+     new physics.
+
  R9. LATERAL-CANAL PITCH 10.4° INSTEAD OF THE CANONICAL ~30° [2026-08-05, OPEN].
      THIS IS NOT A DATA ERROR — it is a FRAME unknown. Settled by separating relative from absolute
      quantities (probe 45):

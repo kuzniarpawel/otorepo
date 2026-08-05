@@ -525,6 +525,26 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      i mówi „model nie rozstrzyga"; (b) kierunek bierzemy z reguły klinicznej, jawnie, jako regułę
      a nie wynik fizyki; (c) zostaje jak jest. NIE wybieram sam, bo każda opcja zmienia treść kliniczną.
 
+ R10. SILNIK NIE MA PAMIĘCI POZYCJI — punkt startowy złogu jest ZAŁOŻENIEM, nie stanem [2026-08-05, OTWARTE].
+     Wyszło z rozbioru R8. restPhi liczy spoczynek dla postawy PIONOWEJ, jakby to była własność anatomii.
+     Nie jest — to własność ostatniej godziny życia pacjenta. Zmierzone φ na starcie testu Bow & Lean
+     (kanał poziomy P, szczyt skłonu 190°, po której stronie leży złóg decyduje o kierunku):
+       sam długi siad (założenie silnika)      199.8°   za szczytem
+       leżał na plecach 5 min, potem usiadł     199.8°   za szczytem
+       spał na boku CHORYM, potem usiadł        132.3°   PRZED — zgodnie z regułą Choung
+       spał na boku ZDROWYM, potem usiadł       267.3°   za (na samym ujściu)
+       po teście Roll obu stron i siadzie      267.3°   za (na samym ujściu)
+       po Dix-Hallpike i siadzie               164.9°   PRZED — zgodnie z regułą Choung
+     Rozrzut 132–267° to PRAWIE CAŁY ŁUK, a dwa z sześciu realnych scenariuszy lądują po stronie
+     „klinicznej". Silnik wybiera jeden z nich i podaje jako wynik.
+     SKUTEK UBOCZNY, WAŻNIEJSZY NIŻ SAM Bow & Lean: wejście w pozycję Roll TAK, JAK SIĘ JĄ WYKONUJE
+     (najpierw położenie na plecach, potem obrót głowy) prowadzi do OPUSZCZENIA KANAŁU po 21 s przy uchu
+     ZDROWYM w dole. Kontrola R1 („diagnostyka nie leczy") przechodzi tylko dlatego, że engineXi robi
+     skok siad→Roll bez etapu leżenia. Kierunkowo to zgodne z terapią (wymuszona długa pozycja wg
+     Vannucchiego = leżenie na boku ZDROWYM), ale skala czasu jest inna: 21 s wobec godzin.
+     CO Z TYM ZROBIĆ: silnik już przyjmuje oś czasu — brakuje modelowania BADANIA JAKO CIĄGŁEJ SEKWENCJI,
+     w której każdy test zaczyna się tam, gdzie skończył poprzedni. To zmiana projektowa, nie nowa fizyka.
+
  R9. NACHYLENIE KANAŁU BOCZNEGO 10.4° ZAMIAST KANONICZNYCH ~30° [2026-08-05, OTWARTE].
      TO NIE JEST BŁĄD DANYCH — to niewiadoma RAMKI. Rozstrzygnięte rozdzieleniem wielkości względnych
      od bezwzględnych (sonda 45):
