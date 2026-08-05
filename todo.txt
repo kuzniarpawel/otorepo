@@ -498,6 +498,41 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
             po rzucie na płaszczyznę PCA). Bez niej nie da się zwalidować mapowania RAS→ramka głowy.
           • uporządkowane punkty linii środkowej od końca bańkowego do niebańkowego (3–5 wystarczy) —
             przypina kierunek obiegu i pozwala usunąć ARC_SPIN (dziś 6 bitów konwencji).
+
+        >>> AKTUALIZACJA: NORMALNE PCA OTRZYMANE (2026-08-05, drugi zestaw od USERA) — MAPOWANIE
+            ZWALIDOWANE, DIAGNOZA POTWIERDZONA, ALE PEŁNE WDROŻENIE NADAL WYMAGA PRZEBUDOWY. <<<
+          KONTROLE, KTÓRE TERAZ PRZESZŁY:
+           • kanały z normalnych PCA są ORTOGONALNE: ante-post 87.8° · ante-hori 87.5° · post-hori 89.8°.
+             Potwierdza, że wcześniejszy rozjazd 51–57° był w całości winą estymaty (A−C)×(O−C), nie danych.
+           • MAPOWANIE RAS→ramka silnika ZWALIDOWANE: (X,Z,Y) daje zgodność z Wu maks. 17.1°
+             (ante 16.7 · post 8.3 · hori 7.6), alternatywy 80–85°. Reszta 8–17° to różnica MIĘDZY ZBIORAMI
+             (Wu MRI n=55 vs IE-Map/David n=1) — tego samego rzędu co dawny rozjazd idealizacja↔Wu.
+             UWAGA: normalna to wektor OSIOWY, a mapowanie ma det=−1 (transpozycja osi), więc przy
+             przenoszeniu znaku trzeba go odwrócić. Ramka silnika jest numerycznie prawoskrętna
+             (zweryfikowane: rotv(qaxis(x,90),y)=+z), ale anatomicznie x=prawo,y=góra,z=nos jest
+             lewoskrętna — stąd det=−1 i stąd odwrócenie zwrotu obiegu.
+           • ZAKRES ŁUKU z tego samego zbioru: tylny 319.6° · przedni 283.3° · poziomy 269.7°
+             (Cárdenas-Serna dawał 307/266/237 — systematycznie mniej, bo błędnik KOSTNY i inna
+             definicja „środka bańki"). Teraz geometria może być zakotwiczona w JEDNYM zbiorze.
+          DIAGNOZA POTWIERDZONA EKSPERYMENTALNIE: po WYPROWADZENIU pozycji spoczynkowej z geometrii
+          (zamiast zaszytego phi=90) klinika w większości WRACA — 4 z 5 kierunków poprawne:
+             Dix-Hallpike P i L -> POBUDZENIE (OK) · Roll ucho chore w dole -> POBUDZENIE (OK) ·
+             Roll ucho zdrowe -> hamowanie (OK) · deep head-hang -> hamowanie (BŁĄD, ma pobudzać)
+          Test ROLL, który przy poprzedniej próbie był ODWRÓCONY, jest teraz POPRAWNY — to dowód, że
+          winowajcą był sztywny start phi=90, dokładnie jak zakładała diagnoza.
+          Pozycje spoczynkowe wyprowadzone: tylny 48.8° · przedni 304.7° · poziomy 199.8°, przy czym
+          dla POZIOMEGO |g w płaszczyźnie| = 0.18 -> punkt spoczynku jest WOLNYM PARAMETREM (potwierdzone).
+          CO NADAL NIE GRA:
+           • EPLEY i SEMONT nie sięgają ujścia (maks. minimum kroku 271 i 282 przy ujściu 319.6);
+           • KANAŁ PRZEDNI: pozycja spoczynkowa 304.7° leży ZA ujściem 283.3°, czyli złóg „spoczywa"
+             poza kanałem, a deep head-hang wychodzi hamujący. Albo zwrot obiegu (znak N) dla przedniego
+             jest inny, albo — co ciekawsze — model mówi, że kanał przedni SAM SIĘ OPRÓŻNIA w postawie
+             pionowej. To ostatnie byłoby zgodne z tym, że BPPV kanału przedniego jest RZADKIE (~1–2%).
+             Do rozstrzygnięcia, nie do zgadnięcia.
+           • YACOVINO natomiast MOŻE wyjść (maks. minimum 348 > ujście 283) — blokada R6 znika przy
+             spójnej geometrii. Lempert (325>270) i Gufoni geo (336>270) też.
+          WNIOSEK: dane są UŻYTECZNE i droga jest otwarta, ale wdrożenie to przebudowa (wyprowadzenie
+          startu + przepięcie całej geometrii na jeden zbiór + rekalibracja), nie podmiana stałej.
  [ ] R5 stepXiPeak NIE JEST miarą per-krok — łapie ξ odziedziczone po kroku poprzednim (dowód: Bascule k5,
         ξ_start −0,75 przebija własną odpowiedź kroku +0,50 → etykieta „ODWRÓCONY", choć fizyka kroku jest
         dodatnia). Ten sam korzeń co maskowanie z R4b. Naprawa ruszy etykiety w kilku krokach → osobny commit.
