@@ -560,6 +560,17 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
                   Epley i Roll się psują).
               Kotwica anatomiczna i zachowanie manewrów WSKAZUJĄ PRZECIWNE STRONY → sztywny obrót nie
               jest wyjaśnieniem, a −30° byłoby dopasowaniem parametru do wyniku.
+          STRONA LEWA OTRZYMANA I ZWERYFIKOWANA: idealne lustro prawej — różnica zakresu łuku 0.000°,
+          e1_L vs lustro(e1_P) 0.00° dla wszystkich trzech kanałów; obie strony monotoniczne.
+          KOMPLET STAŁYCH GOTOWY DO WKLEJENIA (ramka silnika, wyprowadzony z IE-Map, jedno źródło):
+            ARC_SPAN = { posterior:318.8, anterior:281.1, horizontal:267.3 }
+            AMPULLA_DIR (= e1, rzut A−C na płaszczyznę PCA):
+              posterior : P[-0.5174,-0.6498, 0.5568]  L[ 0.5174,-0.6498, 0.5568]
+              anterior  : P[ 0.4703,-0.5693, 0.6743]  L[-0.4703,-0.5693, 0.6743]
+              horizontal: P[-0.1794, 0.1705, 0.9689]  L[ 0.1794, 0.1705, 0.9689]
+            ARC_SPIN — DO USUNIĘCIA (zwrot wynika z monotoniczności osi Q0→Q4).
+            Konwersja: pozycje RAS→głowa (X,Z,Y); normalna = wektor OSIOWY, det=−1 → znak odwrócony.
+
           POZOSTAŁY PODEJRZANY: POZY MANEWRÓW (BASE_G / LEAN_G / SUPINE_PITCH) były kalibrowane pod
           STARĄ, błędną geometrię — tak samo jak AMPULLA_DIR był współ-dostrojony z phi=90. Jeśli
           geometria jest teraz poprawna, pozy trzeba wyprowadzić na nowo z opisów klinicznych, a nie
