@@ -11,9 +11,15 @@ export const Vestibular = (()=>{
   // Ewald I (swoistość płaszczyzny): oś szybkiej fazy dla POBUDZENIA kanału,
   // ipsiwersyjnie do pobudzonego ucha.
   // --- Realne wektory normalne kanałów (magnitudy oczopląsu zamiast idealnych 45°) ---
-  // Źródło: atlas IE-Map (ludzki błędnik, 3D Slicer) — dla każdego kanału dopasowana płaszczyzna PCA
-  //   przez uporządkowane punkty osi przewodu. TA SAMA rekonstrukcja, z której pochodzą AMPULLA_DIR
-  //   i ARC_SPAN, więc płaszczyzna, położenie bańki i długość łuku mówią o jednym i tym samym kanale.
+  // Źródło: atlas IE-Map — Ahmadi, Raiser, Rühl, Flanagin, zu Eulenburg (2021) „IE-Map: a novel in-vivo
+  //   atlas and template of the human inner ear", Sci Rep 11:3293, doi:10.1038/s41598-021-82716-0
+  //   (MRI 3T, CISS 0.5 mm izo → template 0.2 mm izo, n=63 osób / 126 uszu, CC BY 4.0).
+  //   Dla każdego kanału dopasowana płaszczyzna PCA przez uporządkowane punkty osi przewodu. TA SAMA
+  //   rekonstrukcja, z której pochodzą AMPULLA_DIR i ARC_SPAN, więc płaszczyzna, położenie bańki
+  //   i długość łuku mówią o jednym i tym samym kanale.
+  //   RAMKA: template jest wyrównany do STANDARDOWEJ PŁASZCZYZNY REIDA (punkt podoczodołowy + przewód
+  //   słuchowy zewnętrzny, obustronnie) — czyli do zdefiniowanej płaszczyzny czaszkowej, nie do ramki
+  //   skanera. Dlatego ramkę atlasu bierzemy jako ramkę głowy BEZ obrotu (patrz engine_doc R9).
   //   Wcześniej normalne brano z Wu i wsp. 2021 (Front. Neurol. 12:741948, MRI n=55) — uśrednienie
   //   populacyjne bez informacji o położeniu bańki wzdłuż pętli; zgodność obu źródeł 17.1°.
   //   Kanon kierunkowy: Della Santina i wsp. (2005), JARO 6:191-206, doi:10.1007/s10162-005-0003-x.

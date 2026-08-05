@@ -528,8 +528,33 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      12/12, Dix ✓, head-hang ✓, geotropic Roll with lateralization ✓. The frame pitch is therefore a FREE
      parameter today: the model cannot tell 0° from −20°. I leave it at 0° because that is the only value
      that need not be assumed — but it is a CHOICE, not a result, and should be read as one.
-     WHAT WOULD CLOSE IT: a measurement tying the labyrinth to habitual head posture — e.g. the position
-     of the Frankfort/Reid plane in the same coordinate set as the canal centreline points.
+     >>> SETTLED 2026-08-05 — THE ATLAS'S SOURCE PAPER. <<<
+     Ahmadi S-A et al. "IE-Map: a novel in-vivo atlas and template of the human inner ear",
+     Sci Rep 2021;11:3293, doi:10.1038/s41598-021-82716-0 (PMID 33558581, PMC7870663, CC BY 4.0).
+     THE FRAME IS NAMED: the template is aligned to REID'S STANDARD PLANE, defined by four landmarks —
+       the infraorbital point and the external auditory meatus, bilaterally. Quote: "aligned to Reid's
+       standard plane, roughly with the horizontal semicircular canal (SCC) in the axial plane". That is
+       NOT a scanner frame but a defined cranial plane, and Reid/Frankfort is by definition an
+       approximation of the horizontal in natural head posture. TAKING THE PITCH AS 0° IS THEREFORE
+       ANATOMICALLY JUSTIFIED, not merely convenient — this corrects the earlier note "0° is a choice".
+     THE SOURCE'S LIMIT REMAINS: among the atlas's 94 landmarks there is NOT ONE cranial landmark — all
+       annotate inner-ear structures. The paper itself calls the lateral canal's coplanarity with Reid an
+       ASSUMPTION and reports no measured deviation. A residual posture uncertainty (Reid vs true
+       horizontal) of a few degrees cannot be removed from this source.
+     THE 30° CANON IS REFUTED BY MEASUREMENT, not by our atlas:
+       Della Santina et al. 2005, JARO, doi:10.1007/s10162-005-0003-x (3D CT): lateral-canal angle to
+         Reid's plane 19.5°±7.4 (L) and 20.4°±6.9 (R) — the paper EXPLICITLY notes the difference from
+         the textbook 30°;
+       Wu et al. 2021 (MRI, n=55): 17.4°;
+       IE-Map (our template): 10.4°.
+       Three measurements — 20°, 17°, 10° — all BELOW 30°. The canon comes from the caloric convention
+       ("raising the head 30° brings the lateral canal vertical"), i.e. an inference from an assumption
+       about posture rather than an independent measurement.
+     WHAT REMAINS: our 10.4° sits ~1.3 SD below Della Santina's mean — LOW NORMAL, not an error. The rest
+       of the gap (10.4 vs 20) may be explained by Reid landmark definitions (infraorbital point vs
+       orbitale, meatus centre vs porion) and individual variation. We do NOT adjust the geometry toward
+       another paper's mean — stitching sources is exactly what was removed in b5f55b1.
+     EFFECT ON R3: none. R3 is independent of the frame pitch (see the correction under R3).
 
  R6-OLD. YACOVINO DOES NOT CLEAR THE ANTERIOR CANAL with an anatomically correct arc [CLOSED — above].
      The gravitational minimum at its deepest step (deep head-hang) is 233.8 deg while the opening is at

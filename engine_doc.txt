@@ -516,8 +516,33 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      12/12, Dix ✓, head-hang ✓, Roll geotropowy z lateralizacją ✓. Pochylenie ramki jest więc dziś
      parametrem WOLNYM: model nie odróżnia 0° od −20°. Zostawiam 0°, bo to jedyna wartość, której nie
      trzeba zakładać — ale to WYBÓR, nie wynik, i tak należy go czytać.
-     CZEGO POTRZEBA, ŻEBY ZAMKNĄĆ: pomiaru wiążącego błędnik z postawą nawykową głowy — np. położenia
-     płaszczyzny Frankfurta/Reida w tym samym zbiorze współrzędnych co punkty osi kanałów.
+     >>> ROZSTRZYGNIĘTE 2026-08-05 — PRACA ŹRÓDŁOWA ATLASU. <<<
+     Ahmadi S-A i wsp. „IE-Map: a novel in-vivo atlas and template of the human inner ear",
+     Sci Rep 2021;11:3293, doi:10.1038/s41598-021-82716-0 (PMID 33558581, PMC7870663, CC BY 4.0).
+     RAMKA JEST NAZWANA: template jest wyrównany do STANDARDOWEJ PŁASZCZYZNY REIDA, wyznaczonej czterema
+       punktami — punkt podoczodołowy i przewód słuchowy zewnętrzny, obustronnie. Cytat: „aligned to
+       Reid's standard plane, roughly with the horizontal semicircular canal (SCC) in the axial plane".
+       To NIE jest ramka skanera, tylko zdefiniowana płaszczyzna czaszkowa, a Reid/Frankfurt jest
+       z definicji przybliżeniem poziomu w postawie naturalnej. PRZYJĘCIE POCHYLENIA 0° JEST WIĘC
+       UZASADNIONE ANATOMICZNIE, a nie tylko wygodne — to koryguje wcześniejszy zapis „0° to wybór".
+     GRANICA ŹRÓDŁA ZOSTAJE: wśród 94 punktów atlasu NIE MA ani jednego punktu czaszkowego — wszystkie
+       opisują struktury ucha wewnętrznego. Sama praca nazywa koplanarność kanału bocznego z Reidem
+       ZAŁOŻENIEM i nie podaje zmierzonego odchylenia. Rezydualna niepewność postawy (Reid vs realny
+       poziom) rzędu kilku stopni pozostaje nieusuwalna z tego źródła.
+     KANON 30° JEST OBALONY PRZEZ POMIARY, nie przez nasz atlas:
+       Della Santina i wsp. 2005, JARO, doi:10.1007/s10162-005-0003-x (CT 3D): kąt kanału bocznego
+         do płaszczyzny Reida 19.5°±7.4 (L) i 20.4°±6.9 (P) — praca WPROST odnotowuje różnicę wobec
+         podręcznikowych 30°;
+       Wu i wsp. 2021 (MRI, n=55): 17.4°;
+       IE-Map (nasz template): 10.4°.
+       Trzy pomiary — 20°, 17°, 10° — wszystkie PONIŻEJ 30°. Kanon pochodzi z konwencji kalorycznej
+       („uniesienie głowy o 30° ustawia kanał boczny pionowo"), czyli jest wnioskiem z założenia
+       o postawie, a nie niezależnym pomiarem.
+     CO ZOSTAJE: nasze 10.4° leży ~1.3 SD poniżej średniej Della Santiny — NISKA NORMA, nie błąd.
+       Resztę różnicy (10.4 vs 20) mogą tłumaczyć definicje punktów Reida (punkt podoczodołowy vs
+       orbitale, środek przewodu vs porion) i zmienność osobnicza. NIE korygujemy geometrii pod średnią
+       innej pracy — zszywanie źródeł jest dokładnie tym, co usunięto w b5f55b1.
+     SKUTEK DLA R3: żaden. R3 jest niezależne od pochylenia ramki (patrz korekta przy R3).
 
  R6-STARE. YACOVINO NIE CZYŚCI KANAŁU PRZEDNIEGO przy anatomicznie poprawnym łuku [ZAMKNIĘTE — wyżej].
      Minimum grawitacyjne w jego najgłębszym kroku (deep head-hang) to 233.8°, a ujście leży na 266°.
