@@ -259,15 +259,33 @@ CANAL_GEOM — arc geometry for the dynamics (e1=ampulla direction φ=0, e2=seco
        big   : lat 0.25 s, peak +5.5 s,  ξpeak 2.80 (saturates intensity→1) — short latency, florid.
      Monotonicity lat↓/ξ↑/peak↓ with r confirmed for all 6 canals, both sides symmetric.
      Cupulolith: gain ∝ r³ exactly (small −0.41 / medium −0.85 / big −2.10). Maneuvers (generated plans, side P):
-       medium/big — Epley/Semont/Yacovino/Lempert reach φ=178° (exited); small — Epley/Lempert do,
-       Semont (φmax 157) and Yacovino (φmax 128) do NOT clear in the shortened holds (emergent, clinically
-       consistent: slow fragments → consider repetition / longer holds).
-     >>> OUT OF DATE [verified 2026-08-05, on the pre-review code as well]: after the common-crus chamber AND
-         size-scaled holds were introduced (maneuverTimeline: cap = 12/r² → small gets 20 s instead of 12 s),
-         small DOES clear Semont and Yacovino (φ=178, exited). The emergent property "slow fragments do not
-         clear in shortened holds" has DISAPPEARED from the model although the document still claimed it.
-         Additionally bascule|big clears (exited=true) while bascule|medium/small do not. To decide: restore
-         the property (stop scaling cap with size) or drop it from the teaching material. <<<
+       ALL sizes (small/medium/big) reach φ=178° (exited) in Epley, Semont, Yacovino, Lempert and
+       geotropic Gufoni. 30 maneuver x side x size combinations, zero failures.
+     >>> CORRECTION [2026-08-05]. Until that day this read: "small — Semont (φmax 157) and Yacovino
+         (φmax 128) do NOT clear in the shortened holds (emergent, clinically consistent)". That was FALSE
+         in two ways. (1) The numbers no longer reproduced even under the old cap — with the common-crus
+         chamber they are 102.1 and 90.3, not 157 and 128. (2) More importantly, the property itself was
+         NOT PHYSICS but a SIMULATION-TRUNCATION ARTEFACT: maneuverTimeline clips each step's hold to cap
+         (12 s for medium/big), while Semont prescribes 120 s per step. At the CLINICALLY PRESCRIBED hold
+         small clears everything (Semont: 252 s total → exited; Yacovino: 123 s → exited). "Slow fragments
+         do not clear" therefore described a performance boundary of the model, not particle settling, and
+         has been REMOVED rather than restored. <<<
+     TRUNCATION DEPTH (medium) — how much of the real hold the model actually simulates. It is uneven across
+       maneuvers, so "does the maneuver clear" partly measures truncation aggressiveness, not canal geometry:
+         semont 180 s → 36 s (20%) · gufoniGeo 120 s → 36 s (30%) · lempert 150 s → 66 s (44%)
+         epley 90 s → 48 s (53%) · yacovino 60 s → 46 s (77%)
+       Semont is truncated hardest and is therefore the most sensitive to changes in the constants.
+     WHAT ACTUALLY SURVIVES OF THE SIZE EFFECT — THE MINIMUM PER-STEP HOLD at which the maneuver still
+       clears (measured; a uniform hold on every timed step):
+                    small   medium   big     plan prescribes
+         epley       12 s     7 s     4 s          30 s
+         semont      18 s    10 s     5 s          90 s
+         yacovino    33 s    16 s     8 s          30 s   <-- THE ONLY THIN MARGIN
+         lempert     11 s     7 s     3 s          30 s
+         gufoniGeo   11 s     7 s     3 s          60 s
+       YACOVINO + SMALL DEBRIS is the only place where the threshold (33 s) EXCEEDS the nominal hold (30 s).
+       It is rescued only by sizedSeconds (holdMult 1.6 → 45 s). That is a physically grounded teaching
+       point for "slow fragments need longer holds" [2] — unlike the one removed above.
 
 --------------------------------------------------------------------------
  USAGE EXAMPLES

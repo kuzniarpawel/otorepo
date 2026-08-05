@@ -258,15 +258,32 @@ CANAL_GEOM — geometria łuku dla dynamiki (e1=kierunek ampułki φ=0, e2=druga
        big   : lat 0.25 s, szczyt +5.5 s,  ξpeak 2.80 (nasyca intensity→1) — krótka latencja, florydny.
      Monotoniczność lat↓/ξ↑/szczyt↓ wraz z r potwierdzona dla wszystkich 6 kanałów, obie strony symetryczne.
      Cupulolith: gain ∝ r³ dokładnie (small −0.41 / medium −0.85 / big −2.10). Manewry (plany gen, str. P):
-       medium/big — Epley/Semont/Yacovino/Lempert osiągają φ=178° (exited); small — Epley/Lempert tak,
-       Semont (φmax 157) i Yacovino (φmax 128) NIE czyszczą w skróconych holdach (emergentne, klinicznie
-       spójne: wolne odłamki → rozważ powtórzenie / dłuższe holdy).
-     >>> NIEAKTUALNE [zweryfikowane 2026-08-05, także na kodzie sprzed przeglądu]: po wprowadzeniu komory odnogi
-         ORAZ skalowania holdów rozmiarem (maneuverTimeline: cap = 12/r² → small dostaje 20 s zamiast 12 s)
-         small CZYŚCI Semonta i Yacovino (φ=178, exited). Emergentna cecha „wolne odłamki nie czyszczą w
-         skróconych holdach" ZNIKŁA z modelu, choć dokument nadal ją deklarował. Dodatkowo bascule|big
-         czyści (exited=true), a bascule|medium/small nie. Do decyzji: przywrócić cechę (nie skalować cap
-         rozmiarem) albo usunąć ją z materiału dydaktycznego. <<<
+       WSZYSTKIE rozmiary (small/medium/big) osiągają φ=178° (exited) w Epleyu, Semoncie, Yacovino,
+       Lempercie i Gufonim geotropowym. 30 kombinacji manewr×strona×rozmiar, zero niepowodzeń.
+     >>> SPROSTOWANIE [2026-08-05]. Do tego dnia stało tu: „small — Semont (φmax 157) i Yacovino (φmax 128)
+         NIE czyszczą w skróconych holdach (emergentne, klinicznie spójne)". To było NIEPRAWDZIWE na dwa
+         sposoby. (1) Liczby nie odtwarzały się już nawet przy starym capie — po wprowadzeniu komory odnogi
+         jest 102.1 i 90.3, nie 157 i 128. (2) Co ważniejsze, sama cecha NIE BYŁA FIZYKĄ, tylko ARTEFAKTEM
+         OBCIĘCIA SYMULACJI: maneuverTimeline obcina hold kroku do cap (12 s dla medium/big), a Semont ma
+         w planie 120 s na krok. Przy KLINICZNIE ZALECONYM holdzie small czyści wszystko (Semont: suma
+         252 s → exited; Yacovino: 123 s → exited). „Wolne odłamki nie czyszczą" opisywało więc granicę
+         wydajnościową modelu, nie osiadanie cząstki, i zostało USUNIĘTE zamiast przywrócone. <<<
+     GŁĘBOKOŚĆ OBCIĘCIA (medium) — ile realnego holdu model faktycznie symuluje. Nierówna między manewrami,
+       więc „czy manewr czyści" częściowo mierzy agresywność obcięcia, a nie geometrię kanału:
+         semont 180 s → 36 s (20%) · gufoniGeo 120 s → 36 s (30%) · lempert 150 s → 66 s (44%)
+         epley 90 s → 48 s (53%) · yacovino 60 s → 46 s (77%)
+       Semont jest obcięty najmocniej i przez to najbardziej wrażliwy na zmiany stałych.
+     CO NAPRAWDĘ ZOSTAJE Z WPŁYWU ROZMIARU — MINIMALNY HOLD NA KROK, przy którym manewr jeszcze czyści
+       (zmierzone; hold jednakowy na każdym kroku z timerem):
+                    small   medium   big     zalecenie w planie
+         epley       12 s     7 s     4 s          30 s
+         semont      18 s    10 s     5 s          90 s
+         yacovino    33 s    16 s     8 s          30 s   <-- JEDYNY CIENKI MARGINES
+         lempert     11 s     7 s     3 s          30 s
+         gufoniGeo   11 s     7 s     3 s          60 s
+       YACOVINO + DROBNY ZŁÓG to jedyne miejsce, gdzie próg (33 s) PRZEKRACZA hold nominalny (30 s).
+       Ratuje go dopiero sizedSeconds (holdMult 1.6 → 45 s). To jest fizycznie ugruntowany punkt
+       dydaktyczny „wolne odłamki wymagają dłuższych holdów" [2] — w przeciwieństwie do usuniętego wyżej.
 
 --------------------------------------------------------------------------
  PRZYKŁADY UŻYCIA

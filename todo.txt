@@ -443,8 +443,21 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
         |g·e1| = 0,985 tylny / 0,854 poziomy / 0,696 przedni. Naprawa TANIA — jedna stała per kanał
         (poziomy tauP=3,0 → lat 0,90 s, ξ 0,766). ALE: jeśli R1 naprawiasz PRZEPARAMETRYZOWANIEM łuku
         (nie samym phiExit), to e1 i φ_start się zmienią → kalibruj R3 dopiero PO tej przebudowie.
- [ ] R4 engine_doc deklarował, że small NIE czyści Semonta/Yacovino — nieaktualne (skalowanie holdów cap=12/r²
-        to skompensowało). Cecha dydaktyczna zniknęła po cichu; przywrócić albo usunąć z materiału.
+ [x] R4 ROZSTRZYGNIĘTE 2026-08-05 (docs). engine_doc deklarował, że small NIE czyści Semonta/Yacovino.
+        Zależność: WYŁĄCZNIE od `cap` w maneuverTimeline (12 → 12/r²) — zero sprzężenia z R1/R2/R3 i z modelem
+        odnogi (dowód: wymuszenie cap=12 natychmiast przywraca „awarię", Semont φ 102,1 / Yacovino φ 90,3).
+        ALE cecha NIE BYŁA FIZYKĄ, tylko artefaktem OBCIĘCIA: przy klinicznie zaleconym holdzie small czyści
+        wszystko (Semont 252 s, Yacovino 123 s). Doc mówił o granicy wydajnościowej modelu, nie o osiadaniu.
+        DECYZJA: NIE przywracać (byłoby wpisaniem artefaktu w materiał dydaktyczny + pogłębieniem nierówności
+        obcięcia). Twierdzenie usunięte, zastąpione zmierzonymi PROGAMI HOLDU — jedyny realny margines to
+        Yacovino+small (33 s przy nominale 30 s, ratuje sizedSeconds ×1,6 → 45 s).
+ [ ] R4b (OPCJONALNE, dotyka KODU) podnieść albo zdjąć `cap` w maneuverTimeline, żeby symulacja szła holdem
+        realnie zaleconym (dziś: semont 20%, gufoniGeo 30%, lempert 44%, epley 53%, yacovino 77% realnego
+        holdu). Sprawdzone jako bezpieczne dla zwalidowanych kroków kuracyjnych: Epley k5, Semont k3,
+        Yacovino k3 bez zmian dla small/medium/big; jedyna zmiana to gufoniGeo k3→k2, NIEWIDOCZNA w UI
+        (kanał poziomy nie idzie przez manExitStep — `vertical` fałszem — więc render używa schematu n-2).
+        Ruszy natomiast stepXiPeak per krok, czyli MOŻE zmienić, w których krokach pojawia się oczopląs —
+        to wymaga osobnej weryfikacji w przeglądarce + przebiegu wyroczni przed commitem.
 
 BEZ ZMIAN (sprawdzone, potwierdzone jako poprawne): prawa Ewalda I/II/III i maska NYS_SHOW; magnitudy
  z CANAL_NORMALS (tylny 0,93:0,41:1,00 · przedni 1,00:0,44:0,78 · poziomy 0,02:1,00:0,31); odwracanie geo/apo
