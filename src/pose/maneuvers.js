@@ -242,7 +242,8 @@ function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POS
 //   zatrzymywał się PIERWSZY — dokładne odwrócenie cechy różnicującej, której uczy ta sama karta
 //   („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno 60 s = próg kliniczny 1 min z kryteriów Bárány.
 function engineXi(canal, side, persistent, q){
-  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:40}];
+  // pivot:"body" — badany jest KŁADZIONY z siadu (rusza całe ciało), a nie sam obraca głowę.
+  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:40, pivot:"body"}];
   // q0 = POZYCJA WYJŚCIOWA (siad): bez niej pierwszy segment interpolował „z samego siebie", czyli test
   // zaczynał się już W pozycji prowokującej — złóg nie dostawał przejścia, które go w ogóle rusza.
   const q0=[1,0,0,0];
@@ -446,8 +447,17 @@ function sizedSeconds(sec, size){ if(sec==null) return null; const v=sec*holdMul
 const HOLD_STEPS=[30,45,60,75,90,105,120], UNTIMED_HOLD=6;
 const holdKey=(plan,size)=>[plan.canal,plan.side,size,plan.steps.map(s=>`${s.body}|${s.yaw}|${s.face}|${s.seconds}`).join(";")].join("#");
 const _holdMemo=new Map();                                   // szukanie holdu = do 7 symulacji; pamiętamy per (kanał,strona,rozmiar,pozy)
+// OŚ OBROTU KROKU — wyprowadzona z tej samej tabeli pozy: jeśli zmienił się roll albo kąt TUŁOWIA,
+// to przemieszcza się całe ciało (oś w biodrach/na kozetce); jeśli zmienia się tylko kark lub skręt —
+// obraca się sama głowa (oś u podstawy szyi). Silnik zamienia to na ramię ω²·L (siła właściwa, R7).
+function stepPivot(prev, st){
+  if(!prev) return "body";                                   // wejście w pozycję wyjściową: pacjent siada/kładzie się
+  const a=poseOf(prev.body, prev.face), b=poseOf(st.body, st.face);
+  return (a.roll!==b.roll || a.trunk!==b.trunk) ? "body" : "neck";
+}
 function timelineWithHold(plan, h){
-  return plan.steps.map(st=>({ q: stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8,
+  return plan.steps.map((st,i)=>({ q: stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8,
+    pivot: stepPivot(plan.steps[i-1], st),
     tHold: st.seconds!=null ? h : UNTIMED_HOLD }));
 }
 // najmniejszy hold z HOLD_STEPS, przy którym manewr wyprowadza złóg; null gdy żaden nie wystarcza
@@ -462,9 +472,10 @@ function derivedHold(plan, size){
 }
 function maneuverTimeline(plan, size="medium"){
   const h=derivedHold(plan,size);
-  return plan.steps.map(st=>({
+  return plan.steps.map((st,i)=>({
     q: stepHeadQ(st.body, st.yaw, st.face),
     tTrans: 0.8,
+    pivot: stepPivot(plan.steps[i-1], st),                                // oś obrotu → ramię bezwładności (R7)
     tHold: st.seconds==null ? UNTIMED_HOLD : (h!=null ? h : st.seconds)   // fallback: hold zalecony klinicznie
   }));
 }
@@ -600,7 +611,7 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

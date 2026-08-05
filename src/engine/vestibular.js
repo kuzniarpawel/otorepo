@@ -184,6 +184,19 @@ export const Vestibular = (()=>{
     const a=Math.atan2(dot3(g,G.e2), dot3(g,G.e1))*180/Math.PI, eq=((a%360)+360)%360;
     return (eq>CUPULA_DEG && eq<ARC_SPAN[canal]) ? eq : CUPULA_DEG;
   }
+  /* NAPĘD W SPOCZYNKU — decyduje, czy złóg jest w ogóle PRZYKLEJONY. Gdy spoczynek jest prawdziwym
+     minimum (tylny, poziomy), styczna składowa = 0: złóg leży swobodnie i trzyma go adhezja, którą
+     prowokacja musi zerwać — stąd LATENCJA. Gdy minimum wypada poza łukiem (kanał przedni), złóg jest
+     DOCISKANY do osklepka stałą siłą 0.131 (przy progu fStat 0.04): nie trzyma go wiązanie, tylko
+     grawitacja, więc po odwróceniu głowy rusza BEZ zrywania adhezji. Model przewiduje z tego brak
+     latencji w kanale przednim — zgodnie z opisami BPPV kanału przedniego (latencja krótka/nieobecna).
+     Bez tego test deep head-hang nie dawał ŻADNEGO oczopląsu: 0.5 s przejścia nie starcza, by zużyć
+     wiązanie adh=0.2, a w manewrze Yacovino zużywał je dopiero 6-sekundowy krok „pacjent siedzi". */
+  function restDrive(canal, side, tauP){
+    const G=CANAL_GEOM[canal][side], g=gHead([1,0,0,0]), phi=restPhi(canal,side)*Math.PI/180;
+    const c=Math.cos(phi), sn=Math.sin(phi);
+    return dot3(g,[-sn*G.e1[0]+c*G.e2[0], -sn*G.e1[1]+c*G.e2[1], -sn*G.e1[2]+c*G.e2[2]])/tauP;
+  }
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
     reqCanal(canal, side, "position");
@@ -269,6 +282,40 @@ export const Vestibular = (()=>{
   //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
+  /* ---- SIŁA WŁAŚCIWA f = g − a (zasada równoważności) [R7, 2026-08-05] ----
+     Do tej daty złóg reagował na SAMĄ grawitację. To czyniło Semonta i Bascule nieodwzorowywalnymi
+     z powodu STRUKTURALNEGO, nie liczbowego: obrót ciała o 180° odwraca gHead DOKŁADNIE (Rz(180)
+     przeprowadza (0,−1,0) w (0,+1,0) niezależnie od ustawienia głowy względem tułowia), więc minimum
+     drugiego rzutu leży dokładnie 180° od pierwszego i złóg ląduje w punkcie NIESTABILNYM — styczna
+     składowa zero, żaden hold i żadne tauP tego nie ruszy. Dawne „działanie" Semonta pochodziło
+     z ręcznie dopisanego do LEAN_G wektora ku czubkowi głowy (+0.6), który łamał tę symetrię.
+     Ten wektor okazał się TĄ SAMĄ WIELKOŚCIĄ, tylko wpisaną: podczas rzutu błędnik jedzie po łuku
+     wokół osi obrotu, więc doznaje przyspieszenia dośrodkowego skierowanego KU osi, a siła właściwa
+     f = g − a zyskuje składową ku czubkowi o module ω²·L/g. Dla rzutu 180° w 0,8 s i L=0,75 m wychodzi
+     1,2 g — ten sam kierunek i ten sam rząd co wpisane 0,6 (0,6 g odpowiada rzutowi 180° w ~1,16 s).
+     ω bierzemy z TEJ SAMEJ interpolacji, która steruje pozą (slerp o stałym tempie): ω = Θ/tTrans wokół
+     osi obrotu względnego. Człon styczny (α×d) POMIJAMY — przy stałym tempie α=0 poza granicami
+     segmentów, a profil prędkości, który dałby α, nie istnieje w danych aplikacji. To zaniżenie,
+     nie zawyżenie: model bierze tylko tę część bezwładności, którą interpolacja naprawdę określa.
+     RAMIĘ (jedyne nowe wejście — antropometria, nie parametr dopasowywany):
+       body 0.75 m — oś w biodrach/kozetce; siad→leżenie, rzut boczny, przewrót ciała
+       neck 0.12 m — oś u podstawy szyi; sam skręt/pochylenie głowy przy nieruchomym tułowiu
+       earX 0.075 m — półrozstaw międzyuszny: błędnik NIE leży na osi czaszki, więc sam skręt szyi
+                      też daje (mały) człon dośrodkowy. Bez tego skręt głowy byłby zupełnie bezwładny. */
+  const G0=9.81, LEVER={body:0.75, neck:0.12}, EAR_X=0.075;
+  function angVel(qPrev, sq, tTrans){        // ω [rad/s] w RAMCE GŁOWY (oś obrotu względnego jest w niej stała)
+    if(!(tTrans>0)) return [0,0,0];
+    let r=qmul(qconj(qPrev), sq); if(r[0]<0) r=[-r[0],-r[1],-r[2],-r[3]];
+    const v=Math.hypot(r[1],r[2],r[3]); if(v<1e-9) return [0,0,0];
+    const w=2*Math.atan2(v, r[0])/tTrans;
+    return [w*r[1]/v, w*r[2]/v, w*r[3]/v];
+  }
+  function specForce(g, wv, side, pivot){    // f = g − a/g0, a = ω × (ω × d) [dośrodkowe]
+    if(!wv[0] && !wv[1] && !wv[2]) return g;
+    const d=[(side==="P"?EAR_X:-EAR_X), LEVER[pivot]||LEVER.body, 0];   // oś obrotu → błędnik, w ramce głowy
+    const c1=cross3(wv,d), a=cross3(wv,c1);
+    return [g[0]-a[0]/G0, g[1]-a[1]/G0, g[2]-a[2]/G0];
+  }
   function simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}){
     reqCanal(canal, side, "simulateCanalith");
     if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
@@ -284,9 +331,11 @@ export const Vestibular = (()=>{
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
     // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
     // 1. segment = pozycja startowa, a jego tTrans to czas W tej pozycji (NIE przejście z neutralnej). Wsteczna zgodność.
-    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=0, t=0, exited=false, stuck=true, inCrus=false, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=0, t=0, exited=false, stuck=Math.abs(restDrive(canal,side,tauP))<=fStat, inCrus=false, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
+      const wv = angVel(qPrev, sq, seg.tTrans);          // prędkość kątowa przejścia (stała — slerp o stałym tempie)
+      const pivot = seg.pivot || "body";                  // oś obrotu kroku: "body" (biodra/kozetka) | "neck" (sama głowa)
       const flingDeg = 2*Math.acos(Math.min(1,Math.abs(q4dot(qPrev,sq))))*180/Math.PI;   // kąt przejścia INTO tego segmentu
       // PRĘDKOŚĆ kątowa przejścia [°/s] — bezwładność zależy od NIEJ, nie od samego kąta. tTrans=0 (skok
       // orientacji) = przejście natychmiastowe → prędkość nieskończona (zachowuje dawne zachowanie kąt-only).
@@ -295,7 +344,8 @@ export const Vestibular = (()=>{
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
-        const g=gHead(slerpQ(qPrev,sq,u));
+        const g0v=gHead(slerpQ(qPrev,sq,u));
+        const g = u<1 ? specForce(g0v, wv, side, pivot) : g0v;   // W TRAKCIE przejścia działa siła właściwa; w holdzie ω=0 → f=g
         let dphi=0, flow=0;
         if(!exited){
           if(crusGate && inCrus){
