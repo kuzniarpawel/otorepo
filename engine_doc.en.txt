@@ -434,7 +434,68 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      the engine in maneuverTimeline). Epley/Semont/Lempert/Gufoni geo/Bascule all clear.
      NOT CLOSED: YACOVINO - see R6 below.
 
- R6. YACOVINO DOES NOT CLEAR THE ANTERIOR CANAL with an anatomically correct arc [2026-08-05, OPEN].
+ >>> R6 CLOSED 2026-08-05 (branch feature/vestibular). Yacovino clears: φ 3 → 133 → 262 → 281 (exit). <<<
+     The R6 working hypothesis was right about the LOCATION (anterior-canal AMPULLA_DIR) but the fix was
+     not a −35° rotation — it was a MEASUREMENT. The IE-Map atlas supplied a complete set from one
+     reconstruction: the plane normal (PCA of the ordered duct-axis points), the ampulla centre, the
+     opening, and the ARC DIRECTION (monotonic Q0→Q4 — this removed the ARC_SPIN table, 6 bits of
+     convention). Arc spans 318.8/281.1/267.3.
+     The "anterior-canal anomaly" dissolved with it: the anterior canal's gravitational minimum in the
+     upright posture (304.7°) lies BEYOND its exit (281.1°), i.e. the anterior canal has NO stable
+     resting point when upright and free debris falls out of it on its own. That is not a defect but a
+     reproduction of a known fact (AC-BPPV ~1–2%). Debris persists there only pressed against the
+     cupula, and that is where it starts (φ=3°).
+     The earlier conclusion "head-hang comes out inhibitory at every pitch" was MY REFERENCE-POINT
+     ERROR: I evaluated the drive at the resting position 304.7° rather than where the debris actually
+     lies. From the cupula the head-hang drives it ampullofugally → excitation → DOWNBEAT, as in clinic.
+
+ R7. SEMONT AND BASCULE DO NOT CLEAR — THE MODEL HAS NO INERTIAL TERM [2026-08-05, OPEN].
+     This is NOT a geometry or pose error; it is a structural statement. A 180° body rotation reverses
+     gravity in the head frame EXACTLY (Rz(180) maps (0,−1,0) to (0,+1,0), whatever the head's relation
+     to the trunk). Semont and Bascule swing the patient through 180° "without changing the head
+     position" by definition, so the second position's gravitational minimum sits EXACTLY 180° from the
+     first. Measured: drop 1 → 139.8°, drop 2 → 319.8°, difference 180.000°.
+     A particle that settled in the first minimum therefore lands on the UNSTABLE point in the second:
+     the tangential component of gravity is zero. Gravity alone will never move it — shortening the
+     transition does not help (checked tTrans 0.8/0.4/0.2 s: φ stays at 140°).
+     So a maneuver clinically called LIBERATORY, whose whole efficacy depends on the SPEED of the swing,
+     cannot be reproduced by a purely gravitational model. Semont's previous "success" came from a
+     hand-added vertex-ward component in LEAN_G (+0.6) that broke the symmetry by 27° — the pose had
+     been bent to stand in for the missing physics.
+     REPAIR DIRECTION (not implemented): the particle responds to the SPECIFIC FORCE f = g − a
+     (equivalence principle), not to g alone. During the swing the labyrinth travels an arc whose radius
+     is its distance from the rotation axis, so a is computable from the step's axis and the existing
+     skeleton (SK: pelvis→head = 42+15+15 units with thigh 33 and shin 29 → about 0.8 m). This needs no
+     new fitted constant — it needs a decision on whether to add an inertial term to the in-canal
+     dynamics. The same term resolves the other borderline case: the anterior canal's start at the
+     cupula (drive 0.012 < threshold 0.04).
+
+ R8. THE BOW & LEAN TEST IS SUB-THRESHOLD IN THIS MODEL [2026-08-05, OPEN — clinical decision].
+     Tangential drive: bow 0.026, lean 0.022, against an adhesion-breaking threshold fStat of 0.04 and
+     0.131 for the Roll test — 5× weaker than the Roll and below threshold. The simulation yields ξ=0.000.
+     The reason is geometric and parameter-robust: the horizontal canal lies almost in the earth plane
+     and its ampulla↔antipode axis almost in the sagittal plane. Bowing and leaning rotate gravity in
+     THAT plane, so the minimum slides along an axis passing through the resting point (10° ↔ 190°,
+     rest 199.8°) — the tangential component stays small at EVERY bow angle (checked 30–120°). This is
+     consistent with the horizontal canal being tested by the ROLL rather than by bowing, and with Bow &
+     Lean being regarded as an adjunct test of debated accuracy.
+     DISCREPANCY: the sign that does come out is OPPOSITE to the Choung rule (bow toward the affected
+     ear, lean toward the healthy ear) that the test card asserts in text. The margin is ~10° of resting
+     position — within the individual variability of a single atlas.
+     FOR CLINICAL DECISION (not mine): (a) the card stops drawing an arrow when the drive is below
+     threshold and says "the model does not resolve this"; (b) the direction is taken from the clinical
+     rule, explicitly, as a rule rather than a physics result; (c) leave as is. I am not choosing,
+     because every option changes clinical content.
+
+ R9. LATERAL-CANAL PITCH 10.4° INSTEAD OF THE CANONICAL ~30° [2026-08-05, RECORDED].
+     The atlas is in the scan frame; the canon describes the NATURAL HEAD POSTURE. Checked whether one
+     frame rotation reconciles them: NO. The pitch has a MINIMUM at +10° (falling to 1.8°) and only
+     grows again for negative values, and any non-zero pitch breaks the Roll test, the head-hang, or
+     both (probe 39: from +10° on we lose Roll, Gufoni geo and Yacovino). The atlas frame stays
+     unrotated. This is the second independent test of the same "missing pitch" hypothesis — and its
+     second refutation, this time with derived poses.
+
+ R6-OLD. YACOVINO DOES NOT CLEAR THE ANTERIOR CANAL with an anatomically correct arc [CLOSED — above].
      The gravitational minimum at its deepest step (deep head-hang) is 233.8 deg while the opening is at
      266 deg. Later steps pull the debris back: chin-to-chest -> 115.8, sitting -> 53.6. No hold and no
      tauP fixes this (tested tauP 6.5->2: final phi stays 54-61 deg, the particle merely returns faster).
