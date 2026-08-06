@@ -582,10 +582,80 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
        geotropic form even though the dynamics say no nystagmus arises there. That is the same class of
        problem as the stepXiPeak fabrication removed on 2026-08-05: the screen asserts something the
        model did not compute.
+     >>> HYPOTHESIS VERIFIED AGAINST THE LITERATURE 2026-08-06 (data supplied by the user). <<<
+     H1 (rest a few degrees PAST the ampulla's antipode) — CONFIRMED IN THIS ATLAS, not in the population.
+        An independent recomputation gave the same 199.82°, i.e. 19.82° past the antipode, margin 9.82°.
+        Between-subject variability of lateral-canal orientation is ~5° (Wu 2021), and nobody has measured
+        the ampulla's phase along the loop at all — so a 9.8° margin is NOT large against that variability.
+     H2 (~29 µm) — RIGHT ORDER, WRONG NUMBER. The quoted 29 µm is the depth of the basin WHILE SITTING
+        (28.8 µm between 180° and 199.8° at |g|_plane 0.18) — it describes why the starting point is
+        ill-defined. The quantity H2 actually needs is a different one: THE THRESHOLD TO CLEAR IN THE BOW,
+        where the canal stands vertical and the full radius works: R(1−cos 9.82°) = 38.5–39.3 µm. Both
+        numbers are correct but describe different things — my label was misleading. WHAT STANDS: "about
+        30–40 µm". Caveat: the size of the real AGGREGATE in a living patient's canal is not known (single
+        otoconia 1–30 µm), so any "grain-sized" comparison must be made cautiously.
+     H3 (dependence on the preceding position) — STRONGLY SUPPORTED MECHANISTICALLY, CLINICALLY UNTESTED.
+        Bhandari et al. 2022 (Front Neurol, doi:10.3389/fneur.2022.881156) show by simulation that the
+        debris' initial location and the ORDER of the Roll test's stages change the nystagmus direction,
+        can yield a unilateral or direction-fixed response, AND THAT THE TEST ITSELF MAY REMOVE THE DEBRIS
+        FROM THE CANAL — which INDEPENDENTLY reproduces our R10 (21 s with the healthy ear down).
+        BUT: no study randomises the position before the BLT. Moreover, in Koju the BLT was performed
+        BEFORE the Roll test and only 41% had the expected response — so a prior Roll is not the only cause.
+     H4 (frequent absence of a response) — CLEARLY CONFIRMED:
+        Choung 2006 (n=26) 11.5% without bow or lean · Lee 2010 (n=89) 20.2% · Kim 2016 (n=66) 45%, the BLT
+        lateralised only 36/66 · Koju 2022 (n=44 geo) only 40.9% with the expected response ·
+        Califano 2024 (n=100) HPT non-diagnostic in 20%, direction agreement 75% in BOTH forms.
+        Nowhere any trace of a stable ~90% sensitivity that would refute the hypothesis.
+        NOTE: poor sensitivity does not by itself prove a mechanism — the alternatives are the visibility
+        threshold of the nystagmus, debris dispersion, entrapment against the wall, individual geometry,
+        and too slow an execution.
+     H5 (apo more reproducible than geo) — BADLY FRAMED, needs restating.
+        I equated apogeotropy with a heavy cupula. Apogeotropy is also produced by FREE debris in the
+        ampullary arm, by debris on the canal or utricular side of the cupula, and by transient
+        peri-ampullary canalolithiasis; while persistent geotropic DCPN can be a light cupula. Comparing
+        "geo versus apo" MIXES a mobile mechanism with an immobile one.
+        Data split BY MECHANISM support the intuition: Kim — bow and lean in 63/63 cupulopathies against
+        36/66 canalolithiases; Choi — both components in 85/85 cupulopathies against 48/74 canalolithiases.
+        Data split BY PHENOTYPE do not: Koju 41% geo vs 27% apo; Califano no difference; Lee both
+        components more often in canalolithiasis (62.9%) than in classified cupulolithiasis (41.3%).
+        REVISED H5: in patients with a CONFIRMED PERSISTENT CUPULOPATHY — recognised by nystagmus duration
+        and a reproducible null plane, and NOT by apogeotropy alone — the BLT should be more reproducible
+        than in canalolithiasis with free debris.
+     VERDICT: the core of the hypothesis has NOT been refuted and explains the poor BLT results in
+        canalolithiasis well, but nobody has yet shown clinically a dependence on the immediately
+        preceding position.
+        Defensible version: "In lateral-canal canalolithiasis the presence, direction and amplitude of the
+        nystagmus in the BLT depend on the current location of the free debris; since that location is
+        changed by the preceding position and by earlier tests, the BLT should not be treated as a
+        lateralising feature independent of positional history. The dependence should be much weaker in
+        confirmed persistent cupulopathy."
+        Decisive study: VOG, randomised preparation (affected side / healthy side / neutral), a
+        standardised route to sitting, THE BLT AS THE FIRST TEST, separate reporting of bow / lean /
+        absence of response / direction / SPV / latency. A PARALLEL design, not crossover — because the
+        test itself moves the debris.
+     Literature record: memory otorepo-bowlean-evidence.
+
      FOR CLINICAL DECISION (not mine): (a) the card stops drawing an arrow when the drive is below
      threshold and says "the model does not resolve this"; (b) the direction is taken from the clinical
      rule, explicitly, as a rule rather than a physics result; (c) leave as is. I am not choosing,
      because every option changes clinical content.
+
+ R11. THE ENGINE EQUATES PHENOTYPE WITH MECHANISM: geo≡canalolithiasis, apo≡cupulolithiasis [2026-08-06, OPEN].
+     Came out of verifying H5. For the horizontal canal variantLabels asserts outright "Canalithiasis
+     (geotropic)" and "Cupulolithiasis (apogeotropic)", and gufoniApo carries the code comment
+     "apogeotropic HC-BPPV = CUPULOLITHIASIS: the debris starts EMBEDDED in the cupula". The literature
+     does not support that equation: apogeotropy is also produced by FREE debris in the ampullary arm and
+     by debris on the canal or utricular side of the cupula, while persistent geotropic DCPN can be a
+     light cupula.
+     THE ENGINE CONTRADICTS ITSELF: maneuverSim runs EVERY plan through simulateCanalith, i.e. the physics
+     of FREE debris — including gufoniApo, which is labelled mechanism:"cupulo". And the aim of that
+     maneuver is the apo→geo CONVERSION, which makes sense ONLY for free debris: debris embedded in the
+     cupula has nowhere to move to.
+     So the physics is fine and the LABEL is too strong — and it is the label that teaches the clinician
+     something the data do not support.
+     DIRECTION OF THE FIX: separate the PHENOTYPE (geotropic / apogeotropic — what is seen) from the
+     MECHANISM (free debris / cupulopathy — what is inferred from duration and a reproducible null plane).
+     That is a change of clinical content, so it is the user's decision, not mine.
 
  R10. THE ENGINE HAS NO POSITION MEMORY — the debris start is an ASSUMPTION, not a state [2026-08-05, OPEN].
      Came out of taking R8 apart. restPhi computes the resting point for the UPRIGHT posture as if that
@@ -604,8 +674,20 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      ACTUALLY PERFORMED (lie supine first, then turn the head) makes the debris LEAVE THE CANAL after
      21 s with the HEALTHY ear down. The R1 check ("the diagnostic does not treat") passes only because
      engineXi jumps sitting→Roll without the lying-down stage. Directionally this matches therapy
-     (Vannucchi's forced prolonged position = lying on the HEALTHY side), but the timescale differs:
-     21 s against hours.
+     (Vannucchi's forced prolonged position = lying on the HEALTHY side).
+     CORRECTION 2026-08-06: I wrote earlier that "the timescale differs: 21 s against hours". THAT WAS A
+     BAD COMPARISON — it confused a PARTICLE'S TRANSIT time with the duration of a treatment. Checked from
+     the physics side:
+       the model's terminal velocity v = R/tauP = 2.68 mm / 6.5 s = 0.412 mm/s;
+       by Stokes' law v = (2/9)·Δρ·g·a²/μ that corresponds to a clump radius a ≈ 9.7 µm,
+       i.e. a diameter of ~19 µm — mid-range for the values quoted for human otoconia (1–30 µm).
+     MORE: the engine's size scaling is tauP = tauP₀/r², i.e. v ∝ r² — EXACTLY Stokes' law.
+       size small/medium/large corresponds to radii 7.6 / 9.7 / 13.1 µm and speeds 0.25 / 0.41 / 0.75 mm/s.
+     So tauP is NOT a free parameter — it is equivalent to a physiologically sensible clump radius.
+     CONSEQUENCE FOR R10'S SCOPE: the "timescale" part FALLS AWAY. Only the lack of POSITION MEMORY remains.
+     (A separate, cheap possibility that follows from this: report size in MICROMETRES instead of the
+      0.78/1/1.35 multiplier — the clinician gets a number comparable with the literature rather than a
+      label without a unit. IMPLEMENTED 2026-08-06: sizeUm → 16 / 21 / 29 µm, shown on the guide card.)
      WHAT TO DO: the engine already takes a timeline — what is missing is modelling THE EXAMINATION AS A
      CONTINUOUS SEQUENCE, where each test starts where the previous one left off. A design change, not
      new physics.
@@ -721,61 +803,56 @@ REMAINING (pending decision):
      Bascule mechanism is INERTIAL detachment of debris from the cupula, and an overdamped, purely
      gravity-driven model contains no such phenomenon - beyond the narrow crus-expulsion proxy (crusFling).
 
- R3. [SETTLED BY MEASUREMENT 2026-08-05 after R7] NOT A CALIBRATION DEBT — IT IS A CONSEQUENCE OF R9.
-     CLOSED: (a) the Roll asymmetry at cupular level — |ξ| affected ear down 0.70 vs healthy 0.59, the
-       order correct in the physics itself, without the rescue from Ewald II rectification (it was
-       0.518 vs 0.910, inverted); (b) the ANTERIOR canal's latency — 0.50 s, DERIVED (no adhesion for
-       debris pressed against the cupula), not tuned; matching the clinical "latency short/absent".
-     REMAINING: the horizontal canal has a latency of 2.40 s (posterior 2.20) and a peak of 0.70
-       (posterior 0.87), whereas clinically it should have the SHORTEST latency and the strongest
-       nystagmus.
-     CAUSE — MEASURED, not guessed. The whole difference sits in the fraction of gravity that falls
-       into the canal's PLANE in the provoking position: posterior in Dix-Hallpike gets 0.999, the
-       horizontal in the Roll only 0.855. Drive decomposition (probe 42): posterior |g|_plane 0.999 →
-       drive 0.144 → latency 2.20; horizontal 0.855 → 0.131 → 2.40. Nothing else differs.
-     WHERE 0.855 COMES FROM: the 30° neck flexion the test description prescribes. Probe 44 — the
-       relation is MONOTONIC and it is the instruction that hurts:
-         flexion  0° → |g|_plane 1.000 → latency 1.90 s → peak 0.81
-         flexion 30° → |g|_plane 0.855 → latency 2.40 s → peak 0.70   (the app's description)
-         flexion 60° → |g|_plane 0.499 → latency 5.80 s → peak 0.43
-       At 0° the latency ordering is ALREADY correct (horizontal 1.90 < posterior 2.20), with no
-       constant touched.
-     CORRECTION 2026-08-05 (probe 47): THE LINK TO R9 WAS MY ERROR. I wrote earlier that the model asks
-       for 0° because its lateral canal is 10.4° rather than 30°, so R3 would close together with R9.
-       CHECKED AND FALSE: the optimal flexion comes out at −2° for EVERY frame pitch (0/−10/−20/−30°),
-       because it is governed by the INTERAURAL component of the lateral canal's normal (n_x ≈ −0.03),
-       which a rotation about the interaural axis does not touch. Pitching to the canonical 30.3° raises
-       |g|_plane only from 0.855 to 0.889 and shortens the latency 2.40→2.30 s — still above the
-       posterior canal's 2.20. R3 is NOT a consequence of R9.
-       (A second hypothesis was also rejected: that the 30° serves to ISOLATE the horizontal canal. The
-        posterior/horizontal drive ratio in the Roll position is FLAT at ~0.79 for every flexion — the
-        flexion isolates nothing; it only nulls the anterior canal near 20°.)
-     I AM STILL NOT CHANGING THE INSTRUCTION: 30° is widespread clinical practice, and the model cannot
-       say what that practice buys — its disagreement argues for further study of the MODEL, not for
-       changing advice given to a clinician.
-     WHY WE MUST NOT "FIX" IT WITH A PER-CANAL CONSTANT: I checked the most promising one — the arc
-       radius, MEASURED on the same atlas (posterior 3.50 · anterior 3.32 · lateral 2.68 mm; literature
-       Curthoys & Oman: 3.3 / 3.2 / 2.4 — agreeing in order and magnitude). Scaling tauP ∝ R shortens
-       the lateral canal's latency, BUT consistent physics also requires gc ∝ R (displaced endolymph
-       volume ∝ R·Δφ), and then the peak FALLS. The net effect depends on which of two readings of the
-       phenomenological ξ one adopts — i.e. it would be a choice made for the desired answer, layered
-       on top of a known geometric error. I am not adding that constant.
-     CONCLUSION (after correction): R3 stays OPEN and INDEPENDENT of R9. The mechanism is known (15% of
-       the drive is lost to the 30° flexion); what that flexion buys in return is not — the model
-       reproduces none of the benefit clinic attributes to it. Per-canal calibration remains DISCOURAGED:
-       it would paper over that gap with a number instead of explaining it.
-     CLOSED: the Roll asymmetry at cupular level. |ξ| affected ear down 0.70 vs healthy 0.59 — the order
-       is clinically CORRECT already at cupular level, without needing the rescue from Ewald II
-       rectification (it was 0.518 vs 0.910, i.e. inverted). The derived particle start fixed this, not
-       constant tuning.
-     OPEN: the latency ordering. Posterior 2.30 s / |ξ| 0.87 · horizontal 2.65 s / 0.70 · anterior no
-       response (drive 0.012 < threshold — that is R7, not R3). The horizontal canal still does NOT have
-       the shortest latency or the strongest nystagmus, as clinic requires.
-     OBSOLETE, however, is the whole MECHANISM below: it derived its numbers from the φ=90 start, which
-       no longer exists (restPhi: 48.8 / 199.8 / 3). The formula lat ≈ adh/(|g·e1|/tauP − fStat) no longer
-       applies — the tangent is now taken at the resting position, not at φ=90. The caveat "calibrate R3
-       AFTER rebuilding the geometry" STANDS and has just become actionable: the geometry is measured and
-       closed, so R3 can finally be calibrated, but it must be RECOMPUTED from scratch.
+ R3. [RE-MEASURED 2026-08-06] THE ORIGINAL FORMULATION IS WITHDRAWN; ONE QUESTION REMAINS, DEPENDENT ON R10.
+     CLOSED:
+       (a) the Roll asymmetry at cupular level — |ξ| affected ear down 0.70 vs healthy 0.59, the order
+           already correct in the physics itself (it was 0.518 vs 0.910, i.e. inverted). The DERIVED start
+           fixed this, not tuning.
+       (b) the ANTERIOR canal's latency — 0.50 s, DERIVED (no adhesion for debris pressed against the
+           cupula). The signature of a derivation: it is INDEPENDENT OF DEBRIS SIZE (0.50/0.50/0.45 for
+           small/medium/large), which no tuned constant would give.
+       (c) THE FORMULATION ITSELF — "the constants were calibrated for the posterior canal, the others
+           inherit them without validation" — WITHDRAWN AS INACCURATE. Measured: no constant affecting
+           amplitude differs between canals (tauP, tauC, gc, fStat, adh are shared; only the sign of exc
+           differs, plus the presence of the crus chamber, which acts only at the opening). The whole
+           difference is GEOMETRIC:
+             posterior in Dix    |g|_plane 0.999 × sin(Δ)=0.936 → 0.935
+             horizontal in Roll  |g|_plane 0.855 × sin(Δ)=0.998 → 0.853   (the angle favours the
+                                                                           HORIZONTAL; |g|_plane loses it)
+           i.e. 9.6% of drive, entirely from the geometry of the position, not from an inherited constant.
+     WHAT REMAINS NUMERICALLY: posterior 2.20 s / 0.87 · horizontal 2.40 s / 0.70, whereas clinically the
+       horizontal canal should have the SHORTEST latency and the strongest nystagmus.
+     THIS MAY REQUIRE NO ENGINE FIX AT ALL. Measured sensitivity: debris with a 10% larger radius (33%
+       larger volume) is enough for the horizontal canal to overtake the posterior one in BOTH quantities
+       at once (latency 2.05 vs 2.20 s, peak 1.04 vs 0.87). That fits inside a variable the model ALREADY
+       HAS (size), and it has a clinical rationale: the utricle sits above the horizontal canal's
+       non-ampullary opening, and HC-BPPV often arises as a canal switch after treating the posterior
+       canal — i.e. the debris LITERALLY moves from the posterior canal into the horizontal one. THIS IS
+       NOT PROOF, only an indication that the residual difference lies within a clinical variable rather
+       than a missing per-canal constant. To be checked against the literature.
+       DISPLAY CAVEAT: at size "large" ξ exceeds 1 in both canals (3.04 and 2.43) and dynNystagmus clips
+       intensity at 1 — so above medium the difference is INVISIBLE in the UI.
+     THE ONLY OPEN QUESTION: WHAT IS the clinical 30° neck flexion in the Roll test FOR, given that in this
+       geometry it costs 15% of the drive? Four candidates checked:
+         1. to stand the canal vertical — NO: at 0° flexion |g|_plane = 1.000, the optimum falls at −2°
+            and does NOT depend on the frame pitch (see the correction to the link with R9).
+         2. to ISOLATE the horizontal canal from the vertical ones — NO: the posterior/horizontal drive
+            ratio is FLAT at ~0.79 for every flexion; only the anterior canal nulls, near 20°.
+         3. to equalise the two Roll positions so that the side comparison is fair — NO: the geometric
+            asymmetry is 0.0% at EVERY flexion; both positions are mirror images by construction.
+         4. to PROTECT THE TEST FROM BECOMING A TREATMENT — PARTLY. With the HEALTHY ear down the debris
+            leaves the canal after 15.3 s (flexion 0°), 20.9 s (30°), 42.4 s (50°). The direction is right,
+            but 30° buys only ~6 s — both values fit inside a normal 30–60 s hold.
+       AND HERE IS THE BLOCK — BUT NOT WHERE I FIRST PUT IT. This used to read: "candidate 4 is undecidable
+       as long as the emptying timescale is wrong — the model clears the horizontal canal in 21 s while
+       Vannucchi's forced prolonged position works over hours". THAT WAS WITHDRAWN the same day in R10: the
+       timescale is NOT wrong (I had confused a particle's transit with the duration of a treatment), and
+       tauP is equivalent to Stokes' law for a ~9.7 µm clump. THE BLOCK is R10's other half — THE LACK OF
+       POSITION MEMORY: whether "30° protects the test from becoming a treatment" depends on WHERE the
+       debris lies AT THE START, and that is something the engine today ASSUMES rather than knows.
+     CONCLUSION: R3 reduces to a single question and is BLOCKED ON R10. Per-canal calibration remains
+       DISCOURAGED — there is nothing to calibrate — the difference is geometric, and the rest fits inside
+       the amount of debris.
  R3-OLD. THE CONSTANTS WERE CALIBRATED FOR THE POSTERIOR CANAL ONLY; the horizontal and anterior canals inherit
      them without their own validation and come out clinically backwards:
         latency:  posterior 1.95 s . HORIZONTAL 2.30 s . anterior 3.15 s

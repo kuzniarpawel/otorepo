@@ -648,8 +648,7 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      SKUTEK UBOCZNY, WAŻNIEJSZY NIŻ SAM Bow & Lean: wejście w pozycję Roll TAK, JAK SIĘ JĄ WYKONUJE
      (najpierw położenie na plecach, potem obrót głowy) prowadzi do OPUSZCZENIA KANAŁU po 21 s przy uchu
      ZDROWYM w dole. Kontrola R1 („diagnostyka nie leczy") przechodzi tylko dlatego, że engineXi robi
-     skok siad→Roll bez etapu leżenia. Kierunkowo to zgodne z terapią (wymuszona długa pozycja wg
-     Kierunkowo to zgodne z terapią (wymuszona długa pozycja wg Vannucchiego = leżenie na boku ZDROWYM).
+     skok siad→Roll bez etapu leżenia. Kierunkowo to zgodne z terapią (wymuszona długa pozycja wg Vannucchiego = leżenie na boku ZDROWYM).
      KOREKTA 2026-08-06: napisałem wcześniej, że „skala czasu jest inna: 21 s wobec godzin". TO BYŁO ZŁE
      PORÓWNANIE — myliło czas PRZEJŚCIA CZĄSTKI z czasem trwania zabiegu. Sprawdzone od strony fizyki:
        prędkość graniczna w modelu v = R/tauP = 2.68 mm / 6.5 s = 0.412 mm/s;
@@ -660,7 +659,8 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      Czyli tauP NIE jest wolnym parametrem — jest równoważne fizjologicznie sensownemu promieniowi kłębka.
      SKUTEK DLA ZAKRESU R10: część „skala czasu" ODPADA. Zostaje wyłącznie brak PAMIĘCI POŁOŻENIA.
      (Osobna, tania możliwość, która z tego wynika: podać size w MIKROMETRACH zamiast mnożnika 0.78/1/1.35 —
-      klinicysta dostaje liczbę porównywalną z piśmiennictwem, a nie etykietę bez jednostki.)
+      klinicysta dostaje liczbę porównywalną z piśmiennictwem, a nie etykietę bez jednostki.
+      WDROŻONE 2026-08-06: sizeUm → 16 / 21 / 29 µm, pokazywane na karcie manewru.)
      CO Z TYM ZROBIĆ: silnik już przyjmuje oś czasu — brakuje modelowania BADANIA JAKO CIĄGŁEJ SEKWENCJI,
      w której każdy test zaczyna się tam, gdzie skończył poprzedni. To zmiana projektowa, nie nowa fizyka.
 
