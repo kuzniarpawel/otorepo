@@ -136,6 +136,10 @@ const HANDLE_NAMES = [
   // Blok 15 — generator opisu badania. Brak = handleMissing = twardy exit(1): ekran, ktorego
   // nie da sie wysterowac z testu, nie bylby przypiety zadna wyrocznia.
   'goOpis', 'przelaczSekcjeOpisu', 'edytujOpis', 'ustawTolerancjeKontroli',
+  // Blok 16 — pasek nowej wersji i skroty. Brak = handleMissing = twardy exit(1): komunikat,
+  // ktorego nie da sie wysterowac z testu, nie bylby przypiety zadna wyrocznia.
+  'aktualizacjaCzeka', 'zerujAktualizacje', 'schowajAktualizacje', 'wdrozAktualizacjeTeraz',
+  'obsluzKlawisz', 'syncAktualizacja',
   // Blok 13 — tryb nauki. Ekran, ktorego nie da sie wysterowac z testu, nie bylby przypiety zadna
   // wyrocznia; brak uchwytu = handleMissing = twardy exit(1), a nie ciche zwezenie pokrycia.
   'goNauka', 'otworzPrzypadek', 'wrocDoBiblioteki', 'ustawFiltrNauki', 'goEtapNauki',
@@ -806,7 +810,12 @@ function shellOracle(h, win) {
     let s;
     try { s = sh.outerHTML; } finally { if (app) app.innerHTML = zapamietane; }
     const mapa = doc.getElementById('flowmap');
-    return s + (mapa && !mapa.hidden ? '\n@@FLOWMAP@@' + mapa.outerHTML : '');
+    /* Blok 16: pasek nowej wersji leży POZA #shell (jak arkusz i mapa kroków), więc dopisujemy go
+       na tej samej zasadzie — TYLKO gdy jest widoczny. Dzięki temu dwadzieścia przypiętych stanów
+       powłoki zostaje bajt w bajt takie samo, a nowe stany pinują sam komunikat. */
+    const upd = doc.getElementById('updbar');
+    return s + (mapa && !mapa.hidden ? '\n@@FLOWMAP@@' + mapa.outerHTML : '')
+             + (upd && !upd.hidden ? '\n@@AKTUALIZACJA@@' + upd.outerHTML : '');
   };
   const grab = (tag, fn) => { try { fn(); out[tag] = zrzut(); } catch (e) { out[tag] = 'ERR:' + e.message; } };
   const st = h.state;
@@ -989,6 +998,32 @@ function shellOracle(h, win) {
     h.openTest && h.openTest('dix');            // uzytkownik idzie dalej mimo flagi
     h.syncShell && h.syncShell();
   });
+
+  /* BLOK 16 — PASEK NOWEJ WERSJI. Dwa stany, i drugi jest wazniejszy:
+     • `aktualizacja/gotowa` — nowa wersja czeka, przypadku nie ma: pasek proponuje wdrozenie,
+     • `aktualizacja/manewr` — TA SAMA nowa wersja w trakcie repozycji. Pasek ma tu NIE MIEC
+       przycisku wdrozenia i powiedziec, ze poczeka. Gdyby ktos kiedys „dla wygody" dolozyl tu
+       przycisk, zloty wzorzec zapali sie natychmiast — a to jest dokladnie ta zmiana, ktora
+       przerywa manewr wykonywany na pacjencie.
+     Stan zerujemy na koncu, bo pola aktualizacji PRZEZYWAJA nawigacje (jak rekordy obserwacji
+     i historia kontroli) — bez tego wyciekalyby na kolejne scenariusze. */
+  if (h.aktualizacjaCzeka) {
+    grab('aktualizacja/gotowa', () => {
+      czysty(); if (h.zerujAktualizacje) h.zerujAktualizacje();
+      h.goArea && h.goArea('start');
+      h.aktualizacjaCzeka(); h.syncShell && h.syncShell();
+    });
+    grab('aktualizacja/manewr', () => {
+      czysty(); if (h.zerujAktualizacje) h.zerujAktualizacje();
+      h.goArea && h.goArea('diag');
+      h.openTest && h.openTest('dix'); h.setDiagSide && h.setDiagSide('P');
+      h.startManeuver && h.startManeuver('epley');
+      h.goStep && h.goStep(1);
+      h.aktualizacjaCzeka(); h.syncShell && h.syncShell();
+    });
+    if (h.zerujAktualizacje) h.zerujAktualizacje();
+    h.syncAktualizacja && h.syncAktualizacja();
+  }
   czysty();
   return out;
 }
