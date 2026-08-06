@@ -521,6 +521,30 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      KONSEKWENCJA, która wymaga decyzji: karta testu rysuje dziś strzałkę kierunku dla postaci
        geotropowej, choć dynamika mówi, że żaden oczopląs tam nie powstaje. To ta sama klasa problemu,
        co usunięta 2026-08-05 fabrykacja w stepXiPeak: ekran twierdzi coś, czego model nie policzył.
+     HIPOTEZA DO WERYFIKACJI ZEWNĘTRZNEJ (do skonfrontowania z piśmiennictwem — model jej NIE dowodzi,
+     tylko ją stawia; sformułowana tak, żeby dawała się OBALIĆ):
+       H1. W głowie wyprostowanej najniższy punkt kanału bocznego leży kilka stopni ZA punktem
+           dokładnie naprzeciw bańki (bo bańka leży powyżej środka płaszczyzny kanału). Zmierzone:
+           spoczynek 199.8°, punkt równowagi skłonu 190.0° — margines 9.8°.
+       H2. Kierunek oczopląsu w skłonie rozstrzyga zatem różnica wysokości ~29 µm na dnie kanału —
+           wielkość porównywalna ze średnicą samego kłębka otokoniów.
+       H3. PRZEWIDYWANIE: kierunek/obecność oczopląsu w skłonie zależy od tego, co pacjent robił
+           bezpośrednio przed badaniem (leżenie na boku chorym / zdrowym / wcześniejszy Roll lub Dix).
+           Zmierzone w modelu: φ startowe 132–267° zależnie od scenariusza (patrz R10).
+       H4. PRZEWIDYWANIE: u istotnej części chorych z jednoznacznie geotropowym Roll testem oczopląs
+           w skłonie będzie NIEOBECNY albo niejednoznaczny.
+       H5. PRZEWIDYWANIE: w postaci APOGEOTROPOWEJ (kupulolitiaza) Bow & Lean powinien być BARDZIEJ
+           powtarzalny niż w geotropowej — ciężki osklepek reaguje na sam kierunek grawitacji, nie
+           musi nigdzie jechać i nie ma żadnego wododziału do przekroczenia. W modelu: ξ 0.100/−0.087
+           (kupulo) wobec 0.000 (kanalo).
+     CO BY TO OBALIŁO: wysoka i powtarzalna czułość kierunku skłonu (rzędu >90%), niezależna od pozycji
+       poprzedzającej; albo doniesienia, że Bow & Lean jest PEWNIEJSZY w postaci geotropowej niż
+       apogeotropowej; albo pomiar anatomiczny kładący najniższy punkt kanału bocznego wyraźnie po
+       stronie ampułkowej punktu antypodalnego.
+     GDZIE SZUKAĆ: Choung 2006 (praca źródłowa) i późniejsze walidacje — zgodność z Roll testem, odsetek
+       chorych BEZ oczopląsu w skłonie lub odchyleniu, osobno dla postaci geo- i apogeotropowej;
+       prace kontrolujące pozycję poprzedzającą badanie (rzadkie — i to samo w sobie jest tezą).
+
      DO DECYZJI KLINICZNEJ (nie moja): (a) karta przestaje rysować strzałkę, gdy napęd < progu
      i mówi „model nie rozstrzyga"; (b) kierunek bierzemy z reguły klinicznej, jawnie, jako regułę
      a nie wynik fizyki; (c) zostaje jak jest. NIE wybieram sam, bo każda opcja zmienia treść kliniczną.
