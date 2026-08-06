@@ -328,7 +328,18 @@ const POSE_SPEC = {
   "leanL|floor":   {roll:-90, trunk:0,   pitch:0,    dyaw:+45},  // Gufoni geo krok 3: „nos ku podłodze" [UZUP 45° — Gufoni/Appiani]
   "leanR|floor":   {roll:+90, trunk:0,   pitch:0,    dyaw:-45},
 };
-const poseOf=(body,face)=>POSE_SPEC[body+"|"+face] || POSE_SPEC[body+"|fwd"] || POSE_SPEC["sit|fwd"];
+// NEUTRALNA POZA CIAŁA — jedno pojęcie „domyślnej postawy tego ciała", z którego korzystają
+// zarówno łańcuch zapasowy poseOf, jak i orientacja tułowia (TORSO_Q) i zawias biodrowy (bodyJoints).
+// Wariant „fwd" wygrywa, jeśli istnieje; ciała, które go nie mają (wszystkie supine*, prone),
+// biorą własny jedyny wariant.
+const BODY_NEUTRAL=(()=>{ const out={};
+  for(const key of Object.keys(POSE_SPEC)){ const [body,face]=key.split("|");
+    if(!out[body] || face==="fwd") out[body]=POSE_SPEC[key]; }
+  return out; })();
+// [2026-08-06] Łańcuch zapasowy kończył się na POSE_SPEC["sit|fwd"] — pozie INNEGO ciała.
+// Brakująca twarz dla ciała leżącego dawała więc pozę SIEDZĄCĄ (tułów 0°), a nie „to samo ciało,
+// głowa w neutrum". Teraz zapas jest wewnątrz ciała; do sit|fwd schodzimy tylko dla ciała spoza tabeli.
+const poseOf=(body,face)=>POSE_SPEC[body+"|"+face] || BODY_NEUTRAL[body] || POSE_SPEC["sit|fwd"];
 const headQOf=(roll,pitch,yaw)=>Vestibular.qmul(Vestibular.qmul(
   Vestibular.qaxis([0,0,1],roll), Vestibular.qaxis([1,0,0],pitch)), Vestibular.qaxis([0,1,0],yaw));
 function stepHeadQ(body, yaw, face){                  // orientacja głowy (head→świat) dla kroku
@@ -380,8 +391,7 @@ const POSE3D={
 // Dawniej wpisana ręcznie obok BASE_G, przez co szkielet mógł opisywać inną pozę niż fizyka (i opisywał:
 // supineFlat miał tułów −90° przy grawitacji liczonej dla −100°, a kark „prostował" tę różnicę).
 const TORSO_Q=(()=>{ const out={};
-  for(const key of Object.keys(POSE_SPEC)){ const body=key.split("|")[0]; if(out[body]) continue;
-    const s=poseOf(body,"fwd");
+  for(const body of Object.keys(BODY_NEUTRAL)){ const s=BODY_NEUTRAL[body];
     out[body]=Vestibular.qmul(Vestibular.qaxis([0,0,1],s.roll), Vestibular.qaxis([1,0,0],s.trunk)); }
   return out; })();
 function bodyClass(b){ return b.startsWith("supine")?"supine":(b==="sideL"||b==="sideR")?"side":(b==="leanL"||b==="leanR")?"lean":b; }
@@ -390,12 +400,17 @@ function bodyJoints(body,face){                       // pozycje 3D stawów po o
   const s=poseOf(body,face);
   const nd=s.pitch - s.trunk;                          // KARK = kąt głowy − kąt tułowia (<0 wyprost, >0 zgięcie do mostka) — wprost z tabeli pozy
   if(nd) pose.neckBase=Vestibular.qaxis([1,0,0], nd);
-  const F=s.trunk - poseOf(body,"fwd").trunk;          // ZAWIAS BIODROWY: o ile tułów tej pozy odchyla się od neutralnej (Bow & Lean: +45°)
+  const F=s.trunk - (BODY_NEUTRAL[body]||s).trunk;     // ZAWIAS BIODROWY: o ile tułów tej pozy odchyla się od neutralnej TEGO ciała (Bow & Lean: +45°)
   if(F){                                               // sam kark nie oddaje skłonu — pada CAŁY tułów nad uda (patrz rycina Bow & Lean)
     pose.pelvis=Vestibular.qaxis([1,0,0], F);           // tułów w przód (zawias w biodrach)
     pose.hipL=Vestibular.qaxis([1,0,0], -90-F); pose.hipR=Vestibular.qaxis([1,0,0], -90-F);   // uda niezmienione — kontr-obrót znosi obrót miednicy (nogi zostają)
     pose.shL=Vestibular.qaxis([1,0,0], -F); pose.shR=Vestibular.qaxis([1,0,0], -F);            // ramiona zwisają pionowo (kontr-obrót barków)
   }
+  // [2026-08-06] Kontr-obrót barków ma sens TYLKO przy zawiasie z postawy pionowej (skłon Bow).
+  // Dopóki neutralę brano z sit|fwd, każde ciało leżące dostawało F=−90° i ten sam kontr-obrót:
+  // ręce sterczały 48 j. pionowo w dół, POD blat. Renderer kotwiczy sylwetkę najniższym punktem
+  // (dy=−minY), więc na dłoniach stawiał całego pacjenta — tułów wisiał w powietrzu nad kozetką.
+  // Teraz neutralą ciała leżącego jest ono samo → F=0, brak kontr-obrotu, ręce leżą wzdłuż tułowia.
   // (leanL/leanR: dawny hack unoszący górną rękę był potrzebny TYLKO dla kamery odgórnej, gdzie kończyny
   //  obu boków rzutowały się na siebie. Widok frontalny rozdziela barki po ekranowym Y → ręce proste.)
   const local=fkJoints(pose), TQ=TORSO_Q[body]||[1,0,0,0], out={};
