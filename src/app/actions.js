@@ -21,7 +21,10 @@ import { ustawTolerancje } from './followup-state.js';
 import { pakietEksportu } from './opis-model.js';
 import { opisDeps } from './opis-deps.js';
 import { ustawSekcje, ustawEdycje, wyczyscEdycje, wczytajSesjeStan, zapiszSesjeStan, przywrocSesjeStan, usunSesjeStan, usunWszystkieStan } from './opis-state.js';
-import { tekstOpisu, tekstOpisuDoKopiowania } from '../render/svg-screens.js';
+import { tekstOpisu, tekstOpisuDoKopiowania, toggleTimer } from '../render/svg-screens.js';
+import { skrot, wdrozenieAutomatyczne } from './pwa-model.js';
+import { ustawCzekajaca, schowajPasek, ustawWdrazana, cofnijWdrazanie, zerujAktualizacje as zerujAktualizacjeStan } from './pwa-state.js';
+import { wdrozAktualizacje } from '../runtime/pwa.js';
 import { wolnoBadac, nastepnyElement, ELEMENT_IDS } from './hints-model.js';
 import { przypadek as przypadekNauki } from './nauka-model.js';
 import { naukaDeps } from './nauka-deps.js';
@@ -635,6 +638,12 @@ function zakonczSesje(){
   zakonczSesjeStan(state);
   releaseWake();
   state.screen="start"; state.area="start"; render();
+  /* BLOK 16, KRYTERIUM ODBIORU NR 3: „aktualizacja jest komunikowana i WYKONYWANA PO ZAKONCZENIU
+     SESJI". Wdrazamy tutaj, a nie przy wykryciu nowej wersji, i nie bezwarunkowo: wdrozenie
+     przeladowuje karte, wiec pwa-model.wdrozenieAutomatyczne najpierw MIERZY na stanie, czy
+     zostalo jeszcze cokolwiek do stracenia. Po zakonczeniu sesji nie zostaje — i dlatego to
+     jedyny moment, w ktorym przeladowanie niczego nie kosztuje. */
+  if(wdrozenieAutomatyczne(state)) wdrozAktualizacjeTeraz();
 }
 
 // Potwierdzenie przerwy w obserwacji (kryterium odbioru nr 3). To JAWNY gest czlowieka: aplikacja
@@ -861,6 +870,54 @@ function ustawTolerancjeKontroli(id){
   render();
 }
 
+/* ============ Blok 16: aktualizacja PWA i skroty klawiaturowe ============ */
+
+// Odswiezenie paska idzie przez guardowany uchwyt globalny — actions.js NIE importuje powloki
+// (ta ma zostac lisciem grafu), dokladnie jak przy __otoLangChange.
+function odswiezPasekAktualizacji(){
+  try{ if(typeof window!=="undefined" && typeof window.__otoAktualizacja==="function") window.__otoAktualizacja(); }catch(e){}
+}
+// Wolane przez adapter przegladarki, gdy nowa wersja zainstalowala sie i CZEKA.
+function aktualizacjaCzeka(){ if(ustawCzekajaca(state)) odswiezPasekAktualizacji(); }
+// Uzywane WYLACZNIE przez wyrocznie i scenariusze zlotego wzorca: pola aktualizacji przezywaja
+// nawigacje (jak rekordy obserwacji), wiec bez zerowania scenariusze wyciekalyby jeden na drugi.
+function zerujAktualizacje(){ zerujAktualizacjeStan(state); odswiezPasekAktualizacji(); }
+function schowajAktualizacje(){ if(schowajPasek(state)) odswiezPasekAktualizacji(); }
+/* WDROZENIE NA ZYCZENIE. Odmowa przy trwajacym manewrze nie jest awaria, tylko CELEM tego bloku —
+   dlatego zwracamy powod, a nie ciche `undefined`. Samo przeladowanie robi 'controllerchange'
+   w src/runtime/pwa.js: karta przeladowana przed przejeciem dostalaby z powrotem stary dokument. */
+function wdrozAktualizacjeTeraz(){
+  const r = ustawWdrazana(state);
+  odswiezPasekAktualizacji();
+  if(!r.ok) return r;
+  if(!wdrozAktualizacje()){ cofnijWdrazanie(state); odswiezPasekAktualizacji(); return {ok:false, powod:"brakCzekajacej"}; }
+  return r;
+}
+
+/* SKROTY KLAWIATUROWE (dokument, kolumna „Komputer": spacja pauza/wznowienie, strzalki krok).
+   Tlumaczenie KeyboardEvent na obiekt jest CALA rola tej funkcji — decyzja nalezy do czystego
+   pwa-model.skrot, zeby dalo sie ja zmierzyc bez przegladarki. Zwracamy decyzje (a nie boolean),
+   bo wyrocznia sprawdza NAZWANY powod odmowy, a nie samo „nic sie nie stalo". */
+function celZdarzenia(el){
+  if(!el || typeof el !== "object") return {tag:"", typ:"", edytowalne:false, rola:""};
+  const attr = (n) => (typeof el.getAttribute === "function" ? (el.getAttribute(n) || "") : "");
+  return { tag: el.tagName || "", typ: attr("type"), edytowalne: !!el.isContentEditable, rola: attr("role") };
+}
+function obsluzKlawisz(e){
+  if(!e) return null;
+  const d = skrot({ key:e.key, ctrlKey:!!e.ctrlKey, altKey:!!e.altKey, metaKey:!!e.metaKey,
+                    shiftKey:!!e.shiftKey, repeat:!!e.repeat, cel:celZdarzenia(e.target) }, state);
+  if(!d.akcja) return d;
+  if(!state.plan || !state.plan.steps) return { akcja:null, powod:"brakKroku", skrot:d.skrot };
+  // preventDefault dopiero TERAZ: gdyby stal wyzej, spacja przestalaby przewijac strone nawet
+  // wtedy, gdy skrot odmawia.
+  if(typeof e.preventDefault === "function") e.preventDefault();
+  if(d.akcja === "przelaczLicznik") toggleTimer();
+  else if(d.akcja === "nastepnyKrok") goStep(state.step+1);
+  else if(d.akcja === "poprzedniKrok") goStep(state.step-1);
+  return d;
+}
+
 function setLangUI(lang){
   setLang(lang);
   if(state.plan && state.screen==="guide"){
@@ -874,8 +931,8 @@ function setLangUI(lang){
 }
 
 
-export { goOpis, przelaczSekcjeOpisu, edytujOpis, ustawEdycjeOpisu, wrocDoWyliczonego, kopiujOpis, eksportujOpis, zapiszSesjeOpisu, usunSesjeOpisu, usunWszystkieSesjeOpisu, przywrocSesjeOpisu, wczytajSesjeOpisu, ustawTolerancjeKontroli, goLab, otworzEksperymentLab, wrocDoEksperymentow, ustawStanowiskoLab, przelaczPorownanieLab, ustawParametrLab, resetLab, opisParametruLab, goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { aktualizacjaCzeka, zerujAktualizacje, schowajAktualizacje, wdrozAktualizacjeTeraz, obsluzKlawisz, goOpis, przelaczSekcjeOpisu, edytujOpis, ustawEdycjeOpisu, wrocDoWyliczonego, kopiujOpis, eksportujOpis, zapiszSesjeOpisu, usunSesjeOpisu, usunWszystkieSesjeOpisu, przywrocSesjeOpisu, wczytajSesjeOpisu, ustawTolerancjeKontroli, goLab, otworzEksperymentLab, wrocDoEksperymentow, ustawStanowiskoLab, przelaczPorownanieLab, ustawParametrLab, resetLab, opisParametruLab, goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { goOpis, przelaczSekcjeOpisu, edytujOpis, ustawEdycjeOpisu, wrocDoWyliczonego, kopiujOpis, eksportujOpis, zapiszSesjeOpisu, usunSesjeOpisu, usunWszystkieSesjeOpisu, przywrocSesjeOpisu, wczytajSesjeOpisu, ustawTolerancjeKontroli, goLab, otworzEksperymentLab, wrocDoEksperymentow, ustawStanowiskoLab, przelaczPorownanieLab, ustawParametrLab, resetLab, opisParametruLab, goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { schowajAktualizacje, wdrozAktualizacjeTeraz, goOpis, przelaczSekcjeOpisu, edytujOpis, ustawEdycjeOpisu, wrocDoWyliczonego, kopiujOpis, eksportujOpis, zapiszSesjeOpisu, usunSesjeOpisu, usunWszystkieSesjeOpisu, przywrocSesjeOpisu, wczytajSesjeOpisu, ustawTolerancjeKontroli, goLab, otworzEksperymentLab, wrocDoEksperymentow, ustawStanowiskoLab, przelaczPorownanieLab, ustawParametrLab, resetLab, opisParametruLab, goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, potwierdzPrzerwe, zmienManewr, ustawTrybCzasu, zakonczSerie, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, togglePorownanie, goObs, wrocDoProby, setObsWystapil, setObsPole, oznaczObsPole, setObsPowod, setObsGrupa, wyczyscObs, przyjmijObs, toggleVizPause, setVizSpeed, vizStepFwd, resetViz, openTriage, setTriage, toggleTriageFlaga, goTriageStep, resetTriage, triageGo, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });

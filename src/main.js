@@ -10,7 +10,9 @@ import { initLang } from './i18n.js';
 import { releaseWake } from './runtime/registry.js';
 import { probaKanalu, sygnalKonwersji } from './app/man-model.js';
 import { manDeps } from './app/man-deps.js';
-import { mountShell, syncShell, initShellObservers, mountNav, mountFlow, goArea, goFlowStep, setReducedMotion } from './app/shell.js';
+import { mountShell, syncShell, initShellObservers, mountNav, mountFlow, mountAktualizacja, syncAktualizacja, goArea, goFlowStep, setReducedMotion } from './app/shell.js';
+import { zarejestrujSW } from './runtime/pwa.js';
+import { aktualizacjaCzeka, zerujAktualizacje, schowajAktualizacje, wdrozAktualizacjeTeraz, obsluzKlawisz } from './app/actions.js';
 
 // Etap 5: 3D jest DOMYŚLNYM rendererem karty „Ułożenie" tam, gdzie WebGL działa.
 // Ustawiane raz na boot (NIE w literale state.js) — jsdom/harness bez WebGL → view3d=false → SVG → golden bez zmian.
@@ -48,6 +50,14 @@ mountFlow({ recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[
 try {
   if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) setReducedMotion(true);
 } catch { /* brak matchMedia → zostaje domyślne false */ }
+/* Blok 16 — PWA. Pasek nowej wersji montujemy PRZED rejestracją workera: gdyby worker zdążył
+   zgłosić czekającą wersję do pustego paska, komunikat przepadłby do najbliższego syncShell. */
+mountAktualizacja({ wdrozAktualizacjeTeraz, schowajAktualizacje });
+zarejestrujSW(aktualizacjaCzeka);
+/* Skróty klawiaturowe (dokument, kolumna „Komputer"). Nasłuch jest GLOBALNY, ale decyzja należy
+   do czystego pwa-model.skrot — i domyślnie brzmi „nie": spacja na przycisku ma go wcisnąć,
+   a strzałka w suwaku fazy ma przestawić fazę, nie etap manewru. */
+try { document.addEventListener('keydown', obsluzKlawisz); } catch { /* brak DOM → brak skrótów */ }
 syncShell();
 render();
 // Obserwatory PO pierwszym renderze — przed nim nie ma czego mierzyć. W try/catch, bo awaria
@@ -67,4 +77,6 @@ try {
 
 
 
-window.__OTOREPO_TEST__ = { goOpis, przelaczSekcjeOpisu, edytujOpis, ustawEdycjeOpisu, wrocDoWyliczonego, kopiujOpis, eksportujOpis, zapiszSesjeOpisu, przywrocSesjeOpisu, usunSesjeOpisu, usunWszystkieSesjeOpisu, wczytajSesjeOpisu, ustawTolerancjeKontroli, goLab, otworzEksperymentLab, wrocDoEksperymentow, ustawStanowiskoLab, przelaczPorownanieLab, ustawParametrLab, resetLab, opisParametruLab, goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje,  potwierdzPrzerwe, ustawTrybCzasu, zmienManewr, pickCanal, pickSide, openMan, goStep, pickSize, zakonczSerie, Vestibular, NeuroVOR, Scene3D, composeHead, stepHeadQ, stepGravity, bodyJoints, poseSpec, gravArrowFor, genPlan, MANEUVERS, CANALS, DIAG, CANAL_OF, HINTS_PRESETS, TORSO_Q, state, render, startManeuver, setGuideSide, openTest, setDiagSide, setDixObs, setVariant, openHints, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsFix, setHintsGaze, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, goArea, setReducedMotion, setMode, syncShell, goFlowStep, toggleDiagCentral, openTriage, setTriage, toggleTriageFlaga, resetTriage, goObs, setObsPole, oznaczObsPole, setObsGrupa, wyczyscObs, przyjmijObs, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby };
+window.__OTOREPO_TEST__ = { aktualizacjaCzeka, zerujAktualizacje, schowajAktualizacje, wdrozAktualizacjeTeraz, obsluzKlawisz, syncAktualizacja, goOpis, przelaczSekcjeOpisu, edytujOpis, ustawEdycjeOpisu, wrocDoWyliczonego, kopiujOpis, eksportujOpis, zapiszSesjeOpisu, przywrocSesjeOpisu, usunSesjeOpisu, usunWszystkieSesjeOpisu, wczytajSesjeOpisu, ustawTolerancjeKontroli, goLab, otworzEksperymentLab, wrocDoEksperymentow, ustawStanowiskoLab, przelaczPorownanieLab, ustawParametrLab, resetLab, opisParametruLab, goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje,  potwierdzPrzerwe, ustawTrybCzasu, zmienManewr, pickCanal, pickSide, openMan, goStep, pickSize, zakonczSerie, Vestibular, NeuroVOR, Scene3D, composeHead, stepHeadQ, stepGravity, bodyJoints, poseSpec, gravArrowFor, genPlan, MANEUVERS, CANALS, DIAG, CANAL_OF, HINTS_PRESETS, TORSO_Q, state, render, startManeuver, setGuideSide, openTest, setDiagSide, setDixObs, setVariant, openHints, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsFix, setHintsGaze, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, goArea, setReducedMotion, setMode, syncShell, goFlowStep, toggleDiagCentral, openTriage, setTriage, toggleTriageFlaga, resetTriage, goObs, setObsPole, oznaczObsPole, setObsGrupa, wyczyscObs, przyjmijObs, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby };
+
+

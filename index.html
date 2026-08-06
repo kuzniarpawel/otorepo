@@ -68,13 +68,14 @@
      dotykowych po 48 px = 288 px, czyli więcej niż cały pion pozostały po pasku i nawigacji —
      jako wiersz siatki przycięłaby i siebie, i treść. -->
 <div class="sheet flowmap" id="flowmap" hidden></div>
+<!-- PASEK NOWEJ WERSJI (Blok 16). Leży POZA .shell, tak jak arkusz ustawień i mapa kroków:
+     warstwa `shell` złotego wzorca zrzuca #shell.outerHTML, więc element w środku zmieniłby
+     wszystkie przypięte stany powłoki, mimo że nic w nich nie zaszło. Treść wypełnia
+     src/app/shell.js z czystego src/app/pwa-model.js. -->
+<div class="updbar" id="updbar" role="status" aria-live="polite" hidden></div>
 
 <script type="module" src="./src/main.js"></script>
-<!-- Rejestracja service workera (PWA offline). WYŁĄCZONA w natywnej apce Capacitor
-     (window.Capacitor), by uniknąć serwowania nieaktualnego cache po aktualizacji. -->
-<script>
-if('serviceWorker' in navigator && !window.Capacitor){
-  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
-}
-</script>
+<!-- Rejestracja service workera przeniesiona do src/runtime/pwa.js (Blok 16): rejestracja bez
+     obsługi CZEKAJĄCEJ wersji potrafiła podmienić cache pod otwartą kartą w trakcie manewru.
+     Nadal WYŁĄCZONA w natywnej apce Capacitor — tam cykl aktualizacji należy do sklepu. -->
 </body></html>

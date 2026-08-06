@@ -1,0 +1,64 @@
+/* pwa.css — Blok 16: pasek nowej wersji aplikacji.
+
+   Dwie decyzje układu, obie wynikają z tego, CZYM ten pasek jest:
+
+   • NIE JEST oknem modalnym i nie zaciemnia tła. Aktualizacja aplikacji nie ma prawa zabrać
+     ekranu klinicyście, który trzyma pacjenta w pozycji — dlatego pasek leży nad treścią,
+     ale niczego nie blokuje i nie łapie fokusu.
+   • Siedzi NAD dolną nawigacją i nad przyklejonym paskiem akcji, bo to jedyne miejsce, gdzie
+     na telefonie nie zasłania ani bieżącego etapu, ani licznika. Wysokość nawigacji bierzemy
+     z tego samego tokenu, z którego korzysta powłoka, więc nie rozjedzie się przy zmianie. */
+.updbar {
+  position: fixed;
+  left: max(var(--sp-2), var(--safe-l));
+  right: max(var(--sp-2), var(--safe-r));
+  bottom: calc(var(--nav-h) + var(--safe-b) + var(--sp-2));
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;           /* tło paska nie przechwytuje dotknięć treści pod spodem */
+}
+.updbar[hidden] { display: none; }
+
+.updbar__box {
+  pointer-events: auto;
+  width: min(100%, 34rem);
+  background: var(--panel);
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: var(--r-md, 14px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .35);
+  padding: var(--sp-2);
+}
+.updbar__t { margin: 0; font-weight: 700; font-size: 1rem; }
+.updbar__c { margin: .25rem 0 0; color: var(--muted); font-size: .9375rem; line-height: 1.45; }
+.updbar__row { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-top: var(--sp-2); }
+.updbar__row button[hidden] { display: none; }
+.updbar__ok { font-weight: 600; }
+
+/* OSTRZEŻENIE JEST WIDOCZNE, A NIE TYLKO ZAPISANE W ATRYBUCIE. Gdy wdrożenie skasuje niezapisany
+   przypadek, ramka zmienia się na ostrzegawczą — ta sama konwencja, co przy sprzecznościach
+   kontroli i przy odmowach zapisu. */
+.updbar[data-ostrzezenie="przypadekPrzepadnie"] .updbar__box { border-color: var(--warn, var(--line)); }
+/* TRWAJĄCY MANEWR: pasek tylko INFORMUJE (przycisku wdrożenia nie ma w ogóle) i zwija się do
+   JEDNEJ linii. Powód jest zmierzony, a nie estetyczny: pełny pasek ma 76 px i zachodził na suwak
+   czasu utrzymania pozycji — czyli komunikat, na który w trakcie repozycji i tak nie da się
+   zareagować, zasłaniał kontrolkę kliniczną. Zdanie o manewrze jest samodzielne, więc ukrycie
+   tytułu niczego nie zabiera. */
+.updbar[data-blokada="manewrWToku"] .updbar__box { border-style: dashed; padding: var(--sp-1) var(--sp-2); }
+.updbar[data-blokada="manewrWToku"] .updbar__t,
+.updbar[data-blokada="manewrWToku"] .updbar__row { display: none; }
+.updbar[data-blokada="manewrWToku"] .updbar__c { margin: 0; font-size: .8125rem; }
+
+/* Na szerokim ekranie pasek nie ma po co ciągnąć się przez całą szerokość — dolna nawigacja
+   znika (szyna boczna), więc odzyskujemy jej wysokość. */
+@media (min-width: 768px) {
+  .updbar { bottom: calc(var(--safe-b) + var(--sp-3, 24px)); justify-content: flex-end; }
+  .updbar__box { width: min(100%, 30rem); }
+}
+
+/* Telefon w poziomie: pionu jest tyle co nic, więc pasek zwęża się i traci odstępy —
+   ta sama zasada, co w trybie skupienia paska przebiegu. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .updbar__box { padding: var(--sp-1) var(--sp-2); }
+  .updbar__c { font-size: .875rem; }
+}

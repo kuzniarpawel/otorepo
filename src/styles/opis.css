@@ -37,7 +37,13 @@
   padding: .75rem; margin: 0 0 .5rem;
 }
 .opispodglad__t { max-height: 60vh; overflow-y: auto; }
-.opispodglad__e { min-height: 18rem; resize: vertical; color: inherit; }
+/* BLOK 16 — „blokada przypadkowego zoomu formularzy" (dokument, kolumna „Telefon"). Pole edycji
+   opisu jest JEDYNYM polem tekstowym w całej aplikacji i miało 14 px: Safari na iOS powiększa
+   wtedy widok przy każdym wejściu w pole, a wyjścia z powiększenia nie ma — użytkownik zostaje
+   z przyciętym układem w środku badania. Regułą jest 16 px, i to jest też minimum treści
+   z rozdziału o typografii, więc nie ma tu sprzeczności do wyważenia. Podgląd (nieedytowalny)
+   zostaje mniejszy: w nim nie ma czego ogniskować. */
+.opispodglad__e { min-height: 18rem; resize: vertical; color: inherit; font-size: 1rem; }
 /* Ostrzeżenie o ulotności edycji ma być widoczne ZANIM ktoś zacznie pisać, a nie w stopce. */
 .opisostrz {
   margin: 0 0 .5rem; padding: .5rem .625rem; font-size: .875rem;

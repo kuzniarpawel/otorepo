@@ -639,7 +639,12 @@ function setupGuideAnim(){
     return true;
   });
 }
-function updateGoBtn(){ const b=$("#btnGo"); if(b){ b.textContent=state.running?t("Pauza","Pause"):"Start"; b.classList.toggle("run",state.running);} syncWake(); }
+function updateGoBtn(){ const b=$("#btnGo"); if(b){ b.textContent=state.running?t("Pauza","Pause"):"Start"; b.classList.toggle("run",state.running);} syncWake();
+  /* Blok 16: start i pauza licznika zmieniaja odpowiedz na pytanie „czy wolno teraz wdrozyc nowa
+     wersje" — a to jedyne miejsce, przez ktore przechodza OBIE drogi (przycisk i skrot spacja).
+     Uchwyt globalny, bo powloka ma zostac lisciem grafu (ten sam wzorzec, co __otoLangChange). */
+  try{ if(typeof window!=="undefined" && typeof window.__otoAktualizacja==="function") window.__otoAktualizacja(); }catch(e){}
+}
 /* Start/pauza idzie przez zegar SCIENNY. Kotwica jest JEDNYM zrodlem prawdy o czasie utrzymania
    pozycji; `state.elapsedMs` zostaje wylacznie jako ODCZYT dla petli animacji i markupu. Dwa
    niezalezne liczniki tego samego czasu rozjechalyby sie przy pierwszej pauzie. */

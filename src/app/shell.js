@@ -22,6 +22,7 @@ import {
   FLOW_STEPS, FLOW_STATUS, flowStep, flowStatuses, activeStepId, nextStepId,
   stepTarget, stepSummary, flowVisible, flowSignature,
 } from './flow-model.js';
+import { decyzjaAktualizacji, TEKSTY_AKTUALIZACJI, komunikatSieci } from './pwa-model.js';
 
 const $ = (sel) => (typeof document !== 'undefined' ? document.querySelector(sel) : null);
 
@@ -196,9 +197,20 @@ export function mountNav(deps = {}) {
       d.addEventListener('cancel', (e) => { e.preventDefault(); closeLeave(false); });
     }
 
-    // Arkusz ustawień
+    buildSheet();
+  } catch { /* jw. */ }
+}
+
+/* Arkusz ustawień POWSTAJE OD NOWA przy zmianie języka, a nie tylko na boocie. Wcześniej cały
+   panel (nagłówki, przełączniki, noty) był składany raz, w mountNav, więc po przełączeniu języka
+   ustawienia zostawały w starym — i to przy komplecie zielonych wyroczni, bo arkusz leży poza
+   #app. Ten sam błąd, który onLangChange naprawił kiedyś dla nawigacji i paska przebiegu; Blok 16
+   dokłada tu dwa zdania (o offline i o skrótach), więc zamrożony język przestał być drobiazgiem. */
+function buildSheet() {
+  try {
     const s = $('#sheet');
-    if (s) {
+    if (!s) return;
+    {
       s.innerHTML = `<div class="card sheet__panel" role="dialog" aria-modal="true" aria-label="${t('Ustawienia', 'Settings')}">
           <h2>${t('Profil i ustawienia', 'Profile and settings')}</h2>
           <div class="switchrow"><span>${t('Język', 'Language')}</span>
@@ -214,6 +226,13 @@ export function mountNav(deps = {}) {
             <button type="button" class="toggle toggle--del" data-sesje-usun>${t('Usuń wszystkie', 'Delete all')}</button></div>
           <p class="note" data-sesje-nota>${t('Zapisy leżą wyłącznie w pamięci tej przeglądarki i niosą same identyfikatory ze słowników aplikacji. Usunięcie jest nieodwracalne.',
                                               'The records live only in this browser and carry nothing but identifiers from the app dictionaries. Deletion cannot be undone.')}</p>
+          ${/* BLOK 16: „aplikacja informuje, które treści wymagają połączenia". Zdanie jest
+                FUNKCJĄ listy funkcji sieciowych z pwa-model.js, a nie obietnicą przepisaną
+                z dokumentu — gdy ktoś doda pierwsze wywołanie sieci, zmieni się samo (a bramka
+                w wyroczni pilnuje, żeby lista nie kłamała). */''}
+          <p class="note" data-siec>${t(komunikatSieci().pl, komunikatSieci().en)}</p>
+          <p class="note" data-skroty>${t('Klawiatura na ekranie manewru: spacja — pauza i wznowienie licznika, strzałki ← → — poprzedni i następny etap. Skrót nie działa, gdy kursor stoi w polu tekstowym albo fokus jest na przycisku.',
+                                          'Keyboard on the maneuver screen: space — pause and resume the timer, arrows ← → — previous and next step. The shortcut stands down when the caret is in a text field or a control has focus.')}</p>
           <p class="note">${t('Narzędzie dydaktyczne dla personelu medycznego. Nie zastępuje badania ani decyzji klinicysty.',
                               'An educational tool for medical staff. It does not replace examination or clinician judgment.')}</p>
           <button type="button" class="cta" data-sheet-close>${t('Zamknij', 'Close')}</button>
@@ -241,10 +260,64 @@ export function mountNav(deps = {}) {
   } catch { /* jw. */ }
 }
 
+/* ============ Pasek nowej wersji (Blok 16) ============
+   Komunikat o aktualizacji jest CHROMEM i leży POZA #shell — dokładnie jak #sheet i #flowmap.
+   Powód jest mierzalny: warstwa `shell` złotego wzorca zrzuca #shell.outerHTML, więc element
+   wstawiony do środka zmieniłby WSZYSTKIE 20 przypiętych stanów powłoki, choć nic w nich nie
+   zaszło. Tutaj warstwa dopisuje go tylko wtedy, gdy jest widoczny (jak mapę kroków).
+
+   Pasek nie jest oknem modalnym i nigdy nim nie będzie: aktualizacja aplikacji nie ma prawa
+   zabrać ekranu klinicyście, który trzyma pacjenta w pozycji. Cała decyzja — czy pokazać, czy
+   wolno wdrożyć, co napisać — pochodzi z czystego pwa-model.js. */
+export function mountAktualizacja(deps = {}) {
+  A = { ...A, ...deps };
+  try {
+    const u = $('#updbar');
+    if (!u) return;
+    u.innerHTML = `<div class="updbar__box">
+        <p class="updbar__t" data-upd-tytul></p>
+        <p class="updbar__c" data-upd-tresc></p>
+        <div class="updbar__row">
+          <button type="button" class="opt updbar__ok" data-upd-teraz hidden></button>
+          <button type="button" class="opt updbar__nie" data-upd-pozniej hidden></button>
+        </div>
+      </div>`;
+    const teraz = u.querySelector('[data-upd-teraz]');
+    if (teraz) teraz.addEventListener('click', () => { A.wdrozAktualizacjeTeraz && A.wdrozAktualizacjeTeraz(); });
+    const pozniej = u.querySelector('[data-upd-pozniej]');
+    if (pozniej) pozniej.addEventListener('click', () => { A.schowajAktualizacje && A.schowajAktualizacje(); });
+    syncAktualizacja();
+  } catch { /* powłoka nie ma prawa wywalić aplikacji */ }
+}
+
+export function syncAktualizacja() {
+  try {
+    const u = $('#updbar');
+    if (!u) return;
+    const d = decyzjaAktualizacji(state);
+    u.hidden = !d.pokaz;
+    // Atrybuty niosą POWÓD, a nie wygląd: dzięki nim wyrocznia widzi, że pasek wie o blokadzie,
+    // nawet gdy tekst brzmi łagodnie.
+    u.setAttribute('data-blokada', d.blokada || '');
+    u.setAttribute('data-ostrzezenie', d.ostrzezenie || '');
+    if (!d.pokaz) return;
+    const set = (sel, txt) => { const el = u.querySelector(sel); if (el) el.textContent = txt; };
+    set('[data-upd-tytul]', d.tytul ? t(d.tytul.pl, d.tytul.en) : '');
+    set('[data-upd-tresc]', d.tresc ? t(d.tresc.pl, d.tresc.en) : '');
+    const teraz = u.querySelector('[data-upd-teraz]');
+    if (teraz) { teraz.hidden = !d.przycisk; if (d.przycisk) teraz.textContent = t(d.przycisk.pl, d.przycisk.en); }
+    const pozniej = u.querySelector('[data-upd-pozniej]');
+    if (pozniej) { pozniej.hidden = !d.schowaj; pozniej.textContent = t(TEKSTY_AKTUALIZACJI.schowaj.pl, TEKSTY_AKTUALIZACJI.schowaj.en); }
+  } catch { /* jw. */ }
+}
+
 // Powierzchnia globalna dla handlerów inline (onclick="goArea('diag')") — ten sam wzorzec, co
 // w actions.js i maneuvers.js. Bez tego karty trybu na ekranie startowym rzucały ReferenceError
 // i klikanie ich nie robiło NIC (klik nie zgłasza błędu widocznego dla użytkownika).
 if (typeof window !== 'undefined') Object.assign(window, { goArea, setReducedMotion, goFlowStep });
+// Ta sama zasada, co przy __otoLangChange: actions.js NIE importuje powłoki (ma zostać liściem),
+// więc odświeżenie paska idzie przez guardowany uchwyt globalny.
+if (typeof window !== 'undefined') window.__otoAktualizacja = syncAktualizacja;
 
 // Po zmianie języka etykiety muszą się przebudować — inaczej nawigacja zostaje w starym języku.
 function rebuildNavLabels() {
@@ -549,6 +622,7 @@ export function syncShell() {
       b.classList.toggle('is-active', akt);
     });
     syncFlow();                         // pasek przebiegu odbija ten sam stan (Blok 5)
+    syncAktualizacja();                 // Blok 16: treść paska nowej wersji zależy od EKRANU
   } catch { /* jw. */ }
 }
 
@@ -558,7 +632,7 @@ export function syncShell() {
 // etykiety nawigacji i cały pasek przebiegu zostawały po polsku. mountShell wypełnia napisy
 // przez t() tylko RAZ, na boocie, więc musi zostać wywołane ponownie.
 export function onLangChange() {
-  try { mountShell(); rebuildNavLabels(); rebuildFlowLabels(); syncSheet(); } catch { /* jw. */ }
+  try { mountShell(); rebuildNavLabels(); rebuildFlowLabels(); buildSheet(); syncAktualizacja(); } catch { /* jw. */ }
 }
 // Wystawione globalnie, a nie importowane przez actions.js: powłoka ma zostać LIŚCIEM grafu.
 // actions.js woła to przez window.__otoLangChange (guard w środku), więc w gołym Node nic się

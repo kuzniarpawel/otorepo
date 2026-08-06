@@ -20,4 +20,5 @@
 @import './nauka.css';     /* tryb nauki: biblioteka przypadkow i lekcja (Blok 13) */
 @import './opis.css';      /* generator opisu badania i zapis sesji (Blok 15) */
 @import './lab.css';       /* Laboratorium neurootologiczne: eksperymenty i parametry (Blok 14) */
+@import './pwa.css';       /* pasek nowej wersji aplikacji (Blok 16) */
 @import './a11y.css';      /* pola dotykowe, fokus, stan nie-tylko-kolorem, ograniczenie ruchu */
