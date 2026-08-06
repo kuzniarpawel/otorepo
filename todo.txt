@@ -622,9 +622,12 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
           (Uwaga metodyczna: pierwsza wersja tego przeglądu pochylenia była BŁĘDNA — liczyłem kąt na
            wektorach NIErzutowanych na płaszczyznę kanału, przez co zakresy wyszły 77/40 zamiast
            281/319. Poprawione; kontrola „pitch=0 musi odtworzyć 318.8/281.1/267.3" przechodzi.)
- [ ] R5 stepXiPeak NIE JEST miarą per-krok — łapie ξ odziedziczone po kroku poprzednim (dowód: Bascule k5,
-        ξ_start −0,75 przebija własną odpowiedź kroku +0,50 → etykieta „ODWRÓCONY", choć fizyka kroku jest
-        dodatnia). Ten sam korzeń co maskowanie z R4b. Naprawa ruszy etykiety w kilku krokach → osobny commit.
+ [x] R5 ZAMKNIĘTE 2026-08-06 (decyzja kliniczna USERA: ostatni krok POKAZUJE oczopląs liberacyjny).
+        Wada fizyczna zniknęła sama po R4b (dłuższe holdy) i R7 (bezwładność): ścisłe kryterium — czy
+        raportowany szczyt LEŻY NA POCZĄTKU segmentu — daje 0/64. Dawny „dowód" (Bascule k5) NIE OBOWIĄZUJE:
+        krok 5 wypracowuje własne 0.376 po 1.8 s, a złóg wychodzi właśnie w nim. Wdrożono znacznik
+        „oczopląs liberacyjny" na karcie frontalnej, zapalany w kroku ekspulsji wg FIZYKI (manExitStep).
+        Szczegóły i rozkład po manewrach: engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R5.
  [ ] R4b HOLDY WYPROWADZONE Z SILNIKA — ZAPROJEKTOWANE I PRZELICZONE, WDROŻENIE ODŁOŻONE (decyzja USERA
         2026-08-05). Zastąpić `cap` w maneuverTimeline holdem wyprowadzonym z silnika. Cały rachunek niżej
         jest zmierzony — przy wdrożeniu NIE trzeba go odtwarzać, trzeba tylko domknąć LUKI 1-3.

@@ -808,19 +808,32 @@ REMAINING (pending decision):
        to replace.
 
 
- R5. [RE-MEASURED 2026-08-05 after R7 — audit of 64 steps] THE PHYSICAL DEFECT IS GONE; A DISPLAY
-     DECISION REMAINS. The original charge — a step's label computed from the PREVIOUS step's response,
-     with an INVERTED sign — no longer occurs in ANY of the 64 steps (7 maneuvers × 2 sides). Longer
-     derived holds (R4b) and inertia (R7) fixed it: every step now produces a response larger than what
-     it inherited.
-     2 steps out of 64 remain: Bascule step 5 (both sides), where the reported 0.19 is the inherited
-     value. But there the debris ALREADY LEFT AT STEP 4 (φ 140→319), so step 5 has no response of its
-     own — 0.19 is the decaying tail of the expulsion transient, i.e. a REAL signal. Showing it at
-     "return to sitting" is defensible rather than wrong: clinically a fading liberatory nystagmus is
-     seen after the debris is released.
-     FOR DECISION (display, not physics): whether the last step should show the fading tail or
-     "no nystagmus". The description below is kept as a record of the pre-R4b/R7 state; its numbers
-     come from the old geometry.
+ R5. [CLOSED 2026-08-06 — clinical decision by the USER] THE LAST STEP SHOWS THE LIBERATORY NYSTAGMUS.
+     The original charge — a step's label computed from the PREVIOUS step's response, with an INVERTED
+     sign — no longer occurs in ANY of the 64 steps (7 maneuvers × 2 sides). Longer derived holds (R4b)
+     and inertia (R7) fixed it: every step now produces a response larger than what it inherited.
+     CORRECTION 2026-08-06: this entry used to say "2 steps out of 64 remain: Bascule step 5, the
+       reported 0.19 is inherited". THAT IS OBSOLETE. The strict criterion — does the reported peak SIT
+       AT THE START of the segment, i.e. is it inherited — now yields 0/64. Bascule step 5 produces its
+       OWN 0.376 after 1.8 s, and the debris leaves the canal in that very step (t 146.0 s). The earlier
+       number came from a criterion that confused the NATURAL DECAY of ξ with a sign inversion — the
+       same mistake that produced 4 false hits in the probe.
+     DECISION (display, not physics): the last step DOES show the fading nystagmus, because it is a REAL
+       signal, and clinically a liberatory nystagmus is exactly what is seen once the debris is released.
+     IMPLEMENTATION: the frontal card carries an explicit "liberatory nystagmus" badge (svg-screens.js:
+       libNote, style .libnote in index.html). It lights up in the step where the PHYSICS releases the
+       debris from the canal (manExitStep = the segment containing the first man.sim.exited) — i.e. from
+       the SAME run that produces the number on the card, so the label cannot drift from the value.
+       Steps AFTER the expulsion need no separate case: their |ξ| falls below the 0.10 threshold and no
+       card is shown (Lempert 4-6, Gufoni geo 3-4). The badge also carries a tooltip explaining that this
+       is a sign of SUCCESS, not a relapse.
+       Distribution (identical on both sides): Epley s5 · Semont s4 · Bascule s5 · Yacovino s4 — the LAST
+       step; Lempert s3 of 6 · Gufoni geo s2 of 4 — earlier, because there the debris leaves earlier;
+       Gufoni apo NONE — it is a CONVERSION maneuver, the debris never leaves the canal.
+       Note: for the HORIZONTAL canal the migration drawing uses the n−2 schematic (no crus model), so it
+       may point at a different step than the badge. The badge deliberately follows the PHYSICS — see the
+       comment at manFractions.
+     The description below is kept as a record of the pre-R4b/R7 state; its numbers come from the old geometry.
 
  R5-OLD. stepXiPeak IS NOT A "PER-STEP" MEASURE [found 2026-08-05 while unifying the geometry].
      It takes max|ξ| over a window that STARTS at the segment boundary, so it also picks up ξ INHERITED

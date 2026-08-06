@@ -808,9 +808,13 @@ POZOSTAŁE (do decyzji):
          4. CHRONIĆ TEST PRZED STANIEM SIĘ ZABIEGIEM — CZʌCIOWO. Przy uchu ZDROWYM w dole złóg
             opuszcza kanał po 15.3 s (zgięcie 0°), 20.9 s (30°), 42.4 s (50°). Kierunek się zgadza,
             ale 30° kupuje tylko ~6 s — obie wartości mieszczą się w normalnym holdzie 30–60 s.
-       I TU JEST BLOKADA: kandydat 4 jest nierozstrzygalny, dopóki skala czasu opróżniania jest zła.
-       R10 pokazuje, że model czyści kanał poziomy w 21 s, podczas gdy wymuszona długa pozycja wg
-       Vannucchiego działa godzinami. Przy poprawnej skali 30° mogłoby chronić naprawdę.
+       I TU JEST BLOKADA — ale NIE TAM, GDZIE NAPISAŁEM PIERWOTNIE. Stało tu: „kandydat 4 jest
+       nierozstrzygalny, dopóki skala czasu opróżniania jest zła — model czyści kanał poziomy w 21 s,
+       a wymuszona długa pozycja wg Vannucchiego działa godzinami". To WYCOFANE tego samego dnia w R10:
+       skala czasu NIE jest zła (myliłem czas przejścia cząstki z czasem trwania zabiegu), a tauP jest
+       równoważne prawu Stokesa dla kłębka ~9.7 µm. BLOKADĄ jest druga część R10 — BRAK PAMIĘCI POŁOŻENIA:
+       „czy 30° chroni test przed staniem się zabiegiem" zależy od tego, GDZIE złóg leży NA STARCIE,
+       a to silnik dziś ZAKŁADA, nie wie.
      WNIOSEK: R3 sprowadza się do jednego pytania i jest ZABLOKOWANE NA R10. Kalibracja stałych per
        kanał pozostaje ODRADZANA — nie ma czego kalibrować — różnica jest geometryczna, a reszta mieści
        się w ilości złogu.
@@ -845,15 +849,28 @@ POZOSTAŁE (do decyzji):
        start) zmieni e1 i φ_start, a więc — wprost z powyższego wzoru — ruszy też liczby R3. Kalibrację R3
        rób WTEDY PO przebudowie geometrii, inaczej dostroisz stałe do geometrii, którą zaraz wymienisz.
 
- R5. [PRZEMIERZONE 2026-08-05 po R7 — audyt 64 kroków] WADA FIZYCZNA ZNIKNĘŁA, ZOSTAŁA DECYZJA WIDOKU.
+ R5. [ZAMKNIĘTE 2026-08-06 — decyzja kliniczna UŻYTKOWNIKA] OSTATNI KROK POKAZUJE OCZOPLĄS LIBERACYJNY.
      Pierwotny zarzut — etykieta kroku liczona z odpowiedzi kroku POPRZEDNIEGO, z ODWRÓCONYM znakiem —
      nie występuje już w ŻADNYM ze 64 kroków (7 manewrów × 2 strony). Naprawiły to dłuższe, wyprowadzone
      holdy (R4b) i bezwładność (R7): każdy krok wypracowuje teraz odpowiedź większą niż to, co odziedziczył.
-     ZOSTAŁY 2 kroki na 64: Bascule krok 5 (obie strony), gdzie raport 0.19 to wartość odziedziczona.
-     Ale tam złóg WYSZEDŁ JUŻ W KROKU 4 (φ 140→319), więc krok 5 nie ma własnej odpowiedzi — 0.19 to
-     zanikający ogon transjentu ekspulsji, czyli sygnał PRAWDZIWY. Wyświetlanie go przy „powrocie do
-     siadu" jest obroną, nie błędem: klinicznie po uwolnieniu widuje się dogasający oczopląs liberacyjny.
-     DO DECYZJI (widok, nie fizyka): czy ostatni krok ma pokazywać dogasający ogon, czy „bez oczopląsu".
+     KOREKTA 2026-08-06: stało tu „zostały 2 kroki na 64: Bascule krok 5, raport 0.19 odziedziczony".
+       To NIEAKTUALNE. Ścisłe kryterium — czy raportowany szczyt LEŻY NA POCZĄTKU segmentu, czyli jest
+       odziedziczony — daje dziś 0/64. Bascule krok 5 wypracowuje WŁASNE 0.376 po 1.8 s, a złóg opuszcza
+       kanał właśnie w tym kroku (t 146.0 s). Wcześniejsza liczba pochodziła z kryterium, które myliło
+       NATURALNY ZANIK ξ z odwróceniem znaku — ta sama pomyłka, która dała 4 fałszywe trafienia w sondzie.
+     DECYZJA (widok, nie fizyka): ostatni krok POKAZUJE dogasający oczopląs, bo to sygnał PRAWDZIWY,
+       a klinicznie po uwolnieniu złogu widuje się właśnie oczopląs liberacyjny.
+     WDROŻENIE: karta frontalna dostała jawny znacznik „oczopląs liberacyjny" (svg-screens.js: libNote,
+       styl .libnote w index.html). Zapala się w kroku, w którym FIZYKA wypuszcza złóg z kanału
+       (manExitStep = segment zawierający pierwsze man.sim.exited) — czyli z TEGO SAMEGO przebiegu,
+       z którego liczona jest wartość na karcie, więc etykieta nie może rozjechać się z liczbą.
+       Kroki PO ekspulsji nie wymagają osobnego przypadku: ich |ξ| spada poniżej progu 0.10 i karty nie ma
+       (Lempert 4-6, Gufoni geo 3-4). Znacznik ma też dymek tłumaczący, że to objaw SKUTECZNOŚCI, nie nawrotu.
+       Rozkład (obie strony identycznie): Epley k5 · Semont k4 · Bascule k5 · Yacovino k4 — czyli krok
+       OSTATNI; Lempert k3 z 6 · Gufoni geo k2 z 4 — wcześniej, bo tam złóg wychodzi wcześniej;
+       Gufoni apo BRAK — to manewr KONWERSJI, złóg nie opuszcza kanału.
+       Uwaga: dla kanału POZIOMEGO rysunek wędrówki używa schematu n−2 (brak modelu odnogi), więc może
+       wskazać inny krok niż znacznik. Znacznik celowo idzie za FIZYKĄ — patrz komentarz przy manFractions.
      Poniższy opis zostawiam jako zapis stanu sprzed R4b/R7 — jego liczby pochodzą ze starej geometrii.
 
  R5-STARE. stepXiPeak NIE JEST MIARĄ „PER KROK" [znalezione 2026-08-05 przy uzgadnianiu geometrii].

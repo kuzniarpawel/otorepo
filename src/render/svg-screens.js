@@ -786,6 +786,16 @@ function renderGuide(){
   const _man = currentManSim();
   const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step), p.mechanism==="cupulo");
   const gn = (_gn && _gn.strength >= 0.10) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
+  // OCZOPLĄS LIBERACYJNY (R5, decyzja kliniczna 2026-08-06): krok, w którym złóg OPUSZCZA kanał, dostaje
+  // jawny znacznik. Źródłem jest TA SAMA symulacja, z której liczona jest wartość na karcie (manExitStep =
+  // segment zawierający pierwsze man.sim.exited), więc etykieta nie może rozjechać się z liczbą.
+  // Kroki PO ekspulsji nie potrzebują osobnego przypadku: ich |ξ| spada poniżej progu 0.10 i karty nie ma
+  // (Lempert 4-6, Gufoni geo 3-4). Uwaga: dla kanału POZIOMEGO rysunek wędrówki używa schematu n−2, więc
+  // może wskazać inny krok niż fizyka — znacznik celowo idzie za fizyką (patrz komentarz przy manFractions).
+  // Sklejane BEZ własnej linii w szablonie: pusta gałąź musi dawać markup bajtowo identyczny z dotychczasowym.
+  const libNote = (gn && state.step===manExitStep(_man))
+    ? `<span class="libnote" title="${t('W tym kroku złóg opuszcza kanał i wpada do łagiewki. Oczopląs bije w tę samą stronę co prowokacyjny, jest krótki i dogasa — to spodziewany objaw skuteczności, nie nawrót.','In this step the debris leaves the canal and drops into the utricle. The nystagmus beats in the same direction as the provoking one, is brief and fades — an expected sign of success, not a relapse.')}">${t("oczopląs liberacyjny","liberatory nystagmus")}</span>`
+    : "";
   const gravArrow = gn ? gravArrowFor(ps) : "";
   const dots=p.steps.map((_,i)=>`<i class="${i<state.step?'done':i===state.step?'cur':''}"></i>`).join("");
   const tgIcons = `<div class="tg">
@@ -840,7 +850,7 @@ function renderGuide(){
       ? `<div class="flipwrap"><div class="flip${cupuloMech?' flipped':''}" id="flip" role="button" tabindex="0" aria-label="${t('Odwróć kartę: widok frontalny albo wędrówka otolitów','Flip the card: frontal view or otolith migration')}" onclick="flipGuide()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipGuide();}">
           <div class="face front panelbox"><h4>${t("Widok frontalny","Frontal view")}</h4>
             <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-nys-guide>${eyesSVG()}</div><span class="emk">L</span></div>
-            <div class="nyslabel"><span class="arrow">${arrowGlyph(gn)}</span><span>${gn.label}</span></div>
+            <div class="nyslabel"><span class="arrow">${arrowGlyph(gn)}</span><span>${gn.label}</span></div>${libNote}
             ${gravArrow}
             <div class="fliphint">${FLIP_ICO} ${t("wędrówka otolitów","otolith migration")}</div></div>
           <div class="face back panelbox"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}
