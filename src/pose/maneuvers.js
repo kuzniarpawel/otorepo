@@ -425,7 +425,7 @@ function gravArrowFor(spec){
   const ang = (Math.atan2(dy, dx)*180/Math.PI).toFixed(1);
   return `<div class="gravmark" title="kierunek do ziemi"><svg viewBox="0 0 24 24" fill="none"><g transform="rotate(${ang} 12 12)"><line x1="4" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M13 7l5 5-5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></svg>ziemia</div>`;
 }
-const sizeRadius=s=>({small:0.78, medium:1.0, big:1.35})[s]!==undefined?({small:0.78, medium:1.0, big:1.35})[s]:1;
+const sizeRadius=s=>Vestibular.sizeR(s);   // była tu WKLEJONA kopia SIZE_R (dwa razy w jednym wyrażeniu) — jedno źródło
 // Klinicznie zalecany hold kroku wg rozmiaru: małe (wolno osiadające) złogi wymagają DŁUŻSZEGO utrzymania
 // pozycji (uzasadnienie ~30 s holdów w CRP: Hain, Squires & Stone 2005). medium/big = bez zmian (bezpieczne).
 const holdMult=s=> s==="small"?1.6:1;

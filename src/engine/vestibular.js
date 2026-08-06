@@ -117,7 +117,7 @@ export const Vestibular = (()=>{
   // środek okręgu C, środek bańki A, ujście O oraz UPORZĄDKOWANE punkty osi Q0=A → Q4=O. e1 = rzut (A−C)
   // na płaszczyznę PCA kanału. Przeliczenie ze Slicer-RAS do ramki głowy: pozycje (X,Z,Y); normalna jest
   // wektorem OSIOWYM, a odwzorowanie ma wyznacznik −1, więc jej znak się odwraca.
-  // Weryfikacja: kanały wzajemnie prostopadłe (87.8/87.5/89.8°), zgodność z normalnymi Wu 17.1°
+  // Weryfikacja: kanały wzajemnie prostopadłe (87.8/87.5/89.8°), zgodność z KONTROLNĄ pracą Wu 17.1°
   // (alternatywne przypisania osi dawały 80–85°), lewa strona = idealne lustro prawej (różnica 0.000°).
   const AMPULLA_DIR = {
     posterior: { P:[-0.5174,-0.6498,0.5568], L:[0.5174,-0.6498,0.5568] },
@@ -150,27 +150,24 @@ export const Vestibular = (()=>{
   // kierunek oczopląsu w karcie testu potrafił być PRZECIWNY do wyniku dynamiki tej samej pozy.
   const tangAt=(G,phiDeg)=>{ const r=phiDeg*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
     return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]]; };
-  // ZAKRES ŁUKU: od ŚRODKA BAŃKI (φ=0) do ujścia do przedsionka/łagiewki (φ=phiExit) — POMIAR, nie idealizacja.
-  // Źródło: Cárdenas-Serna & Jeffery — współrzędne anatomiczne 96 ludzkich błędników kostnych (48 dorosłych),
-  //   Zenodo doi:10.5281/zenodo.4818568 (opis: PMC8819049). Wartości = duży łuk od środka bańki do
-  //   przeciwległego ujścia, po rzucie kanału na jego najlepiej dopasowaną płaszczyznę:
-  //     przedni → ujście odnogi wspólnej   265.8° ± 7.1°  (zakres 249.2–279.4)
-  //     tylny   → ujście odnogi wspólnej   307.0° ± 5.3°  (zakres 295.1–319.5)
-  //     boczny  → ujście niebańkowe        236.8° ± 10.1° (zakres 213.4–254.5)
-  //   Zgodne kierunkowo z θs Bradshaw i wsp. 2010 (JARO, doi:10.1007/s10162-009-0195-6): 271.7/324.7/249.2°
-  //   dla błędnika błoniastego — θs liczone między GRANICAMI przedsionkowymi, nie od środka bańki, stąd
-  //   systematycznie wyższe (od granicy bańka–przedsionek nasze wartości rosną do 281.5/320.4/255.8°).
-  // TO ZAMYKA R1: do 2026-08-05 model miał JEDEN globalny phiExit=178°, czyli ujście DOKŁADNIE naprzeciw
+  // ZAKRES ŁUKU: od ŚRODKA BAŃKI (φ=0) do ujścia do przedsionka/łagiewki (φ=phiExit).
+  // ŹRÓDŁO: atlas IE-Map — to samo, z którego pochodzą CANAL_NORMALS i AMPULLA_DIR (patrz nagłówek
+  //   pliku). Kąt liczony między rzutami (A−C) i (O−C) na dopasowaną płaszczyznę PCA kanału.
+  //   Kontrola wewnętrzna: suma kątów po polilinii Q0→Q4 zgadza się z prostym kątem A→O co do 0.1°
+  //   (kanał dobrze opisany okręgiem; promienie |Qi−C| 2.3–3.9 mm bez odstających); L = lustro P (0.000°).
+  // KONTROLA ZEWNĘTRZNA (nie źródło — wartości NIE pochodzą z tych prac):
+  //   Cárdenas-Serna & Jeffery, 96 błędników kostnych (Zenodo doi:10.5281/zenodo.4818568, opis PMC8819049):
+  //     przedni 265.8°±7.1 · tylny 307.0°±5.3 · boczny 236.8°±10.1 — ten sam pomiar, ten sam rząd.
+  //   Bradshaw i wsp. 2010 (JARO doi:10.1007/s10162-009-0195-6), błędnik BŁONIASTY: θs 271.7/324.7/249.2° —
+  //     liczone między GRANICAMI przedsionkowymi, nie od środka bańki, więc systematycznie wyższe.
+  //   Cherchi 2026 (PMC12799655) zwraca uwagę, że klasyczne schematy używają łuku 180° albo błędnego
+  //     odcinka przednio-przyśrodkowego, podczas gdy realny kanał boczny ma odcinek tylno-przyśrodkowy
+  //     i łuk ~240° — kierunkowo zgodne z naszymi 267.3°.
+  // TO ZAMKNĘŁO R1: do 2026-08-05 model miał JEDEN globalny phiExit=178°, czyli ujście DOKŁADNIE naprzeciw
   //   bańki. Anatomicznie oba końce przewodu uchodzą do łagiewki — leżą OBOK siebie — a pętla biegnie
-  //   między nimi długą drogą (~2/3 do 5/6 okręgu). Skutkiem było to, że minimum grawitacyjne w KAŻDEJ
-  //   pozycji prowokującej (φ_eq: tylny 189.6°, przedni 207.1°) leżało POZA końcem łuku, więc złóg zawsze
-  //   dobijał do odnogi. Przy zmierzonym zakresie φ_eq leży W ŚRODKU łuku dla wszystkich 6 kanałów.
-  // UWAGA: to dane błędnika KOSTNEGO — „przedsionek" jest anatomicznym przybliżeniem ujścia do łagiewki.
-  const ARC_SPAN = { anterior:281.1, posterior:318.8, horizontal:267.3 };   // ZMIERZONE na tym samym atlasie co AMPULLA_DIR
-  // Kontrola: suma kątów po polilinii Q0→Q4 zgadza się z prostym kątem A→O co do 0.1° (kanał jest dobrze
-  // opisany okręgiem; promienie |Qi−C| 2.3–3.9 mm bez odstających). Wartości Cárdenas-Serna (265.8/307.0/
-  // 236.8) mierzą to samo na 48 błędnikach i leżą w tym samym zakresie — atlas wybrano, bo daje KOMPLET
-  // (płaszczyzna + bańka + ujście + zwrot) z JEDNEGO źródła, bez zszywania trzech prac.
+  //   między nimi długą drogą. Skutkiem było to, że minimum grawitacyjne w KAŻDEJ pozycji prowokującej
+  //   leżało POZA końcem łuku, więc złóg zawsze dobijał do odnogi — diagnostyka wykonywała pracę manewru.
+  const ARC_SPAN = { anterior:281.1, posterior:318.8, horizontal:267.3 };
   const CUPULA_DEG=3;                                   // złóg nie przechodzi przez osklepek — kres łuku od strony bańki
   /* SPOCZYNEK ZŁOGU — WYPROWADZONY, nie wpisany (2026-08-05).
      Silnik startował KAŻDĄ symulację od φ=90°: stałej dobranej pod dawny łuk 178° (środek pętli).
@@ -240,6 +237,21 @@ export const Vestibular = (()=>{
     }
     return SIZE_R[size]!==undefined ? SIZE_R[size] : 1;   // preset (small/medium/big) lub domyślnie medium (r=1)
   };
+  /* RÓWNOWAŻNA ŚREDNICA KŁĘBKA [µm] — WYPROWADZONA, nie wpisana (2026-08-06).
+     tauP nie jest wolnym parametrem. Prędkość graniczna cząstki w kanale to v = R/tauP, a prawo Stokesa
+     v = (2/9)·Δρ·g·a²/μ wiąże ją z promieniem kłębka a. Dla tauP=6.5 s i średniego promienia łuku
+     trzech kanałów (3.17 mm) wychodzi a ≈ 10.6 µm, czyli równoważna średnica ≈ 21 µm — kłębek kilku
+     otoconiów (pojedyncze ludzkie otoconium 1–30 µm, PMC3226995; rozmiar realnego agregatu u żywego
+     chorego NIE jest znany). Skalowanie rozmiarem w silniku to tauP = tauP₀/r², czyli v ∝ r² — DOKŁADNIE
+     Stokes, więc mnożnik r przekłada się wprost na promień i skala jest spójna z fizyką, a nie dopisana.
+     Δρ = 1700 kg/m³ (otoconia 2.7 − endolimfa 1.0) · μ = 8.5e-4 Pa·s (endolimfa ≈ woda 37 °C).
+     ZASTRZEŻENIE: implikowany promień zależy od promienia łuku KONKRETNEGO kanału (9.7 µm boczny …
+     11.1 µm tylny, ±7% wokół średniej), bo tauP jest w silniku wspólny dla wszystkich trzech. Podajemy
+     wartość dla średniego kanału i ZAOKRĄGLONĄ — ma dawać rząd wielkości porównywalny z piśmiennictwem,
+     nie precyzję, której model nie ma. */
+  const R_ARC_MEAN=3.17e-3, TAUP0=6.5, D_RHO=1700, MU=8.5e-4, G_ACC=9.81;
+  const A_MED_M = Math.sqrt((R_ARC_MEAN/TAUP0)*9*MU/(2*D_RHO*G_ACC));   // promień kłębka dla size=medium [m]
+  const sizeUm = size => Math.round(2*A_MED_M*1e6*sizeR(size));         // równoważna ŚREDNICA [µm]
   // MĘCZLIWOŚĆ (fatigability) oczopląsu — kryterium RÓŻNICUJĄCE kanalolitiaza↔kupulolitiaza.
   //   Przy POWTÓRZENIACH prowokacji w tej samej sesji (seryjny Dix–Hallpike) zbity klaster otoconiów ROZPRASZA
   //   SIĘ na mniejsze, mniej spójne fragmenty → słabsze zbiorcze wychylenie osklepka → oczopląs SŁABNIE z każdym
@@ -422,7 +434,7 @@ export const Vestibular = (()=>{
     }
     return out;
   }
-  return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, position,
+  return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, position, sizeR, sizeUm,
           simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
           qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, CUP_WEAK, EWALD_INHIB};
 })();

@@ -94,10 +94,13 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
    Static stimulation of the AFFECTED canal in head orientation q.
    side: "L"|"P"; variant: "canalo" (geotropic) | "cupulo" (apogeotropic).
    Mechanism: projection of gravity onto the canal's excitation axis → flow → Ewald.
-     - horizontal:  proj = g · uHC(side);  excited = (variant==="cupulo" ? proj<0 : proj>0)
-                 (Ewald II: geo/apo reverse)
-     - vertical:  proj = g · GEXC[canal];  excited = proj>0
-                 (Ewald III; no geo/apo reversal for vertical canals)
+     drive = g · tangAt(G, restPhi(canal,side));  proj = G.exc · drive
+     excited = (horizontal canal && variant==="cupulo") ? proj<0 : proj>0
+     G.exc = +1 vertical canals (Ewald III: ampullofugal excites) · −1 horizontal (Ewald II).
+     [2026-08-05] It used to be proj = g·GEXC[canal] (vertical) or g·uHC(side) (horizontal) — both of
+     those axes are the tangent taken at φ=90°, i.e. at the very constant restPhi removed. The test
+     card could therefore show a direction OPPOSITE to the dynamics of the same pose. GEXC and uHC
+     have been DELETED.
    excited: bool; mag = |proj| (raw force); {h,v,t} = quickPhase with the sign of excitation.
    VALIDATED: Dix-Hallpike (posterior), Roll (geo/apo), Bow & Lean.
 
@@ -231,7 +234,8 @@ CANAL GEOMETRY — SINGLE SOURCE [2026-08-05, branch feature/vestibular]
    (CANAL_GEOM/GEXC/uHC) for the debris dynamics. They disagreed by 15-20° on EVERY canal:
        posterior P 16.8° · L 15.5°   anterior P 20.3° · L 20.2°   horizontal P 17.4° · L 16.3°
    The engine therefore computed endolymph flow in one plane and derived eye motion about another.
-   NOW the plane comes SOLELY from CANAL_NORMALS, and CANAL_GEOM, GEXC and uHC are DERIVED from it
+   Stage 1 (morning 2026-08-05): the plane comes SOLELY from CANAL_NORMALS, with CANAL_GEOM, GEXC and uHC
+   derived from it. Stage 2 (evening): GEXC and uHC DELETED — they were the tangent frozen at φ=90°
    (duplication removed; plane discrepancy = 0.00° across all 6 canals).
 
    wuToHead(n) = [-n0, n2, n1]   (Wu: x=left, y=antero-posterior, z=up → head: x=right, y=up, z=nose)
@@ -255,9 +259,10 @@ CANAL_GEOM — DERIVED: {e1, e2, exc}; e1 = projection of AMPULLA_DIR onto the m
               L:{e1 (-0.632, 0.035, 0.774), e2 ( 0.234,-0.944, 0.234)}
    horizontal P:{e1 ( 0.877, 0.129, 0.462), e2 ( 0.480,-0.270,-0.835)}
               L:{e1 (-0.876, 0.113, 0.469), e2 (-0.482,-0.256,-0.838)}
-GEXC — DERIVED as −e1 of the vertical canal (ampullofugal tangent at φ=90°; g·GEXC>0 = excitation).
+GEXC / uHC / CK — DELETED 2026-08-05. They were excitation axes computed as ±e1, i.e. the tangent
+at φ=90° — a duplicate of CANAL_GEOM frozen at one point of the arc. Replaced by tangAt(G, φ),
+evaluated at restPhi, i.e. at the same place the simulation actually moves from.
 uHC(side) — DERIVED as +e1 of the horizontal canal (gravity TOWARD the ampulla = ampullopetal = Ewald II).
-CK — mapping {canal,side} → GEXC key for the vertical canals.
 
    EFFECTS (measured): posterior-canal calibration UNCHANGED (latency 1.95 s, peak 0.807 @9.25 s,
    duration 25.3 s). R3 partially and spontaneously improved: anterior latency 3.15→2.80 s, peak ξ
@@ -334,7 +339,8 @@ Vestibular.dynNystagmus("posterior","P", tr[tr.length-1].xi);
 --------------------------------------------------------------------------
  quickPhase  ──> nystagmus, position, dynNystagmus   (source of direction {h,v,t})
  gHead       ──> position, simulateCanalith           (gravity in the head frame)
- GEXC/uHC    ──> position                             (static projection → Ewald)
+ tangAt      ──> position, simulateCanalith          (arc tangent — one for both paths)
+ restPhi     ──> position, simulateCanalith          (where the debris starts — derived from gravity)
  CANAL_GEOM  ──> simulateCanalith                     (arc + sign of excitation)
  position    ──> simulateCupulolith                    (static gravitational cupular target)
  slerpQ      ──> simulateCanalith, simulateCupulolith  (orientation interpolation)
@@ -382,8 +388,50 @@ BPPV models — it contains no new scientific hypotheses. Mapping:
 
 [9] Ewald (1892) — Ewald's laws I/II/III. CONSISTENT with quickPhase / isExcitatory.
 
-[10] Della Santina et al. (2005) — canal-plane orientations. The basis for the
-     canal normals (GEXC, CANAL_GEOM) in an idealized version (45°).
+[10] Della Santina et al. (2005), JARO 6:191-206, doi:10.1007/s10162-005-0003-x — canal-plane
+     orientations from 3D CT reconstruction. STATUS SINCE 2026-08-05: no longer the source of the
+     geometry (that is [13]); it serves as the DIRECTIONAL CANON and as an independent control for
+     R9 — lateral-canal angle to Reid's plane 19.5°±7.4 (L) and 20.4°±6.9 (R), with the authors'
+     explicit note on the difference from the textbook 30°.
+
+[13] Ahmadi S-A, Raiser TM, Rühl RM, Flanagin VL, zu Eulenburg P (2021). "IE-Map: a novel in-vivo
+     atlas and template of the human inner ear". Sci Rep 11:3293, doi:10.1038/s41598-021-82716-0
+     (PMID 33558581, PMC7870663, CC BY 4.0, repository github.com/pydsgz/IEMap).
+     >>> THE ONLY SOURCE OF CANAL GEOMETRY IN THE ENGINE. <<< It supplies a COMPLETE set from one
+     reconstruction: CANAL_NORMALS (planes from PCA of the duct centreline points), AMPULLA_DIR
+     (projection of A−C), ARC_SPAN (angle A→O) and the arc direction (monotonic Q0→Q4). n=63
+     subjects / 126 ears, 3T, CISS 0.5 mm iso → template 0.2 mm iso, 94 landmarks. The template is
+     aligned to REID'S STANDARD PLANE (infraorbital point + external auditory meatus, bilaterally) —
+     hence the atlas frame is taken as the head frame without rotation (R9). THE SOURCE'S LIMIT:
+     none of the 94 landmarks is cranial, and the paper itself calls the lateral canal's coplanarity
+     with Reid an ASSUMPTION.
+
+[14] Curthoys IS, Oman CM — dimensions of the human membranous labyrinth. A CONTROL on the arc
+     radii computed from [13]: ours 3.50 / 3.32 / 2.68 mm (posterior / anterior / lateral) against
+     the reported 3.3 / 3.2 / 2.4 — agreeing in order and magnitude.
+
+Sources WITHDRAWN from source status (they remain EXTERNAL CONTROLS and feed no constant):
+  • Wu et al. (2021), Front Neurol 12:741948 — canal normals from MRI, n=55. Were the source of
+    CANAL_NORMALS until 2026-08-05. Replaced by [13] because Wu gives no position of the ampulla
+    along the loop, and stitching geometry from different papers was the source of the drifts.
+    Agreement between the two sources 17.1°; lateral-canal pitch per Wu 17.4° — cited in R9 as a
+    second independent number.
+  • Cárdenas-Serna & Jeffery, Zenodo doi:10.5281/zenodo.4818568 (described in PMC8819049) — arc
+    spans from 96 bony labyrinths (265.8 / 307.0 / 236.8°). Were the source of ARC_SPAN between
+    morning and evening on 2026-08-05. Replaced by [13] for the same reason; kept as an
+    order-of-magnitude control.
+  • Bradshaw et al. (2010), JARO doi:10.1007/s10162-009-0195-6 — θs of the membranous labyrinth
+    (271.7 / 324.7 / 249.2°), measured between vestibular boundaries and therefore systematically
+    larger. Never a source — only a directional control.
+  • Cherchi (2026), PMC12799655 — the real lateral-canal arc ~240° and its postero-medial segment;
+    a directional control for our 267.3° and an argument against diagrams using a 180° arc.
+
+[15] Stokes' law (v = (2/9)·Δρ·g·a²/μ) — ties the constant tauP to the radius of the otoconial
+     clump. For tauP=6.5 s and a mean arc radius of 3.17 mm this gives a ≈ 10.6 µm, i.e. an
+     equivalent diameter ≈ 21 µm. The size scaling tauP = tauP₀/r² (v ∝ r²) IS that law, so size
+     small/medium/large = 16 / 21 / 29 µm in diameter, and those numbers are shown to the clinician.
+     Single human otoconia range 1–30 µm; the size of the real AGGREGATE in a living patient is not
+     known — PMC3226995 ([4] Obrist & Hegemann) says so explicitly.
 
 [11] "Extremely Long Latency BPPV" (Res Vestib Sci, 2017) — very long latencies
      attributed to otolith ADHESION and their size. The basis for the adhesion hypothesis

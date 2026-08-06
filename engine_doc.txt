@@ -92,11 +92,13 @@ qPitch(deg) -> q
 position({canal, side, variant, q}) -> {excited, mag, h, v, t}
    Statyczna stymulacja CHOREGO kanału w orientacji głowy q.
    side: "L"|"P"; variant: "canalo" (geotropowy) | "cupulo" (apogeotropowy).
-   Mechanizm: rzut grawitacji na oś pobudzenia kanału → przepływ → Ewald.
-     - poziomy:  proj = g · uHC(side);  excited = (variant==="cupulo" ? proj<0 : proj>0)
-                 (Ewald II: geo/apo odwracają się)
-     - pionowe:  proj = g · GEXC[kanał];  excited = proj>0
-                 (Ewald III; bez odwrócenia geo/apo dla kanałów pionowych)
+   Mechanizm: składowa STYCZNA grawitacji w miejscu, GDZIE ZŁÓG LEŻY → przepływ → Ewald.
+     drive = g · tangAt(G, restPhi(canal,side));  proj = G.exc · drive
+     excited = (kanał poziomy && variant==="cupulo") ? proj<0 : proj>0
+     G.exc = +1 kanały pionowe (Ewald III: ampullofugalny pobudza) · −1 poziomy (Ewald II).
+     [2026-08-05] Było: proj = g·GEXC[kanał] (pionowe) albo g·uHC(side) (poziomy) — obie te osie to
+     styczna liczona w φ=90°, czyli w tej samej wpisanej stałej, którą usunął restPhi. Karta testu
+     potrafiła przez to pokazać kierunek PRZECIWNY do dynamiki tej samej pozy. GEXC i uHC USUNIĘTE.
    excited: bool; mag = |proj| (siła surowa); {h,v,t} = quickPhase ze znakiem pobudzenia.
    ZWALIDOWANE: Dix-Hallpike (tylny), Roll (geo/apo), Bow & Lean.
 
@@ -230,7 +232,8 @@ GEOMETRIA KANAŁU — JEDNO ŹRÓDŁO [2026-08-05, gałąź feature/vestibular]
    do dynamiki złogu. Rozjeżdżały się o 15–20° na KAŻDYM kanale:
        tylny P 16.8° · L 15.5°   przedni P 20.3° · L 20.2°   poziomy P 17.4° · L 16.3°
    Silnik liczył więc przepływ endolimfy w innej płaszczyźnie niż tę, wokół której wyprowadzał ruch oka.
-   TERAZ płaszczyzna pochodzi WYŁĄCZNIE z CANAL_NORMALS, a CANAL_GEOM, GEXC i uHC są z niej WYPROWADZONE
+   Etap 1 (rano 2026-08-05): płaszczyzna WYŁĄCZNIE z CANAL_NORMALS, a CANAL_GEOM, GEXC i uHC z niej wyprowadzone.
+   Etap 2 (wieczór): GEXC i uHC USUNIĘTE — były styczną zamrożoną w φ=90°. Zostało samo CANAL_GEOM + tangAt
    (duplikacja usunięta; rozbieżność płaszczyzn = 0.00° we wszystkich 6 kanałach).
 
    wuToHead(n) = [-n0, n2, n1]   (Wu: x=lewo, y=przednio-tylny, z=góra → głowa: x=prawo, y=góra, z=nos)
@@ -253,9 +256,9 @@ CANAL_GEOM — WYPROWADZONE: {e1, e2, exc}; e1 = rzut AMPULLA_DIR na zmierzoną 
               L:{e1 (-0.632, 0.035, 0.774), e2 ( 0.234,-0.944, 0.234)}
    horizontal P:{e1 ( 0.877, 0.129, 0.462), e2 ( 0.480,-0.270,-0.835)}
               L:{e1 (-0.876, 0.113, 0.469), e2 (-0.482,-0.256,-0.838)}
-GEXC — WYPROWADZONE jako −e1 kanału pionowego (styczna ampullofugalna przy φ=90°; g·GEXC>0 = pobudzenie).
-uHC(side) — WYPROWADZONE jako +e1 kanału poziomego (grawitacja KU bańce = przepływ ampullopetalny = Ewald II).
-CK — mapowanie {canal,side} → klucz GEXC dla kanałów pionowych.
+GEXC / uHC / CK — USUNIĘTE 2026-08-05. Były to osie pobudzenia liczone jako ±e1, czyli styczna
+w φ=90° — duplikat CANAL_GEOM zamrożony w jednym punkcie łuku. Zastąpione przez tangAt(G, φ),
+liczone w restPhi, czyli w tym samym miejscu, którym rusza symulacja.
 
    SKUTKI ZMIANY (zmierzone): kalibracja kanału tylnego BEZ ZMIAN (latencja 1.95 s, szczyt 0.807 @9.25 s,
    trwanie 25.3 s). R3 poprawiony CZĘŚCIOWO i samoistnie: przedni latencja 3.15→2.80 s, szczyt ξ 0.668→0.817;
@@ -331,7 +334,8 @@ Vestibular.dynNystagmus("posterior","P", tr[tr.length-1].xi);
 --------------------------------------------------------------------------
  quickPhase  ──> nystagmus, position, dynNystagmus   (źródło kierunku {h,v,t})
  gHead       ──> position, simulateCanalith           (grawitacja w układzie głowy)
- GEXC/uHC    ──> position                             (statyczny rzut → Ewald)
+ tangAt      ──> position, simulateCanalith          (styczna do łuku — jedna dla obu ścieżek)
+ restPhi     ──> position, simulateCanalith          (skąd startuje złóg — wyprowadzone z grawitacji)
  CANAL_GEOM  ──> simulateCanalith                     (łuk + znak pobudzenia)
  position    ──> simulateCupulolith                    (statyczny cel grawitacyjny osklepka)
  slerpQ      ──> simulateCanalith, simulateCupulolith  (interpolacja orientacji)
@@ -379,8 +383,48 @@ biomechanicznych BPPV — nie zawiera nowych hipotez naukowych. Mapowanie:
 
 [9] Ewald (1892) — prawa Ewalda I/II/III. ZGODNE z quickPhase / isExcitatory.
 
-[10] Della Santina i wsp. (2005) — orientacje płaszczyzn kanałów. Podstawa dla
-     normalnych kanałów (GEXC, CANAL_GEOM) w wersji wyidealizowanej (45°).
+[10] Della Santina i wsp. (2005), JARO 6:191-206, doi:10.1007/s10162-005-0003-x — orientacje
+     płaszczyzn kanałów z rekonstrukcji CT 3D. STATUS OD 2026-08-05: NIE jest już źródłem geometrii
+     (tą jest [13]); służy jako KANON KIERUNKOWY i jako niezależna kontrola do R9 — kąt kanału
+     bocznego do płaszczyzny Reida 19.5°±7.4 (L) i 20.4°±6.9 (P), z jawną uwagą autorów
+     o różnicy wobec podręcznikowych 30°.
+
+[13] Ahmadi S-A, Raiser TM, Rühl RM, Flanagin VL, zu Eulenburg P (2021). „IE-Map: a novel
+     in-vivo atlas and template of the human inner ear". Sci Rep 11:3293,
+     doi:10.1038/s41598-021-82716-0 (PMID 33558581, PMC7870663, CC BY 4.0,
+     repozytorium github.com/pydsgz/IEMap).
+     >>> JEDYNE ŹRÓDŁO GEOMETRII KANAŁÓW W SILNIKU. <<< Dostarcza KOMPLET z jednej rekonstrukcji:
+     CANAL_NORMALS (płaszczyzny z PCA punktów osi przewodu), AMPULLA_DIR (rzut A−C), ARC_SPAN
+     (kąt A→O) i zwrot obiegu (monotoniczność Q0→Q4). n=63 osoby / 126 uszu, 3T, CISS 0.5 mm izo
+     → template 0.2 mm izo, 94 punkty orientacyjne. Template wyrównany do STANDARDOWEJ PŁASZCZYZNY
+     REIDA (punkt podoczodołowy + przewód słuchowy zewnętrzny, obustronnie) — stąd ramka atlasu jest
+     brana jako ramka głowy bez obrotu (R9). GRANICA ŹRÓDŁA: wśród 94 punktów NIE MA żadnego punktu
+     czaszkowego, a sama praca nazywa koplanarność kanału bocznego z Reidem ZAŁOŻENIEM.
+
+[14] Curthoys IS, Oman CM — wymiary ludzkiego błędnika błoniastego. KONTROLA promieni łuku
+     wyliczonych z [13]: nasze 3.50 / 3.32 / 2.68 mm (tylny / przedni / boczny) wobec
+     podawanych 3.3 / 3.2 / 2.4 — zgodność co do kolejności i rzędu.
+
+źródła WYCOFANE ze statusu źródła (zostają jako KONTROLE ZEWNĘTRZNE, nigdzie nie zasilają stałych):
+  • Wu i wsp. (2021), Front Neurol 12:741948 — normalne kanałów z MRI, n=55. Były źródłem
+    CANAL_NORMALS do 2026-08-05. Zastąpione przez [13], bo Wu nie podaje położenia bańki wzdłuż
+    pętli, a zszywanie geometrii z różnych prac było źródłem rozjazdów. Zgodność obu źródeł 17.1°;
+    nachylenie kanału bocznego wg Wu 17.4° — przywoływane w R9 jako druga niezależna liczba.
+  • Cárdenas-Serna & Jeffery, Zenodo doi:10.5281/zenodo.4818568 (opis PMC8819049) — zakresy łuku
+    z 96 błędników kostnych (265.8 / 307.0 / 236.8°). Były źródłem ARC_SPAN między rano a wieczorem
+    2026-08-05. Zastąpione przez [13] z tego samego powodu; zostają jako kontrola rzędu wielkości.
+  • Bradshaw i wsp. (2010), JARO doi:10.1007/s10162-009-0195-6 — θs błędnika błoniastego
+    (271.7 / 324.7 / 249.2°), mierzone między granicami przedsionkowymi, więc systematycznie wyższe.
+    Nigdy nie były źródłem — tylko kontrolą kierunkową.
+  • Cherchi (2026), PMC12799655 — realny łuk kanału bocznego ~240° i odcinek tylno-przyśrodkowy;
+    kontrola kierunkowa dla naszych 267.3° i argument przeciw schematom z łukiem 180°.
+
+[15] Prawo Stokesa (v = (2/9)·Δρ·g·a²/μ) — wiąże stałą tauP z promieniem kłębka otoconiów.
+     Dla tauP=6.5 s i średniego promienia łuku 3.17 mm wychodzi a ≈ 10.6 µm, czyli równoważna
+     średnica ≈ 21 µm. Skalowanie tauP = tauP₀/r² (v ∝ r²) JEST tym prawem, więc size
+     mały/średni/duży = 16 / 21 / 29 µm średnicy i te liczby są pokazywane klinicyście.
+     Zakres pojedynczych ludzkich otoconiów 1–30 µm; rozmiar realnego AGREGATU u żywego chorego
+     nie jest znany — PMC3226995 ([4] Obrist & Hegemann) mówi o tym wprost.
 
 [11] "Extremely Long Latency BPPV" (Res Vestib Sci, 2017) — bardzo długie latencje
      przypisane PRZYLEGANIU otolitów i ich rozmiarowi. Podstawa hipotezy adhezji
@@ -1292,8 +1336,8 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      wykrywa PIONOWO-SKRĘTNY oczopląs samoistny (neuronitis dolny nie jest już „brak oczopląsu"), #3 SCDS w
      lokalizacji, #5 sakada vHIT przedniego ze skrętem (qpFull = wspólna niemaskowana geometria: sakada/pion/SCDS),
      #6 flaga reverseDissociation (vHIT+ / kaloryka− = ubytek HF), #7 readout reużywa hints (bez podwójnego liczenia).
- [x] HIGIENA (t18 doc↔kod, t19 walidacja wejścia): t18 PARSUJE tabele geometrii z engine_doc (GEXC, CANAL_NORMALS)
-     i porównuje z wyeksportowanym kodem (Vestibular.GEXC/CANAL_NORMALS) — łapie „rozjazd tabeli vs kod"; t19:
+ [x] HIGIENA (t18 doc↔kod, t19 walidacja wejścia): t18 PARSUJE tabele geometrii z engine_doc (CANAL_NORMALS)
+     i porównuje z wyeksportowanym kodem — łapie „rozjazd tabeli vs kod" (GEXC usunięte 2026-08-05, ta część odpada); t19:
      zły canal/side/variant/timeline/dt → JASNY błąd (reqCanal/reqCanal w nysMag/position/simulate*; canalSpec/
      vhitPlane w NeuroVOR); dt<=0 nie zawiesza (RangeError). UWAGA: walidacja `variant` w position() musi
      dopuszczać KONWENCJĘ APLIKACJI "canalo"|"cupulo" (nie "canalith"!) — inaczej łamie diagnostykę (nysFromGeom

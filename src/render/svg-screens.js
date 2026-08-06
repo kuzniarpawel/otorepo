@@ -13,7 +13,10 @@ const tr = t;   // alias tlumaczenia dla funkcji HINTS z lokalnym 't' (string/pa
 const FLIP_ICO = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 8a8 8 0 0 1 13-2.5M20 16a8 8 0 0 1-13 2.5M17 3v4h-4M7 21v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 // ROZMIAR ZŁOGU (UI) — mnożnik promienia r, SPÓJNY z SIZE_R w module Vestibular.
 const SIZE_LABELS={ get small(){return t("mała","small");}, get medium(){return t("średnia","medium");}, get big(){return t("duża","large");} };
-const SIZE_NOTE={ get small(){return t("drobne/wolno osiadające","fine/slow-settling");}, get medium(){return t("typowe","typical");}, get big(){return t("duże/ciężkie","large/heavy");} };
+// (SIZE_NOTE usunięte 2026-08-06 — było zdefiniowane i eksportowane, ale NIGDZIE nieużywane.
+//  Zastąpione liczbą: Vestibular.sizeUm(size) daje RÓWNOWAŻNĄ ŚREDNICĘ kłębka w µm, wyprowadzoną
+//  z tauP przez prawo Stokesa — klinicysta dostaje wielkość porównywalną z piśmiennictwem
+//  zamiast etykiety bez jednostki.)
 let _otoStart=null;   // start animacji wędrówki otolitu (moduł, by dało się ją zrestartować przy flipie karty)
 
 /* ============ SVG: głowa z góry ============ */
@@ -826,7 +829,7 @@ function renderGuide(){
       <div class="ttl"><b>${p.name}</b><span>${CANALS[p.canal].label}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${p.side==='L'}" onclick="setGuideSide('L')">L</button><button data-s="P" aria-pressed="${p.side==='P'}" onclick="setGuideSide('P')">${t("P","R")}</button></div></div></div>
     <div class="steps-dots">${dots}</div>
-    <div class="sizerow"><span class="lbl">${t("Rozmiar złogu","Debris size")}</span>
+    <div class="sizerow"><span class="lbl">${t("Rozmiar złogu","Debris size")}<span class="um" title="${t("równoważna średnica kłębka — wyprowadzona z oporu Stokesa","equivalent clump diameter — derived from Stokes drag")}">~${Vestibular.sizeUm(state.size)} µm</span></span>
       <div class="sizepill">${["small","medium","big"].map(k=>`<button aria-pressed="${state.size===k}" onclick="pickSize('${k}')">${SIZE_LABELS[k]}</button>`).join("")}</div></div>
     ${state.size==="small"
       ? `<div class="note">${t('Drobny/wolno osiadający złóg — <b>wydłużono zalecany czas utrzymania pozycji</b> (wolniejsze osiadanie otoconiów; por. uzasadnienie ~30 s holdów w CRP: Hain, Squires &amp; Stone 2005). Oczopląs słabszy i o dłuższej latencji.','Fine/slow-settling debris — <b>the recommended hold time has been extended</b> (slower otoconia settling; cf. the rationale for ~30 s holds in CRP: Hain, Squires &amp; Stone 2005). Nystagmus is weaker and with a longer latency.')}</div>`
@@ -1580,7 +1583,7 @@ function sideSel(current, fn, lbl){
   return `<div class="sidesel"><span class="lbl">${lbl}</span><div class="tabs">${opt('L')}${opt('P')}</div></div>`;
 }
 
-export { FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
+export { FLIP_ICO, SIZE_LABELS, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
