@@ -35,7 +35,9 @@
     "lab:check": "node tools/lab-check.mjs",
     "lab:dom": "node tools/lab-dom.mjs",
     "opis:check": "node tools/opis-check.mjs",
-    "opis:dom": "node tools/opis-dom.mjs"
+    "opis:dom": "node tools/opis-dom.mjs",
+    "pwa:check": "node tools/pwa-check.mjs",
+    "pwa:dom": "node tools/pwa-dom.mjs"
   },
   "repository": {
     "type": "git",
