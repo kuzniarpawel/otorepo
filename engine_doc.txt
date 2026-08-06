@@ -1700,3 +1700,127 @@ CZEGO TEN BLOK NIE ROBI
   · Nie wysyła niczego do sieci i nie ma czym — w torze zapisu nie ma ani jednego wywołania sieci.
   · Nie zapisuje nic samo z siebie: otwarcie ekranu opisu, przełączanie sekcji i edycja tekstu
     zostawiają pamięć przeglądarki dokładnie taką, jaka była (zmierzone bajt po bajcie).
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+PWA, OFFLINE I ZACHOWANIE MOBILNE — AKTUALIZACJA, KTÓRA CZEKA (Blok 16)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Bramki: npm run pwa:check (czysty model ORAZ uruchomiony szablon service workera, gołe Node,
+233 przypadki) i npm run pwa:dom (jsdom, prawdziwy graf modułów i sztuczny service worker,
+79 przypadków).
+
+CO ZMIERZONO NA ZBUDOWANYM `dist`, ZANIM POWSTAŁA JEDNA LINIA KODU
+  · APLIKACJA NIE WSTAWAŁA OFFLINE — mimo kompletnego precache. Po zatrzymaniu serwera i
+    przeładowaniu karta pokazywała pustkę, a w konsoli stał błąd „Expected a JavaScript module
+    but the server responded with text/html". W pamięci podręcznej leżało 11 z 11 zasobów,
+    z leniwym pakietem 3D włącznie.
+    Przyczyna, zmierzona a nie zgadnięta: `caches.match` honoruje nagłówek `Vary`. Moduł ES jest
+    pobierany w trybie CORS, więc jego żądanie niesie `Origin`, którego NIE MIAŁO żądanie
+    z `cache.addAll`. Dowód rozstrzygający: `fetch(url)` na ten sam plik trafiał w cache (200),
+    a `import(url)` tego samego pliku — nie.
+  · PIERWSZE PRZEŁADOWANIE PO WDROŻENIU DAWAŁO PUSTĄ APLIKACJĘ. Worker przejmował kartę
+    natychmiast (`skipWaiting` + `clients.claim`), kasował stary cache, a karta trzymała jeszcze
+    STARY dokument — którego moduł miał już nazwę z nowym hashem, więc nie istniał ani w nowym
+    cache, ani na serwerze. Zmierzone: `#app` 336 znaków, brak powierzchni testowej. Drugie
+    przeładowanie wracało do żywych. W praktyce znaczy to: po każdym wdrożeniu pierwsze wejście
+    pokazuje białą stronę.
+  · Skrótów klawiaturowych z dokumentu (spacja — pauza, strzałki — etap) nie było w ogóle; jedyne
+    `keydown` w aplikacji obsługiwały suwak fazy i karty do odwracania.
+  · Jedyne pole tekstowe w aplikacji (edycja opisu, Blok 15) miało 14 px — Safari na iOS
+    powiększa wtedy widok przy każdym wejściu w pole.
+  · Produkcja na GitHub Pages odpowiada `Vary: Accept-Encoding`, a nie `Vary: Origin`, więc
+    wydany PWA offline najprawdopodobniej działał — ale z przypadku, nie z konstrukcji. Jeden
+    nagłówek serwera dzielił aplikację od całkowitej awarii trybu offline.
+
+AKTUALIZACJA JEST ZDARZENIEM KLINICZNYM, NIE TECHNICZNYM
+Nowa wersja wchodzi przez przeładowanie karty, a przeładowanie kasuje przypadek trzymany
+w pamięci. Dlatego reguły są dwie i są różne:
+  · TWARDA BLOKADA — w trakcie manewru repozycyjnego (licznik biegnie albo etap jest zmieniony)
+    aktualizacja nie ma prawa wejść ŻADNĄ drogą, także na wyraźne życzenie. Pacjent leży
+    w pozycji, a czas utrzymania jest częścią procedury.
+  · MIĘKKIE OSTRZEŻENIE — otwarty przypadek (opisany oczopląs, zapisana kontrola, odpowiedzi
+    kwalifikacji) da się stracić świadomie, ale użytkownik musi wiedzieć, że właśnie to robi.
+Sygnałów otwartego przypadku jest dziesięć i każdy jest sprawdzany OSOBNO: wyrocznia żąda, żeby
+każdy z osobna wstrzymał wdrożenie automatyczne. To ta sama zapadka, co przy strażniku Bloku 15 —
+lista ułożona „z głowy" przeoczy pole dołożone w następnym bloku.
+
+NOWA WERSJA CZEKA, ZAMIAST PRZEJMOWAĆ KARTĘ
+Worker nie woła już `skipWaiting` przy instalacji. Czeka, aż aplikacja sama poprosi (wiadomość
+`OTOREPO_WDROZ`) albo zamkną się wszystkie karty. Dzięki temu stary cache NIE ZNIKA spod otwartej
+karty: zmierzone na żywo — w trakcie manewru, po wdrożeniu nowej wersji, stary pakiet 3D nadal
+ładował się poprawnie (`import` starego pliku z hashem: 200, moduł zaimportowany).
+Kryterium odbioru nr 3 („aktualizacja jest komunikowana i wykonywana po zakończeniu sesji") jest
+zrealizowane dosłownie: wdrożenie odpala się w `zakonczSesje`, i to nie bezwarunkowo — model
+najpierw MIERZY na stanie, czy zostało jeszcze cokolwiek do stracenia.
+
+TRZY POPRAWKI W SAMYM WORKERZE, KAŻDA Z POMIARU
+  1. brak `skipWaiting` w instalacji (patrz wyżej),
+  2. `ignoreVary: true` w dopasowaniu do cache — bez tego moduły ES nie trafiają w kompletny
+     precache, a aplikacja nie wstaje offline,
+  3. dokument z cache dostaje WYŁĄCZNIE nawigacja. Dawny fallback podawał `otorepo.html` na każde
+     nieudane żądanie, więc brak pliku `.js` kończył się błędem typu MIME zamiast czytelnego braku;
+     teraz żądanie skryptu dostaje 504.
+Szablon workera został WYDZIELONY do `tools/sw-template.mjs` po to, żeby dało się go URUCHOMIĆ:
+wyrocznia montuje sztuczny `self`, sztuczny `caches` i sztuczne `fetch`, po czym mierzy, co worker
+naprawdę robi z żądaniem. Dopóki szablon siedział w środku skryptu budującego, jedynym dowodem
+jego poprawności było czytanie kodu — i to jest dokładnie ta klasa dowodu, przez którą aplikacja
+przez cały czas nie wstawała offline. Dowód failing-first: przywrócenie `skipWaiting` zapala G2,
+usunięcie `ignoreVary` zapala G11, a podanie dokumentu na każde pudło zapala G17 i G18.
+
+DECYZJĘ PODEJMUJE CZYSTY MODEL, EKRAN JEJ NIE POWTARZA
+`pwa-model.js` nie zna DOM-u, `navigator`a ani zegara. Odpowiada na trzy pytania naraz: czy pokazać
+komunikat, czy wolno wdrożyć i co dokładnie powiedzieć. Pasek nowej wersji leży POZA `#shell` —
+tak jak arkusz ustawień i mapa kroków — więc dwadzieścia przypiętych stanów powłoki zostało
+bajt w bajt takich samych; złoty wzorzec przybył o DWA klucze i ani jeden nie zmienił się w żadnej
+innej warstwie.
+Pasek nigdy nie jest oknem modalnym: aktualizacja aplikacji nie ma prawa zabrać ekranu klinicyście,
+który trzyma pacjenta w pozycji. W trybie skupienia zwija się do jednej linii — z pomiaru: pełny
+pasek ma 76 px i zachodził na suwak czasu utrzymania pozycji, czyli komunikat, na który w trakcie
+repozycji i tak nie da się zareagować, zasłaniał kontrolkę kliniczną. Po zwężeniu (48 px) nie
+zachodzi już ani na licznik, ani na przycisk, ani na suwak, ani na pasek postępu.
+
+SKRÓT KLAWIATUROWY, KTÓRY DOMYŚLNIE ODMAWIA
+Spacja pauzuje i wznawia licznik, strzałki przechodzą między etapami — ale tylko na ekranie manewru
+i tylko wtedy, gdy klawisz nie należy do kogoś innego. Model odmawia z NAZWANYM powodem, gdy:
+kursor stoi w polu tekstowym (spacja ma pisać), fokus jest na przycisku albo przełączniku (spacja
+ma go wcisnąć), fokus jest na suwaku czasu utrzymania albo liście wyboru (strzałka należy do nich —
+Blok 2 dołożył tę obsługę świadomie, bo bez niej czas utrzymania jest nieustawialny z klawiatury),
+klawisz ma modyfikator, jest przytrzymany, albo nie ma dokąd iść po osi etapów.
+Kontrola czułości idzie w OBIE strony: przycisk nie zjada strzałek, a suwak nie zjada spacji —
+bramka „odmawiaj zawsze" przechodziłaby wszystkie testy odmowy i nie dawała ani jednego skrótu.
+Zmierzone w przeglądarce: spacja uruchamia i pauzuje licznik, strzałki zmieniają etap, strzałka
+z fokusem na suwaku NIE zmienia etapu, a spacja z fokusem na przycisku nie zostaje przechwycona.
+
+ZDANIE O OFFLINE JEST FUNKCJĄ FAKTU, A NIE OBIETNICĄ
+Dokument żąda, żeby aplikacja informowała, które treści wymagają połączenia. Zdanie w ustawieniach
+jest generowane z listy funkcji sieciowych — lista jest pusta, więc zdanie brzmi „wszystko działa
+bez połączenia", a bramka skanuje cały `src/` (z usuniętymi komentarzami, bo komentarz o `fetch`
+nie jest wywołaniem) i przewróci się przy pierwszym prawdziwym wywołaniu sieci. Zdanie jest przy
+tym PRECYZYJNE: aplikacja nie wysyła i nie pobiera danych, ale worker pobiera z sieci własne pliki,
+dopóki nie ma ich w pamięci podręcznej — i to jest w tym zdaniu napisane.
+
+ZOOM FORMULARZA BEZ ODBIERANIA POWIĘKSZANIA
+Pole edycji opisu ma teraz 16 px, więc iOS nie powiększa widoku przy wejściu w nie. Bramka mierzy
+KASKADĘ (ostatnią obowiązującą deklarację), a nie pierwszą pasującą regułę, i ma kontrolę czułości
+w obie strony. Osobna bramka pilnuje, że problemu NIE rozwiązano zakazem powiększania w `viewport`:
+`user-scalable=no` odbiera powiększanie także tym, którzy go potrzebują.
+
+ARKUSZ USTAWIEŃ PRZESTAŁ BYĆ ZAMROŻONY JĘZYKOWO
+Cały panel ustawień powstawał raz, na boocie, więc po przełączeniu języka zostawał w starym — przy
+komplecie zielonych wyroczni, bo arkusz leży poza `#app`. Ten sam błąd, który naprawiono kiedyś dla
+nawigacji i paska przebiegu. Blok 16 dokłada tam dwa zdania (o offline i o skrótach), więc
+zamrożony język przestał być drobiazgiem: panel jest teraz przebudowywany przy zmianie języka.
+
+CZEGO TEN BLOK NIE ROBI
+  · Nie zmienia ani jednej liczby w silniku i nie dokłada ani jednego parametru.
+  · Nie dokłada ani jednego wywołania sieci — bramka to sprawdza.
+  · Nie zmienia zawartości `#app`: 183 przypięte stany DOM i 360 stanów pozy są bajt w bajt takie
+    same jak przed blokiem.
+  · Nie wprowadza routingu z dokumentu (`/start`, `/diagnostyka/bppv/…`) — to osobna, duża zmiana.
+
+CZEGO NIE DA SIĘ ZMIERZYĆ BEZ URZĄDZENIA
+Instalacja na ekranie początkowym i uruchomienie bez paska przeglądarki (kryterium odbioru nr 1)
+opierają się na manifeście (`display: standalone`, `start_url` aliasowany w buildzie) i NIE zostały
+sprawdzone na prawdziwym telefonie. Tak samo obszary bezpieczne przy wycięciu ekranu i tryb
+prezentacyjny w orientacji poziomej: reguły istnieją i są zmierzone w oknie o proporcjach telefonu,
+ale nie na sprzęcie.

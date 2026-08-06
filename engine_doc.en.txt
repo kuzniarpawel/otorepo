@@ -1743,3 +1743,126 @@ WHAT THIS BLOCK DOES NOT DO
     one network call.
   · It saves nothing on its own: opening the report screen, toggling sections and editing the text
     leave browser storage exactly as it was (measured byte for byte).
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+PWA, OFFLINE AND MOBILE BEHAVIOUR — AN UPDATE THAT WAITS (Block 16)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Gates: npm run pwa:check (the pure model AND the service-worker template actually EXECUTED, bare
+Node, 233 cases) and npm run pwa:dom (jsdom, the real module graph and a fake service worker,
+79 cases).
+
+WHAT WAS MEASURED ON THE BUILT `dist` BEFORE A SINGLE LINE WAS WRITTEN
+  · THE APP DID NOT COME UP OFFLINE — despite a complete precache. With the server stopped, a
+    reload showed nothing and the console carried "Expected a JavaScript module but the server
+    responded with text/html". All 11 of 11 assets were in the cache, the lazy 3D chunk included.
+    The cause, measured rather than guessed: `caches.match` honours `Vary`. An ES module is fetched
+    in CORS mode, so its request carries `Origin`, which the `cache.addAll` request did NOT have.
+    The decisive proof: `fetch(url)` on that same file hit the cache (200), while `import(url)` of
+    the same file did not.
+  · THE FIRST RELOAD AFTER A DEPLOY LEFT THE APP BLANK. The worker took the tab over immediately
+    (`skipWaiting` + `clients.claim`), deleted the old cache, and the tab was still holding the OLD
+    document — whose module already had a new hashed name, so it existed neither in the new cache
+    nor on the server. Measured: `#app` 336 characters, no test surface. The second reload brought
+    it back. In practice: after every deployment the first visit shows a white page.
+  · The keyboard shortcuts the document asks for (space — pause, arrows — step) did not exist; the
+    only `keydown` handlers in the app served the phase slider and the flip cards.
+  · The only text field in the app (report editing, Block 15) was 14 px — Safari on iOS then zooms
+    the view on every focus.
+  · Production on GitHub Pages answers with `Vary: Accept-Encoding`, not `Vary: Origin`, so the
+    released PWA most likely did work offline — by accident, not by construction. One response
+    header stood between the app and a total offline failure.
+
+AN UPDATE IS A CLINICAL EVENT, NOT A TECHNICAL ONE
+A new version arrives through a page reload, and a reload discards the case held in memory. Hence
+two different rules:
+  · HARD BLOCK — during a repositioning maneuver (timer running, or the step already changed) an
+    update may not be applied by ANY route, including an explicit request. The patient is lying in
+    a position and the hold time is part of the procedure.
+  · SOFT WARNING — an open case (described nystagmus, a recorded follow-up, triage answers) may be
+    lost deliberately, but the user must know that is what they are doing.
+There are ten signals of an open case and each is checked SEPARATELY: the oracle demands that each
+one on its own suspends the automatic update. Same ratchet as the Block 15 guard — a list written
+from memory will miss the field a future block adds.
+
+THE NEW VERSION WAITS INSTEAD OF TAKING THE TAB
+The worker no longer calls `skipWaiting` on install. It waits until the app asks (an
+`OTOREPO_WDROZ` message) or every tab is closed. The old cache therefore does NOT vanish from under
+an open tab: measured live — mid-maneuver, after a new version was deployed, the old 3D chunk still
+loaded correctly (`import` of the old hashed file: 200, module imported).
+Acceptance criterion 3 ("the update is communicated and applied when the session ends") is met
+literally: deployment fires in `zakonczSesje`, and not unconditionally — the model first MEASURES
+on the state whether anything is left to lose.
+
+THREE FIXES IN THE WORKER ITSELF, EACH FROM A MEASUREMENT
+  1. no `skipWaiting` on install (see above),
+  2. `ignoreVary: true` in the cache lookup — without it ES modules miss a complete precache and
+     the app does not come up offline,
+  3. the cached document is served to NAVIGATIONS ONLY. The old fallback handed out `otorepo.html`
+     for every failed request, so a missing `.js` ended in a MIME-type error instead of a readable
+     failure; a script request now gets a 504.
+The worker template was EXTRACTED into `tools/sw-template.mjs` so that it can be RUN: the oracle
+mounts a fake `self`, a fake `caches` and a fake `fetch`, then measures what the worker actually
+does with a request. While the template lived inside the build script, the only evidence for its
+correctness was reading the code — and that is exactly the class of evidence under which the app
+never came up offline. Failing-first proof: restoring `skipWaiting` turns G2 red, removing
+`ignoreVary` turns G11 red, and serving the document for every miss turns G17 and G18 red.
+
+THE DECISION BELONGS TO A PURE MODEL; THE SCREEN DOES NOT REPEAT IT
+`pwa-model.js` knows nothing of the DOM, of `navigator`, or of a clock. It answers three questions
+at once: whether to show the message, whether applying is allowed, and exactly what to say. The
+new-version bar lives OUTSIDE `#shell` — like the settings sheet and the step map — so the twenty
+pinned shell states stayed byte-identical; the golden snapshot gained TWO keys and not one key
+changed in any other layer.
+The bar is never modal: an app update has no right to take the screen from a clinician holding a
+patient in position. In focus mode it collapses to a single line — from measurement: the full bar
+is 76 px and overlapped the position-hold slider, so a message nobody can act on mid-repositioning
+was covering a clinical control. Narrowed to 48 px it no longer overlaps the timer, the button, the
+slider or the progress bar.
+
+A SHORTCUT WHOSE DEFAULT ANSWER IS "NO"
+Space pauses and resumes the timer, arrows move between steps — but only on the maneuver screen and
+only when the key does not belong to somebody else. The model refuses with a NAMED reason when: the
+caret is in a text field (space must type), a button or switch has focus (space must press it), the
+hold-time slider or a select has focus (the arrow belongs to them — Block 2 added that handling
+deliberately, because without it the hold time cannot be set from a keyboard at all), the key
+carries a modifier, is held down, or there is no step in that direction.
+The sensitivity control runs BOTH ways: a button does not eat arrows and a slider does not eat
+space — a gate that always refuses would pass every refusal test and deliver no shortcut at all.
+Measured in a browser: space starts and pauses the timer, arrows change the step, an arrow with the
+slider focused does NOT change the step, and space with the button focused is not hijacked.
+
+THE OFFLINE SENTENCE IS A FUNCTION OF A FACT, NOT A PROMISE
+The document asks the app to say which content needs a connection. The sentence in settings is
+generated from the list of network-using features — the list is empty, so the sentence reads
+"everything works offline", and a gate scans all of `src/` (with comments stripped, because a
+comment about `fetch` is not a call) and will fall over at the first real network call. The sentence
+is also PRECISE: the app sends and fetches no data, but the worker does fetch its own files from
+the network until they are in the cache — and the sentence says so.
+
+BLOCKING FORM ZOOM WITHOUT TAKING ZOOM AWAY
+The report editing field is now 16 px, so iOS no longer zooms on focus. The gate measures the
+CASCADE (the last declaration that applies), not the first matching rule, and has sensitivity
+controls both ways. A separate gate keeps the problem from being "solved" by forbidding zoom in the
+viewport: `user-scalable=no` takes magnification away from the people who need it.
+
+THE SETTINGS SHEET STOPPED BEING FROZEN IN ONE LANGUAGE
+The whole settings panel was built once, at boot, so after a language switch it stayed in the old
+one — with every oracle green, because the sheet lives outside `#app`. The same bug that was fixed
+long ago for the navigation and the flow bar. Block 16 adds two sentences there (about offline and
+about the shortcuts), so a frozen language stopped being a detail: the panel is now rebuilt on a
+language change.
+
+WHAT THIS BLOCK DOES NOT DO
+  · It changes not a single number in the engine and adds not a single parameter.
+  · It adds not one network call — a gate checks this.
+  · It does not change the contents of `#app`: 183 pinned DOM states and 360 pose states are
+    byte-identical to what they were before the block.
+  · It does not introduce the routing map from the document (`/start`, `/diagnostyka/bppv/…`) —
+    that is a separate, large change.
+
+WHAT CANNOT BE MEASURED WITHOUT A DEVICE
+Installation to the home screen and launching without a browser bar (acceptance criterion 1) rest
+on the manifest (`display: standalone`, `start_url` aliased at build time) and were NOT checked on
+a real phone. The same goes for safe areas around a display cutout and the landscape presentation
+mode: the rules exist and were measured in a phone-shaped window, but not on hardware.
