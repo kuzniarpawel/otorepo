@@ -65,6 +65,11 @@ const state={
   opisSesje:[],             // wczytane zapisy sesji. Literal PUSTY: pamiec czytamy RAZ na boocie
   opisBlad:null,            // powod ODMOWY zapisu/odtworzenia — ekran ma powiedziec, ze nie zapisal
   opisKomunikat:null,       // pokwitowanie wykonanej czynnosci (zapisano/przywrocono/usunieto)
+  // --- Blok 16: AKTUALIZACJA PWA. Czyta je src/app/pwa-model.js (czysty), pisze WYLACZNIE
+  //     src/app/pwa-state.js. Pole `aktualizacja` opisuje wersje CZEKAJACA w przegladarce, a nie
+  //     „czy jest nowa wersja w sieci" — aplikacja nie odpytuje serwera o wersje i nie ma czym.
+  aktualizacja:'brak',      // 'brak' | 'czeka' (nowy service worker zainstalowany i czeka) | 'wdrazana'
+  aktualizacjaSchowana:false, // uzytkownik schowal pasek; wdrozenie po zakonczeniu sesji dzieje sie tak samo
   view3d:false,                                    // karta „Ułożenie": 3D (WebGL) vs SVG. Literał=false (golden bez WebGL); Etap 5: main.js ustawia true na boot gdy webglAvailable()
   lang:"en",                                       // język UI: 'en' (domyślny) | 'pl'. Literał=EN; main.js initLang() ustawia wg locale/wyboru na boot. t(pl,en) w src/i18n.js czyta to pole (golden przypina 'pl' w snapshot.mjs)
   // --- Powłoka aplikacji (Blok 1/3). Pola czytane WYŁĄCZNIE przez src/app/shell.js; żadna
