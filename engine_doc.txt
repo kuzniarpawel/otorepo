@@ -717,57 +717,49 @@ POZOSTAŁE (do decyzji):
      BEZWŁADNOŚCIOWE oderwanie złogu od osklepka, a model przetłumiony (bez bezwładności, napędzany samą
      grawitacją) takiego zjawiska nie zawiera — poza wąskim proxy ekspulsji z odnogi (crusFling).
 
- R3. [ROZSTRZYGNIĘTE POMIAREM 2026-08-05 po R7] NIE JEST DŁUGIEM KALIBRACYJNYM — TO SKUTEK R9.
-     ZAMKNIĘTE: (a) asymetria Roll na poziomie osklepka — |ξ| ucho CHORE w dole 0.70 vs ZDROWE 0.59,
-       kolejność poprawna już w fizyce, bez ratunku z rektyfikacji Ewalda II (było 0.518 vs 0.910,
-       odwrotnie); (b) latencja kanału PRZEDNIEGO — 0.50 s, WYPROWADZONA (brak adhezji przy złogu
-       dociśniętym do osklepka), nie dostrojona; zgodna z klinicznym „latencja krótka/nieobecna".
-     ZOSTAŁO: kanał poziomy ma latencję 2.40 s (tylny 2.20) i szczyt 0.70 (tylny 0.87), a klinicznie
-       powinien mieć latencję NAJKRÓTSZĄ i oczopląs najsilniejszy.
-     PRZYCZYNA — ZMIERZONA, nie zgadnięta. Cała różnica siedzi w ułamku grawitacji, który wpada
-       w PŁASZCZYZNĘ kanału w pozycji prowokującej: tylny w Dix-Hallpike dostaje 0.999, poziomy w Roll
-       tylko 0.855. Rozkład napędu (sonda 42): tylny |g|_pł 0.999 → napęd 0.144 → lat 2.20;
-       poziomy 0.855 → 0.131 → 2.40. Nic więcej się nie różni.
-     SKĄD 0.855: z przygięcia karku o 30°, które nakazuje opis testu. Sonda 44 — zależność jest
-       MONOTONICZNA i to instrukcja szkodzi:
-         zgięcie  0° → |g|_pł 1.000 → latencja 1.90 s → szczyt 0.81
-         zgięcie 30° → |g|_pł 0.855 → latencja 2.40 s → szczyt 0.70   (opis aplikacji)
-         zgięcie 60° → |g|_pł 0.499 → latencja 5.80 s → szczyt 0.43
-       Przy 0° kolejność latencji jest JUŻ POPRAWNA (poziomy 1.90 < tylny 2.20), bez dotykania stałych.
-     KOREKTA 2026-08-05 (sonda 47): POWIĄZANIE Z R9 BYŁO MOIM BŁĘDEM. Napisałem wcześniej, że model
-       żąda 0° dlatego, że jego kanał boczny ma 10.4° zamiast 30°, więc R3 zamknie się razem z R9.
-       SPRAWDZONE I NIEPRAWDA: optimum zgięcia wychodzi −2° przy KAŻDYM pochyleniu ramki (0/−10/−20/−30°),
-       bo decyduje o nim MIĘDZYUSZNA składowa normalnej kanału bocznego (n_x ≈ −0.03), a obrót ramki
-       wokół osi usznej jej nie rusza. Pochylenie do kanonicznych 30.3° podnosi |g|_pł tylko 0.855→0.889
-       i skraca latencję 2.40→2.30 s — nadal powyżej tylnego (2.20). R3 NIE jest skutkiem R9.
-       (Odrzucona też druga hipoteza: że 30° służy IZOLACJI kanału poziomego. Stosunek napędu
-        tylny/poziomy w pozycji Roll jest PŁASKI ~0.79 przy każdym zgięciu — przygięcie niczego nie
-        izoluje; zeruje jedynie kanał przedni w okolicy 20°.)
-     ZMIANY INSTRUKCJI I TAK NIE ROBIĘ: 30° to powszechna praktyka kliniczna, a model nie potrafi
-       wskazać, co ta praktyka kupuje — jego niezgodność jest argumentem za dalszym badaniem MODELU,
-       nie za zmienianiem zalecenia dla klinicysty.
-     DLACZEGO NIE WOLNO TEGO „NAPRAWIĆ" STAŁĄ PER KANAŁ: sprawdziłem najbardziej obiecującą —
-       promień łuku, ZMIERZONY na tym samym atlasie (tylny 3.50 · przedni 3.32 · boczny 2.68 mm;
-       literatura Curthoys & Oman: 3.3 / 3.2 / 2.4 — zgodność co do kolejności i rzędu). Skalowanie
-       tauP ∝ R skraca latencję kanału bocznego, ALE spójna fizyka wymaga też gc ∝ R (objętość wypartej
-       endolimfy ∝ R·Δφ), a wtedy szczyt SPADA. Efekt netto zależy od tego, którą z dwóch interpretacji
-       fenomenologicznego ξ się wybierze — czyli byłby to wybór pod pożądany wynik, nałożony na znany
-       błąd geometryczny. Nie dodaję tej stałej.
-     WNIOSEK (po korekcie): R3 zostaje OTWARTE i NIEZALEŻNE od R9. Znany jest mechanizm (15% napędu
-       traci się na przygięciu 30°), nieznane jest, co to przygięcie daje w zamian — model nie odtwarza
-       żadnej korzyści, którą klinika mu przypisuje. Kalibracja stałych per kanał nadal ODRADZANA:
-       zasłoniłaby tę lukę liczbą, zamiast ją wyjaśnić.
-     ZAMKNIĘTE: asymetria Roll na poziomie osklepka. |ξ| ucho CHORE w dole 0.70 vs ZDROWE 0.59 —
-       kolejność klinicznie POPRAWNA już na poziomie osklepka, bez ratunku z rektyfikacji Ewalda II
-       (było 0.518 vs 0.910, czyli odwrotnie). Naprawił to wyprowadzony start złogu, nie strojenie stałych.
-     OTWARTE: kolejność latencji. Tylny 2.30 s / |ξ| 0.87 · poziomy 2.65 s / 0.70 · przedni brak
-       odpowiedzi (napęd 0.012 < próg — to R7, nie R3). Kanał poziomy nadal NIE ma najkrótszej latencji
-       ani najsilniejszego oczopląsu, jak każe klinika.
-     NIEAKTUALNY jest natomiast cały poniższy MECHANIZM: wyprowadzał liczby ze startu φ=90, który już
-       nie istnieje (restPhi: 48.8 / 199.8 / 3). Wzoru lat ≈ adh/(|g·e1|/tauP − fStat) nie da się już
-       stosować — styczna liczy się teraz w miejscu spoczynku, nie w φ=90. Zastrzeżenie „kalibrację R3
-       rób PO przebudowie geometrii" ZOSTAJE W MOCY i właśnie stało się wykonalne: geometria jest
-       zmierzona i zamknięta, więc R3 można wreszcie kalibrować, ale trzeba go PRZELICZYĆ od zera.
+ R3. [PRZEMIERZONE 2026-08-06] PIERWOTNE SFORMUŁOWANIE WYCOFANE; zostało JEDNO pytanie, zależne od R10.
+     ZAMKNIĘTE:
+       (a) asymetria Roll na poziomie osklepka — |ξ| ucho CHORE w dole 0.70 vs ZDROWE 0.59, kolejność
+           poprawna już w fizyce (było 0.518 vs 0.910, odwrotnie). Naprawił to wyprowadzony start, nie strojenie.
+       (b) latencja kanału PRZEDNIEGO — 0.50 s, WYPROWADZONA (brak adhezji przy złogu dociśniętym do
+           osklepka). Sygnatura wyprowadzenia: jest NIEZALEŻNA OD ROZMIARU złogu (0.50/0.50/0.45 dla
+           małego/średniego/dużego), czego żadna dostrojona stała by nie dała.
+       (c) SAMO SFORMUŁOWANIE „stałe skalibrowane dla kanału tylnego, pozostałe dziedziczą je bez
+           walidacji" — WYCOFANE JAKO NIETRAFNE. Zmierzone: żadna stała wpływająca na amplitudę nie
+           różni się między kanałami (tauP, tauC, gc, fStat, adh są wspólne; różni się tylko znak exc
+           i obecność komory odnogi, która działa dopiero przy ujściu). Cała różnica jest GEOMETRYCZNA:
+             tylny w Dix   |g|_pł 0.999 × sin(Δ)=0.936 → 0.935
+             poziomy w Roll |g|_pł 0.855 × sin(Δ)=0.998 → 0.853   (kąt sprzyja POZIOMEMU, gubi go |g|_pł)
+           czyli 9.6% różnicy napędu, w całości z geometrii pozy, nie z odziedziczonej stałej.
+     CO ZOSTAJE LICZBOWO: tylny 2.20 s / 0.87 · poziomy 2.40 s / 0.70, a klinicznie poziomy ma mieć
+       latencję NAJKRÓTSZĄ i oczopląs najsilniejszy.
+     TO MOŻE NIE WYMAGAĆ ŻADNEJ POPRAWKI W SILNIKU. Zmierzona wrażliwość: wystarczy złóg o 10% większym
+       promieniu (o 33% większej objętości), żeby kanał poziomy przegonił tylny w OBU wielkościach naraz
+       (latencja 2.05 vs 2.20 s, szczyt 1.04 vs 0.87). To mieści się w zmiennej, którą model JUŻ MA
+       (size), i ma uzasadnienie kliniczne: łagiewka leży nad niebańkowym ujściem kanału poziomego,
+       a HC-BPPV często powstaje jako canal switch po leczeniu kanału tylnego — czyli złóg DOSŁOWNIE
+       przenosi się z tylnego do poziomego. NIE JEST TO DOWÓD, tylko wskazanie, że resztowa różnica leży
+       w zakresie zmiennej klinicznej, a nie brakującej stałej per kanał. Do sprawdzenia w piśmiennictwie.
+       ZASTRZEŻENIE WYŚWIETLANIA: przy rozmiarze „duży" ξ przekracza 1 w obu kanałach (3.04 i 2.43),
+       a dynNystagmus tnie intensywność do 1 — więc powyżej średniego różnica jest w UI NIEWIDOCZNA.
+     JEDYNE OTWARTE PYTANIE: PO CO jest kliniczne 30° przygięcia karku w teście Roll, skoro w tej
+       geometrii kosztuje 15% napędu? Cztery kandydatury sprawdzone:
+         1. ustawić kanał pionowo — NIE: przy zgięciu 0° |g|_pł = 1.000, optimum wypada na −2°
+            i NIE zależy od pochylenia ramki (patrz korekta powiązania z R9).
+         2. IZOLOWAć kanał poziomy od pionowych — NIE: stosunek napędu tylny/poziomy jest PŁASKI ~0.79
+            przy każdym zgięciu; zeruje się tylko kanał przedni w okolicy 20°.
+         3. zrównać oba położenia Roll, żeby porównanie stron było uczciwe — NIE: asymetria
+            geometryczna wynosi 0.0% przy KAŻDYM zgięciu, obie pozycje są lustrzane z konstrukcji.
+         4. CHRONIĆ TEST PRZED STANIEM SIĘ ZABIEGIEM — CZʌCIOWO. Przy uchu ZDROWYM w dole złóg
+            opuszcza kanał po 15.3 s (zgięcie 0°), 20.9 s (30°), 42.4 s (50°). Kierunek się zgadza,
+            ale 30° kupuje tylko ~6 s — obie wartości mieszczą się w normalnym holdzie 30–60 s.
+       I TU JEST BLOKADA: kandydat 4 jest nierozstrzygalny, dopóki skala czasu opróżniania jest zła.
+       R10 pokazuje, że model czyści kanał poziomy w 21 s, podczas gdy wymuszona długa pozycja wg
+       Vannucchiego działa godzinami. Przy poprawnej skali 30° mogłoby chronić naprawdę.
+     WNIOSEK: R3 sprowadza się do jednego pytania i jest ZABLOKOWANE NA R10. Kalibracja stałych per
+       kanał pozostaje ODRADZANA — nie ma czego kalibrować — różnica jest geometryczna, a reszta mieści
+       się w ilości złogu.
+
  R3-STARE. STAŁE SKALIBROWANO WYŁĄCZNIE DLA KANAŁU TYLNEGO; kanały poziomy i przedni dziedziczą je bez własnej
      walidacji i wychodzą klinicznie na odwrót:
         latencja:   tylny 1.95 s · POZIOMY 2.30 s · przedni 3.15 s
