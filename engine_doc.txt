@@ -521,33 +521,73 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      KONSEKWENCJA, która wymaga decyzji: karta testu rysuje dziś strzałkę kierunku dla postaci
        geotropowej, choć dynamika mówi, że żaden oczopląs tam nie powstaje. To ta sama klasa problemu,
        co usunięta 2026-08-05 fabrykacja w stepXiPeak: ekran twierdzi coś, czego model nie policzył.
-     HIPOTEZA DO WERYFIKACJI ZEWNĘTRZNEJ (do skonfrontowania z piśmiennictwem — model jej NIE dowodzi,
-     tylko ją stawia; sformułowana tak, żeby dawała się OBALIĆ):
-       H1. W głowie wyprostowanej najniższy punkt kanału bocznego leży kilka stopni ZA punktem
-           dokładnie naprzeciw bańki (bo bańka leży powyżej środka płaszczyzny kanału). Zmierzone:
-           spoczynek 199.8°, punkt równowagi skłonu 190.0° — margines 9.8°.
-       H2. Kierunek oczopląsu w skłonie rozstrzyga zatem różnica wysokości ~29 µm na dnie kanału —
-           wielkość porównywalna ze średnicą samego kłębka otokoniów.
-       H3. PRZEWIDYWANIE: kierunek/obecność oczopląsu w skłonie zależy od tego, co pacjent robił
-           bezpośrednio przed badaniem (leżenie na boku chorym / zdrowym / wcześniejszy Roll lub Dix).
-           Zmierzone w modelu: φ startowe 132–267° zależnie od scenariusza (patrz R10).
-       H4. PRZEWIDYWANIE: u istotnej części chorych z jednoznacznie geotropowym Roll testem oczopląs
-           w skłonie będzie NIEOBECNY albo niejednoznaczny.
-       H5. PRZEWIDYWANIE: w postaci APOGEOTROPOWEJ (kupulolitiaza) Bow & Lean powinien być BARDZIEJ
-           powtarzalny niż w geotropowej — ciężki osklepek reaguje na sam kierunek grawitacji, nie
-           musi nigdzie jechać i nie ma żadnego wododziału do przekroczenia. W modelu: ξ 0.100/−0.087
-           (kupulo) wobec 0.000 (kanalo).
-     CO BY TO OBALIŁO: wysoka i powtarzalna czułość kierunku skłonu (rzędu >90%), niezależna od pozycji
-       poprzedzającej; albo doniesienia, że Bow & Lean jest PEWNIEJSZY w postaci geotropowej niż
-       apogeotropowej; albo pomiar anatomiczny kładący najniższy punkt kanału bocznego wyraźnie po
-       stronie ampułkowej punktu antypodalnego.
-     GDZIE SZUKAĆ: Choung 2006 (praca źródłowa) i późniejsze walidacje — zgodność z Roll testem, odsetek
-       chorych BEZ oczopląsu w skłonie lub odchyleniu, osobno dla postaci geo- i apogeotropowej;
-       prace kontrolujące pozycję poprzedzającą badanie (rzadkie — i to samo w sobie jest tezą).
+     >>> HIPOTEZA ZWERYFIKOWANA PIŚMIENNICTWEM 2026-08-06 (dane od użytkownika). <<<
+     H1 (spoczynek kilka stopni ZA antypodą bańki) — POTWIERDZONA W TYM ATLASIE, nie populacyjnie.
+        Niezależne przeliczenie dało te same 199,82°, czyli 19,82° za antypodą, margines 9,82°.
+        Zmienność międzyosobnicza orientacji kanału bocznego ~5° (Wu 2021), a fazy bańki względem
+        pętli nikt nie mierzył — margines 9,8° NIE jest duży wobec tej zmienności.
+     H2 (~29 µm) — WŁAŚCIWY RZĄD, ZŁA LICZBA. Podane 29 µm to głębokość basenu W SIADZIE (28,8 µm
+        między 180° a 199,8° przy |g|_pł 0,18) — opisuje, czemu punkt startowy jest nieokreślony.
+        Dla H2 właściwa jest inna wielkość: PRÓG DO POKONANIA W SKŁONIE, gdzie kanał stoi pionowo
+        i pracuje pełny promień: R(1−cos 9,82°) = 38,5–39,3 µm. Obie liczby są poprawne, ale opisują
+        co innego — moja etykieta była myląca. OBOWIĄZUJE: „ok. 30–40 µm".
+        Zastrzeżenie: rozmiar realnego AGREGATU w kanale żywego chorego nie jest znany (pojedyncze
+        otokonia 1–30 µm), więc porównanie „rzędu ziarna" trzeba stawiać ostrożnie.
+     H3 (zależność od pozycji poprzedzającej) — SILNIE WSPARTA MECHANISTYCZNIE, KLINICZNIE NIEPRZETESTOWANA.
+        Bhandari i wsp. 2022 (Front Neurol, doi:10.3389/fneur.2022.881156) pokazują symulacyjnie, że
+        położenie początkowe złogu i KOLEJNOŚĆ etapów Roll testu zmieniają kierunek oczopląsu, mogą
+        dać odpowiedź jednostronną lub direction-fixed, A SAM TEST MOŻE USUNĄĆ ZŁÓG Z KANAŁU — to
+        NIEZALEŻNIE odtwarza nasze R10 (21 s przy uchu zdrowym w dole).
+        ALE: brak badania randomizującego pozycję przed BLT. Co więcej u Koju BLT robiono PRZED Roll
+        testem, a poprawną odpowiedź miało tylko 41% — więc wcześniejszy Roll NIE jest jedyną przyczyną.
+     H4 (częsty brak odpowiedzi) — WYRAŹNIE POTWIERDZONA:
+        Choung 2006 (n=26) 11,5% bez bow i lean · Lee 2010 (n=89) 20,2% · Kim 2016 (n=66) 45%, BLT
+        lateralizował tylko 36/66 · Koju 2022 (n=44 geo) tylko 40,9% z oczekiwaną odpowiedzią ·
+        Califano 2024 (n=100) HPT niediagnostyczny u 20%, zgodność kierunku 75% w OBU postaciach.
+        Nigdzie śladu stabilnej czułości ~90%, która by hipotezę obaliła.
+        UWAGA: słaba czułość sama w sobie NIE dowodzi mechanizmu — alternatywy to próg widoczności
+        oczopląsu, rozproszenie złogu, utknięcie przy ścianie, geometria osobnicza, zbyt wolne wykonanie.
+     H5 (apo bardziej powtarzalny niż geo) — BŁĘDNIE POSTAWIONA, wymaga przeformułowania.
+        Utożsamiłem apogeotropię z ciężkim osklepkiem. Apogeotropię daje też WOLNY złóg w ramieniu
+        bańkowym, złóg po kanalikowej lub łagiewkowej stronie osklepka, przejściowa canalolithiasis
+        okołobańkowa; a trwały geotropowy DCPN może być light cupula. Porównanie „geo kontra apo"
+        MIESZA mechanizm ruchomy z nieruchomym.
+        Dane po ROZDZIELENIU mechanizmów wspierają intuicję: Kim — bow i lean u 63/63 cupulopatii wobec
+        36/66 kanalolitiazy; Choi — obie składowe u 85/85 cupulopatii wobec 48/74 kanalolitiazy.
+        Dane po FENOTYPIE już nie: Koju 41% geo vs 27% apo; Califano bez różnicy; Lee obie składowe
+        częściej w kanalolitiazie (62,9%) niż w klasyfikowanej cupulolithiasis (41,3%).
+        POPRAWIONA H5: u chorych z POTWIERDZONĄ TRWAŁĄ CUPULOPATIĄ — rozpoznaną czasem trwania
+        oczopląsu i powtarzalną płaszczyzną zerową, a NIE samą apogeotropią — BLT powinien być
+        bardziej powtarzalny niż w kanalolitiazie z wolnym złogiem.
+     WERDYKT: rdzeń hipotezy NIE został obalony i dobrze tłumaczy słabe wyniki BLT w kanalolitiazie,
+        ale zależności od pozycji bezpośrednio poprzedzającej NIKT jeszcze klinicznie nie wykazał.
+        Wersja obronna: „W kanalolitiazie kanału bocznego obecność, kierunek i amplituda oczopląsu w BLT
+        zależą od aktualnej lokalizacji wolnego złogu; ponieważ położenie to zmienia pozycja poprzedzająca
+        i wcześniejsze testy, BLT nie powinien być traktowany jako cecha lateralizacyjna niezależna od
+        historii pozycyjnej. Zależność powinna być znacznie mniejsza w potwierdzonej trwałej cupulopatii."
+        Badanie rozstrzygające: VOG, randomizowane przygotowanie (bok chory / zdrowy / neutralnie),
+        standaryzowana droga do siadu, BLT JAKO PIERWSZY TEST, osobne raportowanie bow / lean / braku
+        odpowiedzi / kierunku / SPV / latencji. Projekt RÓWNOLEGŁY, nie crossover — bo próba przenosi złóg.
+     Zapis piśmiennictwa: pamięć otorepo-bowlean-evidence.
 
      DO DECYZJI KLINICZNEJ (nie moja): (a) karta przestaje rysować strzałkę, gdy napęd < progu
      i mówi „model nie rozstrzyga"; (b) kierunek bierzemy z reguły klinicznej, jawnie, jako regułę
      a nie wynik fizyki; (c) zostaje jak jest. NIE wybieram sam, bo każda opcja zmienia treść kliniczną.
+
+ R11. SILNIK UTOŻSAMIA FENOTYP Z MECHANIZMEM: geo≡kanalolitiaza, apo≡kupulolitiaza [2026-08-06, OTWARTE].
+     Wyszło z weryfikacji H5. variantLabels dla kanału poziomego twierdzi wprost
+     „Kanalolitiaza (geotropowy)" i „Kupulolitiaza (apogeotropowy)", a gufoniApo ma w kodzie komentarz
+     „apogeotropowy HC-BPPV = KUPULOLITIAZA: złóg startuje WBITY w osklepek". Piśmiennictwo tego
+     utożsamienia nie potwierdza: apogeotropię daje też WOLNY złóg w ramieniu bańkowym oraz złóg po
+     kanalikowej lub łagiewkowej stronie osklepka, a trwały geotropowy DCPN bywa light cupula.
+     SILNIK SAM SOBIE PRZECZY: maneuverSim puszcza KAŻDY plan przez simulateCanalith, czyli fizykę
+     WOLNEGO złogu — także gufoniApo, oznaczony mechanism:"cupulo". A cel tego manewru to KONWERSJA
+     apo→geo, która ma sens WYŁĄCZNIE dla wolnego złogu: złóg wbity w osklepek nie ma się gdzie przenieść.
+     Czyli fizyka jest w porządku, a ETYKIETA za mocna — i to etykieta uczy klinicystę czegoś, czego
+     dane nie potwierdzają.
+     KIERUNEK NAPRAWY: rozdzielić FENOTYP (geotropowy / apogeotropowy — to, co się widzi) od MECHANIZMU
+     (wolny złóg / cupulopatia — to, co się wnioskuje z czasu trwania i powtarzalnej płaszczyzny zerowej).
+     To zmiana treści klinicznej, więc do decyzji użytkownika, nie moja.
 
  R10. SILNIK NIE MA PAMIĘCI POZYCJI — punkt startowy złogu jest ZAŁOŻENIEM, nie stanem [2026-08-05, OTWARTE].
      Wyszło z rozbioru R8. restPhi liczy spoczynek dla postawy PIONOWEJ, jakby to była własność anatomii.
