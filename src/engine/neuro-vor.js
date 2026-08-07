@@ -70,7 +70,8 @@ export const NeuroVOR = (()=>{
     // 0.65 → FI 0.35 (środek pasma), neuronitis w świetle ~9.9°/s (jak w 1. dobie przy łóżku). Dowód sondą:
     // zmiana NIE przełącza ŻADNEJ flagi (suppressed≤0.5 i failsSuppression>0.5 mają bufor z obu stron) —
     // teza dokumentacji o „przesunięciu wszystkich odczytów" była błędna (obalona w ocenie II).
-    fixationGain:0.65,       // zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0 (etap 2)
+    fixationGain:0.65,       // zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0 (etap 2). MUSI równać się FIX_HEALTHY (kotwica pościgu, N4)
+    pursuitGain:null,        // gain pościgu; null = POCHODNA fixationGain/FIX_HEALTHY (jeden obwód kłaczka, N4); liczba = jawna dysocjacja
     integratorTau:25,        // stała czasowa integratora UTRZYMANIA SPOJRZENIA (s); ośrodek „leaky" → krótka (etap 4)
     skewTone:0, otrTorsion:0,// grawiceptywna asymetria / OTR (etap 4)
     comp:0,                  // poziom KOMPENSACJI ośrodkowej c∈[0,1]: 0=faza ostra, 1=pełna symetria spoczynkowa (etap 6)
@@ -346,6 +347,20 @@ export const NeuroVOR = (()=>{
     const g = Math.max(-0.5, Math.min(1, p.fixationGain));
     return Math.max(0, 1 - g);                              // g=0.9→0.1 (obwód gaśnie); g=0→1 (ośrodek trwa); g<0→>1 (paradoks)
   }
+  // ETAP N4 (ocena II, D5) — ŚLEDZENIE PŁYNNE (smooth pursuit): druga połowa kłaczka. Pościg i supresja
+  // VOR fiksacją to TEN SAM obwód kłaczkowo-móżdżkowy [H3, Zee 1981] — dlatego pursuitGain jest domyślnie
+  // POCHODNĄ fixationGain (norma FIX_HEALTHY), a „pościg sakadyczny ≡ brak supresji fiksacją" wychodzi
+  // z modelu, nie z reguły. Opcjonalny p.pursuitGain (null=pochodna) zostawia furtkę na dysocjacje.
+  const FIX_HEALTHY = 0.65;  // zdrowy fixationGain (default makePatient) — wspólna kotwica normalizacji
+  function smoothPursuit(p, opts){
+    opts = opts||{};
+    const targetVel = opts.targetVel||20;                    // °/s — typowa prędkość celu w badaniu pościgu
+    const raw = p.pursuitGain!=null ? p.pursuitGain : Math.max(0, p.fixationGain)/FIX_HEALTHY;
+    const pursuitGain = Math.max(0, Math.min(1, raw));
+    const slipVel = targetVel*(1-pursuitGain);               // ślizg doganiany sakadami
+    return { targetVel, pursuitGain, slipVel, saccadic: slipVel >= VIS_THRESH*2 };   // gain<0.8 przy 20°/s
+  }
+
   // Oczopląs OBSERWOWANY w danym stanie fiksacji (fixOn: true=światło/fiksacja, false=ciemność/Frenzel).
   function observe(p, fixOn){
     const s = spontaneous(p), f = suppressionFactor(p, fixOn), spvRaw = s.spv;
@@ -407,6 +422,32 @@ export const NeuroVOR = (()=>{
     return { tauBase: base, tau: base*(1 - DVS_FRAC*c), c, shortened: c>0 };
   }
 
+  // ETAP N4 (ocena II, D1) — OCZOPLĄS POSZARPANIOWY (head-shaking nystagmus, HSN). [H25]
+  // Potrząsanie głową ~2 Hz ładuje velocity storage ASYMETRYCZNIE przez rektyfikację Ewalda II: przy
+  // prędkości potrząsania strona hamowana jest obcięta, więc ładunek niesie modulacja POBUDZENIOWA obu
+  // stron (modEx). Po zatrzymaniu magazyn rozładowuje się oczopląsem KU UCHU ZDROWEMU (większy ładunek),
+  // z zanikiem exp(−t/τ) — a τ pochodzi z postRotational, więc kompensacja SKRACA zanik EMERGENTNIE.
+  // Kliniczna wartość: jak kaloryka, ODSŁANIA SKOMPENSOWANY ubytek (utajona asymetria przy zerowym
+  // sponcie) bez irygacji; zero w BVH (symetria) i w drażnieniu Ménière'a (gain 1:1). Model MONOfazowy
+  // (bez odwrócenia dwufazowego); „perverted HSN" (pionowy po poziomym potrząsaniu = ośrodek) świadomie
+  // POZA modelem — flaga z verticalBeat odpalałaby fałszywie dla obwodowego neuronitis GÓRNEGO.
+  const HSN_K = 20;          // °/s — skala szczytowego HSN przy pełnej asymetrii ładunku (pasmo 5–15°/s w UVH)
+  const HSN_CYC = 6;         // stała ładowania (w cyklach potrząsania): charge = 1−exp(−cycles/HSN_CYC)
+  function hsn(p, opts){
+    opts = opts||{};
+    const vel = opts.peakVel||150, cycles = opts.cycles==null ? 20 : Math.max(0, opts.cycles);
+    const mR = excited(p.toneR, p.gainR, vel).mod, mL = excited(p.toneL, p.gainL, vel).mod;
+    const denom = mR + mL;
+    const asym = denom>0 ? (mR - mL)/denom : 0;              // >0: prawy magazyn większy (ubytek L)
+    const charge = 1 - Math.exp(-cycles/HSN_CYC);
+    const pr = postRotational(p);
+    const spv0 = HSN_K*Math.abs(asym)*charge;
+    const present = spv0 >= VIS_THRESH;
+    const beatEar = present ? (asym>0 ? "P" : "L") : null;   // ku uchu o większym ładunku (zdrowemu)
+    return { peakVel:vel, cycles, asym, charge, spv0, tau:pr.tau, tauBase:pr.tauBase,
+      beatEar, dir: beatEar ? (Math.sign((beatEar==="P"?1:-1)*camRx())||0) : 0, present };
+  }
+
   // spec: 'P'/'L' (poziomy, zgodność wsteczna) LUB {canal,ear} — dowolny z 6 kanałów (HC/przedni/tylny × L/P).
   function headImpulse(p, spec, opts){
     opts = opts||{};
@@ -439,6 +480,10 @@ export const NeuroVOR = (()=>{
     const fw = fusionWeights(p, Ohm, ex);
     const covertFrac = Math.max(0, Math.min(1, p.comp||0));  // predykcyjny udział → sakada ukryta (0 gdy niekompensowany, 1 przy pełnej)
     const covertAmp = saccadeAmp*covertFrac, overtAmp = saccadeAmp*(1-covertFrac);
+    // GAIN POZORNY HIMP (ocena II, D2): sakady UKRYTE wpadają w okno pomiaru i ZAWYŻAJĄ gain HIMP — to cała
+    // racja bytu SHIMP (covert ~35% w HIMP vs ~5% w SHIMP [H23]). `gain` zostaje czysty (prawda fizjologiczna),
+    // gainApparent = to, co odczyta aparat HIMP; skompensowany UVH: gain 0.35, gainApparent ~0.74 (pseudo-norma).
+    const gainApparent = Math.min(1.1, gain + 0.6*covertFrac*deficit);
     const overt  = overtAmp  >= 2.5;                         // JAWNA sakada — widoczna gołym okiem (bedside HIT)
     const covert = covertAmp >= 1.0;                         // UKRYTA sakada — wykrywalna tylko w vHIT (goggles)
     const plane = canalPlane(ex.canal, ex.ear);
@@ -449,13 +494,46 @@ export const NeuroVOR = (()=>{
     const saccade = { h:-q.h/qn, v:-q.v/qn, t:-q.t/qn };
     return {
       toSide, canal:ex.canal, ear:ex.ear, plane, coplanar:inh, saccade,
-      headVel:Ohm, headAmp:amp, gain, deficit,
+      headVel:Ohm, headAmp:amp, gain, gainApparent, deficit,
       rateEx, rateIn, modEx, modIn, inhibitedFloored: rateIn<=0,
       saccadeAmp, covertAmp, overtAmp, covertFrac, fusion: fw,
       saccadePresent: overt, overtSaccade: overt, covertSaccade: covert,
       saccadeToSide: toSide==="P" ? "L" : "P",               // catch-up przeciwnie do pchnięcia (poziomy: ku linii środkowej)
       abnormal                                               // patologiczny HIT (deficyt gain); jawność bedside = saccadePresent/overt
     };
+  }
+
+  // ETAP N4 (ocena II, D2) — SHIMP (suppression head impulse paradigm). [H23]
+  // Cel ZWIĄZANY Z GŁOWĄ (laser na czole): zdrowy VOR odrzuca oko OD celu podczas pchnięcia → potrzebna
+  // sakada ANTYkompensacyjna Z POWROTEM na cel. Reguła ODWROTNA do HIMP: OBECNA duża sakada = zdrowy VOR;
+  // jej BRAK = ubytek. Sakady ukryte NIE kontaminują (covert-saccade killer: ~5% vs ~35% w HIMP), więc
+  // SHIMP czyta gain CZYSTY — u skompensowanego UVH z pseudo-prawidłowym gainApparent HIMP to JEDYNY
+  // test przyłóżkowo-instrumentalny odsłaniający ubytek. Cięcie patologii: gain < 0.5 [H23].
+  function shimp(p, spec, opts){
+    opts = opts||{};
+    const Ohm = opts.headVel||150, amp = opts.headAmp||15;   // protokół SHIMP: ~150°/s
+    const ex = canalSpec(spec), pk = CANAL_PARAM[ex.canal][ex.ear];
+    const e = excited(p[pk.tone], p[pk.gain], Ohm);
+    const gain = Math.max(0, Math.min(1.25, e.mod/(S_HZ*Ohm)));
+    const antiSaccadeAmp = gain*amp;                         // sakada ∝ temu, ILE VOR faktycznie odrzucił oko
+    const q = qpFull(ex.canal, ex.ear), qn = Math.hypot(q.h, q.v, q.t)||1;
+    return { paradigm:"SHIMP", canal:ex.canal, ear:ex.ear, plane:canalPlane(ex.canal, ex.ear),
+      headVel:Ohm, headAmp:amp, gain, antiSaccadeAmp,
+      saccadePresent: antiSaccadeAmp >= 2.5,                 // duża antysakada widoczna = VOR zadziałał
+      abnormal: gain < 0.5,                                  // cięcie SHIMP [H23] (HIMP: GAIN_CUT per kanał)
+      saccade:{ h:q.h/qn, v:q.v/qn, t:q.t/qn } };            // ANTYkompensacyjna = kierunek szybkiej fazy kanału (PRZECIWNIE do catch-upu HIMP)
+  }
+
+  // ETAP N4 (ocena II, D10) — DVA / DYNAMICZNA OSTROŚĆ WZROKU (oscylopsja jako SKARGA pacjenta).
+  // Utrata ostrości przy ruchu głowy ∝ niedomiar gain HF (nienaprawialny kompensacją — spójnie z headImpulse).
+  // BVH: ~4 linie logMAR (ciężka, oscylopsja definicyjna [H19]); skompensowany UVH: ~2 linie (graniczny);
+  // zdrowy: 0. Trzecia demonstracja trwałości ubytku (obok kaloryki i vHIT) — tym razem jako objaw. (Guinand 2012)
+  function dva(p){
+    const gP = headImpulse(p,"P").gain, gL = headImpulse(p,"L").gain;
+    const meanGain = (gP+gL)/2;
+    const logMARLoss = Math.max(0, 0.6*(1-meanGain));
+    return { meanGain, logMARLoss, linesLost: Math.round(logMARLoss/0.1),
+      abnormal: logMARLoss>=0.2, oscillopsia: logMARLoss>=0.3 };
   }
 
   // vHIT całej PŁASZCZYZNY (HC/RALP/LARP): dwa pobudzeniowe pchnięcia — po jednym na każdy kanał pary.
@@ -882,6 +960,20 @@ export const NeuroVOR = (()=>{
     if(ve.cVEMP.weakEar){ findings.push(tr(`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.cVEMP.weakEar)} — woreczek (nerw DOLNY).`,`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} on the ${side(ve.cVEMP.weakEar)} side — saccule (INFERIOR nerve).`)); peripheralSigns.push(tr("cVEMP obniżony (woreczek — n. dolny)","cVEMP reduced (saccule — inferior nerve)")); }
     if(ve.oVEMP.weakEar){ findings.push(tr(`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.oVEMP.weakEar)} — łagiewka (nerw GÓRNY).`,`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} on the ${side(ve.oVEMP.weakEar)} side — utricle (SUPERIOR nerve).`)); peripheralSigns.push(tr("oVEMP obniżony (łagiewka — n. górny)","oVEMP reduced (utricle — superior nerve)")); }
 
+    // ETAP N4 — dodatkowe testy przyłóżkowe: HSN (velocity storage), pościg (kłaczek), DVA (skarga pacjenta).
+    const hs = hsn(p), spu = smoothPursuit(p), dv = dva(p);
+    if(hs.present){
+      findings.push(tr(`HSN (po potrząsaniu głową): ${R1(hs.spv0)}°/s ku stronie ${side(hs.beatEar)}, zanik τ≈${R1(hs.tau)} s — utajona asymetria velocity storage${dark.spv<VIS_THRESH?" (odsłania SKOMPENSOWANY ubytek)":""}.`,`HSN (after head shaking): ${R1(hs.spv0)}°/s toward the ${side(hs.beatEar)} side, decay τ≈${R1(hs.tau)} s — latent velocity-storage asymmetry${dark.spv<VIS_THRESH?" (unmasks a COMPENSATED deficit)":""}.`));
+      peripheralSigns.push(tr("HSN ku stronie zdrowej (asymetria obwodowa)","HSN toward the healthy side (peripheral asymmetry)"));
+    }
+    if(spu.saccadic){
+      findings.push(tr(`Pościg SAKADYCZNY (gain ${R1(spu.pursuitGain)}) — kłaczek/móżdżek; współistnieje z brakiem supresji fiksacją (jeden obwód).`,`SACCADIC pursuit (gain ${R1(spu.pursuitGain)}) — flocculus/cerebellum; co-occurs with absent fixation suppression (one circuit).`));
+      centralSigns.push(tr("pościg sakadyczny (kłaczek/móżdżek)","saccadic pursuit (flocculus/cerebellum)"));
+    }
+    if(dv.abnormal){
+      findings.push(tr(`DVA: utrata ~${dv.linesLost} linii ostrości przy ruchu głowy${dv.oscillopsia?" — OSCYLOPSJA (skarga definicyjna BVH)":""}; kompensacja tego NIE naprawia (gain HF trwały).`,`DVA: loss of ~${dv.linesLost} acuity lines with head movement${dv.oscillopsia?" — OSCILLOPSIA (the defining BVH complaint)":""}; compensation does NOT repair this (HF gain is permanent).`));
+    }
+
     // lokalizacja (z wzorca vHIT + kaloryki). Nerw GÓRNY (ucho E) = kanał poziomy-E + przedni-E; przedni-P leży
     // w płaszczyźnie RALP, przedni-L w LARP (tylny-E — nerw DOLNY — oszczędzony). Stąd wzorzec superior =
     // HC patologiczny + JEDNA płaszczyzna skośna (od strony chorej) patologiczna, druga prawidłowa.
@@ -926,11 +1018,12 @@ export const NeuroVOR = (()=>{
     if(cal.reverseDissociation) ambiguities.push(tr("Odwrotna dysocjacja: vHIT poziomy patologiczny przy PRAWIDŁOWEJ kalorycе — ubytek WYSOKOczęstotliwościowy (lub wczesna/częściowo skompensowana faza).","Reverse dissociation: horizontal vHIT pathological with a NORMAL caloric — a HIGH-frequency deficit (or an early/partially compensated phase)."));
 
     return { verdict:h.verdict, localization, findings, peripheralSigns, centralSigns, ambiguities,
-      hints:h, caloric:cal, vhit:{ HC:hc, RALP:ralp, LARP:larp }, spontaneous:dark, skew:sk, scds, svv:sv, vemp:ve };
+      hints:h, caloric:cal, vhit:{ HC:hc, RALP:ralp, LARP:larp }, spontaneous:dark, skew:sk, scds, svv:sv, vemp:ve,
+      hsn:hs, pursuit:spu, dva:dv };
   }
 
   return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, GAIN_CUT, afferent, makePatient, compensate, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
-           headImpulse, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, svv, vemp, caloric, caloricBattery,
+           headImpulse, shimp, hsn, smoothPursuit, dva, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, svv, vemp, caloric, caloricBattery,
            CANAL_PARAM, NERVE_CANALS, nerveBranchLesion, bilateralLoss, meniere,
            COPLANAR, PLANE_CANALS, canalSpec, canalPlane, qpFull, vhitPlane,
            SCENARIOS, scenario, hints, PARAM_SPEC, clinicalReadout };

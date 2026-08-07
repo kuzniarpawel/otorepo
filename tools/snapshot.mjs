@@ -182,6 +182,12 @@ function engineOracle(h) {
       // canalSpec brał ear='horizontal' i rzucał; golden trzymał komunikat błędu zamiast liczb vHIT.
       call('hitHC_P', () => NV.headImpulse(p, { canal: 'horizontal', ear: 'P' }));
       call('hitHC_L', () => NV.headImpulse(p, { canal: 'horizontal', ear: 'L' }));
+      // ETAP N4 (ocena II): nowe testy przyłóżkowe — pinowane od wejścia (czysto addytywne klucze)
+      call('hsn', () => NV.hsn(p));
+      call('shimpHC_P', () => NV.shimp(p, { canal: 'horizontal', ear: 'P' }));
+      call('shimpHC_L', () => NV.shimp(p, { canal: 'horizontal', ear: 'L' }));
+      call('pursuit', () => NV.smoothPursuit(p));
+      call('dva', () => NV.dva(p));
       readouts[pk] = r;
     }
     out.neuro = readouts;

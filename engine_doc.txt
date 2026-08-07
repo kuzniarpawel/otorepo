@@ -1435,6 +1435,28 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      gain 1.0 do 350°/s, droop od 387 — poza protokołem; MOD_MAX=310; świadomy rebaseline fusion.canalRel
      0.583→0.687, semantyka headroom bez zmian). Sonda n3.mjs (34 asercje). Wyrocznie: engine.neuro (wartości)
      + dom 12 ekranów (amplitudy/fusion; stroke NIEtknięty — jawne fixationGain:0).
+ [x] WDROŻENIE OCENY II — ETAP N4 (nowe testy przyłóżkowe, czysto ADDYTYWNE):
+     • hsn(p,{peakVel=150,cycles=20}) [H25 Hain 1987] — oczopląs poszarpaniowy: ładunek velocity storage
+       z ASYMETRII POBUDZENIOWEJ (modEx obu stron; strona hamowana obcięta — Ewald II), HSN_K=20, ładowanie
+       1−exp(−cykle/6), zanik τ z postRotational (kompensacja SKRACA emergentnie: 15→4.95 s). Emergenty
+       zweryfikowane: ostry UVH 9.3°/s ku zdrowemu; SKOMPENSOWANY UVH — ten sam HSN przy sponcie 0
+       (utajona asymetria, jak kaloryka bez irygacji); BVH 0; Ménière irritative 0. Model MONOfazowy;
+       „perverted HSN" świadomie POZA modelem (flaga z verticalBeat odpalałaby fałszywie dla obwodowego
+       neuronitis górnego) → OGRANICZENIA.
+     • shimp(p,spec,{headVel=150}) [H23] — cel związany z głową; sakada ANTYkompensacyjna = gain·amp
+       (jej BRAK = ubytek; reguła odwrotna do HIMP), cięcie gain<0.5, kierunek +q/qn (przeciwny do
+       catch-upu). Plus gainApparent w headImpulse(): min(1.1, gain + 0.6·covertFrac·deficit) — sakady
+       ukryte ZAWYŻAJĄ gain HIMP; skompensowany UVH: HIMP 0.74 (pseudo-norma) vs SHIMP 0.35 (prawda).
+     • smoothPursuit(p,{targetVel=20}) — pościg jako DRUGA POŁOWA kłaczka: pursuitGain domyślnie pochodna
+       fixationGain/FIX_HEALTHY(0.65) → „pościg sakadyczny ≡ brak supresji fiksacją" WYNIKA z jednego
+       parametru (perła dydaktyczna); p.pursuitGain (null=pochodna) na jawne dysocjacje. saccadic gdy
+       slip ≥ 4°/s (gain<0.8 przy 20°/s).
+     • dva(p) — dynamiczna ostrość wzroku: logMARLoss=0.6·(1−meanGain HF), NIEZALEŻNA od komp. (gain
+       trwały): BVH 4 linie + OSCYLOPSJA (skarga definicyjna [H19]), skompensowany UVH 0.195 (graniczny),
+       zdrowy 0. Trzecia demonstracja trwałości ubytku (obok kaloryki i vHIT) — jako objaw pacjenta.
+     clinicalReadout raportuje wszystkie cztery (+ sygnały per/central); zwraca hsn/pursuit/dva. Wyrocznia
+     engine.neuro pinuje nowe klucze (hsn, shimpHC_P/L, pursuit, dva) dla wszystkich pacjentów. Sonda
+     n4.mjs (27 asercji). dom: tylko 4 ekrany (bvh/stroke/nerve-superior — nowe findings).
  [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; suwak kompensacji steruje CAŁĄ
      fizjologią na żywo (oczopląs SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain nienaprawialny,
      sakada UKRYTA w trakcie pchnięcia (błąd śródpchnięciowy 18→10 px), regeneracja→Bechterew; werdykt spójny.
@@ -1553,7 +1575,23 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         NIE stosować CT do wykluczenia udaru (MRI DWI+MRA dla ośrodek/niejednoznaczny; wczesne MRI fałszywie ujemne
         → powtórzyć 48–72 h); czerwone flagi 5 D (dyplopia, dyzartria, dysfagia, dysfonia, dysmetria). Rama
         dydaktyczna + autorytet dla całego różnicowania OTOREPO (HINTS + BPPV); migrena przedsionkowa (s-EVS)
-        CELOWO nie modelowana — flagowana jako różnicowa.
+        CELOWO nie modelowana — flagowana jako różnicowa. (Od N1: preset vmInterictal pokazuje s-EVS
+        międzynapadowo — badanie prawidłowe, rozpoznanie z wywiadu.)
+
+[H25] Hain TC, Fetter M, Zee DS (1987). "Head-shaking nystagmus in patients with unilateral peripheral
+      vestibular lesions." Am J Otolaryngol 8(1):36–47. doi:10.1016/S0196-0709(87)80017-0.
+      → HSN: potrząsanie głową ~2 Hz ładuje velocity storage asymetrycznie (rektyfikacja Ewalda II);
+        po zatrzymaniu oczopląs KU UCHU ZDROWEMU, 5–15°/s w UVH, zanik z τ magazynu; przetrwały w ubytku
+        SKOMPENSOWANYM (utajona asymetria — jak kaloryka, bez irygacji); zerowy w BVH (symetria).
+        Podstawa hsn() (etap N4).
+
+[H26] Özgirgin ON, Kingma H, Manzari L, Lacour M (2024). "Residual dizziness after BPPV management:
+      exploring pathophysiology and treatment beyond canalith repositioning maneuvers." Front Neurol
+      15:1382196. doi:10.3389/fneur.2024.1382196. PMID 38854956.
+      → SKUTECZNY manewr ≠ zdrowy pacjent: zawroty rezydualne (RD) u 31–61% po ustąpieniu oczopląsu;
+        mechanizmy m.in. NIEPEŁNA KOMPENSACJA OŚRODKOWA + dysfunkcja ŁAGIEWKI (mierzalna SVV/oVEMP);
+        supresanty przedsionkowe SZKODLIWE (opóźniają kompensację — w silniku: obniż comp, a SPV wraca);
+        poradnictwo zbija RD do ~13%. Podstawa presetu 'residual' + gałęzi lokalizacji RD (etap N5).
 
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE
@@ -1585,7 +1623,9 @@ UPROSZCZENIA / ZASTRZEŻENIA:
   - kompensacja: pojedynczy skalar c (bez osi czasu godziny↔tygodnie); clamp/pacemaker jako czyste funkcje c;
     ładunek pacemakera (Bechterew) jako sticky parametr (nośnik historii), bo skalar c nie niesie pamięci;
   - fuzja szyjno-oczna i velocity storage: fenomenologiczne (waga ∝ wiarygodność / c), bez pełnego filtru
-    Kalmana; pominięto head-shaking nystagmus (utajona asymetria velocity storage po kompensacji);
+    Kalmana; HSN DODANY w N4 (model MONOfazowy — bez odwrócenia dwufazowego; „perverted HSN" pionowy po
+    poziomym potrząsaniu ŚWIADOMIE niemodelowany: prosta flaga z verticalBeat odpalałaby fałszywie dla
+    obwodowego neuronitis górnego, a poprawny model wymaga krzyżowego sprzężenia velocity storage);
   - HINTS jako model DYDAKTYCZNY — NIE zastępuje badania; ważny w AVS z utrzymującym się oczopląsem,
     interpretować z HINTS „plus" (słuch) i kontekstem (Tarnutzer 2011 [H9]). UWAGA: skompensowany ubytek
     obwodowy może mieć bedside HIT „prawidłowy" (sakady ukryte) — pułapka, gdy nie ma już oczopląsu AVS.
