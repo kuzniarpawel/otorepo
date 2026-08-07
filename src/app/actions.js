@@ -54,7 +54,10 @@ const HINTS_PRESETS = {
   scdsL:   { label:"SCDS L",              make:()=>({dehiscence:"L"}) },
   // skewTone UJEMNY — OTR poniżej skrzyżowania (Wallenberg) jest IPSIWERSYJNY: przy zmianie P oko P NIŻEJ.
   // Musi zgadzać się z NeuroVOR.SCENARIOS.strokeCentral (ten sam pacjent, dwa wejścia do UI).
-  stroke:  { get label(){return t("Udar (ośrodek)","Stroke (central)");},      make:()=>({toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:-3, otrTorsion:4}) }
+  stroke:  { get label(){return t("Udar (ośrodek)","Stroke (central)");},      make:()=>({toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:-3, otrTorsion:4}) },
+  // s-EVS (GRACE-3): migrena przedsionkowa MIĘDZYNAPADOWO — badanie całkowicie prawidłowe, rozpoznanie
+  // z WYWIADU (napadowość). Lekcja: hints().applicable=false + verdictNote zamiast werdyktu triady.
+  vmi:     { get label(){return t("Migrena przeds. (międzynapadowo)","Vestibular migraine (interictal)");}, make:()=>({}) }
 };
 function loadHintsPreset(k){
   const pr=HINTS_PRESETS[k]; if(!pr) return;

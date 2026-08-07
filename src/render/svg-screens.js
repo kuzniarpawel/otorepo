@@ -1047,8 +1047,10 @@ function hintsNysLabel(nys){
 function hintsVerdictHTML(H){
   const v=H.verdict;
   const tag=(cls,txt)=>`<span class="tag ${cls}">${txt}</span>`;
-  const hiNA = !H.ny.hasSpontaneous && !H.hi.abnormal;                 // brak AVS → HIT nieinformacyjny do różnicowania
-  const hiRow = H.hi.abnormal
+  // Okno sakad wyłącznie UKRYTYCH: vHIT patologiczny, ale bedside NIC nie widać — pułapka sakad ukrytych.
+  const hiRow = (H.hi.abnormal && !H.hi.bedsideAbnormal && H.ny.hasSpontaneous)
+    ? [tag("warn","HI"), tr(`Head-Impulse: patologiczny w vHIT (sakady UKRYTE) — przy łóżku wygląda PRAWIDŁOWO. Pułapka: nieprzeszkolone badanie odczyta ośrodek.`,`Head impulse: abnormal on vHIT (COVERT saccades) — looks NORMAL at the bedside. Trap: an untrained exam would read central.`)]
+    : H.hi.abnormal
     ? [tag("ok","HI"), tr(`Head-Impulse: sakada korygująca po stronie ${H.hi.side==="P"?"prawej":"lewej"} (kanał chory) — <b>obwodowy</b>.`,`Head impulse: corrective saccade on the ${H.hi.side==="P"?"right":"left"} side (affected canal) — <b>peripheral</b>.`)]
     // Kryterium „Impulse Normal" bierzemy z silnika (H.infarct), a NIE z hasSpontaneous: HIT bada kanaly
     // POZIOME, wiec grozny jest tylko oczoplas POZIOMY przy prawidlowym HIT. Oczoplas pionowo-skretny
@@ -1073,8 +1075,11 @@ function hintsVerdictHTML(H){
       ? `<div class="note" style="margin-top:10px">${tr("Triada uspokajająca: patologiczny HIT + oczopląs jednokierunkowy tłumiony fiksacją + brak skew — zgodne z przyczyną obwodową. Zawsze interpretuj klinicznie (m.in. HINTS dotyczy AVS z oczopląsem).","Reassuring triad: pathological HIT + unidirectional nystagmus suppressed by fixation + no skew — consistent with a peripheral cause. Always interpret clinically (HINTS applies to AVS with nystagmus).")}</div>`
       : `<div class="note" style="margin-top:10px">${tr("Brak oczopląsu samoistnego, HIT prawidłowy, brak skew — w tym modelu bez cech ostrego zespołu przedsionkowego.","No spontaneous nystagmus, normal HIT, no skew — in this model, no features of an acute vestibular syndrome.")}</div>`;
   const row=r=>`<div class="hrow">${r[0]}<span>${r[1]}</span></div>`;
+  // Nota stosowalnosci GRACE-3 (silnik: applicable=false gdy brak AVS, a jakies znalezisko jest) —
+  // werdykt widoczny, ale JAWNIE oznaczony jako interpretacja instrumentalna, nie przylozkowa triada.
+  const applic = H.verdictNote ? `<div class="note" style="margin-top:8px;opacity:.85">⚠ ${H.verdictNote}</div>` : "";
   return `<div class="hverdict ${v}"><h4>${tr("Werdykt HINTS","HINTS verdict")}</h4><div class="vv">${vText}</div>
-    ${row(hiRow)}${row(nyRow)}${row(tsRow)}${foot}</div>`;
+    ${applic}${row(hiRow)}${row(nyRow)}${row(tsRow)}${foot}</div>`;
 }
 function renderHints(){
   const key=state.hintsScenario||"neuritisR";
@@ -1461,7 +1466,7 @@ function hintsCustomPanel(){
   const presetBtn=k=>`<button class="preset" aria-pressed="${active===k}" onclick="loadHintsPreset('${k}')">${HINTS_PRESETS[k].label}</button>`;
   const presets = presetBtn("healthy")
     + `<button class="preset" aria-pressed="${active==='neuritis'}" onclick="loadHintsNeuritis()">${tr("Neuronitis","Neuritis")}</button>`
-    + ["bvh","meniereP","meniereL","scdsP","scdsL","stroke"].map(presetBtn).join("");
+    + ["bvh","meniereP","meniereL","scdsP","scdsL","stroke","vmi"].map(presetBtn).join("");
   const ear=state.hintsNerveEar||"P", branch=state.hintsNerveBranch||"superior", sev=state.hintsNerveSev==null?1:state.hintsNerveSev;
   const ne=(e)=>`<button aria-pressed="${ear===e}" onclick="setHintsNerveEar('${e}')">${e}</button>`;
   const nb=(b,l)=>`<button aria-pressed="${branch===b}" onclick="setHintsNerveBranch('${b}')">${l}</button>`;
@@ -1524,10 +1529,20 @@ function hintsReadoutHTML(p){
   const cen=r.centralSigns.map(s=>chip("cen",s)).join("");
   const amb=r.ambiguities.length
     ? `<div class="rsub"><b>${tr("Pułapki / niejednoznaczności:","Pitfalls / ambiguities:")}</b><ul>${r.ambiguities.map(a=>`<li>${a}</li>`).join("")}</ul></div>` : "";
+  // SLAD PRZYCZYNOWY (hints().trace): dla kazdego znaku INFARCT — ktore wejscie przekroczylo ktory prog.
+  // Uczacy sie po odslonieciu quizu widzi WYWOD, nie tylko wnioski zdaniowe.
+  const SIGN_LBL = { impulseNormal:"Impulse Normal", isolatedVertical:tr("izolowany pion","isolated vertical"),
+    fastAlternating:tr("zmienny kierunkowo","direction-changing"), refixationCover:"Test of Skew",
+    fixationFail:tr("brak supresji fiksacją","no fixation suppression") };
+  const trace = (r.hints.trace||[]).map(t=>{
+    const ins=t.inputs.map(i=>`${i.name}: <b>${i.value}</b> ${i.cmp} ${i.threshold}`).join(" · ");
+    return `<li class="${t.fired?"fired":""}">${t.fired?"🔴":"⚪"} <b>${SIGN_LBL[t.sign]||t.sign}</b> — ${ins}</li>`;
+  }).join("");
+  const why = trace ? `<details class="rsub"><summary>${tr("Dlaczego ten werdykt (ślad parametr → próg)","Why this verdict (parameter → threshold trace)")}</summary><ul class="rfind">${trace}</ul></details>` : "";
   const body = hidden
     ? `<button class="preset" onclick="revealHintsQuiz()">${tr("Odsłoń rozpoznanie i parametry","Reveal the diagnosis and parameters")}</button>`
     : `<div class="rloc"><span class="eyebrow">${tr("Lokalizacja","Localization")}</span><b>${r.localization}</b></div>
-       <div class="rsigns">${per}${cen||`<span class="rchip">${tr("brak jawnych cech ośrodkowych","no overt central features")}</span>`}</div>${amb}`;
+       <div class="rsigns">${per}${cen||`<span class="rchip">${tr("brak jawnych cech ośrodkowych","no overt central features")}</span>`}</div>${amb}${why}`;
   return `<div class="readout">
     <h4>${tr("Odczyt kliniczny — matematyczny pacjent","Clinical readout — mathematical patient")}${hidden?" · QUIZ":""}</h4>
     <ul class="rfind">${findings}</ul>

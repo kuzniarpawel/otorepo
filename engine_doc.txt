@@ -1385,6 +1385,35 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      w świetle 1.1°/s = PONIŻEJ własnego progu VIS_THRESH, czyli patologię „niewidoczną").
      ZAKRES ZMIAN (wyrocznie): engine.neuro = 12/12 pacjentów, dom = 18/91 ekranów (wyłącznie HINTS),
      pose 360/360 i plans 14/14 BEZ ZMIAN — fizyka BPPV nietknięta. bridge/view:check zielone.
+ [x] WDROŻENIE OCENY II — ETAP N1 (poprawki spójności; ocena: ocena_neurofizjologiczna_neurovor_II.md):
+     #A2 bilateralWeak liczony ze składowych SKORYGOWANYCH |Vcal| (jak CPcorrected) — nałożony oczopląs
+        samoistny podbijał sumy surowe i maskował obustronne osłabienie; nowe pola rightSumCal/leftSumCal.
+     #A3 sygnatura DRAŻNIENIA w clinicalReadout: bicie KU jawnie wskazanemu uchu choremu (z wykluczeniem
+        Bechterewa) → wczesny Ménière (caloricLoss:0) dostaje lokalizację „niejednoznaczna: drażnienie vs
+        ośrodek" + ambiguity, zamiast gołego „ośrodkowa (pień/móżdżek)".
+     #A4 `suppressed` w observe() DWUOSIOWO (poziom LUB pion) — koniec dwóch definicji supresji; neuronitis
+        dolny przestał dostawać „NIE słabnie z fiksacją — cecha OŚRODKOWA" przy werdykcie obwodowym.
+     #A5 kłaczek WIDZIALNY: hints() liczy fixationFail (hasSpont + brak supresji, bez INS) jako WSPIERAJĄCY
+        znak ośrodkowy (infarct.fixationFail; nie litera INFARCT); clinicalReadout raportuje indeks fiksacji
+        przy failsSuppression + gałąź lokalizacji „izolowany brak supresji fiksacji — móżdżek (kłaczek)".
+        ZAMIERZONA rozbieżność: czysta lezja kłaczka bez oczopląsu ma hints=„normal" (HINTS wymaga AVS),
+        a lokalizację instrumentalną kłaczkową — werdykt przyłóżkowy i lokalizacja to różne osie.
+     #A6 kryterium vHIT na GAIN per kanał: GAIN_CUT={HC:0.8, AC:0.7, PC:0.7} (McGarvie 2015) zamiast progu
+        na amplitudzie sakady (dryfował z headAmp; nadrozpoznawał kanały pionowe — AC gain 0.75 był
+        „patologiczny" wbrew LLN). saccadeAmp/overt/covert bez zmian (rysują, nie orzekają).
+     #A7 bramka stosowalności GRACE-3: hints() zwraca applicable=hasSpont + verdictNote („poza AVS — werdykt
+        instrumentalny"); karta werdyktu drukuje notę. Preset vmInterictal (SCENARIOS, episodic:true; w UI
+        przycisk „vmi") — migrena przedsionkowa międzynapadowo: badanie CAŁKOWICIE prawidłowe (s-EVS,
+        rozpoznanie z wywiadu). [H24]
+     #A8 okno sakad wyłącznie UKRYTYCH (comp ~0.75–0.95 z trwającym oczoplasem): hi.bedsideAbnormal +
+        infarct.impulseNormalBedside + ambiguity + osobna gałąź wiersza HI (tag .warn) „patologiczny w vHIT;
+        przy łóżku wygląda PRAWIDŁOWO — pułapka". Werdykt główny pozostaje instrumentalny. [H5][H23]
+     #C6 flaga INS: observe().fixationEnhanced (f>1.05) + ambiguity „wzmocniony fiksacją = wzorzec oczopląsu
+        wrodzonego, nie INFARCT" + nota w help PARAM_SPEC; oraz ŚLAD PRZYCZYNOWY hints().trace[] (znak →
+        wejścia → progi) renderowany jako „Dlaczego ten werdykt" w odczycie (quiz uczy wywodu, nie wniosku).
+     WERDYKTY wszystkich dotychczasowych presetów BEZ ZMIAN (sonda n1.mjs: 45 asercji). Wyrocznie:
+     engine.neuro 13 (12 + vmInterictal), dom 92 (13 zmienionych ekranów HINTS + 1 nowy hints/preset/vmi),
+     pose/plans nietknięte.
  [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; suwak kompensacji steruje CAŁĄ
      fizjologią na żywo (oczopląs SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain nienaprawialny,
      sakada UKRYTA w trakcie pchnięcia (błąd śródpchnięciowy 18→10 px), regeneracja→Bechterew; werdykt spójny.

@@ -321,9 +321,16 @@ export const NeuroVOR = (()=>{
   // Oczopląs OBSERWOWANY w danym stanie fiksacji (fixOn: true=światło/fiksacja, false=ciemność/Frenzel).
   function observe(p, fixOn){
     const s = spontaneous(p), f = suppressionFactor(p, fixOn), spvRaw = s.spv;
+    // `suppressed` liczone DWUOSIOWO (poziom LUB pion) — silnik trzymał tu tylko oś poziomą, a clinicalReadout
+    // już dwuosiową formułę, więc neuronitis nerwu DOLNEGO (czysto pionowo-skrętny, tłumiony w 90%) dostawał
+    // na ekranie „NIE słabnie z fiksacją — cecha OŚRODKOWA" przy werdykcie obwodowym. Jedno źródło prawdy.
+    const anyRaw = spvRaw>0.5 || (s.spvV||0)>0.5;
     return Object.assign({}, s, {
       spv: spvRaw*f, spvRaw, fixation: !!fixOn, suppressionFactor: f,
-      suppressed: spvRaw>0.5 && f<=0.5,                     // klinicznie „tłumi się fiksacją" (≥50% redukcji)
+      suppressed: anyRaw && f<=0.5,                         // klinicznie „tłumi się fiksacją" (≥50% redukcji)
+      // Wzmocnienie fiksacją (f>1, fixationGain<0) to sygnatura oczopląsu WRODZONEGO (INS), nie AVS/udaru —
+      // osobna flaga, żeby Laboratorium nie uczyło jej jako „jeszcze gorszego ośrodka" w ramach INFARCT. [H3]
+      fixationEnhanced: !!fixOn && f>1.05 && anyRaw,
       strength: spvRaw>0 ? s.strength*f : 0,                // amplituda renderera skaluje się z WIDOCZNĄ fazą wolną
       spvV: (s.spvV||0)*f, strengthV: (s.strengthV||0)*f    // E3: pionowo-skrętna też tłumiona fiksacją (obwód)
     });
@@ -339,6 +346,9 @@ export const NeuroVOR = (()=>{
   //   OŚRODEK (udar): kanały zdrowe (gain≈1) → HIT PRAWIDŁOWY (brak sakady) = zły znak (nie uspokaja).
   const S_HZ = 0.8;          // czułość aferentu (Hz na °/s) — kalibracja: obcięcie hamowania ~tone/S ≈112°/s < prędkości vHIT
   const VIS_THRESH = 2;      // próg widoczności klinicznej oczopląsu (°/s) — poniżej: brak jawnego oczopląsu
+  // Progi patologii GAIN vHIT per kanał — publikowane dolne granice normy (McGarvie 2015: HC ~0.8,
+  // kanały pionowe ~0.7); kryterium BVH (obustronnie <0.6 [H19]) pozostaje zaostrzeniem tych progów.
+  const GAIN_CUT = { horizontal:0.8, anterior:0.7, posterior:0.7 };
 
   // ETAP 6c — KOMPENSACJA DYNAMICZNA: fuzja sensoryczna + velocity storage. [H12][H13][H14]
   // Wysokich częstotliwości VOR (vHIT) NIE da się naprawić (gain trwa). Ośrodek kompensuje inaczej:
@@ -386,7 +396,12 @@ export const NeuroVOR = (()=>{
     const gain = Math.max(0, Math.min(1.25, modEx/(S_HZ*Ohm)));
     const deficit = Math.max(0, 1-gain);
     const saccadeAmp = deficit*amp;                          // CAŁKOWity niedomiar rotacji oka → sakada korygująca (gain nienaprawialny)
-    const abnormal = saccadeAmp >= 2.5;                      // vHIT PATOLOGICZNY (deficyt gain) — NIEZALEŻNY od kompensacji
+    // Kryterium PATOLOGII na GAIN per kanał (jak w pracowniach vHIT), NIE na amplitudzie sakady: próg na
+    // saccadeAmp dryfował z amplitudą pchnięcia (gain 0.75 → „norma" przy amp 8°, „patologia" przy 15°)
+    // i jednym efektywnym cięciem ~0.83 nadrozpoznawał kanały PIONOWE (publikowane LLN: HC <0.8, pionowe
+    // <0.7 — McGarvie 2015; BVH <0.6 [H19]). saccadeAmp/overt/covert zostają: rysują sakadę i podział
+    // jawna/ukryta, ale nie orzekają. [H5][H21]
+    const abnormal = gain < GAIN_CUT[ex.canal];              // vHIT PATOLOGICZNY (deficyt gain) — NIEZALEŻNY od kompensacji i amplitudy
     // KOMPENSACJA DYNAMICZNA: całość korekty stała, ale przesuwa się w czasie z sakady JAWNEJ (overt —
     // spóźnionej, po pchnięciu, napędzanej ślizgiem) na UKRYTĄ (covert — predykcyjnej, w trakcie pchnięcia,
     // z fuzji szyjno-ocznej/efference). Udział covert = KOMPLETNOŚĆ kompensacji c (przy pełnej kompensacji
@@ -573,11 +588,16 @@ export const NeuroVOR = (()=>{
     // który MASKUJE niedowład (surowy CP zaniża przy ostrym oczoplątem). Skorygowany = prawdziwa asymetria. [H21]
     const cR=Math.abs(rw.Vcal)+Math.abs(rc.Vcal), cL=Math.abs(lw.Vcal)+Math.abs(lc.Vcal), cT=cR+cL;
     const CPcorrected = cT>0 ? (cR-cL)/cT*100 : 0;
-    const bilateralWeak = rightSum<CAL_BILAT && leftSum<CAL_BILAT;   // UWAGA: przy symetrii CP≈0 mimo obustronnego ubytku!
+    // Kryterium OBUSTRONNE (Bárány: suma ciepła+zimna ucha < CAL_BILAT) liczone ze składowych SKORYGOWANYCH
+    // |Vcal| — jak CPcorrected — a NIE z sum surowych: nałożony oczopląs samoistny podbijał sumy surowe
+    // i MASKOWAŁ obustronne osłabienie (pacjent spełniający kryterium BVH czytał się „kaloryka prawidłowa").
+    // Standard laboratoryjny: odpowiedź kaloryczna = SPV po odjęciu tła przedirygacyjnego. Sumy surowe
+    // zostają w wyniku (niosą DP, który MA zawierać tło, i dydaktykę maskowania). [H19][H21]
+    const bilateralWeak = cR<CAL_BILAT && cL<CAL_BILAT;   // UWAGA: przy symetrii CP≈0 mimo obustronnego ubytku!
     const fixationIndex = suppressionFactor(p, true);
     const hcHIT = vhitPlane(p,"HC").abnormal;               // vHIT poziomego (HF) — do porównania dysocjacyjnego
     const caloricWeak = Math.abs(CPcorrected)>=CP_THRESH || bilateralWeak;   // skorygowany = odporny na maskowanie
-    return { RW, RC, LW, LC, rightSum, leftSum, total,
+    return { RW, RC, LW, LC, rightSum, leftSum, total, rightSumCal:cR, leftSumCal:cL,
       CP, CPcorrected, DP, weakEar: Math.abs(CPcorrected)>=CP_THRESH ? (CPcorrected<0?"P":"L") : null,
       dpSide: Math.abs(DP)>=DP_THRESH ? (DP>0?"P":"L") : null,
       bilateralWeak, fixationIndex, failsSuppression: fixationIndex>0.5,
@@ -607,6 +627,12 @@ export const NeuroVOR = (()=>{
       // SYMETRYCZNY ubytek OBU błędników → brak oczopląsu samoistnego (symetria!), ale vHIT patologiczny
       // OBUSTRONNIE we wszystkich płaszczyznach. Objawy: oscylopsja przy ruchu głowy, chód po ciemku (nie okoruch).
       params: bilateralLoss(1) },
+    vmInterictal: { get label(){return tr("Migrena przedsionkowa — międzynapadowo (s-EVS)","Vestibular migraine — interictal (s-EVS)");}, side:null,
+      // s-EVS wg GRACE-3 [H24]: napadowe, NIEwyzwalane zawroty z badaniem MIĘDZYNAPADOWO CAŁKOWICIE
+      // PRAWIDŁOWYM — rozpoznanie stawia WYWIAD (napadowość, migrenowość), nie HINTS. Parametry celowo
+      // puste (zdrowy pacjent): lekcja polega na tym, że applicable=false i verdictNote mówią wprost,
+      // że triada HINTS niczego tu nie wnosi. Zamyka lukę s-EVS bez nowej fizyki.
+      params:{}, episodic:true },
   };
   function scenario(key){ const s = SCENARIOS[key]||SCENARIOS.normal; return makePatient(s.params); }
 
@@ -640,15 +666,51 @@ export const NeuroVOR = (()=>{
     if(isolatedVertical)    centralSigns.push(tr("izolowany oczopląs pionowo-skrętny przy PRAWIDŁOWYM vHIT kanałów pionowych","isolated vertical-torsional nystagmus with NORMAL vertical-canal vHIT"));
     if(dirChanging)         centralSigns.push(tr("oczopląs zmienny kierunkowo (Fast-phase Alternating)","direction-changing nystagmus (Fast-phase Alternating)"));
     if(ts.central)          centralSigns.push(tr("dodatni Test of Skew — pionowa sakada przy odsłanianiu (Refixation on Cover Test)","positive Test of Skew — vertical saccade on uncovering (Refixation on Cover Test)"));   // tylko ZNACZĄCY skew (mały = obwodowy)
+    // BRAK SUPRESJI FIKSACJĄ przy obecnym oczoplasie samoistnym — WSPIERAJĄCY znak ośrodkowy (Kattah [H8]:
+    // oczopląs obwodowy tłumi się fiksacją; nabyty ośrodkowy nie). NIE litera mnemonika INFARCT — stąd osobne
+    // pole infarct.fixationFail. Bez tego pacjent typu AICA (HIT patologiczny + zniesiona supresja) dostawał
+    // werdykt „peripheral" z pustymi centralSigns, podczas gdy clinicalReadout TEGO SAMEGO pacjenta wymieniał
+    // znak ośrodkowy — karta werdyktu (czytająca wyłącznie hints) fałszywie uspokajała.
+    const fixationFail = hasSpont && !lit.suppressed && !lit.fixationEnhanced;   // wzmocnienie fiksacją = INS, nie ośrodek (osobna flaga)
+    if(fixationFail) centralSigns.push(tr("oczopląs samoistny NIEtłumiony fiksacją","spontaneous nystagmus NOT suppressed by fixation"));
     const verdict = !anyFinding ? "normal" : (centralSigns.length ? "central" : "peripheral");
+    // JAWNOŚĆ BEDSIDE: przy sakadach wyłącznie UKRYTYCH (okno comp ~0.75–0.95 z trwającym oczoplasem) badanie
+    // przyłóżkowe wygląda jak Impulse-Normal, choć vHIT jest patologiczny — kanoniczna pułapka sakad ukrytych.
+    // Werdykt GŁÓWNY zostaje instrumentalny; te pola pozwalają UI/readout ją podnieść. [H5][H23]
+    const bedsideAbnormal = hiR.overtSaccade || hiL.overtSaccade;
+    const impulseNormalBedside = hasSpontH && !bedsideAbnormal;
+    // STOSOWALNOŚĆ (GRACE-3 [H24]): triada HINTS obowiązuje TYLKO w trwającym AVS z oczopląsem samoistnym.
+    // Poza AVS (BVH bez oczopląsu, pełna kompensacja) werdykt = interpretacja INSTRUMENTALNA, nie przyłóżkowa.
+    const applicable = hasSpont;
+    const verdictNote = (!applicable && anyFinding)
+      ? tr("poza AVS (brak oczopląsu samoistnego) — HINTS wg GRACE-3 nie ma zastosowania przy łóżku; werdykt = interpretacja instrumentalna (vHIT/kaloryka)","outside AVS (no spontaneous nystagmus) — per GRACE-3, HINTS does not apply at the bedside; the verdict is an instrumental interpretation (vHIT/caloric)")
+      : null;
+    // ŚLAD PRZYCZYNOWY: dla każdego znaku — które wejście przekroczyło który próg. Czysta translacja już
+    // policzonych zmiennych pośrednich na strukturę; render „Dlaczego ten werdykt" przy odsłonięciu quizu.
+    const R2 = x => Math.round(x*100)/100, gainMin = Math.min(hiR.gain, hiL.gain);
+    const trace = [
+      { sign:"impulseNormal", fired:impulseNormalDanger, inputs:[
+        { get name(){return tr("oczopląs poziomy w ciemności (°/s)","horizontal nystagmus in darkness (°/s)");}, value:R2(dark.spv), threshold:VIS_THRESH, cmp:">=" },
+        { get name(){return tr("vHIT gain HC (gorsze ucho)","HC vHIT gain (worse ear)");}, value:R2(gainMin), threshold:GAIN_CUT.horizontal, cmp:">=" } ] },
+      { sign:"isolatedVertical", fired:isolatedVertical, inputs:[
+        { get name(){return tr("oczopląs pionowo-skrętny w ciemności (°/s)","vertical-torsional nystagmus in darkness (°/s)");}, value:R2(dark.spvV||0), threshold:VIS_THRESH, cmp:">=" },
+        { get name(){return tr("vHIT kanałów pionowych (0=prawidłowy)","vertical-canal vHIT (0=normal)");}, value:vertCanalDeficit?1:0, threshold:0, cmp:"==" } ] },
+      { sign:"fastAlternating", fired:dirChanging, inputs:[
+        { get name(){return tr("integrator τ (s; zdrowy 25)","integrator τ (s; healthy 25)");}, value:R2(p.integratorTau!=null?p.integratorTau:25), threshold:25, cmp:"<" } ] },
+      { sign:"refixationCover", fired:ts.central, inputs:[
+        { get name(){return tr("odchylenie skośne (°)","skew deviation (°)");}, value:R2(Math.abs(p.skewTone||0)), threshold:SKEW_CENTRAL, cmp:">=" } ] },
+      { sign:"fixationFail", fired:fixationFail, inputs:[
+        { get name(){return tr("indeks fiksacji (supresja <0,5 = obwód)","fixation index (suppression <0.5 = peripheral)");}, value:R2(lit.suppressionFactor), threshold:0.5, cmp:">" } ] }
+    ];
     return {
-      verdict,
-      hi: { abnormal:hiAbnormal, side:hiSide, right:hiR, left:hiL },
+      verdict, applicable, verdictNote, trace,
+      hi: { abnormal:hiAbnormal, side:hiSide, right:hiR, left:hiL, bedsideAbnormal },
       vhitVertical: { RALP:ralp, LARP:larp, abnormal:vertCanalDeficit },   // liczone RAZ — clinicalReadout reużywa
       ny: { pattern:nyPattern, hasSpontaneous:hasSpont, horizontal:hasSpontH, vertical:hasSpontV,
             directionChanging:dirChanging, suppresses:lit.suppressed, dark, lit },
       ts,
-      infarct: { impulseNormal:impulseNormalDanger, isolatedVertical, fastAlternating:dirChanging, refixationCover:ts.central },
+      infarct: { impulseNormal:impulseNormalDanger, isolatedVertical, fastAlternating:dirChanging,
+                 refixationCover:ts.central, fixationFail, impulseNormalBedside },
       centralSigns
     };
   }
@@ -674,7 +736,7 @@ export const NeuroVOR = (()=>{
       { key:"tonePcR", get label(){return tr("Ton PC prawy","PC tone right");}, min:0, max:200, step:1, unit:"Hz", def:R0 },
       { key:"gainPcL", get label(){return tr("Gain PC lewy","PC gain left");},  min:0, max:1.2, step:0.05, unit:"", def:1 },
       { key:"gainPcR", get label(){return tr("Gain PC prawy","PC gain right");}, min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
-    { get group(){return tr("Przetwarzanie ośrodkowe","Central processing");}, tier:"advanced", get help(){return tr("Kłaczek (fiksacja), integrator (spojrzeniowy), otolity (skew).","Flocculus (fixation), integrator (gaze), otoliths (skew).");}, params:[
+    { get group(){return tr("Przetwarzanie ośrodkowe","Central processing");}, tier:"advanced", get help(){return tr("Kłaczek (fiksacja), integrator (spojrzeniowy), otolity (skew). Supresja fiksacji <0 = WZMOCNIENIE fiksacją — wzorzec oczopląsu wrodzonego (INS), poza ramą HINTS.","Flocculus (fixation), integrator (gaze), otoliths (skew). Fixation suppression <0 = ENHANCEMENT by fixation — a congenital nystagmus (INS) pattern, outside the HINTS frame.");}, params:[
       { key:"fixationGain",  get label(){return tr("Supresja fiksacji","Fixation suppression");}, min:-0.5, max:1, step:0.05, unit:"", def:0.9 },
       { key:"integratorTau", get label(){return tr("Integrator (τ spojrzenia)","Integrator (gaze τ)");}, min:0.5, max:30, step:0.5, unit:"s", def:25 },
       { key:"skewTone",      get label(){return tr("Asymetria grawiceptywna (skew)","Graviceptive asymmetry (skew)");}, min:-6, max:6, step:0.5, unit:"°", def:0 },
@@ -714,7 +776,7 @@ export const NeuroVOR = (()=>{
       const parts = [];
       if(hSpont) parts.push(tr(`poziomo-skrętny ku stronie ${side(dark.beatEar)} (${R1(dark.spv)}°/s)`,`horizontal-torsional toward the ${side(dark.beatEar)} side (${R1(dark.spv)}°/s)`));
       if(vSpont) parts.push(tr(`pionowo-skrętny ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`,`vertical-torsional ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`));
-      const f = lit.suppressionFactor, supp = f<=0.5 && (dark.spv>0.5 || (dark.spvV||0)>0.5);  // supresja poziomu LUB pionu
+      const supp = lit.suppressed;                          // JEDNO źródło prawdy (observe, dwuosiowo) — bez drugiej definicji
       findings.push(tr(`Oczopląs samoistny: ${parts.join(" + ")}; ${supp?"tłumiony":"NIEtłumiony"} fiksacją.`,`Spontaneous nystagmus: ${parts.join(" + ")}; ${supp?"suppressed":"NOT suppressed"} by fixation.`));
       (supp ? peripheralSigns : centralSigns).push(supp ? tr("oczopląs tłumiony fiksacją","nystagmus suppressed by fixation") : tr("oczopląs NIEtłumiony fiksacją","nystagmus NOT suppressed by fixation"));
       // Izolowany pion jest czerwoną flagą tylko wtedy, gdy NIE tłumaczy go ubytek kanału pionowego. Ten sam
@@ -743,6 +805,12 @@ export const NeuroVOR = (()=>{
     else if(cal.weakEar)  findings.push(tr(`Kaloryka: niedowład kanału po stronie ${side(cal.weakEar)} (CP skoryg. ${R1(Math.abs(cal.CPcorrected))}%).`,`Caloric: canal paresis on the ${side(cal.weakEar)} side (corrected CP ${R1(Math.abs(cal.CPcorrected))}%).`));
     else findings.push(tr("Kaloryka: prawidłowa (brak istotnego niedowładu).","Caloric: normal (no significant paresis)."));
     if(Math.abs(cal.DP) >= DP_THRESH) findings.push(tr(`Przewaga kierunkowa ku stronie ${side(cal.dpSide)} (DP ${R1(Math.abs(cal.DP))}%).`,`Directional preponderance toward the ${side(cal.dpSide)} side (DP ${R1(Math.abs(cal.DP))}%).`));
+    // INDEKS FIKSACJI: standardowy odczyt VNG (kłaczek) niezależny od oczopląsu samoistnego — liczony był
+    // zawsze, ale nigdy nie raportowany; izolowana dysfunkcja kłaczka czytała się jako „obraz prawidłowy". [H21]
+    if(cal.failsSuppression){
+      findings.push(tr(`Indeks fiksacji ${R1(cal.fixationIndex)} (>0,5) — oczopląs kaloryczny NIEtłumiony fiksacją (kłaczek).`,`Fixation index ${R1(cal.fixationIndex)} (>0.5) — caloric nystagmus NOT suppressed by fixation (flocculus).`));
+      centralSigns.push(tr("brak supresji fiksacyjnej oczopląsu kalorycznego","no fixation suppression of caloric nystagmus"));
+    }
 
     // SCDS
     if(scds && scds.present){ findings.push(tr(`SCDS: dźwięk/ciśnienie wyzwala oczopląs pionowo-skrętny (dehiscencja po stronie ${side(p.dehiscence)}), bez ruchu głową.`,`SCDS: sound/pressure triggers vertical-torsional nystagmus (dehiscence on the ${side(p.dehiscence)} side), without head movement.`)); peripheralSigns.push(tr("dodatni objaw Tullio/Hennebert (trzecie okno)","positive Tullio/Hennebert sign (third window)")); }
@@ -782,6 +850,11 @@ export const NeuroVOR = (()=>{
     const lesSide = cal.weakEar || h.hi.side;
     const supObl = lesSide==="P" ? ralp.abnormal : lesSide==="L" ? larp.abnormal : false;   // płaszczyzna z przednim kanałem ucha chorego
     const othObl = lesSide==="P" ? larp.abnormal : lesSide==="L" ? ralp.abnormal : false;   // druga skośna (kanał tylny — nerw dolny)
+    // SYGNATURA DRAŻNIENIA: oczopląs bije KU jawnie wskazanemu uchu choremu (przy ubytku bije ku zdrowemu).
+    // Wyklucza Bechterewa (tam bicie ku choremu napędza pacemaker, nie drażnienie). Bez tej sygnatury wczesny
+    // Ménière (caloricLoss:0 — kaloryka jeszcze prawidłowa) przechodził drabinę do „ośrodkowa (pień/móżdżek)"
+    // z PUSTĄ listą ambiguities, choć silnik znał stronę chorą i kierunek bicia. [H20]
+    const irrit = !!(dark.trueLesionEar && dark.beatEar===dark.trueLesionEar && dark.spv>=VIS_THRESH && !dark.bechterew);
     let localization;
     if(cal.bilateralWeak && hc.abnormal)                              localization = tr("obustronna westybulopatia (BVH)","bilateral vestibulopathy (BVH)");
     else if(hc.abnormal && ralp.abnormal && larp.abnormal)           localization = tr(`pełny ubytek błędnika po stronie ${side(lesSide)}`,`complete labyrinthine loss on the ${side(lesSide)} side`);
@@ -790,14 +863,26 @@ export const NeuroVOR = (()=>{
     else if((hc.abnormal||cal.weakEar) && supObl && !othObl)          localization = tr(`nerw GÓRNY po stronie ${side(lesSide)} (poziomy + przedni)${ve.oVEMP.weakEar===lesSide?" + oVEMP↓ (łagiewka)":""}`,`SUPERIOR nerve on the ${side(lesSide)} side (horizontal + anterior)${ve.oVEMP.weakEar===lesSide?" + oVEMP↓ (utricle)":""}`);
     else if((hc.abnormal||cal.weakEar) && !ralp.abnormal && !larp.abnormal) localization = tr(`nerw GÓRNY po stronie ${side(lesSide)} (kanał poziomy)`,`SUPERIOR nerve on the ${side(lesSide)} side (horizontal canal)`);
     else if(ve.cVEMP.weakEar && !ve.oVEMP.weakEar && !planes.length && !cal.weakEar) localization = tr(`nerw DOLNY (woreczek) po stronie ${side(ve.cVEMP.weakEar)} — izolowany ubytek otolitowy (cVEMP↓, oVEMP prawidłowy)`,`INFERIOR nerve (saccule) on the ${side(ve.cVEMP.weakEar)} side — isolated otolithic deficit (cVEMP↓, oVEMP normal)`);
+    else if(h.verdict==="central" && irrit)                           localization = tr("niejednoznaczna: drażnienie obwodowe (Ménière, faza irritative?) vs ośrodek — rozstrzyga napadowość i audiometria","ambiguous: peripheral irritation (Ménière, irritative phase?) vs central — resolved by paroxysmal course and audiometry");
     else if(h.verdict==="central")                                    localization = tr("ośrodkowa (pień/móżdżek)","central (brainstem/cerebellum)");
     else if(scds && scds.present)                                     localization = tr(`SCDS / trzecie okno po stronie ${side(p.dehiscence)}`,`SCDS / third window on the ${side(p.dehiscence)} side`);
-    else if(!h.ny.hasSpontaneous && !cal.caloricWeak && !planes.length && !(sk.present) && !sv.abnormal && !ve.cVEMP.weakEar && !ve.oVEMP.weakEar) localization = tr("brak lokalizacji (obraz prawidłowy)","no localization (normal picture)");
+    // Izolowana dysfunkcja kłaczka: żadnego oczopląsu ani ubytku obwodowego, a supresja kaloryczna zniesiona.
+    // hints() daje tu „normal" (HINTS wymaga AVS) — lokalizacja jest INSTRUMENTALNA i bogatsza od werdyktu;
+    // ta rozbieżność jest zamierzona i opisana w engine_doc.
+    else if(cal.failsSuppression && !h.ny.hasSpontaneous && !cal.caloricWeak && !planes.length && !sk.present) localization = tr("izolowany brak supresji fiksacji — móżdżek (kłaczek)","isolated loss of fixation suppression — cerebellum (flocculus)");
+    else if(!h.ny.hasSpontaneous && !cal.caloricWeak && !planes.length && !(sk.present) && !sv.abnormal && !ve.cVEMP.weakEar && !ve.oVEMP.weakEar && !cal.failsSuppression) localization = tr("brak lokalizacji (obraz prawidłowy)","no localization (normal picture)");
     else                                                              localization = tr("nieokreślona","indeterminate");
 
     // niejednoznaczności / pułapki
     if(cal.dissociation) ambiguities.push(tr("Dysocjacja kaloryka↔vHIT (LF osłabiona, HF prawidłowy): wodniak/Ménière lub ubytek niskoczęstotliwościowy. Obraz często NAPADOWY → HINTS (dla ciągłego AVS) nie ma zastosowania.","Caloric↔vHIT dissociation (LF weakened, HF normal): hydrops/Ménière or a low-frequency deficit. The picture is often PAROXYSMAL → HINTS (for continuous AVS) does not apply."));
-    if(h.infarct.impulseNormal && cal.weakEar) ambiguities.push(tr("HIT prawidłowy mimo oczopląsu, ale kaloryka lokalizuje ubytek OBWODOWY — rozważ fazę DRAŻNIENIA Ménière (napadowy) zamiast udaru.","HIT normal despite nystagmus, but caloric localizes a PERIPHERAL deficit — consider the IRRITATIVE phase of Ménière (paroxysmal) rather than a stroke."));
+    // Bramka rozszerzona o SYGNATURĘ DRAŻNIENIA (irrit): wczesny Ménière ma kalorykę jeszcze PRAWIDŁOWĄ
+    // (caloricLoss:0), więc sama bramka cal.weakEar zostawiała pułapkę bez ostrzeżenia. [H20]
+    if(h.infarct.impulseNormal && (cal.weakEar || irrit)) ambiguities.push(tr("HIT prawidłowy mimo oczopląsu, a obraz wskazuje ubytek/drażnienie OBWODOWE (kaloryka lub bicie ku uchu choremu) — rozważ fazę DRAŻNIENIA Ménière (napadowy) zamiast udaru.","HIT normal despite nystagmus, yet the picture suggests a PERIPHERAL deficit/irritation (caloric or beating toward the affected ear) — consider the IRRITATIVE phase of Ménière (paroxysmal) rather than a stroke."));
+    // Okno sakad wyłącznie UKRYTYCH przy trwającym oczoplasie: bedside HIT wygląda prawidłowo → nieprzeszkolony
+    // HINTS odczyta fałszywie „ośrodek"; rozstrzyga vHIT (gogle). [H5][H23][H24]
+    if(h.infarct.impulseNormalBedside && h.hi.abnormal) ambiguities.push(tr("Sakady wyłącznie UKRYTE przy trwającym oczoplasie: przy łóżku HIT wygląda PRAWIDŁOWO → nieprzeszkolone badanie odczyta fałszywie ośrodek; rozstrzyga vHIT (gogle).","Covert-only saccades with ongoing nystagmus: at the bedside the HIT looks NORMAL → an untrained exam would falsely read central; vHIT (goggles) resolves it."));
+    // Wzmocnienie fiksacją = sygnatura oczopląsu WRODZONEGO (INS), nie AVS/udaru — nie liczyć do INFARCT. [H3]
+    if(lit.fixationEnhanced) ambiguities.push(tr("Oczopląs WZMOCNIONY fiksacją — nietypowy dla AVS/udaru; wzorzec oczopląsu wrodzonego (INS) lub artefakt parametru. Nie liczyć jako cechy INFARCT.","Nystagmus ENHANCED by fixation — atypical for AVS/stroke; a congenital nystagmus (INS) pattern or a parameter artifact. Do not count it as an INFARCT feature."));
     if(cal.bilateralWeak) ambiguities.push(tr("HINTS zakłada jednostronny AVS — przy obustronnym ubytku (BVH) nie różnicuje; kieruj się sumą kaloryczną i obustronnym vHIT.","HINTS assumes a unilateral AVS — with a bilateral deficit (BVH) it does not differentiate; be guided by the caloric sum and bilateral vHIT."));
     if((ralp.abnormal||larp.abnormal) && !hc.abnormal && !cal.weakEar) ambiguities.push(tr("Kaloryka i vHIT poziomy prawidłowe, lecz vHIT kanału tylnego patologiczny — neuronitis nerwu DOLNEGO (kaloryka go NIE wykrywa).","Caloric and horizontal vHIT normal, but posterior-canal vHIT pathological — INFERIOR nerve neuritis (caloric does NOT detect it)."));
     if(cal.reverseDissociation) ambiguities.push(tr("Odwrotna dysocjacja: vHIT poziomy patologiczny przy PRAWIDŁOWEJ kalorycе — ubytek WYSOKOczęstotliwościowy (lub wczesna/częściowo skompensowana faza).","Reverse dissociation: horizontal vHIT pathological with a NORMAL caloric — a HIGH-frequency deficit (or an early/partially compensated phase)."));
@@ -806,7 +891,7 @@ export const NeuroVOR = (()=>{
       hints:h, caloric:cal, vhit:{ HC:hc, RALP:ralp, LARP:larp }, spontaneous:dark, skew:sk, scds, svv:sv, vemp:ve };
   }
 
-  return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, afferent, makePatient, compensate, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
+  return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, GAIN_CUT, afferent, makePatient, compensate, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
            headImpulse, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, svv, vemp, caloric, caloricBattery,
            CANAL_PARAM, NERVE_CANALS, nerveBranchLesion, bilateralLoss, meniere,
            COPLANAR, PLANE_CANALS, canalSpec, canalPlane, qpFull, vhitPlane,
