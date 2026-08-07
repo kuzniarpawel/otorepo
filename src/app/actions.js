@@ -57,7 +57,12 @@ const HINTS_PRESETS = {
   stroke:  { get label(){return t("Udar (ośrodek)","Stroke (central)");},      make:()=>({toneR:72, gainL:1, gainR:1, fixationGain:0, integratorTau:2.2, skewTone:-3, otrTorsion:4}) },
   // s-EVS (GRACE-3): migrena przedsionkowa MIĘDZYNAPADOWO — badanie całkowicie prawidłowe, rozpoznanie
   // z WYWIADU (napadowość). Lekcja: hints().applicable=false + verdictNote zamiast werdyktu triady.
-  vmi:     { get label(){return t("Migrena przeds. (międzynapadowo)","Vestibular migraine (interictal)");}, make:()=>({}) }
+  vmi:     { get label(){return t("Migrena przeds. (międzynapadowo)","Vestibular migraine (interictal)");}, make:()=>({}) },
+  // ETAP N5: nowe osie — JEDNO źródło parametrów: NeuroVOR.SCENARIOS (bez duplikacji literałów jak w stroke).
+  laby:    { get label(){return t("Labyrinthitis P (+niedosłuch)","Labyrinthitis R (+hearing loss)");}, make:()=>Object.assign({},NeuroVOR.SCENARIOS.labyrinthitisR.params) },
+  aica:    { get label(){return t("Zawał AICA P (pułapka HIT)","AICA infarct R (HIT trap)");},          make:()=>Object.assign({},NeuroVOR.SCENARIOS.aicaR.params) },
+  downbeat:{ get label(){return t("Zespół downbeat (CPN)","Downbeat syndrome (CPN)");},                 make:()=>Object.assign({},NeuroVOR.SCENARIOS.downbeat.params) },
+  rd:      { get label(){return t("Zawroty rezydualne po CRM","Residual dizziness post-CRM");},         make:()=>Object.assign({},NeuroVOR.SCENARIOS.residual.params) }
 };
 function loadHintsPreset(k){
   const pr=HINTS_PRESETS[k]; if(!pr) return;

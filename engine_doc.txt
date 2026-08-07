@@ -1457,6 +1457,26 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      clinicalReadout raportuje wszystkie cztery (+ sygnały per/central); zwraca hsn/pursuit/dva. Wyrocznia
      engine.neuro pinuje nowe klucze (hsn, shimpHC_P/L, pursuit, dva) dla wszystkich pacjentów. Sonda
      n4.mjs (27 asercji). dom: tylko 4 ekrany (bvh/stroke/nerve-superior — nowe findings).
+ [x] WDROŻENIE OCENY II — ETAP N5 (nowe osie):
+     • OŚ SŁUCHOWA (D3, HINTS-plus [H24]): hearingL/R (0..1; <0.65 = niedosłuch w teście pocierania palców)
+       + grupa PARAM_SPEC. NIE zmienia werdyktu triady (słuch to „plus"); clinicalReadout raportuje +
+       ambiguity „AVS + ostry niedosłuch: labyrinthitis vs AICA — patologiczny HIT NIE wyklucza udaru".
+       Fluktuacja LF (Ménière) i ABG (SCDS) poza zakresem → OGRANICZENIA.
+     • OŚ POSTURALNA (D4, GRACE-3 [H24]): posture(p) z asymetrii JĄDER (vnL/vnR z compensate) — zbaczanie
+       IPSILEZJONALNE, Romberg ×2.5 po zamknięciu oczu (analog zdjęcia fiksacji), ataksja st. 0–3:
+       ośrodek+oczopląs → 3 (nie stoi; Lee 2006: bywa jedynym znakiem zawału móżdżku, push do centralSigns
+       readoutu); ostry obwód → 2; BVH → 2 tylko bez wzroku (darkOnly — „chód po ciemku"); skompensowany → ≤1.
+       hints() NIETKNIĘTE (chód = osobna oś GRACE-3, nie triada).
+     • SCENARIUSZE (D3/D7/D9): labyrinthitisR (neuritis+hearingR 0.3 → PERIPHERAL mimo dodatniego „plus"),
+       aicaR (neuritis+fixationGain 0+skewTone −3+hearingR 0.3 → CENTRAL z „obwodowym" HIT — sztandarowa
+       pułapka HINTS-plus), downbeat (toneAc 140/140+fixationGain 0.2+τ5 → downbeat 15°/s nietłumiony,
+       spojrzeniowo zmienny, isolatedVertical → CENTRAL; karta CPN w diagnostyce czerpie z TEGO pacjenta —
+       koniec literału w rendererze), residual (RD [H26]: bez oczopląsu/vHIT/kaloryki, SVV 4.1° ku P +
+       oVEMP obniżony przy comp 0.85 → NOWA gałąź lokalizacji „obraz REZYDUALNY" + ambiguity o supresantach;
+       utricleR 0.45, nie 0.55 z oceny — po kalibracji B2 dopiero ta wartość flaguje AR≥0.35). Presety UI
+       (laby/aica/downbeat/rd) czerpią parametry ze SCENARIOS (jedno źródło). Sonda n5.mjs (33 asercje);
+       wyrocznie: engine.neuro 17 pacjentów (+4), dom 96 (+4 ekrany presetów; 12 zmienionych — pasek
+       przycisków + postura w findings).
  [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; suwak kompensacji steruje CAŁĄ
      fizjologią na żywo (oczopląs SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain nienaprawialny,
      sakada UKRYTA w trakcie pchnięcia (błąd śródpchnięciowy 18→10 px), regeneracja→Bechterew; werdykt spójny.

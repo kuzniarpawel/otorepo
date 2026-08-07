@@ -1029,7 +1029,9 @@ function renderDiag(){
     });
     const dcA=$('[data-diagcanal="canalo"]'); if(dcA) startDiagOtolith(dcA,"canalo",effCanal,effSide);
     const dcB=$('[data-diagcanal="cupulo"]'); if(dcB) startDiagOtolith(dcB,"cupulo",effCanal,effSide);
-    const cpn=$('[data-cpnnys]'); if(cpn) startNeuroNys(cpn, {strength:0, strengthV:1, dir:0, vdir:-1, tdir:0}, 0);  // CPN: uporczywy CZYSTY downbeat — pętla CIĄGŁA (nie wygasa; startNys z obwiednią ξ wyłączyłby się, a to ma być oczopląs UPORCZYWY)
+    // CPN: uporczywy downbeat Z SILNIKA (preset 'downbeat' — odhamowanie drog kanalow przednich), nie literal:
+    // fizyka i animacja maja jedno zrodlo; petla CIAGLA (startNys z obwiednia xi wylaczylby sie, a CPN jest UPORCZYWY).
+    const cpn=$('[data-cpnnys]'); if(cpn) startNeuroNys(cpn, NeuroVOR.observe(NeuroVOR.scenario('downbeat'), false), 0);
     sizeFlip("mechflip"); sizeFlip("phaseflip");
   });
 }
@@ -1473,7 +1475,7 @@ function hintsCustomPanel(){
   const presetBtn=k=>`<button class="preset" aria-pressed="${active===k}" onclick="loadHintsPreset('${k}')">${HINTS_PRESETS[k].label}</button>`;
   const presets = presetBtn("healthy")
     + `<button class="preset" aria-pressed="${active==='neuritis'}" onclick="loadHintsNeuritis()">${tr("Neuronitis","Neuritis")}</button>`
-    + ["bvh","meniereP","meniereL","scdsP","scdsL","stroke","vmi"].map(presetBtn).join("");
+    + ["bvh","meniereP","meniereL","scdsP","scdsL","stroke","vmi","laby","aica","downbeat","rd"].map(presetBtn).join("");
   const ear=state.hintsNerveEar||"P", branch=state.hintsNerveBranch||"superior", sev=state.hintsNerveSev==null?1:state.hintsNerveSev;
   const ne=(e)=>`<button aria-pressed="${ear===e}" onclick="setHintsNerveEar('${e}')">${e}</button>`;
   const nb=(b,l)=>`<button aria-pressed="${branch===b}" onclick="setHintsNerveBranch('${b}')">${l}</button>`;

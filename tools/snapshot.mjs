@@ -188,6 +188,7 @@ function engineOracle(h) {
       call('shimpHC_L', () => NV.shimp(p, { canal: 'horizontal', ear: 'L' }));
       call('pursuit', () => NV.smoothPursuit(p));
       call('dva', () => NV.dva(p));
+      call('posture', () => NV.posture(p));   // ETAP N5: oś posturalna GRACE-3
       readouts[pk] = r;
     }
     out.neuro = readouts;

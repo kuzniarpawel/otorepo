@@ -84,6 +84,11 @@ export const NeuroVOR = (()=>{
     // NARZĄDY OTOLITOWE (funkcja 0..1, zdrowy=1) — badane przez VEMP + współtworzą SVV (etap 7, [H22]):
     sacculeL:1.0, sacculeR:1.0,   // WORECZEK L/P → cVEMP (n. DOLNY, ipsilateralnie)
     utricleL:1.0, utricleR:1.0,   // ŁAGIEWKA L/P → oVEMP (n. GÓRNY) + grawiceptywny przechył SVV
+    // OŚ SŁUCHOWA (N5, ocena II D3) — HINTS-plus: 0..1 (1=norma; <0.65 = niedosłuch w teście pocierania
+    // palców). NIE zmienia werdyktu triady (słuch to „plus"); clinicalReadout raportuje i podnosi
+    // ambiguity labyrinthitis-vs-AICA. Fluktuacja niskich częstotliwości (Ménière) i ABG (SCDS) — POZA
+    // zakresem minimalnym (OGRANICZENIA). [H24]
+    hearingL:1.0, hearingR:1.0,
     dehiscence:null          // SCDS: dehiscencja kanału GÓRNEGO/przedniego — null | "L" | "P" (trzecie okno, etap 7)
   }, o||{}); }
 
@@ -524,6 +529,36 @@ export const NeuroVOR = (()=>{
       saccade:{ h:q.h/qn, v:q.v/qn, t:q.t/qn } };            // ANTYkompensacyjna = kierunek szybkiej fazy kanału (PRZECIWNIE do catch-upu HIMP)
   }
 
+  // ETAP N5 (ocena II, D4) — OŚ POSTURALNA (chód / Romberg / lateropulsja). [H24]
+  // GRACE-3: „każda ataksja chodu = OŚRODEK" — najsilniejszy dyskryminator przyłóżkowy POZA triadą HINTS.
+  // Wejście westybulospinalne = ta sama asymetria JĄDER (vnL/vnR z compensate), która napędza oczopląs:
+  // zbaczanie IPSILEZJONALNE (ku słabszemu jądru), Romberg pogarsza się po zamknięciu oczu (analog
+  // zdjęcia fiksacji, iloraz ROMBERG_Q), a stopień ataksji 0–3 wynika z profilu: cechy ośrodkowe →
+  // st. 3 (nie stoi bez pomocy — Lee 2006: bywa JEDYNYM znakiem zawału móżdżku); ostry obwód → st. 2
+  // (zbacza, ale stoi); skompensowany → ≤1; BVH → st. 2 tylko bez kontroli wzroku („chód po ciemku").
+  // hints() NIETKNIĘTE — chód to osobna oś GRACE-3, nie składowa triady.
+  const SWAY_G = 3, ROMBERG_Q = 2.5;
+  function posture(p){
+    const cmp = compensate(p);
+    const lateral = (cmp.vnR - cmp.vnL)/R0;                  // >0: prawe jądro silniejsze → pchnięcie/zbaczanie ku L
+    const veerSide = lateral>1e-6 ? "L" : lateral<-1e-6 ? "P" : null;
+    const swayCm = Math.min(10, SWAY_G*Math.abs(lateral));
+    const swayEyesClosedCm = Math.min(15, swayCm*ROMBERG_Q);
+    const sp = spontaneous(p);
+    const anyNys = sp.spv>=VIS_THRESH || (sp.spvV||0)>=VIS_THRESH;
+    const centralFeat = (p.fixationGain!=null && p.fixationGain<=0.3) || (p.integratorTau!=null && p.integratorTau<=5);
+    const bothTonesLow = afferent(p.toneL,0) < 0.5*R0 && afferent(p.toneR,0) < 0.5*R0;   // BVH
+    const c = Math.max(0, Math.min(1, p.comp||0));
+    let grade = 0;
+    if(centralFeat && anyNys)                    grade = 3;  // ośrodek: nie ustoi bez podparcia
+    else if(bothTonesLow)                        grade = 2;  // BVH: niestabilny BEZ wzroku (chód po ciemku)
+    else if(Math.abs(lateral)>=0.5 && c<0.3)     grade = 2;  // ostry obwód: wyraźne zbaczanie, ale stoi
+    else if(veerSide && Math.abs(lateral)>=0.15) grade = 1;  // łagodna lateropulsja
+    return { lateral, veerSide, swayCm, swayEyesClosedCm, ataxiaGrade: grade,
+      central: grade>=3, darkOnly: bothTonesLow && grade===2,
+      rombergPositive: (swayEyesClosedCm>=4 && !!veerSide) || bothTonesLow };
+  }
+
   // ETAP N4 (ocena II, D10) — DVA / DYNAMICZNA OSTROŚĆ WZROKU (oscylopsja jako SKARGA pacjenta).
   // Utrata ostrości przy ruchu głowy ∝ niedomiar gain HF (nienaprawialny kompensacją — spójnie z headImpulse).
   // BVH: ~4 linie logMAR (ciężka, oscylopsja definicyjna [H19]); skompensowany UVH: ~2 linie (graniczny);
@@ -745,6 +780,28 @@ export const NeuroVOR = (()=>{
       // puste (zdrowy pacjent): lekcja polega na tym, że applicable=false i verdictNote mówią wprost,
       // że triada HINTS niczego tu nie wnosi. Zamyka lukę s-EVS bez nowej fizyki.
       params:{}, episodic:true },
+    // ===== ETAP N5 (ocena II, D3/D7/D9) — nowe osie: słuch, downbeat, zawroty rezydualne =====
+    labyrinthitisR:{ get label(){return tr("Labyrinthitis — ucho P (OBWÓD + niedosłuch)","Labyrinthitis — R ear (PERIPHERAL + hearing loss)");}, side:"P",
+      // Neuronitis + NIEDOSŁUCH tej samej strony: HINTS-plus „dodatni", a jednostka OBWODOWA — lekcja,
+      // że słuch sam nie rozstrzyga; rozstrzyga PEŁNY obraz (HIT patologiczny + supresja + brak cech ośrodka).
+      params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0.65, hearingR:0.3 } },
+    aicaR:        { get label(){return tr("Zawał AICA — strona P (OŚRODEK z pułapką HIT)","AICA infarct — R side (CENTRAL with a HIT trap)");}, side:"P",
+      // JEDYNY częsty udar łamiący regułę „HIT patologiczny = obwód": AICA unaczynia błędnik (a. labyrinthi)
+      // → realny ubytek obwodowy + niedosłuch + cechy ośrodkowe (zniesiona supresja, skew). To sztandarowy
+      // przypadek HINTS-plus [H8][H24]: patologiczny HIT NIE wyklucza udaru, gdy towarzyszy mu ostry niedosłuch.
+      params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0, skewTone:-3, hearingR:0.3 } },
+    downbeat:     { get label(){return tr("Zespół downbeat (CPN / ośrodek)","Downbeat syndrome (CPN / central)");}, side:null,
+      // Ośrodkowy downbeat z ODHAMOWANIA dróg kanałów PRZEDNICH (kłaczek hamuje AC — jego uszkodzenie
+      // podnosi obustronnie ton AC): mechanistycznie poprawna droga [H3]. Emergent: downbeat ~15°/s,
+      // NIEtłumiony fiksacją (0.2), spojrzeniowo zmienny (τ=5), isolatedVertical przy ZDROWYM vHIT pionowym
+      // → werdykt central. Karta CPN w diagnostyce czerpie z TEGO pacjenta (koniec literału w rendererze).
+      params:{ toneAcL:140, toneAcR:140, fixationGain:0.2, integratorTau:5 } },
+    residual:     { get label(){return tr("Zawroty rezydualne po CRM (RD)","Residual dizziness after CRM (RD)");}, side:"P",
+      // SKUTECZNY manewr ≠ zdrowy pacjent [H26]: bez oczopląsu przy łóżku (1.25°/s), HINTS „normal",
+      // vHIT/kaloryka w normie — a SVV przechylona i oVEMP obniżony (dysfunkcja łagiewki) przy NIEPEŁNEJ
+      // kompensacji (comp 0.85). Mechanizm „supresanty szkodliwe" emergentny: obniż comp → SPV wraca.
+      // utricleR 0.45 (nie 0.55 z oceny): po kalibracji B2 (próg AR 0.35) dopiero ta wartość flaguje oVEMP.
+      params:{ toneR:65, gainR:0.9, caloricGainR:0.85, comp:0.85, lesionEar:"P", utricleR:0.45 } },
   };
   function scenario(key){ const s = SCENARIOS[key]||SCENARIOS.normal; return makePatient(s.params); }
 
@@ -864,6 +921,9 @@ export const NeuroVOR = (()=>{
       { key:"sacculeR", get label(){return tr("Woreczek prawy (cVEMP)","Saccule right (cVEMP)");}, min:0, max:1, step:0.05, unit:"", def:1 },
       { key:"utricleL", get label(){return tr("Łagiewka lewa (oVEMP)","Utricle left (oVEMP)");},  min:0, max:1, step:0.05, unit:"", def:1 },
       { key:"utricleR", get label(){return tr("Łagiewka prawa (oVEMP)","Utricle right (oVEMP)");}, min:0, max:1, step:0.05, unit:"", def:1 } ]},
+    { get group(){return tr("Słuch (HINTS-plus)","Hearing (HINTS-plus)");}, tier:"advanced", get help(){return tr("Test pocierania palców; <0.65 = niedosłuch. AVS + ostry niedosłuch = labyrinthitis vs AICA — HIT patologiczny NIE wyklucza udaru.","Finger-rub test; <0.65 = hearing loss. AVS + acute hearing loss = labyrinthitis vs AICA — a pathological HIT does NOT exclude stroke.");}, params:[
+      { key:"hearingL", get label(){return tr("Słuch lewy","Hearing left");},  min:0, max:1, step:0.05, unit:"", def:1 },
+      { key:"hearingR", get label(){return tr("Słuch prawy","Hearing right");}, min:0, max:1, step:0.05, unit:"", def:1 } ]},
     { get group(){return tr("Trzecie okno (SCDS)","Third window (SCDS)");}, tier:"advanced", get help(){return tr("Dehiscencja kan. górnego → objaw Tullio/Hennebert.","Superior canal dehiscence → Tullio/Hennebert sign.");}, params:[
       { key:"dehiscence", get label(){return tr("Dehiscencja kan. górnego","Superior canal dehiscence");}, type:"select", def:null,
         options:[ {v:null,get l(){return tr("brak","none");}}, {v:"L",get l(){return tr("lewa","left");}}, {v:"P",get l(){return tr("prawa","right");}} ] } ]}
@@ -960,6 +1020,27 @@ export const NeuroVOR = (()=>{
     if(ve.cVEMP.weakEar){ findings.push(tr(`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.cVEMP.weakEar)} — woreczek (nerw DOLNY).`,`cVEMP ${ve.cVEMP[ve.cVEMP.weakEar==="P"?"R":"L"]} on the ${side(ve.cVEMP.weakEar)} side — saccule (INFERIOR nerve).`)); peripheralSigns.push(tr("cVEMP obniżony (woreczek — n. dolny)","cVEMP reduced (saccule — inferior nerve)")); }
     if(ve.oVEMP.weakEar){ findings.push(tr(`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} po stronie ${side(ve.oVEMP.weakEar)} — łagiewka (nerw GÓRNY).`,`oVEMP ${ve.oVEMP[ve.oVEMP.weakEar==="P"?"R":"L"]} on the ${side(ve.oVEMP.weakEar)} side — utricle (SUPERIOR nerve).`)); peripheralSigns.push(tr("oVEMP obniżony (łagiewka — n. górny)","oVEMP reduced (utricle — superior nerve)")); }
 
+    // ETAP N5 — OŚ SŁUCHOWA (HINTS-plus): test pocierania palców. Słuch NIE zmienia werdyktu triady —
+    // rozstrzyga różnicowanie labyrinthitis (obwód) vs AICA (ośrodek z „obwodowym" HIT). [H8][H24]
+    const hearL = Math.max(0,Math.min(1, p.hearingL==null?1:p.hearingL));
+    const hearR = Math.max(0,Math.min(1, p.hearingR==null?1:p.hearingR));
+    const hLossEar = (hearR<0.65 && hearL<0.65) ? "both" : hearR<0.65 ? "P" : hearL<0.65 ? "L" : null;
+    if(hLossEar){
+      findings.push(hLossEar==="both"
+        ? tr("Niedosłuch OBUSTRONNY (test pocierania palców — HINTS-plus).","BILATERAL hearing loss (finger-rub test — HINTS-plus).")
+        : tr(`Niedosłuch po stronie ${side(hLossEar)} (test pocierania palców — HINTS-plus dodatni).`,`Hearing loss on the ${side(hLossEar)} side (finger-rub test — HINTS-plus positive).`));
+      if(h.ny.hasSpontaneous) ambiguities.push(tr("AVS + OSTRY niedosłuch: labyrinthitis vs zawał AICA (a. labyrinthi unaczynia błędnik) — patologiczny HIT NIE wyklucza udaru; HINTS-plus → MRI DWI.","AVS + ACUTE hearing loss: labyrinthitis vs AICA infarct (the labyrinthine artery supplies the labyrinth) — a pathological HIT does NOT exclude stroke; HINTS-plus → MRI DWI."));
+    }
+
+    // ETAP N5 — OŚ POSTURALNA (GRACE-3): chód/Romberg z asymetrii JĄDER (westybulospinalnie). [H24]
+    const po = posture(p);
+    if(po.ataxiaGrade>0 || po.rombergPositive){
+      const gr = po.ataxiaGrade;
+      findings.push(tr(`Chód/Romberg: ${po.veerSide?`zbacza ku stronie ${side(po.veerSide)}; `:""}kołysanie ~${R1(po.swayCm)} cm (oczy otwarte) / ~${R1(po.swayEyesClosedCm)} cm (zamknięte)${po.darkOnly?" — niestabilność GŁÓWNIE bez kontroli wzroku (chód po ciemku)":""}; ataksja tułowia st. ${gr}.`,`Gait/Romberg: ${po.veerSide?`veers toward the ${side(po.veerSide)} side; `:""}sway ~${R1(po.swayCm)} cm (eyes open) / ~${R1(po.swayEyesClosedCm)} cm (closed)${po.darkOnly?" — instability MAINLY without visual control (walking in the dark)":""}; truncal ataxia grade ${gr}.`));
+      if(po.central) centralSigns.push(tr("ataksja tułowia st. 3 — nie stoi bez pomocy (GRACE-3: każda ataksja = ośrodek)","truncal ataxia grade 3 — cannot stand unaided (GRACE-3: any ataxia = central)"));
+      else if(gr>0 && po.veerSide) peripheralSigns.push(tr("lateropulsja ku stronie chorej (westybulospinalna, obwodowa)","lateropulsion toward the affected side (vestibulospinal, peripheral)"));
+    }
+
     // ETAP N4 — dodatkowe testy przyłóżkowe: HSN (velocity storage), pościg (kłaczek), DVA (skarga pacjenta).
     const hs = hsn(p), spu = smoothPursuit(p), dv = dva(p);
     if(hs.present){
@@ -996,6 +1077,12 @@ export const NeuroVOR = (()=>{
     else if(h.verdict==="central" && irrit)                           localization = tr("niejednoznaczna: drażnienie obwodowe (Ménière, faza irritative?) vs ośrodek — rozstrzyga napadowość i audiometria","ambiguous: peripheral irritation (Ménière, irritative phase?) vs central — resolved by paroxysmal course and audiometry");
     else if(h.verdict==="central")                                    localization = tr("ośrodkowa (pień/móżdżek)","central (brainstem/cerebellum)");
     else if(scds && scds.present)                                     localization = tr(`SCDS / trzecie okno po stronie ${side(p.dehiscence)}`,`SCDS / third window on the ${side(p.dehiscence)} side`);
+    // OBRAZ REZYDUALNY po ubytku/CRM (N5, [H26]): bez oczopląsu i bez ubytku kaloryczno-vHITowego, a SVV
+    // przechylona + oVEMP obniżony po TEJ SAMEJ stronie przy niepełnej kompensacji — profil RD (31–61%
+    // pacjentów po skutecznym manewrze). Gałąź PRZED „nieokreślona", żeby najczęstszy pacjent „po Epleyu,
+    // a dalej się kręci" przestał być niewidzialny.
+    else if(sv.abnormal && ve.oVEMP.weakEar && ve.oVEMP.weakEar===sv.tiltSide && !cal.weakEar && !planes.length && (p.comp||0)>=0.5)
+      localization = tr(`dysfunkcja łagiewki + niepełna kompensacja po stronie ${side(sv.tiltSide)} — obraz REZYDUALNY (po ubytku / po manewrze)`,`utricular dysfunction + incomplete compensation on the ${side(sv.tiltSide)} side — a RESIDUAL picture (post-deficit / post-maneuver)`);
     // Izolowana dysfunkcja kłaczka: żadnego oczopląsu ani ubytku obwodowego, a supresja kaloryczna zniesiona.
     // hints() daje tu „normal" (HINTS wymaga AVS) — lokalizacja jest INSTRUMENTALNA i bogatsza od werdyktu;
     // ta rozbieżność jest zamierzona i opisana w engine_doc.
@@ -1011,6 +1098,8 @@ export const NeuroVOR = (()=>{
     // Okno sakad wyłącznie UKRYTYCH przy trwającym oczoplasie: bedside HIT wygląda prawidłowo → nieprzeszkolony
     // HINTS odczyta fałszywie „ośrodek"; rozstrzyga vHIT (gogle). [H5][H23][H24]
     if(h.infarct.impulseNormalBedside && h.hi.abnormal) ambiguities.push(tr("Sakady wyłącznie UKRYTE przy trwającym oczoplasie: przy łóżku HIT wygląda PRAWIDŁOWO → nieprzeszkolone badanie odczyta fałszywie ośrodek; rozstrzyga vHIT (gogle).","Covert-only saccades with ongoing nystagmus: at the bedside the HIT looks NORMAL → an untrained exam would falsely read central; vHIT (goggles) resolves it."));
+    // RD (N5, [H26]): skuteczny manewr ≠ wyleczony pacjent; supresanty przedsionkowe SZKODLIWE.
+    if(/REZYDUALNY|RESIDUAL/.test(localization)) ambiguities.push(tr("Skuteczny manewr ≠ wyleczony pacjent: zawroty rezydualne u 31–61% po ustąpieniu oczopląsu (łagiewka + niepełna kompensacja). Supresanty przedsionkowe SZKODLIWE — opóźniają kompensację (w silniku: obniż comp, a SPV wraca). Zalecane: poradnictwo + rehabilitacja przedsionkowa.","A successful maneuver ≠ a cured patient: residual dizziness in 31–61% after nystagmus resolves (utricle + incomplete compensation). Vestibular suppressants are HARMFUL — they delay compensation (in the engine: lower comp and the SPV returns). Recommended: counselling + vestibular rehabilitation."));
     // Wzmocnienie fiksacją = sygnatura oczopląsu WRODZONEGO (INS), nie AVS/udaru — nie liczyć do INFARCT. [H3]
     if(lit.fixationEnhanced) ambiguities.push(tr("Oczopląs WZMOCNIONY fiksacją — nietypowy dla AVS/udaru; wzorzec oczopląsu wrodzonego (INS) lub artefakt parametru. Nie liczyć jako cechy INFARCT.","Nystagmus ENHANCED by fixation — atypical for AVS/stroke; a congenital nystagmus (INS) pattern or a parameter artifact. Do not count it as an INFARCT feature."));
     if(cal.bilateralWeak) ambiguities.push(tr("HINTS zakłada jednostronny AVS — przy obustronnym ubytku (BVH) nie różnicuje; kieruj się sumą kaloryczną i obustronnym vHIT.","HINTS assumes a unilateral AVS — with a bilateral deficit (BVH) it does not differentiate; be guided by the caloric sum and bilateral vHIT."));
@@ -1019,11 +1108,11 @@ export const NeuroVOR = (()=>{
 
     return { verdict:h.verdict, localization, findings, peripheralSigns, centralSigns, ambiguities,
       hints:h, caloric:cal, vhit:{ HC:hc, RALP:ralp, LARP:larp }, spontaneous:dark, skew:sk, scds, svv:sv, vemp:ve,
-      hsn:hs, pursuit:spu, dva:dv };
+      hsn:hs, pursuit:spu, dva:dv, posture:po, hearing:{ L:hearL, R:hearR, lossEar:hLossEar } };
   }
 
   return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, GAIN_CUT, afferent, makePatient, compensate, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
-           headImpulse, shimp, hsn, smoothPursuit, dva, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, svv, vemp, caloric, caloricBattery,
+           headImpulse, shimp, hsn, smoothPursuit, dva, posture, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, svv, vemp, caloric, caloricBattery,
            CANAL_PARAM, NERVE_CANALS, nerveBranchLesion, bilateralLoss, meniere,
            COPLANAR, PLANE_CANALS, canalSpec, canalPlane, qpFull, vhitPlane,
            SCENARIOS, scenario, hints, PARAM_SPEC, clinicalReadout };
