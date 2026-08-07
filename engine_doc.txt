@@ -1414,6 +1414,17 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      WERDYKTY wszystkich dotychczasowych presetów BEZ ZMIAN (sonda n1.mjs: 45 asercji). Wyrocznie:
      engine.neuro 13 (12 + vmInterictal), dom 92 (13 zmienionych ekranów HINTS + 1 nowy hints/preset/vmi),
      pose/plans nietknięte.
+ [x] WDROŻENIE OCENY II — ETAP N2 (oś pionowa, A1): verticalBeat() rozdziela prędkość PIONOWĄ (spvVert z |v|)
+     od SKRĘTNEJ (spvTors z |t|) — dawne mag=hypot(v,t) wliczało skręt do „pionowej" prędkości (mnożnik 1.28)
+     i częściowy neuronitis GÓRNY wychodził pionowo-dominujący (upbeat 26.9 > poziom 21) wbrew klinice [H15].
+     Nowa stała VERT_W=0.5: pełny ubytek JEDNEGO kanału pionowego → spvV 15°/s (było 30 = pełny UVH; opisy
+     IVN: umiarkowany, 9–15 [H22]). spvV = max(spvVert, spvTors) niesie widoczność (czysto skrętny to też
+     oczopląs). vdir=sign(v)||0 — BEZ defaultu +1: pełny ubytek błędnika (piony par zniesione EMERGENTNIE,
+     v=0) przestał być etykietowany i ANIMOWANY jako „upbeat 30°/s"; readout mówi „czysto SKRĘTNY (X°/s)",
+     renderer dostaje strengthV=0 (pion stoi) + nowe strengthT (skręt animowany; At=8·max(sH,sT), fallback
+     sT=sV utrzymuje stare wywołania — literał CPN, pressureStimulus). Efekt uboczny poprawny klinicznie:
+     lezja pionowa sev 0.1 (spvV 1.5 < progu) daje teraz „normal" zamiast „central" (łagodna lezja = badanie
+     nieme). Sonda n2.mjs (24 asercje); wyrocznie: engine.neuro + dom TYLKO 4 ekrany hints/nerve/*.
  [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; suwak kompensacji steruje CAŁĄ
      fizjologią na żywo (oczopląs SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain nienaprawialny,
      sakada UKRYTA w trakcie pchnięcia (błąd śródpchnięciowy 18→10 px), regeneracja→Bechterew; werdykt spójny.

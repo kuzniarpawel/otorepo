@@ -1219,10 +1219,14 @@ function neuroNysParams(nys, gazeDeg){
   // ten rodzaj rozjazdu stała↔kopia, który silnik pilnuje tripwire'ami. Jedno źródło prawdy.
   const VISFRAC=NeuroVOR.VIS_THRESH/NeuroVOR.SPV_MAX;
   let sH=Math.max(0,Math.min(1,nys.strength||0));                          // siła składowej POZIOMEJ
-  let sV=Math.max(0,Math.min(1, nys.strengthV!=null ? nys.strengthV : (nys.dir?0:nys.strength)||0));  // PIONOWO-skrętnej
+  let sV=Math.max(0,Math.min(1, nys.strengthV!=null ? nys.strengthV : (nys.dir?0:nys.strength)||0));  // PIONOWEJ (bez skretu — A1)
+  // SKRET z wlasna sila (strengthT, pary pionowe); fallback sV utrzymuje stare wywolania (CPN literal,
+  // pressureStimulus bez strengthT) — tam skret jedzie na sile pionu, jak przed rozdzialem osi.
+  let sT=Math.max(0,Math.min(1, nys.strengthT!=null ? nys.strengthT : sV));
   if(sH<VISFRAC) sH=0;                                                     // poniżej progu → nie animuj (spójne z etykietą)
   if(sV<VISFRAC) sV=0;
-  return { gazePx:(gazeDeg||0)*camRx*0.5, Ah:7*sH, Av:6*sV, At:8*Math.max(sH,sV),
+  if(sT<VISFRAC) sT=0;
+  return { gazePx:(gazeDeg||0)*camRx*0.5, Ah:7*sH, Av:6*sV, At:8*Math.max(sH,sT),
            hDir:nys.dir||0, vDir:nys.vdir||0, tDir:nys.tdir||nys.dir||0 };
 }
 // Ciągły oczopląs poziomo-skrętny + odchylenie spojrzenia. Parametry aktualizowalne bez restartu FAZY:

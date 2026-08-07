@@ -222,6 +222,11 @@ export const NeuroVOR = (()=>{
   // sumowanie PER-PARA (a nie per-kanał) gwarantuje to zniesienie mimo różnych magnitud AC/PC.
   // W spoczynku wszystkie = R0 → wektor ZERO (czysto poziomy przypadek bez zmian, backward compat). [H15]
   const TORS_V = 0.8;    // udział skrętu wzgl. pionu w oczopląsie kanałów pionowych (poglądowo; geom. ~0.78–1.0)
+  // WAGA PŁASZCZYZNY PIONOWEJ (ocena II, A1): imbalans pary /R0 bez wagi dawał dla JEDNEGO martwego kanału
+  // spvV=SPV_MAX — izolowany neuronitis dolny bił 30°/s, tyle co pełny poziomy UVH, a częściowe zapalenie
+  // n. górnego wychodziło PIONOWO-dominujące (upbeat > poziom) wbrew klinice (SVN poziomo-skrętny [H15]).
+  // 0.5 kalibruje pełny ubytek JEDNEGO kanału pionowego na ~15°/s (opisy IVN: umiarkowany, rząd 9–15 [H22]).
+  const VERT_W = 0.5;
   const VERT_PAIRS = [
     { ac:"toneAcL", pc:"tonePcR", tSign:-1 },   // LARP: przedni LEWY ∥ tylny PRAWY → skręt ku L (−)
     { ac:"toneAcR", pc:"tonePcL", tSign:+1 }    // RALP: przedni PRAWY ∥ tylny LEWY → skręt ku P (+)
@@ -234,8 +239,15 @@ export const NeuroVOR = (()=>{
       v += imb*(-1);                 // przedni aktywniejszy → downbeat; tylny aktywniejszy → upbeat
       t += imb*pr.tSign*TORS_V;      // skręt zależny od płaszczyzny (LARP ku L, RALP ku P)
     }
-    const mag = Math.hypot(v, t), spvV = SPV_MAX*Math.min(1, mag);
-    return { v, t, mag, spvV, present: spvV >= VIS_THRESH };
+    // ROZDZIAŁ OSI (ocena II, A1): prędkość PIONOWA z |v|, SKRĘTNA z |t| — OSOBNO. Dawne mag=hypot(v,t)
+    // wliczało skręt do „pionowej" prędkości (mnożnik 1.28/jednostkę imbalansu), choć oś pozioma skrętu do
+    // spv nie wlicza; a przy v=0 (pełny ubytek błędnika — piony par znoszą się EMERGENTNIE) magnituda skrętu
+    // udawała upbeat. spvV = max(spvVert, spvTors) niesie WIDOCZNOŚĆ całej składowej pionowo-skrętnej
+    // (czysto skrętny oczopląs to też oczopląs), ale etykieta up/downbeat wymaga spvVert≥progu.
+    const spvVert = SPV_MAX*VERT_W*Math.min(1, Math.abs(v));
+    const spvTors = SPV_MAX*VERT_W*Math.min(1, Math.abs(t));
+    const spvV = Math.max(spvVert, spvTors);
+    return { v, t, mag: Math.max(Math.abs(v), Math.abs(t)), spvV, spvVert, spvTors, present: spvV >= VIS_THRESH };
   }
 
   // ETAP 7 (E4) — SCDS / fenomen TULLIO: dehiscencja kanału GÓRNEGO (przedniego) = TRZECIE OKNO ruchome.
@@ -294,15 +306,21 @@ export const NeuroVOR = (()=>{
     const vb = verticalBeat(p), compFac = 1 - Math.max(0, Math.min(1, p.comp||0));
     const h=beatSign, tH=beatSign*TORS_FRAC*asym;             // skręt poziomy ważony WŁASNĄ intensywnością
     const v=vb.v*compFac, tV=vb.t*compFac, t=tH+tV, spvV=vb.spvV*compFac;
-    const strengthV=Math.min(1, spvV/SPV_MAX);
+    const spvVert=vb.spvVert*compFac, spvTors=vb.spvTors*compFac;
+    // strengthV = amplituda PIONOWA renderera (z samego pionu — czysto skrętny oczopląs NIE rusza gałką
+    // w pionie); strengthT = amplituda SKRĘTNA (pionowa para; skręt poziomo-skrętny niesie sH w rendererze).
+    const strengthV=Math.min(1, spvVert/SPV_MAX), strengthT=Math.min(1, spvTors/SPV_MAX);
     // Rodzaj oczopląsu rozstrzyga porównanie WIDOCZNYCH prędkości fazy wolnej (°/s), a nie magnitudy `v`
     // z jednostkowym znakiem `h` — ten drugi zawsze wynosi ±1, więc 0,1°/s poziomu „wygrywało" z 12°/s pionu.
     const kind=(spvV > spv) ? "verticalTorsional" : "horizontalTorsional";
     return { kind, h, v, t, tH, tV,
       dir:  Math.sign(h*camRx()) || 0,             // znak EKRANOWY poziomu (jak nysFromDyn)
       tdir: Math.sign(t*camRx()) || 0,             // znak EKRANOWY skrętu (poziomy + pionowy)
-      vdir: Math.sign(v) || 1,                     // + = upbeat (frontal nie odwraca pionu)
-      strength: asym, strengthV, spv, spvV, beatEar, lesionEar,
+      // vdir BEZ defaultu +1: przy v=0 (czysto skrętny — np. pełny ubytek błędnika, piony par zniesione)
+      // ZERO, żeby etykieta/renderer nie malowały „upbeatu" z niczego (ocena II, A1.3). Konsument z fallbackiem
+      // (||1) dostaje neutralne zero → brak ruchu pionowego, co jest fizjologicznie poprawne.
+      vdir: Math.sign(v) || 0,
+      strength: asym, strengthV, strengthT, spv, spvV, spvVert, spvTors, beatEar, lesionEar,
       comp: cmp.c, trueLesionEar: cmp.lesionEar, bechterew,   // etap 6: stan kompensacji
       clampAmt: cmp.clampAmt, paceAmt: cmp.paceAmt, vnL:rL, vnR:rR };
   }
@@ -332,7 +350,8 @@ export const NeuroVOR = (()=>{
       // osobna flaga, żeby Laboratorium nie uczyło jej jako „jeszcze gorszego ośrodka" w ramach INFARCT. [H3]
       fixationEnhanced: !!fixOn && f>1.05 && anyRaw,
       strength: spvRaw>0 ? s.strength*f : 0,                // amplituda renderera skaluje się z WIDOCZNĄ fazą wolną
-      spvV: (s.spvV||0)*f, strengthV: (s.strengthV||0)*f    // E3: pionowo-skrętna też tłumiona fiksacją (obwód)
+      spvV: (s.spvV||0)*f, strengthV: (s.strengthV||0)*f,   // E3: pionowo-skrętna też tłumiona fiksacją (obwód)
+      spvVert: (s.spvVert||0)*f, spvTors: (s.spvTors||0)*f, strengthT: (s.strengthT||0)*f
     });
   }
 
@@ -460,7 +479,8 @@ export const NeuroVOR = (()=>{
     const beatHead = Math.sign(Vnet)||0, spv = Math.abs(Vnet);
     return { gazeDeg, beatHead, spv, strength: Math.min(1, spv/SPV_MAX),
       dir: Math.sign(beatHead*camRx())||0, tdir: sp.tdir, t: sp.t,
-      v: sp.v||0, vdir: sp.vdir||1, strengthV: sp.strengthV||0,   // E3: pionowo-skrętna składowa niesiona z samoistnego
+      v: sp.v||0, vdir: sp.vdir!=null ? sp.vdir : 0,               // bez defaultu +1 — czysto skrętny NIE jest upbeatem (A1.3)
+      strengthV: sp.strengthV||0, strengthT: sp.strengthT||0, spvVert: sp.spvVert||0, spvTors: sp.spvTors||0,   // E3: pionowo-skrętna składowa niesiona z samoistnego
       kind: sp.kind||"horizontalTorsional", components:{Vspont, Vge} };
   }
   // Czy oczopląs ZMIENIA KIERUNEK ze spojrzeniem (cecha OŚRODKOWA)? Próbkujemy skrajne spojrzenia.
@@ -775,7 +795,11 @@ export const NeuroVOR = (()=>{
     if(hSpont || vSpont){
       const parts = [];
       if(hSpont) parts.push(tr(`poziomo-skrętny ku stronie ${side(dark.beatEar)} (${R1(dark.spv)}°/s)`,`horizontal-torsional toward the ${side(dark.beatEar)} side (${R1(dark.spv)}°/s)`));
-      if(vSpont) parts.push(tr(`pionowo-skrętny ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`,`vertical-torsional ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`));
+      // Etykieta up/downbeat TYLKO gdy składowa PIONOWA realnie widoczna; czysto skrętny (v=0, np. pełny
+      // ubytek błędnika — piony par zniesione) nazywany po imieniu, zamiast malowania upbeatu z zera. (A1.3)
+      if(vSpont) parts.push((dark.spvVert||0) >= VIS_THRESH
+        ? tr(`pionowo-skrętny ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`,`vertical-torsional ${dark.vdir<0?"downbeat":"upbeat"} (${R1(dark.spvV)}°/s)`)
+        : tr(`czysto SKRĘTNY (${R1(dark.spvTors||dark.spvV)}°/s)`,`purely TORSIONAL (${R1(dark.spvTors||dark.spvV)}°/s)`));
       const supp = lit.suppressed;                          // JEDNO źródło prawdy (observe, dwuosiowo) — bez drugiej definicji
       findings.push(tr(`Oczopląs samoistny: ${parts.join(" + ")}; ${supp?"tłumiony":"NIEtłumiony"} fiksacją.`,`Spontaneous nystagmus: ${parts.join(" + ")}; ${supp?"suppressed":"NOT suppressed"} by fixation.`));
       (supp ? peripheralSigns : centralSigns).push(supp ? tr("oczopląs tłumiony fiksacją","nystagmus suppressed by fixation") : tr("oczopląs NIEtłumiony fiksacją","nystagmus NOT suppressed by fixation"));
