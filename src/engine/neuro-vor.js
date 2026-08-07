@@ -20,7 +20,12 @@ import { t as tr } from '../i18n.js';   // alias 'tr' — lokalne 't' (param tes
    2009, Stroke (HINTS; mnemonik INFARCT). */
 export const NeuroVOR = (()=>{
   const R0 = 90;         // spoczynkowa częstotliwość aferentów kanału (Hz) — zdrowy błędnik
-  const R_SAT = 300;     // sufit pobudzenia (Hz) — aferent nie przekracza ~3× spoczynku (nasycenie)
+  const R_SAT = 400;     // sufit pobudzenia (Hz) — szczytowe częstotliwości wyładowań aferentów ~350–400/s [H1].
+                         // Kalibracja z oceny II (B4): przy 300 zdrowy VOR zaczynał tracić gain od 262°/s
+                         // i przy 350°/s (osiągalne w energicznym vHIT) dostawał werdykt „abnormal" — a
+                         // publikowane gainy zdrowych są płaskie do ~350°/s. Droop zaczyna się teraz od
+                         // 387°/s, poza protokołem. Skutek uboczny (zaakceptowany, rebaseline): headroom
+                         // w fusionWeights rośnie (zdrowy@200: 0.375 zamiast 0.167 → canalRel 0.687).
   const SPV_MAX = 30;    // faza wolna (°/s) przy pełnej asymetrii (błędnik 0 Hz) — OSTRY UVH w ciemności bije
                          // ~20–40°/s (neuronitis, pierwsze doby); dawne 12 było sufitem PONIŻEJ realnego zakresu
                          // i przy fixationGain 0.9 dawało w świetle 1.1°/s, czyli PONIŻEJ własnego progu VIS_THRESH
@@ -60,7 +65,12 @@ export const NeuroVOR = (()=>{
     toneL:R0, toneR:R0,      // spoczynkowa aktywność błędnika L/P (Hz) — hipofunkcja obniża
     gainL:1.0, gainR:1.0,    // wzmocnienie VOR kanału poziomego L/P (0..~1.1) — vHIT = WYSOKA częstotl. ~5 Hz (etap 3)
     caloricGainL:1.0, caloricGainR:1.0,  // gain NISKOczęstotliwościowy HC L/P — PRÓBA KALORYCZNA ~0.003 Hz (etap 7/E4.5)
-    fixationGain:0.9,        // zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0 (etap 2)
+    // Kalibracja z oceny II (B1): 0.9 dawało indeks fiksacji 0.1 — supresję MOCNIEJSZĄ niż typowa obwodowa
+    // (klinicznie FI 0.3–0.6), a ostry neuronitis w świetle bił 2.8°/s = o włos nad progiem widoczności.
+    // 0.65 → FI 0.35 (środek pasma), neuronitis w świetle ~9.9°/s (jak w 1. dobie przy łóżku). Dowód sondą:
+    // zmiana NIE przełącza ŻADNEJ flagi (suppressed≤0.5 i failsSuppression>0.5 mają bufor z obu stron) —
+    // teza dokumentacji o „przesunięciu wszystkich odczytów" była błędna (obalona w ocenie II).
+    fixationGain:0.65,       // zdolność kłaczka do supresji wzrokowej (0..1); ośrodek → ~0 (etap 2)
     integratorTau:25,        // stała czasowa integratora UTRZYMANIA SPOJRZENIA (s); ośrodek „leaky" → krótka (etap 4)
     skewTone:0, otrTorsion:0,// grawiceptywna asymetria / OTR (etap 4)
     comp:0,                  // poziom KOMPENSACJI ośrodkowej c∈[0,1]: 0=faza ostra, 1=pełna symetria spoczynkowa (etap 6)
@@ -540,6 +550,7 @@ export const NeuroVOR = (()=>{
   // ipsilateralnie; oVEMP (oczny) ≈ ŁAGIEWKA (n. GÓRNY). Rozdziela gałęzie nerwu: neuronitis DOLNY → cVEMP↓ +
   // oVEMP prawidłowy; GÓRNY → odwrotnie. Amplituda z funkcji narządu (0..1). AR% = asymetria międzyuszna.
   const VEMP_THRESH=0.3;    // amplituda < 0.3 → „zniesiony"; 0.3..0.65 → „obniżony"; ≥0.65 → „prawidłowy"
+  const VEMP_AR=0.35;       // próg ASYMETRII międzyusznej dla weakEar (górne normy lab.: Rosengren 2019) — ocena II (B2)
   const VEMP_HIGH=1.35;     // ≥1.35 → „wzmożony" — VEMP mierzy w OBIE strony, nie tylko w dół
   const VEMP_SCDS=2.0;      // TRZECIE OKNO (SCDS) → wzrost amplitudy VEMP ipsilateralnie (niski próg cVEMP,
                             // duże n10 oVEMP). To ROZPOZNAWCZA para SCDS; wcześniej sufit amplitudy = 1.0
@@ -553,7 +564,10 @@ export const NeuroVOR = (()=>{
     // weakEar nazywa ucho tylko wtedy, gdy jego amplituda jest FAKTYCZNIE poniżej normy. Sama różnica
     // międzyuszna nie wystarcza: przy wzmocnieniu SCDS po jednej stronie druga (prawidłowa!) byłaby
     // inaczej raportowana jako „obniżona".
-    const weak   = (L,R) => (Math.abs(L-R)>=0.1 && Math.min(L,R)<0.65) ? (L<R?"L":"P") : null;
+    // Kalibracja z oceny II (B2): strona "obnizona" dopiero od ASYMETRII miedzyusznej >= VEMP_AR (0.35 —
+    // gorne normy laboratoryjne AR: cVEMP ~0.34-0.40, Rosengren 2019) ORAZ amplitudy ponizej normy.
+    // Dawna bramka (roznica bezwzgledna 0.1) flagowala AR 22% — asymetrie, ktorej zadna pracownia nie nazwie.
+    const weak   = (L,R) => (asym(L,R)>=VEMP_AR && Math.min(L,R)<0.65) ? (L<R?"L":"P") : null;
     const strong = (L,R) => (Math.abs(L-R)>=0.1 && Math.max(L,R)>=VEMP_HIGH) ? (L>R?"L":"P") : null;
     // OBUSTRONNE zniesienie (otoksyczność/BVH) daje AR%≈0 — dokładnie ta sama pułapka maskowania, którą
     // kaloryka obsługuje przez bilateralWeak. Bez tej flagi „brak asymetrii" czytało się jak „prawidłowo".
@@ -634,9 +648,9 @@ export const NeuroVOR = (()=>{
     normal:       { get label(){return tr("Zdrowy / równowaga","Healthy / balance");}, side:null,
       params:{} },
     neuritisR:    { get label(){return tr("Neuronitis przedsionkowy — ucho P (OBWÓD)","Vestibular neuritis — R ear (PERIPHERAL)");}, side:"P",
-      params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0.9, integratorTau:25, skewTone:0 } },
+      params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0.65, integratorTau:25, skewTone:0 } },
     neuritisL:    { get label(){return tr("Neuronitis przedsionkowy — ucho L (OBWÓD)","Vestibular neuritis — L ear (PERIPHERAL)");}, side:"L",
-      params:{ toneL:5, gainL:0.35, caloricGainL:0.3, fixationGain:0.9, integratorTau:25, skewTone:0 } },
+      params:{ toneL:5, gainL:0.35, caloricGainL:0.3, fixationGain:0.65, integratorTau:25, skewTone:0 } },
     strokeCentral:{ get label(){return tr("Udar móżdżku / pnia (OŚRODEK)","Cerebellar / brainstem stroke (CENTRAL)");}, side:"P",
       // kanały SPRAWNE (gain≈1 → HIT prawidłowy), łagodny ton asymetryczny ośrodkowy (oczopląs samoistny),
       // integrator „leaky" (oczopląs zmienny kierunkowo), asymetria grawiceptywna (skew + torsja).
@@ -757,7 +771,7 @@ export const NeuroVOR = (()=>{
       { key:"gainPcL", get label(){return tr("Gain PC lewy","PC gain left");},  min:0, max:1.2, step:0.05, unit:"", def:1 },
       { key:"gainPcR", get label(){return tr("Gain PC prawy","PC gain right");}, min:0, max:1.2, step:0.05, unit:"", def:1 } ]},
     { get group(){return tr("Przetwarzanie ośrodkowe","Central processing");}, tier:"advanced", get help(){return tr("Kłaczek (fiksacja), integrator (spojrzeniowy), otolity (skew). Supresja fiksacji <0 = WZMOCNIENIE fiksacją — wzorzec oczopląsu wrodzonego (INS), poza ramą HINTS.","Flocculus (fixation), integrator (gaze), otoliths (skew). Fixation suppression <0 = ENHANCEMENT by fixation — a congenital nystagmus (INS) pattern, outside the HINTS frame.");}, params:[
-      { key:"fixationGain",  get label(){return tr("Supresja fiksacji","Fixation suppression");}, min:-0.5, max:1, step:0.05, unit:"", def:0.9 },
+      { key:"fixationGain",  get label(){return tr("Supresja fiksacji","Fixation suppression");}, min:-0.5, max:1, step:0.05, unit:"", def:0.65 },
       { key:"integratorTau", get label(){return tr("Integrator (τ spojrzenia)","Integrator (gaze τ)");}, min:0.5, max:30, step:0.5, unit:"s", def:25 },
       { key:"skewTone",      get label(){return tr("Asymetria grawiceptywna (skew)","Graviceptive asymmetry (skew)");}, min:-6, max:6, step:0.5, unit:"°", def:0 },
       { key:"otrTorsion",    get label(){return tr("Torsja OTR","OTR torsion");}, min:0, max:10, step:0.5, unit:"°", def:0 } ]},

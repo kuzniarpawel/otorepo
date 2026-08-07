@@ -1150,7 +1150,10 @@ function hintsCompPatient(key){
     const ear=base.side, acute = ear==="P" ? (base.params.toneR??NeuroVOR.R0) : (base.params.toneL??NeuroVOR.R0);
     if(ear==="P") p.toneR=85; else p.toneL=85;                 // błędnik regeneruje (ton wraca ~do normy)
     p.lesionEar=ear;                                            // historia: która strona była chora
-    p.pacemakerBias=0.7*p.comp*(NeuroVOR.R0-acute);            // sticky ładunek pacemakera — Bechterew ∝ c
+    // Kalibracja z oceny II (B3): 0.7 dawalo oczoplas powrotny 19.8 st./s = 70% fazy ostrej (klinicznie:
+    // KILKA st./s, czesto widoczny dopiero bez fiksacji — McClure 1981) i ladunek 59.5 Hz PONAD maksimum
+    // wlasnego suwaka (40 Hz). 0.15 -> bias 12.75 Hz, SPV 4.25 w ciemnosci (>prog), ~0.4 z fiksacja (znika).
+    p.pacemakerBias=0.15*p.comp*(NeuroVOR.R0-acute);           // sticky ładunek pacemakera — Bechterew ∝ c
   }
   return p;
 }

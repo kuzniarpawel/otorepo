@@ -1045,7 +1045,7 @@ API PUBLICZNE (zwracane z modułu)
 
  afferent(tone, drive) -> Hz                                                                  [H1][H2]
    Aferent po REKTYFIKACJI: max(0, min(R_SAT, tone+drive)). Obcięcie hamowania (≥0) +
-   nasycenie (≤R_SAT=300). Wspólny prymityw: spoczynek (drive=0) i pchnięcie głowy (drive≠0).
+   nasycenie (≤R_SAT=400; do etapu N3 oceny II było 300 — zdrowy VOR tracił gain już od 262°/s). Wspólny prymityw: spoczynek (drive=0) i pchnięcie głowy (drive≠0).
 
  spontaneous(p) -> {kind,h,v,t,dir,tdir,vdir,strength,spv,beatEar,lesionEar}                  [H1][H2]
    ETAP 1 — oczopląs SAMOISTNY z asymetrii tonicznej (push-pull). Mózg szacuje prędkość głowy
@@ -1085,12 +1085,12 @@ API PUBLICZNE (zwracane z modułu)
    ≥2.5° ≈ gain<0.83), skierowana przeciwnie do pchnięcia (`saccadeToSide`). OŚRODEK: gainy≈1 →
    HIT prawidłowy (groźny). Kalibracja S_HZ=0.8 → obcięcie ~tone/S≈112°/s < prędkości vHIT.
    ZAKRES DYNAMICZNY aferentu (poprawka z przeglądu): modulacja pobudzeniowa jest ograniczona WŁASNOŚCIĄ
-   aferentu MOD_MAX=R_SAT−R0=210 Hz (helper excited(), wspólny z fusionWeights), a nie liczona jako
+   aferentu MOD_MAX=R_SAT−R0=310 Hz (po N3; helper excited(), wspólny z fusionWeights), a nie liczona jako
    rate−tone. Dawniej wysoki ton spoczynkowy sam zjadał zapas do sufitu: ton ≥167 Hz przy gain=1.0 dawał
    vHIT PATOLOGICZNY bez żadnego ubytku wzmocnienia — a ton do 200 Hz jest osiągalny suwakiem w
    Laboratorium. Przeczyło to własnej tezie modułu: w fazie DRAŻNIENIA Ménière'a gain jest zachowany,
    więc vHIT pozostaje PRAWIDŁOWY, i to jest cecha RÓŻNICUJĄCA tę jednostkę [H20]. Nasycenie nadal
-   działa tam, gdzie ma fizjologiczny sens — przy bardzo dużej prędkości głowy (Ω>262°/s dla gain 1.0).
+   działa tam, gdzie ma fizjologiczny sens — przy bardzo dużej prędkości głowy (Ω>387°/s dla gain 1.0 — poza protokołem vHIT; po N3, było 262).
    ETAP 7 (E2): drugi argument POLIMORFICZNY — 'P'/'L' (poziomy, jw., liczbowo bez zmian) LUB {canal,ear}
    (dowolny z 6 kanałów; płaszczyzny HC/RALP/LARP). Zwraca też canal/ear/plane/coplanar/saccade{h,v,t}. Zob. vhitPlane.
 
@@ -1296,11 +1296,11 @@ API PUBLICZNE (zwracane z modułu)
    „nieokreślona".
 
 STAŁE EKSPORTOWANE (w publicznym obiekcie NeuroVOR — używane też przez UI, np. R0, VIS_THRESH): R0=90
-   (spoczynek), R_SAT=300 (nasycenie), SPV_MAX=30 (°/s przy pełnej asymetrii — ostry UVH w ciemności),
+   (spoczynek), R_SAT=400 (nasycenie; N3 — było 300, zdrowy „abnormal" od 350°/s), SPV_MAX=30 (°/s przy pełnej asymetrii — ostry UVH w ciemności),
    VIS_THRESH=2 (°/s — próg widoczności oczopląsu), CLAMP_TAU=0.32 (rozkład udziału clampu w c),
    DVS_FRAC=0.67 (maks. skrócenie velocity storage).
-STAŁE WEWNĘTRZNE (nieeksportowane): TORS_FRAC=0.5 (udział skrętu poziomo-skrętnego), MOD_MAX=210 (zakres
-   dynamiczny aferentu = R_SAT−R0), S_HZ=0.8 (czułość aferentu Hz/°·s⁻¹), CAL_NORMAL=20 (°/s norma
+STAŁE WEWNĘTRZNE (nieeksportowane): TORS_FRAC=0.5 (udział skrętu poziomo-skrętnego), MOD_MAX=310 (zakres
+   dynamiczny aferentu = R_SAT−R0; po N3), S_HZ=0.8 (czułość aferentu Hz/°·s⁻¹), CAL_NORMAL=20 (°/s norma
    irygacji), CAL_BILAT=6 (°/s próg obustronny/ucho), CP_THRESH=25%, DP_THRESH=30%, SKEW_CENTRAL=2.5
    (° — próg skew dla flagi OŚRODKOWEJ; mały skew < progu = obwodowy, np. łagiewka n. górnego),
    SVV_SKEW=1.6 (° przechyłu SVV na 1° skew — tor OŚRODKOWY osi grawiceptywnej), VEMP_HIGH=1.35
@@ -1425,6 +1425,16 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      sT=sV utrzymuje stare wywołania — literał CPN, pressureStimulus). Efekt uboczny poprawny klinicznie:
      lezja pionowa sev 0.1 (spvV 1.5 < progu) daje teraz „normal" zamiast „central" (łagodna lezja = badanie
      nieme). Sonda n2.mjs (24 asercje); wyrocznie: engine.neuro + dom TYLKO 4 ekrany hints/nerve/*.
+ [x] WDROŻENIE OCENY II — ETAP N3 (kalibracje B1–B4): fixationGain 0.9→0.65 (default + presety neuritis +
+     PARAM_SPEC; FI 0.35 w klinicznym paśmie 0.3–0.6; neuronitis w świetle 9.9°/s zamiast 2.8; DOWÓD sondą:
+     zero zmian flag/werdyktów na wszystkich 13 przypiętych pacjentach — rebaseline WYŁĄCZNIE wartości);
+     VEMP_AR=0.35 (weakEar od asymetrii międzyusznej wg górnych norm lab. Rosengren 2019 — AR 22% przestało
+     być „obniżeniem"; pacjenci sev 0.6 mają AR 0.43 → bez zmian); współczynnik Bechterewa w UI 0.7→0.15
+     (oczopląs powrotny 4.25°/s zamiast 19.8 = 70% fazy ostrej; ładunek 12.75 Hz mieści się w suwaku 40 Hz;
+     z fiksacją znika — McClure 1981); R_SAT 300→400 (szczyt aferentów ~350–400/s [H1]; zdrowy trzyma
+     gain 1.0 do 350°/s, droop od 387 — poza protokołem; MOD_MAX=310; świadomy rebaseline fusion.canalRel
+     0.583→0.687, semantyka headroom bez zmian). Sonda n3.mjs (34 asercje). Wyrocznie: engine.neuro (wartości)
+     + dom 12 ekranów (amplitudy/fusion; stroke NIEtknięty — jawne fixationGain:0).
  [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; suwak kompensacji steruje CAŁĄ
      fizjologią na żywo (oczopląs SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain nienaprawialny,
      sakada UKRYTA w trakcie pchnięcia (błąd śródpchnięciowy 18→10 px), regeneracja→Bechterew; werdykt spójny.
@@ -1563,9 +1573,9 @@ UPROSZCZENIA / ZASTRZEŻENIA:
     modelujemy oś grawiceptywną jako JEDNĄ liczbę (skewTone) wspólną dla skew i SVV, bez rozdzielenia
     poziomu zmiany (opuszka=ipsiwersyjny vs śródmózgowie/INC=kontrawersyjny); preset udaru przyjmuje
     wariant OPUSZKOWY (Wallenberg) jako najczęstszą przyczynę AVS pochodzenia naczyniowego;
-  - fixationGain domyślnie 0.9 → indeks fiksacji 0.1, czyli supresja MOCNIEJSZA niż typowa obwodowa
-    (klinicznie ~0.3–0.6; próg failsSuppression w silniku = 0.5). Zostawione: próg i tak rozdziela
-    obwód od ośrodka, a zmiana przesunęłaby wszystkie odczyty „tłumiony/NIEtłumiony";
+  - [ROZWIĄZANE w N3 oceny II] fixationGain domyślnie 0.65 → indeks fiksacji 0.35 (środek klinicznego
+    pasma 0.3–0.6); dawna teza, że korekta „przesunęłaby wszystkie odczyty", została OBALONA sondą
+    (progi suppressed≤0.5 i failsSuppression>0.5 mają bufor z obu stron — zero zmian flag);
   - pacemakerBias (Bechterew) wymaga JAWNEGO lesionEar, gdy oba błędniki wróciły do symetrii: po
     wyrównaniu tonów strony chorej NIE DA SIĘ odtworzyć z samych parametrów (brak informacji), więc
     ładunek bez wskazanej strony pozostaje bezczynny — to ograniczenie modelu, nie błąd wyprowadzenia;
