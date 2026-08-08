@@ -96,6 +96,10 @@
 /* Atrybucja: KTÓRE z trzech wartości pochodzą od użytkownika. To jedyne zdanie na tej karcie,
    które mówi o pewności — i mówi wyłącznie o autorstwie, nigdy o prawdopodobieństwie. */
 .ekspert__atryb{ border-left:2px solid var(--line-strong); padding-left:10px; color:var(--faint); }
+/* Akcja główna karty. Wygląd niesie STYL BAZOWY z layout.css; tutaj zostaje sama SZEROKOŚĆ, bo to
+   decyzja tej karty, a nie klasy: alternatywy pod spodem są pełnej szerokości, więc przycisk
+   pierwszego rzutu przyklejony do zawartości (zmierzone 213 z 453 px) wyglądał jak element obcy. */
+.reco--ekspert > .recoprimary{ display:block; width:100%; margin-top:var(--sp-2); }
 .ekspert__alt{ margin-top:var(--sp-3); padding-top:var(--sp-2); border-top:1px solid var(--line); }
 .ekspert__alt .eyebrow{ display:block; margin-bottom:6px; }
 .ekspert__alt .recoalt{
