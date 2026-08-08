@@ -252,11 +252,25 @@ function nysFromDyn(canal, side, xiPeak, apo){
   };
 }
 
-// pozycja prowokująca kanał (konwencje silnika) — wejście do dynamiki ξ(t)
+/* ═══ POZA NALEŻY DO WARSTWY POZY, NIE DO SILNIKA (przegląd zgodności, 2026-08-08) ═══
+   `Vestibular.qSupineYaw` i `Vestibular.qPitch` zniknęły z publicznego API silnika na gałęzi głównej
+   (zostały tam zastąpione tablicą póz aplikacji). Dopóki nie scalamy, kopiujemy je tutaj — CO DO
+   WZORU, więc żadna liczba się nie zmienia — i przestajemy sięgać po nie do silnika. Silnik nadal
+   daje `qaxis`/`qmul`, i te dwie funkcje zostają jego zadaniem: kwaterniony, nie postawy pacjenta.
+   Q_SUPINE = −100° wokół osi międzyusznej: leżenie na plecach z głową zwieszoną poza kozetkę. */
+const Q_SUPINE  = Vestibular.qaxis([1,0,0], -100);
+const qSupineYaw = deg => Vestibular.qmul(Q_SUPINE, Vestibular.qaxis([0,1,0], deg));   // skręt wokół osi czaszki
+const qPitch     = deg => Vestibular.qaxis([1,0,0], deg);                              // +deg = skłon (bow), −deg = odchylenie (lean)
+
+// pozycja prowokująca kanał — TA SAMA tablica póz, z której rysowany jest pacjent.
+// Zmierzone przed podmianą: dla wszystkich trzech kanałów `stepHeadQ(rysowana poza)` daje grawitację
+// CO DO CYFRY taką samą jak dawne `Vestibular.qSupineYaw(...)`, więc podmiana nie rusza fizyki, a
+// usuwa drugie źródło pozy. (Bow & Lean to jedyne miejsce, gdzie te dwa źródła się rozjeżdżają —
+// patrz komentarz przy DIAG.bowlean.)
 function provokeQ(canal, side){
-  if(canal==="horizontal") return Vestibular.qSupineYaw(side==="P"? 90 : -90); // ucho chore w dół
-  if(canal==="anterior")  return Vestibular.qSupineYaw(0);                      // głębokie odchylenie (strona przez skręt)
-  return Vestibular.qSupineYaw(side==="P"? 45 : -45);                           // tylny (Dix-Hallpike)
+  if(canal==="horizontal") return stepHeadQ("supineFlex", side==="P"? 90 : -90, "up");  // ucho chore w dół (poza testu Roll)
+  if(canal==="anterior")  return stepHeadQ("supineHang", 0, "up");                       // zwis (strona przez skręt)
+  return stepHeadQ("supineHang", side==="P"? 45 : -45, "up");                            // tylny (Dix-Hallpike)
 }
 /* OKNO SYMULACJI PRÓBY POZYCYJNEJ = CZAS KLINICZNY (decyzja użytkownika, 2026-08-01).
    Te dwie liczby mają zupełnie inny status i mieszanie ich było źródłem błędu:
@@ -349,7 +363,7 @@ const LEAN_G={ "leanL|up":[0.5,-0.2,-0.8], "leanR|up":[-0.5,-0.2,-0.8],
 //     na kroku), a broda/siad już tylko wyprowadzają (exited zostaje). NIE tknięto geometrii kanału.
 const SUPINE_PITCH={ supineChin:+75, supineDeepHang:-30 };
 function supineHeadQ(body, yaw){          // orientacja głowy dla póz supine (opcjonalny pitch brody)
-  const q=Vestibular.qSupineYaw(yaw), p=SUPINE_PITCH[body];
+  const q=qSupineYaw(yaw), p=SUPINE_PITCH[body];
   return p ? Vestibular.qmul(q, Vestibular.qaxis([1,0,0], p)) : q;
 }
 function stepGravity(body, yaw, face){               // gHead dla kroku manewru
@@ -546,22 +560,22 @@ function manStepEnv(man, step){
   if(stepPk < 0.10) return null;
   return {env, tEnd, hist:true};
 }
-// szczyt ξ (ZE ZNAKIEM) dla kroku z ciągłej symulacji; przy luce (model nie re-prowokuje) — świeży provoke
-// z FAKTYCZNEJ orientacji kroku (neutralny start → pozycja kroku). Znak steruje kierunkiem (odwróceniem) w nysFromDyn.
-function stepXiPeak(man, plan, step, size="medium"){
+// szczyt ξ (ZE ZNAKIEM) dla kroku z CIĄGŁEJ symulacji manewru. Znak steruje kierunkiem (odwróceniem) w nysFromDyn.
+// USUNIĘTA ŚCIEŻKA AWARYJNA (przegląd zgodności z silnikiem, 2026-08-08 — ta sama naprawa, którą silnik
+// dostał na gałęzi głównej). Gdy |ξ| kroku spadało poniżej 0.06, funkcja budowała POZĘ, KTÓREJ W MANEWRZE
+// NIE MA (odwracała twarz "down"→"up"), symulowała od niej świeżą prowokację i wpisywała jej wynik jako
+// odpowiedź kroku. Miała ratować kroki „bez odpowiedzi", a PRODUKOWAŁA oczopląs tam, gdzie fizyka daje zero.
+// Zmierzone na 192 krokach (7 manewrów × 2 strony × 3 rozmiary): odpalała się 58 razy, ZMIENIAŁA wynik 8 razy
+// i za każdym z tych 8 razy karta oczopląsu POJAWIAŁA SIĘ tam, gdzie jej być nie powinno:
+//   Lempert krok 5:   ξ −0.042 → 0.840 (rozmiar średni), −0.048 → 2.916 (duży) — złóg wyszedł już w kroku 3,
+//   Yacovino krok 4:  ξ  0.051 → −0.324 — z ODWRÓCONYM znakiem, czyli strzałką w drugą stronę.
+// Krok bez własnej odpowiedzi ma pokazywać brak odpowiedzi. `size` przestał być potrzebny — jedynym
+// odbiorcą był ten symulator zastępczy.
+function stepXiPeak(man, plan, step){
   let xi=0;
   const seg = man && man.segs ? man.segs[step] : null;
   if(seg){ const i0=Math.round(seg.t0/man.dt), i1=Math.round((seg.t0+seg.dur)/man.dt);
     for(let k=i0;k<=i1 && k<man.sim.length;k++){ if(Math.abs(man.sim[k].xi)>Math.abs(xi)) xi=man.sim[k].xi; } }
-  if(Math.abs(xi) < 0.06){                                  // luka: świeży provoke z orientacji kroku
-    const st=plan.steps[step];
-    const pre = stepHeadQ(st.body, 0, st.face==="down"?"up":st.face);
-    const q   = stepHeadQ(st.body, st.yaw, st.face);
-    const psim = Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, size,
-      timeline:[{q:pre,tTrans:0,tHold:1},{q,tTrans:0.8,tHold:12}]});
-    let pp=0; for(const s of psim){ if(Math.abs(s.xi)>Math.abs(pp)) pp=s.xi; }
-    if(Math.abs(pp) > Math.abs(xi)) xi=pp;
-  }
   return xi;
 }
 function manPhi(man, step, frac){                       // φ realne dla danego kroku i ułamka timera
@@ -607,8 +621,10 @@ function manFractions(man, plan){
 // Czas trwania oczopląsu (widok frontalny) dla danego kroku — DOKŁADNIE to samo tEnd, którego użyją
 // startNys/startDialNys w renderGuide (envOv=manStepEnv(...) z fallbackiem na świeży xiEnvelope(engineXi(...))).
 // Zwraca sekundy albo null, gdy krok nie ma oczopląsu (sygnał < próg). Wędrówkę otolitu wiążemy z tą wartością.
+// `size` zostaje w sygnaturze (wołają ją man-deps i renderGuide), ale po usunięciu symulatora zastępczego
+// nie ma już odbiorcy: rozmiar złogu wchodzi do fizyki w computeManSim, czyli PRZED tym miejscem.
 function guideNysSeconds(plan, man, step, size){
-  const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step, size), plan.mechanism==="cupulo");
+  const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step), plan.mechanism==="cupulo");
   if(!_gn || _gn.strength < 0.10) return null;
   const r = manStepEnv(man, step) || xiEnvelope(engineXi(_gn.canal, _gn.side, _gn.persistent, _gn.q));
   return r ? r.tEnd : null;
@@ -628,7 +644,7 @@ const DIAG={
     phases:(A,v)=>[{
       ptitle:t("Strona chora w dole","Affected side down"), ppos:t("Na plecach, głowa 45° ku stronie chorej, ~20° poniżej poziomu","Supine, head 45° toward the affected side, ~20° below horizontal"),
       body:"supineHang", yaw:yawToA(A), face:"up",
-      nys: nysFromGeom("posterior", A, v, Vestibular.qSupineYaw(A==="P"?45:-45)),
+      nys: nysFromGeom("posterior", A, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),
       label:t(`ku górze + skrętny ku uchu choremu (${sideN(A,"cel")})`,`upbeat + torsional toward the affected ear (${sideN(A)})`),
       note: v==="canalo"
         ? t("po latencji, narasta i wygasa; wyczerpuje się przy powtórzeniu.","after a latency, crescendos and fades; fatigues on repetition.")
@@ -646,7 +662,7 @@ const DIAG={
         const strong = geo ? (down===A) : (down===H);
         return {ptitle:t(`Ucho ${down==="L"?"lewe":"prawe"} w dole`,`${down==="L"?"Left":"Right"} ear down`), ppos:t(`Głowa obrócona 90° ku stronie ${sideN(down,"dop")}`,`Head turned 90° toward the ${sideN(down)} side`),
           body:"supineFlex", yaw: down==="P"?90:-90, face:"up",
-          nys: nysFromGeom("horizontal", A, v, Vestibular.qSupineYaw(down==="P"?90:-90), "asym"),
+          nys: nysFromGeom("horizontal", A, v, stepHeadQ("supineFlex", down==="P"?90:-90, "up"), "asym"),
           label: geo ? t(`geotropowy — ku uchu w dole (${sideN(down,"cel")})`,`geotropic — toward the lower ear (${sideN(down)})`) : t(`apogeotropowy — ku uchu w górze (${sideN(up,"cel")})`,`apogeotropic — toward the upper ear (${sideN(up)})`),
           note: strong ? t("Reakcja silniejsza w tej pozycji.","Stronger response in this position.") : t("Reakcja słabsza w tej pozycji.","Weaker response in this position.")};
       };
@@ -659,16 +675,24 @@ const DIAG={
     latNote:(A,v)=> v==="canalo"
       ? t(`Geotropowy: skłon (bow) bije ku stronie chorej → ${sideN(A,"dop")}.`,`Geotropic: the bow beats toward the affected side → ${sideN(A)}.`)
       : t(`Apogeotropowy: kierunki odwrócone — skłon bije ku stronie zdrowej.`,`Apogeotropic: directions reversed — the bow beats toward the healthy side.`),
+    /* JEDYNE MIEJSCE, GDZIE POZA RYSOWANA I POZA LICZONA SIĘ ROZJEŻDŻAJĄ (zmierzone 2026-08-08).
+       Fizyka dostaje tu pełne ±90° (grawitacja [0,0,±1]), a rysunek pokazuje pozę `sit/down` i
+       `sit/up` z tablicy póz, czyli grawitację [0, 0.894, 0.447] i [0, −0.507, −0.862]. Nie jest
+       to więc ten sam skłon: karta rysuje jedno, a liczy drugie. NIE naprawiamy tego tutaj, bo
+       obie strony rozjazdu są sporne — tablica póz aplikacji ma dla siadu wartości starsze niż
+       reszta modelu, a kierunek samego Bow & Lean zmienia się w zaktualizowanym silniku (patrz
+       przegląd zgodności: ten sam skłon daje tam pobudzenie o przeciwnym znaku). Rozstrzygnięcie
+       należy do decyzji klinicznej przy scaleniu; do tego czasu zostają liczby dotychczasowe. */
     phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
       return [
         {ptitle:t("Skłon w przód (bow)","Forward bend (bow)"), ppos:t("Siad, skłon tułowia w przód ~45°, nos ku podłodze","Sitting, trunk bent forward ~45°, nose toward the floor"),
          body:"sit", yaw:0, face:"down",
-         nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(90), "flat"),
+         nys: nysFromGeom("horizontal", A, v, qPitch(90), "flat"),
          label: geo?t(`bije ku stronie chorej (${sideN(A,"dop")})`,`beats toward the affected side (${sideN(A)})`):t(`bije ku stronie zdrowej (${sideN(H,"dop")})`,`beats toward the healthy side (${sideN(H)})`),
          note: geo?t("Geotropowy: skłon wskazuje stronę chorą.","Geotropic: the bow indicates the affected side."):t("Apogeotropowy: kierunek odwrócony.","Apogeotropic: direction reversed.")},
         {ptitle:t("Odchylenie do tyłu (lean)","Backward tilt (lean)"), ppos:t("Siad, głowa odchylona do tyłu","Sitting, head tilted back"),
          body:"sit", yaw:0, face:"up",
-         nys: nysFromGeom("horizontal", A, v, Vestibular.qPitch(-90), "flat"),
+         nys: nysFromGeom("horizontal", A, v, qPitch(-90), "flat"),
          label: geo?t(`bije ku stronie zdrowej (${sideN(H,"dop")})`,`beats toward the healthy side (${sideN(H)})`):t(`bije ku stronie chorej (${sideN(A,"dop")})`,`beats toward the affected side (${sideN(A)})`),
          note: geo?t("Przy odchyleniu kierunek odwraca się (ku zdrowej).","On leaning back, the direction reverses (toward the healthy side)."):t("Apogeotropowy: odchylenie bije ku chorej.","Apogeotropic: the lean beats toward the affected side.")},
       ];
@@ -683,7 +707,7 @@ const DIAG={
     phases:(A,v)=>[{
       ptitle:t("Głowa głęboko w tył","Head deep back"), ppos:t("Na plecach, głowa prosto, głęboko odchylona (~30° poniżej poziomu)","Supine, head straight, extended deeply (~30° below horizontal)"),
       body:"supineHang", yaw:0, face:"up",
-      nys: nysFromGeom("anterior", A, v, Vestibular.qSupineYaw(0)),
+      nys: nysFromGeom("anterior", A, v, stepHeadQ("supineHang", 0, "up")),
       label:t(`ku dołowi — czysty downbeat (bez wyraźnej torsji)`,`downward — pure downbeat (no clear torsion)`),
       note: v==="canalo"
         ? t("po latencji: czysty downbeat, narasta i wygasa, wyczerpuje się przy powtórzeniu. Oczopląsu nie używaj do ustalenia strony — torsja bywa śladowa/nieobecna.","after a latency: pure downbeat, crescendos and fades, fatigues on repetition. Do not use the nystagmus to establish the side — torsion may be trace/absent.")

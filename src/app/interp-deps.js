@@ -13,8 +13,7 @@
  * `stan` wchodzi ARGUMENTEM (nie importem `state.js`), bo `state.js` wciąga `actions.js`, a ten
  * cały graf renderera — wyrocznia w gołym Node nie miałaby jak tego zaimportować.
  */
-import { DIAG, nysFromGeom, otherSide } from '../pose/maneuvers.js';
-import { Vestibular } from '../engine/vestibular.js';
+import { DIAG, nysFromGeom, otherSide, stepHeadQ } from '../pose/maneuvers.js';
 import { OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI, fazaDIAG, wartoscInstancji, spojnosc, flagi } from './obs-model.js';
 
 /* Predykcja modelu dla JEDNEJ kandydatury w JEDNEJ fazie, w konwencji `Vestibular.quickPhase`
@@ -31,7 +30,7 @@ export function fazaKandydatury(proba, fazaId, kand) {
        (czyli strony z kierunku nie ustalisz — to jest właśnie „maska modelu"). */
     if (proba === 'dix' && kand.canal === 'anterior') {
       const badana = otherSide(side);
-      const n = nysFromGeom('anterior', side, variant, Vestibular.qSupineYaw(badana === 'P' ? 45 : -45));
+      const n = nysFromGeom('anterior', side, variant, stepHeadQ('supineHang', badana === 'P' ? 45 : -45, 'up'));
       return { h: n.anat.h, v: n.anat.v, t: n.anat.t, s: n.strength == null ? 1 : n.strength };
     }
     const f = DIAG[proba].phases(side, variant)[fazaDIAG(proba, fazaId, side)];
