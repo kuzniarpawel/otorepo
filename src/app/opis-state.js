@@ -107,4 +107,5 @@ export const KOMUNIKATY_OPISU = {
 export const BLEDY_OPISU = {
   brakWpisu: { pl: 'Tego zapisu już nie ma.', en: 'That record no longer exists.' },
 };
-export const SEKCJE_DOMYSLNE = SEKCJE_IDS.filter(id => id !== 'zastrzezenie');
+/* (USUNIĘTE 2026-08-08) `SEKCJE_DOMYSLNE` — lista sekcji opisu bez zastrzeżenia. Zestaw startowy
+   sekcji bierze się dziś ze stanu (`opisSekcje`), więc ta stała nie miała ani jednego czytelnika. */

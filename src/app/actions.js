@@ -34,7 +34,8 @@ import { labDeps } from './lab-deps.js';
 import { otworzEksperyment, zamknijEksperyment, ustawStanowisko, przelaczPorownanie, ustawParametr, resetDoReferencji, rozwinParametr } from './lab-state.js';
 import { hintsDeps } from './hints-deps.js';
 import { zapiszSkladowa, ustawPowodNiewiar as _ustawPowodNiewiar, ustawPrzeszkolenie as _ustawPrzeszkolenie,
-         ustawPominiecie as _ustawPominiecie, cofnijPominiecieStan, wyczyscBadanie as _wyczyscBadanie, ustawKrok, biezacyKrok } from './hints-state.js';
+         ustawPominiecie as _ustawPominiecie, cofnijPominiecieStan, wyczyscBadanie as _wyczyscBadanie, ustawKrok, biezacyKrok,
+         czystyStanHints } from './hints-state.js';
 
 function setHintsPlane(pl){ state.hintsPlane=pl; state.hintsHitSide=null; render(); }
 function hintsHIT(canal, ear){
@@ -636,6 +637,16 @@ function kontrolaAkcja(a){
 function pytajOZakonczeniu(v){ state.zakonczeniePyta=!!v; render(); }
 function zakonczSesje(){
   zakonczSesjeStan(state);
+  /* BADANIE HINTS TEŻ JEST DANĄ PRZYPADKU (naprawa, 2026-08-08). `POLA_PRZYPADKU` w followup-state
+     powstało w Bloku 11, a przyłóżkowe badanie HINTS w Bloku 12 — i nikt tej listy nie dopisał, więc
+     odpowiedzi, deklaracja przeszkolenia, powód niewiarygodności i powód pominięcia PRZEŻYWAŁY
+     zakończenie sesji i witały następnego pacjenta. Funkcja, która je czyści, istniała od Bloku 12
+     i nie była wołana z żadnego miejsca. Skutek drugi, niewidoczny: sygnał `hints` w pwa-model
+     czyta `hintsBadanie`, więc po jednym badaniu HINTS automatyczne wdrożenie aktualizacji
+     (Blok 16, kryterium nr 3) było wstrzymane NA ZAWSZE — sesja kończyła się z „otwartym
+     przypadkiem", którego nie dało się zamknąć inaczej niż przyciskiem „wyczyść badanie".
+     Każdy moduł czyści SWOJE pola (jeden pisarz), a akcja tylko woła po kolei. */
+  czystyStanHints(state);
   releaseWake();
   state.screen="start"; state.area="start"; render();
   /* BLOK 16, KRYTERIUM ODBIORU NR 3: „aktualizacja jest komunikowana i WYKONYWANA PO ZAKONCZENIU

@@ -40,7 +40,11 @@ const h = win.__OTOREPO_TEST__;
 const A = (n) => (h && h[n]) || win[n];
 const POTRZEBNE = ['state', 'render', 'startManeuver', 'zakonczSerie', 'goStep', 'goKontrola', 'wrocDoManewru',
   'ustawWynikKontroli', 'ustawPowodKontroli', 'kontrolaAkcja', 'kontrolaAlternatywa', 'powtorzManewrKontroli',
-  'pytajOZakonczeniu', 'zakonczSesje', 'openTest', 'openMan', 'pickCanal', 'syncShell', 'goObs', 'openTriage', 'setTriage'];
+  'pytajOZakonczeniu', 'zakonczSesje', 'openTest', 'openMan', 'pickCanal', 'syncShell', 'goObs', 'openTriage', 'setTriage',
+  // K3o/K3p: listy pól modułów + droga wypełnienia badania HINTS. Brak któregokolwiek uchwytu ma
+  // NAZWAĆ brak, a nie wywalić wyrocznię na „undefined is not a function".
+  'POLA_HINTS', 'POLA_PREFERENCJI', 'goHintsKwal', 'ustawPrzeszkolenieHints', 'pomijajKwalifikacje',
+  'zacznijBadanieHints', 'ustawSkladowaHints', 'ustawPowodNiewiarHints'];
 const brak = POTRZEBNE.filter(n => typeof A(n) === 'undefined');
 if (errs.length || brak.length) {
   console.error('✗ BLAD LADOWANIA — wyrocznia niewazna.');
@@ -175,8 +179,21 @@ T('K3g/potwierdzenie', /Zakończyć sesję\?/.test(app()), 'kasowanie danych prz
 T('K3h/mowi-co-zniknie', /kasuje dane przypadku/.test(app()), 'potwierdzenie musi powiedzieć, co się stanie');
 T('K3i/nie-pyta-o-pacjenta', /nigdzie nie pyta o dane pacjenta|Nigdzie nie pytamy o dane pacjenta/.test(app()),
   'ekran mówi wprost, że danych pacjenta nie ma gdzie podać');
-// Dane PRZYPADKU znikają, preferencje NARZĘDZIA zostają.
+/* Dane PRZYPADKU znikają, preferencje NARZĘDZIA zostają. Badanie HINTS wypełniamy PRZED
+   zakończeniem, bo to ono przez dwa bloki przeżywało sesję (patrz K3p niżej). */
 st.lang = 'pl'; st.view3d = false; st.sound = false; st.autoAdvance = true;
+const niepuste = () => h.POLA_HINTS.filter(p => {
+  const v = st[p];
+  return v != null && !(typeof v === 'object' && !Object.keys(v).length);
+});
+A('goHintsKwal')(); A('ustawPrzeszkolenieHints')('tak'); A('pomijajKwalifikacje')('symulacja');
+A('zacznijBadanieHints')(); A('ustawSkladowaHints')('hit', 'sakadaP'); A('ustawSkladowaHints')('skew', 'brak');
+A('ustawPowodNiewiarHints')('brakZniesieniaFiksacji');
+const hintsPrzed = niepuste();
+T('K3p0/czulosc-badanie-wypelnione',
+  hintsPrzed.includes('hintsBadanie') && Object.keys(st.hintsBadanie).length >= 1 && hintsPrzed.length >= 4,
+  `przed zakończeniem muszą być wypełnione ODPOWIEDZI, nie tylko kwalifikacja — inaczej K3p przechodzi na pół pustym stanie (jest: ${hintsPrzed})`);
+const prefPrzed = Object.fromEntries(h.POLA_PREFERENCJI.map(p => [p, st[p]]));
 A('zakonczSesje')();
 eq('K3j/ekran-startowy', st.screen, 'start');
 {
@@ -185,8 +202,15 @@ eq('K3j/ekran-startowy', st.screen, 'start');
   eq('K3l/kontrole-skasowane', st.kontrole, []);
   eq('K3m/odcisk-manewru-skasowany', st.flow.maneuver, null);
   eq('K3n/strona-domyslna', [st.side, st.sideZrodlo, st.variant, st.variantZrodlo], ['P', null, 'canalo', null]);
-  T('K3o/preferencje-zostaja', st.lang === 'pl' && st.sound === false && st.autoAdvance === true,
-    'zakończenie sesji nie ma prawa kasować ustawień narzędzia');
+  /* Preferencje bierzemy z LISTY MODUŁU, nie z ręcznego wyliczenia w wyroczni: ręczna lista
+     wymieniała 3 z 7 pól i to właśnie takie listy przeoczyły pola HINTS. */
+  const zmienione = h.POLA_PREFERENCJI.filter(p => JSON.stringify(st[p]) !== JSON.stringify(prefPrzed[p]));
+  eq('K3o/preferencje-zostaja', zmienione, []);
+  /* K3p: KAŻDE pole badania HINTS wraca do stanu pustego — lista czytana z hints-state, więc pole
+     dołożone w przyszłym bloku wchodzi pod bramkę bez dopisywania go tutaj. Bez tej bramki
+     odpowiedzi poprzedniego pacjenta witały następnego, a sygnał `hints` z pwa-model trzymał
+     „otwarty przypadek" na zawsze, blokując automatyczne wdrożenie aktualizacji (Blok 16 K3). */
+  eq('K3p/badanie-hints-skasowane', niepuste(), []);
 }
 /* Przycisk zakończenia NIE MOŻE się dublować. Przy wyniku „ustąpienie" zakończenie jest krokiem
    GŁÓWNYM, a karta końcowa istnieje zawsze — pierwsza wersja rysowała więc dwa identycznie
@@ -284,7 +308,7 @@ eq('PP4/przed-nietkniete', (st.flow.maneuver.opisPrzed || {}).wystapil, 'tak');
 eq('PP5/po-zmienione', st.obs.dix.wystapil, 'nie');
 
 /* ═══════════ K. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 68;
+const OCZEKIWANE = 70;
 if (bledy.length) {
   console.error(`✗ fu:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

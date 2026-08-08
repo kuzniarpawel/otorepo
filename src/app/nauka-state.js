@@ -18,10 +18,11 @@
 import { ETAPY_PYTAJACE, etapNauki, ETAP_IDS, przypadek, opcjeEtapu, wolnoDalej,
          PRZYPADEK_IDS, POZIOM_IDS, RODZAJ_IDS, wpisPostepu, bezDanychOsobowychNauka } from './nauka-model.js';
 
-/* Lista pól, które ten moduł ma prawo dotknąć. Wyrocznia czyta ją WPROST i porównuje z odciskiem
-   stanu — dopisanie tu pola klinicznego zapali bramkę, zamiast po cichu otworzyć furtkę. */
-export const POLA_NAUKI = ['naukaPrzypadek', 'naukaEtap', 'naukaOdp', 'naukaWskazowki',
-                           'naukaFiltr', 'naukaPostep', 'naukaBlad', 'naukaZapisBlad'];
+/* (USUNIĘTE 2026-08-08) `POLA_NAUKI`. Komentarz obiecywał, że „wyrocznia czyta ją WPROST" — a nie
+   czytała jej żadna. Taki kontrakt-w-komentarzu jest dokładnie tym, przez co zakończenie sesji przez
+   dwa bloki omijało pola badania HINTS. Niezmiennik „lekcja nie tyka pacjenta" jest tu pilnowany
+   OD DRUGIEJ STRONY i naprawdę: bramka G w tools/nauka-dom.mjs porównuje odcisk POLA_PACJENTA przed
+   lekcją i po niej. Lista własnych pól modułu nie miała czego dokładać. */
 
 export const POWODY_ODMOWY = {
   odpowiedzZamrozona: { pl: 'ta odpowiedź jest już udzielona — decyzji nie zmienia się po zobaczeniu werdyktu', en: 'this answer has already been given — a decision is not changed after seeing the verdict' },

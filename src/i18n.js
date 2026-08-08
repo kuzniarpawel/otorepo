@@ -13,7 +13,8 @@
 // wiec zloty snapshot pozostaje deterministycznie POLSKI niezaleznie od navigator.language jsdom.
 import { state } from './app/state.js';
 
-export const LANGS = ['en', 'pl'];
+/* (USUNIETE 2026-08-08) `LANGS` — lista kodow jezykow. Wybor jezyka robia dwa jawne przyciski
+   w powloce, a `setLang` waliduje wprost, wiec ta stala nie miala ani jednego czytelnika. */
 const LS_KEY = 'otorepo.lang';
 
 // Zwraca wariant napisu wg aktywnego jezyka. Domyslnie (i dla nieznanego jezyka) — angielski.

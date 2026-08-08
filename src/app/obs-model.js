@@ -307,9 +307,8 @@ export const ETYKIETY_OSI = {
   nieDotyczy: { pl: 'nie dotyczy', en: 'not applicable' },
 };
 
-export const POWODY_NIEDOTYCZY = {
-  wynikUjemny: { pl: 'oczopląsu nie było — nie ma czego opisywać', en: 'there was no nystagmus — there is nothing to describe' },
-};
+/* (USUNIĘTE 2026-08-08) `POWODY_NIEDOTYCZY` — jednoelementowy słownik powodu „nie dotyczy". Powód
+   „oczopląsu nie było" niesie dziś sama wartość pola `wystapil`, więc słownik nigdy nie był czytany. */
 
 export function kompletnosc(rekord) {
   const proba = rekord && rekord.proba;

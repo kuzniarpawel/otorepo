@@ -111,7 +111,11 @@ export const POLA_PRZYPADKU = {
 };
 // Preferencje narzędzia — NIE dane pacjenta. Wypisane, żeby wyrocznia mogła sprawdzić, że
 // zakończenie sesji ich NIE rusza (kasowanie języka przy każdym pacjencie byłoby wrogie).
-export const POLA_PREFERENCJI = ['lang', 'view3d', 'sound', 'autoAdvance', 'reducedMotion', 'area', 'mode'];
+// Czyta ją bramka K3o w fu:dom — do 2026-08-08 nie czytał jej NIKT, a wyrocznia sprawdzała trzy
+// pola wypisane z ręki. Pierwsze uruchomienie prawdziwej listy pokazało, że `area` na niej nie ma
+// czego szukać: to POŁOŻENIE W NAWIGACJI, a nie ustawienie, i zakończenie sesji wraca do obszaru
+// startowego ŚWIADOMIE (kryterium odbioru nr 1 Bloku 11). Zostały ustawienia, które przeżyć mają.
+export const POLA_PREFERENCJI = ['lang', 'view3d', 'sound', 'autoAdvance', 'reducedMotion', 'mode'];
 
 export function zakonczSesjeStan(state) {
   for (const [pole, domyslna] of Object.entries(POLA_PRZYPADKU)) state[pole] = domyslna();

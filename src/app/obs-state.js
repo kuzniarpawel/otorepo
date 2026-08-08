@@ -96,12 +96,5 @@ export function przyjmijObserwacje(state, proba) {
   return podstawa;
 }
 
-/* Ile instancji jest w danej grupie już odpowiedzianych — do podpisu „3 z 4" przy grupie.
-   Liczymy WYPEŁNIENIE, nie kompletność: to jest nawigacja po formularzu, a nie ocena opisu. */
-export function postepGrupy(state, proba, os) {
-  const r = obsRekordu(state, proba);
-  const wyst = r ? wartoscInstancji(r, 'wystapil') : undefined;
-  const inst = instancjeStosowalne(proba, wyst).filter(i => i.os === os);
-  const zrobione = inst.filter(i => wartoscInstancji(r, i.klucz, { ufajNiewiarygodnym: true }) != null).length;
-  return { zrobione, ile: inst.length };
-}
+/* (USUNIĘTE 2026-08-08) `postepGrupy` — licznik „3 z 4" przy grupie osi. Napisane pod podpis, który
+   nigdy nie trafił na ekran: ani jeden renderer i ani jedna wyrocznia go nie wołały. */

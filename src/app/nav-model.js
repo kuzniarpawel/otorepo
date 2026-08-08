@@ -38,6 +38,7 @@ export const AREAS = [
     plDesc:'Język, ruch, informacje',        enDesc:'Language, motion, about' },
 ];
 
-export const AREA_IDS = AREAS.map(a => a.id);
+/* (USUNIĘTE 2026-08-08) `AREA_IDS` — lista identyfikatorów obszarów. Wyrocznie i nawigacja czytają
+   `AREAS` wprost (razem z etykietami), więc sama lista kluczy nie miała czytelnika. */
 export const barAreas = () => AREAS.filter(a => a.bar === 'both');
 export const areaById = (id) => AREAS.find(a => a.id === id) || AREAS[0];
