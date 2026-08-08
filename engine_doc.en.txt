@@ -1087,7 +1087,7 @@ PUBLIC API (returned from the module)
 
  afferent(tone, drive) -> Hz                                                                  [H1][H2]
    The afferent after RECTIFICATION: max(0, min(R_SAT, tone+drive)). Inhibitory cut-off (≥0) +
-   saturation (≤R_SAT=300). A shared primitive: rest (drive=0) and head impulse (drive≠0).
+   saturation (≤R_SAT=400; until stage N3 of review II it was 300 — a healthy VOR was losing gain from as low as 262°/s). A shared primitive: rest (drive=0) and head impulse (drive≠0).
 
  spontaneous(p) -> {kind,h,v,t,dir,tdir,vdir,strength,spv,beatEar,lesionEar}                  [H1][H2]
    STAGE 1 — SPONTANEOUS nystagmus from tonic asymmetry (push-pull). The brain estimates head velocity
@@ -1127,12 +1127,12 @@ PUBLIC API (returned from the module)
    ≥2.5° ≈ gain<0.83), directed opposite to the impulse (`saccadeToSide`). CENTRAL: gains≈1 →
    a normal HIT (ominous). Calibration S_HZ=0.8 → cut-off ~tone/S≈112°/s < the vHIT velocity.
    The afferent's DYNAMIC RANGE (a review fix): the excitatory modulation is bounded by a PROPERTY of the
-   afferent, MOD_MAX=R_SAT−R0=210 Hz (helper excited(), shared with fusionWeights), and is not computed as
+   afferent, MOD_MAX=R_SAT−R0=310 Hz (after N3; helper excited(), shared with fusionWeights), and is not computed as
    rate−tone. Previously a high resting tone by itself ate up the headroom to the ceiling: a tone ≥167 Hz with gain=1.0
    gave a PATHOLOGICAL vHIT with no gain loss whatsoever — and a tone up to 200 Hz is reachable with the slider in
    the Laboratory. That contradicted the module's own thesis: in the IRRITATIVE phase of Ménière's the gain is
    preserved, so the vHIT stays NORMAL, and that is the DIFFERENTIATING feature of this entity [H20]. Saturation still
-   acts where it makes physiological sense — at a very high head velocity (Ω>262°/s for gain 1.0).
+   acts where it makes physiological sense — at a very high head velocity (Ω>387°/s for gain 1.0 — outside the vHIT protocol; after N3, it was 262).
    STAGE 7 (E2): the second argument is POLYMORPHIC — 'P'/'L' (horizontal, as above, numerically unchanged) OR {canal,ear}
    (any of the 6 canals; planes HC/RALP/LARP). It also returns canal/ear/plane/coplanar/saccade{h,v,t}. See vhitPlane.
 
@@ -1240,7 +1240,7 @@ PUBLIC API (returned from the module)
      anterior,utricle}, inferior={posterior,saccule}. Neuritis usually of the SUPERIOR nerve (longer bony canal). [H15]
 
  nerveBranchLesion(ear, branch, sev) -> overrides for makePatient                                 [H15]
-   E1 — dropout of a nerve BRANCH (branch "superior"/"inferior", sev 0..1): tone→R0·(1−sev), gain→1−0.65·sev
+   E1 — dropout of a nerve BRANCH (branch "superior"/"inferior", sev 0..1): tone→R0·(1−sev), gain→1−0.9·sev (N7)
    for the branch's canals; superior adds a SMALL skewTone (1.5·sev, utricle — < the central threshold) + caloricGain↓ (1−sev;
    HC=superior nerve) + utricle↓ (oVEMP); inferior adds saccule↓ (cVEMP) — does NOT touch the caloric (HC spared).
    SUPERIOR → nystagmus + pathological vHIT of the horizontal AND anterior + caloric↓ + oVEMP↓ + SVV↑, POSTERIOR/cVEMP normal;
@@ -1255,7 +1255,7 @@ PUBLIC API (returned from the module)
    modelled). IN THE ENGINE: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) bilaterally; "pathological vHIT" is NOT a
    direct gain cutoff but a corrective-saccade amplitude ≥ 2.5° in headImpulse (for amp 15° ≈ gain ≤ 0.83 — more
    sensitive than 0.6, appropriate for a SINGLE canal). Only the caloric 6 °/s threshold is encoded numerically
-   (CAL_BILAT → caloricBattery.bilateralWeak). SHIMP not implemented. NOTE: the random preset bilateralLoss(r(0.6,1))
+   (CAL_BILAT → caloricBattery.bilateralWeak). SHIMP implemented (N4/N7). NOTE: the random preset bilateralLoss(r(0.6,1))
    yields gain 0.35–0.61 — the upper end (0.61) is SLIGHTLY above the Bárány 0.6 cutoff (meets BVH by caloric, not vHIT).
 
  meniere(ear, {phase | tone, gain}) -> overrides for makePatient                                  [H20]
@@ -1338,11 +1338,11 @@ PUBLIC API (returned from the module)
    "undetermined".
 
 EXPORTED CONSTANTS (in the public NeuroVOR object — also used by the UI, e.g. R0, VIS_THRESH): R0=90
-   (rest), R_SAT=300 (saturation), SPV_MAX=30 (°/s at full asymmetry — an acute UVH in darkness),
+   (rest), R_SAT=400 (saturation; N3 — it was 300, and a healthy subject read "abnormal" from 350°/s), SPV_MAX=30 (°/s at full asymmetry — an acute UVH in darkness),
    VIS_THRESH=2 (°/s — the nystagmus visibility threshold), CLAMP_TAU=0.32 (distribution of the clamp contribution in c),
    DVS_FRAC=0.67 (max. shortening of velocity storage).
-INTERNAL CONSTANTS (non-exported): TORS_FRAC=0.5 (torsion share of the horizontal-torsional), MOD_MAX=210 (the
-   afferent's dynamic range = R_SAT−R0), S_HZ=0.8 (afferent sensitivity Hz/°·s⁻¹), CAL_NORMAL=20 (°/s irrigation
+INTERNAL CONSTANTS (non-exported): TORS_FRAC=0.5 (torsion share of the horizontal-torsional), MOD_MAX=310 (the
+   afferent's dynamic range = R_SAT−R0; after N3), S_HZ=0.8 (afferent sensitivity Hz/°·s⁻¹), CAL_NORMAL=20 (°/s irrigation
    norm), CAL_BILAT=6 (°/s bilateral/ear threshold), CP_THRESH=25%, DP_THRESH=30%, SKEW_CENTRAL=2.5
    (° — the skew threshold for the CENTRAL flag; a small skew < the threshold = peripheral, e.g. the utricle of the superior nerve),
    SVV_SKEW=1.6 (° of SVV tilt per 1° of skew — the CENTRAL track of the graviceptive axis), VEMP_HIGH=1.35
@@ -1427,6 +1427,152 @@ VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Sc
      1.1°/s in the light = BELOW its own VIS_THRESH threshold, i.e. an "invisible" pathology).
      SCOPE OF CHANGE (oracles): engine.neuro = 12/12 patients, dom = 18/91 screens (HINTS only),
      pose 360/360 and plans 14/14 UNCHANGED — the BPPV physics untouched. bridge/view:check green.
+ [x] IMPLEMENTATION OF REVIEW II — STAGE N1 (consistency fixes; review: ocena_neurofizjologiczna_neurovor_II.md):
+     #A2 bilateralWeak computed from the CORRECTED components |Vcal| (like CPcorrected) — the superimposed
+        spontaneous nystagmus inflated the raw sums and masked a bilateral weakness; new fields rightSumCal/leftSumCal.
+     #A3 the IRRITATION signature in clinicalReadout: a beat TOWARD an explicitly stated affected ear (with
+        Bechterew excluded) → early Ménière's (caloricLoss:0) gets the localization "equivocal: irritation vs
+        central" + ambiguity, instead of a bare "central (brainstem/cerebellum)".
+     #A4 `suppressed` in observe() is TWO-AXIS (horizontal OR vertical) — the end of two definitions of suppression;
+        inferior neuritis stopped getting "does NOT fade with fixation — a CENTRAL feature" alongside a peripheral verdict.
+     #A5 the flocculus made VISIBLE: hints() counts fixationFail (hasSpont + no suppression, without INS) as a SUPPORTING
+        central sign (infarct.fixationFail; not an INFARCT letter); clinicalReadout reports the fixation index
+        with failsSuppression + a localization branch "isolated failure of fixation suppression — cerebellum (flocculus)".
+        An INTENDED divergence: a pure flocculus lesion without nystagmus has hints="normal" (HINTS requires AVS)
+        alongside an instrumental floccular localization — the bedside verdict and the localization are different axes.
+     #A6 the vHIT criterion on GAIN per canal: GAIN_CUT={HC:0.8, AC:0.7, PC:0.7} (McGarvie 2015) instead of a threshold
+        on the saccade amplitude (it drifted with headAmp; over-called the vertical canals — an AC gain of 0.75 was
+        "pathological" against the LLN). saccadeAmp/overt/covert unchanged (they draw, they do not adjudicate).
+     #A7 the GRACE-3 applicability gate: hints() returns applicable=hasSpont + verdictNote ("outside AVS — an
+        instrumental verdict"); the verdict card prints the note. Preset vmInterictal (SCENARIOS, episodic:true; the
+        "vmi" button in the UI) — vestibular migraine between attacks: the examination COMPLETELY normal (s-EVS,
+        the diagnosis comes from the history). [H24]
+     #A8 the window of EXCLUSIVELY COVERT saccades (comp ~0.75–0.95 with a persisting nystagmus): hi.bedsideAbnormal +
+        infarct.impulseNormalBedside + ambiguity + a separate branch of the HI row (tag .warn) "pathological on vHIT;
+        looks NORMAL at the bedside — a pitfall". The main verdict remains instrumental. [H5][H23]
+     #C6 the INS flag: observe().fixationEnhanced (f>1.05) + ambiguity "enhanced by fixation = the pattern of
+        congenital nystagmus, not INFARCT" + a note in the PARAM_SPEC help; plus the CAUSAL TRACE hints().trace[]
+        (sign → inputs → thresholds) rendered as "Why this verdict" in the readout (the quiz teaches the derivation,
+        not the conclusion).
+     The VERDICTS of all existing presets UNCHANGED (probe n1.mjs: 45 assertions). Oracles:
+     engine.neuro 13 (12 + vmInterictal), dom 92 (13 changed HINTS screens + 1 new hints/preset/vmi),
+     pose/plans untouched.
+ [x] IMPLEMENTATION OF REVIEW II — STAGE N2 (the vertical axis, A1): verticalBeat() separates the VERTICAL velocity
+     (spvVert from |v|) from the TORSIONAL one (spvTors from |t|) — the old mag=hypot(v,t) folded torsion into the
+     "vertical" velocity (a ×1.28 multiplier) and a partial SUPERIOR neuritis came out vertical-dominant (upbeat
+     26.9 > horizontal 21) against the clinic [H15]. New constant VERT_W=0.5: a full loss of ONE vertical canal →
+     spvV 15°/s (it was 30 = a full UVH; IVN reports: moderate, 9–15 [H22]). spvV = max(spvVert, spvTors) carries
+     visibility (a purely torsional nystagmus is still a nystagmus). vdir=sign(v)||0 — WITHOUT the +1 default: a full
+     loss of the labyrinth (the pair verticals cancelled EMERGENTLY, v=0) is no longer labelled and ANIMATED as
+     "upbeat 30°/s"; the readout says "purely TORSIONAL (X°/s)", the renderer gets strengthV=0 (the vertical stands
+     still) + the new strengthT (torsion animated; At=8·max(sH,sT), the fallback sT=sV keeps the old call sites — the
+     CPN literal, pressureStimulus). A clinically correct side effect: a vertical lesion of sev 0.1 (spvV 1.5 < the
+     threshold) now yields "normal" instead of "central" (a mild lesion = a silent examination). Probe n2.mjs
+     (24 assertions); oracles: engine.neuro + dom ONLY the 4 hints/nerve/* screens.
+ [x] IMPLEMENTATION OF REVIEW II — STAGE N3 (calibrations B1–B4): fixationGain 0.9→0.65 (default + the neuritis
+     presets + PARAM_SPEC; FI 0.35 within the clinical band 0.3–0.6; neuritis in the light at 9.9°/s instead of 2.8;
+     PROVEN by probe: zero changes of flags/verdicts across all 13 pinned patients — the rebaseline is EXCLUSIVELY
+     values); VEMP_AR=0.35 (weakEar from the interaural asymmetry per the upper laboratory norms, Rosengren 2019 —
+     an AR of 22% stopped being a "reduction"; patients with sev 0.6 have AR 0.43 → unchanged); the Bechterew
+     coefficient in the UI 0.7→0.15 (a recovery nystagmus of 4.25°/s instead of 19.8 = 70% of the acute phase; the
+     12.75 Hz charge fits within the 40 Hz slider; it disappears with fixation — McClure 1981); R_SAT 300→400 (the
+     afferent peak ~350–400/s [H1]; a healthy subject holds gain 1.0 up to 350°/s, droop from 387 — outside the
+     protocol; MOD_MAX=310; a deliberate rebaseline of fusion.canalRel 0.583→0.687, the headroom semantics unchanged).
+     Probe n3.mjs (34 assertions). Oracles: engine.neuro (values) + dom 12 screens (amplitudes/fusion; stroke
+     NOT touched — an explicit fixationGain:0).
+ [x] IMPLEMENTATION OF REVIEW II — STAGE N4 (new bedside tests, purely ADDITIVE):
+     • hsn(p,{peakVel=150,cycles=20}) [H25 Hain 1987] — head-shaking nystagmus: a velocity-storage charge from the
+       EXCITATORY ASYMMETRY (modEx of both sides; the inhibited side clipped — Ewald II), HSN_K=20, charging
+       1−exp(−cycles/6), decay with the τ from postRotational (compensation SHORTENS it emergently: 15→4.95 s).
+       Emergents verified: an acute UVH 9.3°/s toward the healthy ear; a COMPENSATED UVH — the same HSN at spont 0
+       (a latent asymmetry, like the caloric without irrigation); BVH 0; irritative Ménière's 0. A MONOphasic model;
+       "perverted HSN" deliberately OUTSIDE the model (a flag from verticalBeat would fire falsely for a peripheral
+       superior neuritis) → CAVEATS.
+     • shimp(p,spec,{headVel=150}) [H23] — a head-fixed target; the ANTI-compensatory saccade = gain·amp
+       (its ABSENCE = a deficit; the rule inverted vs HIMP), cutoff gain<0.5, direction +q/qn (opposite to the
+       catch-up). Plus gainApparent in headImpulse(): min(1.1, gain + 0.6·covertFrac·deficit) — covert saccades
+       INFLATE the HIMP gain; a compensated UVH: HIMP 0.74 (pseudo-normal) vs SHIMP 0.35 (the truth).
+     • smoothPursuit(p,{targetVel=20}) — pursuit as the SECOND HALF of the flocculus: pursuitGain by default derived
+       from fixationGain/FIX_HEALTHY(0.65) → "saccadic pursuit ≡ failure of fixation suppression" FOLLOWS from a
+       single parameter (a didactic gem); p.pursuitGain (null=derived) for explicit dissociations. saccadic when
+       slip ≥ 4°/s (gain<0.8 at 20°/s).
+     • dva(p) — dynamic visual acuity: logMARLoss=0.6·(1−meanGain HF), INDEPENDENT of compensation (the gain is
+       permanent): BVH 4 lines + OSCILLOPSIA (the defining complaint [H19]), a compensated UVH 0.195 (borderline),
+       healthy 0. The third demonstration of the permanence of the loss (next to the caloric and vHIT) — as the
+       patient's own symptom.
+     clinicalReadout reports all four (+ the per/central signals); it returns hsn/pursuit/dva. The engine.neuro
+     oracle pins the new keys (hsn, shimpHC_P/L, pursuit, dva) for all patients. Probe n4.mjs (27 assertions).
+     dom: only 4 screens (bvh/stroke/nerve-superior — new findings).
+ [x] IMPLEMENTATION OF REVIEW II — STAGE N5 (new axes):
+     • THE AUDITORY AXIS (D3, HINTS-plus [H24]): hearingL/R (0..1; <0.65 = hearing loss on the finger-rub test)
+       + a PARAM_SPEC group. It does NOT change the triad verdict (hearing is the "plus"); clinicalReadout reports
+       it + ambiguity "AVS + acute hearing loss: labyrinthitis vs AICA — a pathological HIT does NOT rule out
+       stroke". LF fluctuation (Ménière's) and the ABG (SCDS) are out of scope → CAVEATS.
+     • THE POSTURAL AXIS (D4, GRACE-3 [H24]): posture(p) from the asymmetry of the NUCLEI (vnL/vnR from compensate) —
+       IPSILESIONAL veering, Romberg ×2.5 after eye closure (the analogue of removing fixation), ataxia grade 0–3:
+       central+nystagmus → 3 (cannot stand; Lee 2006: it can be the only sign of cerebellar infarction, pushed into
+       the readout's centralSigns); an acute peripheral → 2; BVH → 2 only without vision (darkOnly — "gait in the
+       dark"); compensated → ≤1. hints() UNTOUCHED (gait is a separate GRACE-3 axis, not the triad).
+     • SCENARIOS (D3/D7/D9): labyrinthitisR (neuritis+hearingR 0.3 → PERIPHERAL despite a positive "plus"),
+       aicaR (neuritis+fixationGain 0+skewTone −3+hearingR 0.3 → CENTRAL with a "peripheral" HIT — the flagship
+       HINTS-plus trap), downbeat (toneAc 140/140+fixationGain 0.2+τ5 → a downbeat of 15°/s, unsuppressed,
+       gaze-modulated, isolatedVertical → CENTRAL; the CPN card in the diagnostics draws on THIS patient — the end
+       of the literal in the renderer), residual (RD [H26]: no nystagmus/vHIT/caloric findings, SVV 4.1° toward P +
+       a reduced oVEMP at comp 0.85 → a NEW localization branch "RESIDUAL picture" + ambiguity about suppressants;
+       utricleR 0.45, not the review's 0.55 — after calibration B2 only this value flags AR≥0.35). The UI presets
+       (laby/aica/downbeat/rd) draw their parameters from SCENARIOS (a single source). Probe n5.mjs (33 assertions);
+       oracles: engine.neuro 17 patients (+4), dom 96 (+4 preset screens; 12 changed — the button bar
+       + posture in findings).
+ [x] IMPLEMENTATION OF REVIEW II — STAGE N6 (time and compensation):
+     • C2 — compensatePair(rA,rB,lesionIsA,c,bias): ONE primitive of the nucleus model (gap=max(0,·), clampShare
+       exp(−c/CLAMP_TAU)) for the horizontal pair AND the vertical pairs. The affected side is EXPLICIT (the lesson
+       of review II's counter-probe: the auto-heuristic "affected=weaker" compensated an irritation); the AUTO
+       fallback stays for the Lab sliders. verticalBeat goes through compensatePair per pair (the (1−c) multiplier
+       OUTSIDE the mechanism removed) — for pure losses the result is BIT-FOR-BIT identical (proven by probe:
+       (1−c)·imb), but the mechanism REPORTS clamp/pace in Hz (spontaneous sums the axes), and a VERTICAL irritation
+       with an explicit lesionEar does NOT fade. nerveBranchLesion sets lesionEar=ear (like meniere after t20).
+       pacemakerBias remains for the horizontal pair ONLY (a Bechterew in a canal plane requires per-canal history →
+       CAVEATS).
+     • C3 — gravEffective(p): the PERIPHERAL graviceptive axis FADES with compensation (skew·(1−c), torsion·(1−c),
+       the peripheral SVV track ·(1−SVV_COMP_FRAC·c)); the |skewTone|<SKEW_CENTRAL gate protects a CENTRAL skew
+       (the stroke preset's −3° does not fade). SVV_COMP_FRAC=0.6 (not the review's 0.75 — a compromise: a full UVH
+       at c=1 leaves ~4°, while the RESIDUAL profile keeps 2.4°≥the threshold). Preset residual: utricleR 0.35
+       (recalibration after B2+C3). Normalization of skew/OTR/SVV with compensation = a marker of static
+       compensation [H10; Vibert 2000].
+     • D8 — timeline(scenario|overrides, tDays, {recovery}): a days→parameters map ON TOP OF the unchanged physics:
+       comp=1−exp(−t/6d); recovery: the tone returns (τ=30d, up to 0.94·R0) + a pacemaker charge 0.15·(R0−acute)·
+       (1−exp(−t/14d)) — the CHARGE EXCLUSIVELY in recovery (the L5-2 verifier's correction: outside it, it would
+       duplicate paceAmt). Emergent: recovery at d3 (bias 2.5 Hz) with NO visible Bechterew; at d21 (9.9 Hz) — an
+       overt Bechterew; the caloric CP persists at d60. The oracle pins timeline/neuritisR/d7 and d21rec (+2
+       patients, neuro 19). UI: a compensation-epoch label with the approximate day (~an inversion of c(t)).
+     Probe n6.mjs (27 assertions). dom: 8 screens (SVV with the inherited comp on the nerve screens — the
+     Laboratory's intended mix-and-match; the day label; the RD preset's utricleR slider).
+ [x] IMPLEMENTATION OF REVIEW II — STAGE N7 (finale):
+     • C5 — a BINAURAL, velocity-dependent vHIT: gain = (modEx + W_IN·|modIn|)/(idealEx + W_IN·idealIn),
+       W_IN=1/3 (excitation:inhibition ~3:1 — Ewald II; calibration: an impulse toward the HEALTHY ear in a full
+       UVH measures 0.85, contralesional 0.8–0.9 per [H5]; without the weight it came out 0.66 = a false pathology
+       of the healthy side and the WRONG hiSide side — caught by the N7 probe). Emergents: the ipsilesional gain
+       FALLS with velocity (0.33@50 → 0.24@200 → 0.20@300, Weber 2008); a dead labyrinth has a RESIDUAL gain
+       (0.16–0.25) from the healthy ear instead of a hand-entered one; the PURSUIT TERM (P_MAX=40°/s ·fixationGain):
+       at 50°/s the saccade of 2.3° < the overt threshold → "the minimal effective HIT velocity ~120–150°/s" FOLLOWS
+       from the model. A COORDINATED recalibration: the presets' input gain 0.35→0.1, the nerveBranchLesion and
+       bilateralLoss slope 0.65→0.9·sev, SHIMP on the same binaural estimate, CONTAM gainApparent 0.75
+       (a compensated UVH: an apparent HIMP of 0.81 = pseudo-normal vs SHIMP 0.28). BVH bilaterally <0.6 [H19].
+     • C1 — ALEXANDER'S LAW multiplicatively: alexF = clamp(1 + 0.02·gaze·sign(Vspont), 0.1, 2) on the
+       spontaneous component (toward:away 2.5:1 at ±20°, it was 1.06:1); ALEX_MIN>0 → the sign of Vspont NEVER
+       reverses → directionChanging structurally safe (verified: all presets stable; the route "through the
+       integrator τ" is FORBIDDEN — it turned neuritis into "central"). alexanderGrade(): degrees I–III emergent
+       from visibility at 3 gaze positions; the evolution III→II→I with compensation; reported in clinicalReadout;
+       pinned in the oracle (key 'alex').
+     • D6 — THE INTER-ENGINE BRIDGE (an AVS overlay): state.neuroOverlay (a button on the HINTS screen carries the
+       ACTIVE patient over), renderDiag adds a banner + a tonic vector ov {dir,amp} to the positional nystagmus;
+       startNys: the tonic component WITHOUT the ξ envelope (the same sawtooth phase), the loop does NOT end after
+       tEnd while the overlay is active. The GRACE-3 lesson finally demonstrable: the AVS nystagmus present BEFORE
+       the test, in EVERY position, NON-fatiguing — next to the transient, fatigable BPPV one. Default OFF → the
+       diag screens in golden differ only by the template's whitespace.
+     Probes n7.mjs (42 assertions, including a detected and fixed hiSide-side regression). Oracles: engine.neuro
+     19 (vHIT/SHIMP/DVA/HSN values + the 'alex' key), dom 25 screens (HINTS values + diag whitespace);
+     pose/plans byte-identical; 3 oracles + build green.
  [x] Browser (preview): mobile 375 + desktop, no console errors; the compensation slider drives the ENTIRE
      physiology live (nystagmus SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain irreparable,
      the saccade COVERT during the impulse (intra-impulse error 18→10 px), regeneration→Bechterew; the verdict consistent.
@@ -1545,7 +1691,24 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         posterior-circulation TIA). Do NOT use CT to exclude stroke (MRI DWI+MRA for central/equivocal; early MRI
         false-negative → repeat 48–72 h); the 5 Ds red flags (diplopia, dysarthria, dysphagia, dysphonia,
         dysmetria). An educational framing + authority for all of OTOREPO's differentiation (HINTS + BPPV);
-        vestibular migraine (s-EVS) DELIBERATELY not modelled — flagged as a differential.
+        vestibular migraine (s-EVS) DELIBERATELY not modelled — flagged as a differential. (Since N1: the
+        vmInterictal preset shows s-EVS between attacks — a normal examination, the diagnosis comes from the history.)
+
+[H25] Hain TC, Fetter M, Zee DS (1987). "Head-shaking nystagmus in patients with unilateral peripheral
+      vestibular lesions." Am J Otolaryngol 8(1):36–47. doi:10.1016/S0196-0709(87)80017-0.
+      → HSN: head shaking at ~2 Hz charges velocity storage asymmetrically (Ewald-II rectification);
+        after the shaking stops, a nystagmus TOWARD THE HEALTHY EAR, 5–15°/s in UVH, decaying with the storage τ;
+        it persists in a COMPENSATED loss (a latent asymmetry — like the caloric, without irrigation); zero in
+        BVH (symmetry). The basis of hsn() (stage N4).
+
+[H26] Özgirgin ON, Kingma H, Manzari L, Lacour M (2024). "Residual dizziness after BPPV management:
+      exploring pathophysiology and treatment beyond canalith repositioning maneuvers." Front Neurol
+      15:1382196. doi:10.3389/fneur.2024.1382196. PMID 38854956.
+      → a SUCCESSFUL maneuver ≠ a well patient: residual dizziness (RD) in 31–61% after the nystagmus has
+        resolved; the mechanisms include INCOMPLETE CENTRAL COMPENSATION + UTRICULAR dysfunction (measurable with
+        SVV/oVEMP); vestibular suppressants are HARMFUL (they delay compensation — in the engine: lower comp and
+        the SPV comes back); counselling cuts RD to ~13%. The basis of the 'residual' preset + the RD localization
+        branch (stage N5).
 
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals
@@ -1553,21 +1716,18 @@ SIMPLIFICATIONS / CAVEATS:
     the HINTS RENDERER draws horizontal + VERTICAL + torsion (added in U4: neuroNysParams Av/vDir; the inferior-nerve downbeat visible);
     the animation is GATED by the visibility threshold (strength < VIS_THRESH/SPV_MAX → 0), so as not to show sub-threshold
     gaze-evoked drift of the healthy (τ=25 → 0.8°/s) — consistent with the label (spv<VIS_THRESH = "no nystagmus");
-  - vHIT: a single gain value (the excited canal); covert/overt saccades as a TEMPORAL SPLIT of the total
-    correction (share from the neck-ocular fusion), without the full eyeball velocity dynamics;
+  - [EXTENDED in N7] vHIT: a BINAURAL gain (W_IN=1/3), velocity-dependent, with a pursuit term —
+    still one number per impulse (without the full eyeball velocity dynamics and saccade metrics beyond amplitude);
   - a linear integrator (drift θ/τ) without horizontal/vertical asymmetry and without rebound nystagmus;
-  - ALEXANDER'S LAW only QUALITATIVELY and too weakly. We model it indirectly — the spontaneous nystagmus sums
-    with the integrator drift, so on gaze TOWARD the fast phase it beats more strongly (neuritisR: 3.6°/s
-    at gaze −20°, 2.8°/s straight ahead, 2.0°/s at +20°) — the direction of change is CORRECT. But a healthy
-    integrator gives only ±0.8°/s, so there are no clinical degrees I/II/III here (a nystagmus visible only
-    on gaze toward the fast phase). A separate adaptive term → a possible further stage;
+  - [RESOLVED in N7 of review II] Alexander's law: a multiplicative term ALEX_GAIN=0.02 (toward:away 2.5:1)
+    + degrees I–III (alexanderGrade); it remains a LINEAR simplification without an adaptive term (rebound);
   - skew as a scalar vertical divergence; no full OTR geometry (head tilt, cyclotorsion) —
     we model the graviceptive axis as a SINGLE number (skewTone) shared by skew and SVV, without separating
     the level of the lesion (medulla=ipsiversive vs midbrain/INC=contraversive); the stroke preset assumes the
     MEDULLARY variant (Wallenberg) as the commonest vascular cause of AVS;
-  - fixationGain 0.9 by default → a fixation index of 0.1, i.e. suppression STRONGER than a typical peripheral one
-    (clinically ~0.3–0.6; the engine's failsSuppression threshold = 0.5). Left as is: the threshold separates
-    peripheral from central anyway, and a change would shift every "suppressed/NOT suppressed" readout;
+  - [RESOLVED in N3 of review II] fixationGain 0.65 by default → a fixation index of 0.35 (the middle of the
+    clinical band 0.3–0.6); the old claim that a correction "would shift every readout" was REFUTED by probe
+    (the suppressed≤0.5 and failsSuppression>0.5 thresholds have a buffer on both sides — zero flag changes);
   - pacemakerBias (Bechterew) requires an EXPLICIT lesionEar once both labyrinths have returned to symmetry: after
     the tones have equalized the affected side CANNOT be recovered from the parameters alone (the information is gone), so a
     charge without a stated side stays idle — a limitation of the model, not an error of the derivation;
@@ -1577,7 +1737,9 @@ SIMPLIFICATIONS / CAVEATS:
   - compensation: a single scalar c (without a time axis hours↔weeks); clamp/pacemaker as pure functions of c;
     the pacemaker charge (Bechterew) as a sticky parameter (a carrier of history), because the scalar c carries no memory;
   - neck-ocular fusion and velocity storage: phenomenological (weight ∝ reliability / c), without a full Kalman
-    filter; head-shaking nystagmus omitted (a latent velocity-storage asymmetry after compensation);
+    filter; HSN ADDED in N4 (a MONOphasic model — no biphasic reversal; a vertical "perverted HSN" after
+    horizontal shaking DELIBERATELY not modelled: a simple flag from verticalBeat would fire falsely for a
+    peripheral superior neuritis, and a correct model requires cross-coupled velocity storage);
   - HINTS as an EDUCATIONAL model — it does NOT replace an examination; valid in AVS with a persistent nystagmus,
     interpret with HINTS "plus" (hearing) and context (Tarnutzer 2011 [H9]). NOTE: a compensated peripheral loss
     can have a bedside HIT "normal" (covert saccades) — a pitfall when the AVS nystagmus is no longer present.

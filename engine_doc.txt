@@ -1198,7 +1198,7 @@ API PUBLICZNE (zwracane z modułu)
      przedni,łagiewka}, inferior={tylny,woreczek}. Neuronitis zwykle nerwu GÓRNEGO (dłuższy kanał kostny). [H15]
 
  nerveBranchLesion(ear, branch, sev) -> overrides do makePatient                                 [H15]
-   E1 — wypadnięcie GAŁĘZI nerwu (branch "superior"/"inferior", sev 0..1): ton→R0·(1−sev), gain→1−0.65·sev
+   E1 — wypadnięcie GAŁĘZI nerwu (branch "superior"/"inferior", sev 0..1): ton→R0·(1−sev), gain→1−0.9·sev (N7)
    kanałów gałęzi; superior dokłada MAŁY skewTone (1.5·sev, łagiewka — < próg ośrodkowy) + caloricGain↓ (1−sev;
    HC=nerw górny) + utricle↓ (oVEMP); inferior dokłada saccule↓ (cVEMP) — NIE rusza kaloryki (HC oszczędzony).
    SUPERIOR → oczopląs + patolog. vHIT poziomego I przedniego + kaloryka↓ + oVEMP↓ + SVV↑, TYLNY/cVEMP prawidłowe;
@@ -1213,7 +1213,7 @@ API PUBLICZNE (zwracane z modułu)
    modelowany). W SILNIKU: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) obustronnie; „vHIT patolog." to NIE próg gain
    wprost, lecz amplituda sakady korygującej ≥ 2.5° w headImpulse (dla amp 15° ≈ gain ≤ 0.83 — czulsze niż 0.6,
    właściwe dla POJEDYNCZEGO kanału). Jedynie próg kaloryczny 6 °/s jest zakodowany numerycznie (CAL_BILAT →
-   caloricBattery.bilateralWeak). SHIMP nie zaimplementowany. UWAGA: losowy preset bilateralLoss(r(0.6,1)) daje
+   caloricBattery.bilateralWeak). SHIMP zaimplementowany (N4/N7). UWAGA: losowy preset bilateralLoss(r(0.6,1)) daje
    gain 0.35–0.61 — górny kraniec (0.61) LEKKO powyżej progu Bárány 0.6 (spełnia BVH kalorycznie, nie vHIT-owo).
 
  meniere(ear, {phase | tone, gain}) -> overrides do makePatient                                  [H20]
@@ -1631,7 +1631,7 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         DANEGO ucha < 6 °/s (→ CAL_BILAT) · fotel obrotowy gain < 0.1 z fazą > 68° (NIE modelowany). SHIMP = cel
         związany z GŁOWĄ → prawidłowy VOR daje sakadę ANTYkompensacyjną (jej BRAK = ubytek — reguła ODWROTNA vs
         HIMP); „zabójca sakad ukrytych" (covert ~5% vs ~35%) → czystszy gain (nieco niższy → stąd niższe cięcie
-        0.5). Protokół: szczyt prędkości głowy > 120 °/s, amplituda 10–30°. SHIMP nie zaimplementowany (kandydat
+        0.5). Protokół: szczyt prędkości głowy > 120 °/s, amplituda 10–30°. SHIMP zaimplementowany (N4/N7) (kandydat
         na rozszerzenie headImpulse: ta sama maszyneria gain, lecz obecność sakady = ZDROWY VOR).
 [H24] Edlow JA, Carpenter C, Akhter M, et al. (2023). "Guidelines for Reasonable and Appropriate Care in the
       Emergency Department 3 (GRACE-3): Acute dizziness and vertigo in the emergency department." Acad Emerg
