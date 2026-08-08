@@ -395,14 +395,16 @@ function startNys(container,nys,envOv){
   // kanalolitiaza → przejściowa (narost po latencji → szczyt → wygasanie, cząstka wychodzi → NIE wraca);
   // kupulolitiaza → uporczywa. Animacja gra RAZ i się zatrzymuje (koniec pętli).
   const canal=nys.canal||"posterior", side=nys.side||"P";
+  const ov = (nys.ov && nys.ov.amp>0) ? nys.ov : null;   // N7/D6: toniczna nakladka AVS — bez obwiedni xi, nie wygasa
   const {env, tEnd} = envOv || xiEnvelope(engineXi(canal, side, nys.persistent, nys.q));
   loopRAF((now)=>{
     if(container.__nysTok!==token || !document.body.contains(container)) return false;
     const elapsed=(now-start)/1000;                      // sekundy
-    if(elapsed>tEnd+0.4){ for(const g of irises) g.setAttribute("transform","translate(0 0) rotate(0)"); return false; } // koniec — bez zapętlenia
-    const e=env(elapsed), p=((now-start)%T)/T, o=nysOffset(p,fast)*e;
+    if(elapsed>tEnd+0.4 && !ov){ for(const g of irises) g.setAttribute("transform","translate(0 0) rotate(0)"); return false; } // koniec — bez zapętlenia (nakladka: petla trwa)
+    const e=elapsed>tEnd?0:env(elapsed), p=((now-start)%T)/T, oo=nysOffset(p,fast), o=oo*e;
     let x=0,y=0,rot=0;
     if(nys.kind==="horizontal"){ x=o*A*nys.dir; } else { y=-o*Aup*vdir; rot=o*tors*nys.dir; }
+    if(ov) x += oo*ov.amp*ov.dir;                        // sklad TONICZNY: stala amplituda, ta sama faza pily
     for(const g of irises){ const cx=+g.dataset.cx, cy=+g.dataset.cy;
       g.setAttribute("transform",`translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rot.toFixed(2)} ${cx} ${cy})`); }
     return true;
@@ -934,6 +936,12 @@ function renderDiag(){
   const dixRep = (isDix && !antMode) ? (state.dixRep||0) : 0;
   const fatFactor = v==="cupulo" ? 1 : Vestibular.fatigueFactor(dixRep);
   phases.forEach(ph=>{ if(ph.nys) ph.nys.fatigue = fatFactor; });
+  // N7 (D6): NAKLADKA AVS — toniczny oczoplas NeuroVOR (skladowa POZIOMA) obecny w KAZDEJ pozycji testu
+  // i NIEwyczerpujacy sie: fundament taksonomii GRACE-3 (AVS vs t-EVS) wreszcie demonstrowalny obok
+  // przejsciowego, meczliwego oczoplasu BPPV. Default OFF -> zadna wyrocznia dom nie rusza sie bez wlaczenia.
+  const ovVec = state.neuroOverlay ? (()=>{ const o=NeuroVOR.observe(NeuroVOR.makePatient(state.neuroOverlay), false);
+    return o.spv>=NeuroVOR.VIS_THRESH ? { dir:o.dir||0, amp:6*Math.min(1,o.strength||0), spv:o.spv, ear:o.beatEar } : null; })() : null;
+  if(ovVec) phases.forEach(ph=>{ if(ph.nys) ph.nys.ov = ovVec; });
   state._diagPhaseNys = phases.map(p=>p.nys);   // do restartu animacji przy odwracaniu kart pozycji
   const vl=variantLabels(D.canal);
   const mechNote = v==="canalo"
@@ -1020,6 +1028,7 @@ function renderDiag(){
         <div class="note" style="color:var(--text)">${rec.note}</div>
         <div class="note">${t(`Leczenie dla strony <b>${SIDE[effSide]}</b>.`,`Treatment for the <b>${effSide==="L"?"left":"right"}</b> side.`)} ${antMode?t("Strona kanału przedniego niepewna — potwierdź deep head-hangiem i dopiero po wykluczeniu przyczyny ośrodkowej.","The anterior-canal side is uncertain — confirm with the deep head-hang and only after ruling out a central cause."):t("Potwierdź stronę regułą lateralizacji powyżej, zanim rozpoczniesz manewr.","Confirm the side with the lateralization rule above before starting the maneuver.")}</div>
         <div class="recobtns">${btns}</div></div>`; })()}
+    ${ovVec?`<div class="note" style="border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px">〰 ${t(`NAKŁADKA AVS: oczopląs toniczny ${ovVec.spv.toFixed(1)}°/s ku stronie ${SIDE[ovVec.ear]||"?"} jest obecny już PRZED testem pozycyjnym, w KAŻDEJ pozycji i NIE wyczerpuje się — to obraz AVS (HINTS), nie t-EVS/BPPV (latencja + paroksyzm + wyczerpywanie). Wyłącz nakładkę na ekranie HINTS.`,`AVS OVERLAY: a tonic nystagmus of ${ovVec.spv.toFixed(1)}°/s toward the ${ovVec.ear==="P"?"right":"left"} side is present BEFORE the positional test, in EVERY position, and does NOT fatigue — an AVS picture (HINTS), not t-EVS/BPPV (latency + paroxysm + fatigability). Turn the overlay off on the HINTS screen.`)}</div>`:""}
     <p class="footnote">${t("Wzorce poglądowe. Interpretuj w kontekście klinicznym.","Illustrative patterns. Interpret in the clinical context.")}</p>`;
   if(can3d && state.view3d) phases.forEach((ph,i)=>mount3D("diag"+i, poseSpec(ph), A));
   requestAnimationFrame(()=>{
@@ -1518,6 +1527,7 @@ function hintsCustomPanel(){
     <div class="hctrl" style="margin-top:12px">
       <button class="preset" onclick="hintsRandomPatient()">${tr("🎲 Losowy pacjent (quiz)","🎲 Random patient (quiz)")}</button>
       <button class="preset" onclick="saveShareHints()">${tr("🔗 Zapisz / udostępnij","🔗 Save / share")}</button>
+      <button class="preset" aria-pressed="${!!state.neuroOverlay}" onclick="toggleNeuroOverlay()" title="${tr("Nałóż tonicznego pacjenta AVS na ekrany diagnostyki pozycyjnej (AVS vs t-EVS wg GRACE-3)","Overlay the tonic AVS patient onto the positional-testing screens (AVS vs t-EVS per GRACE-3)")}">${tr("〰 Nakładka AVS → diagnostyka","〰 AVS overlay → diagnostics")}</button>
       <button class="preset" onclick="exitHintsCustom()">${tr("Wróć do scenariuszy","Back to scenarios")}</button></div>
     <div class="note" data-sharenote style="margin-top:6px">${tr("Link koduje parametry w adresie (dane tylko lokalnie — nic nie jest wysyłane).","The link encodes the parameters in the URL (data local only — nothing is sent).")}</div>
   </div>`;

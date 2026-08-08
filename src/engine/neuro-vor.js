@@ -110,7 +110,7 @@ export const NeuroVOR = (()=>{
     for(const canal of (NERVE_CANALS[branch]||[])){
       const pk = CANAL_PARAM[canal] && CANAL_PARAM[canal][ear]; if(!pk) continue;
       o[pk.tone] = R0*(1-sev);                            // hipofunkcja tonu (0 przy pełnym)
-      o[pk.gain] = 1 - sev*0.65;                          // gain → ~0.35 przy pełnym (jak preset neuritis)
+      o[pk.gain] = 1 - sev*0.9;                           // gain WEJŚCIOWY → 0.1 przy pełnym (N7: mierzony dwuusznie ~0.42, jak preset neuritis)
     }
     if(branch==="superior"){
       // ŁAGIEWKA (utriculus) → MAŁY skew (obwodowy, < próg ośrodkowy SKEW_CENTRAL). ZNAK: reakcja pochylenia
@@ -133,7 +133,7 @@ export const NeuroVOR = (()=>{
   // OBUSTRONNIE (każdy kanał badany osobno). Kompensacja bezczynna (compensate: brak strony chorej). [H19]
   function bilateralLoss(sev){
     sev = Math.max(0, Math.min(1, sev==null?1:sev));
-    const tone = R0*(1-sev), gain = 1 - sev*0.65;            // jak ubytek jednostronny, lecz OBUSTRONNIE + wszystkie kanały
+    const tone = R0*(1-sev), gain = 1 - sev*0.9;             // jak ubytek jednostronny (N7), lecz OBUSTRONNIE + wszystkie kanały
     return { toneL:tone, toneR:tone, gainL:gain, gainR:gain,
              toneAcL:tone, toneAcR:tone, gainAcL:gain, gainAcR:gain,
              tonePcL:tone, tonePcR:tone, gainPcL:gain, gainPcR:gain,
@@ -429,6 +429,8 @@ export const NeuroVOR = (()=>{
   // Progi patologii GAIN vHIT per kanał — publikowane dolne granice normy (McGarvie 2015: HC ~0.8,
   // kanały pionowe ~0.7); kryterium BVH (obustronnie <0.6 [H19]) pozostaje zaostrzeniem tych progów.
   const GAIN_CUT = { horizontal:0.8, anterior:0.7, posterior:0.7 };
+  const P_MAX = 40;          // °/s — nasycenie pościgu (człon pościgowy vHIT, N7/C5) [H3 Leigh&Zee]
+  const W_IN = 1/3;          // waga członu HAMOWANEGO w dwuusznej estymacie gain (pobudzenie:hamowanie ~3:1, N7/C5)
 
   // ETAP 6c — KOMPENSACJA DYNAMICZNA: fuzja sensoryczna + velocity storage. [H12][H13][H14]
   // Wysokich częstotliwości VOR (vHIT) NIE da się naprawić (gain trwa). Ośrodek kompensuje inaczej:
@@ -497,11 +499,25 @@ export const NeuroVOR = (()=>{
     const rateEx = ex1.rate, modEx = ex1.mod;
     const rateIn = afferent(toneIn, -gIn*S_HZ*Ohm);          // hamowany (obcięcie na 0)
     const modIn = rateIn - toneIn;                           // modulacja hamująca — ograniczona tonem (Ewald II)
-    // Przy prędkości vHIT kanał hamowany jest obcięty → prędkość VOR niesie kanał pobudzany.
-    // gain = modulacja pobudzana / modulacja idealna (gEx=1 bez nasycenia → gain 1).
-    const gain = Math.max(0, Math.min(1.25, modEx/(S_HZ*Ohm)));
+    // N7 (ocena II, C5) — GAIN DWUUSZNY, ZALEŻNY OD PRĘDKOŚCI: estymata prędkości sumuje modulację
+    // POBUDZANĄ i (obciętą tonem — Ewald II) HAMOWANĄ, normowaną do zdrowego przy TEJ SAMEJ prędkości
+    // (idealIn obcięty R0 → zdrowy trzyma 1.0 przy każdej Ohm). Emergenty [H5 Weber 2008]:
+    //   • martwy błędnik ma gain REZYDUALNY z ucha zdrowego: 0.50@50 → 0.36@200 → malejący z prędkością
+    //     (dawniej wpisywany ręcznie jako gainR=0.35 — teraz presety trzymają wejściowe 0.1);
+    //   • przy wolnym pchnięciu (≤~50°/s) zakres hamowania zdrowego ucha POKRYWA obrót → gain wysoki.
+    // Waga czlonu hamowanego W_IN=1/3: pobudzenie dominuje w estymacie ~3:1 (asymetria Ewalda II —
+    // strona hamowana jest obcieta tonem, niesie ulamek informacji). Kalibracja: pchniecie ku uchu
+    // ZDROWEMU przy pelnym UVH mierzy ~0.85 (kontralezjonalne 0.8-0.9 wg [H5] Weber 2008) — bez wagi
+    // wychodzilo 0.66 = falszywa patologia strony zdrowej (i zla strona hiSide w hints).
+    const idealEx = Math.min(S_HZ*Ohm, MOD_MAX), idealIn = W_IN*Math.min(S_HZ*Ohm, R0);
+    const gain = Math.max(0, Math.min(1.25, (modEx + W_IN*Math.abs(modIn))/(idealEx + idealIn)));
     const deficit = Math.max(0, 1-gain);
-    const saccadeAmp = deficit*amp;                          // CAŁKOWity niedomiar rotacji oka → sakada korygująca (gain nienaprawialny)
+    // CZŁON POŚCIGOWY [H3]: przy wolnym pchnięciu ślizg siatkówkowy mieści się w paśmie pościgu
+    // (≤ fixationGain·P_MAX) i sakada NIE jest potrzebna — minimalna skuteczna prędkość HIT ~120–150°/s
+    // WYNIKA z modelu (sedno protokołu: powolny obrót głowy u UVH wygląda prawidłowo).
+    const slip = deficit*Ohm;
+    const slipCovered = Math.min(slip, Math.max(0, p.fixationGain)*P_MAX);
+    const saccadeAmp = ((slip - slipCovered)/Ohm)*amp;       // niedomiar rotacji NIEpokryty pościgiem → catch-up
     // Kryterium PATOLOGII na GAIN per kanał (jak w pracowniach vHIT), NIE na amplitudzie sakady: próg na
     // saccadeAmp dryfował z amplitudą pchnięcia (gain 0.75 → „norma" przy amp 8°, „patologia" przy 15°)
     // i jednym efektywnym cięciem ~0.83 nadrozpoznawał kanały PIONOWE (publikowane LLN: HC <0.8, pionowe
@@ -519,7 +535,7 @@ export const NeuroVOR = (()=>{
     // GAIN POZORNY HIMP (ocena II, D2): sakady UKRYTE wpadają w okno pomiaru i ZAWYŻAJĄ gain HIMP — to cała
     // racja bytu SHIMP (covert ~35% w HIMP vs ~5% w SHIMP [H23]). `gain` zostaje czysty (prawda fizjologiczna),
     // gainApparent = to, co odczyta aparat HIMP; skompensowany UVH: gain 0.35, gainApparent ~0.74 (pseudo-norma).
-    const gainApparent = Math.min(1.1, gain + 0.6*covertFrac*deficit);
+    const gainApparent = Math.min(1.1, gain + 0.75*covertFrac*deficit);   // CONTAM 0.75: pelna kontaminacja covert winduje HIMP nad prog 0.8 (pseudo-norma)
     const overt  = overtAmp  >= 2.5;                         // JAWNA sakada — widoczna gołym okiem (bedside HIT)
     const covert = covertAmp >= 1.0;                         // UKRYTA sakada — wykrywalna tylko w vHIT (goggles)
     const plane = canalPlane(ex.canal, ex.ear);
@@ -549,8 +565,13 @@ export const NeuroVOR = (()=>{
     opts = opts||{};
     const Ohm = opts.headVel||150, amp = opts.headAmp||15;   // protokół SHIMP: ~150°/s
     const ex = canalSpec(spec), pk = CANAL_PARAM[ex.canal][ex.ear];
+    const inh = COPLANAR[ex.canal][ex.ear], pkIn = CANAL_PARAM[inh.canal][inh.ear];
     const e = excited(p[pk.tone], p[pk.gain], Ohm);
-    const gain = Math.max(0, Math.min(1.25, e.mod/(S_HZ*Ohm)));
+    // N7: ta sama DWUUSZNA estymata prędkości co w headImpulse (fizjologia nie zależy od paradygmatu) —
+    // różnica SHIMP↔HIMP leży w POMIARZE (brak kontaminacji covert), nie w VOR.
+    const rateIn = afferent(p[pkIn.tone], -p[pkIn.gain]*S_HZ*Ohm);
+    const modIn = Math.abs(rateIn - p[pkIn.tone]);
+    const gain = Math.max(0, Math.min(1.25, (e.mod + W_IN*modIn)/(Math.min(S_HZ*Ohm, MOD_MAX) + W_IN*Math.min(S_HZ*Ohm, R0))));
     const antiSaccadeAmp = gain*amp;                         // sakada ∝ temu, ILE VOR faktycznie odrzucił oko
     const q = qpFull(ex.canal, ex.ear), qn = Math.hypot(q.h, q.v, q.t)||1;
     return { paradigm:"SHIMP", canal:ex.canal, ear:ex.ear, plane:canalPlane(ex.canal, ex.ear),
@@ -625,9 +646,17 @@ export const NeuroVOR = (()=>{
   }
   // Oczopląs WYPADKOWY przy danym spojrzeniu: suma prędkości bicia — SAMOISTNY (obwód, stały kierunek,
   // z fiksacją) + SPOJRZENIOWY (ośrodek, zmienny kierunek). Prędkości w head-frame x (+ = bije ku P/prawej).
+  // N7 (ocena II, C1) — PRAWO ALEXANDRA jako człon MULTIPLIKATYWNY na składowej samoistnej: oczopląs
+  // obwodowy narasta przy spojrzeniu W KIERUNKU fazy szybkiej (~2.3:1 przy ±20°) i słabnie przeciwnie.
+  // Droga „przez skrócenie integratorTau" (mechanizm wg Robinson 1984) jest w tym silniku ZAKAZANA —
+  // sonda oceny II: tau=3 z fiksacją robi directionChanging=true → neuritis fałszywie „central".
+  // ALEX_MIN>0 gwarantuje, że znak Vspont NIGDY się nie odwraca → directionChanging strukturalnie
+  // bezpieczne (zweryfikowane dla wszystkich presetów). [H3; Robinson 1984; Jeffcoat 2008]
+  const ALEX_GAIN = 0.02, ALEX_MIN = 0.1, ALEX_MAX = 2;
   function nystagmusAtGaze(p, gazeDeg, fixOn){
     const sp = observe(p, fixOn);                            // samoistny (po supresji fiksacji)
-    const Vspont = (sp.h||0)*sp.spv;                         // sp.h = znak bicia head-frame; sp.spv = |faza wolna|
+    const alexF = Math.max(ALEX_MIN, Math.min(ALEX_MAX, 1 + ALEX_GAIN*gazeDeg*(sp.h||0)));
+    const Vspont = (sp.h||0)*sp.spv*alexF;                   // sp.h = znak bicia head-frame; sp.spv = |faza wolna|
     const Vge = gazeEvoked(p, gazeDeg).driftVel;             // spojrzeniowy (nie tłumiony fiksacją — objaw ośrodkowy)
     const Vnet = Vspont + Vge;                               // wypadkowa prędkość bicia
     const beatHead = Math.sign(Vnet)||0, spv = Math.abs(Vnet);
@@ -636,6 +665,16 @@ export const NeuroVOR = (()=>{
       v: sp.v||0, vdir: sp.vdir!=null ? sp.vdir : 0,               // bez defaultu +1 — czysto skrętny NIE jest upbeatem (A1.3)
       strengthV: sp.strengthV||0, strengthT: sp.strengthT||0, spvVert: sp.spvVert||0, spvTors: sp.spvTors||0,   // E3: pionowo-skrętna składowa niesiona z samoistnego
       kind: sp.kind||"horizontalTorsional", components:{Vspont, Vge} };
+  }
+  // Stopień prawa Alexandra (I–III) — EMERGENTNY z widoczności przy trzech spojrzeniach: III = widoczny
+  // nawet PRZECIW fazie szybkiej; II = w centrum; I = tylko KU fazie szybkiej. Ewolucja III→II→I
+  // z kompensacją/fiksacją to kliniczna miara ostrości. (N7/C1)
+  function alexanderGrade(p, fixOn){
+    const sp = observe(p, fixOn), b = sp.h||0;
+    if(!b) return { grade:0, toward:false, center:false, away:false };
+    const vis = g => nystagmusAtGaze(p, g, fixOn).spv >= VIS_THRESH;
+    const toward = vis(20*b), center = vis(0), away = vis(-20*b);
+    return { grade: (away&&center&&toward)?3 : (center&&toward)?2 : toward?1 : 0, toward, center, away };
   }
   // Czy oczopląs ZMIENIA KIERUNEK ze spojrzeniem (cecha OŚRODKOWA)? Próbkujemy skrajne spojrzenia.
   // Wymóg: oczopląs KLINICZNIE WIDOCZNY (≥próg) po OBU stronach i przeciwne kierunki bicia. Silny
@@ -807,9 +846,9 @@ export const NeuroVOR = (()=>{
     normal:       { get label(){return tr("Zdrowy / równowaga","Healthy / balance");}, side:null,
       params:{} },
     neuritisR:    { get label(){return tr("Neuronitis przedsionkowy — ucho P (OBWÓD)","Vestibular neuritis — R ear (PERIPHERAL)");}, side:"P",
-      params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0.65, integratorTau:25, skewTone:0 } },
+      params:{ toneR:5, gainR:0.1, caloricGainR:0.3, fixationGain:0.65, integratorTau:25, skewTone:0 } },
     neuritisL:    { get label(){return tr("Neuronitis przedsionkowy — ucho L (OBWÓD)","Vestibular neuritis — L ear (PERIPHERAL)");}, side:"L",
-      params:{ toneL:5, gainL:0.35, caloricGainL:0.3, fixationGain:0.65, integratorTau:25, skewTone:0 } },
+      params:{ toneL:5, gainL:0.1, caloricGainL:0.3, fixationGain:0.65, integratorTau:25, skewTone:0 } },
     strokeCentral:{ get label(){return tr("Udar móżdżku / pnia (OŚRODEK)","Cerebellar / brainstem stroke (CENTRAL)");}, side:"P",
       // kanały SPRAWNE (gain≈1 → HIT prawidłowy), łagodny ton asymetryczny ośrodkowy (oczopląs samoistny),
       // integrator „leaky" (oczopląs zmienny kierunkowo), asymetria grawiceptywna (skew + torsja).
@@ -830,12 +869,12 @@ export const NeuroVOR = (()=>{
     labyrinthitisR:{ get label(){return tr("Labyrinthitis — ucho P (OBWÓD + niedosłuch)","Labyrinthitis — R ear (PERIPHERAL + hearing loss)");}, side:"P",
       // Neuronitis + NIEDOSŁUCH tej samej strony: HINTS-plus „dodatni", a jednostka OBWODOWA — lekcja,
       // że słuch sam nie rozstrzyga; rozstrzyga PEŁNY obraz (HIT patologiczny + supresja + brak cech ośrodka).
-      params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0.65, hearingR:0.3 } },
+      params:{ toneR:5, gainR:0.1, caloricGainR:0.3, fixationGain:0.65, hearingR:0.3 } },
     aicaR:        { get label(){return tr("Zawał AICA — strona P (OŚRODEK z pułapką HIT)","AICA infarct — R side (CENTRAL with a HIT trap)");}, side:"P",
       // JEDYNY częsty udar łamiący regułę „HIT patologiczny = obwód": AICA unaczynia błędnik (a. labyrinthi)
       // → realny ubytek obwodowy + niedosłuch + cechy ośrodkowe (zniesiona supresja, skew). To sztandarowy
       // przypadek HINTS-plus [H8][H24]: patologiczny HIT NIE wyklucza udaru, gdy towarzyszy mu ostry niedosłuch.
-      params:{ toneR:5, gainR:0.35, caloricGainR:0.3, fixationGain:0, skewTone:-3, hearingR:0.3 } },
+      params:{ toneR:5, gainR:0.1, caloricGainR:0.3, fixationGain:0, skewTone:-3, hearingR:0.3 } },
     downbeat:     { get label(){return tr("Zespół downbeat (CPN / ośrodek)","Downbeat syndrome (CPN / central)");}, side:null,
       // Ośrodkowy downbeat z ODHAMOWANIA dróg kanałów PRZEDNICH (kłaczek hamuje AC — jego uszkodzenie
       // podnosi obustronnie ton AC): mechanistycznie poprawna droga [H3]. Emergent: downbeat ~15°/s,
@@ -1037,6 +1076,11 @@ export const NeuroVOR = (()=>{
       else if(vSpont && !hSpont)     peripheralSigns.push(tr("oczopląs pionowo-skrętny z ubytkiem kanału pionowego (obwodowy)","vertical-torsional nystagmus with a vertical-canal deficit (peripheral)"));
     } else findings.push(tr("Brak oczopląsu samoistnego w spoczynku.","No spontaneous nystagmus at rest."));
     if(h.ny.directionChanging){ findings.push(tr("Oczopląs zmienia kierunek ze spojrzeniem (spojrzeniowy).","Nystagmus changes direction with gaze (gaze-evoked).")); centralSigns.push(tr("oczopląs zmienny kierunkowo","direction-changing nystagmus")); }
+    // N7 (C1): stopień prawa Alexandra — tylko dla JEDNOkierunkowego oczopląsu poziomego (obwód).
+    else if(hSpont){
+      const ag = alexanderGrade(p, true);
+      if(ag.grade>0) findings.push(tr(`Prawo Alexandra: stopień ${["","I","II","III"][ag.grade]} (widoczny ${ag.away?"we wszystkich kierunkach spojrzenia":ag.center?"w centrum i ku fazie szybkiej":"tylko ku fazie szybkiej"}).`,`Alexander's law: grade ${["","I","II","III"][ag.grade]} (visible ${ag.away?"in all gaze directions":ag.center?"at centre and toward the fast phase":"only toward the fast phase"}).`));
+    }
 
     // vHIT płaszczyzn
     const planes = [];
@@ -1188,7 +1232,7 @@ export const NeuroVOR = (()=>{
   }
 
   return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, GAIN_CUT, afferent, makePatient, compensate, compensatePair, timeline, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
-           headImpulse, shimp, hsn, smoothPursuit, dva, posture, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, svv, vemp, caloric, caloricBattery,
+           headImpulse, shimp, hsn, smoothPursuit, dva, posture, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, alexanderGrade, directionChanging, skew, svv, vemp, caloric, caloricBattery,
            CANAL_PARAM, NERVE_CANALS, nerveBranchLesion, bilateralLoss, meniere,
            COPLANAR, PLANE_CANALS, canalSpec, canalPlane, qpFull, vhitPlane,
            SCENARIOS, scenario, hints, PARAM_SPEC, clinicalReadout };

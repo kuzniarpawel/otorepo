@@ -193,6 +193,7 @@ function engineOracle(h) {
       call('pursuit', () => NV.smoothPursuit(p));
       call('dva', () => NV.dva(p));
       call('posture', () => NV.posture(p));   // ETAP N5: oś posturalna GRACE-3
+      call('alex', () => NV.alexanderGrade(p, true));   // ETAP N7: stopień prawa Alexandra (fiksacja)
       readouts[pk] = r;
     }
     out.neuro = readouts;
