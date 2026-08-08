@@ -102,8 +102,13 @@ export const OBS_POLA = {
     os: 'kierunek', waga: 3, faza: true, zrodlo: 'src/engine/vestibular.js',
     pytanie: { pl: 'Składowa pozioma — dokąd bije faza szybka?', en: 'Horizontal component — where does the quick phase beat?' },
     wartosci: [
-      w('p1', 'ku PRAWEMU uchu pacjenta (w widoku badającego: w lewo na obrazie)', "toward the patient's RIGHT ear (in the examiner's view: to the left of the image)"),
-      w('m1', 'ku LEWEMU uchu pacjenta (w widoku badającego: w prawo na obrazie)', "toward the patient's LEFT ear (in the examiner's view: to the right of the image)"),
+      /* BEZ dopisku „w widoku badającego: w lewo na obrazie" (decyzja użytkownika 2026-08-08).
+         Kierunek jest zakotwiczony w UCHU PACJENTA i to jest cała potrzebna informacja — strona
+         obrazu jest własnością rysunku, a nie oczopląsu, i mówi ją podpis perspektywy stojący przy
+         samym rysunku (`perspNota` / „widok badającego"). Powtórzona przy każdej opcji wydłużała
+         wybór dwukrotnie, a przy pytaniu bez rysunku odsyłała do obrazu, którego nie ma. */
+      w('p1', 'ku PRAWEMU uchu pacjenta', "toward the patient's RIGHT ear"),
+      w('m1', 'ku LEWEMU uchu pacjenta', "toward the patient's LEFT ear"),
       w('zero', 'brak składowej poziomej', 'no horizontal component'),
       w('niewiem', 'nie wiem', "I don't know"),
     ],
