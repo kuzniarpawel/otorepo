@@ -1477,6 +1477,28 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
        (laby/aica/downbeat/rd) czerpią parametry ze SCENARIOS (jedno źródło). Sonda n5.mjs (33 asercje);
        wyrocznie: engine.neuro 17 pacjentów (+4), dom 96 (+4 ekrany presetów; 12 zmienionych — pasek
        przycisków + postura w findings).
+ [x] WDROŻENIE OCENY II — ETAP N6 (czas i kompensacja):
+     • C2 — compensatePair(rA,rB,lesionIsA,c,bias): JEDEN prymityw modelu jąder (gap=max(0,·), clampShare
+       exp(−c/CLAMP_TAU)) dla pary poziomej I par pionowych. Strona chora JAWNA (lekcja kontrsondy oceny II:
+       auto-heurystyka „chory=słabszy" kompensowała drażnienie); fallback AUTO zostaje dla suwaków Lab.
+       verticalBeat przechodzi przez compensatePair per para (mnożnik (1−c) POZA mechanizmem usunięty) —
+       dla czystych ubytków wynik BIT-W-BIT identyczny (dowód sondą: (1−c)·imb), ale mechanizm RAPORTUJE
+       clamp/pace w Hz (spontaneous sumuje osie), a drażnienie PIONOWE z jawnym lesionEar NIE gaśnie.
+       nerveBranchLesion ustawia lesionEar=ear (jak meniere po t20). pacemakerBias nadal TYLKO para pozioma
+       (Bechterew w płaszczyźnie kanału wymaga historii kanałowej → OGRANICZENIA).
+     • C3 — gravEffective(p): OBWODOWA oś grawiceptywna GAŚNIE z kompensacją (skew·(1−c), torsja·(1−c),
+       tor obwodowy SVV ·(1−SVV_COMP_FRAC·c)); bramka |skewTone|<SKEW_CENTRAL chroni skew OŚRODKOWY
+       (preset udaru −3° nie gaśnie). SVV_COMP_FRAC=0.6 (nie 0.75 z oceny — kompromis: pełny UVH przy c=1
+       zostawia ~4°, a profil REZYDUALNY trzyma 2.4°≥progu). Preset residual: utricleR 0.35 (rekalibracja
+       po B2+C3). Normalizacja skew/OTR/SVV z kompensacją = marker kompensacji statycznej [H10; Vibert 2000].
+     • D8 — timeline(scenariusz|overrides, tDays, {recovery}): mapa dni→parametry NAD niezmienioną fizyką:
+       comp=1−exp(−t/6d); recovery: ton wraca (τ=30d, do 0.94·R0) + ładunek pacemakera 0.15·(R0−acute)·
+       (1−exp(−t/14d)) — ŁADUNEK WYŁĄCZNIE w recovery (korekta weryfikatora L5-2: poza nim dublowałby
+       paceAmt). Emergent: wyzdrowienie w d3 (bias 2.5 Hz) BEZ widocznego Bechterewa; w d21 (9.9 Hz) —
+       jawny Bechterew; CP kaloryczne trwa w d60. Wyrocznia pinuje timeline/neuritisR/d7 i d21rec (+2
+       pacjentów, neuro 19). UI: etykieta epoki kompensacji z przybliżonym dniem (~inwersja c(t)).
+     Sonda n6.mjs (27 asercji). dom: 8 ekranów (SVV z dziedziczonym comp na ekranach nerwu — zamierzony
+     mix-and-match Laboratorium; etykieta dni; suwak utricleR presetu RD).
  [x] Przeglądarka (preview): mobile 375 + desktop, brak błędów konsoli; suwak kompensacji steruje CAŁĄ
      fizjologią na żywo (oczopląs SPV 11→0, clamp/pacemaker, velocity storage 15→5 s), vHIT gain nienaprawialny,
      sakada UKRYTA w trakcie pchnięcia (błąd śródpchnięciowy 18→10 px), regeneracja→Bechterew; werdykt spójny.

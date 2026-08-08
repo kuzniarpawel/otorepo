@@ -1159,7 +1159,11 @@ function hintsCompPatient(key){
   }
   return p;
 }
-const compStage=c=> c<0.05?tr("Faza ostra","Acute phase") : c<0.4?tr("Podostra","Subacute") : c<0.85?tr("Zaawansowana","Advanced") : tr("Pełna kompensacja","Full compensation");
+// N6 (D8): etykieta epoki + PRZYBLIŻONY dzień choroby z odwrócenia mapy czasu silnika c(t)=1−exp(−t/6d)
+// (NeuroVOR.timeline) — suwak % zyskuje kotwicę czasową bez zmiany mechaniki.
+const compDays=c=> c>=0.995 ? "≥30" : String(Math.round(-6*Math.log(1-Math.max(0,Math.min(0.994,c)))));
+const compStage=c=> (c<0.05?tr("Faza ostra","Acute phase") : c<0.4?tr("Podostra","Subacute") : c<0.85?tr("Zaawansowana","Advanced") : tr("Pełna kompensacja","Full compensation"))
+  + tr(` (~${compDays(c)} d.)`,` (~${compDays(c)} d)`);
 const compRowHTML=(sp,pr)=>`<span>${tr("Clamp móżdżkowy","Cerebellar clamp")} <b>−${(sp.clampAmt||0).toFixed(0)} Hz</b></span><span>Pacemaker <b>+${(sp.paceAmt||0).toFixed(0)} Hz</b></span><span>Velocity storage <b>${pr.tau.toFixed(1)} s</b></span>`;
 function compNoteHTML(c,rec,sp){
   const t = rec ? tr("Błędnik odzyskuje funkcję. Jeśli pacemaker zdążył się naładować (wyższa kompensacja) — pojawia się oczopląs powrotny.","The labyrinth is recovering function. If the pacemaker has had time to charge (higher compensation) — a recovery nystagmus appears.")

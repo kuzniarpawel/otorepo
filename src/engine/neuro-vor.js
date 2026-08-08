@@ -106,6 +106,7 @@ export const NeuroVOR = (()=>{
   function nerveBranchLesion(ear, branch, sev){
     sev = Math.max(0, Math.min(1, sev==null?1:sev));
     const o = {};
+    o.lesionEar = ear;   // strona chora JAWNIE (N6/C2) — kompensacja i Bechterew nie zgadują ze słabszego tonu
     for(const canal of (NERVE_CANALS[branch]||[])){
       const pk = CANAL_PARAM[canal] && CANAL_PARAM[canal][ear]; if(!pk) continue;
       o[pk.tone] = R0*(1-sev);                            // hipofunkcja tonu (0 przy pełnym)
@@ -205,28 +206,38 @@ export const NeuroVOR = (()=>{
   //   „naładowania" umożliwiający oczopląs POWROTNY (Bechterewa), gdy błędnik odzyska funkcję (etap 6b).
   // Zwraca aktywność JĄDER przedsionkowych (VN) — to ją, nie surowy błędnik, „widzi" push-pull (etap 1).
   const CLAMP_TAU = 0.32;    // rozkład udziału clampu w c: exp(−c/τ) — 1 przy c→0, ~0.04 przy c=1 (clamp ustępuje pacemakerowi)
-  function compensate(p){
-    const c = Math.max(0, Math.min(1, p.comp||0));
-    const bias = p.pacemakerBias||0;                         // sticky ładunek pacemakera (Hz)
-    const rL = afferent(p.toneL,0), rR = afferent(p.toneR,0);// surowy błędnik po rektyfikacji (Ewald)
-    const lesion = p.lesionEar || (rL<rR ? "L" : rR<rL ? "P" : null);   // strona chora = słabszy błędnik
-    let vnL=rL, vnR=rR, clampAmt=0, paceAmt=0;
-    if(c>0 && lesion){
-      const intactRate = lesion==="L" ? rR : rL, lesionRate = lesion==="L" ? rL : rR;
-      // Asymetria ostra do zniesienia. max(0,·) jest CELOWE: [H10][H11] opisują kompensację ubytku
-      // (HIPOfunkcji). Gdy strona chora jest AKTYWNIEJSZA od zdrowej (faza DRAŻNIENIA Ménière'a), gap=0
-      // i model nie kompensuje — co jest zgodne z kliniką (napad trwa minuty–godziny, czyli o rzędy
-      // wielkości za krótko na kompensację statyczną) i lepsze niż dawne „podnoszenie ucha zdrowego
-      // do poziomu chorego", które wychodziło z heurystyki „chory = słabszy błędnik".
-      const gap = Math.max(0, intactRate - lesionRate);
+  // ETAP N6 (ocena II, C2) — PRYMITYW kompensacji dla JEDNEJ pary push-pull (poziomej LUB pionowej).
+  // Strona chora jest wejściem JAWNYM (lesionIsA) — nauka z kontrsondy oceny II: heurystyka „chory =
+  // słabszy" potrafi wskazać ucho ZDROWE przy zmianie DRAŻNIĄCEJ i skompensować napad do zera.
+  // gap = max(0,·) CELOWO: [H10][H11] opisują kompensację UBYTKU; drażnienia (chory człon AKTYWNIEJSZY)
+  // nie kompensujemy — napad Ménière'a trwa minuty–godziny, o rzędy za krótko na kompensację statyczną.
+  function compensatePair(rA, rB, lesionIsA, c, bias){
+    let vnA=rA, vnB=rB, clampAmt=0, paceAmt=0;
+    const intact = lesionIsA ? rB : rA, les = lesionIsA ? rA : rB;
+    if(c>0){
+      const gap = Math.max(0, intact - les);
       const restored = c*gap;                                // ile asymetrii już zniesiono (0→gap)
       const clampShare = Math.exp(-c/CLAMP_TAU);             // udział clampu (wczesny) vs pacemakera (późny)
       clampAmt = restored*clampShare;                        // obniżenie zdrowego jądra (przejściowe)
       paceAmt  = restored*(1-clampShare);                    // podniesienie chorego jądra (trwałe)
-      if(lesion==="L"){ vnL = lesionRate+paceAmt; vnR = intactRate-clampAmt; }
-      else            { vnR = lesionRate+paceAmt; vnL = intactRate-clampAmt; }
+      if(lesionIsA){ vnA = les+paceAmt; vnB = intact-clampAmt; }
+      else         { vnB = les+paceAmt; vnA = intact-clampAmt; }
     }
-    if(bias && lesion){ if(lesion==="L") vnL += bias; else vnR += bias; }   // sticky pacemaker (Bechterew)
+    if(bias){ if(lesionIsA) vnA += bias; else vnB += bias; } // sticky pacemaker (Bechterew)
+    return { vnA, vnB, clampAmt, paceAmt };
+  }
+  function compensate(p){
+    const c = Math.max(0, Math.min(1, p.comp||0));
+    const bias = p.pacemakerBias||0;                         // sticky ładunek pacemakera (Hz)
+    const rL = afferent(p.toneL,0), rR = afferent(p.toneR,0);// surowy błędnik po rektyfikacji (Ewald)
+    // Fallback AUTO („chory = słabszy") zostaje dla zgodności wstecznej suwaków Laboratorium — ale ścieżki
+    // jednostkowe (meniere, nerveBranchLesion, timeline) podają lesionEar JAWNIE i to on ma pierwszeństwo.
+    const lesion = p.lesionEar || (rL<rR ? "L" : rR<rL ? "P" : null);
+    let vnL=rL, vnR=rR, clampAmt=0, paceAmt=0;
+    if(lesion){
+      const pr = compensatePair(rL, rR, lesion==="L", c, bias);
+      vnL=pr.vnA; vnR=pr.vnB; clampAmt=pr.clampAmt; paceAmt=pr.paceAmt;
+    }
     return { vnL, vnR, c, lesionEar:lesion, clampAmt, paceAmt, pacemakerBias:bias };
   }
 
@@ -248,9 +259,25 @@ export const NeuroVOR = (()=>{
     { ac:"toneAcR", pc:"tonePcL", tSign:+1 }    // RALP: przedni PRAWY ∥ tylny LEWY → skręt ku P (+)
   ];
   function verticalBeat(p){
-    let v=0, t=0;
+    // ETAP N6 (C2): pary pionowe przechodzą przez TEN SAM model jąder (compensatePair) co para pozioma —
+    // koniec surowego mnożnika (1−c) poza mechanizmem. Dla czystych ubytków wynik jest IDENTYCZNY
+    // (per-para: resztkowy imbalans == (1−c)·imb, dowód w ocenie II), ale: (1) mechanizm RAPORTUJE
+    // clamp/pace w Hz (a nie 0/null przy gasnącym oczoplasie), (2) przy JAWNYM lesionEar zmiana
+    // DRAŻNIĄCA kanału pionowego NIE jest już znoszona (spójność z osią poziomą, gap=max(0,·)).
+    // Członek pary chory: z lesionEar (ac 'toneAcL'→ucho L, pc 'tonePcR'→ucho P); fallback AUTO
+    // „słabszy członek" utrzymuje zachowanie suwaków Laboratorium bez wskazanej strony.
+    const c = Math.max(0, Math.min(1, p.comp||0)), lesEar = p.lesionEar||null;
+    let v=0, t=0, clampAmt=0, paceAmt=0;
     for(const pr of VERT_PAIRS){
-      const imb = (afferent(p[pr.ac],0) - afferent(p[pr.pc],0))/R0;  // przewaga przedniego(+)/tylnego(−) w płaszczyźnie
+      const rA = afferent(p[pr.ac],0), rB = afferent(p[pr.pc],0);    // A=przedni, B=tylny pary
+      let vnA=rA, vnB=rB;
+      if(c>0 && rA!==rB){
+        const acEar = pr.ac.endsWith("L")?"L":"P", pcEar = pr.pc.endsWith("L")?"L":"P";
+        const lesionIsA = lesEar===acEar ? true : lesEar===pcEar ? false : (rA<rB);
+        const pp = compensatePair(rA, rB, lesionIsA, c, 0);          // pacemakerBias: tylko para pozioma (historia kanałowa → OGRANICZENIA)
+        vnA=pp.vnA; vnB=pp.vnB; clampAmt+=pp.clampAmt; paceAmt+=pp.paceAmt;
+      }
+      const imb = (vnA - vnB)/R0;    // przewaga przedniego(+)/tylnego(−) w płaszczyźnie — PO kompensacji jąder
       if(!imb) continue;
       v += imb*(-1);                 // przedni aktywniejszy → downbeat; tylny aktywniejszy → upbeat
       t += imb*pr.tSign*TORS_V;      // skręt zależny od płaszczyzny (LARP ku L, RALP ku P)
@@ -263,7 +290,8 @@ export const NeuroVOR = (()=>{
     const spvVert = SPV_MAX*VERT_W*Math.min(1, Math.abs(v));
     const spvTors = SPV_MAX*VERT_W*Math.min(1, Math.abs(t));
     const spvV = Math.max(spvVert, spvTors);
-    return { v, t, mag: Math.max(Math.abs(v), Math.abs(t)), spvV, spvVert, spvTors, present: spvV >= VIS_THRESH };
+    return { v, t, mag: Math.max(Math.abs(v), Math.abs(t)), spvV, spvVert, spvTors,
+      clampAmt, paceAmt, present: spvV >= VIS_THRESH };
   }
 
   // ETAP 7 (E4) — SCDS / fenomen TULLIO: dehiscencja kanału GÓRNEGO (przedniego) = TRZECIE OKNO ruchome.
@@ -319,10 +347,12 @@ export const NeuroVOR = (()=>{
     // SKALA: składowe pionowe niosą INTENSYWNOŚĆ (imbalans pary /R0), więc składowe poziome też muszą —
     // inaczej śladowy oczopląs poziomy (asym≈0,01) wnosił do sumy skrętu PEŁNE 0,5 i potrafił ODWRÓCIĆ
     // wypadkowy kierunek skrętu (tdir) silnego oczopląsu pionowo-skrętnego. Stąd mnożnik `asym`.
-    const vb = verticalBeat(p), compFac = 1 - Math.max(0, Math.min(1, p.comp||0));
+    // N6 (C2): verticalBeat kompensuje się już WEWNĄTRZ (model jąder per para) — mnożnik (1−c) zniknął.
+    // Dla czystych ubytków wynik identyczny; dla drażnienia pionowego z jawnym lesionEar — już NIE gaśnie.
+    const vb = verticalBeat(p);
     const h=beatSign, tH=beatSign*TORS_FRAC*asym;             // skręt poziomy ważony WŁASNĄ intensywnością
-    const v=vb.v*compFac, tV=vb.t*compFac, t=tH+tV, spvV=vb.spvV*compFac;
-    const spvVert=vb.spvVert*compFac, spvTors=vb.spvTors*compFac;
+    const v=vb.v, tV=vb.t, t=tH+tV, spvV=vb.spvV;
+    const spvVert=vb.spvVert, spvTors=vb.spvTors;
     // strengthV = amplituda PIONOWA renderera (z samego pionu — czysto skrętny oczopląs NIE rusza gałką
     // w pionie); strengthT = amplituda SKRĘTNA (pionowa para; skręt poziomo-skrętny niesie sH w rendererze).
     const strengthV=Math.min(1, spvVert/SPV_MAX), strengthT=Math.min(1, spvTors/SPV_MAX);
@@ -338,7 +368,8 @@ export const NeuroVOR = (()=>{
       vdir: Math.sign(v) || 0,
       strength: asym, strengthV, strengthT, spv, spvV, spvVert, spvTors, beatEar, lesionEar,
       comp: cmp.c, trueLesionEar: cmp.lesionEar, bechterew,   // etap 6: stan kompensacji
-      clampAmt: cmp.clampAmt, paceAmt: cmp.paceAmt, vnL:rL, vnR:rR };
+      clampAmt: cmp.clampAmt + vb.clampAmt, paceAmt: cmp.paceAmt + vb.paceAmt,   // suma OSI (poziom + pary pionowe, N6)
+      vnL:rL, vnR:rR };
   }
 
   // ETAP 2 — SUPRESJA FIKSACJI (kłaczek / parakłaczek). [H3]
@@ -624,11 +655,21 @@ export const NeuroVOR = (()=>{
   //   skewTone (°, ze znakiem): + = oko PRAWE wyżej / lewe niżej; − = odwrotnie. 0 = oczy w linii.
   const SKEW_CENTRAL = 2.5;   // próg skew dla flagi OŚRODKOWEJ (INFARCT). Poniżej: skew MAŁY — może być OBWODOWY
                               // (łagiewka, n. górny) → NIE liczony jako cecha ośrodkowa (unika fałszywego „udaru").
+  // N6 (C3): OBWODOWA oś grawiceptywna GAŚNIE z kompensacją — normalizacja skew/OTR/SVV to jeden z najlepiej
+  // udokumentowanych markerów kompensacji statycznej [H10; Vibert&Häusler 2000]. Bramka |raw|<SKEW_CENTRAL:
+  // skew OŚRODKOWY (pniowy, ≥2.5°) NIE podlega kompensacji obwodowej (preset udaru −3° nie gaśnie).
+  function gravEffective(p){
+    const c = Math.max(0, Math.min(1, p.comp||0));
+    const raw = p.skewTone||0;
+    const peripheral = Math.abs(raw) < SKEW_CENTRAL;
+    return { st: peripheral ? raw*(1-c) : raw,
+             tor: peripheral ? (p.otrTorsion||0)*(1-c) : (p.otrTorsion||0), c };
+  }
   function skew(p){
-    const st = p.skewTone||0, mag = Math.abs(st);
+    const ge = gravEffective(p), st = ge.st, mag = Math.abs(st);
     return { present: mag>=1, central: mag>=SKEW_CENTRAL, skewDeg: mag, sign: Math.sign(st)||0,
       hyperSide: st>0?"P":st<0?"L":null,                     // oko wyżej (hipertropijne)
-      torsionDeg: p.otrTorsion||0 };                         // torsja OTR (bieguny górne ku oku niższemu)
+      torsionDeg: ge.tor };                                  // torsja OTR (bieguny górne ku oku niższemu)
   }
 
   // ETAP 7 ([H22]) — SVV / GRAWICEPTYWNY PRZECHYŁ PIONU (subiektywna pionowa). Osobny, CZULSZY pomiar niż
@@ -644,13 +685,18 @@ export const NeuroVOR = (()=>{
   // SVV = 0,0° = „prawidłowe" — skew bez przechyłu SVV klinicznie praktycznie nie występuje. [H7][H22]
   const SVV_MAX=12, SVV_UTRICLE=1.5, SVV_VCANAL=1.0, SVV_GAIN=5, SVV_THRESH=2;
   const SVV_SKEW=1.6;   // ° przechyłu SVV na 1° odchylenia skośnego (SVV czulszy niż skew → współczynnik >1)
+  // N6 (C3): tor OBWODOWY SVV gaśnie z kompensacją do REZYDUUM (1−SVV_COMP_FRAC·c). 0.6 (nie 0.75 z oceny):
+  // kompromis kalibracyjny — pełny UVH przy c=1 zostawia ~4° (przewlekłe przechyły potrafią przetrwać
+  // miesiące), a profil REZYDUALNY [H26] (utricle 0.35, c=0.85) trzyma mierzalne ~2.4° ≥ progu 2°.
+  const SVV_COMP_FRAC=0.6;
   function svv(p){
     const g = e => Math.max(0,Math.min(1,p["utricle"+e]))*SVV_UTRICLE
       + ((afferent(p["toneAc"+e],0)+afferent(p["tonePc"+e],0))/(2*R0))*SVV_VCANAL;   // grawiceptywna „siła" ucha
-    const gR=g("R"), gL=g("L");
-    const periph = (gR-gL)*SVV_GAIN;         // >0 prawa mocniejsza → pion ku LEWEJ (słabszej/chorej)
+    const gR=g("R"), gL=g("L"), cc = Math.max(0, Math.min(1, p.comp||0));
+    const periph = (gR-gL)*SVV_GAIN*(1 - SVV_COMP_FRAC*cc);  // >0 prawa mocniejsza → pion ku LEWEJ (słabszej/chorej)
     // skewTone>0 = oko P wyżej ⇒ oko L niżej ⇒ przechył głowy/pionu KU LEWEJ — ten sam zwrot co periph>0.
-    const central = (p.skewTone||0)*SVV_SKEW;
+    // stEff z gravEffective: mały (obwodowy) skew gaśnie z c, ośrodkowy nie — spójność triady OTR (C3).
+    const central = gravEffective(p).st*SVV_SKEW;
     const towardL = periph + central;
     const tiltSide = towardL>1e-6?"L" : towardL<-1e-6?"P" : null;   // ipsiwersyjnie: KU stronie chorej
     const deg = Math.min(SVV_MAX, Math.abs(towardL));
@@ -800,10 +846,40 @@ export const NeuroVOR = (()=>{
       // SKUTECZNY manewr ≠ zdrowy pacjent [H26]: bez oczopląsu przy łóżku (1.25°/s), HINTS „normal",
       // vHIT/kaloryka w normie — a SVV przechylona i oVEMP obniżony (dysfunkcja łagiewki) przy NIEPEŁNEJ
       // kompensacji (comp 0.85). Mechanizm „supresanty szkodliwe" emergentny: obniż comp → SPV wraca.
-      // utricleR 0.45 (nie 0.55 z oceny): po kalibracji B2 (próg AR 0.35) dopiero ta wartość flaguje oVEMP.
-      params:{ toneR:65, gainR:0.9, caloricGainR:0.85, comp:0.85, lesionEar:"P", utricleR:0.45 } },
+      // utricleR 0.35 (nie 0.55 z oceny): (a) po kalibracji B2 (próg AR 0.35) dopiero <0.45 flaguje oVEMP,
+      // (b) po C3 (SVV gaśnie z comp, SVV_COMP_FRAC=0.6) dopiero ta wartość trzyma SVV ~2.4° ≥ progu 2° —
+      // RD ma z definicji [H26] MIERZALNĄ dysfunkcję łagiewki mimo kompensacji.
+      params:{ toneR:65, gainR:0.9, caloricGainR:0.85, comp:0.85, lesionEar:"P", utricleR:0.35 } },
   };
   function scenario(key){ const s = SCENARIOS[key]||SCENARIOS.normal; return makePatient(s.params); }
+
+  // ETAP N6 (ocena II, D8) — OŚ CZASU: mapa dni → (comp, ewent. regeneracja tonu + ładunek pacemakera).
+  // Czysta funkcja parametryzacji NAD niezmienioną fizyką: c(t)=1−exp(−t/TAU_COMP) (kompensacja statyczna
+  // dni–tygodnie [H10]); wariant recovery regeneruje ton chorego ucha (TAU_REGEN) i ŁADUJE pacemaker
+  // (TAU_PACE). KOREKTA z weryfikacji oceny II (L5-2): ładunek pacemakera WYŁĄCZNIE w wariancie recovery —
+  // w tym silniku pacemakerBias to AKTYWNY przyrost vn, więc poza recovery dublowałby pacemaker zawarty
+  // już w paceAmt. Emergent: wczesne wyzdrowienie (3 d, bias 5.8 Hz) NIE daje widocznego Bechterewa;
+  // późne (14 d, bias ~19·0.15/0.7≈… wg BIAS_K) — daje. Epoki: ostra(0) → szczyt clampu(1–2 d, crossover
+  // c*=CLAMP_TAU·ln2≈0.22 przy t≈1.5 d) → podostra(4–7 d, overt+covert) → późna(14–30 d, covert-only) →
+  // przewlekła(≥60 d, SPV 0, CP kaloryczne TRWA).
+  const TL_TAU_COMP=6, TL_TAU_PACE=14, TL_BIAS_K=0.15, TL_TAU_REGEN=30, TL_REC_FRAC=0.94;
+  function timeline(base, tDays, opts){
+    opts = opts||{};
+    const src = typeof base==="string" ? ((SCENARIOS[base]||{}).params||{}) : (base||{});
+    const o = Object.assign({}, src);
+    const t = Math.max(0, tDays||0);
+    o.comp = 1 - Math.exp(-t/TL_TAU_COMP);
+    const tL = o.toneL!=null?o.toneL:R0, tR = o.toneR!=null?o.toneR:R0;
+    const les = o.lesionEar || (afferent(tL,0)<afferent(tR,0) ? "L" : afferent(tR,0)<afferent(tL,0) ? "P" : null);
+    if(les) o.lesionEar = les;                               // strona JAWNA dalej w dół (kompensacja/Bechterew)
+    if(opts.recovery && les){
+      const key = les==="P" ? "toneR" : "toneL";
+      const acute = o[key]!=null ? o[key] : R0;
+      o[key] = acute + (R0*TL_REC_FRAC - acute)*(1 - Math.exp(-t/TL_TAU_REGEN));   // błędnik regeneruje
+      o.pacemakerBias = TL_BIAS_K*(R0 - acute)*(1 - Math.exp(-t/TL_TAU_PACE));    // ładunek TYLKO w recovery
+    }
+    return o;   // overrides gotowe dla makePatient (czysto addytywne API)
+  }
 
   // Synteza HINTS z parametrów pacjenta → trzy składowe + werdykt obwód/ośrodek (mnemonik INFARCT).
   function hints(p){
@@ -1111,7 +1187,7 @@ export const NeuroVOR = (()=>{
       hsn:hs, pursuit:spu, dva:dv, posture:po, hearing:{ L:hearL, R:hearR, lossEar:hLossEar } };
   }
 
-  return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, GAIN_CUT, afferent, makePatient, compensate, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
+  return { R0, R_SAT, SPV_MAX, VIS_THRESH, CLAMP_TAU, DVS_FRAC, GAIN_CUT, afferent, makePatient, compensate, compensatePair, timeline, verticalBeat, pressureStimulus, spontaneous, suppressionFactor, observe,
            headImpulse, shimp, hsn, smoothPursuit, dva, posture, fusionWeights, postRotational, gazeEvoked, nystagmusAtGaze, directionChanging, skew, svv, vemp, caloric, caloricBattery,
            CANAL_PARAM, NERVE_CANALS, nerveBranchLesion, bilateralLoss, meniere,
            COPLANAR, PLANE_CANALS, canalSpec, canalPlane, qpFull, vhitPlane,

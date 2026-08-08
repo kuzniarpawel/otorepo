@@ -158,6 +158,10 @@ function engineOracle(h) {
     // Wołanie jest teraz jawne i pinuje DOKŁADNIE tę samą fazę (liczby w golden bez zmian).
     // Klucz 'meniereP' = faza DRAŻNIENIA (nazwa historyczna, zachowana dla ciągłości golden).
     try { patients['meniereP'] = NV.makePatient(NV.meniere('P', { phase: 'irritative' })); } catch {}
+    // ETAP N6 (ocena II, D8): oś czasu — dwa punkty łuku pacjenta. d7 = podostry (comp 0.69, overt+covert);
+    // d21+recovery = regeneracja (ton wraca, pacemaker naładowany → mieszany obraz przed Bechterewem).
+    try { patients['timeline/neuritisR/d7'] = NV.makePatient(NV.timeline('neuritisR', 7)); } catch {}
+    try { patients['timeline/neuritisR/d21rec'] = NV.makePatient(NV.timeline('neuritisR', 21, { recovery: true })); } catch {}
     // FAZA PORAŻENIA tego samego ucha — para do powyższej. Przypina EMERGENTNE odwrócenie kierunku:
     // drażnienie (toneR 150 > toneL 90) bije KU uchu choremu, porażenie (toneR 0) bije KU zdrowemu,
     // przy niezmienionej stronie zmiany. Do tego rozjeżdża się vHIT (gain 1.0 → prawidłowy mimo
