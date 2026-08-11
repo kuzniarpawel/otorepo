@@ -349,6 +349,27 @@ function domOracle(h, win) {
      blok zmienia znaczenie wejścia „Mam wynik próby". */
   grab('start', () => { h.state.screen = 'start'; h.state.mode = 'treat'; h.render(); });
 
+  /* KARTA POWROTU DO PRZERWANEJ SESJI. Klucz `start` wyzej zrzuca stan CZYSTY, wiec karta sie
+     w nim nie renderuje — cala nowa powierzchnia (podpis kroku, kropki postepu z flowStatuses,
+     dwie akcje, dwustopniowe potwierdzenie akcji niszczacej) mialaby w zlotym wzorcu zero stanow.
+     Postep ustawiamy JAWNIE na polach `flow`, bo tego wlasnie dotyka karta; proba i strona wchodza
+     do podtytulu. Zrzut jest deterministyczny, bo karta NIE pokazuje czasu — patrz komentarz przy
+     startResume w svg-screens.js. */
+  grab('start/sesja', () => {
+    h.state.screen = 'start'; h.state.mode = 'diag'; h.state.area = 'start';
+    h.state.testKey = 'dix'; h.state.side = 'L'; h.state.zakonczeniePyta = false;
+    h.state.flow = { testSeen: true, obsSeen: true, interpretSeen: false, maneuver: null };
+    h.render();
+  });
+  grab('start/sesja-pyta', () => { h.state.zakonczeniePyta = true; h.render(); });
+  // Powrot do stanu wyjsciowego — kolejne klucze nie moga dziedziczyc postepu po tej sekcji.
+  grab('start/czysty-po-sesji', () => {
+    h.state.zakonczeniePyta = false;
+    h.state.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
+    h.state.testKey = 'dix'; h.state.side = 'P'; h.state.mode = 'treat'; h.state.area = 'start';
+    h.render();
+  });
+
   // setup
   grab('setup', () => { h.state.screen = 'setup'; h.state.mode = 'treat'; h.render(); });
 

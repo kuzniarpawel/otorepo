@@ -2,14 +2,13 @@
 import { Vestibular } from './engine/vestibular.js';
 import { Scene3D } from './engine/scene3d.js';
 import { NeuroVOR } from './engine/neuro-vor.js';
-import { MANEUVERS, CANALS, stepGravity, stepHeadQ, composeHead, TORSO_Q, bodyJoints, poseSpec, gravArrowFor, DIAG, CANAL_OF, recommend } from './pose/maneuvers.js';
+import { MANEUVERS, CANALS, stepGravity, stepHeadQ, composeHead, TORSO_Q, bodyJoints, poseSpec, gravArrowFor, DIAG, CANAL_OF } from './pose/maneuvers.js';
 import { state } from './app/state.js';
 import { render, webglAvailable, sizeFlip } from './render/svg-screens.js';
 import { goHintsKwal, ustawPrzeszkolenieHints, pomijajKwalifikacje, cofnijPominiecie, zacznijBadanieHints, otworzSymulatorHints, otworzLaboratorium, ustawSkladowaHints, ustawPowodNiewiarHints, goHintsKrok, dalejHints, wsteczHints, pokazWynikHints, wrocDoBadaniaHints, wyczyscBadanieHints, biezacyKrok, goKontrola, wrocDoManewru, ustawWynikKontroli, ustawPowodKontroli, kontrolaAkcja, kontrolaAlternatywa, powtorzManewrKontroli, pytajOZakonczeniu, zakonczSesje, openHints, setHintsFix, setHintsGaze, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, loadHintsFromHash, openTest, setDixObs, setVariant, toggleDiagCentral, openTriage, setTriage, toggleTriageFlaga, resetTriage, pickCanal, pickSide, openMan, goStep, pickSize, zakonczSerie, ustawTrybCzasu, zmienManewr, potwierdzPrzerwe, goObs, setObsPole, oznaczObsPole, setObsGrupa, wyczyscObs, przyjmijObs, goInterpret, przyjmijMechanizm, nadpiszMechanizm, wrocDoWyprowadzonego, idzDoProby, genPlan, setGuideSide, setDiagSide, startManeuver, syncLangBar, setMode, setLangUI, goNauka, otworzPrzypadek, wrocDoBiblioteki, ustawFiltrNauki, goEtapNauki, odpowiedzNauki, wskazowkaNauki, zakonczPrzypadek, wyczyscPostepNauki, wczytajPostepNauki, wczytajSesjeOpisu, usunWszystkieSesjeOpisu, goOpis, przelaczSekcjeOpisu, edytujOpis, ustawEdycjeOpisu, wrocDoWyliczonego, kopiujOpis, eksportujOpis, zapiszSesjeOpisu, przywrocSesjeOpisu, usunSesjeOpisu, ustawTolerancjeKontroli, goLab, otworzEksperymentLab, wrocDoEksperymentow, ustawStanowiskoLab, przelaczPorownanieLab, ustawParametrLab, resetLab, opisParametruLab } from './app/actions.js';
 import { initLang } from './i18n.js';
 import { releaseWake } from './runtime/registry.js';
-import { probaKanalu, sygnalKonwersji } from './app/man-model.js';
-import { manDeps } from './app/man-deps.js';
+import { flowDeps } from './app/flow-deps.js';
 import { mountShell, syncShell, initShellObservers, mountNav, mountFlow, mountAktualizacja, syncAktualizacja, goArea, goFlowStep, setReducedMotion } from './app/shell.js';
 import { zarejestrujSW } from './runtime/pwa.js';
 /* Listy pól modułów (jeden pisarz) na powierzchni testowej. Obie były dotąd „kontraktem w
@@ -46,11 +45,9 @@ mountNav({ setMode, openHintsCustom, goHintsKwal, goNauka, goLab, setLangUI, ren
 // celowo bezimportowy (wyrocznia tools/flow-check.mjs importuje go w gołym Node), a powłoka ma
 // zostać liściem grafu renderowania. Dzięki wstrzyknięciu zgodność wybranego manewru z bieżącą
 // interpretacją liczy PRAWDZIWY silnik, a nie kopia reguł, która mogłaby się z nim rozjechać.
-// probaKanalu: most kanal->proba dla sciezki BEZ proby (tryb ekspercki). Bez niego
-// maneuverAgreement degraduje do 'nieznana', czyli do stanu sprzed Bloku 10.
-mountFlow({ recommend, canalOf: k => CANAL_OF[k] || null, testCanal: k => (DIAG[k] || {}).canal || null,
-            probaKanalu: (kanal) => probaKanalu(kanal, manDeps()),
-            konwersja: (s) => sygnalKonwersji(s, manDeps()) });
+// Zestaw zależności mieszka w src/app/flow-deps.js, bo czyta go TAKŻE karta „ostatnia sesja"
+// na ekranie startowym — dwie kopie dawałyby dwa różne stany tego samego przebiegu.
+mountFlow(flowDeps());
 // Preferencja ograniczenia ruchu z systemu — ZA DETEKCJĄ (jsdom nie ma matchMedia; niezłapany
 // wyjątek w ciele modułu = biały ekran, dlatego snapshot.mjs ma teraz twarde exit(1)).
 try {

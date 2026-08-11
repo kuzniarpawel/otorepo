@@ -1,0 +1,401 @@
+/* OTOREPO — ekran startowy w stylu „SCENA KLINICZNA" (wariant 1b z paczki projektowej).
+ *
+ * Wybrany kierunek: render przestaje być kafelkiem w kolumnie bocznej i staje się ŚRODOWISKIEM.
+ * Wypełnia prawą część obszaru treści, karty leżą na nim jak szkło, a zwolnione miejsce w kolumnie
+ * bocznej dostaje dwie rzeczy, których dotąd nie było: panel „co robi ta karta" i powrót do
+ * ostatniej sesji (wejście wymagane przez Blok 4).
+ *
+ * Import: index.css, PO start.css — ten plik nadpisuje MATERIAŁ, nie układ.
+ *
+ * ─── CZEGO TEN PLIK NIE RUSZA ────────────────────────────────────────────────────────────────
+ * Siatka, progi @container (900 / 1160), kolejność DOM i wszystkie uzasadnienia liczb ze
+ * start.css zostają. start.css jest arkuszem UKŁADU; tutaj mieszka wyłącznie to, co można
+ * wyrzucić bez zmiany zachowania ekranu.
+ *
+ * ─── DLACZEGO SCENA, A NIE OBRAZEK ───────────────────────────────────────────────────────────
+ * Render w ramce 320 px konkuruje z kartami o uwagę i przegrywa: jest za mały, żeby cokolwiek
+ * pokazać, i za duży, żeby zniknąć. Jako tło nie konkuruje — buduje kontekst („to jest atlas
+ * przedsionkowy") i oddaje całą uwagę decyzji. Cena: karty muszą same nieść kontrast, stąd
+ * szkło (--scene-card) zamiast --panel i jaśniejszy tekst drugorzędny (--scene-text).
+ *
+ * ─── ODEJŚCIE OD PACZKI: BRAK TOKENA `--clin-render` ─────────────────────────────────────────
+ * Paczka deklarowała `--clin-render:url("../../assets/head-xray.jpg")` jako „jedno miejsce
+ * podmiany materiału", ale NIE odwoływała się do niego ani razu — obraz wchodzi znacznikiem
+ * <img>, nie tłem. Token miałby dwa skutki, oba złe: byłby kontraktem w komentarzu (dokładnie ten
+ * wzorzec, przez który zakończenie sesji przez dwa bloki omijało pola badania HINTS), a Vite
+ * przetwarza `url()` w CSS, więc ten sam plik trafiłby do dist DRUGI RAZ, pod zahaszowaną nazwą.
+ * Jedynym miejscem podmiany zostaje stała `CLIN_RENDER` w svg-screens.js.
+ */
+
+/* ═══ 1. TOKENY (addytywne) ═════════════════════════════════════════════════════════════════ */
+:root{
+  --scene-ink:#080C11;                  /* podłoże sceny — ciemniejsze od --bg, bo render musi mieć co rozjaśniać */
+  --scene-card:rgba(12,20,28,.84);      /* szkło karty: przepuszcza scenę, ale nie tekst */
+  --scene-card-solid:rgba(12,20,28,.86);
+  --scene-text:#B4C7D6;                 /* tekst drugorzędny NA SCENIE — jaśniejszy od --muted, bo podłoże nie jest jednolite */
+  --scene-line:rgba(203,217,228,.16);   /* kreska rozdzielająca na szkle */
+  --scene-line-strong:rgba(122,147,168,.6);
+
+  --glow-core:rgba(126,240,255,.42);
+  --glow-edge:rgba(79,210,238,0);
+
+  --lift-1:inset 0 1px 0 rgba(255,255,255,.10);
+  --lift-2:0 24px 50px -30px rgba(0,0,0,.90);
+  --lift-3:0 24px 50px -26px rgba(0,0,0,.95);
+}
+
+/* ═══ 2. SCENA ══════════════════════════════════════════════════════════════════════════════
+   Trzy warstwy, jedna nad drugą: render → kurtyna kierunkowa → poświata + domknięcie dołu.
+   Render i jego poświata leżą w JEDNYM pudełku (.startscene__plate) pozycjonowanym raz, a
+   poświata jest w PROCENTACH tego pudełka. Dwa niezależne kotwiczenia rozjeżdżają się przy
+   każdej zmianie kadru.
+   KOLEJNOŚĆ REGUŁ JEST TU ISTOTNA: `.startpage > *` i `.startscene` mają tę samą specyficzność
+   (0,1,0), więc scena zostaje w tle wyłącznie dlatego, że jej reguła stoi NIŻEJ. */
+.startpage{ position:relative; background:var(--scene-ink); }
+.startpage > *{ position:relative; z-index:1; }
+
+.startscene{
+  position:absolute; z-index:0; top:0; bottom:0;
+  /* Wypływ na krawędzie scenoportu: treść siedzi w #app (--pad-x) w .mainscroll (--shell-pad).
+     Obie wartości są tokenami, więc scena nie może rozjechać się z wcięciem treści. */
+  left:calc(-1 * (var(--pad-x) + var(--shell-pad)));
+  right:calc(-1 * (var(--pad-x) + var(--shell-pad)));
+  overflow:hidden; pointer-events:none;
+}
+.startscene__plate{ position:absolute; top:-130px; right:-170px; width:900px; height:547px; }
+.startscene__img{
+  display:block; width:100%; height:100%; object-fit:cover;
+  opacity:.58; filter:saturate(.85);
+}
+.startscene__glow{
+  position:absolute; left:59.7%; top:43%;            /* środek świecącego błędnika w kadrze 1264x768 */
+  width:210px; height:210px; margin:-105px 0 0 -105px;
+  border-radius:var(--r-pill);
+  background:radial-gradient(circle, var(--glow-core), var(--glow-edge) 66%);
+}
+/* Kurtyna kierunkowa: pełne krycie tam, gdzie stoi tekst, przejrzystość tam, gdzie jest anatomia.
+   Punkty załamania (40 % / 62 %) to krawędzie kolumn siatki, nie okrągłe liczby. */
+.startscene::before{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(90deg, var(--scene-ink) 0%, rgba(8,12,17,.96) 40%,
+                                    rgba(8,12,17,.50) 62%, rgba(8,12,17,.16) 100%);
+}
+/* Poświata nad błędnikiem + domknięcie dołu, żeby listwa zakresu i zastrzeżenie stały na czystym. */
+.startscene::after{
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(700px 380px at 81% 17%, color-mix(in oklab, var(--primary) 16%, transparent), transparent 66%),
+             linear-gradient(180deg, rgba(8,12,17,0) 52%, var(--scene-ink) 100%);
+}
+@media (prefers-reduced-motion:no-preference){
+  .startscene__glow{ animation:lab-pulse 4.2s var(--ease) infinite; }
+}
+@keyframes lab-pulse{ 0%,100%{opacity:.72; transform:scale(1);} 50%{opacity:1; transform:scale(1.05);} }
+
+/* OSZCZĘDZANIE DANYCH — i drugie życie schematu `startAnatSVG()`.
+   Paczka kazała przy `prefers-reduced-data` nie renderować sceny wcale („czysty gradient, zero
+   utraty treści") i JEDNOCZEŚNIE zostawić schemat błędnika w kodzie „na wypadek awarii zasobu".
+   Te dwa zdania razem dawałyby martwą funkcję — a martwych funkcji ta gałąź właśnie się pozbyła.
+   Schemat jest więc PLANSZĄ TEJ SAMEJ SCENY, kiedy nie wolno pobrać renderu: kosztuje zero
+   bajtów sieci (siedzi w pakiecie), a geometrię bierze z CANAL_PATHS, czyli z tego samego
+   źródła co fizyka. Własna poświata schematu (`#otoglow`) zastępuje wtedy warstwę `__glow`. */
+.startscene--schemat .startscene__glow{ display:none; }
+.startscene--schemat .startscene__plate{ display:grid; place-items:center; }
+.startscene--schemat svg{ width:100%; height:100%; opacity:.62; }
+
+/* ═══ 3. NAGŁÓWEK EKRANU ════════════════════════════════════════════════════════════════════
+   Na scenie tytuł musi być głośniejszy niż na płaskim tle, bo podłoże już mówi. Nadkreślenie
+   nazywa produkt (jedyne miejsce poza paskiem górnym, gdzie to robimy). */
+.starteyebrow{
+  display:block; margin:var(--sp-3) 0 var(--sp-2);
+  font-size:11.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--primary);
+}
+.starthead .starth{
+  margin:0 0 var(--sp-4);
+  font-size:clamp(24px, 4.4vw, 34px); letter-spacing:-.02em; line-height:1.18;
+}
+/* Nagłówek sekcji („Co chcesz zrobić?") schodzi o stopień niżej w hierarchii, bo tytuł ekranu
+   urósł do 34 px — bez tego oba brzmiałyby tak samo głośno. */
+.startcol > .starth{ margin:26px 0 14px; font-size:22px; letter-spacing:-.01em; }
+
+/* ═══ 4. UKŁAD: NAGŁÓWEK JAKO WŁASNY RZĄD SIATKI ════════════════════════════════════════════
+   Makieta miała `margin-top:91px` na kolumnie bocznej, żeby panel podpowiedzi stanął na linii
+   kart trybu. Ta liczba jest zmierzona dla 1280 px i przy KAŻDEJ zmianie tytułu albo kroju
+   przestaje być prawdziwa. Nagłówek wchodzi więc do siatki jako osobny rząd LEWEJ kolumny —
+   wyrównanie robi układ, nie stała. */
+@container main (min-width:900px){
+  .startgrid{ grid-template-rows:auto minmax(0,1fr); }
+  .starthead{ grid-column:1; grid-row:1; }
+  .startcol { grid-column:1; grid-row:2; }
+  .startside{ grid-column:2; grid-row:2; margin-top:0; position:static; }
+}
+
+/* ═══ 5. KARTY TRYBU — SZKŁO ════════════════════════════════════════════════════════════════ */
+.modecard{
+  position:relative; overflow:hidden; min-height:100px;
+  border-color:var(--scene-line-strong);
+  background:linear-gradient(150deg, color-mix(in oklab, var(--ant) 14%, transparent), var(--scene-card) 62%);
+  box-shadow:var(--lift-2), var(--lift-1);
+}
+.modecard--clin{
+  border-color:color-mix(in srgb, var(--primary) 85%, transparent);
+  background:linear-gradient(150deg, color-mix(in oklab, var(--primary) 20%, transparent), var(--scene-card) 62%);
+  box-shadow:var(--lift-3), var(--lift-1);
+}
+.modecard--clin::before{                       /* pasek dominującej akcji — czytelny też w skali szarości */
+  content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background:linear-gradient(180deg, #84E2F7, var(--primary) 55%, transparent);
+}
+.modecard__ico{
+  width:48px; height:48px; border-radius:14px; display:grid; place-items:center;
+  color:var(--ant); background:color-mix(in oklab, var(--ant) 14%, transparent);
+  border:1px solid color-mix(in srgb, var(--ant) 40%, transparent);
+}
+.modecard__ico svg{ width:28px; height:28px; }
+/* Płyta dominującej akcji jest WYPEŁNIONA — jedyny taki element w górnej połowie ekranu, więc
+   oko trafia tam, gdzie ma trafić, bez strzałek i bez animacji. */
+.modecard--clin .modecard__ico{
+  color:var(--ink); background:linear-gradient(160deg,#84E2F7,#35B9D6); border:0;
+  box-shadow:0 10px 24px -12px color-mix(in srgb, var(--primary) 90%, transparent);
+}
+.modecard__txt b{ font-size:20px; }
+.modecard__txt small{ color:var(--scene-text); }
+.modecard__go{ color:var(--scene-text); }
+.modecard--clin .modecard__go{
+  width:30px; height:30px; border-radius:var(--r-pill); display:grid; place-items:center;
+  background:var(--primary); color:var(--ink); font-size:17px; font-weight:700;
+}
+.modecard:hover{ transform:translateY(-1px); }
+.modecard--clin:hover{ box-shadow:0 28px 56px -24px color-mix(in srgb, var(--primary) 55%, transparent), var(--lift-1); }
+
+/* ═══ 6. SZYBKIE WEJŚCIA — KOD BARWNY KANAŁU ════════════════════════════════════════════════
+   Barwa niesie treść: 1 → kanał tylny (~85 % BPPV), 2 → czas trwania (ten sam żółty co --timer),
+   3 → obserwacja (cyan nawigacyjny), 4 → kanał przedni, 5 → ryzyko ośrodkowe. Klasa dochodzi
+   w markupie: startQuick() dostaje 6. argument `tone`.
+   ZGODNOŚĆ Z BLOKIEM 2: kolor NIE jest jedynym nośnikiem — numer, ikona i pełny opis zostają. */
+.quick{
+  position:relative; overflow:hidden;
+  border-color:color-mix(in srgb, var(--tone, var(--primary)) 45%, transparent);
+  background:linear-gradient(180deg, color-mix(in oklab, var(--tone, var(--primary)) 14%, transparent), var(--scene-card) 52%);
+}
+/* Numer jest WYPEŁNIONY tonem: na scenie obrys w barwie tonu ginie, wypełnienie nie. Atrament
+   dobrany per ton, bo jeden wspólny czarny brudzi cyan i żółty. */
+.quick__n{
+  border:0; color:var(--tone-ink, #06222C); background:var(--tone, var(--primary));
+  font-weight:700;
+}
+.quick__ico{
+  width:46px; height:46px; border-radius:var(--r-md); display:grid; place-items:center;
+  color:var(--tone, var(--primary));
+  background:color-mix(in oklab, var(--tone, var(--primary)) 14%, transparent);
+  border:1px solid color-mix(in srgb, var(--tone, var(--primary)) 34%, transparent);
+}
+.quick__ico svg{ width:28px; height:28px; }
+.quick__txt small{ color:var(--scene-text); border-top-color:var(--scene-line); }
+.quick:hover{
+  border-color:var(--tone, var(--primary));
+  background:linear-gradient(180deg, color-mix(in oklab, var(--tone, var(--primary)) 22%, transparent), var(--scene-card) 56%);
+}
+.quick--kpost{ --tone:var(--post);    --tone-ink:#0B221F; }
+.quick--ktime{ --tone:var(--timer);   --tone-ink:#2A1E02; }
+.quick--kobs { --tone:var(--primary); --tone-ink:#03242E; }
+.quick--kant { --tone:var(--ant);     --tone-ink:#1A1230; }
+.quick--krisk{
+  --tone:var(--crit); --tone-ink:#3A0E16;
+  border-color:color-mix(in srgb, var(--crit) 50%, transparent);
+  background:linear-gradient(180deg, color-mix(in oklab, var(--crit) 16%, transparent), var(--scene-card) 52%);
+}
+
+/* ═══ 7. KOLUMNA BOCZNA: PANEL PODPOWIEDZI + OSTATNIA SESJA ═════════════════════════════════ */
+.startside{ display:grid; gap:var(--sp-3); }
+
+/* PANEL PODPOWIEDZI. Zajmuje wolne pole nad kartą sesji, ale jest PÓŁPRZEZROCZYSTY u góry —
+   błędnik świeci nad nim i przez niego, więc scena nie znika pod kolejną płytą. Stan spoczynku
+   mówi wprost, co zrobić; pusty panel czekający na hover byłby dziurą.
+   157 px to wysokość zmierzona w makiecie 1280 px (od linii kart trybu do linii siatki kafli
+   minus odstęp). Zostaje jako MINIMUM, nie jako wysokość — treść dłuższa niż projektowa musi
+   móc urosnąć, a nie zostać przycięta. */
+.starthint{
+  position:relative; overflow:hidden; min-height:157px;
+  display:flex; flex-direction:column; justify-content:flex-end; gap:6px;
+  padding:14px var(--sp-4); border-radius:var(--r-lg);
+  border:1px solid rgba(122,147,168,.45);
+  background:linear-gradient(180deg, rgba(12,20,28,.20), var(--scene-card-solid) 62%);
+}
+.starthint::before{                             /* pasek w barwie tonu opisywanej karty */
+  content:""; position:absolute; inset:0 0 auto; height:3px;
+  background:var(--tone, var(--faint)); transition:background var(--dur) var(--ease);
+}
+.starthint b{ display:block; font-size:15px; font-weight:700; line-height:1.3; color:var(--text); }
+.starthint small{ display:block; font-size:12.5px; line-height:1.45; color:var(--scene-text); }
+/* Panel jest DOSTĘPNY TYLKO PRZEZ HOVER i powtarza treść, którą każda karta podaje słowem.
+   Dla czytnika ekranu byłby ósmym opisem tych samych siedmiu kart — stąd aria-hidden w markupie.
+   Tam, gdzie nie ma kursora, nie ma też panelu: bez wskaźnika zostałby na wieki w spoczynku. */
+@media (hover:none){
+  .starthint{ display:none; }
+}
+
+/* OSTATNIA SESJA — wejście wymagane przez Blok 4, dotąd nieobecne w interfejsie. */
+.startresume{
+  padding:var(--sp-4); border-radius:var(--r-lg);
+  border:1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--primary) 14%, transparent), var(--scene-card-solid) 60%);
+  box-shadow:0 22px 46px -28px rgba(0,0,0,.9);
+}
+.startresume__eyebrow{
+  display:block; font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--primary);
+}
+.startresume b{ display:block; margin-top:var(--sp-2); font-size:17px; font-weight:700; line-height:1.25; }
+.startresume small{ display:block; margin-top:var(--sp-1); font-size:12.5px; line-height:1.4; color:var(--scene-text); }
+/* Pasek postępu = te same statusy, co pasek przebiegu na ekranach klinicznych (flowStatuses).
+   Nie jest ozdobą: mówi, ile kroków zostało, zanim użytkownik zdecyduje, czy wracać. */
+.startresume__steps{ margin-top:var(--sp-3); display:flex; gap:5px; }
+.startresume__steps i{ flex:1 1 0; height:4px; border-radius:var(--r-pill); background:rgba(203,217,228,.22); }
+.startresume__steps i[data-done]{ background:var(--primary); }
+.startresume__go{
+  margin-top:14px; width:100%; display:flex; align-items:center; justify-content:center; gap:var(--sp-2);
+  min-height:var(--tap); border:0; border-radius:var(--r-md);
+  background:var(--primary); color:var(--ink); font-size:15px; font-weight:700; cursor:pointer;
+}
+.startresume__go:hover{ background:var(--primary-press); }
+.startresume__new{
+  margin-top:var(--sp-2); width:100%; display:flex; align-items:center; justify-content:center;
+  min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none;
+  color:var(--scene-text); font-size:13.5px; font-weight:600; cursor:pointer;
+}
+.startresume__new:hover{ border-color:var(--primary); color:var(--text); }
+/* POTWIERDZENIE AKCJI NISZCZĄCEJ. „Zacznij nowy przypadek" kasuje dane przebiegu, więc idzie przez
+   ten sam dwustopniowy mechanizm (`state.zakonczeniePyta`), co zakończenie sesji na ekranie
+   kontroli — bez nowego pola w stanie i bez drugiej implementacji tego samego pytania. */
+.startresume__pyta{ margin-top:var(--sp-3); }
+.startresume__pyta small{ margin:0 0 var(--sp-2); }
+.startresume__pyta .startresume__go{ margin-top:0; background:var(--crit); color:#2A0710; }
+.startresume__pyta .startresume__go:hover{ filter:brightness(1.08); }
+
+/* ═══ 8. LISTWA ZAKRESU I ZASTRZEŻENIE ══════════════════════════════════════════════════════ */
+.scopestrip{ border-top-color:var(--scene-line); }
+.scopeitem + .scopeitem{ border-left-color:var(--scene-line); }
+.scopeitem__ico{
+  width:38px; height:38px; border-radius:11px; display:grid; place-items:center;
+  color:var(--tone, var(--primary));
+  background:color-mix(in oklab, var(--tone, var(--primary)) 12%, transparent);
+  border:1px solid color-mix(in srgb, var(--tone, var(--primary)) 30%, transparent);
+}
+.scopeitem__ico svg{ width:22px; height:22px; }
+.scopeitem__txt small{ color:var(--scene-text); }
+.scopeitem:nth-child(1){ --tone:var(--post); }
+.scopeitem:nth-child(2){ --tone:var(--primary); }
+.scopeitem:nth-child(3){ --tone:var(--crit); }
+.scopeitem:nth-child(4){ --tone:var(--ant); }
+
+.startpage .disclaimer{
+  display:flex; gap:var(--sp-3); align-items:flex-start;
+  border-radius:var(--r-md);
+  border-color:color-mix(in srgb, var(--warn) 40%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--warn) 12%, transparent), var(--scene-card) 55%);
+  color:var(--scene-text);
+}
+.startpage .disclaimer::before{                 /* ikona przy statusie — wymóg Bloku 2 */
+  content:"!"; flex:0 0 auto;
+  width:22px; height:22px; border-radius:var(--r-pill); display:grid; place-items:center;
+  color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 50%, transparent);
+  font-weight:700; font-size:12px;
+}
+
+/* ═══ 9. TELEFON ════════════════════════════════════════════════════════════════════════════
+   Scena wchodzi od góry i schodzi za treść. Wolne pole nad nagłówkiem jest jedynym miejscem,
+   w którym render jest widoczny — ale NIE może zepchnąć pierwszych działań poniżej pierwszego
+   ekranu (kryterium odbioru Bloku 4). Stąd 96 px przy normalnej wysokości i 56 px na niskich
+   ekranach: przy 844 px wysokości nagłówek + karta sesji + dwie karty trybu mieszczą się z
+   96 px zapasu, przy 667 px — nie. */
+@container main (max-width:899.9px){
+  .startscene__plate{ top:-10px; right:-138px; width:560px; height:340px; }
+  .startscene__img{ opacity:.62; }
+  .startscene__glow{ left:60%; top:40%; width:150px; height:150px; margin:-75px 0 0 -75px; }
+  .startscene::before{
+    background:linear-gradient(180deg, rgba(8,12,17,.55) 0%, rgba(8,12,17,.30) 24%,
+                                       rgba(8,12,17,.86) 62%, var(--scene-ink) 100%);
+  }
+  .startscene::after{ background:none; }
+
+  .startpage{ padding-top:96px; }
+  .starteyebrow{ margin-top:0; font-size:11px; }
+
+  /* W układzie WIERSZOWYM górna krawędź tonu nie ma sensu — ton zostaje w obrysie i tle. */
+  .quick{ background:linear-gradient(90deg, color-mix(in oklab, var(--tone, var(--primary)) 14%, transparent), var(--scene-card) 44%); }
+  .quick__ico{ width:28px; height:28px; border:0; background:none; }
+  .quick__ico svg{ width:28px; height:28px; }
+  .quick__go{ color:var(--scene-text); }
+
+  /* KARTA SESJI NA TELEFONIE IDZIE NAD KARTY TRYBU: powrót do przerwanego badania jest pilniejszy
+     niż wybór trybu, a jedna dominująca akcja na ekranie to nadal jedna.
+     Paczka robiła to przez `.startresume{order:-1}` — i to NIE MOGŁO zadziałać: `order` przestawia
+     elementy wyłącznie WEWNĄTRZ jednego kontenera flex/grid, a karta siedzi w `.startside`, podczas
+     gdy karty trybu są w `.startcol`. Poniżej progu `.startgrid` była w dodatku `display:block`,
+     więc `order` był tam martwy dwa razy. Zmierzone: karta lądowała na y=927 px, czyli daleko pod
+     kartami trybu. Przestawiamy więc CAŁĄ kolumnę boczną, w kontenerze, który to potrafi. */
+  .startgrid{ display:flex; flex-direction:column; }
+  .starthead{ order:1; }
+  .startside{ order:2; margin-top:0; }
+  .startcol { order:3; }
+  /* Panel podpowiedzi należy do układu DWUKOLUMNOWEGO — w jednej kolumnie wszedłby między nagłówek
+     a pierwszą decyzję. Reguła `(hover:none)` niżej zostaje: dotykowy tablet ma kolumnę ≥ 900 px
+     i tam panel też nie ma sensu. */
+  .starthint{ display:none; }
+  .startresume{ margin-bottom:var(--sp-3); padding:14px var(--sp-4); border-radius:16px; }
+  .startresume b{ font-size:16px; }
+  .startresume__steps, .startresume__new{ display:none; }   /* wersja kompaktowa: postęp i druga akcja zostają na desktopie */
+}
+@media (max-height:700px){
+  .startpage{ padding-top:56px; }
+}
+
+/* ═══ 10. MOTYW JASNY ═══════════════════════════════════════════════════════════════════════
+   Scena jest zdjęciem, nie ilustracją liniową — inwersja dałaby prześwietloną plamę. W jasnym
+   motywie render przestaje więc być środowiskiem i wraca do roli akcentu: niskie krycie,
+   `multiply`, brak kurtyn, karty w pełnym kryciu. Układ i hierarchia zostają bez zmian. */
+@media (prefers-color-scheme:light){
+  :root{
+    --scene-ink:#F2F6F9;
+    --scene-card:rgba(255,255,255,.92); --scene-card-solid:#FFFFFF;
+    --scene-text:#4C6377;
+    --scene-line:#CBD9E4; --scene-line-strong:#7A93A8;
+    --lift-1:inset 0 1px 0 rgba(255,255,255,.9);
+    --lift-2:0 12px 26px -22px rgba(13,22,32,.5);
+    --lift-3:0 14px 30px -20px rgba(13,22,32,.55);
+  }
+  .startscene__img{ opacity:.14; mix-blend-mode:multiply; filter:saturate(.6); }
+  .startscene__glow{ opacity:.5; mix-blend-mode:multiply; }
+  .startscene::before{ background:linear-gradient(90deg, var(--scene-ink) 0%, rgba(242,246,249,.9) 46%, rgba(242,246,249,.2) 100%); }
+  .startscene::after{ background:linear-gradient(180deg, rgba(242,246,249,0) 60%, var(--scene-ink) 100%); }
+  .modecard--clin .modecard__ico{ color:#FFFFFF; background:linear-gradient(160deg,#12A2BE,#0E7C93); }
+  .starthint{ background:var(--scene-card-solid); border-color:var(--scene-line); }
+}
+
+/* ═══ 11. WEBVIEW BEZ ZAPYTAŃ KONTENERA (Capacitor, minSdk 24) ══════════════════════════════
+   Ten sam zestaw co w start.css: próg okna wyższy o szynę boczną. Bez tego scena zostałaby w
+   wersji telefonowej na komputerze — z rozjechanym kadrem, bo plate ma inne kotwiczenie. */
+@supports not (container-type:inline-size){
+  @media (max-width:1199.9px){
+    .startscene__plate{ top:-10px; right:-138px; width:560px; height:340px; }
+    .startscene__img{ opacity:.62; }
+    .startscene__glow{ left:60%; top:40%; width:150px; height:150px; margin:-75px 0 0 -75px; }
+    .startscene::before{ background:linear-gradient(180deg, rgba(8,12,17,.55) 0%, rgba(8,12,17,.30) 24%, rgba(8,12,17,.86) 62%, var(--scene-ink) 100%); }
+    .startscene::after{ background:none; }
+    .startpage{ padding-top:96px; }
+    .quick__ico{ width:28px; height:28px; border:0; background:none; }
+    .startgrid{ display:flex; flex-direction:column; }
+    .starthead{ order:1; } .startside{ order:2; margin-top:0; } .startcol{ order:3; }
+    .starthint{ display:none; }
+    .startresume{ margin-bottom:var(--sp-3); }
+    .startresume__steps, .startresume__new{ display:none; }
+  }
+  @media (min-width:1200px){
+    .startgrid{ grid-template-rows:auto minmax(0,1fr); }
+    .starthead{ grid-column:1; grid-row:1; }
+    .startcol { grid-column:1; grid-row:2; }
+    .startside{ grid-column:2; grid-row:2; margin-top:0; position:static; }
+  }
+}

@@ -33,6 +33,11 @@ copyFileSync(join(ROOT, 'manifest.json'), join(DIST, 'manifest.json'));
 copyFileSync(join(ROOT, 'privacy.html'), join(DIST, 'privacy.html'));
 copyFileSync(join(ROOT, '.nojekyll'), join(DIST, '.nojekyll'));
 cpSync(join(ROOT, 'icons'), join(DIST, 'icons'), { recursive: true });
+/* assets/ — render sceny ekranu startowego. Wchodzi znacznikiem <img src="assets/…">, czyli POZA
+   grafem Vite'a (Vite przetwarza tylko url() w CSS i importy w JS), więc bez tej kopii pierwszy
+   start offline pokazałby scenę bez renderu. Nazwa cache to hash zawartości dist/, więc plik
+   sam wchodzi do precache i sam wymusza odświeżenie — bumpu nie trzeba. */
+cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true });
 
 // 2. alias dla starych instalacji (start_url otorepo.html)
 copyFileSync(join(DIST, 'index.html'), join(DIST, 'otorepo.html'));

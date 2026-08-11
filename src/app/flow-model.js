@@ -542,11 +542,39 @@ export function stepReachable(s, id) {
   return !stepPending(s, id);
 }
 
-// Zwięzły podpis paska na telefonie: „Krok 2 z 6 — Próba".
-export function stepSummary(s, lang) {
-  const akt = activeStepId(s);
-  const i = FLOW_IDS.indexOf(akt);
-  const st = flowStep(akt);
+// Zwięzły podpis kroku: „Krok 2 z 6 — Próba". Jedna formuła dla paska (krok AKTYWNY) i dla karty
+// powrotu na ekranie startowym (krok POWROTU) — dwie kopie rozjechałyby się przy zmianie liczby kroków.
+function podpisKroku(id, lang) {
+  const i = FLOW_IDS.indexOf(id);
+  const st = flowStep(id);
   if (i < 0 || !st) return null;
-  return { nr: i + 1, total: FLOW_IDS.length, label: lang === 'pl' ? st.pl : st.en, id: akt };
+  return { nr: i + 1, total: FLOW_IDS.length, label: lang === 'pl' ? st.pl : st.en, id };
 }
+
+export function stepSummary(s, lang) { return podpisKroku(activeStepId(s), lang); }
+
+/* ============ Powrót do przerwanej sesji (ekran startowy, Blok 4) ============
+   Dokument wymaga na ekranie startowym wejścia „powrót do ostatniej sesji". Dwie funkcje, których
+   używa pasek przebiegu, NIE nadają się do tego z definicji, a nie przez przeoczenie:
+     activeStepId(s) — wyprowadzany Z EKRANU; dla screen==='start' zwraca null, bo przebieg
+                       kliniczny nie jest wtedy aktywny;
+     flowVisible(s)  — odpowiada na pytanie „czy pokazać PASEK na tym ekranie" i dla ekranu
+                       startowego zwraca false Z ZAŁOŻENIA (pasek nad wyborem trybu kłamałby).
+   Karta powrotu pyta o co innego: „dokąd użytkownik doszedł", niezależnie od tego, gdzie stoi
+   teraz. Odpowiedź bierzemy z TYCH SAMYCH statusów co pasek — najdalszy krok, który przestał być
+   `todo` (i nie jest `pending`). Bez własnego pola w stanie: pole rozjeżdżałoby się przy każdej
+   nawigacji, która je pomija — dokładnie ten błąd, którego uniknął activeStepId. */
+export function resumeStepId(s, deps) {
+  if (!s) return null;
+  let id = null;
+  for (const st of flowStatuses(s, deps)) {
+    if (st.status !== 'todo' && st.status !== 'pending') id = st.id;
+  }
+  return id;
+}
+
+// Czy jest do czego wracać. Osobno od flowVisible() — patrz komentarz wyżej.
+export function resumeVisible(s, deps) { return !!resumeStepId(s, deps); }
+
+// Podpis kroku powrotu: „Krok 3 z 6 — Oczopląs".
+export function resumeSummary(s, lang, deps) { return podpisKroku(resumeStepId(s, deps), lang); }

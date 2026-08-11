@@ -223,13 +223,39 @@ screenAngleCW(p) -> stopnie
      (widełki kan. pionowych → pień do łagiewki), komora łagiewki. viewBox PRZYCIĘTY do treści (38 35 205 164,
      bez pustych marginesów) + SVG skalowany do 80% (inline style width:80%, wyśrodkowany); stałe LAB_* w svg-screens.js.
      Gufoni-apo (brak wyjścia) → notka 'manewr konwersji' w panelu labiryntu (renderGuide).
-     TA SAMA GEOMETRIA NA EKRANIE STARTOWYM (startAnatSVG, Blok 4/mockup D1): głowa w profilu z
-     podświetlonym błędnikiem rysowanym z CANAL_PATHS/LAB_AMP/LAB_UTR/LAB_CRUS przez jedną transformację
-     (skala LS, przesunięcie LX/LY w układzie głowy, HX/HY/HS w układzie rysunku). Punkty odnośników
-     („kanały półkoliste", „łagiewka") liczą się TĄ SAMĄ parą gx/gy, więc kreska nie może się rozjechać
-     z rysunkiem po zmianie skali. Pierwszy ekran nie ma prawa uczyć innej anatomii niż ta, po której
-     liczona jest fizyka. Kolory kanałów = kod barwny aplikacji (--post/--horiz/--ant), nie jednolita
-     poświata z mockupu. Szyja wychodzi poza viewBox i jest przez niego przycięta.
+     TA SAMA GEOMETRIA W SCHEMACIE `startAnatSVG` (Blok 4): głowa w profilu z podświetlonym błędnikiem
+     rysowanym z CANAL_PATHS/LAB_AMP/LAB_UTR/LAB_CRUS przez jedną transformację (skala LS, przesunięcie
+     LX/LY w układzie głowy, HX/HY/HS w układzie rysunku). Punkty odnośników („kanały półkoliste",
+     „łagiewka") liczą się TĄ SAMĄ parą gx/gy, więc kreska nie może się rozjechać z rysunkiem po zmianie
+     skali. Kolory kanałów = kod barwny aplikacji (--post/--horiz/--ant). Szyja wychodzi poza viewBox
+     i jest przez niego przycięta.
+     GDZIE TEN SCHEMAT ŻYJE: ekran startowy pokazuje domyślnie RENDER (assets/head-xray.jpg, scena
+     kliniczna — patrz niżej), a schemat wchodzi na jego miejsce przy `prefers-reduced-data: reduce`.
+     To nie jest zapasowa kopia „na wszelki wypadek": kosztuje zero bajtów sieci, bo siedzi w pakiecie,
+     i jest JEDYNĄ wersją sceny działającą bez zasobu graficznego.
+
+=== SCENA KLINICZNA EKRANU STARTOWEGO (start-scene.css + startScene/startHint/startResume) ===
+ Render przestaje być kafelkiem w kolumnie bocznej i staje się TŁEM prawej części obszaru treści;
+ karty leżą na nim jak szkło. Trzy warstwy: render → kurtyna kierunkowa (punkty załamania = krawędzie
+ kolumn siatki) → poświata + domknięcie dołu. Obraz i jego poświata siedzą w JEDNYM pudełku
+ (.startscene__plate), bo poświata jest w PROCENTACH tego pudełka — dwa niezależne kotwiczenia
+ rozjeżdżają się przy każdej zmianie kadru.
+ PODMIANA MATERIAŁU: jedna stała CLIN_RENDER w svg-screens.js. Wymóg kadru: proporcja bliska 3:2,
+ błędnik w prawej-górnej ćwiartce, tło ciemne, BEZ wypalonego logotypu; inny kadr wymaga przeliczenia
+ pary procentów .startscene__glow. Zasób: JPEG 1264x768, 74 kB (materiał źródłowy z paczki projektowej
+ był 782-kilobajtowym PNG-iem NAZWANYM .jpg — przekodowany, bo wchodzi do precache PWA). Kopiuje go
+ tools/build-dist.mjs, bo <img src> jest POZA grafem Vite.
+ KOD BARWNY KAFLI: startQuick(..., ton) — ton jest ARGUMENTEM, nie wyliczeniem z numeru (numer
+ porządkowy i znaczenie kliniczne to dwie różne rzeczy). Barwa nigdy nie jest jedynym nośnikiem:
+ numer, ikona i pełny opis zostają.
+ KARTA POWROTU DO SESJI stoi na resumeStepId/resumeSummary z flow-model.js — NIE na activeStepId
+ (wyprowadzany z ekranu, na starcie null) ani flowVisible (dla ekranu startowego false z założenia).
+ Kropki postępu to te same statusy, co pasek przebiegu (flowStatuses), przez wspólny wstrzykiwacz
+ src/app/flow-deps.js. Karta NIE pokazuje czasu przerwania: stan zapisuje CO zrobił użytkownik,
+ nigdy KIEDY, a przybliżenie („niedawno") w karcie powrotu do badania byłoby zmyśleniem.
+ NA TELEFONIE karta idzie NAD karty trybu — przez przestawienie CAŁEJ kolumny bocznej w kontenerze
+ flex, bo order przestawia elementy wyłącznie wewnątrz jednego kontenera (paczka miała order:-1 na
+ samej karcie i to nie działało: zmierzone y=927 px, czyli pod kartami trybu).
  [x] ETAP C: pełne ciało (tułów+szyja+kończyny) jako rzut 3D — ZROBIONE (figProj/bodyJoints, patrz
         ARCHITEKTURA figProj niżej oraz PODSUMOWANIE SESJI 2026-07-02). Swobodny wybór kamery (K4) pozostaje
         w migracja_3d.txt jako projekt na przyszłość.

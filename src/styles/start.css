@@ -26,8 +26,6 @@
   font-family:var(--display); font-size:clamp(20px, 5vw, 26px); font-weight:700;
   letter-spacing:-.01em; margin:var(--sp-6) 0 var(--sp-4);
 }
-.startcol > .starth:first-child{ margin-top:var(--sp-2); }
-
 .startgrid{ display:block; }
 
 /* --- dwie karty trybu --- */
@@ -81,28 +79,13 @@
 .quick__txt small{ display:block; margin-top:2px; font-size:12.5px; color:var(--muted); line-height:1.3; }
 .quick__go{ flex:0 0 auto; font-size:20px; color:var(--faint); line-height:1; }
 
-/* --- kolumna boczna: ilustracja anatomiczna + nota (mockup D1, prawa strona) ---
-   NA TELEFONIE ląduje POD listą szybkich wejść. Mockup M1 pokazuje ją przy nagłówku, ale kryterium
-   odbioru z tego samego bloku mówi wprost: „ilustracja jest mała i NIE spycha pierwszych działań
-   poniżej pierwszego ekranu" — kolejność w DOM rozstrzyga to na korzyść kryterium. */
+/* --- kolumna boczna (mockup D1, prawa strona) ---
+   NA TELEFONIE ląduje POD listą szybkich wejść: kryterium odbioru Bloku 4 mówi wprost, że
+   ilustracja „NIE spycha pierwszych działań poniżej pierwszego ekranu", a kolejność w DOM
+   rozstrzyga to na korzyść kryterium.
+   MATERIAŁ zawartości kolumny (panel podpowiedzi, karta ostatniej sesji) mieszka w
+   start-scene.css — tutaj zostaje wyłącznie to, co jest UKŁADEM. */
 .startside{ margin-top:var(--sp-5); display:grid; gap:var(--sp-3); }
-.startanat{
-  margin:0; padding:var(--sp-3);
-  background:linear-gradient(165deg, color-mix(in oklab, var(--primary) 7%, var(--panel)), var(--panel) 70%);
-  border:1px solid var(--line); border-radius:var(--r-lg);
-}
-.startanat svg{ display:block; width:100%; height:auto; max-width:340px; margin-inline:auto; }
-.startnote{
-  display:flex; gap:var(--sp-3); align-items:flex-start; margin:0;
-  padding:var(--sp-3) var(--sp-4);
-  background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md);
-  font-size:12.5px; line-height:1.45; color:var(--muted);
-}
-.startnote__i{
-  flex:0 0 auto; width:22px; height:22px; border-radius:var(--r-pill);
-  display:grid; place-items:center; font-weight:800; font-size:12px; color:var(--primary);
-  border:1px solid color-mix(in srgb, var(--primary) 55%, var(--line-strong));
-}
 
 /* --- listwa zakresu (mockup D1, dół ekranu) ---
    Cztery pozycje, nie trzy jak na planszy: „Laboratorium" jest realnym obszarem tej aplikacji,
@@ -132,7 +115,6 @@
     align-items:start;
   }
   .startside{ margin-top:0; position:sticky; top:var(--sp-2); }
-  .startanat svg{ max-width:none; }
 
   /* Karty trybu obok siebie dopiero wtedy, gdy jest na to miejsce — przy wąskiej kolumnie muszą
      zostać jedna pod drugą, żeby opis trybu nie łamał się na cztery wiersze. */
@@ -188,7 +170,6 @@
       align-items:start;
     }
     .startside{ margin-top:0; position:sticky; top:var(--sp-2); }
-    .startanat svg{ max-width:none; }
     .modecards{ grid-template-columns:repeat(auto-fit, minmax(250px,1fr)); }
     .quicklist{ grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--sp-3); }
     .quicklist > li{ display:flex; }

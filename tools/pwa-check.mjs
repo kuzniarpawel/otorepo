@@ -364,7 +364,7 @@ const CZEKA = (nad = {}) => ({ ...CZYSTY(), aktualizacja: 'czeka', ...nad });
 }
 
 /* ═══════════ WYNIK ═══════════ */
-const OCZEKIWANE = 233;
+const OCZEKIWANE = 234;   // +1: bramka F6 biegnie RAZ NA PLIK w src/, a doszedl src/app/flow-deps.js (scena ekranu startowego)
 if (ok !== OCZEKIWANE) bledy.push(`LICZBA PRZYPADKÓW: ${ok}, oczekiwano ${OCZEKIWANE} — dopisz albo popraw zakres, ale nie po cichu`);
 if (bledy.length) { console.error(`✗ pwa:check — ${bledy.length} błędów (${ok} przeszło)`); for (const b of bledy) console.error('  ' + b); process.exit(1); }
 console.log(`✓ pwa:check — ${ok} przypadków`);

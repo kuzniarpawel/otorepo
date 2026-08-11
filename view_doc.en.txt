@@ -224,14 +224,41 @@ screenAngleCW(p) -> degrees
      (the fork of the vertical canals → a trunk to the utricle), utricle chamber. viewBox CROPPED to the content (38 35 205 164,
      no empty margins) + SVG scaled to 80% (inline style width:80%, centered); the LAB_* constants in svg-screens.js.
      Gufoni-apo (no exit) → a 'conversion maneuver' note in the labyrinth panel (renderGuide).
-     THE SAME GEOMETRY ON THE START SCREEN (startAnatSVG, Block 4/mockup D1): a head in profile with the
-     labyrinth highlighted, drawn from CANAL_PATHS/LAB_AMP/LAB_UTR/LAB_CRUS through a single transform
-     (scale LS, offset LX/LY in head space, HX/HY/HS in drawing space). The callout anchor points
-     ("semicircular canals", "utricle") are computed with the SAME gx/gy pair, so a leader line cannot
-     drift away from the drawing when the scale changes. The first screen must not teach an anatomy other
-     than the one the physics is computed on. Canal colours = the application colour code
-     (--post/--horiz/--ant), not the uniform glow of the mockup. The neck runs past the viewBox and is
-     clipped by it.
+     THE SAME GEOMETRY IN THE `startAnatSVG` SCHEMATIC (Block 4): a head in profile with the labyrinth
+     highlighted, drawn from CANAL_PATHS/LAB_AMP/LAB_UTR/LAB_CRUS through a single transform (scale LS,
+     offset LX/LY in head space, HX/HY/HS in drawing space). The callout anchor points ("semicircular
+     canals", "utricle") are computed with the SAME gx/gy pair, so a leader line cannot drift away from
+     the drawing when the scale changes. Canal colours = the application colour code
+     (--post/--horiz/--ant). The neck runs past the viewBox and is clipped by it.
+     WHERE THIS SCHEMATIC LIVES: the start screen shows the RENDER by default (assets/head-xray.jpg,
+     the clinical scene — see below), and the schematic takes its place under
+     `prefers-reduced-data: reduce`. It is not a spare copy kept "just in case": it costs zero network
+     bytes because it ships inside the bundle, and it is the ONLY version of the scene that works
+     without the image asset.
+
+=== THE CLINICAL SCENE OF THE START SCREEN (start-scene.css + startScene/startHint/startResume) ===
+ The render stops being a tile in the side column and becomes the BACKGROUND of the right-hand part of
+ the content area; the cards lie on it like glass. Three layers: render -> directional curtain (its
+ breakpoints are the grid column edges) -> glow + bottom close-off. The image and its glow sit in ONE
+ box (.startscene__plate), because the glow is expressed in PERCENTAGES of that box — two independent
+ anchorings drift apart on every change of framing.
+ SWAPPING THE MATERIAL: one constant, CLIN_RENDER, in svg-screens.js. Framing requirements: aspect close
+ to 3:2, labyrinth in the upper-right quadrant, dark background, NO burned-in logotype; a different
+ framing requires recomputing one pair of percentages in .startscene__glow. Asset: JPEG 1264x768, 74 kB
+ (the source material in the design package was a 782 kB PNG NAMED .jpg — transcoded, because it enters
+ the PWA precache). tools/build-dist.mjs copies it, since <img src> is OUTSIDE the Vite graph.
+ TILE COLOUR CODE: startQuick(..., tone) — the tone is an ARGUMENT, not derived from the number (the
+ ordinal and the clinical meaning are two different things). Colour is never the only carrier: the
+ number, the icon and the full description all remain.
+ THE RESUME CARD stands on resumeStepId/resumeSummary from flow-model.js — NOT on activeStepId (derived
+ from the screen, null on start) nor on flowVisible (false for the start screen by design). The progress
+ dots are the same statuses as the flow bar (flowStatuses), through the shared injector
+ src/app/flow-deps.js. The card does NOT show the time of interruption: the state records WHAT the user
+ did, never WHEN, and an approximation ("recently") in a card that returns to an examination would be
+ an invention.
+ ON THE PHONE the card goes ABOVE the mode cards — by reordering the WHOLE side column inside a flex
+ container, because order only reorders items within one container (the package had order:-1 on the card
+ itself and it did nothing: measured y=927 px, i.e. below the mode cards).
  [x] STAGE C: full body (trunk+neck+limbs) as a 3D projection — DONE (figProj/bodyJoints, see the
         figProj ARCHITECTURE below and the SESSION SUMMARY 2026-07-02). Free camera choice (K4) remains
         in migracja_3d.txt as a project for the future.

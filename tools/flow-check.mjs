@@ -18,6 +18,7 @@ import {
   FLOW_STEPS, FLOW_IDS, FLOW_STATUS, flowStep, stepPending, stepTarget,
   decisionInputs, sameInputs, noteManeuver, maneuverDrift, maneuverAgreement,
   lateralizacjaNiepewna, activeStepId, flowStatuses, nextStepId, stepReachable, stepSummary,
+  resumeStepId, resumeVisible, resumeSummary,
   flowVisible, flowSignature, KONWERSJE,
 } from '../src/app/flow-model.js';
 import { recommend, CANAL_OF, DIAG } from '../src/pose/maneuvers.js';
@@ -554,6 +555,50 @@ eq('PD1/podpis-pl', stepSummary(S({ screen: 'diag' }), 'pl'), { nr: 2, total: 6,
 eq('PD2/podpis-en', stepSummary(S({ screen: 'guide' }), 'en'), { nr: 5, total: 6, label: 'Maneuver', id: 'maneuver' });
 eq('PD3/poza-przebiegiem', stepSummary(S({ screen: 'start' }), 'pl'), null);
 
+/* ============ 13a. Powrót do przerwanej sesji (ekran startowy, Blok 4) ============
+   Karta „ostatnia sesja" pyta o co innego niż pasek przebiegu: nie „na czym stoisz", tylko
+   „dokąd doszedłeś". Dwie funkcje paska odpowiadają na to pytanie ŹLE Z DEFINICJI —
+   activeStepId() jest wyprowadzany z ekranu (start → null), a flowVisible() dla ekranu
+   startowego zwraca false z założenia. Te trzy bramki są dowodem, że karta nie stoi na żadnej
+   z nich; PW1 jest bramką FAILING-FIRST: gdyby resumeStepId liczył z activeStepId, byłby null. */
+{
+  const naStarcie = (o = {}) => S({ screen: 'start', area: 'start', ...o });
+
+  // PUSTY PRZEBIEG — nie ma do czego wracać, karta się nie renderuje.
+  eq('PW0/pusty-brak-powrotu', resumeStepId(naStarcie(), DEPS), null);
+  T('PW0b/pusty-niewidoczna', !resumeVisible(naStarcie(), DEPS), 'bez postępu karta nie istnieje');
+
+  // NA EKRANIE STARTOWYM pasek jest niewidoczny i krok aktywny NIE ISTNIEJE — a karta powrotu
+  // i tak ma powiedzieć, dokąd użytkownik doszedł.
+  const poObserwacji = naStarcie({ flow: { testSeen: true, obsSeen: true, interpretSeen: false, maneuver: null } });
+  T('PW1a/pasek-niewidoczny', !flowVisible(poObserwacji), 'pasek przebiegu na ekranie startowym jest ukryty');
+  eq('PW1b/krok-aktywny-null', activeStepId(poObserwacji), null);
+  eq('PW1/powrot-najdalszy', resumeStepId(poObserwacji, DEPS), 'nystagmus');
+  T('PW1c/widoczna', resumeVisible(poObserwacji, DEPS), 'jest do czego wracać');
+
+  // NAJDALSZY, nie pierwszy ani ostatni dotknięty: manewr wybrany „Znam kanał i stronę" daje
+  // krokowi „Interpretacja" status `skipped`, który TEŻ jest śladem przejścia.
+  const ekspercki = naStarcie({ testKey: null, canal: 'posterior' });
+  ekspercki.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
+  ekspercki.flow.maneuver = noteManeuver(ekspercki, 'epley', false, 'P');
+  eq('PW2/ekspercki-do-manewru', resumeStepId(ekspercki, DEPS), 'maneuver');
+
+  // Sam wynik kwalifikacji wstępnej też jest postępem.
+  const poWywiadzie = naStarcie({ flow: { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null,
+                                          triage: { complete: true, kategoria: 't-EVS', sciezka: 'bppv', pewnosc: 'wysoka', czerwona: false } } });
+  eq('PW3/po-wywiadzie', resumeStepId(poWywiadzie, DEPS), 'history');
+
+  // Podpis liczony TĄ SAMĄ formułą co pasek — inaczej „Krok 3 z 6" na starcie i „Krok 3 z 6"
+  // na pasku mogłyby zacząć znaczyć co innego.
+  eq('PW4/podpis-pl', resumeSummary(poObserwacji, 'pl', DEPS), { nr: 3, total: 6, label: 'Oczopląs', id: 'nystagmus' });
+  eq('PW5/podpis-en', (resumeSummary(poObserwacji, 'en', DEPS) || {}).label, 'Nystagmus');   // bez `?.` — regresja ma dac CZYTELNA liste bledow, nie stos wywolan
+  eq('PW6/podpis-pusty', resumeSummary(naStarcie(), 'pl', DEPS), null);
+
+  // Kropki postępu karty = te same statusy, co pasek przebiegu (zliczamy „zrobione").
+  const zrobione = (s) => flowStatuses(s, DEPS).filter(x => x.status !== 'todo' && x.status !== 'pending').length;
+  eq('PW7/kropki-zgadzaja-sie-z-paskiem', zrobione(poObserwacji), 2);
+}
+
 /* ============ 13b. Krok „Kontrola" po manewrze (Blok 11) ============
    Model przebiegu NIE zna słownika odpowiedzi — czyta STRESZCZENIE zapisane przez
    followup-state.syncKontrola, dokładnie jak kwalifikację wstępną z Bloku 6. Dzięki temu
@@ -633,7 +678,7 @@ if (bledy.length) {
   process.exit(1);
 }
 // Bramka liczności: skasowanie przypadków jest równie groźne jak zepsucie kodu.
-const OCZEKIWANE = 229;   // +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9 odcisk opisu; +8 (IN1-IN8) — Blok 9 wlasny ekran interpretacji; +7 (ZG6 przepisane: zgodnosc manewru dziala takze BEZ proby, na deklaracji kanalu i mechanizmu) — Blok 10; +17 (SH3/ST2-3/CL8/NX4/OS1 PRZEPISANE + sekcja KT1-KT16) — Blok 11 krok „Kontrola” przestaje byc pending
+const OCZEKIWANE = 241;   // +12 (PW0..PW7 + PW0b/PW1a/PW1b/PW1c) — powrot do przerwanej sesji na ekranie startowym (Blok 4); +4 (DR-A..D) +3 (ZT-N) +6 (sekcja 10 przepisana: krok „Oczoplas" ma wlasny ekran i istnieje dla KAZDEJ proby) — Blok 8; +3 (OD10-12) +7 (DR-O1..O6) — Blok 9 odcisk opisu; +8 (IN1-IN8) — Blok 9 wlasny ekran interpretacji; +7 (ZG6 przepisane: zgodnosc manewru dziala takze BEZ proby, na deklaracji kanalu i mechanizmu) — Blok 10; +17 (SH3/ST2-3/CL8/NX4/OS1 PRZEPISANE + sekcja KT1-KT16) — Blok 11 krok „Kontrola” przestaje byc pending
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

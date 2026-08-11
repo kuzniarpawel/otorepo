@@ -43,6 +43,8 @@ import { nowyZegar, startZegara, pauzaZegara, resetZegara, odliczono, ustawOdlic
 import { $, cancelAnims, loopRAF, rafOnce, easeInOut, syncWake, beep, vizNow, vizPeek, vizClock } from '../runtime/registry.js';
 import { zakonczSerie, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, pickSide, openMan, openTest, zmienManewr, ustawTrybCzasu, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
 import { markDecision, markSeen } from '../app/flow-state.js';
+import { flowStatuses, resumeStepId, resumeSummary } from '../app/flow-model.js';
+import { flowDeps } from '../app/flow-deps.js';
 import { activeQuestions, nextQuestionId, triageComplete, triageResult, czerwoneFlagi } from '../app/triage-model.js';
 import { t } from '../i18n.js';
 const tr = t;   // alias tlumaczenia dla funkcji HINTS z lokalnym 't' (string/param) — 'tr' (modul-scope) NIE jest przeslaniany, wiec nie koliduje w bundlu
@@ -762,8 +764,13 @@ function render(){
 // wystarcza — zmienia tryb, ale render() zostaje przy screen="start", więc dotknięcie karty
 // wyglądałoby na nieskuteczne.
 function startGo(mode){ state.mode=mode; state.screen="setup"; render(); }
-function startQuick(n, ico, tytul, opis, akcja){
-  return `<li><button type="button" class="quick" onclick="${akcja}">
+/* TON jest ARGUMENTEM, nie wyliczeniem z numeru: numer porządkowy i znaczenie kliniczne to dwie
+   różne rzeczy i przy zmianie kolejności pozycji nie mogą się rozjechać (1 → kanał tylny,
+   2 → kryterium czasu, 3 → obserwacja, 4 → wybór kanału, 5 → ryzyko ośrodkowe).
+   Barwa NIE jest jedynym nośnikiem znaczenia (Blok 2): numer, ikona i pełny opis zostają. */
+function startQuick(n, ico, tytul, opis, akcja, ton){
+  return `<li><button type="button" class="quick quick--${ton}" onclick="${akcja}"
+      onmouseenter="startHint('${ton}')" onmouseleave="startHint(null)">
       <span class="quick__n" aria-hidden="true">${n}</span>
       <span class="quick__ico" aria-hidden="true">${ico}</span>
       <span class="quick__txt"><b>${tytul}</b><small>${opis}</small></span>
@@ -772,6 +779,138 @@ function startQuick(n, ico, tytul, opis, akcja){
 function startScope(ico, nazwa, opis){
   return `<li class="scopeitem"><span class="scopeitem__ico" aria-hidden="true">${ico}</span>
       <span class="scopeitem__txt"><b>${nazwa}</b><small>${opis}</small></span></li>`;
+}
+
+/* ════════ SCENA KLINICZNA ════════
+   Render przestaje być kafelkiem w kolumnie bocznej i staje się ŚRODOWISKIEM: leży w tle prawej
+   części obszaru treści, a karty leżą na nim jak szkło. Obraz i jego poświata siedzą w JEDNYM
+   pudełku (`.startscene__plate`), bo poświata jest w PROCENTACH tego pudełka — dwa niezależne
+   kotwiczenia rozjeżdżają się przy każdej zmianie kadru.
+
+   `alt=""` jest ŚWIADOME: w tym wariancie render jest tłem, nie materiałem nauczania — nie ma
+   odnośników anatomicznych ani podpisu, więc dla czytnika ekranu nie nosi żadnej treści.
+   JEDYNE miejsce podmiany materiału (inny render, zrzut 3D, zdjęcie z gabinetu). Warunek kadru:
+   proporcja bliska 3:2, błędnik w prawej-górnej ćwiartce, tło ciemne; inny kadr wymaga
+   przeliczenia pary procentów `.startscene__glow` w start-scene.css. */
+const CLIN_RENDER = "assets/head-xray.jpg";
+
+/* `prefers-reduced-data` jest wciąż nierówno wspierane — BRAK WSPARCIA MUSI ZNACZYĆ „render",
+   inaczej wszyscy dostaliby wersję zastępczą. `typeof` na niezadeklarowanej nazwie nie rzuca,
+   więc to działa też w jsdom (który matchMedia nie ma w ogóle — zmierzone). */
+function prefersReducedData(){
+  try { return typeof matchMedia === "function" && matchMedia("(prefers-reduced-data: reduce)").matches; }
+  catch(e){ return false; }
+}
+function startScene(){
+  /* Oszczędzanie danych: zamiast pustego gradientu wchodzi SCHEMAT — kosztuje zero bajtów sieci
+     (siedzi w pakiecie), a geometrię bierze z CANAL_PATHS, czyli z tego samego źródła co fizyka. */
+  if(prefersReducedData())
+    return `<div class="startscene startscene--schemat" aria-hidden="true">
+      <span class="startscene__plate">${startAnatSVG()}</span></div>`;
+  return `<div class="startscene" aria-hidden="true">
+      <span class="startscene__plate">
+        <img class="startscene__img" src="${CLIN_RENDER}" alt="" width="1264" height="768" decoding="async">
+        <span class="startscene__glow"></span>
+      </span>
+    </div>`;
+}
+
+/* ════════ PANEL PODPOWIEDZI („co robi ta karta") ════════
+   Treść WYPROWADZONA Z DOKUMENTU (Bloki 5-13), nie wymyślona: karta ma powiedzieć, co się stanie
+   po kliknięciu. Panel ma `aria-hidden="true"` i jest chowany przy `(hover:none)` — powtarza
+   treść, którą każda karta podaje słowem, więc dla czytnika ekranu byłby ósmym opisem tych samych
+   siedmiu pozycji, a bez wskaźnika zostałby na wieki w spoczynku.
+   Podmiana idzie przez `textContent`, BEZ przerysowania ekranu: rerender na `mouseenter` gubi
+   hover i miga. */
+const START_HINTS = {
+  clin:  { ton:"var(--primary)", t:()=>t("Badam pacjenta","Examining a patient"),
+           d:()=>t("Sześć kroków: Wywiad → Próba → Oczopląs → Interpretacja → Manewr → Kontrola. Każdy krok ma status, a powrót do wcześniejszego nie kasuje danych późniejszych.",
+                   "Six steps: History → Test → Nystagmus → Interpretation → Maneuver → Follow-up. Every step carries a status, and going back to an earlier one does not erase later data.") },
+  learn: { ton:"var(--ant)", t:()=>t("Uczę się","Learning"),
+           d:()=>t("Przypadki prowadzone i quizy na trzech poziomach. Decyzja przed odsłonięciem odpowiedzi; każdy przypadek kończy cecha rozstrzygająca, pułapka i następny krok.",
+                   "Guided cases and quizzes at three levels. The decision comes before the answer is revealed; each case ends with the decisive feature, the pitfall and the next step.") },
+  kpost: { ton:"var(--post)", t:()=>t("Zawroty po zmianie pozycji","Vertigo after a change of position"),
+           d:()=>t("Dix–Hallpike, test rolki, Bow & Lean, deep head-hang. Kierunek, latencja i wygasanie oczopląsu wynikają z symulacji złogu, nie z tabeli.",
+                   "Dix–Hallpike, roll test, Bow & Lean, deep head-hang. Direction, latency and decay of the nystagmus follow from a simulation of the debris, not from a table.") },
+  ktime: { ton:"var(--timer)", t:()=>t("Ciągłe zawroty od godzin lub dni","Continuous vertigo for hours or days"),
+           d:()=>t("Kwalifikacja przed badaniem, potem test pchnięcia głową, oczopląs, test of skew, słuch i chód. Bez potwierdzenia obrazu klinicznego HINTS się nie otwiera.",
+                   "Qualification before the exam, then head impulse, nystagmus, test of skew, hearing and gait. Without confirming the clinical picture, HINTS does not open.") },
+  kobs:  { ton:"var(--primary)", t:()=>t("Mam wynik próby","I have a test result"),
+           d:()=>t("Od zaobserwowanego oczopląsu do kanału, strony i mechanizmu. Wynik podaje poziom zgodności, alternatywy i cechę rozstrzygającą.",
+                   "From the observed nystagmus to canal, side and mechanism. The result states the level of agreement, the alternatives and the decisive feature.") },
+  kant:  { ton:"var(--ant)", t:()=>t("Znam kanał i stronę","I know the canal and the side"),
+           d:()=>t("Tryb ekspercki — pomija wywiad i próbę. Epley, Semont, Bascule, Lempert/BBQ, Gufoni, Yacovino; licznik i kontrola po manewrze.",
+                   "Expert mode — skips history and test. Epley, Semont, Bascule, Lempert/BBQ, Gufoni, Yacovino; timer and follow-up after the maneuver.") },
+  krisk: { ton:"var(--crit)", t:()=>t("Przypadek nietypowy","Atypical case"),
+           d:()=>t("Cechy niezgodne z klasycznym obrazem i czerwone flagi ośrodkowe. Prowadzi do różnicowania, nie do manewru repozycyjnego.",
+                   "Features that do not fit the classic picture, plus central red flags. Leads to differentiation, not to a repositioning maneuver.") },
+};
+const START_HINT_SPOCZYNEK = { ton:"var(--faint)",
+  t:()=>t("Co robi ta karta?","What does this card do?"),
+  d:()=>t("Najedź kursorem na kartę trybu albo na szybkie wejście — tutaj pojawi się opis tego, co dana ścieżka faktycznie uruchamia.",
+          "Hover over a mode card or a quick entry — a description of what that path actually starts will appear here.") };
+function startHint(klucz){
+  const el = document.querySelector("[data-hint]"); if(!el) return;
+  const h = START_HINTS[klucz] || START_HINT_SPOCZYNEK;
+  el.style.setProperty("--tone", h.ton);
+  const b = el.querySelector("b"), s = el.querySelector("small");
+  if(b) b.textContent = h.t();
+  if(s) s.textContent = h.d();
+}
+function startHintHTML(){
+  const h = START_HINT_SPOCZYNEK;
+  return `<div class="starthint" aria-hidden="true" data-hint style="--tone:${h.ton}">
+      <b>${h.t()}</b><small>${h.d()}</small></div>`;
+}
+
+/* ════════ POWRÓT DO OSTATNIEJ SESJI ════════
+   Wejście wymagane przez Blok 4, dotąd nieobecne w interfejsie. CAŁA treść karty pochodzi ze
+   stanu — poza etykietami nic nie jest tekstem stałym.
+
+   BRAK ZNACZNIKA CZASU JEST ŚWIADOMY. Makieta miała podtytuł „…· przerwane 12 min temu", ale
+   `flow-state.js` zapisuje CO zrobił użytkownik, nigdy KIEDY. Dołożenie `updatedAt` wymagałoby
+   `Date.now()` w ścieżce zapisu, a złoty wzorzec przechodzi przez `markSeen`/`markManeuver` —
+   ekran startowy zacząłby więc zrzucać do wzorca liczbę zmieniającą się co minutę. Przybliżenie
+   („niedawno") jest niedopuszczalne: w karcie powrotu do BADANIA czas jest informacją kliniczną,
+   nie ozdobą. Sam podtytuł z próbą i stroną jest kompletny.
+
+   Bez sesji karta się nie renderuje i NIE zostawiamy po niej pustego miejsca — panel podpowiedzi
+   wypełnia kolumnę sam. */
+function startResumeOpis(){
+  const cz = [];
+  const proba = state.testKey && DIAG[state.testKey] ? DIAG[state.testKey].name : null;
+  const mk = state.flow && state.flow.maneuver ? state.flow.maneuver.key : null;
+  const man = mk && MANEUVERS[mk] ? MANEUVERS[mk].label : null;
+  if(proba) cz.push(proba); else if(man) cz.push(man);
+  if(state.side) cz.push(state.side==="P" ? t("strona prawa","right side") : t("strona lewa","left side"));
+  return cz.join(" · ");
+}
+function startResume(){
+  const FD = flowDeps();
+  const id = resumeStepId(state, FD);
+  if(!id) return "";
+  const sum = resumeSummary(state, state.lang, FD);
+  const kropki = flowStatuses(state, FD)
+    .map(st => `<i${st.status!=="todo" && st.status!=="pending" ? " data-done" : ""}></i>`).join("");
+  const opis = startResumeOpis();
+  /* AKCJA NISZCZĄCA IDZIE PRZEZ ISTNIEJĄCE, DWUSTOPNIOWE POTWIERDZENIE. `state.zakonczeniePyta`
+     obsługuje dokładnie to samo pytanie na ekranie kontroli — druga implementacja oznaczałaby
+     dwa miejsca, w których można zapomnieć o polu przypadku (błąd wycieku badania HINTS). */
+  const akcje = state.zakonczeniePyta
+    ? `<div class="startresume__pyta">
+         <small>${t("Nowy przypadek kasuje dane bieżącego badania. Kontynuować?","A new case erases the data of the current examination. Continue?")}</small>
+         <button type="button" class="startresume__go" onclick="zakonczSesje()">${t("Tak, zacznij nowy","Yes, start a new one")}</button>
+         <button type="button" class="startresume__new" onclick="pytajOZakonczeniu(false)">${t("Anuluj","Cancel")}</button>
+       </div>`
+    : `<button type="button" class="startresume__go" onclick="goFlowStep('${id}')">${t("Wróć do sesji","Back to the session")} <span aria-hidden="true">›</span></button>
+       <button type="button" class="startresume__new" onclick="pytajOZakonczeniu(true)">${t("Zacznij nowy przypadek","Start a new case")}</button>`;
+  return `<div class="startresume">
+      <span class="startresume__eyebrow">${t("Ostatnia sesja","Last session")}</span>
+      <b>${sum ? `${t("Krok","Step")} ${sum.nr} ${t("z","of")} ${sum.total} — ${sum.label}` : t("Badanie w toku","Examination in progress")}</b>
+      ${opis ? `<small>${opis}</small>` : ""}
+      <div class="startresume__steps" aria-hidden="true">${kropki}</div>
+      ${akcje}
+    </div>`;
 }
 
 /* ILUSTRACJA ANATOMICZNA EKRANU STARTOWEGO (mockupy D1/M1: głowa z podświetlonym błędnikiem
@@ -852,16 +991,22 @@ function renderStart(){
   };
   $("#app").innerHTML=`
     <section class="startpage">
+      ${startScene()}
       <div class="startgrid">
-        <div class="startcol">
+        <div class="starthead">
+          <span class="starteyebrow">${t("Atlas diagnostyki przedsionkowej","Atlas of vestibular diagnostics")}</span>
           <h2 class="starth">${t("Wybierz tryb","Choose a mode")}</h2>
+        </div>
+        <div class="startcol">
           <div class="modecards">
-            <button type="button" class="modecard modecard--clin" onclick="openTriage()">
+            <button type="button" class="modecard modecard--clin" onclick="openTriage()"
+                    onmouseenter="startHint('clin')" onmouseleave="startHint(null)">
               <span class="modecard__ico" aria-hidden="true">${I.lek}</span>
               <span class="modecard__txt"><b>${t("Badam pacjenta","Examining a patient")}</b>
                 <small>${t("Tryb kliniczny dla lekarzy i praktyków","Clinical mode for physicians and practitioners")}</small></span>
               <span class="modecard__go" aria-hidden="true">›</span></button>
-            <button type="button" class="modecard" onclick="goArea('learn')">
+            <button type="button" class="modecard" onclick="goArea('learn')"
+                    onmouseenter="startHint('learn')" onmouseleave="startHint(null)">
               <span class="modecard__ico" aria-hidden="true">${I.ucz}</span>
               <span class="modecard__txt"><b>${t("Uczę się","Learning")}</b>
                 <small>${t("Tryb edukacyjny dla studentów i lekarzy","Educational mode for students and physicians")}</small></span>
@@ -871,21 +1016,20 @@ function renderStart(){
           <h2 class="starth">${t("Co chcesz zrobić?","What do you want to do?")}</h2>
           <ul class="quicklist">
             ${startQuick(1, I.poz,  t("Zawroty po zmianie pozycji","Vertigo after a change of position"),
-                             t("Diagnostyka BPPV krok po kroku","Step-by-step BPPV work-up"), "startGo('diag')")}
+                             t("Diagnostyka BPPV krok po kroku","Step-by-step BPPV work-up"), "startGo('diag')", "kpost")}
             ${startQuick(2, I.czas, t("Ciągłe zawroty od godzin lub dni","Continuous vertigo for hours or days"),
-                             t("Kwalifikacja do HINTS / HINTS+","Qualification for HINTS / HINTS+"), "goHintsKwal()")}
+                             t("Kwalifikacja do HINTS / HINTS+","Qualification for HINTS / HINTS+"), "goHintsKwal()", "ktime")}
             ${startQuick(3, I.oko,  t("Mam wynik próby","I have a test result"),
-                             t("Opis oczopląsu i klasyfikacja","Nystagmus description and classification"), "startGo('diag')")}
+                             t("Opis oczopląsu i klasyfikacja","Nystagmus description and classification"), "startGo('diag')", "kobs")}
             ${startQuick(4, I.cel,  t("Znam kanał i stronę","I know the canal and the side"),
-                             t("Szybki wybór manewru","Quick maneuver selection"), "startGo('treat')")}
+                             t("Szybki wybór manewru","Quick maneuver selection"), "startGo('treat')", "kant")}
             ${startQuick(5, I.uwaga,t("Przypadek nietypowy","Atypical case"),
-                             t("Różnicowanie i czerwone flagi","Differentiation and red flags"), "goHintsKwal()")}
+                             t("Różnicowanie i czerwone flagi","Differentiation and red flags"), "goHintsKwal()", "krisk")}
           </ul>
         </div>
         <aside class="startside">
-          <figure class="startanat">${startAnatSVG()}</figure>
-          <p class="startnote"><span class="startnote__i" aria-hidden="true">i</span>
-            <span>${t("Oczopląs i czasy wynikają z symulacji fizyki złogu, nie z ręcznych adnotacji.","Nystagmus and timings follow from a physical simulation of the debris, not from manual annotations.")}</span></p>
+          ${startHintHTML()}
+          ${startResume()}
         </aside>
       </div>
 
@@ -3456,8 +3600,8 @@ function renderLabEksp(){
                               '<b>A bench, not a patient.</b> The app makes no diagnosis here and shows no verdict — it shows what changed in the EXAMINATION when you changed a number in the model.')}</div>`;
 }
 
-export { renderObs, syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable, renderNaukaBib, renderNaukaLekcja, renderLabLista, renderLabEksp };
+export { renderObs, syncVizBar, vizControls, pozySekwencja, perspNota, earMark, renderTriage, renderStart, startGo, startHint, startScene, startResume, FLIP_ICO, SIZE_LABELS, SIZE_NOTE, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable, renderNaukaBib, renderNaukaLekcja, renderLabLista, renderLabEksp };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { renderObs, syncVizBar, renderTriage, startGo, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });
+Object.assign(window, { renderObs, syncVizBar, renderTriage, startGo, startHint, renderStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });
