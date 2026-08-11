@@ -224,6 +224,14 @@ screenAngleCW(p) -> degrees
      (the fork of the vertical canals → a trunk to the utricle), utricle chamber. viewBox CROPPED to the content (38 35 205 164,
      no empty margins) + SVG scaled to 80% (inline style width:80%, centered); the LAB_* constants in svg-screens.js.
      Gufoni-apo (no exit) → a 'conversion maneuver' note in the labyrinth panel (renderGuide).
+     THE SAME GEOMETRY ON THE START SCREEN (startAnatSVG, Block 4/mockup D1): a head in profile with the
+     labyrinth highlighted, drawn from CANAL_PATHS/LAB_AMP/LAB_UTR/LAB_CRUS through a single transform
+     (scale LS, offset LX/LY in head space, HX/HY/HS in drawing space). The callout anchor points
+     ("semicircular canals", "utricle") are computed with the SAME gx/gy pair, so a leader line cannot
+     drift away from the drawing when the scale changes. The first screen must not teach an anatomy other
+     than the one the physics is computed on. Canal colours = the application colour code
+     (--post/--horiz/--ant), not the uniform glow of the mockup. The neck runs past the viewBox and is
+     clipped by it.
  [x] STAGE C: full body (trunk+neck+limbs) as a 3D projection — DONE (figProj/bodyJoints, see the
         figProj ARCHITECTURE below and the SESSION SUMMARY 2026-07-02). Free camera choice (K4) remains
         in migracja_3d.txt as a project for the future.

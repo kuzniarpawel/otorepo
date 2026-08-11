@@ -223,6 +223,13 @@ screenAngleCW(p) -> stopnie
      (widełki kan. pionowych → pień do łagiewki), komora łagiewki. viewBox PRZYCIĘTY do treści (38 35 205 164,
      bez pustych marginesów) + SVG skalowany do 80% (inline style width:80%, wyśrodkowany); stałe LAB_* w svg-screens.js.
      Gufoni-apo (brak wyjścia) → notka 'manewr konwersji' w panelu labiryntu (renderGuide).
+     TA SAMA GEOMETRIA NA EKRANIE STARTOWYM (startAnatSVG, Blok 4/mockup D1): głowa w profilu z
+     podświetlonym błędnikiem rysowanym z CANAL_PATHS/LAB_AMP/LAB_UTR/LAB_CRUS przez jedną transformację
+     (skala LS, przesunięcie LX/LY w układzie głowy, HX/HY/HS w układzie rysunku). Punkty odnośników
+     („kanały półkoliste", „łagiewka") liczą się TĄ SAMĄ parą gx/gy, więc kreska nie może się rozjechać
+     z rysunkiem po zmianie skali. Pierwszy ekran nie ma prawa uczyć innej anatomii niż ta, po której
+     liczona jest fizyka. Kolory kanałów = kod barwny aplikacji (--post/--horiz/--ant), nie jednolita
+     poświata z mockupu. Szyja wychodzi poza viewBox i jest przez niego przycięta.
  [x] ETAP C: pełne ciało (tułów+szyja+kończyny) jako rzut 3D — ZROBIONE (figProj/bodyJoints, patrz
         ARCHITEKTURA figProj niżej oraz PODSUMOWANIE SESJI 2026-07-02). Swobodny wybór kamery (K4) pozostaje
         w migracja_3d.txt jako projekt na przyszłość.

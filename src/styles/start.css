@@ -2,8 +2,22 @@
  *
  * Zasada z dokumentu: na telefonie JEDNA dominująca akcja i wszystkie podstawowe wejścia widoczne
  * bez menu hamburgerowego; na komputerze ta sama treść rozkłada się na szerokość, bez zmiany
- * znaczeń. Kolejność w DOM jest mobilna, a układ dwukolumnowy włącza zapytanie kontenera z
- * layout.css (.pagegrid) — ten sam mechanizm co na ekranie manewru.
+ * znaczeń. Kolejność w DOM jest mobilna, a układ wielokolumnowy włącza zapytanie kontenera.
+ *
+ * ═══ DLACZEGO WŁASNA SIATKA, A NIE `.pagegrid` ═══
+ * Ekran startowy używał wspólnej `.pagegrid`, która ma proporcje ekranu MANEWRU: wąska kolumna
+ * sterowania (300-380 px) po lewej i szeroka wizualizacja po prawej. Na ekranie startowym wychodziło
+ * z tego dokładne ODWRÓCENIE mockupu D1 — pięć szybkich wejść ściskało się w 380 px, a opisowy panel
+ * „Zakres narzędzia" dostawał 536 px (zmierzone przy oknie 1280 px). Stąd `.startgrid`: treść dostaje
+ * kolumnę elastyczną, ilustracja — wąską i ograniczoną.
+ *
+ * ═══ DLACZEGO SZYBKIE WEJŚCIA MAJĄ DWIE POSTACIE Z JEDNEGO DOM ═══
+ * Dokument: komputer — „pięć szybkich kart może być ułożonych w jednym rzędzie lub siatce";
+ * telefon — „szybkie wejścia jako pionowe, całkowicie klikalne wiersze". To ten sam markup:
+ * poniżej progu `.quick` jest wierszem (flex), powyżej — kartą (block + wyśrodkowanie). Żadna
+ * treść nie znika i nie pojawia się wraz z szerokością, więc czytnik ekranu widzi zawsze to samo.
+ * Pięć kolumn dopiero od 1160 px kontenera, bo przy 900 px karta miałaby ~98 px i tytuł przestałby
+ * być czytelny — liczba kolumn wynika z miejsca, nie z liczby pozycji.
  */
 
 .startpage{ padding-block:var(--sp-2) var(--sp-6); }
@@ -12,7 +26,9 @@
   font-family:var(--display); font-size:clamp(20px, 5vw, 26px); font-weight:700;
   letter-spacing:-.01em; margin:var(--sp-6) 0 var(--sp-4);
 }
-.startpage > .starth:first-child{ margin-top:var(--sp-2); }
+.startcol > .starth:first-child{ margin-top:var(--sp-2); }
+
+.startgrid{ display:block; }
 
 /* --- dwie karty trybu --- */
 .modecards{ display:grid; gap:var(--sp-3); }
@@ -65,21 +81,130 @@
 .quick__txt small{ display:block; margin-top:2px; font-size:12.5px; color:var(--muted); line-height:1.3; }
 .quick__go{ flex:0 0 auto; font-size:20px; color:var(--faint); line-height:1; }
 
-/* --- panel boczny (na telefonie ląduje pod listą i NIE spycha pierwszych działań poniżej ekranu) --- */
-.startaside h4{
-  margin:0 0 var(--sp-3); font-family:var(--display); font-size:10.5px;
-  letter-spacing:.15em; text-transform:uppercase; color:var(--faint); font-weight:700;
+/* --- kolumna boczna: ilustracja anatomiczna + nota (mockup D1, prawa strona) ---
+   NA TELEFONIE ląduje POD listą szybkich wejść. Mockup M1 pokazuje ją przy nagłówku, ale kryterium
+   odbioru z tego samego bloku mówi wprost: „ilustracja jest mała i NIE spycha pierwszych działań
+   poniżej pierwszego ekranu" — kolejność w DOM rozstrzyga to na korzyść kryterium. */
+.startside{ margin-top:var(--sp-5); display:grid; gap:var(--sp-3); }
+.startanat{
+  margin:0; padding:var(--sp-3);
+  background:linear-gradient(165deg, color-mix(in oklab, var(--primary) 7%, var(--panel)), var(--panel) 70%);
+  border:1px solid var(--line); border-radius:var(--r-lg);
 }
-.startscope{ list-style:none; margin:0; padding:0; display:grid; gap:var(--sp-2); }
-.startscope li{ font-size:13.5px; line-height:1.4; color:var(--muted); }
-.startscope b{ color:var(--text); }
+.startanat svg{ display:block; width:100%; height:auto; max-width:340px; margin-inline:auto; }
+.startnote{
+  display:flex; gap:var(--sp-3); align-items:flex-start; margin:0;
+  padding:var(--sp-3) var(--sp-4);
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md);
+  font-size:12.5px; line-height:1.45; color:var(--muted);
+}
+.startnote__i{
+  flex:0 0 auto; width:22px; height:22px; border-radius:var(--r-pill);
+  display:grid; place-items:center; font-weight:800; font-size:12px; color:var(--primary);
+  border:1px solid color-mix(in srgb, var(--primary) 55%, var(--line-strong));
+}
+
+/* --- listwa zakresu (mockup D1, dół ekranu) ---
+   Cztery pozycje, nie trzy jak na planszy: „Laboratorium" jest realnym obszarem tej aplikacji,
+   a mockup jest wzorcem UKŁADU, przy zachowaniu „realnych tekstów i komponentów aplikacji".
+   Listwa jest OPISEM zakresu, nie nawigacją — stąd brak stanu hover i brak roli przycisku. */
+.scopestrip{
+  list-style:none; margin:var(--sp-6) 0 0; padding:var(--sp-4) 0 0;
+  border-top:1px solid var(--line);
+  display:grid; gap:var(--sp-4);
+}
+.scopeitem{ display:flex; align-items:center; gap:var(--sp-3); min-width:0; }
+.scopeitem__ico{ flex:0 0 auto; width:34px; height:34px; color:var(--primary); }
+.scopeitem__ico svg{ width:34px; height:34px; }
+.scopeitem__txt{ min-width:0; }
+.scopeitem__txt b{ display:block; font-family:var(--display); font-size:14.5px; line-height:1.2; }
+.scopeitem__txt small{ display:block; margin-top:2px; font-size:12px; color:var(--muted); line-height:1.35; }
 
 .startpage .disclaimer{ margin-top:var(--sp-6); }
 
 @container main (min-width:900px){
-  /* Karty trybu obok siebie dopiero wtedy, gdy jest na to miejsce — na wąskim ekranie muszą
-     zostać jedna pod drugą, żeby każda mieściła się w zasięgu kciuka. */
-  .modecards{ grid-template-columns:1fr 1fr; }
-  .startgrid{ margin-top:var(--sp-2); }
-  .startpage .col--viz .startaside{ position:sticky; top:var(--sp-2); }
+  /* Treść z lewej, ilustracja z prawej — proporcje z mockupu D1 (ilustracja NIE dostaje
+     połowy ekranu; jej zadaniem jest osadzić temat, nie konkurować z decyzją). */
+  .startgrid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(240px,320px);
+    column-gap:var(--sp-6);
+    align-items:start;
+  }
+  .startside{ margin-top:0; position:sticky; top:var(--sp-2); }
+  .startanat svg{ max-width:none; }
+
+  /* Karty trybu obok siebie dopiero wtedy, gdy jest na to miejsce — przy wąskiej kolumnie muszą
+     zostać jedna pod drugą, żeby opis trybu nie łamał się na cztery wiersze. */
+  .modecards{ grid-template-columns:repeat(auto-fit, minmax(250px,1fr)); }
+
+  /* SZYBKIE WEJŚCIA JAKO KARTY (mockup D1). Numer wchodzi w narożnik, ikona i tytuł na oś pionową,
+     opis oddzielony kreską — chevron znika, bo cała karta jest przyciskiem i strzałka w wersji
+     kafelkowej wskazywałaby donikąd.
+     Liczba kolumn jest JAWNA (3, potem 5), a nie z `auto-fit`: przy kolumnie treści 832 px auto-fit
+     dawał 4+1, czyli osieroconą kartę w drugim rzędzie (zmierzone przy oknie 1760 px). Trzy i pięć
+     dzielą pięć pozycji bez sieroty — 5 w jednym rzędzie to układ z mockupu D1, 3+2 to dopuszczona
+     przez dokument „siatka". */
+  .quicklist{ grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--sp-3); }
+  .quicklist > li{ display:flex; }
+  .quick{
+    display:block; position:relative; text-align:center;
+    padding:var(--sp-5) var(--sp-3) var(--sp-4);
+  }
+  .quick__n{ position:absolute; top:var(--sp-3); left:var(--sp-3); }
+  .quick__ico{ display:block; width:38px; height:38px; margin:var(--sp-1) auto var(--sp-3); }
+  .quick__ico svg{ width:38px; height:38px; }
+  .quick__txt{ display:block; }
+  .quick__txt small{
+    margin-top:var(--sp-3); padding-top:var(--sp-3);
+    border-top:1px solid var(--line);
+  }
+  .quick__go{ display:none; }
+
+  .scopestrip{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:0; }
+  .scopeitem{ padding-inline:var(--sp-4); }
+  .scopeitem:first-child{ padding-left:0; }
+  .scopeitem + .scopeitem{ border-left:1px solid var(--line); }
+}
+
+/* Pięć kart w JEDNYM RZĘDZIE — układ z mockupu D1.
+   Próg 1160 px NIE jest okrągłą liczbą z sufitu: kontener zapytań to treść .mainscroll, a jej
+   szerokość jest twardo ograniczona przez --content-max (1560) minus szyna (272) minus oddech
+   powłoki (2x40) = 1208 px MAKSIMUM. Pierwotny próg 1240 px był więc nieosiągalny — pięć kart
+   nie pokazałoby się nigdy. Przy 1160 px kolumna treści ma ~800 px, czyli po ~151 px na kartę
+   (zmierzone: tytuł mieści się w dwóch wierszach). */
+@container main (min-width:1160px){
+  .quicklist{ grid-template-columns:repeat(5, minmax(0,1fr)); }
+}
+
+/* WebView < 105 (Capacitor, minSdk 24) nie zna zapytań kontenera — bez tego układ zwinąłby się
+   po cichu do jednej kolumny. Próg okna wyższy o szerokość szyny bocznej (jak w layout.css). */
+@supports not (container-type:inline-size){
+  @media (min-width:1200px){
+    .startgrid{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(240px,320px);
+      column-gap:var(--sp-6);
+      align-items:start;
+    }
+    .startside{ margin-top:0; position:sticky; top:var(--sp-2); }
+    .startanat svg{ max-width:none; }
+    .modecards{ grid-template-columns:repeat(auto-fit, minmax(250px,1fr)); }
+    .quicklist{ grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--sp-3); }
+    .quicklist > li{ display:flex; }
+    .quick{ display:block; position:relative; text-align:center; padding:var(--sp-5) var(--sp-3) var(--sp-4); }
+    .quick__n{ position:absolute; top:var(--sp-3); left:var(--sp-3); }
+    .quick__ico{ display:block; width:38px; height:38px; margin:var(--sp-1) auto var(--sp-3); }
+    .quick__ico svg{ width:38px; height:38px; }
+    .quick__txt{ display:block; }
+    .quick__txt small{ margin-top:var(--sp-3); padding-top:var(--sp-3); border-top:1px solid var(--line); }
+    .quick__go{ display:none; }
+    .scopestrip{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:0; }
+    .scopeitem{ padding-inline:var(--sp-4); }
+    .scopeitem:first-child{ padding-left:0; }
+    .scopeitem + .scopeitem{ border-left:1px solid var(--line); }
+  }
+  @media (min-width:1512px){                 /* = kontener 1160 px + szyna 272 px + 2x40 px oddechu */
+    .quicklist{ grid-template-columns:repeat(5, minmax(0,1fr)); }
+  }
 }

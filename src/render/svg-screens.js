@@ -769,6 +769,72 @@ function startQuick(n, ico, tytul, opis, akcja){
       <span class="quick__txt"><b>${tytul}</b><small>${opis}</small></span>
       <span class="quick__go" aria-hidden="true">›</span></button></li>`;
 }
+function startScope(ico, nazwa, opis){
+  return `<li class="scopeitem"><span class="scopeitem__ico" aria-hidden="true">${ico}</span>
+      <span class="scopeitem__txt"><b>${nazwa}</b><small>${opis}</small></span></li>`;
+}
+
+/* ILUSTRACJA ANATOMICZNA EKRANU STARTOWEGO (mockupy D1/M1: głowa z podświetlonym błędnikiem
+   i dwoma odnośnikami do struktur).
+   Dwie decyzje, obie merytoryczne, nie estetyczne:
+   1. Geometria kanałów, baniek i łagiewki jest brana Z TEGO SAMEGO ŹRÓDŁA, co schemat wędrówki
+      złogu (CANAL_PATHS / LAB_AMP / LAB_UTR / LAB_CRUS). Obrazek na pierwszym ekranie nie ma
+      prawa pokazywać innej anatomii niż ta, po której liczona jest fizyka — inaczej użytkownik
+      uczyłby się układu, którego dwa ekrany dalej już nie zobaczy.
+   2. Kanały dostają kod barwny CAŁEJ aplikacji (tylny/poziomy/przedni), a nie jednolitą poświatę
+      z mockupu. Mockup jest wzorcem układu i hierarchii („nie specyfikacja piksel w piksel"),
+      a kolor kanału jest w tej aplikacji nośnikiem informacji.
+   Głowa jest schematyczna — ten sam idiom, co reszta rysunków (backHeadSVG, figProj). */
+function startAnatSVG(){
+  const COL={posterior:"var(--post)", horizontal:"var(--horiz)", anterior:"var(--ant)"};
+  let kanaly="";
+  for(const k of ["anterior","horizontal","posterior"]){         // poświata (szeroka, przezroczysta) + rdzeń
+    kanaly+=`<path d="${CANAL_PATHS[k]}" fill="none" stroke="${COL[k]}" stroke-width="17" stroke-linecap="round" opacity=".18"/>`
+          + `<path d="${CANAL_PATHS[k]}" fill="none" stroke="${COL[k]}" stroke-width="7" stroke-linecap="round"/>`;
+  }
+  let banki="";
+  for(const k in LAB_AMP){ const a=LAB_AMP[k];
+    banki+=`<ellipse cx="${a.x}" cy="${a.y}" rx="11" ry="8.5" fill="#22303D" stroke="${COL[k]}" stroke-width="3.5"/>`; }
+  /* Umiejscowienie błędnika W GŁOWIE. Skala i przesunięcie tak dobrane, żeby środek trafił na
+     okolicę ucha (rysowanego niżej), a nie w skroń — inaczej obrazek uczyłby złej lokalizacji.
+     Punkty odnośników liczone TĄ SAMĄ transformacją, więc kreska nie może się rozjechać z rysunkiem. */
+  const LS=0.38, LX=200, LY=112;                                 // błędnik: skala i przesunięcie W UKŁADZIE GŁOWY
+  const HX=-4, HY=-6, HS=1.08;                                   // głowa: przesunięcie i skala W UKŁADZIE RYSUNKU
+  const gx=x=>HX+(LX+(x-38)*LS)*HS, gy=y=>HY+(LY+(y-35)*LS)*HS;  // struktura błędnika → współrzędne rysunku
+  const blednik=`<g transform="translate(${LX} ${LY}) scale(${LS}) translate(-38 -35)">
+      <path d="M${LAB_CRUS.fx} ${LAB_CRUS.fy} L${LAB_UTR.cx} ${LAB_UTR.cy-LAB_UTR.ry+2}" fill="none" stroke="#4A5F72" stroke-width="9" stroke-linecap="round"/>
+      <ellipse cx="${LAB_UTR.cx}" cy="${LAB_UTR.cy}" rx="${LAB_UTR.rx}" ry="${LAB_UTR.ry}" fill="#22303D" stroke="#7E94A6" stroke-width="4"/>
+      ${kanaly}${banki}</g>`;
+  // Głowa w profilu, twarzą w prawo — JEDNA ścieżka (bez szwów między nachodzącymi kształtami).
+  // Szyja WYCHODZI POZA viewBox i jest przez niego przycięta. Domknięta u dołu dawała pudełkowy
+  // kołnierz, bo w tej skali nie ma już miejsca na barki — kadr kończy rysunek za nas.
+  const glowa=`<path d="M238 26 C204 26 168 52 166 98 C165 128 176 150 186 160 C187 180 188 198 187 216
+      L187 262 L258 262 C256 240 254 220 255 203 C275 201 288 191 290 178
+      C291 172 287 170 289 165 C292 160 287 158 290 153 C293 148 300 150 304 146
+      L316 136 C310 126 302 120 300 110 C299 102 304 98 302 90 C298 58 272 26 238 26 Z"
+      fill="#101822" stroke="#3C5165" stroke-width="2"/>`;
+  const ucho=`<path d="M206 138 c-11 1 -17 10 -16 20 1 9 5 15 11 19" fill="none" stroke="#4A5F72" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M201 152 c-5 1 -7 6 -5 10" fill="none" stroke="#4A5F72" stroke-width="2" stroke-linecap="round"/>`;
+  // Odnośniki celują w punkty POLICZONE z geometrii błędnika: szczyt pętli kanału tylnego (najbliżej
+  // etykiety) i środek łagiewki. Ręcznie wpisane współrzędne rozjechałyby się przy każdej zmianie skali.
+  const pKan=[gx(60), gy(68)], pLag=[gx(LAB_UTR.cx), gy(LAB_UTR.cy)];
+  const pGlow=[gx(140), gy(112)], rGlow=(205*LS*HS)*0.86;
+  const odn=(x,y,d,cx,cy,txt)=>`<path d="${d}" fill="none" stroke="var(--faint)" stroke-width="1.2" opacity=".75"/>
+      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.6" fill="var(--faint)"/>
+      <text x="${x}" y="${y}" fill="var(--faint)" font-size="9.5" letter-spacing=".07em">${txt}</text>`;
+  return `<svg viewBox="0 0 360 250" role="img" aria-label="${t(
+      "Schemat: głowa w profilu z zaznaczonym błędnikiem — trzy kanały półkoliste z bańkami i łagiewka",
+      "Diagram: head in profile with the labyrinth highlighted — three semicircular canals with ampullae and the utricle")}">
+    <defs><radialGradient id="otoglow"><stop offset="0" stop-color="var(--primary)" stop-opacity=".22"/>
+      <stop offset="1" stop-color="var(--primary)" stop-opacity="0"/></radialGradient></defs>
+    <g transform="translate(${HX} ${HY}) scale(${HS})">${glowa}${ucho}</g>
+    <circle cx="${pGlow[0].toFixed(1)}" cy="${pGlow[1].toFixed(1)}" r="${rGlow.toFixed(1)}" fill="url(#otoglow)"/>
+    <g transform="translate(${HX} ${HY}) scale(${HS})">${blednik}</g>
+    ${odn(8, 60, `M92 66 H176 L${pKan[0].toFixed(1)} ${pKan[1].toFixed(1)}`, pKan[0], pKan[1], t("KANAŁY","SEMICIRCULAR"))}
+    <text x="8" y="72" fill="var(--faint)" font-size="9.5" letter-spacing=".07em">${t("PÓŁKOLISTE","CANALS")}</text>
+    ${odn(8, 194, `M78 190 H196 L${pLag[0].toFixed(1)} ${pLag[1].toFixed(1)}`, pLag[0], pLag[1], t("ŁAGIEWKA","UTRICLE"))}
+  </svg>`;
+}
 function renderStart(){
   const I = {
     poz:  '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="6" r="2.6" stroke="currentColor" stroke-width="1.8"/><path d="M6 20c0-3.6 2.7-6 6-6s6 2.4 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 9.5 6.5 7M20 9.5 17.5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -778,25 +844,30 @@ function renderStart(){
     uwaga:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 4.5 21 19.5H3L12 4.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4M12 16.6v.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
     lek:  '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="6.2" r="2.8" stroke="currentColor" stroke-width="1.8"/><path d="M7 11.5v3.2a5 5 0 0 0 10 0v-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>',
     ucz:  '<svg viewBox="0 0 24 24" fill="none"><path d="M3 8.5 12 4.5l9 4-9 4-9-4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M6.5 10.5v5c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    /* ikony paska zakresu (mockup D1, dolna listwa) */
+    rep:  '<svg viewBox="0 0 24 24" fill="none"><path d="M4 9.5A6 6 0 0 1 15.5 7.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20 14.5A6 6 0 0 1 8.5 16.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M13 5.2 15.9 7.6 13.4 10.4M11 18.8 8.1 16.4 10.6 13.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    diag: '<svg viewBox="0 0 24 24" fill="none"><rect x="4.5" y="4" width="15" height="16" rx="2.4" stroke="currentColor" stroke-width="1.8"/><path d="M9 3h6v3H9z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7.5 14h2l1.5-3 2 5 1.5-2h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    mozg: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 5.2v13.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 6.2A2.7 2.7 0 0 0 7 5.6 2.6 2.6 0 0 0 4.8 9a2.7 2.7 0 0 0-.3 4.6A2.7 2.7 0 0 0 7.4 18a2.6 2.6 0 0 0 4.6-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 6.2A2.7 2.7 0 0 1 17 5.6 2.6 2.6 0 0 1 19.2 9a2.7 2.7 0 0 1 .3 4.6A2.7 2.7 0 0 1 16.6 18a2.6 2.6 0 0 1-4.6-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    lab:  '<svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="2.2" fill="var(--panel)" stroke="currentColor" stroke-width="1.8"/><circle cx="15" cy="12" r="2.2" fill="var(--panel)" stroke="currentColor" stroke-width="1.8"/><circle cx="10.5" cy="17" r="2.2" fill="var(--panel)" stroke="currentColor" stroke-width="1.8"/></svg>',
   };
   $("#app").innerHTML=`
     <section class="startpage">
-      <h2 class="starth">${t("Wybierz tryb","Choose a mode")}</h2>
-      <div class="modecards">
-        <button type="button" class="modecard modecard--clin" onclick="openTriage()">
-          <span class="modecard__ico" aria-hidden="true">${I.lek}</span>
-          <span class="modecard__txt"><b>${t("Badam pacjenta","Examining a patient")}</b>
-            <small>${t("Tryb kliniczny dla lekarzy i praktyków","Clinical mode for physicians and practitioners")}</small></span>
-          <span class="modecard__go" aria-hidden="true">›</span></button>
-        <button type="button" class="modecard" onclick="goArea('learn')">
-          <span class="modecard__ico" aria-hidden="true">${I.ucz}</span>
-          <span class="modecard__txt"><b>${t("Uczę się","Learning")}</b>
-            <small>${t("Tryb edukacyjny dla studentów i lekarzy","Educational mode for students and physicians")}</small></span>
-          <span class="modecard__go" aria-hidden="true">›</span></button>
-      </div>
+      <div class="startgrid">
+        <div class="startcol">
+          <h2 class="starth">${t("Wybierz tryb","Choose a mode")}</h2>
+          <div class="modecards">
+            <button type="button" class="modecard modecard--clin" onclick="openTriage()">
+              <span class="modecard__ico" aria-hidden="true">${I.lek}</span>
+              <span class="modecard__txt"><b>${t("Badam pacjenta","Examining a patient")}</b>
+                <small>${t("Tryb kliniczny dla lekarzy i praktyków","Clinical mode for physicians and practitioners")}</small></span>
+              <span class="modecard__go" aria-hidden="true">›</span></button>
+            <button type="button" class="modecard" onclick="goArea('learn')">
+              <span class="modecard__ico" aria-hidden="true">${I.ucz}</span>
+              <span class="modecard__txt"><b>${t("Uczę się","Learning")}</b>
+                <small>${t("Tryb edukacyjny dla studentów i lekarzy","Educational mode for students and physicians")}</small></span>
+              <span class="modecard__go" aria-hidden="true">›</span></button>
+          </div>
 
-      <div class="pagegrid startgrid">
-        <div class="col col--ctl">
           <h2 class="starth">${t("Co chcesz zrobić?","What do you want to do?")}</h2>
           <ul class="quicklist">
             ${startQuick(1, I.poz,  t("Zawroty po zmianie pozycji","Vertigo after a change of position"),
@@ -811,19 +882,19 @@ function renderStart(){
                              t("Różnicowanie i czerwone flagi","Differentiation and red flags"), "goHintsKwal()")}
           </ul>
         </div>
-        <div class="col col--viz">
-          <div class="card startaside">
-            <h4>${t("Zakres narzędzia","Scope of the tool")}</h4>
-            <ul class="startscope">
-              <li><b>${t("Repozycja","Repositioning")}</b> — ${t("manewry i protokoły","maneuvers and protocols")}</li>
-              <li><b>${t("Diagnostyka","Diagnostics")}</b> — ${t("testy pozycyjne, oczopląs, klasyfikacja Bárány","positional tests, nystagmus, Bárány classification")}</li>
-              <li><b>HINTS</b> — ${t("różnicowanie obwód ↔ ośrodek","peripheral ↔ central differentiation")}</li>
-              <li><b>${t("Laboratorium","Laboratory")}</b> — ${t("matematyczny pacjent (parametry fizjologii)","mathematical patient (physiology parameters)")}</li>
-            </ul>
-            <p class="note">${t("Oczopląs i czasy wynikają z symulacji fizyki złogu, nie z ręcznych adnotacji.","Nystagmus and timings follow from a physical simulation of the debris, not from manual annotations.")}</p>
-          </div>
-        </div>
+        <aside class="startside">
+          <figure class="startanat">${startAnatSVG()}</figure>
+          <p class="startnote"><span class="startnote__i" aria-hidden="true">i</span>
+            <span>${t("Oczopląs i czasy wynikają z symulacji fizyki złogu, nie z ręcznych adnotacji.","Nystagmus and timings follow from a physical simulation of the debris, not from manual annotations.")}</span></p>
+        </aside>
       </div>
+
+      <ul class="scopestrip">
+        ${startScope(I.rep,  t("Repozycja","Repositioning"), t("Manewry i protokoły","Maneuvers and protocols"))}
+        ${startScope(I.diag, t("Diagnostyka","Diagnostics"), t("Testy pozycyjne i klasyfikacja Bárány","Positional tests and Bárány classification"))}
+        ${startScope(I.mozg, "HINTS+", t("Ocena zawrotów ośrodkowych","Assessment of central vertigo"))}
+        ${startScope(I.lab,  t("Laboratorium","Laboratory"), t("Matematyczny pacjent (parametry fizjologii)","Mathematical patient (physiology parameters)"))}
+      </ul>
 
       <div class="disclaimer">${t('<b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem.','<b>Support tool for medical staff.</b> Does not replace examination, diagnosis, or clinician judgment. Nystagmus timings and patterns are illustrative — verify against your own protocol.')}</div>
     </section>`;
