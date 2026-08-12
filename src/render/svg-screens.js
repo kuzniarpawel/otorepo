@@ -1545,7 +1545,7 @@ function renderFollowup(){
       <button class="recoprimary" onclick="wrocDoManewru()">${m&&m.key?t("Wróć do manewru","Back to the maneuver"):t("Wybierz manewr","Choose a maneuver")}</button></div>`;
     return `<div class="card fupyt"><h4>${t("Co obserwujesz teraz?","What do you observe now?")}</h4>
       <div class="note">${t("Odpowiedź opisuje TWOJĄ obserwację po repozycji. Aplikacja nie ocenia skuteczności manewru — wyprowadza z odpowiedzi następny krok.","The answer describes YOUR observation after repositioning. The app does not judge the maneuver's effectiveness — it derives the next step from the answer.")}</div>
-      <ul class="fuopcje">${WYNIKI.map(w=>`<li><button type="button" class="fuopcja" aria-pressed="${wybrany===w.id}" onclick="ustawWynikKontroli('${w.id}')">
+      <ul class="fuopcje">${WYNIKI.map(w=>`<li><button type="button" class="fuopcja" data-fuwynik="${w.id}" aria-pressed="${wybrany===w.id}" onclick="ustawWynikKontroli('${w.id}')">
         <span class="fuopcja__n">${t(w.pl, w.en)}</span>
         <span class="fuopcja__o">${t(w.pytaniePl, w.pytanieEn)}</span></button></li>`).join("")}</ul>
       ${wybrany==="niewiarygodne" ? `<div class="fupowod"><span class="eyebrow">${t("Dlaczego nie da się ocenić","Why it cannot be assessed")}</span>
@@ -1587,7 +1587,7 @@ function renderFollowup(){
       ? `<div class="fualt"><span class="eyebrow">${t("Alternatywny manewr tego kanału","Alternative maneuver for this canal")}</span>
           ${alternatywy.map(k=>`<button class="recoalt" onclick="kontrolaAlternatywa('${k}')">${MANEUVERS[k].label}</button>`).join("")}</div>`
       : "";
-    return `<div class="card fudalej"><h4>${t("Co dalej","What next")}</h4>
+    return `<div class="card fudalej" data-fuwynik="${wybrany}"><h4>${t("Co dalej","What next")}</h4>
       <div class="note fuuwaga">${t(wynikDef.uwagaPl, wynikDef.uwagaEn)}</div>
       ${sprzecz.length?`<ul class="fusprzecz">${sprzecz.map(s=>`<li>${t(s.pl, s.en)}</li>`).join("")}</ul>`:""}
       ${glowny}
@@ -1618,7 +1618,7 @@ function renderFollowup(){
       <ol class="fuseria__l">${lista.map((k,i)=>{
         const w = wynikKontroli(k.wynik);
         const czasy = (k.czasy||[]).filter(x=>x!=null);
-        return `<li><b>${MANEUVERS[k.manewr]?MANEUVERS[k.manewr].label:k.manewr}</b> · ${t("ucho","ear")} ${sideN(k.strona,"mianN")}
+        return `<li data-fuwynik="${k.wynik}"><b>${MANEUVERS[k.manewr]?MANEUVERS[k.manewr].label:k.manewr}</b> · ${t("ucho","ear")} ${sideN(k.strona,"mianN")}
           <span class="fuseria__w">${w?t(w.pl,w.en):k.wynik}</span>
           ${k.powod?`<span class="fuseria__p">${(()=>{const p=POWODY_NIEWIARYGODNOSCI.find(x=>x.id===k.powod); return p?t(p.pl,p.en):k.powod;})()}</span>`:""}
           ${czasy.length?`<span class="fuseria__c">${t("czasy z planu","times from the plan")}: ${czasy.map(s=>fmtClock(s)).join(" · ")}${k.czasySkad==="planPodniesiony"?` (${t("podniesione trybem „do ustąpienia oczopląsu”","raised by the “until nystagmus subsides” mode")})`:""}</span>`:""}

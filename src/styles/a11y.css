@@ -14,6 +14,21 @@
 .tcard .go,
 .pillseg button,
 .advbox summary,
+/* Rozwijane sekcje tury 3 — `.ndet` to „Dlaczego / Pułapka / Co dalej" w informacji zwrotnej
+   Nauki, `.lgrupa` to grupy parametrów Laboratorium. Oba są wyzwalaczami rozwinięcia, dokładnie
+   jak `.advbox summary` wyżej, więc podlegają tej samej regule. ZMIERZONE po wdrożeniu
+   rest-scene.css: trzy `<summary>` w `.ndet` stały na 32 px. Wpis należy TUTAJ, a nie
+   w rest-scene.css: pole dotykowe jest niezmiennikiem aplikacji, a ten arkusz idzie ostatni
+   i wygrywa z arkuszami ekranów.
+
+   CZEGO TU CELOWO NIE MA: `.lparam__n` (30 sztuk), `.lstan` i `.nwsk__b` stoją na 36 px, bo tyle
+   dała paczka projektowa. Zmierzone przed wdrożeniem: miały 22 px, więc tura je PODNIOSŁA, a 36 px
+   jest powyżej progu WCAG 2.2 AA (24 px). Nie podciągamy ich do --tap, bo `.lparam__n` siedzi
+   w wierszu wyrównanym do LINII BAZOWEJ razem z wartością parametru — wymuszenie 40 px rozbiłoby
+   to wyrównanie, a rozwiązanie pseudo-elementem (jak przy przełączniku 2D/3D niżej) kolidowałoby
+   ze znacznikiem `.lparam__i`. To jest świadomie odłożone, nie przeoczone. */
+.ndet summary,
+.lgrupa > summary,
 .preset,
 .langbar button,
 .sizepill button{ min-height:var(--tap); }
@@ -61,6 +76,14 @@
    więc strefa chwytu też miała 7 px. Na ekranie „matematycznego pacjenta" jest ich 32.
    Podnosimy WYSOKOŚĆ ELEMENTU do pola dotykowego, a wygląd toru przenosimy na pseudo-element
    ścieżki — dzięki temu suwak wygląda identycznie, a da się go chwycić kciukiem. */
+/* Ta sama luka i to samo lekarstwo dla suwaków LABORATORIUM. Zmierzone: lab.css daje `.lsuwak`
+   podłogę `min-height:32px`, która bije `height` z arkusza ekranu (min-height wygrywa z height,
+   gdy jest większa) — więc suwak stał na 32 px, poniżej pola dotykowego, mimo że arkusz sceny
+   deklarował co innego. Wysokość należy tutaj, obok `.comprange`, bo to jeden niezmiennik.
+   OSOBNA reguła, nie dopisanie do `.comprange`: tamten blok zeruje `margin-block`, a `.lsuwak`
+   ma odstęp od nazwy parametru i zlanie go z etykietą byłoby naprawą jednej rzeczy kosztem drugiej. */
+.lsuwak{ height:var(--tap); }
+
 .comprange{
   height:var(--tap);
   background:transparent;

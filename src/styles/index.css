@@ -25,4 +25,8 @@
 /* Ekrany kliniczne w stylu „scena kliniczna" (tura 2 paczki projektowej). MUSI byc po arkuszach
    poszczegolnych ekranow: nadpisuje MATERIAL (szklo, obrys, ton kanalu), nigdy ukladu. */
 @import './clinic-scene.css';
+/* Ekrany pozostale (tura 3): Kontrola, Opis badania, Nauka, Laboratorium. MUSI byc po
+   clinic-scene.css — bierze z niego tokeny materialu (--clin-glass, --clin-deep, --lift-*)
+   i nadpisuje wylacznie material, nigdy ukladu. */
+@import './rest-scene.css';
 @import './a11y.css';      /* pola dotykowe, fokus, stan nie-tylko-kolorem, ograniczenie ruchu */

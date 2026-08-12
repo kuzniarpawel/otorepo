@@ -256,6 +256,71 @@ screenAngleCW(p) -> stopnie
  NA TELEFONIE karta idzie NAD karty trybu — przez przestawienie CAŁEJ kolumny bocznej w kontenerze
  flex, bo order przestawia elementy wyłącznie wewnątrz jednego kontenera (paczka miała order:-1 na
  samej karcie i to nie działało: zmierzone y=927 px, czyli pod kartami trybu).
+=== SCENA KLINICZNA — EKRANY POZOSTALE (rest-scene.css, tura 3 paczki projektowej) ===
+ Zakres: Kontrola po manewrze, Opis badania i zapis sesji, Nauka (biblioteka + lekcja),
+ Laboratorium (lista + eksperyment). Import w index.css PO clinic-scene.css; arkusz nadpisuje
+ MATERIAL, nigdy ukladu, i nie kopiuje ani jednej wartosci z tur 1-2 (bierze je tokenami).
+ TRZY NOWE RODZAJE TRESCI. DOKUMENT (podglad opisu): wlasny papier --doc-paper #070B0F, kroj
+ maszynowy, interlinia 1,75 — to jedyny tekst, ktory wychodzi POZA aplikacje, wiec czyta sie go
+ zdanie po zdaniu, a nie skanuje jak liste. ZASLONA (Nauka): ukosna szrafura w tonie obszaru +
+ obrys przerywany — mowi „tu cos jest i zostanie pokazane"; odrozniona od szarych kart „braku
+ wyniku", bo celowe ukrycie i brak danych to dwie rozne rzeczy. POMIAR (Laboratorium): karta
+ „Co sie zmienilo" wypelniona STALA, nie tonem — stan „nic sie nie zmienilo" ma te sama wage
+ wizualna co stan ze zmiana, bo w eksperymencie brak skutku JEST wynikiem.
+ DWIE REGULY OBSZAROW. Nauka niesie --ant w calosci (ten sam fiolet, co karta „Ucze sie" na
+ Starcie). Laboratorium nie dostaje ZADNEGO tonu klinicznego: barwa kanalu albo stanu sugerowalaby
+ rozpoznanie, ktorego to miejsce z definicji nie stawia. Ton wraca w jednym miejscu — .lobraz
+ („Obraz kliniczny"), plus bursztyn .lgranica, bo zdanie o granicy uczciwosci symulacji nie moze
+ wygladac jak kolejny wiersz opisu.
+ TON WYNIKU KONTROLI: jedna mapa [data-fuwynik] dla TRZECH miejsc (odpowiedz, wiersz serii, karta
+ „Co dalej"). Wartosci nie sa zgadywane z nazwy, tylko wyprowadzone z flag, ktore model juz niesie:
+ zamyka -> --post, nowaPodstawa -> --ant, wiarygodny bez obu -> --horiz, !wiarygodny -> --faint
+ (+ obrys przerywany). Renderer dopisuje data-fuwynik w trzech miejscach; to JEDYNA zmiana markupu
+ calej tury.
+ ROZJAZD IDENTYFIKATOROW — najwazniejsza rzecz z tej tury. Paczka celowala w `bezZmian`,
+ `zmianaKierunku`, `nkafel--bezbledu`, `nfeed--trafne`, `nwynik--zewskazowka`. ZADEN z nich nie
+ istnieje: WYNIKI ma SIEDEM pozycji (ustapienie, czesciowaPoprawa, brakPoprawy, konwersja,
+ drugaStrona, residual, niewiarygodne), OCENY cztery (rozwiazany, zeWskazowka, zBledami,
+ nieukonczony — wielkosc liter ma znaczenie w selektorze), WERDYKTY trzy (trafna, dopuszczalna,
+ bledna; „niejednoznaczny" nie jest czwartym werdyktem, tylko zdaniem .nfeed__nj). Selektor na
+ nieistniejacy identyfikator jest NIEWIDOCZNY dla kazdej wyroczni — domOracle czyta innerHTML,
+ jsdom nie stosuje kaskady — a --tone spada wtedy na :root{--tone:var(--primary)}, czyli karta
+ „Co dalej" po odpowiedzi „badanie niewiarygodne" wygladalaby jak zwykla karta akcji.
+ BRAMKA CSS4-CSS8 w tools/interp-dom.mjs (33 -> 39 przypadkow): kazdy identyfikator z WYNIK_IDS,
+ OCENY i WERDYKT_IDS musi miec regule tonu w rest-scene.css, plus .nkafel--nowy (stan startowy,
+ ktorego zadna petla po slowniku nie zlapie). Sprawdzone czulosciowo: po przywroceniu trzech nazw
+ z paczki bramka zapala sie na dokladnie tych trzech.
+ PULAPKA „min-height bije height" — TRZY RAZY w tej paczce. lab.css .lsuwak{min-height:32px},
+ nauka.css .netap{min-height:44px}: deklaracja `height` z arkusza sceny byla martwa. Skutki byly
+ widoczne, nie teoretyczne — suwak stal na 32 px zamiast pola dotykowego, a os etapow na telefonie
+ zostawala szescioma PUSTYMI kaflami po 44 px zamiast paskow postepu po 5 px (etykiety juz ukryte).
+ Wysokosc suwaka przeniesiona do a11y.css obok .comprange (jeden niezmiennik, jedno miejsce);
+ os etapow dostala min-height:0 w obu blokach telefonu.
+ KROJ MASZYNOWY: paczka wolala var(--mono, "IBM Plex Mono", monospace), ale --mono nie istnial,
+ a IBM Plex Mono nie jest wklejony (cztery @font-face w base64 to odmiany Plex SANS). Fallback
+ schodzil na rodzajowe monospace, czyli na Windows na Courier New — i podmienial POPRAWNY stos,
+ ktory .opispodglad__t mial juz z opis.css. Token --mono bierze stos zastany (ui-monospace,
+ SFMono-Regular, Menlo, Consolas); do piatki miejsc z LICZBAMI dolozone font-variant-numeric:
+ tabular-nums, bo kroj maszynowy sam nie wyrownuje cyfr w pionie.
+ POLA DOTYKOWE: .ndet summary (32 px) i .lgrupa > summary podciagniete w a11y.css do var(--tap),
+ dokladnie jak .advbox summary. CELOWO ZOSTAWIONE na 36 px: .lparam__n (30 sztuk), .lstan,
+ .nwsk__b — tyle dala paczka, przed tura mialy 22 px, a 36 px jest powyzej progu WCAG 2.2 AA
+ (24 px); .lparam__n siedzi w wierszu wyrownanym do linii bazowej razem z wartoscia parametru,
+ wiec wymuszenie 40 px rozbiloby to wyrownanie.
+ ZLOTY WZORZEC: rebaseline WYLACZNIE osmiu kluczy dom/followup/* (engine 0, pose 0, shell 0,
+ _meta 0). Dowiedzione, ze roznica to WYLACZNIE dopisane data-fuwynik: po ich mechanicznym zdjeciu
+ nowy zrzut jest znakowo identyczny ze starym, przy kontroli czulosci (zdjecie takze aria-pressed
+ daje roznice). Pozostale piec ekranow nie ruszylo ANI JEDNEGO znaku — to jest dowod, ze tura jest
+ poza Kontrola czysto CSS-owa.
+ POMIAR W PRZEGLADARCE (golden nie widzi CSS): siedem odpowiedzi Kontroli niesie cztery rozne tony
+ zgodnie z mapa; jedno pelne wypelnienie na ekran (Kontrola: krok glowny, Opis: „Kopiuj opis");
+ dokument 12,5 px/interlinia 21,875 px na papierze rgb(7,11,15); cztery oceny Nauki daja cztery
+ rozne tony i ZADNA nie spada na cyjan; Laboratorium --tone=--faint, .lobraz na --clin-deep.
+ Telefon: „Kopiuj opis" przyklejony (sticky, 52 px), suwak 48 px, os etapow szesc paskow po 5 px
+ w jednym rzedzie, nazwy przyciskow zostaja w drzewie dostepnosci (1x1 + clip-path, nie aria-label).
+ Zero przewijania poziomego na 360 px na wszystkich szesciu ekranach.
+ NIE WIDZIANE NA OCZY: panel podgladu nie kompozytowal klatek przez cala ture, wiec caly odbior
+ jest liczbowy (getComputedStyle), a nie wzrokowy.
  [x] ETAP C: pełne ciało (tułów+szyja+kończyny) jako rzut 3D — ZROBIONE (figProj/bodyJoints, patrz
         ARCHITEKTURA figProj niżej oraz PODSUMOWANIE SESJI 2026-07-02). Swobodny wybór kamery (K4) pozostaje
         w migracja_3d.txt jako projekt na przyszłość.

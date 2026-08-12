@@ -311,6 +311,45 @@ const dixPelny = () => {
   T('CSS3/zakres', pliki.length >= 10, `spodziewano się co najmniej 10 arkuszy, jest ${pliki.length}`);
 }
 
+/* ============ 7b. TON, KTÓRY SPADŁ NA DOMYŚLNY ============
+   Ta sama rodzina błędu co §7, o stopień subtelniejsza. Arkusze „sceny klinicznej" nadają ton
+   przez selektor złożony z IDENTYFIKATORA MODELU: `[data-fuwynik="konwersja"]`,
+   `.nfeed--bledna`, `.nwynik--zBledami`. Nazwa w modelu może się zmienić albo dojść nowa —
+   i wtedy selektor przestaje trafiać BEZ ŚLADU: `--tone` spada na `:root{--tone:var(--primary)}`
+   z clinic-scene.css, więc karta nie znika i nie brzydnie, tylko robi się cyjanowa, czyli
+   w tej aplikacji znaczy „akcja". Wynik „badanie niewiarygodne" wyglądałby wtedy jak zachęta.
+
+   Zmierzone przy wdrażaniu tury 3: paczka projektowa celowała w `bezZmian`, `zmianaKierunku`,
+   `nkafel--bezbledu`, `nfeed--trafne`, `nwynik--zewskazowka` — ANI JEDEN z tych identyfikatorów
+   nie istnieje w modelu. Bramka jest po to, żeby drugi raz nie trzeba było tego szukać ręcznie. */
+{
+  const fs = await import('node:fs');
+  const arkusz = fs.readFileSync(resolve(ROOT, 'src', 'styles', 'rest-scene.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');                      // komentarze NIE liczą się jako reguła
+  const { WYNIK_IDS } = await import('../src/app/followup-model.js');
+  const { OCENY, WERDYKT_IDS } = await import('../src/app/nauka-model.js');
+
+  const brak = WYNIK_IDS.filter(id => !arkusz.includes(`[data-fuwynik="${id}"]`));
+  T('CSS4/kontrola-tony-wynikow', brak.length === 0,
+    `wyniki kontroli bez reguły tonu w rest-scene.css: ${brak.join(', ')}`);
+  T('CSS4b/kontrola-czulosci', !arkusz.includes('[data-fuwynik="niemaTakiegoWyniku"]'),
+    'kontrola: skaner nie może uznać za obecną reguły, której nie ma');
+
+  const oceny = Object.keys(OCENY);
+  const brakKafli = oceny.filter(o => !arkusz.includes(`.nkafel--${o}`));
+  const brakWynikow = oceny.filter(o => !arkusz.includes(`.nwynik--${o}`));
+  T('CSS5/nauka-oceny-kafla', brakKafli.length === 0, `oceny bez reguły .nkafel--*: ${brakKafli.join(', ')}`);
+  T('CSS6/nauka-oceny-wyniku', brakWynikow.length === 0, `oceny bez reguły .nwynik--*: ${brakWynikow.join(', ')}`);
+
+  const brakWerdyktow = WERDYKT_IDS.filter(w => !arkusz.includes(`.nfeed--${w}`));
+  T('CSS7/nauka-werdykty', brakWerdyktow.length === 0, `werdykty bez reguły .nfeed--*: ${brakWerdyktow.join(', ')}`);
+
+  /* Renderer składa `nkafel--${ocena||'nowy'}` — „nowy" nie jest oceną ze słownika, więc żadna
+     pętla po OCENY go nie złapie, a to jest stan startowy KAŻDEGO przypadku w bibliotece. */
+  T('CSS8/nauka-kafel-nowy', arkusz.includes('.nkafel--nowy'),
+    'brak reguły .nkafel--nowy — nietknięty przypadek jest stanem domyślnym biblioteki');
+}
+
 /* ============ Wynik ============ */
 const razem = ok + bledy.length;
 console.log('\nOTOREPO — kryterium 3 na poziomie DOM (Blok 9)');
@@ -320,7 +359,7 @@ if (bledy.length) {
   for (const b of bledy) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 33;
+const OCZEKIWANE = 39;   /* 33 + 6 bramek §7b (tony wyników kontroli i ocen/werdyktów nauki) */
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

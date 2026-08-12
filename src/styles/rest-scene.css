@@ -1,0 +1,791 @@
+/* OTOREPO — EKRANY POZOSTAŁE w stylu „scena kliniczna" (tura 3 paczki projektowej).
+ *
+ * Zakres: Kontrola po manewrze, Opis badania i zapis sesji, Nauka (biblioteka + lekcja),
+ * Laboratorium (lista + eksperyment). To wszystko, czego nie dotknęły start-scene.css
+ * ani clinic-scene.css.
+ *
+ * Import: index.css, PO clinic-scene.css — ten plik nadpisuje MATERIAŁ, nigdy układu.
+ *
+ * ═══ CO TA TURA DOKŁADA DO JĘZYKA ═══
+ * Tury 1-2 miały jeden rodzaj treści: pytanie i odczyt. Tutaj wchodzą trzy nowe:
+ *   DOKUMENT  (Opis badania)      — tekst, który wyjdzie poza aplikację, więc dostaje papier i krój maszynowy;
+ *   ZASŁONA   (Nauka, lekcja)     — celowo ukryta treść, która jest dydaktyką, a nie brakiem danych;
+ *   POMIAR    (Laboratorium)      — karta „Co się zmieniło", w której BRAK zmiany jest wynikiem.
+ * Reszta materiału jest przejęta z clinic-scene.css bez zmian i bez kopiowania wartości.
+ *
+ * ═══ DWIE REGUŁY OBSZARÓW ═══
+ * NAUKA niesie --ant w całości: ten sam fiolet, którym karta „Uczę się" jest oznaczona na Starcie.
+ * Użytkownik ma poznać obszar po barwie, zanim przeczyta nagłówek.
+ * LABORATORIUM nie dostaje ŻADNEGO tonu klinicznego. To nie jest oszczędność — to znaczenie:
+ * barwa kanału albo stanu na stanowisku sugerowałaby rozpoznanie, którego to miejsce z definicji
+ * nie stawia (kierunek wnioskowania jest tu odwrotny niż przy pacjencie). Ton wraca dokładnie
+ * w jednym miejscu: w karcie „Obraz kliniczny", czyli tam, gdzie stanowisko mówi językiem badania.
+ */
+
+/* ═══ 1. TOKENY (addytywne) ═════════════════════════════════════════════════════════════════ */
+:root{
+  --doc-paper:#070B0F;                  /* papier podglądu opisu — ciemniejszy niż --clin-deep, bo to nie panel, tylko dokument */
+  --doc-line:rgba(203,217,228,.14);
+  --lab-steel:rgba(122,147,168,.18);    /* wypełnienie stali laboratoryjnej: jedyna „pełna" płyta obszaru bez tonu */
+
+  /* KRÓJ MASZYNOWY. Paczka pisała wszędzie var(--mono, IBM Plex Mono, monospace), ale
+     `--mono` nie istniał w tym repozytorium, a IBM Plex Mono nie jest wklejony — z czterech
+     @font-face w base64 wszystkie są odmianami IBM Plex SANS. Fallback spadał więc na rodzajowe
+     `monospace`, czyli na Windows na Courier New. ZMIERZONE: `.opispodglad__t` miało już w
+     opis.css poprawny stos `ui-monospace…Consolas`, a ten arkusz (importowany później) podmieniał
+     go na gorszy — pogorszenie dokładnie w jedynym tekście, który wychodzi poza aplikację.
+     Token bierze stos ZASTANY z opis.css i legacy.css `.mono`; nie wprowadzamy trzeciej pisowni. */
+  --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ═══ 2. KONTROLA PO MANEWRZE ═══════════════════════════════════════════════════════════════
+   Ekran ma jedno pytanie i jedną konsekwencję, więc materiał musi rozdzielić dwie rzeczy, które
+   w markupie wyglądają tak samo: ODPOWIEDŹ (co widzę) i KROK (co robię dalej). Odpowiedzi niosą
+   ton wyniku, kroki — ton nawigacyjny. */
+
+.fupyt, .futol, .fuseria, .fukoniecbox, .fukonczenie, .fubrak{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:var(--clin-glass); box-shadow:none;
+}
+.fupyt{ box-shadow:var(--lift-2); }        /* pierwsze pytanie ekranu — jedyna karta z cieniem po tej stronie */
+.fupyt h4, .futol h4, .fudalej h4, .fuseria h4, .fukonczenie h4, .fubrak h4{ font-size:15px; font-weight:700; color:var(--text); }
+.fupyt .note, .futol .note, .fuseria .note, .fukonczenie .note, .fukoniecbox .note{ font-size:12.5px; color:var(--scene-text); }
+
+/* ═══ MAPA TONÓW WYNIKU KONTROLI — JEDNA, WSPÓLNA DLA TRZECH MIEJSC ═══
+   Paczka projektowa zakładała CZTERY odpowiedzi o identyfikatorach `ustapienie`, `bezZmian`,
+   `zmianaKierunku`, `niewiarygodne` i kazała je sprawdzić w followup-model.js. Sprawdzone:
+   odpowiedzi jest SIEDEM, a `bezZmian` i `zmianaKierunku` nie istnieją w ogóle. Selektory na
+   nieistniejący identyfikator są niewidoczne dla każdej wyroczni (domOracle czyta innerHTML,
+   jsdom nie stosuje kaskady), więc cztery z siedmiu odpowiedzi zostałyby bez tonu, a `--tone`
+   spadłby na `:root{--tone:var(--primary)}` z clinic-scene.css — czyli karta „Co dalej" po
+   odpowiedzi „badanie niewiarygodne" wyglądałaby jak zwykła karta akcji.
+
+   Ton bierzemy z TRZECH FLAG, które model już niesie przy każdym wyniku — nie z nazwy:
+     zamyka:true                → --post   proces domknięty (ta sama zieleń, co zamknięty etap)
+     nowaPodstawa:true          → --ant    wniosek trzeba zbudować OD NOWA (kanał/strona);
+                                           ta sama barwa, co „Znam kanał i stronę"
+     wiarygodny, ale ani jedno  → --horiz  nierozstrzygnięte: obraz się nie domknął i nie zmienił podstawy
+     wiarygodny:false           → --faint  odmowa oceny; do tego obrys PRZERYWANY (niżej)
+   Dzięki temu ósmy wynik dopisany do WYNIKI dostanie ton z tej samej reguły, a nie po cichu
+   szarość. Bramka `CSS4` w interp-dom.mjs pilnuje, że KAŻDY identyfikator z WYNIK_IDS ma tu
+   swoją regułę — to jest jedyne miejsce, w którym rozjazd nazw da się złapać maszynowo.
+
+   ODEJŚCIE OD PACZKI: paczka chciała atrybutu na odpowiedziach i serii, a na karcie „Co dalej"
+   klasy `fudalej--${wybrany}`. Trzy miejsca to byłyby trzy kopie tej samej mapy. Atrybut nosi
+   ten sam znacznik we wszystkich trzech, więc mapa jest jedna. */
+[data-fuwynik="ustapienie"], [data-fuwynik="residual"]{ --tone:var(--post); }
+[data-fuwynik="czesciowaPoprawa"], [data-fuwynik="brakPoprawy"]{ --tone:var(--horiz); }
+[data-fuwynik="konwersja"], [data-fuwynik="drugaStrona"]{ --tone:var(--ant); }
+[data-fuwynik="niewiarygodne"]{ --tone:var(--faint); }
+
+/* ODPOWIEDZI. Ton niesie WYNIK, nie kolejność (mapa wyżej); „niewiarygodne" dostaje dodatkowo
+   obrys PRZERYWANY i zero wypełnienia — to odmowa oceny, nie siódma odpowiedź.
+   WYMAGA data-fuwynik w markupie — bez tego wszystkie siedem wygląda tak samo, a to
+   najczęściej klikany ekran całej ścieżki. */
+.fuopcja{
+  display:flex; gap:12px; align-items:flex-start;
+  min-height:52px; padding:10px 14px; border-radius:var(--r-md);
+  border:1px solid rgba(203,217,228,.18); background:none; text-align:left; cursor:pointer;
+}
+.fuopcja__n{ font-size:13.5px; font-weight:600; color:var(--scene-text); }
+.fuopcja__o{ display:block; margin-top:2px; font-size:12px; color:var(--faint); }
+.fuopcja::before{                              /* kropka wyboru — ten sam znacznik co .oqopt i .tqopt */
+  content:""; flex:0 0 auto; margin-top:3px;
+  width:14px; height:14px; border-radius:var(--r-pill);
+  border:1px solid rgba(122,147,168,.7); background:none;
+}
+.fuopcja[aria-pressed="true"]{
+  border-color:color-mix(in srgb, var(--tone) 50%, transparent);
+  background:color-mix(in oklab, var(--tone) 14%, transparent);
+}
+.fuopcja[aria-pressed="true"]::before{ background:var(--tone); border-color:var(--tone); }
+.fuopcja[aria-pressed="true"] .fuopcja__n{ color:var(--text); font-weight:700; }
+.fuopcja[aria-pressed="true"] .fuopcja__o{ color:var(--scene-text); }
+.fuopcja:hover{ border-color:color-mix(in srgb, var(--tone) 50%, transparent); }
+.fuopcja[data-fuwynik="niewiarygodne"]{
+  border-style:dashed; border-color:rgba(122,147,168,.5);
+}
+.fuopcja[data-fuwynik="niewiarygodne"][aria-pressed="true"]{
+  border-style:dashed; border-color:var(--scene-line-strong);
+  background:rgba(8,12,17,.6);
+}
+.fuopcja[data-fuwynik="niewiarygodne"][aria-pressed="true"]::before{ background:var(--faint); border-color:var(--faint); }
+
+/* Powód niewiarygodności — dochodzi POD odpowiedzią, więc dziedziczy jej język (przerywany). */
+.fupowod{ margin-top:var(--sp-3); display:flex; flex-wrap:wrap; gap:8px; }
+.fupowod__b{
+  min-height:40px; border-radius:var(--r-md);
+  border:1px dashed rgba(122,147,168,.5); background:none; color:var(--scene-text); font-size:12.5px;
+}
+.fupowod__b[aria-pressed="true"]{ border-style:solid; border-color:var(--scene-line-strong); background:rgba(8,12,17,.6); color:var(--text); }
+.fublad{
+  margin-top:var(--sp-3); padding:10px 12px; border-radius:var(--r-md);
+  border:1px solid color-mix(in srgb, var(--crit) 45%, transparent);
+  background:color-mix(in oklab, var(--crit) 10%, transparent); color:var(--scene-text); font-size:12.5px;
+}
+
+/* TOLERANCJA — pytanie nieobowiązkowe, więc nie dostaje ani cienia, ani tonu wyniku. */
+.futol__l{ margin-top:var(--sp-3); display:flex; flex-wrap:wrap; gap:8px; }
+.futol__b{
+  min-height:44px; border-radius:var(--r-md);
+  border:1px solid rgba(203,217,228,.18); background:none; color:var(--scene-text); font-size:13px;
+}
+.futol__b[aria-pressed="true"]{
+  border-color:color-mix(in srgb, var(--post) 50%, transparent);
+  background:color-mix(in oklab, var(--post) 14%, transparent); color:var(--text); font-weight:600;
+}
+
+/* CO DALEJ — karta konsekwencji. Ton bierze z wyniku (klasa na karcie, patrz markup §1),
+   a jej przycisk główny jest JEDYNYM pełnym wypełnieniem ekranu. */
+.fudalej{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--tone) 40%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--tone) 12%, transparent), var(--scene-card-solid) 58%);
+  box-shadow:var(--lift-2);
+}
+.fudalej .fuuwaga{ font-size:12.5px; line-height:1.5; color:#D4DEE8; }
+.fusprzecz{ margin:10px 0 0; padding-left:18px; font-size:12.5px; line-height:1.55; color:var(--scene-text); }
+.fudalej .recoprimary{
+  margin-top:14px; width:100%; min-height:var(--tap); border:0; border-radius:var(--r-md);
+  background:var(--primary); color:var(--ink); font-size:14.5px; font-weight:700; cursor:pointer;
+}
+.fudalej .recoprimary:hover{ background:var(--primary-press); }
+.fudalej .recoalt, .fualt .recoalt, .fukoniecbox .recoalt{
+  margin-top:var(--sp-2); width:100%; min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:13px; font-weight:600; cursor:pointer;
+}
+.fudalej .recoalt:hover, .fualt .recoalt:hover, .fukoniecbox .recoalt:hover{ border-color:var(--primary); color:var(--text); }
+/* „Obserwacja" nie jest przyciskiem — jest zdaniem. Materiał ma to mówić, zanim ktoś spróbuje kliknąć. */
+.fuinfo{
+  margin-top:14px; padding:12px 14px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line); background:rgba(8,12,17,.55);
+  color:#D4DEE8; font-size:12.5px; line-height:1.5;
+}
+.fualt{ margin-top:14px; }
+.fualt .eyebrow, .fuzakaz .eyebrow{
+  display:block; font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint);
+}
+
+/* CZEGO TEN EKRAN CELOWO NIE PROPONUJE — nie ma tego nigdzie indziej w aplikacji i nie może
+   wyglądać jak lista niedostępnych przycisków. Obrys PRZERYWANY: to nie jest wyłączona akcja,
+   tylko wyjaśnienie, dlaczego akcji nie ma. */
+.fuzakaz{
+  margin-top:14px; padding:12px 14px; border-radius:var(--r-md);
+  border:1px dashed rgba(122,147,168,.45); background:none;
+}
+.fuzakaz ul{ margin:8px 0 0; padding-left:18px; font-size:12px; line-height:1.55; color:var(--faint); }
+.fuzakaz li b{ color:var(--scene-text); font-weight:600; }
+
+/* ZAKOŃCZENIE SESJI. Przycisk zmienia rangę razem z krokiem głównym (klasa z renderera), więc
+   materiał tylko podąża — po ustąpieniu oczopląsu to jest akcja dominująca, wcześniej nie. */
+.fukoniecbox .recoprimary{
+  width:100%; min-height:var(--tap); border:0; border-radius:var(--r-md);
+  background:var(--primary); color:var(--ink); font-size:14.5px; font-weight:700; cursor:pointer;
+}
+
+/* PRZEBIEG SERII — lista bez numerów: kolejność niesie już porządek pionowy, a numer sugerowałby
+   rangę prób. Werdykt każdej próby jest pigułką w tonie wyniku (ten sam słownik co odpowiedzi). */
+.fuseria__l{ margin:var(--sp-3) 0 0; padding:0; list-style:none; display:grid; gap:8px; }
+.fuseria__l li{ padding:10px 12px; border-radius:var(--r-sm); background:rgba(8,12,17,.6); font-size:12.5px; }
+.fuseria__w{
+  display:inline-block; margin-top:4px; padding:2px 8px; border-radius:var(--r-pill);
+  background:color-mix(in oklab, var(--tone) 16%, transparent); color:var(--tone);
+  font-size:11px; font-weight:600;
+}
+/* Wiersz serii bierze ton z tej samej mapy [data-fuwynik] co odpowiedź wyżej — pigułka werdyktu
+   ma być tą samą barwą, którą klinicysta widział, klikając odpowiedź. */
+.fuseria__p{ display:block; margin-top:3px; font-size:11.5px; color:var(--faint); }
+/* Czasy PLANOWE — krój maszynowy, bo to liczby do porównywania między wierszami, a nie proza. */
+.fuseria__c{ display:block; margin-top:5px; font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:11px; color:var(--faint); }
+
+/* PODSUMOWANIE PRZED ZAKOŃCZENIEM — te same włosowe kreski co .etapdane na ekranie manewru. */
+.fupods{ margin:var(--sp-3) 0 0; display:grid; gap:1px; border-radius:var(--r-md); overflow:hidden; background:rgba(203,217,228,.14); }
+.fupods > div{ display:flex; gap:12px; padding:10px 12px; background:rgba(8,12,17,.72); }
+.fupods dt{ flex:0 0 148px; font-size:11.5px; color:var(--faint); }
+.fupods dd{ flex:1 1 auto; min-width:0; margin:0; font-size:12.5px; color:var(--text); }
+.fukonczenie__r{ margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; }
+.fukonczenie__r button{ flex:1 1 160px; min-height:var(--tap); border-radius:var(--r-md); font-size:13.5px; font-weight:600; cursor:pointer; }
+.fukonczenie__r .recoprimary{ border:0; background:var(--primary); color:var(--ink); font-weight:700; }
+.fukonczenie__r .recoalt{ border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text); }
+
+/* PRZED I PO — jedyna TABELA w kolumnie wizualizacji tej ścieżki. Zestawia OPISY cecha po cesze,
+   bo tylko one są porównywalne: rysunek oczu pokazałby jeden moment, a kontrola pyta o różnicę
+   między dwoma opisami. Kolumna „po manewrze" jest jaśniejsza od „przed" — to ona jest nowa
+   i to jej brak (—) jest informacją. Nagłówek tej kolumny niesie ton --ant, ten sam co odpowiedź
+   „zmiana kierunku": mówi, skąd pochodzi, zanim użytkownik przeczyta notę pod tabelą.
+   Wierszy NIE tonujemy per zmiana — renderer nie emituje takiego hooka, a dorabianie go znaczyłoby,
+   że aplikacja ocenia różnicę. Ona jej nie ocenia; ona ją pokazuje. */
+.fuporown{
+  border-radius:var(--r-lg); border:1px solid var(--scene-line); background:var(--clin-deep);
+}
+.fuporown h4{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+.fuporown .note{ margin-top:10px; font-size:12px; line-height:1.45; color:var(--faint); }
+.futab{
+  width:100%; margin-top:var(--sp-3);
+  border-collapse:separate; border-spacing:0 1px;      /* włosowa kreska z odstępu — jak .etapdane i .nzapis__t */
+  font-size:12px; text-align:left;
+}
+.futab thead th{
+  padding:8px 10px; background:rgba(8,12,17,.4);
+  font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--faint);
+}
+.futab thead th:first-child{ padding-left:12px; }
+.futab thead th:last-child{ color:var(--ant); }
+.futab tbody th{
+  padding:9px 12px; background:rgba(8,12,17,.72);
+  font-weight:400; font-size:11.5px; color:var(--faint);
+}
+.futab tbody td{ padding:9px 10px; background:rgba(8,12,17,.72); color:var(--faint); }
+.futab tbody td:last-child{ color:var(--text); }
+
+/* SKRÓT DO OPISU BADANIA — licznik sekcji w kroju maszynowym: to jest miara kompletności, nie ozdoba. */
+.opiskarta{ border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34); background:var(--clin-glass); }
+.opiskarta__n{ margin-top:10px; font-size:12.5px; color:var(--faint); }
+.opiskarta__n b{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:22px; font-weight:500; color:var(--text); }
+.opiskarta .recoprimary{
+  margin-top:12px; width:100%; min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:13px; font-weight:600; cursor:pointer;            /* NIE wypełniony: na tym ekranie dominuje „Co dalej" */
+}
+
+/* ═══ 3. OPIS BADANIA — PIERWSZY DOKUMENT W TEJ APLIKACJI ═══════════════════════════════════
+   Podgląd nie jest kartą interfejsu: to tekst, który za chwilę trafi do cudzej dokumentacji.
+   Dlatego dostaje własny papier (--doc-paper, ciemniejszy niż wszystkie panele), krój maszynowy
+   i interlinię 1,75 — czyta się go zdanie po zdaniu, a nie skanuje wzrokiem jak listę. */
+.opissek, .opisakcje, .opissesje, .opispodglad{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:var(--clin-glass); box-shadow:none;
+}
+.opissek h4, .opisakcje h4, .opissesje h4, .opispodglad h4{ font-size:15px; font-weight:700; color:var(--text); }
+.opissek .note, .opisakcje .note, .opissesje .note{ font-size:12.5px; color:var(--scene-text); }
+
+/* PRZEŁĄCZNIKI SEKCJI. role="switch" — więc wyglądają jak przełącznik, a nie jak przycisk:
+   stan niesie pozycja gałki, obrys i tło, nigdy sam kolor (a11y.css). */
+.opissek__l{ margin:var(--sp-3) 0 0; padding:0; list-style:none; display:grid; gap:6px; }
+.opissek__b{
+  display:flex; align-items:center; gap:10px; width:100%;
+  min-height:44px; padding:0 12px; border-radius:var(--r-sm);
+  border:1px solid rgba(203,217,228,.18); background:none; text-align:left; cursor:pointer;
+}
+.opissek__b::before{
+  content:""; flex:0 0 auto; box-sizing:border-box;
+  width:32px; height:18px; border-radius:var(--r-pill);
+  border:1px solid var(--scene-line-strong); background:none;
+  box-shadow:inset -13px 0 0 -6px var(--faint);        /* gałka po lewej: wyłączone */
+  transition:box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.opissek__b[aria-checked="true"]{ border-color:color-mix(in srgb, var(--primary) 40%, transparent); background:color-mix(in oklab, var(--primary) 10%, transparent); }
+.opissek__b[aria-checked="true"]::before{ border-color:var(--primary); background:var(--primary); box-shadow:inset 13px 0 0 -6px var(--ink); }
+.opissek__b[disabled]{ border-style:dashed; border-color:rgba(122,147,168,.45); cursor:default; }
+.opissek__b[disabled]::before{ background:rgba(122,147,168,.5); border-color:transparent; box-shadow:inset 13px 0 0 -6px var(--clin-deep); }
+.opissek__n{ flex:1 1 auto; min-width:0; font-size:13px; font-weight:600; color:var(--text); }
+.opissek__b[aria-checked="false"] .opissek__n{ color:var(--faint); font-weight:400; }
+.opissek__c{ flex:0 0 auto; font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:11.5px; color:var(--faint); }
+
+/* DZIAŁANIA — „Kopiuj" jest jedynym pełnym wypełnieniem ekranu. Eksport i zapis to gesty
+   rzadsze i bardziej brzemienne (zostawiają ślad na urządzeniu), więc zostają obrysem. */
+.opisakcje{
+  border-color:color-mix(in srgb, var(--primary) 40%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--primary) 12%, transparent), var(--scene-card-solid) 58%);
+  box-shadow:var(--lift-2);
+}
+.opisakcje__kop{
+  margin-top:12px; width:100%; min-height:var(--tap); border:0; border-radius:var(--r-md);
+  background:var(--primary); color:var(--ink); font-size:14.5px; font-weight:700; cursor:pointer;
+}
+.opisakcje__kop:hover{ background:var(--primary-press); }
+.opisakcje__r{ margin-top:var(--sp-2); display:grid; gap:8px; }
+.opisakcje__r .recoalt{
+  width:100%; min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:13px; font-weight:600; cursor:pointer;
+}
+.opiskom{
+  margin-top:var(--sp-3); padding:10px 12px; border-radius:var(--r-md);
+  border:1px solid color-mix(in srgb, var(--post) 45%, transparent);
+  background:color-mix(in oklab, var(--post) 12%, transparent); color:var(--text); font-size:12.5px;
+}
+.opisblad{
+  margin-top:var(--sp-3); padding:10px 12px; border-radius:var(--r-md);
+  border:1px solid color-mix(in srgb, var(--crit) 45%, transparent);
+  background:color-mix(in oklab, var(--crit) 10%, transparent); color:var(--scene-text); font-size:12.5px;
+}
+
+/* PODGLĄD — PAPIER. */
+.opispodglad{ background:var(--clin-deep); border-color:var(--scene-line); }
+.opispodglad__t, .opispodglad__e{
+  margin:var(--sp-3) 0 0; padding:20px 22px; border-radius:var(--r-md);
+  border:1px solid var(--doc-line); background:var(--doc-paper);
+  font-family:var(--mono); font-size:12.5px; line-height:1.75;
+  color:#D4DEE8; white-space:pre-wrap; text-wrap:pretty;
+}
+.opispodglad__e{
+  display:block; width:100%; box-sizing:border-box; resize:vertical; min-height:340px;
+  color:var(--text); caret-color:var(--primary);
+}
+.opispodglad__e:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+.opispodglad .recoalt{
+  margin-top:var(--sp-3); min-height:40px; padding:0 14px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:13px; font-weight:600; cursor:pointer;
+}
+/* OSTRZEŻENIE O EDYCJI — obrys PRZERYWANY i bursztyn. Nie jest błędem (nic się nie zepsuło)
+   ani zwykłą notą (dotyczy danych pacjenta), więc nie może wyglądać jak żadne z nich. */
+.opisostrz{
+  margin-top:var(--sp-3); display:flex; gap:12px; align-items:flex-start;
+  padding:14px 16px; border-radius:var(--r-md);
+  border:1px dashed color-mix(in srgb, var(--warn) 50%, transparent);
+  background:color-mix(in oklab, var(--warn) 6%, transparent);
+  color:var(--scene-text); font-size:12.5px; line-height:1.5;
+}
+.opisostrz::before{
+  content:"!"; flex:0 0 auto;
+  width:22px; height:22px; border-radius:var(--r-pill); display:grid; place-items:center;
+  color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 50%, transparent);
+  font-weight:700; font-size:12px;
+}
+
+/* ZAPISANE SESJE. Podpis jest jedyną treścią wiersza — dwa przyciski obok siebie i po równo,
+   bo „Odtwórz" i „Usuń" są tu równorzędne, a wyróżnienie któregoś zachęcałoby do kliknięcia. */
+.opissesje__l{ margin:var(--sp-3) 0 0; padding:0; list-style:none; display:grid; gap:8px; }
+.opissesje__l li{ padding:10px 12px; border-radius:var(--r-sm); background:rgba(8,12,17,.6); }
+.opissesje__p{ display:block; font-size:12.5px; color:#D4DEE8; }
+.opissesje__r{ display:flex; gap:6px; margin-top:var(--sp-2); }
+.opissesje__r .recoalt{
+  flex:1 1 0; min-height:36px; border-radius:var(--r-sm);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:12.5px; font-weight:600; cursor:pointer;
+}
+.opissesje__brak{
+  margin-top:var(--sp-3); padding:14px 16px; border-radius:var(--r-md);
+  border:1px dashed rgba(122,147,168,.45); color:var(--faint); font-size:12.5px;
+}
+
+/* ═══ 4. NAUKA — CAŁY OBSZAR W TONIE --ant ══════════════════════════════════════════════════ */
+.ngrid{ --tone:var(--ant); }
+
+.nlead, .nkontekst{
+  padding:14px var(--sp-4); border-radius:var(--r-lg);
+  border:1px solid rgba(122,147,168,.34); background:rgba(12,20,28,.7);
+  font-size:13.5px; line-height:1.5; color:#D4DEE8;
+}
+.nkontekst{ border:0; background:none; padding:0; font-size:12.5px; color:var(--faint); }
+
+/* Filtry — pigułki, bo to zawężenie listy, a nie odpowiedź na pytanie. */
+.nfiltr{ display:flex; flex-wrap:wrap; gap:8px; }
+.nfiltr__b{
+  min-height:38px; padding:0 14px; border-radius:var(--r-pill);
+  border:1px solid rgba(203,217,228,.18); background:none; color:var(--scene-text); font-size:12.5px; cursor:pointer;
+}
+.nfiltr__b[aria-pressed="true"]{
+  border-color:color-mix(in srgb, var(--ant) 50%, transparent);
+  background:color-mix(in oklab, var(--ant) 14%, transparent); color:var(--text); font-weight:700;
+}
+
+/* KAFEL PRZYPADKU. Rozwiązany dostaje ton obszaru w tle; nierozpoczęty zostaje na czystym szkle —
+   tło niesie „już tu byłeś", a nie ocenę. Ocena jest osobno, SŁOWEM. */
+.nlista{ margin:0; padding:0; list-style:none; display:grid; gap:8px; }
+.nkafel{
+  display:flex; align-items:center; gap:14px; width:100%;
+  min-height:72px; padding:12px var(--sp-4); border-radius:var(--r-lg);
+  border:1px solid rgba(122,147,168,.34); background:var(--clin-glass);
+  text-align:left; cursor:pointer;
+}
+.nkafel:not(.nkafel--nowy){
+  border-color:color-mix(in srgb, var(--ant) 45%, transparent);
+  background:linear-gradient(90deg, color-mix(in oklab, var(--ant) 12%, transparent), var(--scene-card-solid) 46%);
+}
+.nkafel:hover{ border-color:var(--ant); }
+.nkafel__t{ flex:1 1 auto; min-width:0; font-size:14.5px; font-weight:700; color:var(--text); }
+.nkafel__m{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.npill{ padding:2px 8px; border-radius:var(--r-xs); border:1px solid rgba(203,217,228,.18); font-size:11px; color:var(--scene-text); }
+.npill--poz{ border-color:color-mix(in srgb, var(--ant) 40%, transparent); background:color-mix(in oklab, var(--ant) 12%, transparent); color:#C7B4FD; }
+/* STAN PRZYPADKU JEST SŁOWEM. „Rozwiązany z błędem" to nie odcień zielonego — barwa tylko
+   towarzyszy napisowi, nigdy go nie zastępuje (Blok 2).
+   IDENTYFIKATORY: paczka zakładała `--bezbledu` i `--zbledem`; renderer składa
+   `nkafel--${ocena||'nowy'}`, a OCENY z nauka-model.js to `rozwiazany`, `zeWskazowka`,
+   `zBledami`, `nieukonczony` (wielkość liter ma znaczenie w selektorze). Stanów jest pięć,
+   nie trzy: „nieukończony" to przypadek ZACZĘTY i porzucony i musi się różnić od nietkniętego,
+   bo inaczej lista kłamie o tym, gdzie użytkownik już był. */
+.nkafel__s{ flex:0 0 auto; padding:3px 10px; border-radius:var(--r-pill); font-size:11.5px; font-weight:700; }
+.nkafel--nowy .nkafel__s,
+.nkafel--nieukonczony .nkafel__s{ border:1px solid var(--scene-line-strong); color:var(--faint); font-weight:600; }
+.nkafel--rozwiazany .nkafel__s{ background:color-mix(in oklab, var(--post) 16%, transparent); color:var(--post); }
+.nkafel--zeWskazowka .nkafel__s{ background:color-mix(in oklab, var(--ant) 18%, transparent); color:#C7B4FD; }
+.nkafel--zBledami .nkafel__s{ background:color-mix(in oklab, var(--horiz) 16%, transparent); color:var(--horiz); }
+.nkafel__go{ flex:0 0 auto; font-size:20px; color:var(--scene-text); }
+
+/* POSTĘP — jedyna karta obszaru z cieniem; licznik w kroju maszynowym. */
+.npostep{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--ant) 40%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--ant) 12%, transparent), var(--scene-card-solid) 58%);
+  box-shadow:var(--lift-2);
+}
+.npostep h3{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:#C7B4FD; }
+.npostep__l{ margin:10px 0 0; font-size:13px; color:var(--scene-text); }
+.npostep__l b{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:30px; font-weight:500; color:var(--text); }
+.nkasuj{
+  margin-top:var(--sp-3); width:100%; min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:13px; font-weight:600; cursor:pointer;
+}
+.nzapisblad{
+  margin-top:var(--sp-3); padding:10px 12px; border-radius:var(--r-md);
+  border:1px solid color-mix(in srgb, var(--crit) 45%, transparent);
+  background:color-mix(in oklab, var(--crit) 10%, transparent); color:var(--scene-text); font-size:12.5px;
+}
+
+/* OŚ ETAPÓW LEKCJI — ten sam komponent co oś składowych HINTS (.hxkrok), w tonie obszaru. */
+.nos{ display:flex; flex-wrap:wrap; gap:6px; }
+.netap{
+  display:flex; align-items:center; gap:8px; flex:1 1 0; min-width:0;
+  padding:9px 10px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line); background:none; cursor:pointer;
+}
+.netap__n{
+  flex:0 0 auto; width:20px; height:20px; box-sizing:border-box; border-radius:var(--r-xs);
+  display:grid; place-items:center; font-size:11px; font-weight:700;
+  border:1px solid var(--scene-line-strong); color:var(--faint);
+}
+.netap__t{ font-size:12px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.netap--gotowy{ border-color:color-mix(in srgb, var(--post) 40%, transparent); background:color-mix(in oklab, var(--post) 10%, transparent); }
+.netap--gotowy .netap__n{ background:var(--post); color:#0B221F; border:0; }
+.netap--gotowy .netap__t{ color:var(--scene-text); }
+.netap--biezacy{
+  border-color:color-mix(in srgb, var(--ant) 85%, transparent);
+  background:linear-gradient(180deg, color-mix(in oklab, var(--ant) 20%, transparent), var(--scene-card) 62%);
+}
+.netap--biezacy .netap__n{ background:var(--ant); color:#1A1230; border:0; }
+.netap--biezacy .netap__t{ color:var(--text); font-weight:700; }
+.netap[disabled]{ opacity:.5; cursor:default; }
+
+/* PYTANIE ETAPU — jedyna karta z cieniem w lewej kolumnie. */
+.npyt, .nopis{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--ant) 40%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--ant) 12%, transparent), var(--scene-card-solid) 58%);
+  box-shadow:var(--lift-2);
+}
+.npyt__q, .nopis h3{ font-size:19px; font-weight:700; line-height:1.25; color:var(--text); }
+.npyt__w, .nopis__k{ font-size:12.5px; line-height:1.45; color:var(--scene-text); }
+.npyt__k{ font-size:12.5px; color:#D4DEE8; }
+.nopcje{ margin-top:14px; display:grid; gap:8px; }
+.nopcja{
+  display:flex; align-items:center; gap:12px;
+  min-height:52px; padding:10px 14px; border-radius:var(--r-md);
+  border:1px solid rgba(203,217,228,.18); background:none; color:var(--scene-text);
+  font-size:13.5px; text-align:left; cursor:pointer;
+}
+.nopcja__box{ flex:0 0 auto; width:15px; height:15px; border-radius:var(--r-pill); border:1px solid rgba(122,147,168,.7); }
+.nopcja[aria-pressed="true"]{
+  border-color:color-mix(in srgb, var(--ant) 55%, transparent);
+  background:color-mix(in oklab, var(--ant) 14%, transparent); color:var(--text); font-weight:600;
+}
+.nopcja[aria-pressed="true"] .nopcja__box{ background:var(--ant); border-color:var(--ant); }
+/* Odpowiedź „własna" („nie da się przewidzieć z wywiadu") to nie czwarty wzorzec, tylko odmowa
+   wskazania — ten sam przerywany język co „niewiarygodne" i „nie oceniono". */
+.nopcja--wlasna{ border-style:dashed; border-color:rgba(122,147,168,.5); color:var(--faint); }
+.nopcja--wlasna[aria-pressed="true"]{ border-style:dashed; background:rgba(8,12,17,.6); color:var(--scene-text); }
+/* Etap zamrożony: odpowiedzi nie da się zmienić, ale MUSI zostać czytelna — nie przygaszamy jej
+   poniżej progu kontrastu, bo to jest treść informacji zwrotnej, a nie wyłączony formularz. */
+.nopcja[disabled]{ cursor:default; }
+.nopcja[disabled]:not([aria-pressed="true"]){ color:var(--faint); }
+.nwsk{ margin-top:var(--sp-3); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.nwsk__b{
+  min-height:36px; padding:0 12px; border-radius:var(--r-sm);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:12.5px; font-weight:600; cursor:pointer;
+}
+.nwsk__b[aria-pressed="true"]{ border-color:color-mix(in srgb, var(--ant) 50%, transparent); background:color-mix(in oklab, var(--ant) 12%, transparent); color:var(--text); }
+.nwsk__t{ flex:1 1 220px; margin:0; font-size:12.5px; color:var(--scene-text); }
+.nodmowa{
+  margin:var(--sp-3) 0 0; padding:10px 12px; border-radius:var(--r-md);
+  border:1px dashed rgba(122,147,168,.5); color:var(--faint); font-size:12.5px;
+}
+
+/* INFORMACJA ZWROTNA — ton NIESIE WERDYKT. Trzy sekcje (Dlaczego / Pułapka / Co dalej) stoją
+   na włosowych kreskach jak .etapdane: są równorzędne i czyta się je po kolei, więc nie mogą
+   być trzema osobnymi kartami. */
+.nfeed{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--tone) 14%, transparent), rgba(12,20,28,.88) 58%);
+}
+/* WERDYKTY: paczka zakładała pięć (`trafne`, `czesciowe`, `niejednoznaczne`, `bledne`,
+   `nierozstrzygniete`); nauka-model.js ma TRZY — `trafna`, `dopuszczalna`, `bledna` — a stan
+   „niejednoznaczny" nie jest czwartym werdyktem, tylko ZDANIEM dokładanym obok (`.nfeed__nj`).
+   To rozróżnienie jest merytoryczne, nie nazewnicze: etap niejednoznaczny nie ma trafnej
+   odpowiedzi w ogóle, więc nie wolno go pokazać jako osobnej oceny odpowiedzi ucznia. */
+.nfeed--trafna{ --tone:var(--post); }
+.nfeed--dopuszczalna{ --tone:var(--horiz); }
+.nfeed--bledna{ --tone:var(--crit); }             /* obrys i tint, NIGDY wypełnienie — pełna czerwień należy do wyniku HINTS */
+.nfeed__w{
+  display:inline-flex; align-items:center; gap:8px;
+  font-size:16px; font-weight:700; color:var(--text);
+}
+.nfeed__w::before{
+  content:""; flex:0 0 auto; width:26px; height:26px; border-radius:var(--r-pill);
+  background:var(--tone);
+}
+.nfeed__o{ margin:8px 0 0; font-size:13px; line-height:1.5; color:#D4DEE8; }
+.nfeed__nj{ margin:8px 0 0; font-size:12.5px; line-height:1.5; color:var(--scene-text); }
+.ndet{ background:rgba(8,12,17,.72); }
+.nfeed .ndet{ margin-top:1px; padding:12px 14px; }
+.nfeed .ndet:first-of-type{ margin-top:var(--sp-3); border-radius:var(--r-md) var(--r-md) 0 0; }
+.nfeed .ndet:last-of-type{ border-radius:0 0 var(--r-md) var(--r-md); }
+.ndet summary{ font-size:12.5px; font-weight:700; color:var(--scene-text); cursor:pointer; }
+.ndet p{ margin:4px 0 0; font-size:12.5px; line-height:1.5; color:#D4DEE8; }
+.nnaw{ display:flex; gap:10px; }
+.nnaw button{ flex:1 1 0; min-height:var(--tap); border-radius:var(--r-md); font-size:13.5px; font-weight:600; cursor:pointer; }
+.nnaw .recoalt{ border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text); }
+.nnaw .recoprimary{ border:0; background:var(--ant); color:#1A1230; font-weight:700; }
+.nnaw button[disabled]{ opacity:.45; cursor:default; }
+
+/* ZASŁONA — sedno dydaktyki, nie brak danych. Ukośna szrafura mówi „tu COŚ jest i zostanie
+   pokazane", czego pusta karta nie powie; przerywany obrys w tonie obszaru odróżnia ją od
+   przerywanych kart „braku wyniku", które są szare. */
+.nzaslona{
+  border-radius:var(--r-lg); border:1px dashed color-mix(in srgb, var(--ant) 45%, transparent);
+  background:repeating-linear-gradient(135deg,
+    color-mix(in oklab, var(--ant) 5%, transparent) 0 10px, transparent 10px 20px);
+  text-align:center;
+}
+.nzaslona h4{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+.nzaslona .note{ margin-top:10px; font-size:12px; line-height:1.5; color:var(--scene-text); }
+.nzaslona::before{
+  content:"?"; display:inline-grid; place-items:center; margin-top:var(--sp-3);
+  width:34px; height:34px; border-radius:var(--r-pill);
+  border:1px solid color-mix(in srgb, var(--ant) 50%, transparent); color:var(--ant); font-size:16px;
+}
+
+/* ZAPIS OBSERWACJI — tabela na najciemniejszej płycie, jak wizualizacje ekranów klinicznych. */
+.nzapis{ border-radius:var(--r-lg); border:1px solid var(--scene-line); background:var(--clin-deep); }
+.nzapis h4{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+.nzapis__t{ width:100%; margin-top:var(--sp-3); border-collapse:separate; border-spacing:0 1px; font-size:12px; }
+.nzapis__t th{ width:92px; padding:9px 12px; background:rgba(8,12,17,.72); text-align:left; font-weight:400; font-size:11.5px; color:var(--faint); }
+.nzapis__t td{ padding:9px 12px; background:rgba(8,12,17,.72); color:#D4DEE8; }
+
+/* WYNIK PRZYPADKU — ton oceny; ta sama zasada co przy werdykcie etapu. */
+.nwynik{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--tone) 12%, transparent), var(--scene-card-solid) 58%);
+}
+.nwynik--rozwiazany{ --tone:var(--post); }
+.nwynik--zeWskazowka{ --tone:var(--ant); }
+.nwynik--zBledami{ --tone:var(--horiz); }
+.nwynik--nieukonczony{ --tone:var(--faint); }
+.nwynik__o{ margin:8px 0 0; font-size:13px; line-height:1.5; color:#D4DEE8; }
+.nwynik__l{ margin:var(--sp-3) 0 0; padding-left:18px; font-size:12.5px; line-height:1.6; color:var(--scene-text); }
+
+/* ═══ 5. LABORATORIUM — OBSZAR BEZ TONU KLINICZNEGO ═════════════════════════════════════════
+   Patrz nagłówek pliku. Ton wraca WYŁĄCZNIE w .lobraz (opis badania) i w bursztynie granic
+   modelu; wszystko inne jest stalowe. */
+.lgrid{ --tone:var(--faint); }
+
+.llead{
+  padding:14px var(--sp-4); border-radius:var(--r-lg);
+  border:1px solid rgba(122,147,168,.34); background:rgba(12,20,28,.7);
+  font-size:13.5px; line-height:1.5; color:#D4DEE8;
+}
+.llista{ margin:0; padding:0; list-style:none; display:grid; gap:8px; }
+.lkafel{
+  display:flex; align-items:center; gap:14px; width:100%;
+  min-height:76px; padding:14px var(--sp-4); border-radius:var(--r-lg);
+  border:1px solid rgba(122,147,168,.34); background:var(--clin-glass);
+  text-align:left; cursor:pointer;
+}
+.lkafel:hover{ border-color:var(--scene-line-strong); }
+.lkafel__t{ flex:1 1 auto; min-width:0; font-size:14.5px; font-weight:700; color:var(--text); }
+.lkafel__q{ display:block; margin-top:3px; font-size:12.5px; color:var(--scene-text); }
+.lkafel__go{ flex:0 0 auto; font-size:20px; color:var(--scene-text); }
+.lozakres{
+  border-radius:var(--r-lg); border:1px solid var(--scene-line-strong);
+  background:var(--clin-glass); box-shadow:var(--lift-2);
+}
+.lozakres h3{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+.lozakres p{ margin:10px 0 0; font-size:13px; line-height:1.55; color:#D4DEE8; }
+.lozakres .note{ font-size:12.5px; color:var(--faint); }
+
+/* Stanowiska A/B — segmenty stalowe. „Porównaj" ma obrys PRZERYWANY: to nie trzecie stanowisko,
+   tylko tryb patrzenia na dwa. */
+.lstany{ display:flex; flex-wrap:wrap; gap:6px; }
+.lstan{
+  min-height:36px; padding:0 16px; border-radius:var(--r-sm);
+  border:1px solid rgba(203,217,228,.16); background:none; color:var(--scene-text);
+  font-size:12.5px; cursor:pointer;
+}
+.lstan[aria-pressed="true"]{ border-color:var(--scene-line-strong); background:var(--lab-steel); color:var(--text); font-weight:700; }
+.lstan--por{ margin-left:auto; border-style:dashed; border-color:rgba(122,147,168,.5); color:var(--faint); }
+.lstan--por[aria-pressed="true"]{ border-style:dashed; }
+
+.lpyt, .lparams, .lref{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:var(--clin-glass); box-shadow:none;
+}
+.lpyt h3{ font-size:14px; font-weight:600; line-height:1.5; color:#D4DEE8; }
+.lparams h4, .lref h4{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+
+/* PARAMETR. Nazwa jest przyciskiem (rozwija opis), więc dostaje znak zapytania — inaczej nikt
+   nie zgadnie, że pod nazwą coś jest. Wartość w kroju maszynowym: liczby porównuje się w pionie. */
+.lparam{ margin-top:14px; padding-bottom:14px; border-bottom:1px solid var(--scene-line); }
+.lparam:last-of-type{ border-bottom:0; padding-bottom:0; }
+.lparam__g{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.lparam__n{
+  display:inline-flex; align-items:center; gap:6px;
+  border:0; background:none; padding:0; cursor:pointer;
+  font:inherit; font-size:13.5px; font-weight:600; color:var(--scene-text);
+}
+.lparam__n[aria-expanded="true"]{ color:var(--text); }
+.lparam__i{
+  display:inline-grid; place-items:center; width:16px; height:16px; border-radius:var(--r-pill);
+  border:1px solid var(--scene-line-strong); font-size:10px; color:var(--faint);
+}
+.lparam__v{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px; color:var(--text); }
+
+/* Suwak — własna szyna, bo domyślny wygląd systemowy jest jasny i na tej scenie znika.
+   Uchwyt 16 px z obwódką w barwie płyty: pozostaje widoczny nad wypełnioną częścią szyny.
+   WYSOKOŚCI TU NIE MA I NIE MOŻE BYĆ. Paczka dawała `height:20px`, ale lab.css trzyma
+   `min-height:32px`, a min-height wygrywa z height, gdy jest większa — deklaracja była martwa,
+   a suwak stał na 32 px, poniżej pola dotykowego. Wysokość ustawia a11y.css (`.lsuwak{height:
+   var(--tap)}`), razem z `.comprange`, bo to jeden niezmiennik całej aplikacji, nie decyzja
+   tego ekranu. Tu zostaje wyłącznie MATERIAŁ: szyna, uchwyt, ognisko. */
+.lsuwak{
+  appearance:none; -webkit-appearance:none; width:100%; margin:10px 0 0;
+  background:none; cursor:pointer;
+}
+.lsuwak::-webkit-slider-runnable-track{ height:4px; border-radius:var(--r-pill); background:rgba(203,217,228,.16); }
+.lsuwak::-moz-range-track{ height:4px; border-radius:var(--r-pill); background:rgba(203,217,228,.16); }
+.lsuwak::-moz-range-progress{ height:4px; border-radius:var(--r-pill); background:var(--scene-text); }
+.lsuwak::-webkit-slider-thumb{
+  -webkit-appearance:none; width:16px; height:16px; margin-top:-6px;
+  border-radius:var(--r-pill); background:var(--text); border:2px solid var(--clin-deep);
+}
+.lsuwak::-moz-range-thumb{
+  width:16px; height:16px; border-radius:var(--r-pill);
+  background:var(--text); border:2px solid var(--clin-deep);
+}
+.lsuwak:focus-visible{ outline:2px solid var(--primary); outline-offset:4px; }
+.lwybor{ margin-top:10px; display:flex; gap:6px; }
+.lwybor__b{
+  flex:1 1 0; min-height:40px; border-radius:var(--r-sm);
+  border:1px solid rgba(203,217,228,.18); background:none; color:var(--scene-text); font-size:12.5px; cursor:pointer;
+}
+.lwybor__b[aria-pressed="true"]{ border-color:var(--scene-line-strong); background:var(--lab-steel); color:var(--text); font-weight:700; }
+
+.lopis{ margin-top:10px; padding:12px; border-radius:var(--r-sm); background:rgba(8,12,17,.6); }
+.lopis__co{ margin:0; font-size:12.5px; line-height:1.5; color:#D4DEE8; }
+.lopis__dl{ margin:10px 0 0; display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:12px; }
+.lopis__dl dt{ color:var(--faint); }
+.lopis__dl dd{ margin:0; color:var(--scene-text); }
+/* GRANICA MODELU — jedyny bursztyn w Laboratorium. Zdanie o tym, gdzie kończy się uczciwość
+   symulacji, nie może wyglądać jak kolejny wiersz opisu. */
+.lgranica{
+  margin:10px 0 0; padding:8px 10px; border-radius:var(--r-xs);
+  border:1px dashed color-mix(in srgb, var(--warn) 45%, transparent);
+  font-size:12px; line-height:1.45; color:#F4D48A;
+}
+.lreszta{ margin-top:16px; padding-top:14px; border-top:1px solid var(--scene-line); }
+.lreszta .eyebrow{ display:block; font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+.lgrupa{ margin-top:10px; border-radius:var(--r-sm); border:1px solid var(--scene-line); }
+.lgrupa > summary{ min-height:40px; display:flex; align-items:center; padding:0 12px; font-size:12.5px; color:var(--scene-text); cursor:pointer; }
+.lgrupa__h{ margin:0; padding:0 12px 8px; font-size:12px; color:var(--faint); }
+
+.lodch{ margin:var(--sp-3) 0 0; padding:0; list-style:none; display:grid; gap:8px; }
+.lodch li{ padding:10px 12px; border-radius:var(--r-sm); background:rgba(8,12,17,.6); font-size:12.5px; color:#D4DEE8; }
+.lodch li em{ display:block; margin-top:3px; font-style:normal; font-size:11.5px; color:var(--faint); }
+.lreset{
+  margin-top:var(--sp-3); width:100%; min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:13px; font-weight:600; cursor:pointer;
+}
+
+/* CO SIĘ ZMIENIŁO — bohater ekranu i jedyna „pełna" płyta obszaru. Wypełnienie jest STALOWE,
+   nie tonowe: to pomiar, nie werdykt. Stan pusty i stan „nic się nie zmieniło" mają tę samą
+   wagę wizualną co stan ze zmianą — w eksperymencie brak skutku jest wynikiem, a nie usterką,
+   i wygaszenie tej karty uczyłoby czegoś przeciwnego. */
+.lskutek{
+  border-radius:var(--r-lg); border:1px solid var(--scene-line-strong);
+  background:linear-gradient(180deg, var(--lab-steel), rgba(12,20,28,.9) 60%);
+  box-shadow:var(--lift-3), var(--lift-1);
+}
+.lskutek h4{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--scene-text); }
+.lskutek__p{ margin:10px 0 0; font-size:13px; font-weight:600; color:var(--text); }
+.lskutek__l{ margin:var(--sp-3) 0 0; padding:0; list-style:none; display:grid; gap:8px; }
+.lskutek__l li{ padding:10px 12px; border-radius:var(--r-sm); background:rgba(8,12,17,.62); }
+.lskutek__l li b{ display:block; font-size:12.5px; color:var(--text); }
+.lskutek__l li span{ display:block; margin-top:2px; font-size:11.5px; color:var(--faint); }
+.lskutek__nic{ margin:var(--sp-3) 0 0; font-size:13px; font-weight:600; line-height:1.5; color:var(--text); }
+.lskutek__powod{ margin:8px 0 0; font-size:12.5px; line-height:1.5; color:var(--scene-text); }
+.lskutek--pusty .note{ margin-top:10px; font-size:12.5px; line-height:1.5; color:var(--scene-text); }
+.lzdania{ margin-top:var(--sp-3); padding:12px; border-radius:var(--r-sm); }
+.lzdania .eyebrow{ display:block; font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+.lzdania ul{ margin:6px 0 0; padding-left:18px; font-size:12px; line-height:1.5; color:#D4DEE8; }
+.lzdania--plus{ border:1px solid color-mix(in srgb, var(--post) 34%, transparent); background:color-mix(in oklab, var(--post) 8%, transparent); }
+.lzdania--plus .eyebrow{ color:var(--post); }
+.lzdania--minus{ border:1px dashed rgba(122,147,168,.45); }
+.lzdania--minus .eyebrow{ color:var(--faint); }
+
+/* OBRAZ KLINICZNY — jedyne miejsce Laboratorium, w którym wraca język badania, więc jedyne
+   z płytą kliniczną (--clin-deep, jak wizualizacje w turze 2). */
+.lobraz{ border-radius:var(--r-lg); border:1px solid var(--scene-line); background:var(--clin-deep); }
+.lobraz h4{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+.lobraz__l{ margin:var(--sp-3) 0 0; padding-left:18px; font-size:12.5px; line-height:1.65; color:#D4DEE8; }
+.lobraz .note{ margin-top:var(--sp-3); font-size:12px; line-height:1.45; color:var(--faint); }
+.lpor{ border-radius:var(--r-lg); border:1px dashed rgba(122,147,168,.45); background:none; }
+.lpor h4{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); }
+.lpor__l{ margin:var(--sp-3) 0 0; padding-left:18px; font-size:12.5px; line-height:1.6; color:var(--scene-text); }
+
+/* ═══ 6. TELEFON ════════════════════════════════════════════════════════════════════════════
+   Wszystkie sześć ekranów siedzi w tej samej `.pagegrid`, co Bloki 10-13, więc kolumny znikają
+   same. Dochodzą trzy rzeczy, których układ sam nie zrobi. */
+@container main (max-width:899.9px){
+  /* 1. Opis badania: podgląd jest DŁUGI, a użytkownik przyszedł tu po jeden gest. Przycisk
+        kopiowania przykleja się do dołu scenoportu i dostaje wysokość 52 px. */
+  .opisakcje{ position:sticky; bottom:0; z-index:2; border-radius:var(--r-lg) var(--r-lg) 0 0; }
+  .opisakcje__kop{ min-height:52px; font-size:15px; }
+  .opisakcje__r{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .opispodglad__t, .opispodglad__e{ padding:16px; font-size:11.5px; line-height:1.7; }
+
+  /* 2. Kafle i oś: nazwy etapów nie mieszczą się w rzędzie sześciu — oś schodzi do pasków
+        postępu. Etykiety NIE znikają z drzewa dostępności: `.netap__n/__t` dostają kanoniczne
+        ukrycie wzrokowe (1x1 + clip-path), które czytnik ekranu nadal czyta — czyli nazwa
+        przycisku zostaje, mimo że paczka mówiła o aria-label.
+        `min-height:0` JEST KONIECZNE: nauka.css trzyma `.netap{min-height:44px}`, a min-height
+        wygrywa z height, gdy jest większa. Bez tego oś zostawała sześcioma pustymi kaflami po
+        44 px — zmierzone. To trzecie miejsce w tej paczce z tą samą pułapką (patrz `.lsuwak`
+        i dopisek o wysokości suwaka), więc: w tym repozytorium `height` bez `min-height`
+        niczego nie zmniejsza. */
+  .nos{ gap:5px; }
+  .netap{ flex:1 1 0; min-width:0; padding:0; min-height:0; height:5px; border-radius:var(--r-pill); background:rgba(203,217,228,.2); border:0; }
+  .netap__n, .netap__t{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .netap--gotowy{ background:var(--post); }
+  .netap--biezacy{ background:var(--ant); }
+
+  /* 3. Laboratorium: na telefonie rośnie UCHWYT. Wysokość pola dotykowego niesie a11y.css
+        przez var(--tap), które na wskaźniku grubym ma 48 px — czyli więcej, niż dawała paczka. */
+  .lsuwak::-webkit-slider-thumb{ width:22px; height:22px; margin-top:-9px; }
+  .lsuwak::-moz-range-thumb{ width:22px; height:22px; }
+  .lparam__v{ font-size:15px; }
+}
+
+/* ═══ 7. MOTYW JASNY ════════════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme:light){
+  :root{ --doc-paper:#FFFFFF; --doc-line:#CBD9E4; --lab-steel:rgba(122,147,168,.12); }
+  .opispodglad__t, .opispodglad__e{ color:#1B2733; }
+  .nzaslona{ background:repeating-linear-gradient(135deg, color-mix(in oklab, var(--ant) 8%, transparent) 0 10px, transparent 10px 20px); }
+  .lsuwak::-webkit-slider-thumb, .lsuwak::-moz-range-thumb{ border-color:#FFFFFF; }
+}
+
+/* ═══ 8. WEBVIEW BEZ ZAPYTAŃ KONTENERA (Capacitor, minSdk 24) ═══════════════════════════════ */
+@supports not (container-type:inline-size){
+  @media (max-width:1199.9px){
+    .opisakcje{ position:sticky; bottom:0; z-index:2; border-radius:var(--r-lg) var(--r-lg) 0 0; }
+    .opisakcje__kop{ min-height:52px; font-size:15px; }
+    .opispodglad__t, .opispodglad__e{ padding:16px; font-size:11.5px; line-height:1.7; }
+    .nos{ gap:5px; }
+    .netap{ flex:1 1 0; min-width:0; padding:0; min-height:0; height:5px; border-radius:var(--r-pill); background:rgba(203,217,228,.2); border:0; }
+    .netap__n, .netap__t{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+    .netap--gotowy{ background:var(--post); }
+    .netap--biezacy{ background:var(--ant); }
+    .lsuwak::-webkit-slider-thumb{ width:22px; height:22px; margin-top:-9px; }
+    .lsuwak::-moz-range-thumb{ width:22px; height:22px; }
+  }
+}

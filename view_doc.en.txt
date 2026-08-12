@@ -267,6 +267,72 @@ DEPENDENCIES
  Scene3D uses Vestibular.rotate / Vestibular.qaxis (shared quaternion algebra).
 
 
+=== CLINICAL SCENE — REMAINING SCREENS (rest-scene.css, design package turn 3) ===
+ Scope: post-maneuver Control, Report and session saving, Learning (library + lesson), Laboratory
+ (list + experiment). Imported in index.css AFTER clinic-scene.css; the sheet overrides MATERIAL,
+ never layout, and copies no value from turns 1-2 (it takes them as tokens).
+ THREE NEW KINDS OF CONTENT. DOCUMENT (report preview): its own paper --doc-paper #070B0F,
+ monospace, line height 1.75 — the only text that leaves the app, so it is read sentence by
+ sentence, not scanned like a list. CURTAIN (Learning): diagonal hatching in the area tone +
+ dashed outline — it says "something is here and will be shown"; distinct from the grey "no
+ result" cards, because deliberate concealment and missing data are two different things.
+ MEASUREMENT (Laboratory): the "What changed" card is filled with STEEL, not tone — the state
+ "nothing changed" carries the same visual weight as a state with a change, because in an
+ experiment the absence of an effect IS a result.
+ TWO AREA RULES. Learning carries --ant throughout (the same violet as the "I am learning" card on
+ Start). The Laboratory gets NO clinical tone: a canal or state colour would suggest a diagnosis
+ this place by definition does not make. The tone returns in one place — .lobraz ("Clinical
+ picture"), plus the amber .lgranica, because a sentence about where the simulation stops being
+ honest must not look like another line of description.
+ CONTROL-RESULT TONE: one [data-fuwynik] map for THREE places (answer, series row, "What next"
+ card). The values are not guessed from names but derived from flags the model already carries:
+ zamyka -> --post, nowaPodstawa -> --ant, reliable with neither -> --horiz, not reliable -> --faint
+ (+ dashed outline). The renderer emits data-fuwynik in three places; that is the ONLY markup
+ change in the whole turn.
+ IDENTIFIER DRIFT — the most important finding of this turn. The package targeted `bezZmian`,
+ `zmianaKierunku`, `nkafel--bezbledu`, `nfeed--trafne`, `nwynik--zewskazowka`. NONE of them exists:
+ WYNIKI has SEVEN entries (ustapienie, czesciowaPoprawa, brakPoprawy, konwersja, drugaStrona,
+ residual, niewiarygodne), OCENY four (rozwiazany, zeWskazowka, zBledami, nieukonczony — case
+ matters in a selector), WERDYKTY three (trafna, dopuszczalna, bledna; "ambiguous" is not a fourth
+ verdict but the .nfeed__nj sentence). A selector on a non-existent identifier is INVISIBLE to
+ every oracle — domOracle reads innerHTML, jsdom does not apply the cascade — and --tone then falls
+ back to :root{--tone:var(--primary)}, so the "What next" card after the answer "examination
+ unreliable" would look like an ordinary action card.
+ GATE CSS4-CSS8 in tools/interp-dom.mjs (33 -> 39 cases): every identifier from WYNIK_IDS, OCENY
+ and WERDYKT_IDS must have a tone rule in rest-scene.css, plus .nkafel--nowy (the starting state,
+ which no loop over a dictionary would catch). Sensitivity-checked: restoring three of the
+ package's names lights the gate on exactly those three.
+ THE "min-height beats height" TRAP — THREE TIMES in this package. lab.css .lsuwak{min-height:32px},
+ nauka.css .netap{min-height:44px}: the scene sheet's `height` declaration was dead. The effects
+ were visible, not theoretical — the slider stood at 32 px instead of a touch target, and on the
+ phone the stage axis stayed as six EMPTY 44 px tiles instead of 5 px progress bars (labels already
+ hidden). Slider height moved to a11y.css next to .comprange (one invariant, one place); the stage
+ axis got min-height:0 in both phone blocks.
+ MONOSPACE: the package called var(--mono, "IBM Plex Mono", monospace), but --mono did not exist
+ and IBM Plex Mono is not embedded (the four base64 @font-face entries are Plex SANS variants). The
+ fallback dropped to generic monospace — Courier New on Windows — and replaced the CORRECT stack
+ .opispodglad__t already had from opis.css. The --mono token takes the existing stack (ui-monospace,
+ SFMono-Regular, Menlo, Consolas); the five places carrying NUMBERS also got
+ font-variant-numeric:tabular-nums, because a monospace face alone does not align digits vertically.
+ TOUCH TARGETS: .ndet summary (32 px) and .lgrupa > summary raised in a11y.css to var(--tap),
+ exactly like .advbox summary. DELIBERATELY LEFT at 36 px: .lparam__n (30 of them), .lstan,
+ .nwsk__b — that is what the package specified, before this turn they were 22 px, and 36 px is
+ above the WCAG 2.2 AA threshold (24 px); .lparam__n sits in a row baseline-aligned with the
+ parameter value, so forcing 40 px would break that alignment.
+ GOLDEN SNAPSHOT: rebaseline of EXACTLY eight dom/followup/* keys (engine 0, pose 0, shell 0,
+ _meta 0). Proven that the difference is ONLY the added data-fuwynik: after mechanically stripping
+ them the new dump is character-identical to the old one, with a sensitivity control (stripping
+ aria-pressed as well does produce a difference). The other five screens moved NOT ONE character —
+ that is the proof that outside Control this turn is purely CSS.
+ BROWSER MEASUREMENT (the golden cannot see CSS): the seven Control answers carry four distinct
+ tones per the map; one full fill per screen (Control: the main step, Report: "Copy report"); the
+ document at 12.5 px / 21.875 px line height on rgb(7,11,15) paper; the four Learning grades give
+ four distinct tones and NONE falls back to cyan; Laboratory --tone=--faint, .lobraz on --clin-deep.
+ Phone: "Copy report" sticky at 52 px, slider 48 px, stage axis six 5 px bars in one row, button
+ names kept in the accessibility tree (1x1 + clip-path, not aria-label). Zero horizontal scrolling
+ at 360 px on all six screens.
+ NEVER SEEN WITH EYES: the preview pane composited no frames throughout this turn, so the whole
+ acceptance is numeric (getComputedStyle), not visual.
 === COMPACT REPOSITIONING STEP LAYOUT (renderGuide) — one screen ===
 Side selection: an L|R pill in the header (.sidepill, color L=--left/R=--right, aria-pressed), onclick=setGuideSide.
   Removed the full-row sideSel from the Repositioning view (sideSel still in Diagnostics).
