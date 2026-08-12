@@ -95,16 +95,10 @@
   .ghead .ttl{flex:1; min-width:0}
   .ghead .ttl b{display:block; font-family:var(--display); font-size:15.5px; line-height:1.25; letter-spacing:-.01em}
   .ghead .ttl span{font-size:12px; color:var(--muted)}
-  .badge{font-size:11px; font-weight:700; padding:5px 9px; border-radius:999px; border:1px solid var(--line); white-space:nowrap}
-  .badge.L{color:var(--left); border-color:#2c4a6b}
-  .badge.P{color:var(--right); border-color:#5a2c44}
   .sidesel{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
   .sidesel .lbl{font-size:12.5px;color:var(--muted);white-space:nowrap}
   .sidesel .tabs{flex:1;margin:0}
 
-  .steps-dots{display:flex; gap:5px; margin:2px 0 14px}
-  .steps-dots i{height:5px; flex:1; border-radius:4px; background:var(--line); transition:background .25s}
-  .steps-dots i.done{background:var(--primary)} .steps-dots i.cur{background:var(--timer); box-shadow:0 0 10px rgba(255,197,61,.5)}
 
   .viz{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; align-items:start}   /* start: karta „Ułożenie" NIE rozciąga się do sąsiada → stała wysokość między krokami (2D i 3D) */
   /* Stała wysokość OBU kart (Ułożenie + Głowa/Głowa z góry) we wszystkich krokach/pozycjach:
@@ -123,18 +117,11 @@
   .stepcard .instr{font-size:14.5px; color:#D6E0EA}
   .stepcard .meta{font-size:12px; color:var(--faint); margin-top:8px}
 
-  .timerwrap{display:flex; align-items:center; gap:16px}
   .ring{position:relative; width:104px;height:104px; flex:0 0 auto}
   .ring svg{position:absolute; inset:0}
   .ring .read{position:absolute; inset:0; display:grid; place-items:center; text-align:center}
   .ring .read b{font-size:26px; font-weight:700; letter-spacing:.5px}
   .ring .read em{display:block; font-style:normal; font-size:10px; color:var(--muted); margin-top:-2px}
-  .tctrl{flex:1; display:flex; flex-wrap:wrap; gap:8px}
-  .tctrl button{flex:1; min-width:64px; appearance:none; cursor:pointer; border-radius:11px; padding:11px 8px;
-    font-weight:700; font-size:13px; border:1px solid var(--line); background:var(--panel2); color:var(--text)}
-  .tctrl button.go{background:var(--timer); color:var(--timer-ink); border-color:transparent}
-  .tctrl button.go.run{background:var(--panel2); color:var(--text); border-color:var(--line)}
-  .tctrl button:active{transform:translateY(1px)}
   .adjust{display:flex; align-items:center; gap:8px; justify-content:center; margin-top:10px; font-size:13px; color:var(--muted)}
   .adjust button{appearance:none;cursor:pointer;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
     background:var(--panel2);color:var(--text);font-size:18px;line-height:1;font-weight:700}
@@ -321,3 +308,24 @@
   .mini3d[aria-pressed="true"]{border-color:var(--primary);color:var(--primary);background:rgba(79,210,238,.12)}
   .threewrap{width:100%;aspect-ratio:5/4;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:11px}
   .threewrap canvas{width:100%!important;height:auto!important;display:block;border-radius:8px}
+
+
+/* USUNIETO 2026-08-12 — 13 regul w czterech rodzinach, na MASZYNOWY DOWOD MARTWOTY (nie grep):
+     .badge / .badge.L / .badge.P      — plakietka strony; zastapiona przez .emk i .sidepill
+     .steps-dots (4 reguly)            — kropki postepu manewru; zastapione osia .osetapow (Blok 10)
+     .timerwrap                        — stary uklad timera; zastapiony przez .tcard/.trow1
+     .tctrl (5 regul)                  — stare sterowanie timerem; zastapione przez .tg/.ic/.go w .tcard
+
+   DOWOD, dwie niezalezne metody, obie zerowe:
+     1. skan statyczny — zero literalow w src/ i index.html, zero nazw SKLADANYCH w szablonach
+        (`foo--${x}`), zero manipulacji przez classList, zero wystapien w 208 przypietych
+        kluczach zlotego wzorca (warstwy dom i shell);
+     2. skan RUNTIME — zero wystapien w zywym DOM na 32 stanach ekranow (start, setup, wywiad,
+        cztery proby, oczoplas, interpretacja, cztery manewry po trzy etapy, kontrola, opis,
+        nauka, lekcja, laboratorium, trzy ekrany HINTS, symulator, pacjent wlasny).
+
+   Bramka czulosci skanera: .hint-eyes.dark (ostrzezenie z naglowka tego pliku) zostala
+   rozpoznana jako ZYWA — bez tego wynikom nie wolno ufac.
+
+   Reguly .tctrl button.go nadawaly przyciskowi timera zolc --timer. Zywa jest dzis .tcard .go
+   (clinic-scene.css), gdzie przycisk jest cyanowy — zolc wrocila do jednego znaczenia: czas. */
