@@ -1406,7 +1406,10 @@ function renderInterpret(){
       <button class="recoprimary" onclick="goObs()">${t("Opisz zaobserwowany oczopląs","Describe the observed nystagmus")}</button></div>`;
     const et = ETYKIETY_ZGODNOSCI[w.zgodnosc];
     const powod = w.powod && POWODY_ZGODNOSCI[w.powod] ? POWODY_ZGODNOSCI[w.powod] : null;
-    return `<div class="card iwynik">
+    /* Klasa stanu ZGODNOSCI takze na plycie wyniku, nie tylko na pigulce w srodku: material
+       plyty (obrys i podklad) niesie ten sam stan co napis, wiec nie moze go czytac z dziecka.
+       `:has()` odpada — WebView < 105 (Capacitor, minSdk 24) go nie zna. */
+    return `<div class="card iwynik iwynik--${w.zgodnosc}">
       <h4>${t("Co z tego opisu wynika","What follows from this description")}</h4>
       <div class="izgod izgod--${w.zgodnosc}">${t(et.pl, et.en)}</div>
       ${powod?`<div class="note" style="color:var(--text)">${t(powod.pl, powod.en)}</div>`:""}
