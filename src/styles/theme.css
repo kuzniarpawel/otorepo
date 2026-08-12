@@ -30,6 +30,30 @@
   --crit:#FF8FA0; --crit-bg:rgba(255,143,160,.12); --crit-line:#8A3A46;
   --danger:var(--crit);   /* był zadeklarowany i miał ZERO użyć — teraz to alias semantyczny */
 
+  /* BARWA PRAWEGO UCHA vs BARWA ALARMU. `--right` (#FF7AB3) i `--crit` (#FF8FA0) to dwa ciepłe
+     róże o ZUPEŁNIE różnym znaczeniu: „prawe ucho pacjenta" i „wymaga pilnej oceny neurologicznej".
+     Zmierzone CIEDE2000: ΔE00 = 9,4 — poniżej progu, przy którym dwie barwy da się rozróżnić
+     jednym spojrzeniem (~10). Dla porównania ΔE00(--crit, --left) = 40,8, ΔE00(--crit, --ant) = 29,2,
+     czyli reszta palety jest rozsunięta 3-4 razy szerzej. Ryzyko jest realne, bo obie występują
+     jako WYPEŁNIENIE i sąsiadują: pigułka strony stoi w nagłówku ekranu, na którym HINTS potrafi
+     wyświetlić płytę alarmową.
+
+     Nowa wartość przesuwa róż w stronę magenty, ZOSTAWIAJĄC parę ciepły/zimny z `--left`:
+       ΔE00 do --crit : 9,4 -> 17,1  (1,8x dalej)
+       ΔE00 do --ant  : 24,3 -> 19,0 (nadal dwukrotnie powyżej progu)
+       kontrast na --panel / --panel2 : 7,18/6,42 -> 7,50/6,71 (LEPSZY niż był i niż --left)
+     Warianty głębsze (#E8478F, #E24FA8) dawały większy rozstaw, ale schodziły do 4,2-4,4:1 na
+     --panel2, czyli pod próg 4,5:1 dla tekstu — odrzucone. Atrament pigułki (#2a0a18) ZOSTAJE:
+     na nowym wypełnieniu daje 7,86:1, więc zmiana niczego by nie kupiła.
+     JEDYNE użycia `--right` to trzy reguły w legacy.css — w JS nie ma ani jednego.
+     Z tych trzech ŻYJĄ DWIE: `.opt[data-side="P"]` (ekran doboru) i `.sidepill button[data-s="P"]`
+     (Diagnostyka, Manewr) — obie sprawdzone w przeglądarce. Trzecia, `.badge.P`, dobiera obramowanie
+     literałem `#5a2c44` pod STARY róż, ale sam `.badge` NIE JEST EMITOWANY: zero wystąpień w src/
+     i zero w 208 przypiętych kluczach złotego wzorca. Nie dokładamy więc korekty odcienia dla
+     elementu-widma; to materiał na sprzątanie legacy.css, dla którego jest teraz maszynowy dowód
+     martwoty wymagany przez nagłówek tego pliku. */
+  --right:#FF7ADD;
+
   /* KROJ NAGŁÓWKÓW. --display deklarował "Sora", której nigdy nie ładujemy — wklejone base64 to
      wyłącznie IBM Plex Sans (4 x @font-face). Nagłówki spadały więc po cichu na font systemowy,
      przez co krój nagłówka i treści rozjeżdżał się przypadkowo, inaczej na każdym systemie.
