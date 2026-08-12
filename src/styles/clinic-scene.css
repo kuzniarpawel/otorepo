@@ -97,9 +97,15 @@
 .sidepill{ border-color:var(--scene-line-strong); background:rgba(12,20,28,.8); }
 .sidepill button{ color:var(--scene-text); }
 
-/* Karta instrukcji — jedyna karta na ekranie z tłem w tonie kanału. */
-.card > .instr{ color:#D4DEE8; }
-.card:has(> .instr){
+/* Karta instrukcji — jedyna karta na ekranie z tłem w tonie kanału.
+   KLASA, NIE `:has(> .instr)`. Pierwsza wersja celowała w „każdą kartę z instrukcją" i przeciekała
+   na WSZYSTKIE ekrany kliniczne: `.obsintro` i `.iintro` też zawierają `.instr`, a `:has()` ma
+   specyficzność (0,2,0), więc wygrywała z ich własnymi regułami niezależnie od kolejności w pliku.
+   Zmierzone na ekranie „Oczopląs": karta wprowadzająca dostawała gradient w tonie zamiast płaskiego
+   tła, czyli dokładne przeciwieństwo reguły tamtego ekranu. Przy okazji znika zależność od `:has()`,
+   której WebView < 105 (Capacitor, minSdk 24) nie zna. */
+.clininstr .instr{ color:#D4DEE8; font-size:14px; }
+.clininstr{
   border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--tone) 34%, transparent);
   background:linear-gradient(180deg, color-mix(in oklab, var(--tone) 10%, transparent), var(--scene-card-solid) 56%);
   box-shadow:none;
@@ -257,3 +263,65 @@
 }
 .ticks button.r{ transform:translateX(-100%); }
 .ticks button:hover{ color:var(--primary); }
+
+/* ═══ 5. OCZOPLĄS — NAJCIEMNIEJSZE I NAJSPOKOJNIEJSZE SZKŁO ═════════════════════════════════
+   Nota autora: „Jedyny ekran, na którym mówi UŻYTKOWNIK, więc szkło jest tu najciemniejsze
+   i najspokojniejsze — nic nie miga i nic nie doradza w trakcie pisania".
+   Praktycznie: karta wprowadzająca traci gradient (płaskie `rgba(12,20,28,.7)`), a grupy cech
+   dostają ton SWOJEJ OSI — kierunek, dynamika, kontekst — a nie tonu badanego kanału. To jest
+   rozróżnienie merytoryczne: kanał jest WNIOSKIEM, a tu użytkownik dopiero opisuje przesłanki.
+   Podpowiadanie mu barwą kanału, zanim cokolwiek opisze, to dokładnie to „doradzanie w trakcie
+   pisania", którego ekran ma nie robić. */
+.obsintro{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:rgba(12,20,28,.7); box-shadow:none;
+}
+.obsintro .instr{ font-size:13.5px; color:#D4DEE8; }
+
+.ogrupa{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--tone) 34%, transparent);
+  background:linear-gradient(180deg, color-mix(in oklab, var(--tone) 8%, transparent), var(--scene-card-solid) 46%);
+  box-shadow:none;
+}
+.ogrupa[data-os="kierunek"]{ --tone:var(--post); }
+.ogrupa[data-os="dynamika"]{ --tone:var(--horiz); }
+/* Osie kontekstowe (m.in. `kontekst_wystapil` — „czy oczopląs wystąpił") niosą cyan nawigacyjny:
+   nie opisują ani kierunku, ani dynamiki, tylko ramę obserwacji. Wypisane JAWNIE, żeby ton nie
+   zależał od tego, że akurat taka jest wartość domyślna w :root. */
+.ogrupa[data-os="kontekst"],
+.ogrupa[data-os="kontekst_wystapil"]{ --tone:var(--primary); }
+.ogrupa > summary{ border-bottom:1px solid var(--scene-line); }
+.ogrupa__t{ font-size:14.5px; font-weight:700; color:var(--text); }
+.ogrupa__n{
+  padding:3px 9px; border-radius:var(--r-pill); border:0;
+  background:color-mix(in oklab, var(--tone) 16%, transparent);
+  color:var(--tone); font-size:11.5px; font-weight:700;
+}
+.oq__q{ font-size:13.5px; font-weight:600; color:var(--text); }
+
+/* Odpowiedzi: pole dotykowe 44 px, znacznik jako KROPKA (wybór jednokrotny), wypełniona tonem
+   osi tylko w stanie wybranym. Stan niesie też obrys i waga — nigdy sam kolor (a11y.css). */
+.oqopt{
+  min-height:44px; border-radius:var(--r-md);
+  border:1px solid rgba(203,217,228,.18); background:none; color:var(--scene-text); font-size:13px;
+}
+.oqopt__box{
+  width:14px; height:14px; border-radius:var(--r-pill);
+  border:1px solid rgba(122,147,168,.7); background:none;
+}
+.oqopt[aria-pressed="true"]{
+  border-color:color-mix(in srgb, var(--tone) 50%, transparent);
+  background:color-mix(in oklab, var(--tone) 14%, transparent);
+  color:var(--text); font-weight:600;
+}
+.oqopt[aria-pressed="true"] .oqopt__box{ background:var(--tone); border-color:var(--tone); }
+.oqopt:hover{ border-color:color-mix(in srgb, var(--tone) 50%, transparent); }
+
+/* „Oznacz jako niewiarygodne" — obrys PRZERYWANY. To nie jest odpowiedź na pytanie, tylko
+   odmowa jej udzielenia, więc nie ma prawa wyglądać jak trzecia opcja w rzędzie. */
+.oznak{
+  min-height:44px; border-radius:var(--r-md);
+  border:1px dashed color-mix(in srgb, var(--warn) 50%, transparent);
+  background:none; color:#F4D48A; font-size:13px;
+}
+.oznak:hover{ border-color:var(--warn); }

@@ -1262,7 +1262,10 @@ function renderObs(){
     }).length;
     // Na telefonie rozwinięta jest JEDNA grupa; state.obsGrupa jest tu NAPRAWDĘ czytane.
     const otwarta = state.obsGrupa ? state.obsGrupa===g.os : zrobione<lista.length;
-    return `<details class="card ogrupa"${otwarta?" open":""}>
+    /* OŚ CECHY W MARKUPIE — nośnik TONU GRUPY (scena kliniczna). Ton wchodzi atrybutem, a nie
+       kolejnością `:nth-of-type`: lista grup zależy od próby (część cech ma `tylkoProba`), więc
+       numer porządkowy grupy zmienia się z ekranu na ekran, a jej OŚ nie. */
+    return `<details class="card ogrupa" data-os="${g.os}"${otwarta?" open":""}>
         <summary onclick="event.preventDefault();setObsGrupa('${g.os}')">
           <span class="ogrupa__t">${t(g.pl,g.en)}</span>
           <span class="ogrupa__n">${zrobione}/${lista.length}</span></summary>
