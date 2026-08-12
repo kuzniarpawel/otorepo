@@ -334,8 +334,56 @@ const czysty = () => { st.aktualizacja = 'brak'; st.aktualizacjaSchowana = false
   T('J3/updbar-w-markupie', /id="updbar"/.test(html), 'pasek nie istnieje w statycznym szkielecie powłoki');
 }
 
+/* ═══════════ K. NAWIGACJA MIĘDZY OBSZARAMI NAPRAWDĘ PRZEŁĄCZA EKRAN ═══════════
+   ZNALEZIONE PRZEZ UŻYTKOWNIKA, nie przez wyrocznię: z Nauki albo z Laboratorium dotknięcie
+   „Diagnostyka" nic nie robiło. Stan zmieniał się poprawnie (`area` i `mode` szły na 'diag'),
+   ale `state.screen` zostawał na `naukaBib`/`labLista`, a `render()` dyspozytuje po `screen` —
+   więc rysowała się dalej Nauka. Żadna wyrocznia tego nie widziała, bo wszystkie wchodziły na
+   ekrany akcjami modułu (`goNauka`, `goLab`), nigdy PRZEZ NAWIGACJĘ z innego obszaru.
+
+   Mapa oczekiwań jest tu WŁASNA, celowo niezależna od `OBSZAR_EKRANU` w shell.js: wyrocznia,
+   która importuje tę samą tabelę, co kod, potwierdza tylko, że tabela równa się sama sobie. */
+{
+  const OBSZAR_OCZEKIWANY = { start: 'start', naukaBib: 'learn', naukaLekcja: 'learn',
+                              labLista: 'lab', labEksp: 'lab' };
+  const obszar = (s) => OBSZAR_OCZEKIWANY[s] || 'diag';
+
+  const PRZEJSCIA = [['learn', 'diag'], ['lab', 'diag'], ['learn', 'lab'], ['lab', 'learn'],
+                     ['diag', 'learn'], ['diag', 'lab'], ['start', 'diag']];
+  for (const [z, dokad] of PRZEJSCIA) {
+    czysty(); H.goArea('start'); H.goArea(z);
+    const skad = st.screen;
+    H.goArea(dokad);
+    T(`K1/${z}-do-${dokad}`, obszar(st.screen) === dokad,
+      `z ekranu ${skad} dotknięcie „${dokad}" zostawiło screen=${st.screen} (obszar ${obszar(st.screen)})`);
+  }
+
+  /* Druga strona tej samej monety: przejście NIE MOŻE cofać w obrębie własnego obszaru. Gdyby
+     naprawę zrobić bezwarunkowym `screen='setup'`, dotknięcie „Diagnostyka" w trakcie badania
+     wyrzucałoby klinicystę z „Oczopląsu" na początek — usterka gorsza od naprawianej. */
+  czysty();
+  H.goArea('diag'); H.openTest('dix'); H.setDiagSide('P'); H.goObs();
+  const wTrakcie = st.screen;
+  H.goArea('diag');
+  T('K2/wlasny-obszar-nie-cofa', st.screen === wTrakcie && wTrakcie === 'obs',
+    `ponowne dotknięcie własnego obszaru przeniosło z ${wTrakcie} na ${st.screen}`);
+
+  /* Bramka na PRZYSZŁOŚĆ: każdy ekran z dyspozytora `render()`, którego nazwa zaczyna się od
+     „nauka" albo „lab", musi być przypisany do swojego obszaru. To łapie realny scenariusz —
+     kolejny blok dokłada `naukaWynik` i zapomina o mapie, a objaw jest znowu niewidoczny. */
+  const zrodlo = readFileSync(resolve(ROOT, 'src/render/svg-screens.js'), 'utf8');
+  const ekrany = [...zrodlo.matchAll(/state\.screen\s*===\s*"([A-Za-z]+)"/g)].map((m) => m[1]);
+  T('K3/dyspozytor-znaleziony', ekrany.length >= 15, `w dyspozytorze render() znaleziono ${ekrany.length} ekranów`);
+  const osierocone = ekrany.filter((s) => /^nauka/.test(s) && obszar(s) !== 'learn')
+    .concat(ekrany.filter((s) => /^lab/.test(s) && obszar(s) !== 'lab'));
+  T('K4/ekrany-maja-obszar', osierocone.length === 0,
+    `ekrany bez przypisania do obszaru: ${osierocone.join(', ')} — dopisz je do OBSZAR_EKRANU w shell.js`);
+
+  czysty(); H.goArea('start');
+}
+
 /* ═══════════ WYNIK ═══════════ */
-const OCZEKIWANE = 79;
+const OCZEKIWANE = 89;   /* 79 + 10 bramek sekcji K (nawigacja miedzy obszarami) */
 if (ok !== OCZEKIWANE) bledy.push(`LICZBA PRZYPADKÓW: ${ok}, oczekiwano ${OCZEKIWANE} — dopisz albo popraw zakres, ale nie po cichu`);
 if (bledy.length) { console.error(`✗ pwa:dom — ${bledy.length} błędów (${ok} przeszło)`); for (const b of bledy) console.error('  ' + b); process.exit(1); }
 console.log(`✓ pwa:dom — ${ok} przypadków`);

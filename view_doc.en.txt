@@ -333,6 +333,24 @@ DEPENDENCIES
  at 360 px on all six screens.
  NEVER SEEN WITH EYES: the preview pane composited no frames throughout this turn, so the whole
  acceptance is numeric (getComputedStyle), not visual.
+ NAVIGATION BETWEEN AREAS (shell.js: OBSZAR_EKRANU). `render()` dispatches on `state.screen`, so
+ changing area MUST leave a screen belonging to another area. Block 3 had a single condition here
+ (`screen === 'start'`) and that sufficed while no other area had screens. Block 13 added
+ naukaBib/naukaLekcja, Block 14 labLista/labEksp — and then tapping "Diagnostics" from Learning or
+ the Laboratory stopped working: `area` and `mode` moved to 'diag', but `screen` stayed, so the old
+ screen kept rendering. REPORTED BY THE USER, not by an oracle — all of them entered those screens
+ through module actions (goNauka/goLab), never THROUGH NAVIGATION from another area.
+ Instead of one more `if` there is a screen→area map (screens outside the map belong to Diagnostics,
+ matching the default branch in `render()`), and the rule reads: leave the screen if it belongs to
+ an area OTHER than the target. Re-tapping your own area deliberately does not reset — otherwise
+ "Diagnostics" mid-examination would throw the clinician from "Nystagmus" back to the start.
+ Gate K in pwa-dom.mjs (79 -> 89): seven inter-area transitions, the no-reset rule within one area,
+ and a check that every "nauka*"/"lab*" screen in the dispatcher has an area. The oracle keeps its
+ OWN expectation map — importing the same table as the code would only confirm the table equals
+ itself.
+ THE SIDE RAIL appears from `@media (min-width:1200px)`; below that it is `display:none` and
+ `.bottomnav` takes over navigation. The Claude Code preview pane is ~500 px wide, so the rail is
+ NOT there by design — it is not a defect, just the same layout as on a phone.
 === COMPACT REPOSITIONING STEP LAYOUT (renderGuide) — one screen ===
 Side selection: an L|R pill in the header (.sidepill, color L=--left/R=--right, aria-pressed), onclick=setGuideSide.
   Removed the full-row sideSel from the Repositioning view (sideSel still in Diagnostics).

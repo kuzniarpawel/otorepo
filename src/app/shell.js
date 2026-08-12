@@ -51,6 +51,25 @@ export function mountShell() {
 
 /* ============ Nawigacja (Blok 3) ============ */
 
+/* DO KTÓREGO OBSZARU NALEŻY EKRAN. Ekrany spoza tej mapy należą do Diagnostyki (to jest też
+   zachowanie `render()`, gdzie gałąź domyślna rysuje `renderDiag`).
+
+   PO CO TA MAPA. Blok 3 miał tu jeden warunek — „każdy inny obszar MUSI opuścić EKRAN STARTOWY" —
+   i wtedy to wystarczało, bo innych ekranów-obszarów nie było. Blok 13 dołożył ekrany Nauki,
+   Blok 14 ekrany Laboratorium, i żaden nie rozszerzył warunku. Skutek ZMIERZONY: z biblioteki
+   Nauki dotknięcie „Diagnostyka" ustawiało `area='diag'` i `mode='diag'`, ale `screen` zostawał
+   na `naukaBib`, więc `render()` rysował dalej Naukę — przycisk wyglądał na zepsuty, choć stan
+   się zmieniał. To samo z `labLista`.
+
+   Mapa zamiast kolejnego `if`: dopisanie obszaru wymaga wpisu tutaj, a bramka K w pwa-dom.mjs
+   sprawdza KAŻDY ekran z dyspozytora `render()`, więc przeoczenie jest widoczne od razu. */
+export const OBSZAR_EKRANU = {
+  start: 'start',
+  naukaBib: 'learn', naukaLekcja: 'learn',
+  labLista: 'lab', labEksp: 'lab',
+};
+export const obszarEkranu = (screen) => OBSZAR_EKRANU[screen] || 'diag';
+
 // Mapowanie obszaru na REALNY stan aplikacji. Żaden obszar nie prowadzi donikąd: „Nauka" ma
 // uczciwą, dwujęzyczną zaślepkę zamiast pustego ekranu udającego moduł, którego jeszcze nie ma.
 function applyArea(id) {
@@ -78,9 +97,12 @@ function applyArea(id) {
   // „Start" to ekran oparty na CELU (Blok 4), nie skrót do modułu repozycji.
   if (id === 'start') { state.screen = 'start'; A.render && A.render(); }
   else {
-    // Każdy inny obszar MUSI opuścić ekran startowy. setMode zmienia wyłącznie tryb, a render()
-    // przy screen==='start' rysowałby dalej ekran startowy — dotknięcie wyglądało na nieskuteczne.
-    if (state.screen === 'start') state.screen = 'setup';
+    /* Każdy obszar MUSI opuścić ekran NALEŻĄCY DO INNEGO OBSZARU. `setMode` zmienia wyłącznie
+       tryb, a `render()` dyspozytuje po `state.screen` — więc bez tego dotknięcie wygląda na
+       nieskuteczne, choć stan się zmienia. Warunek celowo NIE rusza ekranów tego samego obszaru:
+       ponowne dotknięcie „Diagnostyka" w trakcie badania nie ma prawa cofnąć użytkownika
+       z „Kontroli" czy „Oczopląsu" na początek. */
+    if (obszarEkranu(state.screen) !== id) state.screen = 'setup';
     if (id === 'diag') A.setMode && A.setMode('diag');
     /* Blok 12 (kryterium odbioru nr 1): „Laboratorium" też nie wchodzi wprost do matematycznego
        pacjenta. Klik w nazwę obszaru jest aktem świadomym, ale NIE jest świadomym pominięciem

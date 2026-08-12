@@ -329,6 +329,23 @@ ZALEŻNOŚCI
  Scene3D używa Vestibular.rotate / Vestibular.qaxis (wspólna algebra kwaternionów).
 
 
+ NAWIGACJA MIEDZY OBSZARAMI (shell.js: OBSZAR_EKRANU). `render()` dyspozytuje po `state.screen`,
+ wiec zmiana obszaru MUSI opuscic ekran nalezacy do innego obszaru. Blok 3 mial tu jeden warunek
+ (`screen === 'start'`) i to wystarczalo, dopoki innych ekranow-obszarow nie bylo. Blok 13 dolozyl
+ naukaBib/naukaLekcja, Blok 14 labLista/labEksp — i wtedy dotkniecie „Diagnostyka" z Nauki albo
+ z Laboratorium przestalo dzialac: `area` i `mode` szly na 'diag', ale `screen` zostawal, wiec
+ rysowal sie dalej stary ekran. ZGLOSZONE PRZEZ UZYTKOWNIKA, nie przez wyrocznie — wszystkie
+ wchodzily na te ekrany akcjami modulu (goNauka/goLab), nigdy PRZEZ NAWIGACJE z innego obszaru.
+ Zamiast kolejnego `if` jest mapa ekran→obszar (ekrany spoza mapy naleza do Diagnostyki, tak jak
+ galaz domyslna w `render()`), a warunek brzmi: opusc ekran, jesli nalezy do INNEGO obszaru niz
+ docelowy. Ponowne dotkniecie wlasnego obszaru celowo nie cofa — inaczej „Diagnostyka" w trakcie
+ badania wyrzucalaby klinicyste z „Oczoplasu" na poczatek. Bramka K w pwa-dom.mjs (79 -> 89):
+ siedem przejsc miedzy obszarami, zakaz cofania we wlasnym obszarze i kontrola, ze kazdy ekran
+ „nauka*"/„lab*" z dyspozytora ma przypisany obszar. Wyrocznia trzyma WLASNA mape oczekiwan —
+ importowanie tej samej tabeli, co kod, potwierdzaloby tylko, ze tabela rowna sie sama sobie.
+ SZYNA BOCZNA pojawia sie od `@media (min-width:1200px)`; ponizej ma `display:none`, a nawigacje
+ przejmuje `.bottomnav`. Panel podgladu w Claude Code ma ~500 px szerokosci, wiec szyny tam NIE MA
+ z zalozenia — to nie usterka, tylko ten sam uklad co na telefonie.
 === KOMPAKTOWY UKŁAD KROKU REPOZYCJI (renderGuide) — jeden ekran ===
 Wybór strony: pigułka L|P w nagłówku (.sidepill, kolor L=--left/P=--right, aria-pressed), onclick=setGuideSide.
   Usunięto pełnowierszowy sideSel z widoku Repozycji (sideSel nadal w Diagnostyce).
