@@ -166,13 +166,25 @@
   background:linear-gradient(160deg, color-mix(in oklab, var(--primary) 12%, transparent), var(--scene-card-solid) 58%);
   box-shadow:var(--lift-2);
 }
-/* `flex:0 0 42px`, nie `width:42px` — legacy.css daje `.stephead .num{flex:1}`, a przy `flex:1 1 0%`
-   baza 0 wygrywa z szerokością i płyta rozlewała się na całą szerokość nagłówka (zmierzone: 246 px). */
+/* LICZNIK KROKU. Pierwsza wersja tej reguły (tura 2) robiła z niego WYPEŁNIONY KWADRAT 42x42 —
+   i to był błąd projektowy, nie literówka: renderer wypisuje tu FRAZĘ `KROK 5 / 5`, a nie cyfrę.
+   ZMIERZONE: treść potrzebuje 47x51 px, więc przy `overflow:visible` wylewała się poza płytkę
+   i nachodziła na tytuł etapu. Poprzedni pomiar tego nie złapał, bo sprawdzałem wtedy tylko to,
+   co naprawiałem — czy pudełko przestało się rozlewać do 246 px — a nie to, czy treść się w nim
+   mieści. Rozmiar pudełka i mieszczenie się treści to dwa różne pomiary.
+
+   Dlatego licznik wraca do tego, czym jest w markupie: WYŚRODKOWANEGO NAPISU między strzałkami
+   („‹ KROK 5 / 5 ›"), a nie plakietki. `flex:1` z legacy.css jest tu POPRAWNE — rozlewanie się
+   było problemem tylko dlatego, że element miał widoczne wypełnienie; bez niego `flex:1` po prostu
+   centruje tekst w wolnej przestrzeni nagłówka.
+   Wypełnienia nie przywracamy także dlatego, że oś etapów NAD kartą pokazuje już bieżący etap
+   wypełnioną cyfrą, a obok stoi wypełniony przycisk przejścia dalej — trzecia cyjanowa płytka
+   w jednym nagłówku powtarzała tę samą informację po raz trzeci. */
 .stepcard .num{
-  flex:0 0 42px; width:42px; height:42px; box-sizing:border-box; padding:0;
-  border-radius:var(--r-md); display:grid; place-items:center;
-  background:linear-gradient(160deg,#84E2F7,#35B9D6); color:var(--ink);
-  font-family:var(--display); font-size:17px; font-weight:700; letter-spacing:0;
+  flex:1 1 auto; width:auto; height:auto; box-sizing:border-box; padding:0;
+  background:none; border-radius:0; color:var(--scene-text);
+  font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.12em;
+  text-align:center; white-space:nowrap;
 }
 .stepcard .title{ font-size:20px; }
 .stepcard .instr{ font-size:13px; color:var(--scene-text); }
