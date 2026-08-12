@@ -385,19 +385,20 @@
 /* KAFEL PRZYPADKU. Rozwiązany dostaje ton obszaru w tle; nierozpoczęty zostaje na czystym szkle —
    tło niesie „już tu byłeś", a nie ocenę. Ocena jest osobno, SŁOWEM. */
 .nlista{ margin:0; padding:0; list-style:none; display:grid; gap:8px; }
+/* Tak samo jak przy .lkafel: nauka.css ma tu siatkę `1fr auto` (tytuł, plakietki cech i stan
+   jeden pod drugim w kolumnie 1, strzałka w kolumnie 2 przez trzy wiersze). Nadpisanie jej
+   `display:flex` kladlo wszystko w jeden rząd i łamało tytuł przypadku. Zostaje materiał. */
 .nkafel{
-  display:flex; align-items:center; gap:14px; width:100%;
   min-height:72px; padding:12px var(--sp-4); border-radius:var(--r-lg);
   border:1px solid rgba(122,147,168,.34); background:var(--clin-glass);
-  text-align:left; cursor:pointer;
 }
 .nkafel:not(.nkafel--nowy){
   border-color:color-mix(in srgb, var(--ant) 45%, transparent);
   background:linear-gradient(90deg, color-mix(in oklab, var(--ant) 12%, transparent), var(--scene-card-solid) 46%);
 }
 .nkafel:hover{ border-color:var(--ant); }
-.nkafel__t{ flex:1 1 auto; min-width:0; font-size:14.5px; font-weight:700; color:var(--text); }
-.nkafel__m{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.nkafel__t{ font-size:14.5px; font-weight:700; color:var(--text); }
+.nkafel__m{ gap:6px; }
 .npill{ padding:2px 8px; border-radius:var(--r-xs); border:1px solid rgba(203,217,228,.18); font-size:11px; color:var(--scene-text); }
 .npill--poz{ border-color:color-mix(in srgb, var(--ant) 40%, transparent); background:color-mix(in oklab, var(--ant) 12%, transparent); color:#C7B4FD; }
 /* STAN PRZYPADKU JEST SŁOWEM. „Rozwiązany z błędem" to nie odcień zielonego — barwa tylko
@@ -407,13 +408,13 @@
    `zBledami`, `nieukonczony` (wielkość liter ma znaczenie w selektorze). Stanów jest pięć,
    nie trzy: „nieukończony" to przypadek ZACZĘTY i porzucony i musi się różnić od nietkniętego,
    bo inaczej lista kłamie o tym, gdzie użytkownik już był. */
-.nkafel__s{ flex:0 0 auto; padding:3px 10px; border-radius:var(--r-pill); font-size:11.5px; font-weight:700; }
+.nkafel__s{ justify-self:start; padding:3px 10px; border-radius:var(--r-pill); font-size:11.5px; font-weight:700; }
 .nkafel--nowy .nkafel__s,
 .nkafel--nieukonczony .nkafel__s{ border:1px solid var(--scene-line-strong); color:var(--faint); font-weight:600; }
 .nkafel--rozwiazany .nkafel__s{ background:color-mix(in oklab, var(--post) 16%, transparent); color:var(--post); }
 .nkafel--zeWskazowka .nkafel__s{ background:color-mix(in oklab, var(--ant) 18%, transparent); color:#C7B4FD; }
 .nkafel--zBledami .nkafel__s{ background:color-mix(in oklab, var(--horiz) 16%, transparent); color:var(--horiz); }
-.nkafel__go{ flex:0 0 auto; font-size:20px; color:var(--scene-text); }
+.nkafel__go{ font-size:20px; color:var(--scene-text); }
 
 /* POSTĘP — jedyna karta obszaru z cieniem; licznik w kroju maszynowym. */
 .npostep{
@@ -586,16 +587,20 @@
   font-size:13.5px; line-height:1.5; color:#D4DEE8;
 }
 .llista{ margin:0; padding:0; list-style:none; display:grid; gap:8px; }
+/* UKŁADU KAFLA NIE RUSZAMY. lab.css ma tu siatkę `1fr auto`: tytuł w wierszu 1, pytanie
+   w wierszu 2, strzałka w kolumnie 2 przez oba wiersze. Pierwsza wersja tej reguły nadpisywała
+   ją `display:flex`, przez co trzy komórki siatki stawały się trzema elementami W JEDNYM RZĘDZIE
+   — pytanie lądowało OBOK tytułu, a tytuł łamał się w połowie słowa („Jednostronn / e
+   wypadnięcie", zmierzone: 179 px, dwie linie). To było złamanie reguły z nagłówka tego pliku:
+   arkusz nadpisuje MATERIAŁ, nigdy układu. Zostaje więc wyłącznie materiał. */
 .lkafel{
-  display:flex; align-items:center; gap:14px; width:100%;
   min-height:76px; padding:14px var(--sp-4); border-radius:var(--r-lg);
   border:1px solid rgba(122,147,168,.34); background:var(--clin-glass);
-  text-align:left; cursor:pointer;
 }
 .lkafel:hover{ border-color:var(--scene-line-strong); }
-.lkafel__t{ flex:1 1 auto; min-width:0; font-size:14.5px; font-weight:700; color:var(--text); }
-.lkafel__q{ display:block; margin-top:3px; font-size:12.5px; color:var(--scene-text); }
-.lkafel__go{ flex:0 0 auto; font-size:20px; color:var(--scene-text); }
+.lkafel__t{ font-size:14.5px; font-weight:700; color:var(--text); }
+.lkafel__q{ font-size:12.5px; color:var(--scene-text); }
+.lkafel__go{ font-size:20px; color:var(--scene-text); }
 .lozakres{
   border-radius:var(--r-lg); border:1px solid var(--scene-line-strong);
   background:var(--clin-glass); box-shadow:var(--lift-2);
