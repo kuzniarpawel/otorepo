@@ -409,3 +409,88 @@
   background:none; color:var(--faint); font-size:12px;
 }
 .isug__t{ font-size:11px; font-weight:700; color:var(--faint); }
+
+/* ═══ 7. HINTS — KWALIFIKACJA ═══════════════════════════════════════════════════════════════
+   Nota autora: trzy ekrany HINTS pokazane na przypadku OŚRODKOWYM, „bo tylko wtedy widać warstwę
+   alarmową, która jest w tym module najważniejsza".
+   Karty pytań to te same komponenty, co kwalifikacja wstępna („Wywiad", Blok 6) — `.tq`. Jeden
+   materiał dla obu ekranów jest tu ZALETĄ: użytkownik odpowiada na te same pytania, odpowiedzi są
+   wspólne dla sesji, więc nie mogą wyglądać na dwa różne formularze. */
+.tq{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:var(--clin-glass); box-shadow:none;
+}
+.tq--biezace{ border-color:color-mix(in srgb, var(--tone) 45%, transparent); }
+.tq__q{ font-size:14.5px; font-weight:700; color:var(--text); }
+.tq__hint{ font-size:12.5px; color:var(--faint); }
+.tqopt{
+  min-height:44px; border-radius:var(--r-md);
+  border:1px solid rgba(203,217,228,.18); background:none; color:var(--scene-text); font-size:13px;
+}
+.tqopt__box{
+  width:14px; height:14px; border-radius:var(--r-pill);
+  border:1px solid rgba(122,147,168,.7); background:none;
+}
+.tqopt[aria-pressed="true"]{
+  border-color:color-mix(in srgb, var(--tone) 50%, transparent);
+  background:color-mix(in oklab, var(--tone) 14%, transparent);
+  color:var(--text); font-weight:600;
+}
+.tqopt[aria-pressed="true"] .tqopt__box{ background:var(--tone); border-color:var(--tone); }
+.tqopt:hover{ border-color:color-mix(in srgb, var(--tone) 50%, transparent); }
+
+/* PYTANIE O PRZESZKOLENIE MA WŁASNY TON (--timer, bursztyn ostrzeżenia). To jedyne pytanie na tym
+   ekranie, które nie dotyczy PACJENTA, tylko BADAJĄCEGO, i jedyne, przy którym GRACE-3 mówi wprost,
+   że wynik pozornie uspokajający jest groźniejszy niż brak badania. Ton oddziela je od pytań
+   o obraz kliniczny, zanim użytkownik przeczyta treść. */
+.hqprzesz{ --tone:var(--timer); border-color:color-mix(in srgb, var(--timer) 34%, transparent);
+  background:linear-gradient(180deg, color-mix(in oklab, var(--timer) 8%, transparent), var(--scene-card-solid) 46%); }
+
+.hqlead{
+  padding:14px var(--sp-4); border-radius:var(--r-md);
+  border:1px solid rgba(122,147,168,.34); background:rgba(12,20,28,.7);
+  font-size:13.5px; color:#D4DEE8;
+}
+
+/* Werdykt kwalifikacji — ton NIESIE STATUS, nie moduł. Potwierdzony obraz to jedyny stan, w którym
+   ekran wpuszcza dalej bez zastrzeżenia, więc jako jedyny dostaje zieleń modelu. */
+.hqw{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--tone) 14%, transparent), rgba(12,20,28,.88) 58%);
+  box-shadow:var(--lift-2);
+}
+.hqw--potwierdzona{ --tone:var(--post); }
+.hqw--odradzana{ --tone:var(--warn); }
+.hqw--brak{ --tone:var(--faint); }
+.hqw--pominieta{ --tone:var(--horiz); }
+.hqw__ttl{ font-size:15.5px; font-weight:700; color:var(--text); }
+.hqw__tresc{ font-size:12.5px; color:#D4DEE8; }
+.hqw__akcje button{
+  min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:13px; font-weight:600;
+}
+.hqw__akcje button:hover{ border-color:var(--primary); color:var(--text); }
+/* Wejście do badania — jedyne pełne wypełnienie tego ekranu. */
+.hqw__akcje .recoprimary, .hqw__akcje button.go{
+  min-height:var(--tap); border:0;
+  background:var(--primary); color:var(--ink); font-size:14.5px; font-weight:700;
+}
+
+/* POMINIĘCIE KWALIFIKACJI — obrys PRZERYWANY. Wejście „nie po cichu": to nie jest równorzędna
+   ścieżka, tylko wyjątek z podanym powodem, i materiał ma to mówić, zanim padnie pierwsze słowo. */
+.hqpomin{
+  border-radius:var(--r-md); border:1px dashed rgba(122,147,168,.45);
+  background:none; color:var(--faint); box-shadow:none;
+}
+.hqpomin--aktywne{ border-style:solid; border-color:color-mix(in srgb, var(--horiz) 45%, transparent);
+  background:color-mix(in oklab, var(--horiz) 10%, transparent); color:var(--scene-text); }
+.hqpomin__b{
+  min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text); font-size:13px;
+}
+.hqpomin__b:hover{ border-color:var(--horiz); color:var(--text); }
+.hqblad{
+  border-radius:var(--r-md); border:1px solid color-mix(in srgb, var(--crit) 45%, transparent);
+  background:color-mix(in oklab, var(--crit) 10%, transparent); color:var(--scene-text);
+}
