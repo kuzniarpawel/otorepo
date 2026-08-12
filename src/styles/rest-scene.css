@@ -201,7 +201,10 @@
 /* PODSUMOWANIE PRZED ZAKOŃCZENIEM — te same włosowe kreski co .etapdane na ekranie manewru. */
 .fupods{ margin:var(--sp-3) 0 0; display:grid; gap:1px; border-radius:var(--r-md); overflow:hidden; background:rgba(203,217,228,.14); }
 .fupods > div{ display:flex; gap:12px; padding:10px 12px; background:rgba(8,12,17,.72); }
-.fupods dt{ flex:0 0 148px; font-size:11.5px; color:var(--faint); }
+/* Szerokosc kolumny etykiet zostaje PROPORCJONALNA (followup.css: flex:0 0 42%). Sztywne
+   148 px zabieralo na 360 px az 41% wiersza i zostawialo wartosciom 110 px zamiast ~134 —
+   a to wartosc jest tu trescia, nie etykieta. */
+.fupods dt{ font-size:11.5px; color:var(--faint); }
 .fupods dd{ flex:1 1 auto; min-width:0; margin:0; font-size:12.5px; color:var(--text); }
 .fukonczenie__r{ margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; }
 .fukonczenie__r button{ flex:1 1 160px; min-height:var(--tap); border-radius:var(--r-md); font-size:13.5px; font-weight:600; cursor:pointer; }
@@ -471,12 +474,16 @@
 .npyt__k{ font-size:12.5px; color:#D4DEE8; }
 .nopcje{ margin-top:14px; display:grid; gap:8px; }
 .nopcja{
-  display:flex; align-items:center; gap:12px;
+  /* align-items:flex-start, NIE center — nauka.css mial to poprawnie, a pierwsza wersja tej reguly
+     zmienila na center. ZMIERZONE na 360 px: kazda opcja lamie sie na 2-3 linie, a kropka wyboru
+     odjezdzala 10-20 px PONIZEJ pierwszej linii etykiety. Na telefonie to stan normalny, nie
+     skrajny. Znacznik nalezy do pierwszej linii — tak samo robi .fuopcja::before na Kontroli. */
+  display:flex; align-items:flex-start; gap:12px;
   min-height:52px; padding:10px 14px; border-radius:var(--r-md);
   border:1px solid rgba(203,217,228,.18); background:none; color:var(--scene-text);
   font-size:13.5px; text-align:left; cursor:pointer;
 }
-.nopcja__box{ flex:0 0 auto; width:15px; height:15px; border-radius:var(--r-pill); border:1px solid rgba(122,147,168,.7); }
+.nopcja__box{ flex:0 0 auto; margin-top:3px; width:15px; height:15px; border-radius:var(--r-pill); border:1px solid rgba(122,147,168,.7); }
 .nopcja[aria-pressed="true"]{
   border-color:color-mix(in srgb, var(--ant) 55%, transparent);
   background:color-mix(in oklab, var(--ant) 14%, transparent); color:var(--text); font-weight:600;

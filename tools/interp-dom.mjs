@@ -350,6 +350,95 @@ const dixPelny = () => {
     'brak reguły .nkafel--nowy — nietknięty przypadek jest stanem domyślnym biblioteki');
 }
 
+/* ============ 7c. „MATERIAŁ, NIGDY UKŁAD" — LISTA WYJĄTKÓW JEST ZAMKNIĘTA ============
+   Nagłówki clinic-scene.css i rest-scene.css deklarują: arkusz sceny nadpisuje MATERIAŁ, nigdy
+   układu. Trzy usterki zgłoszone przez użytkownika były złamaniem tej reguły i za każdym razem
+   wyglądały inaczej: licznik kroku nie mieścił się w płytce, kafle list kładły podpis obok tytułu
+   zamiast pod nim, a znacznik wyboru odjeżdżał 20 px poniżej pierwszej linii etykiety. Wspólny
+   mianownik zobaczyłem dopiero przy trzeciej. Ta bramka pilnuje go maszynowo.
+
+   ZASADA: arkusz sceny może deklarować właściwość układu, której arkusz ekranu NIE deklaruje
+   (dołożenie stylu komponentu). Nie może nadawać jej INNEJ wartości niż arkusz ekranu — chyba że
+   stoi na liście świadomie przyjętych wyjątków niżej. Lista jest ZAMKNIĘTA: ósme nadpisanie zapala
+   wyrocznię i wymaga decyzji, a nie przemknie jak trzy poprzednie.
+
+   `gap` jest poza zakresem: odstęp to RYTM, czyli materiał, i paczka projektowa świadomie podaje
+   go w pikselach tam, gdzie arkusze ekranów mają rem-y. */
+{
+  const fs = await import('node:fs');
+  const dir = resolve(ROOT, 'src', 'styles');
+  const UKLAD = new Set(['display', 'position', 'float', 'flex', 'flex-direction', 'flex-wrap',
+    'flex-grow', 'flex-shrink', 'flex-basis', 'align-items', 'align-self', 'justify-content',
+    'justify-self', 'place-items', 'grid-template-columns', 'grid-template-rows', 'grid-column',
+    'grid-row', 'order']);
+
+  const reguly = (tekst) => {
+    const out = [];
+    const bez = tekst.replace(/\/\*[\s\S]*?\*\//g, '');
+    const re = /([^{}]+)\{([^{}]*)\}/g;
+    let m;
+    while ((m = re.exec(bez))) {
+      const sel = m[1].trim().replace(/\s+/g, ' ');
+      if (!sel || sel.startsWith('@')) continue;
+      const dekl = {};
+      for (const d of m[2].split(';')) {
+        const i = d.indexOf(':');
+        if (i < 0) continue;
+        const p = d.slice(0, i).trim();
+        if (UKLAD.has(p)) dekl[p] = d.slice(i + 1).trim();
+      }
+      if (Object.keys(dekl).length) out.push({ sel, dekl });
+    }
+    return out;
+  };
+
+  const SCENY = ['rest-scene.css', 'clinic-scene.css'];
+  const BAZOWE = fs.readdirSync(dir).filter(f => f.endsWith('.css')
+    && !['index.css', 'a11y.css', ...SCENY].includes(f));
+  const baza = new Map();
+  for (const f of BAZOWE) for (const r of reguly(fs.readFileSync(resolve(dir, f), 'utf8'))) {
+    if (!baza.has(r.sel)) baza.set(r.sel, {});
+    Object.assign(baza.get(r.sel), r.dekl);
+  }
+
+  /* WYJĄTKI PRZYJĘTE ŚWIADOMIE — każdy sprawdzony w przeglądarce, każdy z powodem.
+     Format: 'selektor|właściwość'. */
+  const PRZYJETE = new Set([
+    '.fuopcja|display',              // block -> flex: odpowiedź niesie kropkę wyboru przed etykietą
+    '.fuseria__w|display',           // block -> inline-block: pigułka werdyktu ma objąć swój napis
+    '.fukonczenie__r button|flex',   // 1 1 0 -> 1 1 160px: razem z flex-wrap pozwala zawinąć zamiast ścisnąć
+    '.opisakcje__r|display',         // flex -> grid: na telefonie dwie równe kolumny (reguła @container)
+    '.nos|display',                  // grid -> flex: oś etapów zwija się na telefonie do pasków (flex:1 1 0)
+    '.nnaw button|flex',             // 1 1 160px -> 1 1 0: dwa równe przyciski nawigacji etapu
+    '.lparam__n|display',            // flex -> inline-flex: nazwa parametru wyrównana do LINII BAZOWEJ z wartością
+  ]);
+
+  const nowe = [];
+  for (const plik of SCENY) {
+    for (const r of reguly(fs.readFileSync(resolve(dir, plik), 'utf8'))) {
+      const b = baza.get(r.sel);
+      if (!b) continue;
+      for (const [p, v] of Object.entries(r.dekl)) {
+        if (b[p] === undefined || b[p] === v) continue;
+        if (PRZYJETE.has(`${r.sel}|${p}`)) continue;
+        nowe.push(`${plik}: ${r.sel} { ${p}: ${b[p]} -> ${v} }`);
+      }
+    }
+  }
+  T('CSS9/material-nie-uklad', nowe.length === 0,
+    `arkusz sceny nadpisuje UKŁAD arkusza ekranu poza listą wyjątków:\n      ${nowe.join('\n      ')}`);
+  T('CSS9b/lista-wyjatkow-zywa', [...PRZYJETE].every(w => {
+    const [sel, p] = w.split('|');
+    return (baza.get(sel) || {})[p] !== undefined;
+  }), 'wyjątek na liście nie ma już odpowiednika w arkuszu ekranu — usuń go, zamiast trzymać martwy');
+  /* Kontrola czułości parsera w obie strony: MUSI zobaczyć właściwość układu i MUSI przeoczyć
+     materiał. Bez tego bramka przechodziłaby także wtedy, gdyby parser nie widział niczego. */
+  const widziUklad = reguly('.x{display:flex}').length === 1;
+  const ignorujeMaterial = reguly('.y{color:red;background:none}').length === 0;
+  T('CSS9c/kontrola-czulosci', widziUklad && ignorujeMaterial,
+    `parser: widzi uklad=${widziUklad}, ignoruje material=${ignorujeMaterial}`);
+}
+
 /* ============ Wynik ============ */
 const razem = ok + bledy.length;
 console.log('\nOTOREPO — kryterium 3 na poziomie DOM (Blok 9)');
@@ -359,7 +448,7 @@ if (bledy.length) {
   for (const b of bledy) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 39;   /* 33 + 6 bramek §7b (tony wyników kontroli i ocen/werdyktów nauki) */
+const OCZEKIWANE = 42;   /* 39 + 3 bramki §7c (material-nie-uklad) */
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);
