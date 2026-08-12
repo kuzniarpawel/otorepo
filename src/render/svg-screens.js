@@ -2131,9 +2131,16 @@ function renderSetup(){
       <button role="tab" aria-selected="${state.mode==='diag'}" onclick="setMode('diag')">${t("Diagnostyka","Diagnostics")}</button>
       <button role="tab" aria-selected="${state.mode==='hints'}" onclick="setMode('hints')">HINTS</button>
     </div>
-    <div class="disclaimer">${t('<b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem.','<b>Support tool for medical staff.</b> Does not replace examination, diagnosis, or clinician judgment. Nystagmus timings and patterns are illustrative — verify against your own protocol.')}</div>
     ${body}
-    <p class="footnote">${t("Prototyp poglądowy. Brak gromadzenia danych.","Illustrative prototype. No data collection.")}</p>`;
+    ${/* NOTA O NARZĘDZIU STOI NA KOŃCU, jak na ekranie startowym (renderStart: ostatni element
+          sekcji, po odnośnikach do obszarów). Do tej pory była tu NAD treścią i to był jedyny
+          ekran w aplikacji, gdzie zastrzeżenie wchodziło przed tym, czego dotyczy — użytkownik
+          czytał ostrzeżenie o wzorcach oczopląsu, zanim zobaczył listę prób.
+          STOPKA „Prototyp poglądowy. Brak gromadzenia danych." USUNIĘTA na życzenie użytkownika.
+          Zdanie o prywatności NIE ZNIKA z aplikacji: niesie je arkusz Profilu („Aplikacja nie
+          wysyła niczego poza urządzenie…", shell.js) i karta zakończenia sesji — czyli miejsca,
+          w których użytkownik faktycznie o to pyta, a nie stopka ekranu wyboru próby. */''}
+    <div class="disclaimer">${t('<b>Narzędzie wspomagające dla personelu medycznego.</b> Nie zastępuje badania, rozpoznania ani decyzji klinicysty. Czasy i wzorce oczopląsu są poglądowe — zweryfikuj z własnym protokołem.','<b>Support tool for medical staff.</b> Does not replace examination, diagnosis, or clinician judgment. Nystagmus timings and patterns are illustrative — verify against your own protocol.')}</div>`;
 }
 
 /* ── Etap 3: karta „Ułożenie" w Three.js OBOK SVG (wąski zakres: Epley + Roll) ──
