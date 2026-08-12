@@ -222,7 +222,13 @@ const CZEKA = (nad = {}) => ({ ...CZYSTY(), aktualizacja: 'czeka', ...nad });
 {
   eq('F1/lista-pusta', FUNKCJE_WYMAGAJACE_SIECI, []);
   const puste = komunikatSieci([]);
-  T('F2/puste-bez-polaczenia', /bez polaczenia/.test(puste.pl) && /offline/.test(puste.en), 'zdanie o offline nie mowi o offline');
+  /* Wzorzec przyjmuje OBIE pisownie („polaczenia" i „połączenia"), bo bramka ma pilnowac TRESCI
+     zdania, a nie jego ortografii — inaczej poprawienie polskich ogonkow (2026-08-12: caly modul
+     PWA mial napisy widoczne dla uzytkownika bez znakow diakrytycznych) zapala wyrocznie tak, jakby
+     zdanie przestalo mowic o offline. Ogonkow pilnuje osobna bramka F2b, ktora mowi WPROST, o co jej chodzi. */
+  T('F2/puste-bez-polaczenia', /bez po[lł][aą]czenia/.test(puste.pl) && /offline/.test(puste.en), 'zdanie o offline nie mowi o offline');
+  T('F2b/napisy-po-polsku', !/\b(dziala|polaczenia|wysyla|zadnych|wylacznie|dopoki|pamieci|podrecznej)\b/.test(puste.pl),
+    `napis widoczny dla uzytkownika zgubil polskie znaki diakrytyczne: ${puste.pl.slice(0, 60)}`);
   const zLista = komunikatSieci([{ pl: 'pobieranie atlasu', en: 'atlas download' }]);
   T('F3/lista-zmienia-zdanie', zLista.pl !== puste.pl && /atlasu/.test(zLista.pl), 'zdanie nie jest funkcja listy, tylko obietnica');
   T('F4/lista-en', /atlas download/.test(zLista.en), 'wersja angielska nie wymienia funkcji sieciowej');
@@ -364,7 +370,7 @@ const CZEKA = (nad = {}) => ({ ...CZYSTY(), aktualizacja: 'czeka', ...nad });
 }
 
 /* ═══════════ WYNIK ═══════════ */
-const OCZEKIWANE = 234;   // +1: bramka F6 biegnie RAZ NA PLIK w src/, a doszedl src/app/flow-deps.js (scena ekranu startowego)
+const OCZEKIWANE = 235;   /* 234 + bramka F2b (ogonki w napisie o offline) */   // +1: bramka F6 biegnie RAZ NA PLIK w src/, a doszedl src/app/flow-deps.js (scena ekranu startowego)
 if (ok !== OCZEKIWANE) bledy.push(`LICZBA PRZYPADKÓW: ${ok}, oczekiwano ${OCZEKIWANE} — dopisz albo popraw zakres, ale nie po cichu`);
 if (bledy.length) { console.error(`✗ pwa:check — ${bledy.length} błędów (${ok} przeszło)`); for (const b of bledy) console.error('  ' + b); process.exit(1); }
 console.log(`✓ pwa:check — ${ok} przypadków`);

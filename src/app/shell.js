@@ -144,7 +144,9 @@ function syncSheet() {
   const ile = s.querySelector('[data-sesje-ile]');
   if (ile) ile.textContent = String((state.opisSesje || []).length);
   const del = s.querySelector('[data-sesje-usun]');
-  if (del) { del.removeAttribute('data-potwierdz'); del.textContent = t('Usun wszystkie', 'Delete all'); }
+  /* „Usuń" przez ń — literal bez ogonka wjezdzal tu po KAZDYM przerysowaniu arkusza (syncSheet),
+     wiec poprawny napis z linii 226 zyl tylko do pierwszego odswiezenia. */
+  if (del) { del.removeAttribute('data-potwierdz'); del.textContent = t('Usuń wszystkie', 'Delete all'); }
 }
 
 // Ograniczenie ruchu: własny przełącznik NIEZALEŻNY od ustawienia systemowego (klinicysta może
@@ -223,7 +225,7 @@ function buildSheet() {
                 zapisów stoi przy przycisku, bo „usuń wszystko" bez powiedzenia ILE jest gestem
                 w ciemno. */''}
           <div class="switchrow"><span>${t('Zapisane sesje', 'Saved sessions')} <b data-sesje-ile>${(state.opisSesje || []).length}</b></span>
-            <button type="button" class="toggle toggle--del" data-sesje-usun>${t('Usuń wszystkie', 'Delete all')}</button></div>
+            <button type="button" class="sesjeusun" data-sesje-usun>${t('Usuń wszystkie', 'Delete all')}</button></div>
           <p class="note" data-sesje-nota>${t('Zapisy leżą wyłącznie w pamięci tej przeglądarki i niosą same identyfikatory ze słowników aplikacji. Usunięcie jest nieodwracalne.',
                                               'The records live only in this browser and carry nothing but identifiers from the app dictionaries. Deletion cannot be undone.')}</p>
           ${/* BLOK 16: „aplikacja informuje, które treści wymagają połączenia". Zdanie jest
@@ -248,7 +250,7 @@ function buildSheet() {
            jezyka kasuje caly dorobek. */
         if (del.getAttribute('data-potwierdz') !== '1') {
           del.setAttribute('data-potwierdz', '1');
-          del.textContent = t('Na pewno usunac?', 'Really delete?');
+          del.textContent = t('Na pewno usunąć?', 'Really delete?');
           return;
         }
         if (A.usunWszystkieSesjeOpisu) A.usunWszystkieSesjeOpisu();

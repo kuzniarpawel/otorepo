@@ -40,11 +40,11 @@ export const BLOKADA_TWARDA = {
 export const SYGNALY_PRZYPADKU = [
   { id: 'manewrOtwarty', pl: 'otwarty ekran manewru', en: 'the maneuver screen is open',
     czy: (s) => s.screen === 'guide' },
-  { id: 'proba', pl: 'wykonana proba pozycyjna', en: 'a positional test was performed',
+  { id: 'proba', pl: 'wykonana próba pozycyjna', en: 'a positional test was performed',
     czy: (s) => !!(s.flow && s.flow.testSeen) },
-  { id: 'oczoplas', pl: 'opisany oczoplas', en: 'nystagmus has been described',
+  { id: 'oczoplas', pl: 'opisany oczopląs', en: 'nystagmus has been described',
     czy: (s) => !!(s.flow && s.flow.obsSeen) },
-  { id: 'interpretacja', pl: 'przyjeta interpretacja', en: 'an interpretation was accepted',
+  { id: 'interpretacja', pl: 'przyjęta interpretacja', en: 'an interpretation was accepted',
     czy: (s) => !!(s.flow && s.flow.interpretSeen) },
   { id: 'manewrWybrany', pl: 'wybrany manewr', en: 'a maneuver was selected',
     czy: (s) => !!(s.flow && s.flow.maneuver) },
@@ -69,17 +69,17 @@ export function sygnalyPrzypadku(stan) {
 
 export const TEKSTY_AKTUALIZACJI = {
   tytul: { pl: 'Nowa wersja aplikacji jest gotowa', en: 'A new version of the app is ready' },
-  gotowa: { pl: 'Wejdzie po zakonczeniu sesji albo teraz, jesli zdecydujesz.',
+  gotowa: { pl: 'Wejdzie po zakończeniu sesji albo teraz, jeśli zdecydujesz.',
             en: 'It will be applied when the session ends, or now if you decide so.' },
   // Zdanie o manewrze jest SAMODZIELNE (powtarza podmiot), bo w trybie skupienia pasek zwija sie
   // do jednej linii i tytul nie jest wtedy widoczny — a komunikat bez podmiotu nie znaczy nic.
-  wManewrze: { pl: 'Nowa wersja wejdzie po zakonczeniu manewru — trwajacej repozycji nie przerywamy.',
+  wManewrze: { pl: 'Nowa wersja wejdzie po zakończeniu manewru — trwającej repozycji nie przerywamy.',
                en: 'The new version will be applied after the maneuver — an ongoing repositioning is never interrupted.' },
-  zPrzypadkiem: { pl: 'Wdrozenie teraz przeladuje aplikacje i skasuje niezapisany przypadek.',
+  zPrzypadkiem: { pl: 'Wdrożenie teraz przeładuje aplikację i skasuje niezapisany przypadek.',
                   en: 'Applying it now reloads the app and discards the unsaved case.' },
   przycisk: { pl: 'Zaktualizuj teraz', en: 'Update now' },
   schowaj: { pl: 'Nie teraz', en: 'Not now' },
-  wdrazana: { pl: 'Wdrazanie nowej wersji…', en: 'Applying the new version…' },
+  wdrazana: { pl: 'Wdrażanie nowej wersji…', en: 'Applying the new version…' },
 };
 
 /* DECYZJA — jedno miejsce, ktore odpowiada na pytania „czy pokazac", „czy wolno wdrozyc" oraz
@@ -149,7 +149,7 @@ export const SKROTY = [
   { id: 'licznik', klawisze: [' ', 'Spacebar', 'Space'], akcja: 'przelaczLicznik',
     pl: 'pauza / wznowienie licznika', en: 'pause / resume the timer' },
   { id: 'nastepny', klawisze: ['ArrowRight'], akcja: 'nastepnyKrok',
-    pl: 'nastepny etap manewru', en: 'next maneuver step' },
+    pl: 'następny etap manewru', en: 'next maneuver step' },
   { id: 'poprzedni', klawisze: ['ArrowLeft'], akcja: 'poprzedniKrok',
     pl: 'poprzedni etap manewru', en: 'previous maneuver step' },
 ];
@@ -158,11 +158,11 @@ export const AKCJE_SKROTOW = SKROTY.map((s) => s.akcja);
 
 export const POWODY_ODMOWY = {
   brakSkrotu: { pl: 'klawisz bez przypisania', en: 'key is not bound' },
-  innyEkran: { pl: 'skrot dziala tylko na ekranie manewru', en: 'the shortcut works only on the maneuver screen' },
-  modyfikator: { pl: 'klawisz z modyfikatorem nalezy do przegladarki', en: 'a modified key belongs to the browser' },
+  innyEkran: { pl: 'skrót działa tylko na ekranie manewru', en: 'the shortcut works only on the maneuver screen' },
+  modyfikator: { pl: 'klawisz z modyfikatorem należy do przeglądarki', en: 'a modified key belongs to the browser' },
   powtorzenie: { pl: 'przytrzymanie klawisza nie powtarza akcji', en: 'holding a key does not repeat the action' },
   poleTekstowe: { pl: 'kursor stoi w polu tekstowym', en: 'the caret is in a text field' },
-  kontrolka: { pl: 'klawisz nalezy do kontrolki z fokusem', en: 'the key belongs to the focused control' },
+  kontrolka: { pl: 'klawisz należy do kontrolki z fokusem', en: 'the key belongs to the focused control' },
   brakKroku: { pl: 'nie ma kroku w tym kierunku', en: 'there is no step in that direction' },
 };
 
@@ -233,9 +233,9 @@ export function komunikatSieci(lista) {
   if (!l.length) {
     // Zdanie jest PRECYZYJNE, a nie tylko uspokajajace: worker pobiera z sieci WLASNE pliki
     // aplikacji, dopoki nie ma ich w pamieci podrecznej. Danych nie wysyla i nie pobiera zadnych.
-    return { pl: 'Wszystko dziala bez polaczenia — aplikacja nie wysyla ani nie pobiera zadnych danych; z sieci bierze wylacznie wlasne pliki, i tylko dopoki nie ma ich w pamieci podrecznej.',
+    return { pl: 'Wszystko działa bez połączenia — aplikacja nie wysyła ani nie pobiera żadnych danych; z sieci bierze wyłącznie własne pliki, i tylko dopóki nie ma ich w pamięci podręcznej.',
              en: 'Everything works offline — the app sends and fetches no data; the only thing it takes from the network is its own files, and only until they are in the cache.' };
   }
-  return { pl: 'Polaczenia wymagaja: ' + l.map((x) => x.pl).join(', ') + '.',
+  return { pl: 'Połączenia wymagają: ' + l.map((x) => x.pl).join(', ') + '.',
            en: 'These require a connection: ' + l.map((x) => x.en).join(', ') + '.' };
 }
