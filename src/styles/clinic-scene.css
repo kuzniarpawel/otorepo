@@ -87,15 +87,15 @@
    i zmienia się z próbą. Klasa zamrażałaby go w markupie i rozjechałaby się przy pierwszej
    zmianie mapy próba→kanał. */
 
-/* Pigułka strony: wybrana strona wypełniona TONEM KANAŁU, nie stałym różem/błękitem.
-   Strony L/P zachowują swoje barwy tam, gdzie oznaczają UCHO (badge, .opt[data-side]);
-   tutaj pigułka mówi „która strona TEGO kanału", więc niesie ton kanału. */
+/* Pigułka strony zostaje na SCENIE, ale NIE dostaje tonu kanału.
+   ODEJŚCIE OD MAKIETY, świadome. Makieta wypełnia wybraną stronę barwą kanału (#2DD4BF przy
+   Dix-Hallpike'u). W tej aplikacji barwa L/P znaczy UCHO i znaczy to samo wszędzie — `--left`
+   i `--right` niosą ją w `.badge`, w `.opt[data-side]` i na pigułce manewru. Ton kanału na tej
+   jednej pigułce sprawiłby, że TA SAMA kontrolka mówi na dwóch ekranach dwie różne rzeczy,
+   a pomylenie strony jest klasycznym błędem w BPPV. Ton kanału niosą tu elementy, które nie
+   konkurują z tą konwencją: karta instrukcji, wiersze wejść i strzałka kierunku. */
 .sidepill{ border-color:var(--scene-line-strong); background:rgba(12,20,28,.8); }
 .sidepill button{ color:var(--scene-text); }
-.sidepill button[aria-pressed="true"][data-s="L"],
-.sidepill button[aria-pressed="true"][data-s="P"]{
-  background:var(--tone); color:var(--tone-ink);
-}
 
 /* Karta instrukcji — jedyna karta na ekranie z tłem w tonie kanału. */
 .card > .instr{ color:#D4DEE8; }
@@ -126,3 +126,134 @@
 /* Płyta mechanizmu — jedyny nieprzezroczysty panel ekranu. Schemat kanału musi mieć pod sobą
    jednolite tło, inaczej gradient szkła wchodzi w cienkie ścieżki SVG i je rozmywa. */
 .flipwrap .panelbox{ background:var(--clin-deep); border-color:var(--scene-line); }
+
+/* ═══ 4. MANEWR — TIMER JAKO JEDYNE PEŁNE WYPEŁNIENIE ═══════════════════════════════════════
+   Nota autora: „Timer jest tu jedynym elementem, który dostaje pełne wypełnienie — na ekranie,
+   na którym liczy się czas, nic innego nie ma prawa krzyczeć głośniej". To jest reguła układu
+   uwagi, nie ozdoba: karta etapu, alternatywy i tryb czasu zostają na szkle, a solidna płyta
+   jest w całym ekranie DOKŁADNIE JEDNA. Każde następne pełne wypełnienie na tym ekranie odbiera
+   timerowi to, po co tu jest. */
+
+/* Oś etapów: wykonane niosą ton kanału tylnego (zamknięte), bieżący — cyan nawigacyjny.
+   Numer jest WYPEŁNIONY tylko w tych dwóch stanach; „do zrobienia" zostaje obrysem, bo pełne
+   wypełnienie na pięciu kaflach naraz konkurowałoby z timerem. */
+.osetap{ border-radius:var(--r-md); border:1px solid var(--scene-line); }
+.osetap__n{
+  width:20px; height:20px; border-radius:var(--r-xs); display:grid; place-items:center;
+  font-size:11px; font-weight:700; border:1px solid var(--scene-line-strong); color:var(--faint);
+}
+.osetap__t{ font-size:12px; color:var(--faint); }
+.osetap--done{ border-color:color-mix(in srgb, var(--post) 40%, transparent); background:color-mix(in oklab, var(--post) 10%, transparent); }
+.osetap--done .osetap__n{ background:var(--post); color:#0B221F; border:0; }
+.osetap--done .osetap__t{ color:var(--scene-text); }
+.osetap--cur{
+  border-color:color-mix(in srgb, var(--primary) 85%, transparent);
+  background:linear-gradient(180deg, color-mix(in oklab, var(--primary) 20%, transparent), var(--scene-card) 62%);
+}
+.osetap--cur .osetap__n{ background:var(--primary); color:var(--ink); border:0; }
+.osetap--cur .osetap__t{ color:var(--text); font-weight:700; }
+
+/* Karta etapu — szkło z tonem nawigacyjnym; numer etapu jako jedyna WYPEŁNIONA płyta poza
+   timerem, ale mała (42 px) i bez cienia, więc nie konkuruje. */
+.card.stepcard{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  background:linear-gradient(160deg, color-mix(in oklab, var(--primary) 12%, transparent), var(--scene-card-solid) 58%);
+  box-shadow:var(--lift-2);
+}
+/* `flex:0 0 42px`, nie `width:42px` — legacy.css daje `.stephead .num{flex:1}`, a przy `flex:1 1 0%`
+   baza 0 wygrywa z szerokością i płyta rozlewała się na całą szerokość nagłówka (zmierzone: 246 px). */
+.stepcard .num{
+  flex:0 0 42px; width:42px; height:42px; box-sizing:border-box; padding:0;
+  border-radius:var(--r-md); display:grid; place-items:center;
+  background:linear-gradient(160deg,#84E2F7,#35B9D6); color:var(--ink);
+  font-family:var(--display); font-size:17px; font-weight:700; letter-spacing:0;
+}
+.stepcard .title{ font-size:20px; }
+.stepcard .instr{ font-size:13px; color:var(--scene-text); }
+
+/* Dane etapu: siatka rozdzielana WŁOSOWĄ kreską zrobioną z odstępu (gap:1px na tle), a nie
+   ramkami komórek — ramki na styku dają linię podwójnej grubości i to widać przy 1 px. */
+.etapdane{
+  border-radius:var(--r-md); overflow:hidden;
+  gap:1px; background:rgba(203,217,228,.14);
+}
+.etapdane > *{ background:rgba(8,12,17,.72); }
+.etapdane dt{ font-size:10.5px; font-weight:700; color:var(--faint); }
+.etapdane dd{ font-size:13.5px; font-weight:600; color:var(--text); }
+
+/* Tryb czasu — segmenty na szkle, aktywny podświetlony, nigdy wypełniony. */
+.trybczasu{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:var(--clin-glass);
+}
+.trybczasu__seg{ border-radius:var(--r-md); border:1px solid var(--scene-line); background:rgba(8,12,17,.6); }
+.trybczasu__seg button{ border-radius:var(--r-sm); font-size:12.5px; color:var(--scene-text); }
+.trybczasu__seg button[aria-pressed="true"]{
+  background:color-mix(in oklab, var(--primary) 16%, transparent);
+  border:1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  color:var(--text); font-weight:700;
+}
+
+/* Alternatywy tego kanału — obrys, nigdy wypełnienie; pierwszy rzut wyróżniony tonem. */
+.altman{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:var(--clin-glass);
+}
+.altman__b{
+  min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text); font-size:13px;
+}
+.altman__b:hover{ border-color:var(--primary); color:var(--text); }
+.altman__b em{ color:var(--primary); font-size:11px; }
+.altman__b:has(em){
+  border-color:color-mix(in srgb, var(--primary) 45%, transparent);
+  background:color-mix(in oklab, var(--primary) 10%, transparent);
+  color:var(--text);
+}
+
+/* TIMER — JEDYNA SOLIDNA PŁYTA EKRANU. */
+.tcard{
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  background:linear-gradient(180deg, color-mix(in oklab, var(--primary) 16%, transparent), rgba(12,20,28,.9) 62%);
+  box-shadow:var(--lift-3);
+}
+/* Cyfry lżejsze niż nagłówki (500, nie 700): przy 52 px gruby krój czyta się jak alarm, a to
+   jest odczyt, nie ostrzeżenie. Wielkość niesie wagę, nie grubość. */
+.tval{ font-size:clamp(38px, 11vw, 52px); font-weight:500; color:var(--text); }
+.tprogwrap{ height:6px; border-radius:var(--r-pill); background:rgba(203,217,228,.16); }
+.tprog{ background:var(--primary); border-radius:var(--r-pill); }
+.tcard .go{
+  min-height:var(--tap); border-radius:var(--r-md); border:0;
+  background:var(--primary); color:var(--ink); font-size:15px; font-weight:700;
+}
+.tcard .go:hover{ background:var(--primary-press); }
+.tcard .ghost{
+  min-height:40px; border-radius:var(--r-md);
+  border:1px solid var(--scene-line-strong); background:none; color:var(--scene-text);
+  font-size:13px; font-weight:600;
+}
+.tcard .ghost:hover{ border-color:var(--primary); color:var(--text); }
+
+/* Pigułka rozmiaru złogu przestaje być WYPEŁNIONA. Zmierzone na ekranie manewru: pełne
+   wypełnienia miały trzy elementy naraz (pigułka strony, pigułka rozmiaru i przycisk timera),
+   a reguła tego ekranu mówi, że pełne wypełnienie ma DOKŁADNIE JEDNO. Wybór rozmiaru zostaje
+   czytelny stanem `aria-pressed`, obrysem i wagą — nie samym kolorem (a11y.css). */
+.sizepill{ border-color:var(--scene-line); background:rgba(8,12,17,.6); }
+.sizepill button{ color:var(--scene-text); }
+.sizepill button[aria-pressed="true"]{
+  background:color-mix(in oklab, var(--primary) 16%, transparent);
+  color:var(--text); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+/* PODPISY POD SUWAKIEM CZASU — NAPRAWA, nie stylizacja. legacy.css stylizuje `.ticks span`,
+   a markup emituje `<button>`: reguła nie trafiała w nic, więc trzy podpisy pod suwakiem były
+   SUROWYMI przyciskami przeglądarki (zmierzone: tło rgb(240,240,240), 42x21 px, czarny tekst
+   na ciemnym ekranie). Ta sama dziura, którą zostawiały `.recoprimary`/`.recoalt` — i ten sam
+   powód: styl przypięty do znacznika, którego markup już nie używa. */
+.ticks button{
+  appearance:none; cursor:pointer; background:none; border:0;
+  position:absolute; transform:translateX(-50%); white-space:nowrap; padding:4px 6px;
+  font:inherit; font-size:11px; color:var(--scene-text);
+}
+.ticks button.r{ transform:translateX(-100%); }
+.ticks button:hover{ color:var(--primary); }
