@@ -1,0 +1,128 @@
+/* OTOREPO — EKRANY KLINICZNE w stylu „scena kliniczna" (tura 2 paczki projektowej).
+ *
+ * Import: index.css, PO legacy/theme i po arkuszach ekranów — ten plik nadpisuje MATERIAŁ
+ * (szkło, obrys, atrament, ton kanału), nigdy układu.
+ *
+ * ═══ ZASADA, KTÓRĄ MAKIETA STAWIA WPROST ═══
+ * „Render fotograficzny nie wchodzi na ekrany, które LICZĄ." Ze Startu przechodzi tu wyłącznie
+ * język materiału — szkło, poświata i kod barwny kanału. Wizualizacje zostają dokładnie tym,
+ * czym są dzisiaj: diagCanalSVG, eyesSVG, headDial, posture i renderer 3D. Ten arkusz nie ma
+ * prawa dotknąć ani jednej ścieżki SVG.
+ *
+ * ═══ DLACZEGO JEDEN ARKUSZ NA SIEDEM EKRANÓW ═══
+ * Diagnostyka, Manewr, Oczopląs, Interpretacja i trzy ekrany HINTS dzielą TE SAME klasy
+ * (.ghead, .panelbox, .features, .card, .vizbar). Materiał jest w makiecie wspólny co do
+ * wartości — te same rgba, te same promienie. Rozbicie go na siedem arkuszy „po jednym na
+ * ekran" oznaczałoby siedem kopii tych samych liczb i pierwszy rozjazd przy pierwszej korekcie.
+ * Ekrany różnią się REGUŁAMI (timer jako jedyne pełne wypełnienie, czerwień wypełniająca płytę
+ * tylko w wyniku HINTS) — i to one, nie materiał, wchodzą sekcjami niżej.
+ *
+ * ═══ SZKŁO KLINICZNE JEST CIEMNIEJSZE NIŻ NA STARCIE ═══
+ * Start: linear-gradient(180deg, rgba(12,20,28,.20), …) — półprzezroczysty u góry, żeby błędnik
+ * świecił przez panel. Tutaj: .60 → .86. Powód jest z noty autora przy ekranie „Oczopląs”:
+ * to jedyny ekran, na którym MÓWI UŻYTKOWNIK, więc szkło ma być najciemniejsze i najspokojniejsze.
+ * Pod spodem nie ma zdjęcia, które miałoby przez nie prześwitywać — jest treść, która liczy.
+ */
+
+/* ═══ 1. TOKENY (addytywne; reszta materiału pochodzi ze start-scene.css) ═══════════════════ */
+:root{
+  /* Szkło ekranów klinicznych — ciemniejsze u góry niż startowe (patrz nagłówek). */
+  --clin-glass:linear-gradient(180deg, rgba(12,20,28,.60), rgba(12,20,28,.86) 60%);
+  --clin-tile:rgba(8,12,17,.55);        /* kafelek wizualizacji: najciemniejszy, żeby schemat miał kontrast */
+  --clin-deep:#0B1219;                  /* płyta mechanizmu — jedyne miejsce bez przezroczystości */
+  --lift-4:0 40px 90px -50px rgba(0,0,0,.9);   /* cień płyty ekranu; głębszy niż startowy --lift-2 */
+  /* Ton domyślny ekranu klinicznego. Ekran, który zna kanał, nadpisuje go inline (patrz sekcja 3). */
+  --tone:var(--primary);
+  --tone-ink:var(--ink);
+}
+
+/* ═══ 2. MATERIAŁ WSPÓLNY ═══════════════════════════════════════════════════════════════════
+   Kolejność w index.css daje temu arkuszowi wygraną nad legacy.css przy tej samej
+   specyficzności — dlatego wystarczą selektory jednoklasowe i nie ma tu ani jednego !important. */
+
+/* Nagłówek ekranu: kreska rozdzielająca w barwie sceny, tytuł głośniejszy, podtytuł jaśniejszy. */
+.ghead{ border-bottom-color:var(--scene-line); }
+.ghead .ttl b{ font-size:19px; letter-spacing:-.01em; }
+.ghead .ttl span{ font-size:12.5px; color:var(--scene-text); }
+.ghead .iconbtn{
+  width:38px; height:38px; border-radius:var(--r-md);
+  background:none; border:1px solid var(--scene-line-strong); color:var(--scene-text);
+}
+.ghead .iconbtn:hover{ border-color:var(--primary); color:var(--text); }
+
+/* Płyta panelu (pozycja badana, mechanizm, karty pomocnicze). */
+.phase, .flipwrap .face.phaseface{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:var(--clin-glass); box-shadow:var(--lift-2);
+  padding:var(--sp-4);
+}
+.phase .ptitle, .phaseface .ptitle{ font-size:15px; }
+.phase .ppos, .phaseface .ppos{ font-size:12.5px; color:var(--scene-text); }
+
+/* Kafelek wizualizacji — najciemniejszy element ekranu, żeby schemat miał pod czym świecić. */
+.panelbox{
+  border-radius:var(--r-md); border:1px solid var(--scene-line);
+  background:var(--clin-tile); box-shadow:none;
+}
+.panelbox h4{ color:var(--faint); }
+
+/* Znaczniki cech (latencja, czas trwania, męczliwość) — prostokątne plakietki, nie pigułki:
+   pigułka czyta się jak przełącznik, a to są ODCZYTY, których nie da się dotknąć. */
+.features span{
+  border-radius:var(--r-xs); border:1px solid rgba(203,217,228,.18);
+  background:rgba(12,20,28,.8); color:var(--scene-text); font-size:11.5px;
+}
+
+/* Pasek sterowania wizualizacją leży na szkle, nie na panelu. */
+.vizbar{ border-color:var(--scene-line); background:rgba(8,12,17,.6); }
+
+/* Napis kierunku oczopląsu: strzałka przejmuje TON EKRANU zamiast żółci timera — na ekranie
+   diagnostycznym żółć znaczy „trwa odliczanie" i nie ma prawa opisywać kierunku. */
+.nyslabel .arrow{ color:var(--tone); }
+
+/* ═══ 3. DIAGNOSTYKA — KOD BARWNY KANAŁU ════════════════════════════════════════════════════
+   Nota autora: „Kafel próby ma ton kanału tylnego, więc kod barwny ze Startu ciągnie się na
+   ekran". Ton wchodzi INLINE z renderera (renderDiag zna kanał), a nie klasą `--kpost` jak na
+   Starcie: tam ton opisywał ZNACZENIE pozycji w menu i był stały, tutaj opisuje BADANY KANAŁ
+   i zmienia się z próbą. Klasa zamrażałaby go w markupie i rozjechałaby się przy pierwszej
+   zmianie mapy próba→kanał. */
+
+/* Pigułka strony: wybrana strona wypełniona TONEM KANAŁU, nie stałym różem/błękitem.
+   Strony L/P zachowują swoje barwy tam, gdzie oznaczają UCHO (badge, .opt[data-side]);
+   tutaj pigułka mówi „która strona TEGO kanału", więc niesie ton kanału. */
+.sidepill{ border-color:var(--scene-line-strong); background:rgba(12,20,28,.8); }
+.sidepill button{ color:var(--scene-text); }
+.sidepill button[aria-pressed="true"][data-s="L"],
+.sidepill button[aria-pressed="true"][data-s="P"]{
+  background:var(--tone); color:var(--tone-ink);
+}
+
+/* Karta instrukcji — jedyna karta na ekranie z tłem w tonie kanału. */
+.card > .instr{ color:#D4DEE8; }
+.card:has(> .instr){
+  border-radius:var(--r-lg); border:1px solid color-mix(in srgb, var(--tone) 34%, transparent);
+  background:linear-gradient(180deg, color-mix(in oklab, var(--tone) 10%, transparent), var(--scene-card-solid) 56%);
+  box-shadow:none;
+}
+
+/* Wiersze przejścia do kroków „Oczopląs" i „Interpretacja”. Ton NIESIE CEL: opis obserwacji
+   dostaje ton badanego kanału, interpretacja — cyan nawigacyjny, bo prowadzi do wniosku,
+   a nie do kolejnej obserwacji. */
+.obsrow{
+  border-radius:var(--r-lg); border:1px solid rgba(122,147,168,.34);
+  background:var(--clin-glass);
+}
+.obsrow .obslabel{ color:var(--faint); }
+.obsgo{
+  min-height:60px; border-radius:var(--r-md);
+  border-color:color-mix(in srgb, var(--tone) 45%, transparent);
+  background:linear-gradient(90deg, color-mix(in oklab, var(--tone) 12%, transparent), var(--scene-card-solid) 44%);
+}
+.obsgo:hover{ border-color:var(--tone); }
+.obsgo__s{ color:var(--scene-text); }
+.obsgo__go{ color:var(--scene-text); font-size:20px; }
+.obsgo.interpgo{ --tone:var(--primary); }
+
+/* Płyta mechanizmu — jedyny nieprzezroczysty panel ekranu. Schemat kanału musi mieć pod sobą
+   jednolite tło, inaczej gradient szkła wchodzi w cienkie ścieżki SVG i je rozmywa. */
+.flipwrap .panelbox{ background:var(--clin-deep); border-color:var(--scene-line); }

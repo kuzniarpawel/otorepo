@@ -2458,6 +2458,15 @@ function renderDiag(){
      wołany w tej gałęzi, więc konflikt z kryterium znika bez ruszania silnika. */
   const niet = nietypowy(state, interpDeps());
   const effCanal = antMode ? "anterior" : D.canal;
+  /* TON EKRANU = BADANY KANAŁ (scena kliniczna, tura 2 paczki: „kafel próby ma ton kanału
+     tylnego, więc kod barwny ze Startu ciągnie się na ekran"). Ton wchodzi INLINE, a nie klasą
+      `quick--kpost` jak na Starcie: tam ton opisywał ZNACZENIE pozycji w stałym menu, tutaj
+     opisuje BADANY KANAŁ i zmienia się z próbą oraz z obserwacją (antMode). Klasa zamroziłaby
+     go w markupie i rozjechała przy pierwszej zmianie mapy próba→kanał.
+     Atrament dobrany per ton — jeden wspólny czarny brudzi bursztyn kanału poziomego. */
+  const TON_KANALU = { posterior:["--post","#0B221F"], horizontal:["--horiz","#2A1E02"], anterior:["--ant","#1A1230"] };
+  const [tonVar, tonInk] = TON_KANALU[effCanal] || ["--primary","#03242E"];
+  const TON = `--tone:var(${tonVar});--tone-ink:${tonInk}`;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
   const phases = D.phases(A,v).map(ph => antMode
     ? { ...ph, nys: nysFromGeom("anterior", effSide, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),   // TA SAMA poza co reszta aplikacji (było własne qSupineYaw z silnika)
@@ -2488,11 +2497,11 @@ function renderDiag(){
         ${gravArrowFor(phs)}</div>
       <div class="note">${ph.note}</div>`;};
   const phaseHTML = phases.length===2
-    ? `<div class="flipwrap" style="margin-top:6px"><div class="flip${state.diagPhaseFace?' flipped':''}" id="phaseflip" role="button" tabindex="0" aria-label="${t("Odwróć","Flip")}: ${phases[0].ptitle} ${t("albo","or")} ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
+    ? `<div class="flipwrap" style="margin-top:6px;${TON}"><div class="flip${state.diagPhaseFace?' flipped':''}" id="phaseflip" role="button" tabindex="0" aria-label="${t("Odwróć","Flip")}: ${phases[0].ptitle} ${t("albo","or")} ${phases[1].ptitle}" onclick="flipPhases()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipPhases();}">
         <div class="face front phaseface">${phaseInner(phases[0],0)}<div class="fliphint">${FLIP_ICO} ${phases[1].ptitle}</div></div>
         <div class="face back phaseface">${phaseInner(phases[1],1)}<div class="fliphint">${FLIP_ICO} ${phases[0].ptitle}</div></div>
       </div></div>`
-    : phases.map((ph,i)=>`<div class="phase">${phaseInner(ph,i)}</div>`).join("");
+    : phases.map((ph,i)=>`<div class="phase" style="${TON}">${phaseInner(ph,i)}</div>`).join("");
   // Panel MĘCZLIWOŚCI (tylko Dix-Hallpike, tryb kanału tylnego): powtarzaj prowokację → kanalolitiaza słabnie,
   // kupulolitiaza nie (różnicowanie wprost). Amplituda z Vestibular.fatigueFactor(rep).
   const fatPanel = (isDix && !antMode) ? (()=>{
@@ -2517,15 +2526,15 @@ function renderDiag(){
       <div class="note">${note}</div></div>`;
   })() : "";
   $("#app").innerHTML=`
-    <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="ghead" style="${TON}"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
-    <div class="card" style="margin-bottom:4px" data-flow-anchor="test" tabindex="-1"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
+    <div class="card clininstr" style="margin-bottom:4px;${TON}" data-flow-anchor="test" tabindex="-1"><div class="instr">${D.intro}</div></div>
     ${/* WEJŚCIE DO OPISU OBSERWACJI — takie samo dla WSZYSTKICH czterech prób (Blok 8).
           Zastępuje dwustanowy przełącznik, który istniał wyłącznie przy Dix-Hallpike i pytał
           wprost o WNIOSEK („kanał tylny" / „kanał przedni"), a nie o to, co widać. Przy roll,
           bow&lean i head-hangu nie było czym opisać obserwacji w ogóle. */""}
-    <div class="obsrow" tabindex="-1"><div class="obslabel">${t("Zaobserwowany oczopląs","Observed nystagmus")}</div>
+    <div class="obsrow" style="${TON}" tabindex="-1"><div class="obslabel">${t("Zaobserwowany oczopląs","Observed nystagmus")}</div>
       <button class="obsgo" onclick="goObs()">
         <span class="obsgo__t">${wsparcie.poziom==="brak" ? t("Opisz, co zobaczyłeś","Describe what you saw") : t("Opis obserwacji","Observation record")}</span>
         <span class="obsgo__s">${(()=>{
