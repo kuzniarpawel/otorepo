@@ -105,6 +105,10 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...]
    phiExit=null (domyślnie) = ZMIERZONY zakres łuku per kanał: ARC_SPAN {przedni 281.1 · tylny 318.8 ·
    poziomy 267.3}. (Parametry crusFling/crusFlingRate USUNIĘTE 2026-08-05 — patrz komora odnogi niżej.)
+   WALIDACJE (od 2026-08-13, ocena II A10): dt>0 · tauP>0 · tauC>dt/2 (stabilność Eulera) · gc>0 ·
+   fStat≥0 · adh≥0 · 0≤crusArc<phiExit−3 · crusGrav>0 — jasny RangeError zamiast cichego nonsensu
+   (gc<0 odwracało stronę oczopląsu, crusArc>phiExit uśmiercało test bez śladu). phi0 nadal BEZ
+   walidacji (naprawa razem z settled — plan V3).
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
    [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
     oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
@@ -209,6 +213,9 @@ nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
 
 simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
    q0 — orientacja STARTOWA; semantyka jak w simulateCanalith (null = q pierwszego segmentu).
+   WALIDACJE (od 2026-08-13, ocena II A10/DYN-9): tauCup>dt/2 (poniżej jawny Euler ROZBIEGA — 0.024
+   dawało ξ~8e26 bez błędu) · gain skończony, ŚWIADOMIE bez ograniczenia znaku (gain<0 = przyszła
+   light cupula: trwały GEOTROPOWY DCPN — ocena II, D3).
    size skaluje gain ∝ r³ (cięższy klaster otoconiów → silniejsze wychylenie osklepka); latencji brak
    (tauCup bez zmian). SIZE_R jak w simulateCanalith. medium == r=1 → wynik identyczny.
    Symulacja KUPULOLITIAZY: otolity przyklejone do osklepka → ciężki osklepek odchylany
@@ -1023,9 +1030,9 @@ REALNE PROPORCJE (max=1, żywe 2026-08-13):  tylny v0.81:h0.21:t1.00 · przedni 
 MASKA KLINICZNA (stała NYS_SHOW) — geometria daje magnitudy, ale konwencja kliniczna decyduje,
 KTÓRE składowe wyrażamy (każdą można odsłonić flagą true):
   posterior.h=false  geom.≈0.21 — klin. pomijany (tylny opisywany jako pionowo-skrętny).
-                                   UWAGA (ocena II, A4): flaga NIE jest gotowa do odsłonięcia —
-                                   znakowana geometria daje kierunek KONTRA (−0.21), a quickPhase
-                                   nadałby ipsi (+0.21); przed odsłonięciem poprawić znak.
+                                   ZNAK POPRAWIONY 2026-08-13 (ocena II, A4): quickPhase wiąże
+                                   posterior.h z −ipsi (kierunek KONTRA −0.21, ze znakowanej
+                                   geometrii Ω=−n) — flaga jest bezpieczna do odsłonięcia.
   posterior.t=true                — skręt wyrażony; realne v:t ≈ 0.81:1 (było sztywne 1:1)
   anterior.t=false   geom.≈0.74 — OVERRIDE KLINICZNY: czysty downbeat. UWAGA: geometria daje
                                    ISTOTNY skręt (~0.74× pionu); "przedni = czysty downbeat" jest

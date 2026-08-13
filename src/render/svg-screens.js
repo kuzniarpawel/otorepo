@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -500,7 +500,7 @@ function manStepEnv(man, step){
   if(!man || !man.sim || !man.segs) return null;
   const seg = man.segs[Math.min(step, man.segs.length-1)]; if(!seg || seg.dur<=0) return null;
   const sim=man.sim, dt=man.dt, t0=seg.t0, dur=seg.dur, TAIL=6;
-  const REC = x => Math.min(1, Math.abs(x)*(x>0?1:0.45));           // Ewald II: hamowanie (ampullofugalny ξ<0) słabsze ×0.45
+  const REC = x => Math.min(1, Math.abs(x)*(x>0?1:Vestibular.EWALD_INHIB));   // rektyfikacja: hamowanie (ξ<0) słabsze ×EWALD_INHIB — JEDNO źródło stałej (ocena II, C2; była tu trzecia literalna kopia 0.45)
   const at = tabs => { const i=Math.min(sim.length-1, Math.max(0, Math.round(tabs/dt))); return sim[i]?REC(sim[i].xi):0; };
   const endV = at(t0+dur);
   const env = ts => {
@@ -513,7 +513,7 @@ function manStepEnv(man, step){
   // BEZPIECZNIK: model nie re-prowokuje na niektórych przejściach (obroty poziome Lemperta) — jeśli sygnał
   // historyczny tego kroku jest znikomy, oddaj sterowanie annotacji (świeży provokeQ w startNys), by krok
   // z annotowanym oczopląsem nie „zniknął". Carry-over/rektyfikacja zostają tam, gdzie fizyka daje realny ślad.
-  if(stepPk < 0.10) return null;
+  if(stepPk < XI_CARD) return null;
   return {env, tEnd, hist:true};
 }
 // szczyt ξ (ZE ZNAKIEM) dla kroku z ciągłej symulacji; przy luce (model nie re-prowokuje) — świeży provoke
@@ -580,7 +580,7 @@ function manFractions(man, plan){
 // Zwraca sekundy albo null, gdy krok nie ma oczopląsu (sygnał < próg). Wędrówkę otolitu wiążemy z tą wartością.
 function guideNysSeconds(plan, man, step, size){
   const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step), plan.mechanism==="cupulo");
-  if(!_gn || _gn.strength < 0.10) return null;
+  if(!_gn || _gn.strength < XI_CARD) return null;
   const r = manStepEnv(man, step) || xiEnvelope(engineXi(_gn.canal, _gn.side, _gn.persistent, _gn.q));
   return r ? r.tEnd : null;
 }
@@ -787,7 +787,7 @@ function renderGuide(){
   const can3d = true;                                      // Etap 4: 3D dla WSZYSTKICH manewrów (kamera wg reguł posture: bok/frontal/topDown)
   const _man = currentManSim();
   const _gn = nysFromDyn(p.canal, p.side, stepXiPeak(_man, p, state.step), p.mechanism==="cupulo");
-  const gn = (_gn && _gn.strength >= 0.10) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
+  const gn = (_gn && _gn.strength >= XI_CARD) ? _gn : null;   // karta oczopląsu TAM, gdzie FIZYKA daje sygnał > próg (bez markera)
   // OCZOPLĄS LIBERACYJNY (R5, decyzja kliniczna 2026-08-06): krok, w którym złóg OPUSZCZA kanał, dostaje
   // jawny znacznik. Źródłem jest TA SAMA symulacja, z której liczona jest wartość na karcie (manExitStep =
   // segment zawierający pierwsze man.sim.exited), więc etykieta nie może rozjechać się z liczbą.

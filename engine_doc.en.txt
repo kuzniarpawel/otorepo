@@ -107,6 +107,10 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...]
    phiExit=null (default) = the MEASURED arc span per canal: ARC_SPAN {anterior 281.1 · posterior 318.8 ·
    horizontal 267.3}. (The crusFling/crusFlingRate parameters were REMOVED 2026-08-05 — see the crus chamber below.)
+   VALIDATIONS (since 2026-08-13, assessment II A10): dt>0 · tauP>0 · tauC>dt/2 (Euler stability) ·
+   gc>0 · fStat≥0 · adh≥0 · 0≤crusArc<phiExit−3 · crusGrav>0 — a clear RangeError instead of silent
+   nonsense (gc<0 flipped the nystagmus side, crusArc>phiExit killed the test without a trace).
+   phi0 remains UNVALIDATED (fix rides with settled — plan V3).
    Simulation of CANALITHIASIS: the otolith as a particle on the canal arc.
    [PHENOMENOLOGICAL MODEL — a proxy for the dynamics, not full hydrodynamics; see the "MODEL NATURE" header
     and "SIMPLIFICATIONS RELATIVE TO FULL MODELS".]
@@ -214,6 +218,9 @@ nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
 
 simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
    q0 — STARTING orientation; semantics as in simulateCanalith (null = the q of the first segment).
+   VALIDATIONS (since 2026-08-13, assessment II A10/DYN-9): tauCup>dt/2 (below it the explicit Euler
+   scheme DIVERGES — 0.024 gave ξ~8e26 with no error) · gain finite, DELIBERATELY without a sign
+   constraint (gain<0 = future light cupula: persistent GEOTROPIC DCPN — assessment II, D3).
    size scales gain ∝ r³ (a heavier otoconia cluster → stronger cupular deflection); no latency
    (tauCup unchanged). SIZE_R as in simulateCanalith. medium == r=1 → identical result.
    Simulation of CUPULOLITHIASIS: otoliths attached to the cupula → a heavy cupula deflected
@@ -1071,9 +1078,9 @@ REAL PROPORTIONS (max=1, live 2026-08-13):  posterior v0.81:h0.21:t1.00 · anter
 CLINICAL MASK (constant NYS_SHOW) — geometry gives the magnitudes, but the clinical convention decides
 WHICH components we express (each can be revealed with a true flag):
   posterior.h=false  geom.≈0.21 — clinically omitted (the posterior is described as vertical-torsional).
-                                   NOTE (assessment II, A4): the flag is NOT ready to be revealed —
-                                   the signed geometry gives a CONTRA direction (−0.21), while quickPhase
-                                   would assign ipsi (+0.21); fix the sign before revealing.
+                                   SIGN FIXED 2026-08-13 (assessment II, A4): quickPhase now ties
+                                   posterior.h to −ipsi (CONTRA direction −0.21, from the signed
+                                   geometry Ω=−n) — the flag is safe to reveal.
   posterior.t=true                — torsion expressed; real v:t ≈ 0.81:1 (was a rigid 1:1)
   anterior.t=false   geom.≈0.74 — CLINICAL OVERRIDE: pure downbeat. NOTE: the geometry gives
                                    SIGNIFICANT torsion (~0.74× vertical); "anterior = pure downbeat" is

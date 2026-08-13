@@ -173,6 +173,11 @@ const CANALS={
 };
 
 /* ============ Testy diagnostyczne ============ */
+// PRÓG WIDOCZNOŚCI KARTY OCZOPLĄSU (ocena II, C3) — jedno źródło zamiast trzech literałów 0.10
+// rozsianych po svg-screens.js (bezpiecznik manStepEnv, guideNysSeconds, karta kroku renderGuide).
+// Jednostka: strength/intensity PO rektyfikacji Ewalda (NIE surowe ξ — dlatego pasmo sprzeczności
+// z nystagmusPhase thr=0.05 opisane w engine_doc). Wartość NIEZMIENIONA względem literałów.
+const XI_CARD = 0.10;
 // Kierunki oczopląsu dla wszystkich testów (Dix–Hallpike, Roll, Bow & Lean) wynikają z
 // geometrii (silnik Vestibular): orientacja głowy → grawitacja → przepływ → prawo Ewalda.
 function nysFromGeom(canal, side, variant, q, strengthMode){
@@ -639,7 +644,7 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

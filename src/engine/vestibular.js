@@ -61,15 +61,16 @@ export const Vestibular = (()=>{
   // wyrażamy. true = odsłoń realną składową geometryczną; false = utrzymaj konwencję kliniczną.
   //   posterior.h: geom.≈0.21 (klin. pomijany) · anterior.t: geom.≈0.74 (override: czysty downbeat)
   //   horizontal.t: geom.≈0.18 (klin. czysto poziomy)   [liczby żywe IE-Map 2026-08-13; stare
-  //   0.41/0.78/0.29 pochodziły z wektorów Wu]. UWAGA (ocena II, A4): flaga posterior.h NIE jest
-  //   gotowa do odsłonięcia — znakowana geometria daje kierunek KONTRA (−0.21), a quickPhase nadałby
-  //   ipsi (+0.21); przed ustawieniem true poprawić znak.
+  //   0.41/0.78/0.29 pochodziły z wektorów Wu]. ZNAK posterior.h POPRAWIONY 2026-08-13 (ocena II, A4):
+  //   znakowana geometria (oś pobudzenia Ω=−n, Ewald III) daje składową poziomą KONTRA (−0.21), więc
+  //   quickPhase wiąże ją z −ipsi — flaga jest od teraz bezpieczna do odsłonięcia (dziś false → h=0,
+  //   zmiana martwa dla wyników).
   const NYS_SHOW = { posterior:{h:false,t:true}, anterior:{h:false,t:false}, horizontal:{t:false} };
   function quickPhase(canal, ear /* 'L'|'P' */){
     const ipsi = ear==="P" ? +1 : -1;                 // + = strona prawa
     const m = nysMag(canal, ear);                     // realne magnitudy z CANAL_NORMALS
     if(canal==="horizontal") return {h: ipsi*m.h, v:0, t: NYS_SHOW.horizontal.t ? ipsi*m.t : 0};       // poziomy ku pobudzonemu uchu
-    if(canal==="posterior")  return {h: NYS_SHOW.posterior.h ? ipsi*m.h : 0, v:+m.v, t: NYS_SHOW.posterior.t ? ipsi*m.t : 0}; // upbeat + skręt ku uchu; realne v:t≈0.81:1
+    if(canal==="posterior")  return {h: NYS_SHOW.posterior.h ? -ipsi*m.h : 0, v:+m.v, t: NYS_SHOW.posterior.t ? ipsi*m.t : 0}; // upbeat + skręt ku uchu; realne v:t≈0.81:1; h KONTRA (−ipsi, A4)
     if(canal==="anterior")   return {h: NYS_SHOW.anterior.h ? ipsi*m.h : 0, v:-m.v, t: NYS_SHOW.anterior.t ? ipsi*m.t : 0};   // downbeat; override klin. t:0 (geom. skręt ≈0.74)
     return {h:0,v:0,t:0};
   }
@@ -345,6 +346,17 @@ export const Vestibular = (()=>{
     if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCanalith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCanalith: dt musi być liczbą > 0 (podano "+dt+")");   // dt<=0 → nieskończona pętla
+    // WALIDACJE PARAMETRÓW DYNAMIKI (ocena II, A10/DYN-11) — wartości niefizyczne przechodziły po cichu:
+    // gc<0 ODWRACAŁO stronę oczopląsu (ucho chore!), tauC<0 rozbiegało ξ wykładniczo, tauC<dt/2 destabilizowało
+    // jawny schemat Eulera, tauP<0 pchało złóg POD grawitację, crusArc>phiExit dawało pcrus<0 (test martwy bez
+    // śladu), crusGrav<=0 ekspulsowało w dowolnej pozie. Wartości domyślne przechodzą wszystkie bramki.
+    if(!(tauP>0) || !isFinite(tauP)) throw new RangeError("simulateCanalith: tauP musi być liczbą > 0 (podano "+tauP+")");
+    if(!(tauC>dt/2) || !isFinite(tauC)) throw new RangeError("simulateCanalith: tauC musi być liczbą > dt/2 (stabilność Eulera; podano "+tauC+")");
+    if(!(gc>0) || !isFinite(gc)) throw new RangeError("simulateCanalith: gc musi być liczbą > 0 (podano "+gc+")");
+    if(!(fStat>=0) || !isFinite(fStat)) throw new RangeError("simulateCanalith: fStat musi być liczbą >= 0 (podano "+fStat+")");
+    if(!(adh>=0) || !isFinite(adh)) throw new RangeError("simulateCanalith: adh musi być liczbą >= 0 (podano "+adh+")");
+    if(!(crusArc>=0) || !(crusArc < phiExit-CUPULA_DEG)) throw new RangeError("simulateCanalith: crusArc musi spełniać 0 <= crusArc < phiExit-"+CUPULA_DEG+" (podano "+crusArc+")");
+    if(!(crusGrav>0) || !isFinite(crusGrav)) throw new RangeError("simulateCanalith: crusGrav musi być liczbą > 0 (podano "+crusGrav+")");
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D, pcrus=(phiExit-crusArc)*D;
     const crusGate=(canal==="posterior"||canal==="anterior");   // odnoga wspólna TYLKO dla kanałów pionowych; poziomy → wyjście wprost
@@ -427,6 +439,11 @@ export const Vestibular = (()=>{
     reqCanal(canal, side, "simulateCupulolith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCupulolith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCupulolith: dt musi być liczbą > 0 (podano "+dt+")");
+    // WALIDACJE (ocena II, A10/DYN-9): tauCup <= dt/2 ROZBIEGA jawny schemat Eulera (tauCup=0.024 → ξ~8e26),
+    // tauCup=0 dawało NaN bez wyjątku. gain ŚWIADOMIE bez ograniczenia znaku — gain<0 to przyszła light
+    // cupula (trwały GEOTROPOWY DCPN, ocena II D3); wymagana tylko skończoność.
+    if(!(tauCup>dt/2) || !isFinite(tauCup)) throw new RangeError("simulateCupulolith: tauCup musi być liczbą > dt/2 (stabilność Eulera; podano "+tauCup+")");
+    if(typeof gain!=="number" || !isFinite(gain)) throw new RangeError("simulateCupulolith: gain musi być liczbą skończoną (podano "+gain+")");
     gain=gain*Math.pow(sizeR(size),3);   // cięższy klaster otoconiów → silniejsze wychylenie osklepka (gain ∝ r³); latencji brak (tauCup bez zmian)
     // pozycja startowa: jak w simulateCanalith — jawne q0 lub domyślnie (null) pierwszy q (wsteczna zgodność).
     let xi=0, t=0, qPrev=q0!=null?reqQuat(q0,"simulateCupulolith q0"):reqSegment(timeline[0],0,"simulateCupulolith"); const out=[];
