@@ -104,13 +104,13 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — STAGE 2 (particle dynamics) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...] (+ a .final property)
    phiExit=null (default) = the MEASURED arc span per canal: ARC_SPAN {anterior 281.1 · posterior 318.8 ·
    horizontal 267.3}. (The crusFling/crusFlingRate parameters were REMOVED 2026-08-05 — see the crus chamber below.)
    VALIDATIONS (since 2026-08-13, assessment II A10): dt>0 · tauP>0 · tauC>dt/2 (Euler stability) ·
    gc>0 · fStat≥0 · adh≥0 · 0≤crusArc<phiExit−3 · crusGrav>0 — a clear RangeError instead of silent
    nonsense (gc<0 flipped the nystagmus side, crusArc>phiExit killed the test without a trace).
-   phi0 remains UNVALIDATED (fix rides with settled — plan V3).
+   since V3 also phi0 ∈ [CUPULA_DEG, phiExit] (described below).
    Simulation of CANALITHIASIS: the otolith as a particle on the canal arc.
    [PHENOMENOLOGICAL MODEL — a proxy for the dynamics, not full hydrodynamics; see the "MODEL NATURE" header
     and "SIMPLIFICATIONS RELATIVE TO FULL MODELS".]
@@ -123,9 +123,23 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, 
    phi0 — explicit starting arc angle of the debris [°]; null (default) = restPhi(canal,side): the
        gravitational minimum in the upright posture, or the cupula when that minimum lies outside the arc
        (posterior 48.8° · horizontal 199.8° · anterior 3°).
-       NOTE (assessment II, A2/A9): phi0 is NOT VALIDATED today, and the adhesion state (stuck/bond) is
-       computed from restPhi/upright INDEPENDENTLY of phi0 — an explicit start elsewhere on the arc
-       inherits an adhesion computed for a different place (fix = a settled parameter, assessment II plan V3).
+       VALIDATED since 2026-08-13 (assessment II, A9/V3): RangeError outside [CUPULA_DEG, phiExit] — no more
+       silently dead simulations on NaN, debris resurrected from outside the canal (phi0>phiExit used to give
+       a full liberatory transient) or teleports. A start in the CRUS ZONE (phi0 > phiExit−crusArc, vertical
+       canals) = the debris STARTS IN THE CHAMBER (inCrus) instead of the old backward snap to pcrus.
+   settled — the adhesion state at start (assessment II, A2/V3). true (default) = SETTLED debris: the
+       adhesion gate as before, computed from the resting drive at restPhi and UPRIGHT (deliberately NOT
+       at phi0/q0 — the full gate fix is the continuous-session project D1; the default path is
+       bit-identical, proof: 34 scenarios × 48,144 samples, max difference 0). false = FRESHLY DISPLACED
+       debris (positional history deposited it moments ago; the bond has not had time to form) — starts
+       without the gate. The same distinction — "held by the bond vs held by gravity" — with which the
+       engine explains the missing latency of the anterior canal. Without settled=false the gate —
+       evaluated at someone else's point — quenches to 0.000 even responses of free amplitude |ξ|>1
+       (Bow & Lean: dead bands ~20% of the arc, the 205° cliff).
+   .final — the FINAL STATE {phi, xi, bond, stuck, exited, inCrus} as a property ON THE RESULT ARRAY
+       (JSON.stringify of arrays skips it — oracles untouched). For session chaining (D1):
+       pre=simulateCanalith(history); test=simulateCanalith({phi0: pre.final.phi, settled:false, …}).
+       NOTE: bond is in internal units after size scaling — carry size together with the state.
    q0 — STARTING orientation (quaternion); default null = the q of the FIRST segment (backward compatibility).
        NOTE (semantics of the 1st segment): with q0=null the first segment does NOT interpolate from the neutral position —
        its tTrans is time ALREADY IN the starting position, NOT a transition from sitting. To force a transition from a given
@@ -264,6 +278,9 @@ OTHER EXPORTS (undocumented until now — assessment II, C1):
    sizeUm(size) -> equivalent clump diameter [µm] (16/21/29 for small/medium/big — Stokes'
       law [15]; shown on the maneuver card)
    restPhi(canal, side) -> °  (debris rest when upright: posterior 48.8 · horizontal 199.8 · anterior 3)
+   driveAt(canal, side, phiDeg, q, tauP=6.5) -> tangential drive [rad/s] at ANY point of the arc and
+      ANY orientation (since V3; a generalisation of restDrive — restDrive = driveAt at restPhi and
+      upright, identically). Will feed the drive of the positional-history presets (BLT_HISTORY, plan V5).
    constants: ARC_SPAN {anterior:281.1, posterior:318.8, horizontal:267.3} · CANAL_NORMALS · CANAL_GEOM
       · CUP_WEAK=0.6 · EWALD_INHIB=0.45.
 

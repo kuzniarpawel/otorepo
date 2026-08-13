@@ -198,10 +198,16 @@ export const Vestibular = (()=>{
      latencji w kanale przednim — zgodnie z opisami BPPV kanału przedniego (latencja krótka/nieobecna).
      Bez tego test deep head-hang nie dawał ŻADNEGO oczopląsu: 0.5 s przejścia nie starcza, by zużyć
      wiązanie adh=0.2, a w manewrze Yacovino zużywał je dopiero 6-sekundowy krok „pacjent siedzi". */
+  // NAPĘD STYCZNY W DOWOLNYM PUNKCIE ŁUKU I DOWOLNEJ ORIENTACJI (ocena II, V3) — uogólnienie restDrive
+  // (ta sama arytmetyka; restDrive = driveAt w restPhi i pionie, tożsamościowo — zweryfikowane bitowo).
+  // EKSPORTOWANE: warstwa domenowa policzy z niego napęd presetów historii pozycyjnej (BLT_HISTORY, plan V5).
+  function driveAt(canal, side, phiDeg, q, tauP=6.5){
+    reqCanal(canal, side, "driveAt");
+    const G=CANAL_GEOM[canal][side];
+    return dot3(gHead(reqQuat(q,"driveAt")), tangAt(G, phiDeg))/tauP;
+  }
   function restDrive(canal, side, tauP){
-    const G=CANAL_GEOM[canal][side], g=gHead([1,0,0,0]), phi=restPhi(canal,side)*Math.PI/180;
-    const c=Math.cos(phi), sn=Math.sin(phi);
-    return dot3(g,[-sn*G.e1[0]+c*G.e2[0], -sn*G.e1[1]+c*G.e2[1], -sn*G.e1[2]+c*G.e2[2]])/tauP;
+    return driveAt(canal, side, restPhi(canal, side), [1,0,0,0], tauP);
   }
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
@@ -340,7 +346,7 @@ export const Vestibular = (()=>{
     const c1=cross3(wv,d), a=cross3(wv,c1);
     return [g[0]-a[0]/G0, g[1]-a[1]/G0, g[2]-a[2]/G0];
   }
-  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
+  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
     reqCanal(canal, side, "simulateCanalith");
     if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
     if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
@@ -357,6 +363,10 @@ export const Vestibular = (()=>{
     if(!(adh>=0) || !isFinite(adh)) throw new RangeError("simulateCanalith: adh musi być liczbą >= 0 (podano "+adh+")");
     if(!(crusArc>=0) || !(crusArc < phiExit-CUPULA_DEG)) throw new RangeError("simulateCanalith: crusArc musi spełniać 0 <= crusArc < phiExit-"+CUPULA_DEG+" (podano "+crusArc+")");
     if(!(crusGrav>0) || !isFinite(crusGrav)) throw new RangeError("simulateCanalith: crusGrav musi być liczbą > 0 (podano "+crusGrav+")");
+    // WALIDACJA phi0 (ocena II, A9/V3) — do tej pory NaN dawał po cichu martwą symulację, start za pcrus
+    // był snapowany WSTECZ, a phi0>phiExit wskrzeszał złóg spoza kanału z pełnym transjentem liberacyjnym.
+    if(phi0!=null && (!isFinite(phi0) || phi0<CUPULA_DEG || phi0>phiExit))
+      throw new RangeError("simulateCanalith: phi0 musi być w ["+CUPULA_DEG+", phiExit="+phiExit+"] (podano "+phi0+")");
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D, pcrus=(phiExit-crusArc)*D;
     const crusGate=(canal==="posterior"||canal==="anterior");   // odnoga wspólna TYLKO dla kanałów pionowych; poziomy → wyjście wprost
@@ -365,7 +375,17 @@ export const Vestibular = (()=>{
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
     // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
     // 1. segment = pozycja startowa, a jego tTrans to czas W tej pozycji (NIE przejście z neutralnej). Wsteczna zgodność.
-    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=0, t=0, exited=false, stuck=Math.abs(restDrive(canal,side,tauP))<=fStat, inCrus=false, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    // settled (ocena II, A2/V3): true (domyślne) = złóg OSIADŁY — bramka adhezji jak dotąd (napęd
+    // postojowy w restPhi i pionie; ścieżka bit-identyczna). false = złóg ŚWIEŻO PRZEMIESZCZONY
+    // (historia pozycyjna odłożyła go przed chwilą — wiązanie nie zdążyło się wytworzyć): start bez
+    // bramki. Uzasadnienie fizyczne = ten sam mechanizm, którym silnik tłumaczy brak latencji kanału
+    // przedniego (restDrive wyżej: „nie trzyma go wiązanie, tylko grawitacja"); model i tak nie ma
+    // re-adhezji (raz zerwane wiązanie nie wraca). Bez tego bramka — ewaluowana w CUDZYM punkcie
+    // (restPhi zamiast phi0) — wygasza do 0.000 nawet odpowiedzi o swobodnej amplitudzie |ξ|>1
+    // i robi z odpowiedzi funkcję schodkową phi0 z ~20% martwego łuku (klif 205°).
+    // Start w strefie odnogi (phi0>phiExit−crusArc, kanały pionowe): złóg STARTUJE W KOMORZE (inCrus)
+    // zamiast dawnego snapu WSTECZNEGO do pcrus — czeka na ekspulsję jak każdy zaparkowany złóg.
+    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=0, t=0, exited=false, stuck=settled && Math.abs(restDrive(canal,side,tauP))<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const wv = angVel(qPrev, sq, seg.tTrans);          // prędkość kątowa przejścia (stała — slerp o stałym tempie)
@@ -409,6 +429,12 @@ export const Vestibular = (()=>{
       }
       qPrev=sq;
     }
+    // STAN KOŃCOWY do łańcuchowania sesji (ocena II, V3 — fundament D1/R10): pre=simulateCanalith(historia);
+    // test=simulateCanalith({phi0:pre.final.phi, settled:false, ...}). Właściwość NA TABLICY — JSON.stringify
+    // tablic ją pomija (wyrocznie serializujące nie widzą zmiany), iteracja for-of/length/map bez zmian.
+    // UWAGA: bond jest w jednostkach WEWNĘTRZNYCH po skalowaniu rozmiarem (adh*r) — łańcuchowanie między
+    // przebiegami o różnym size przekłamie stan wiązania; przenoś size razem ze stanem.
+    out.final = { phi: phi/D, xi, bond, stuck, exited, inCrus };
     return out;
   }
   // ξ (odchylenie osklepka) → składowe oczopląsu (kierunek z etapu 0, znak z pobudzenia)
@@ -463,6 +489,6 @@ export const Vestibular = (()=>{
   }
   return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, position, sizeR, sizeUm,
           simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, CUP_WEAK, EWALD_INHIB};
+          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, driveAt, CUP_WEAK, EWALD_INHIB};
 })();
 

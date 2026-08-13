@@ -102,13 +102,13 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — ETAP 2 (dynamika cząstki) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...] (+ właściwość .final)
    phiExit=null (domyślnie) = ZMIERZONY zakres łuku per kanał: ARC_SPAN {przedni 281.1 · tylny 318.8 ·
    poziomy 267.3}. (Parametry crusFling/crusFlingRate USUNIĘTE 2026-08-05 — patrz komora odnogi niżej.)
    WALIDACJE (od 2026-08-13, ocena II A10): dt>0 · tauP>0 · tauC>dt/2 (stabilność Eulera) · gc>0 ·
    fStat≥0 · adh≥0 · 0≤crusArc<phiExit−3 · crusGrav>0 — jasny RangeError zamiast cichego nonsensu
-   (gc<0 odwracało stronę oczopląsu, crusArc>phiExit uśmiercało test bez śladu). phi0 nadal BEZ
-   walidacji (naprawa razem z settled — plan V3).
+   (gc<0 odwracało stronę oczopląsu, crusArc>phiExit uśmiercało test bez śladu); od V3 także
+   phi0 ∈ [CUPULA_DEG, phiExit] (opis niżej).
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
    [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
     oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
@@ -120,9 +120,22 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, 
                 wybiera ramię członu bezwładnościowego R7 (LEVER.body 0.75 m / neck 0.12 m)
    phi0 — jawny kąt startowy złogu [°]; null (domyślnie) = restPhi(canal,side): minimum grawitacyjne
        w postawie pionowej, a gdy leży poza łukiem — osklepek (tylny 48.8° · poziomy 199.8° · przedni 3°).
-       UWAGA (ocena II, A2/A9): phi0 nie jest dziś WALIDOWANE, a stan adhezji (stuck/bond) liczy się
-       z restPhi/pionu NIEZALEŻNIE od phi0 — jawny start w innym miejscu łuku dziedziczy adhezję
-       policzoną dla innego miejsca (naprawa = parametr settled, plan V3 oceny II).
+       WALIDOWANE od 2026-08-13 (ocena II, A9/V3): RangeError poza [CUPULA_DEG, phiExit] — koniec z cichą
+       martwą symulacją przy NaN, wskrzeszaniem złogu spoza kanału (phi0>phiExit dawało pełny transjent
+       liberacyjny) i teleportem. Start w STREFIE ODNOGI (phi0 > phiExit−crusArc, kanały pionowe) =
+       start W KOMORZE (inCrus) zamiast dawnego snapu wstecznego do pcrus.
+   settled — stan adhezji na starcie (ocena II, A2/V3). true (domyślnie) = złóg OSIADŁY: bramka adhezji
+       jak dotąd, liczona z napędu postojowego w restPhi i PIONIE (świadomie NIE w phi0/q0 — pełna
+       naprawa bramki = projekt sesji ciągłej D1; ścieżka domyślna bit-identyczna, dowód: 34 scenariusze
+       × 48 144 próbki, maks. różnica 0). false = złóg ŚWIEŻO PRZEMIESZCZONY (historia pozycyjna
+       odłożyła go przed chwilą; wiązanie nie zdążyło się wytworzyć) — start bez bramki. To samo
+       rozróżnienie „trzyma wiązanie vs trzyma grawitacja", którym silnik tłumaczy brak latencji kanału
+       przedniego. Bez settled=false bramka — ewaluowana w cudzym punkcie — wygasza do 0.000 nawet
+       odpowiedzi o swobodnej amplitudzie |ξ|>1 (Bow & Lean: martwe pasma ~20% łuku, klif 205°).
+   .final — STAN KOŃCOWY {phi, xi, bond, stuck, exited, inCrus} jako właściwość NA TABLICY wyników
+       (JSON.stringify tablic ją pomija — wyrocznie nietknięte). Do łańcuchowania sesji (D1):
+       pre=simulateCanalith(historia); test=simulateCanalith({phi0: pre.final.phi, settled:false, …}).
+       UWAGA: bond w jednostkach wewnętrznych po skalowaniu rozmiarem — przenoś size razem ze stanem.
    q0 — orientacja STARTOWA (kwaternion); domyślnie null = q PIERWSZEGO segmentu (wsteczna zgodność).
        UWAGA (semantyka 1. segmentu): przy q0=null pierwszy segment NIE interpoluje z pozycji neutralnej —
        jego tTrans to czas JUŻ W pozycji startowej, NIE przejście z siadu. Aby wymusić przejście z danej
@@ -259,6 +272,9 @@ POZOSTAŁE EKSPORTY (dotąd nieudokumentowane — ocena II, C1):
    sizeUm(size) -> równoważna średnica kłębka [µm] (16/21/29 dla small/medium/big — prawo
       Stokesa [15]; pokazywana na karcie manewru)
    restPhi(canal, side) -> °  (spoczynek złogu w pionie: tylny 48.8 · poziomy 199.8 · przedni 3)
+   driveAt(canal, side, phiDeg, q, tauP=6.5) -> napęd styczny [rad/s] w DOWOLNYM punkcie łuku
+      i orientacji (od V3; uogólnienie restDrive — restDrive = driveAt w restPhi i pionie,
+      tożsamościowo). Zasili napęd presetów historii pozycyjnej (BLT_HISTORY, plan V5).
    stałe: ARC_SPAN {anterior:281.1, posterior:318.8, horizontal:267.3} · CANAL_NORMALS · CANAL_GEOM
       · CUP_WEAK=0.6 · EWALD_INHIB=0.45.
 
