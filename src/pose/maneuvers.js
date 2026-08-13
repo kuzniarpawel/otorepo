@@ -229,6 +229,9 @@ function nysFromDyn(canal, side, xiPeak, apo){
 }
 
 // pozycja prowokująca kanał (konwencje silnika) — wejście do dynamiki ξ(t)
+// RÓWNOWAŻNOŚĆ ZMIERZONA (ocena II, KLIN-4): skok siad→pozycja Roll daje identyczne ξ i kierunek jak
+// protokół dwuetapowy (najpierw płasko, potem skręt), bo etap leżenia płasko nie rusza złogu
+// (φ zostaje w restPhi 199.8°) — karta Roll niczego nie traci na jednosegmentowym skoku.
 function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POSE_SPEC co ekran testu (było: własne qSupineYaw,
   if(canal==="horizontal") return stepHeadQ("supineFlex", side==="P"? 90 : -90, "up");   // które ignorowało pochylenie z opisu — Roll liczony
   if(canal==="anterior")  return stepHeadQ("supineDeepHang", 0, "up");                   // przy 10° WYPROSTU zamiast opisanych 30° ZGIĘCIA)
@@ -268,8 +271,8 @@ function xiEnvelope(sim){
    przez docelowy gHead, a kwaternion budujemy funkcją qFromG. Konwencja ramki głowy:
    x=prawe ucho, y=czaszka (+czubek), z=nos. Pozycje "nos w dół" mają składową +czaszka
    (czubek głowy opada → otolit przenoszony przez odnogę wspólną = krok kuracyjny).
-   Walidacja offline (cząstka osiąga φ=178°=wyjście, obie strony):
-     Epley ✓ · Yacovino ✓ · Lempert ✓ · Semont ✓ · Gufoni geotropowy ✓
+   Walidacja offline (cząstka osiąga ujście ARC_SPAN, 267–319° per kanał; obie strony):
+     Epley ✓ · Yacovino ✓ · Lempert ✓ · Semont ✓ · Bascule ✓ · Gufoni geotropowy ✓
      Gufoni apogeotropowy ✗ — POPRAWNIE: to manewr KONWERSJI (apo→geo), nie czyści wprost. */
 /* ===== POZY WYPROWADZONE Z OPISU KLINICZNEGO (2026-08-05) =====
    Do tej daty poza kroku była RĘCZNIE WPISANYM wektorem grawitacji (BASE_G/LEAN_G), obok drugiej tabeli
@@ -291,8 +294,10 @@ function xiEnvelope(sim){
    skręt karku jest WEWNĘTRZNY (wokół osi czaszki), pochylenie ZEWNĘTRZNE (kładzenie odbywa się
    w płaszczyźnie strzałkowej pokoju, całym ciałem). Grawitacja, szkielet i rysunek czerpią z TEJ JEDNEJ
    tabeli, więc rozjazd silnik↔widok↔instrukcja jest strukturalnie niemożliwy.
-   [UZUP] = opis w aplikacji był jakościowy; liczbę dopisano z definicji manewru I WNIESIONO DO OPISU,
-   żeby instrukcja i silnik dalej mówiły to samo. */
+   [UZUP] = opis w aplikacji był jakościowy; liczbę dopisano z definicji manewru. UWAGA (ocena II, C9):
+   wbrew wcześniejszemu zapisowi liczby NIE zostały jeszcze wniesione do opisów — faza Lean (~60°)
+   i instrukcja kroku 3 Gufoniego geo (~45°) kąta nie podają; uzupełnienie tekstów = pakiet V8
+   (wymaga rebaseline dom). */
 const POSE_SPEC = {
   // ---- siad ----
   "sit|fwd":       {roll:0,   trunk:0,   pitch:0,    dyaw:0},   // „głowa prosto"
@@ -454,14 +459,22 @@ function sizedSeconds(sec, size){ if(sec==null) return null; const v=sec*holdMul
    dochodził do φ 305,5 z 307 — nie wychodził o włos. Teraz hold jest LICZONY: najmniejsza wartość
    z HOLD_STEPS, przy której silnik wyprowadza złóg do łagiewki.
      • krok Z TIMEREM  → hold wyprowadzony (podłoga 30 s = minimum kliniczne CRP, Hain [2]; krok 15 s)
-     • krok BEZ TIMERA → UNTIMED_HOLD. Uzasadnienie, nie magiczna liczba: w takim kroku albo nic się nie
-       dzieje (pozycja wyjściowa — złóg stoi), albo zachodzi EKSPULSJA z odnogi, która trwa EXPEL_DUR=1,2 s
-       — 6 s daje 5× zapasu. To istotne: krok kuracyjny EPLEYA (k5 „Powrót do siadu") NIE MA timera.
+     • krok BEZ TIMERA → UNTIMED_HOLD. UWAGA (ocena II, B5): dawne uzasadnienie „6 s daje 5× zapasu"
+       jest FAŁSZYWE dla Semonta — jego końcowy bez-timerowy siad musi pomieścić 38,4° wędrówki złogu
+       + parking + ekspulsję (5,35 s + 1,2 s = 6,55 z 6,8 s dostępnych): margines 0,25 s przy medium,
+       a wzrost tauP o ~8% wywala czyszczenie. derivedHold tego nie widzi (przeszukuje wyłącznie kroki
+       z timerem) — wyprowadzanie holdu kroku bez timera = plan V9 oceny II. Krok kuracyjny EPLEYA
+       (k5 „Powrót do siadu") też NIE MA timera, ale tam ekspulsja zachodzi na końcu przejścia.
      • manewr, który NIE czyści przy ŻADNYM kandydacie → hold ZALECONY KLINICZNIE (st.seconds). Dotyczy
-       Gufoniego apo (manewr KONWERSJI — z założenia nie czyści), Bascule i dziś także Yacovino (R1-open). */
+       dziś WYŁĄCZNIE Gufoniego apo (manewr KONWERSJI — z założenia nie czyści); Bascule i Yacovino
+       CZYSZCZĄ (derivedHold 45/30 s — przemierzone 2026-08-13; R1/R6 zamknięte). */
 const HOLD_STEPS=[30,45,60,75,90,105,120], UNTIMED_HOLD=6;
 const holdKey=(plan,size)=>[plan.canal,plan.side,size,plan.steps.map(s=>`${s.body}|${s.yaw}|${s.face}|${s.seconds}`).join(";")].join("#");
 const _holdMemo=new Map();                                   // szukanie holdu = do 7 symulacji; pamiętamy per (kanał,strona,rozmiar,pozy)
+// STRAŻNIK (ocena II, KLIN-7): klucz memo musi rosnąć razem z sygnaturą wywołania simulateCanalith
+// w derivedHold — dziś pokrywa całość (canal, side, size, pozy+sekundy), a rep/tauP/gc nie wchodzą do
+// toru manewru. Pierwsze przelotowanie parametrów silnika (np. tryb laboratoryjny) bez rozszerzenia
+// klucza zacznie po cichu serwować przestarzałe holdy (Map nie jest nigdy unieważniana).
 // OŚ OBROTU KROKU — wyprowadzona z tej samej tabeli pozy: jeśli zmienił się roll albo kąt TUŁOWIA,
 // to przemieszcza się całe ciało (oś w biodrach/na kozetce); jeśli zmienia się tylko kark lub skręt —
 // obraca się sama głowa (oś u podstawy szyi). Silnik zamienia to na ramię ω²·L (siła właściwa, R7).

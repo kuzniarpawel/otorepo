@@ -4,7 +4,9 @@
  Files: src/engine/vestibular.js (Vestibular) · src/engine/neuro-vor.js (NeuroVOR)
         (monolith otorepo.html = frozen source of the golden snapshot — the same IIFEs)
  Nature: pure ES modules WITHOUT DOM (offline-testable in node; importable in .mjs)
- Last update: 2026-07-12 (added nystagmus fatigability: fatigueFactor + rep parameter)
+ Last update: 2026-08-13 (V1 of assessment II: the Vestibular sections synchronized with the code after
+                        the 2026-08-05/06 rebuild — the geometry entirely from IE-Map [13], specific
+                        force R7, phi0/sizeUm; corrected calibration, validation and magnitude numbers)
  Note: `Vestibular` = BPPV physics (otolith debris in the canal). `NeuroVOR` = the
         tonic/central layer (VOR, fixation, vHIT, gaze-evoked nystagmus, skew, HINTS) —
         see the "NeuroVOR MODULE" section at the end of the file.
@@ -58,8 +60,8 @@ quickPhase(canal, ear) -> {h, v, t}
    Fast-phase axis for canal EXCITATION, ipsiversive to the ear (Ewald I).
    ear: "L"|"P". (ipsi = ear==="P" ? +1 : -1)
    horizontal → {h:ipsi, v:0,    t:0}      (horizontal toward the excited ear; torsion masked)
-   posterior  → {h:0,    v:+0.93,t:ipsi}   (upbeat + torsion toward the ear; real v:t≈0.93:1)
-   anterior   → {h:0,    v:-1,   t:0}      (PURE downbeat; geometric torsion ~0.78 MASKED — NYS_SHOW.anterior.t=false)
+   posterior  → {h:0,    v:+0.81,t:ipsi}   (upbeat + torsion toward the ear; real v:t≈0.81:1)
+   anterior   → {h:0,    v:-1,   t:0}      (PURE downbeat; geometric torsion ~0.74 MASKED — NYS_SHOW.anterior.t=false)
    NOTE — CLINICAL MASK (NYS_SHOW): quickPhase returns the UI convention for BPPV (anterior = pure downbeat,
    horizontal without torsion). The FULL geometry (anterior torsion PRESERVED, for lateralization) → NeuroVOR.qpFull()
    / Vestibular.nysMag(); used by the HINTS layer (vHIT saccade / verticalBeat / SCDS). See the "CLINICAL MASK" section.
@@ -81,14 +83,10 @@ gHead(q) -> [x, y, z]
    The gravity vector expressed in the head frame for orientation q.
    Upright-standing head (q=[1,0,0,0]) → [0,-1,0].
 
-qSupineYaw(deg) -> q
-   "Supine head-hanging" orientation (a -100° pitch about the interaural axis)
-   with a head yaw of `deg` about the skull axis (y). Use: Dix-Hallpike (±45),
-   Roll (±90). Note: positive deg = right ear down (3D convention, NOT the UI schematic).
-
-qPitch(deg) -> q
-   Pure pitch about the interaural axis (x). +deg = bow forward (bow),
-   -deg = lean back (lean). Use: Bow & Lean test.
+(qSupineYaw / qPitch — REMOVED 2026-08-05. They encoded the old pose convention: a fixed −100°
+   hang for every lying pose. Clinical pose orientations are NO longer engine API — they are built by
+   stepHeadQ(body, yaw, face) over the POSE_SPEC table in src/pose/maneuvers.js:
+   headQ = Rz(roll)·Rx(pitch)·Ry(yaw+dyaw); every angle has its source in a sentence of the instruction.)
 
 position({canal, side, variant, q}) -> {excited, mag, h, v, t}
    Static stimulation of the AFFECTED canal in head orientation q.
@@ -106,21 +104,34 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — STAGE 2 (particle dynamics) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...]
+   phiExit=null (default) = the MEASURED arc span per canal: ARC_SPAN {anterior 281.1 · posterior 318.8 ·
+   horizontal 267.3}. (The crusFling/crusFlingRate parameters were REMOVED 2026-08-05 — see the crus chamber below.)
    Simulation of CANALITHIASIS: the otolith as a particle on the canal arc.
    [PHENOMENOLOGICAL MODEL — a proxy for the dynamics, not full hydrodynamics; see the "MODEL NATURE" header
     and "SIMPLIFICATIONS RELATIVE TO FULL MODELS".]
-   timeline: array of segments [{q, tTrans, tHold}, ...]
+   timeline: array of segments [{q, tTrans, tHold, pivot}, ...]
        q      — target orientation (quaternion)
        tTrans — transition time to q [s] (slerp interpolation from the previous q)
        tHold  — hold time at q [s]
+       pivot  — the step's rotation axis: "body" (hips/couch, default) | "neck" (the head alone);
+                selects the lever arm of the R7 inertial term (LEVER.body 0.75 m / neck 0.12 m)
+   phi0 — explicit starting arc angle of the debris [°]; null (default) = restPhi(canal,side): the
+       gravitational minimum in the upright posture, or the cupula when that minimum lies outside the arc
+       (posterior 48.8° · horizontal 199.8° · anterior 3°).
+       NOTE (assessment II, A2/A9): phi0 is NOT VALIDATED today, and the adhesion state (stuck/bond) is
+       computed from restPhi/upright INDEPENDENTLY of phi0 — an explicit start elsewhere on the arc
+       inherits an adhesion computed for a different place (fix = a settled parameter, assessment II plan V3).
    q0 — STARTING orientation (quaternion); default null = the q of the FIRST segment (backward compatibility).
        NOTE (semantics of the 1st segment): with q0=null the first segment does NOT interpolate from the neutral position —
        its tTrans is time ALREADY IN the starting position, NOT a transition from sitting. To force a transition from a given
        orientation to the 1st q, pass q0 (e.g. [1,0,0,0] = neutral head). UI convention: the 1st segment has tTrans:0,
        and the transition is realized by the NEXT segment (maneuverTimeline: tTrans:0.8 per step). Analogously for simulateCupulolith.
    Model:
-       φ — arc angle of the particle (ampulla φ=0, exit/common crus φ≈180°); lower bound 3°.
+       φ — arc angle of the particle (ampulla φ=0, exit = ARC_SPAN[canal]: 267–319° per canal); lower
+       bound CUPULA_DEG=3° (0.17 mm from the ampulla CENTRE — a point inside the ampulla) with a ZERO
+       exit margin (the arc-end asymmetry noted in assessment II, C6 — sensitive to it: the horizontal
+       emptying time with the healthy ear down and the rest-degeneracy threshold at a +9.9° pitch).
        Overdamped motion (Stokes drag, no inertia):
            dφ/dt = (g_head · tangent(φ)) / tauP
        Cupula (first-order model, long time constant):
@@ -132,31 +143,40 @@ simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=
    COMMON-CRUS CHAMBER + EXPULSION INTO THE UTRICLE (VERTICAL canals: posterior+anterior; the horizontal has no crus):
        Anatomically, "reaching the end of the arc" (φ=phiExit) ≠ "falling into the utricle" — these are TWO events.
        • HORIZONTAL CANAL: no common crus → the non-ampullary end opens DIRECTLY into the utricle: after φ≥phiExit
-         the otolith enters the utricle ONE-WAY (exited). (Unchanged from the previous version.)
-       • VERTICAL CANALS (crusArc/crusGrav/crusFling): after reaching the crus (φ≥phiExit−crusArc) the otolith ENTERS
+         the otolith enters the utricle ONE-WAY (exited), at a PHYSICAL speed derived from gravity (~7–8 °/s).
+       • VERTICAL CANALS (crusArc/crusGrav): after reaching the crus (φ≥phiExit−crusArc) the otolith ENTERS
          THE CRUS CHAMBER and PARKS — it leaves the sensitive canal, the cupula relaxes (ξ→0, no nystagmus), it waits for
-         expulsion into the utricle. Two physiological expulsion routes from the crus:
-           – GRAVITATIONAL (slow): with the head UPRIGHT (sitting) the utricle is below the crus → the debris falls in. Condition
-             −gHead_y > crusGrav (projection of gravity onto the crus→utricle axis ≈ [0,−1,0]). Gives Epley expulsion AT
-             SITTING (step 5) + a LIBERATORY nystagmus where it clinically occurs.
-           – INERTIAL (fast): an abrupt flip through a large angle (Semont ~180°) throws the debris out of the crus by inertial
-             forces regardless of gravity. TWO-PART proxy: transition angle > crusFling AND angular velocity
-             angle/tTrans > crusFlingRate [°/s]. [2026-08-05] The angle alone is NOT enough — inertia is a
-             function of SPEED, and the previous angle-only test also expelled the debris on a 180° flip taking
-             20 s (9 °/s), which is not an inertial phenomenon. The 180 °/s default is chosen so that at the
-             app-wide uniform tTrans=0.8 s (maneuverTimeline) the behaviour of EVERY maneuver is bit-identical
-             (Semont step 3: 155° / 0.8 s = 194 °/s → still expels; no plan step falls in the 140–150° risk
-             band). tTrans=0 (orientation jump) = instantaneous transition → infinite velocity.
-             Sustains Semont expulsion AT THE FLING (step 3).
+         expulsion into the utricle. Condition: −f[1] > crusGrav, where f is the SPECIFIC FORCE f=g−a (R7); it is
+         realized GRAVITATIONALLY — with the head upright (sitting) the utricle is below the crus → the debris
+         falls in. Gives Epley expulsion at sitting up + a LIBERATORY nystagmus where it clinically occurs.
+         >>> CORRECTION 2026-08-13 (assessment II, C7): the "INERTIAL" expulsion route is STRUCTURALLY DEAD
+         in this model. The centripetal term a=ω×(ω×d) with the lever d=[±EAR_X, L>0, 0] gives a[1]≤0,
+         so inertia can only LOWER −f[1] (measured maximum increase across 7 maneuvers × 2 sides:
+         0.00000; the Semont 180°/0.8 s swing gives +1.18 g TOWARD THE VERTEX — it inhibits the expulsion,
+         and in Epley s4→s5 it even DELAYS it: −f[1]=0.62 against −g[1]=0.99, a hair above the 0.6 threshold).
+         All 12/12 expulsions are gravitational — in the final sitting holds (Semont/Yacovino/Bascule) or at
+         the end of the sit-up transition (Epley). The removed crusFling/crusFlingRate proxy (2026-08-05) was
+         thus replaced by gravity in the timer-less sitting position, NOT by the inertial term; the role of the
+         R7 inertia is real only in the drive ALONG the canal (without it Semont does not deliver the debris
+         to the crus: pivot=neck → exited=false). A true inertial route would require the tangential term α×d,
+         which the pose data do not carry. <<<
          Expulsion advances φ: (phiExit−crusArc)→phiExit over ~EXPEL_DUR(1.2 s) → an ampullofugal nystagmus TRANSIENT
-         (the SAME sign as the original) = liberatory/confirmatory. exited=true one-way (blocks the reversed phase).
+         (the SAME sign as the original) = liberatory/confirmatory. exited=true one-way (blocks the reversed
+         phase). NOTE (assessment II, B6): the transient is SYNTHETIC — a constant speed (pex−pcrus)/EXPEL_DUR,
+         independent of the driving force and the particle size; amplitude ∝ crusArc (two convention constants).
        Backward motion in the canal lumen (dφ/dt<0, before the crus) → ξ<0 → REVERSED nystagmus.
-       VALIDATION (offline, real generated plans, both sides): Epley expulsion/liberatory at STEP 5 (sitting, ξ~0.31);
-       Semont at STEP 3 (fling); Yacovino at STEP 3 (chin to chest); horizontal canal (Lempert/Gufoni) UNCHANGED;
-       Gufoni apo still does not clear (conversion). Diagnostics (a single lying position): the debris parks in the crus
-       without expulsion → nystagmus crescendo→decrescendo (extinguishes), the debris does NOT "vanish" (more physiological).
-   CONSTANTS CALIBRATED TO THE LITERATURE (posterior canal, canalithiasis):
-       latency ~1–3 s, time to peak ~7–9 s, attack duration ~25 s;
+       VALIDATION (re-measured 2026-08-13, real generated plans, both sides): Epley expulsion/liberatory
+       at STEP 5 (return to sitting — end of the transition); Semont at STEP 4 (return to sitting, hold);
+       Yacovino at STEP 4 (sitting, chin to chest); Bascule at STEP 5; the horizontal canal (Lempert/Gufoni geo)
+       exits directly; Gufoni apo does not clear (conversion — correctly). Diagnostics (a single provoking
+       position): the debris does NOT reach the crus — the position's gravitational minimum lies within the
+       arc lumen (Dix: φ(120 s)=159.5, exited=false) — nystagmus crescendo→decrescendo (extinguishes), the
+       debris stays in the canal.
+   CONSTANTS CALIBRATED TO THE LITERATURE (posterior canal, canalithiasis) — NUMBERS IN FORCE 2026-08-13
+       (EXPLICIT metric: latency/duration by the |ξ|≷0.05 threshold; protocol q0=sitting, tTrans 0.5 s):
+       posterior in Dix: latency 2.25 s, peak ξ 0.872 @ 10.15 s, duration ~37 s (3%-of-peak criterion: 42 s);
+       horizontal in Roll: 2.4 s / 0.696 @ 10.1 s / ~38 s; anterior in head-hang: 0.5 s (= no latency, R7) /
+       0.94 @ 25.3 s / ~57 s (3%: 61 s — ABOVE the <60 s threshold; mismatch with the test card: assessment II, A6).
        tauC=5 s corresponds to a long cupular/canal time constant (~4–6 s).
    Returns: t [s], xi (sign = excitation/inhibition), phi [°], exited (bool).
    Tuning parameters: tauP, tauC, gc, phiExit, fStat, adh.
@@ -167,10 +187,11 @@ simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=
          adh  ∝ r    (detachment force of a sphere from the wall, JKR/DMT scaling).
        medium == r=1 → result IDENTICAL to the previous calibration (safe default).
        Emergently: LARGE = shorter latency, stronger/faster nystagmus, faster exit;
-       SMALL = long latency, weak and slow course, MAY NOT reach φ=178° in the shortened holds
-       of a maneuver (e.g. Semont/Yacovino) — consistent with the rationale of ~30 s holds for slowly settling
-       fragments (Hain [2]) and with "extremely long-latency BPPV" [11]. Addresses the simplification
-       "no effect of particle size" from the SIMPLIFICATIONS section.
+       SMALL = long latency, a weak and slow course and a LONGER minimal hold (see the minimal-holds
+       table in VALIDATION STATUS; the app's hold is DERIVED — R4b — so small still clears) —
+       consistent with the rationale of ~30 s holds for slowly settling fragments (Hain [2]) and with
+       "extremely long-latency BPPV" [11]. Addresses the simplification "no effect of particle size"
+       from the SIMPLIFICATIONS section.
    FATIGABILITY (rep) — a DIFFERENTIATING criterion canalithiasis↔cupulolithiasis [12].
        rep = the provocation repetition number in the same session (0 = first = full response). Mechanism:
        a compact cluster of otoconia DISPERSES on repetition (serial Dix–Hallpike) into smaller, less
@@ -188,8 +209,11 @@ fatigueFactor(rep=0, {fatTau=2.0, fatFloor=0.06}) -> factor ∈ [fatFloor, 1]
 nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
    Classification of the phase relative to the provoking direction:
    "primary" (ξ>thr, primary/liberatory), "reversed" (ξ<-thr, reversed), "none".
+   NOTE (assessment II, C3): a helper API, currently NOT WIRED UP in src (no module calls it);
+   the 0.05 threshold is in a different unit than the UI visibility threshold (0.10 on strength AFTER rectification).
 
-simulateCupulolith({canal, side, timeline, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
+simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
+   q0 — STARTING orientation; semantics as in simulateCanalith (null = the q of the first segment).
    size scales gain ∝ r³ (a heavier otoconia cluster → stronger cupular deflection); no latency
    (tauCup unchanged). SIZE_R as in simulateCanalith. medium == r=1 → identical result.
    Simulation of CUPULOLITHIASIS: otoliths attached to the cupula → a heavy cupula deflected
@@ -224,9 +248,17 @@ dynNystagmus(canal, side, xi) -> {excited, intensity, h, v, t}
 --------------------------------------------------------------------------
  INTERNAL CONSTANTS AND HELPERS (non-exported)
 --------------------------------------------------------------------------
-qmul, qconj, qaxis(ax,deg), rotv(q,v), dot3, nrm3, nrm4 — vector/quaternion algebra.
-slerpQ(a,b,t) — spherical quaternion interpolation (with hemisphere handling and the near case).
-Q_SUPINE = qaxis([1,0,0],-100) — base of the supine head-hanging orientation.
+qmul, qconj, qaxis(ax,deg), rotv(q,v) — quaternion algebra: EXPORTED (rotv as `rotate`)
+   for the pose layer (maneuvers.js builds headQ and the FK kinematics from them). dot3, nrm3, nrm4,
+   slerpQ (spherical interpolation with hemisphere handling) — internal.
+(Q_SUPINE — REMOVED 2026-08-05 together with qSupineYaw/qPitch; poses come from POSE_SPEC.)
+OTHER EXPORTS (undocumented until now — assessment II, C1):
+   sizeR(size) -> r  (radius multiplier; validated > 0)
+   sizeUm(size) -> equivalent clump diameter [µm] (16/21/29 for small/medium/big — Stokes'
+      law [15]; shown on the maneuver card)
+   restPhi(canal, side) -> °  (debris rest when upright: posterior 48.8 · horizontal 199.8 · anterior 3)
+   constants: ARC_SPAN {anterior:281.1, posterior:318.8, horizontal:267.3} · CANAL_NORMALS · CANAL_GEOM
+      · CUP_WEAK=0.6 · EWALD_INHIB=0.45.
 
 CANAL GEOMETRY — SINGLE SOURCE [2026-08-05, branch feature/vestibular]
    Until that date the engine carried TWO independent geometries of the same canal: the measured
@@ -238,27 +270,25 @@ CANAL GEOMETRY — SINGLE SOURCE [2026-08-05, branch feature/vestibular]
    derived from it. Stage 2 (evening): GEXC and uHC DELETED — they were the tangent frozen at φ=90°
    (duplication removed; plane discrepancy = 0.00° across all 6 canals).
 
-   wuToHead(n) = [-n0, n2, n1]   (Wu: x=left, y=antero-posterior, z=up → head: x=right, y=up, z=nose)
-     Axis-conversion check: the horizontal-canal normal comes out ≈[0.02, 0.95, −0.30] (up, slightly
-     posterior) = the canonical ~30° pitch of the lateral canal; coplanarity RP∥LA (0.988), RA∥LP (0.985).
+   Source-frame conversion (since 2026-08-05, IE-Map [13]): Slicer-RAS → head: positions (X,Z,Y);
+     the normal is an AXIAL vector and the mapping has determinant −1, so its sign flips
+     (comment in vestibular.js at AMPULLA_DIR). The former wuToHead helper (the Wu frame conversion)
+     does NOT exist in the code — Wu 2021 remains solely an EXTERNAL control (17.1° agreement).
 
-   AMPULLA_DIR — ampulla direction (φ=0). AN ANATOMICAL ASSUMPTION, NOT A MEASUREMENT: Wu gives only
-     PLANE orientations, not the ampulla's position along the loop. Only the PROJECTION of these vectors
-     onto the measured plane is used. This is the ONLY remaining non-measured geometric input — and the
-     datum missing for R1.
-       posterior P(-1,0,1) L(1,0,1) · anterior P(1,0,1) L(-1,0,1) · horizontal P(0.87,0,0.5) L(-0.87,0,0.5)
-   ARC_SPIN — the normal's sign, pinning the convention "increasing φ = ampullofugal" (e2 = n × e1). The
-     measurement does not fix it (a plane is a normal up to sign). 6 bits of convention, not geometry.
-       posterior P+1 L−1 · anterior P−1 L+1 · horizontal P+1 L−1
+   AMPULLA_DIR — ampulla direction (φ=0). MEASURED 2026-08-05 (IE-Map: the projection of A−C onto the
+     canal's PCA plane) — NO longer an anatomical assumption. Values (head frame; L = mirror of P):
+       posterior P[-0.5174,-0.6498,0.5568] · anterior P[0.4703,-0.5693,0.6743]
+       · horizontal P[-0.1794,0.1705,0.9689]
+   ARC_SPIN — REMOVED 2026-08-05: the circulation sense "increasing φ = ampullofugal" FOLLOWS FROM THE
+     MEASUREMENT (monotonically positive angle increments along the ordered Q0→Q4 axis for all six
+     canals), so the 6-bit convention table ceased to exist.
 
-CANAL_GEOM — DERIVED: {e1, e2, exc}; e1 = projection of AMPULLA_DIR onto the measured plane, e2 = n × e1,
-             exc = +1 vertical canals (Ewald III) / −1 horizontal (Ewald II). Resulting values:
-   posterior  P:{e1 (-0.731,-0.010, 0.682), e2 ( 0.203,-0.958, 0.203)}
-              L:{e1 ( 0.727,-0.008, 0.687), e2 (-0.188,-0.964, 0.188)}
-   anterior   P:{e1 ( 0.621, 0.040, 0.783), e2 (-0.231,-0.945, 0.231)}
-              L:{e1 (-0.632, 0.035, 0.774), e2 ( 0.234,-0.944, 0.234)}
-   horizontal P:{e1 ( 0.877, 0.129, 0.462), e2 ( 0.480,-0.270,-0.835)}
-              L:{e1 (-0.876, 0.113, 0.469), e2 (-0.482,-0.256,-0.838)}
+CANAL_GEOM — DERIVED: {e1, e2, exc}; e1 = projection of the MEASURED AMPULLA_DIR onto the PCA plane,
+             e2 = n × e1, exc = +1 vertical canals (Ewald III) / −1 horizontal (Ewald II).
+             Live values (2026-08-13; reproducible with a node probe → Vestibular.CANAL_GEOM; L = mirror of P):
+   posterior  P:{e1 (-0.517,-0.650, 0.557), e2 ( 0.588,-0.743,-0.321)}
+   anterior   P:{e1 ( 0.470,-0.569, 0.674), e2 ( 0.364, 0.821, 0.439)}
+   horizontal P:{e1 (-0.179, 0.170, 0.969), e2 ( 0.983, 0.061, 0.171)}
 GEXC / uHC / CK — DELETED 2026-08-05. They were excitation axes computed as ±e1, i.e. the tangent
 at φ=90° — a duplicate of CANAL_GEOM frozen at one point of the arc. Replaced by tangAt(G, φ),
 evaluated at restPhi, i.e. at the same place the simulation actually moves from.
@@ -271,6 +301,12 @@ uHC(side) — DERIVED as +e1 of the horizontal canal (gravity TOWARD the ampulla
    before (gufoniApo and bascule still do not — per R2). Golden snapshot: 2 of 91 screens (see R5), the
    rest byte-identical. DOES NOT FIX R1 — R1 is the arc LENGTH, not the plane orientation (φ_eq posterior
    190.0→189.6, anterior 194.0→207.1, i.e. for the anterior canal even further past the arc end).
+   [UPDATE 2026-08-13 — assessment II, C1/DYN-10] The "EFFECTS" numbers above describe the state on the
+   DAY the geometry was unified (before R7/R4b) and do NOT reproduce on the current engine. The
+   calibration in force for the posterior canal: latency 2.25 s, peak 0.872 @10.15 s, duration ~37 s
+   (|ξ|≷0.05) — see CONSTANTS CALIBRATED. The sentence "gufoniApo and bascule still do not [clear]" was
+   true before R7 — since R7 Bascule DOES CLEAR; the only non-clearing maneuver remains Gufoni apo (a
+   conversion maneuver).
 
 --------------------------------------------------------------------------
  VALIDATION STATUS (offline, node)
@@ -284,15 +320,17 @@ uHC(side) — DERIVED as +e1 of the horizontal canal (gravity TOWARD the ampulla
      contrast with canalithiasis (build-up+extinction).
  [x] Stage 2: CALIBRATION of the constants to the literature (posterior, canalithiasis): latency ~1.6 s,
      peak ~9 s, duration ~25 s (tauP=6.5, tauC=5, gc=1.6); otolith adhesion (fStat=0.04, adh=0.2).
- [x] Stage 2: PARTICLE SIZE (size small/medium/big). Offline validation (engine in the browser,
-     preview_eval — node unavailable; DOM-free module, so equivalent). Results (posterior|P):
-       medium: lat 1.15 s, peak +8.45 s, ξpeak 0.81, duration 27 s — IDENTICAL to the baseline (regression OK).
-       small : lat 3.0 s,  peak +12.1 s, ξpeak 0.27 — longer latency, weaker/slower.
-       big   : lat 0.25 s, peak +5.5 s,  ξpeak 2.80 (saturates intensity→1) — short latency, florid.
-     Monotonicity lat↓/ξ↑/peak↓ with r confirmed for all 6 canals, both sides symmetric.
-     Cupulolith: gain ∝ r³ exactly (small −0.41 / medium −0.85 / big −2.10). Maneuvers (generated plans, side P):
-       ALL sizes (small/medium/big) reach φ=178° (exited) in Epley, Semont, Yacovino, Lempert and
-       geotropic Gufoni. 30 maneuver x side x size combinations, zero failures.
+ [x] Stage 2: PARTICLE SIZE (size small/medium/big). RE-MEASURED 2026-08-13 (node; protocol
+     q0=sitting, tTrans 0.5 s, latency by the |ξ|>0.05 threshold — the old 2026-07 numbers no longer
+     reproduced after the 2026-08-05 geometry rebuild). Results (posterior|P, Dix):
+       small : lat 4.2 s,  peak 0.29 @14.25 s (16 µm) — longer latency, weaker/slower.
+       medium: lat 2.25 s, peak 0.87 @10.15 s (21 µm).
+       big   : lat 1.3 s,  peak 3.04 @6.85 s (saturates intensity→1; 29 µm) — short latency, florid.
+     Monotonicity lat↓/ξ↑/peak↓ with r preserved; both sides symmetric.
+     Cupulolith: gain ∝ r³ exactly (Roll affected-ear-down: small −0.24 / medium −0.51 / big −1.26;
+     ratios 0.475 / 1 / 2.46 = r³). Maneuvers (generated plans, R4b-derived holds):
+       ALL sizes reach the ARC_SPAN exit (exited) in Epley, Semont, Bascule, Yacovino, Lempert and
+       geotropic Gufoni — zero failures (Gufoni apo by design does not clear).
      >>> CORRECTION [2026-08-05]. Until that day this read: "small — Semont (φmax 157) and Yacovino
          (φmax 128) do NOT clear in the shortened holds (emergent, clinically consistent)". That was FALSE
          in two ways. (1) The numbers no longer reproduced even under the old cap — with the common-crus
@@ -302,37 +340,43 @@ uHC(side) — DERIVED as +e1 of the horizontal canal (gravity TOWARD the ampulla
          small clears everything (Semont: 252 s total → exited; Yacovino: 123 s → exited). "Slow fragments
          do not clear" therefore described a performance boundary of the model, not particle settling, and
          has been REMOVED rather than restored. <<<
+     [HISTORICAL — the "cap" truncation removed by R4b 2026-08-05; holds are now DERIVED from the engine]
      TRUNCATION DEPTH (medium) — how much of the real hold the model actually simulates. It is uneven across
        maneuvers, so "does the maneuver clear" partly measures truncation aggressiveness, not canal geometry:
          semont 180 s → 36 s (20%) · gufoniGeo 120 s → 36 s (30%) · lempert 150 s → 66 s (44%)
          epley 90 s → 48 s (53%) · yacovino 60 s → 46 s (77%)
        Semont is truncated hardest and is therefore the most sensitive to changes in the constants.
      WHAT ACTUALLY SURVIVES OF THE SIZE EFFECT — THE MINIMUM PER-STEP HOLD at which the maneuver still
-       clears (measured; a uniform hold on every timed step):
+       clears (RE-MEASURED 2026-08-13; a uniform hold on every timed step, non-timed steps 6 s):
                     small   medium   big     plan prescribes
-         epley       12 s     7 s     4 s          30 s
-         semont      18 s    10 s     5 s          90 s
-         yacovino    33 s    16 s     8 s          30 s   <-- THE ONLY THIN MARGIN
-         lempert     11 s     7 s     3 s          30 s
-         gufoniGeo   11 s     7 s     3 s          60 s
-       YACOVINO + SMALL DEBRIS is the only place where the threshold (33 s) EXCEEDS the nominal hold (30 s).
-       It is rescued only by sizedSeconds (holdMult 1.6 → 45 s). That is a physically grounded teaching
-       point for "slow fragments need longer holds" [2] — unlike the one removed above.
+         epley       21 s    12 s     6 s          30 s
+         semont      58 s    30 s    14 s          90 s
+         yacovino    41 s    24 s    13 s          30 s   <-- THE ONLY THRESHOLD ABOVE THE NOMINAL HOLD
+         lempert      9 s     5 s     3 s          30 s
+         gufoniGeo    8 s     5 s     2 s          60 s
+       YACOVINO + SMALL DEBRIS is still the only place where the threshold (41 s) EXCEEDS the nominal
+       hold (30 s); it is rescued by sizedSeconds (holdMult 1.6 → 45 s), but the margin has shrunk to
+       4 s (41 vs 45) — the most sensitive spot of the calibration (assessment II, V-DOC-11).
+       Semont/small needs 58 s (fits within the prescribed 90 s). The teaching point "slow fragments
+       need longer holds" [2] stands.
 
 --------------------------------------------------------------------------
  USAGE EXAMPLES
 --------------------------------------------------------------------------
+// The pose is built by the pose layer — qSupineYaw removed from the engine (POSE_SPEC, 2026-08-05):
+import { stepHeadQ } from '../pose/maneuvers.js';
+const qDix = stepHeadQ('supineHang', 45, 'up');   // RIGHT-side Dix–Hallpike
+
 // Statically (diagnostics): nystagmus direction in a right-side Dix-Hallpike
-Vestibular.position({canal:"posterior", side:"P", variant:"canalo",
-                     q: Vestibular.qSupineYaw(45)});
-// -> {excited:true, mag:~0.98, h:0, v:1, t:1}
+Vestibular.position({canal:"posterior", side:"P", variant:"canalo", q: qDix});
+// -> {excited:true, mag:0.935, h:0, v:0.812, t:1}          (RUN 2026-08-13)
 
 // Dynamically: the ξ(t) course for the first Epley position (posterior right)
-const tr = Vestibular.simulateCanalith({canal:"posterior", side:"P", timeline:[
-   {q:[1,0,0,0], tTrans:0, tHold:2},
-   {q:Vestibular.qSupineYaw(45), tTrans:1.5, tHold:25}
-]});
+const tr = Vestibular.simulateCanalith({canal:"posterior", side:"P", q0:[1,0,0,0],
+   timeline:[{q: qDix, tTrans:1.5, tHold:25}]});
+// peak ξ 0.872 @ 10.6 s; last sample: t 26.5, ξ 0.229, φ 155.5, exited:false
 Vestibular.dynNystagmus("posterior","P", tr[tr.length-1].xi);
+// -> {excited:true, intensity:0.229, h:0, v:0.812, t:1}     (RUN 2026-08-13)
 
 --------------------------------------------------------------------------
  INTER-LAYER DEPENDENCIES
@@ -470,7 +514,10 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      The missing datum was the angular ampulla-to-opening separation. Supplied: Cardenas-Serna & Jeffery
      (48 adult bony labyrinths, Zenodo doi:10.5281/zenodo.4818568) - anterior 265.8+-7.1, posterior
      307.0+-5.3, lateral 236.8+-10.1 from the ampulla CENTRE. Entered as ARC_SPAN {266, 307, 237}
-     replacing the global 178 deg. VERIFIED AFTER THE CHANGE:
+     replacing the global 178 deg.
+     [UPDATE: since the evening of 2026-08-05 ARC_SPAN comes from the IE-Map atlas [13]: {281.1, 318.8,
+      267.3}; the Cardenas-Serna values remain an external order-of-magnitude control.]
+     VERIFIED AFTER THE CHANGE:
        - the gravitational minimum lies INSIDE the arc for all 6 canals (was OUTSIDE for 4 of 6);
        - THE REVERSAL ON SITTING UP is back: after Dix-Hallpike xi -0.782 (was +0.312 = none), the
          debris returns to phi 90.9 and does NOT exit - the Barany criterion is reproduced;
@@ -502,6 +549,12 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      f = g − a. ω comes from the same interpolation that drives the pose; the tangential term (α×d) is
      omitted because with a constant rate α=0 away from segment boundaries — that under-states inertia
      rather than over-stating it.
+     [Addendum 2026-08-13 (assessment II, DYN-12): for COMBINED steps (e.g. Epley s4→s5: untwist+sit-up)
+      the slerp screw axis ≠ the sequence of anatomical axes — the inertia of such steps is
+      order-of-magnitude in character; single-axis swings (the Semont 180°, the Lempert roll) are rendered
+      faithfully. Addendum 2 (assessment II, C7): the role of f=g−a is real in the drive ALONG the canal;
+      to EXPULSION from the crus inertia contributes nothing — see the correction in the crus-chamber
+      description.]
      QUANTITATIVE CONFIRMATION: the vertex-ward vector hand-written into LEAN_G (+0.6) turned out to be
      THE SAME QUANTITY. For a 180° swing in 0.8 s with a 0.75 m lever, ω²L/g = 1.2 g in the same
      direction; 0.6 g corresponds to a swing in ~1.16 s. Someone once measured this physics by eye and
@@ -695,10 +748,14 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
  R9. LATERAL-CANAL PITCH 10.4° INSTEAD OF THE CANONICAL ~30° [2026-08-05, OPEN].
      THIS IS NOT A DATA ERROR — it is a FRAME unknown. Settled by separating relative from absolute
      quantities (probe 45):
-       FRAME-INDEPENDENT, all in agreement: canals mutually orthogonal 87.8/89.8/87.5°, coplanarity
+       FRAME-INDEPENDENT, all in agreement: canals mutually orthogonal 87.8/89.8/87.5°
+         (PLANE angles, mod 180 — between the signed normals in the file it comes out 92.2/92.5/89.8°,
+         because the ampullofugal convention flips some of the vectors; assessment II, C5), coplanarity
          RA∥LP and RP∥LA 16.0° (real range 10–20°), arc radii 3.50/3.32/2.68 mm against Curthoys &
-         Oman 3.3/3.2/2.4, mean vertical-canal angle to the sagittal 44.0° (canon 45°), left side a
-         perfect mirror of the right (0.000°).
+         Oman 3.3/3.2/2.4, mean vertical-canal angle to the sagittal 44.0° (canon 45°), left side =
+         mirror of the right (0.000° — a TRANSCRIPTION CONVENTION: the L entries are reflections of the
+         P entries, not an independent reconstruction of the left ear; real interaural asymmetry, of the
+         order of single degrees, is not modeled — assessment II, C5).
        FRAME-DEPENDENT, the only outlier: the absolute pitch of the lateral canal.
      An atlas of an isolated temporal bone CARRIES NO information about habitual head posture — there is
      no landmark in it that ties the two. So no internal check can either confirm or refute the pitch
@@ -955,11 +1012,10 @@ Functions (after xiEnvelope in the file):
 PARTICLE START: not a constant but restPhi(canal,side) = the gravitational minimum in the upright
 posture, or the cupula when that minimum lies outside the arc. Posterior 48.8° · horizontal 199.8° ·
 anterior 3°.
-VALIDATION (offline, real generated plans, both sides, exit = measured ARC_SPAN):
-  Epley ✓✓ (49→158→230→307→319) · Yacovino ✓✓ (3→133→262→281) · Lempert ✓✓ · Gufoni geo ✓✓
-  Gufoni apogeotropic ✗✗ — CORRECTLY: a CONVERSION maneuver (apo→geo), it does not clear directly
-  Semont ✗✗ and Bascule ✗✗ — see R7 (no inertial term); these are the ONLY maneuvers that stopped
-  clearing once the poses were derived, and they have a named physical cause, not a data defect.
+VALIDATION (re-measured 2026-08-13, real generated plans, both sides, exit = measured ARC_SPAN):
+  Epley ✓✓ (49→158→230→307→319) · Yacovino ✓✓ (3→136→262→281) · Lempert ✓✓ · Gufoni geo ✓✓
+  Semont ✓✓ (49→138→268→319) · Bascule ✓✓ (49→3→140→307→319) — clearing since R7 (specific force f=g−a)
+  Gufoni apogeotropic ✗✗ — CORRECTLY: a CONVERSION maneuver (apo→geo), it does not clear directly.
 
 
 === ANTERIOR-CANAL TEST (deep head-hang) + a note on consistency ===
@@ -981,7 +1037,8 @@ Deep head-hang test: the torsion-lateralization declaration removed (latNote/lab
 
 === DIFFERENTIATION IN DIX-HALLPIKE: posterior vs anterior canal (derived from the engine) ===
 The dynamic probe (simulateCanalith, ξpeak≈0.81) in the Dix-Hallpike position confirms the coplanarity of LARP/RALP:
-  RIGHT Dix-Hallpike (qSupineYaw +45): posterior RIGHT → ↑+torsional (v+1,t+1);  anterior LEFT → ↓downbeat (v-1,t0)
+  RIGHT Dix-Hallpike (qSupineYaw +45 — historical probe-pose name; today stepHeadQ('supineHang',45,'up')):
+        posterior RIGHT → ↑+torsional (v+1,t+1);  anterior LEFT → ↓downbeat (v-1,t0)
   LEFT  Dix-Hallpike (qSupineYaw -45): posterior LEFT  → ↑+torsional;            anterior RIGHT → ↓downbeat
 Differentiator = the vertical direction: ↑→posterior (lower ear); ↓→anterior (the OPPOSITE ear, same plane).
 (After the GEXC=-e1 fix, static position() agrees with the dynamics — nysFromGeom computes the nystagmus directly.)
@@ -990,34 +1047,40 @@ the animation (pure downbeat), the mechanism (anterior canal of the opposite ear
 a CENTRAL RED FLAG (isolated/persistent downbeat without latency → cerebellum/craniocervical junction).
 
 === NYSTAGMUS MAGNITUDES FROM REAL CANAL NORMALS (instead of ideal 45°) ===
-SOURCE (cited in the code, constant CANAL_NORMALS):
+SOURCE (since 2026-08-05): the IE-Map atlas [13] — the SAME CANAL_NORMALS from which the engine's entire
+  geometry derives (planes from a PCA of the duct-axis points; see the vestibular.js header and the bibliography).
   Wu S, Lin P, Zheng Y, Zhou Y, Liu Z, Yang X (2021). "Measurement of Human Semicircular Canal
-  Spatial Attitude". Front Neurol 12:741948. doi:10.3389/fneur.2021.741948  (MRI, n=55).
-  Directionally consistent with the canon: Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP
-  (2005). "Orientation of human semicircular canals measured by 3D multiplanar CT reconstruction".
-  JARO 6:191-206. doi:10.1007/s10162-005-0003-x.
-  Internal data validation: LARP/RALP coplanarity — RA∥LP (cos≈0.985, ~10°), RP∥LA (cos≈0.988, ~9°).
+  Spatial Attitude". Front Neurol 12:741948 (MRI, n=55) — the source of the normals until 2026-08-05, today
+  an EXTERNAL CONTROL (17.1° agreement with IE-Map). Directional canon: Della Santina CC et al. (2005),
+  JARO 6:191-206. Internal validation: RA∥LP and RP∥LA coplanarity 16.0° (plane angle).
 
-NORMAL VECTORS (Wu frame: x=left, y=antero-posterior, z=up):
-  RP[-0.651,0.702,0.287] LP[0.660,0.702,0.266] RA[0.749,0.577,0.324]
-  LA[-0.739,0.588,0.329] RH[-0.017,-0.299,0.954] LH[0.025,-0.279,0.960]
+NORMAL VECTORS (live CANAL_NORMALS, head frame x=right, y=up, z=nose; L = mirror of P):
+  posterior P[0.6220, 0.1612, 0.7662] · anterior P[-0.8038, 0.0391, 0.5937]
+  · horizontal P[-0.0304, 0.9834, -0.1786]
 
-MAPPING TO MAGNITUDES (I take |components| — the sign of the Wu axis is irrelevant for the proportions; beat directions
-from the clinical convention in quickPhase): VERTICAL ∝ |x|(interaural), HORIZONTAL ∝ |z|(cranial),
-TORSION ∝ |y|(naso-occipital). nysMag() normalizes to max=1.
+MAPPING TO MAGNITUDES (|components| of the normal in the HEAD FRAME; beat directions from the clinical
+convention in quickPhase): VERTICAL ∝ |x|(interaural) · HORIZONTAL ∝ |y|(cranial) · TORSION ∝ |z|(naso-occipital).
+nysMag() normalizes to max=1.
 
-REAL PROPORTIONS (max=1):  posterior v0.93:h0.41:t1.00 · anterior v1.00:h0.44:t0.78 · horizontal v0.02:h1.00:t0.29
+REAL PROPORTIONS (max=1, live 2026-08-13):  posterior v0.81:h0.21:t1.00 · anterior v1.00:h0.05:t0.74
+  · horizontal v0.03:h1.00:t0.18
+  (The previous numbers of this section — 0.93/0.41/0.44/0.78/0.29 — came from the Wu vectors and became
+   stale once the source was swapped to IE-Map; the largest divergence: anterior h 0.44→0.05.
+   Assessment II, GEO-3/K2.)
 
 CLINICAL MASK (constant NYS_SHOW) — geometry gives the magnitudes, but the clinical convention decides
 WHICH components we express (each can be revealed with a true flag):
-  posterior.h=false  geom.≈0.41 — clinically omitted (the posterior is described as vertical-torsional)
-  posterior.t=true                — torsion expressed; real v:t ≈ 0.93:1 (was a rigid 1:1)
-  anterior.t=false   geom.≈0.78 — CLINICAL OVERRIDE: pure downbeat. NOTE: the geometry gives
-                                   SIGNIFICANT torsion (~0.78× vertical); "anterior = pure downbeat" is
+  posterior.h=false  geom.≈0.21 — clinically omitted (the posterior is described as vertical-torsional).
+                                   NOTE (assessment II, A4): the flag is NOT ready to be revealed —
+                                   the signed geometry gives a CONTRA direction (−0.21), while quickPhase
+                                   would assign ipsi (+0.21); fix the sign before revealing.
+  posterior.t=true                — torsion expressed; real v:t ≈ 0.81:1 (was a rigid 1:1)
+  anterior.t=false   geom.≈0.74 — CLINICAL OVERRIDE: pure downbeat. NOTE: the geometry gives
+                                   SIGNIFICANT torsion (~0.74× vertical); "anterior = pure downbeat" is
                                    a clinical decision (torsion observationally trace), NOT a result of the geometry.
-  horizontal.t=false geom.≈0.29 — clinically purely horizontal (the small geometric torsion omitted)
+  horizontal.t=false geom.≈0.18 — clinically purely horizontal (the small geometric torsion omitted)
 Beat signs and masks verified: posterior upbeat+ipsi torsion, anterior downbeat t=0, horizontal toward the ear.
-The only immediately visible change vs before: posterior v:t = 0.93:1 (real) instead of 1:1.
+The only immediately visible change vs before: posterior v:t = 0.81:1 (real) instead of 1:1.
 
 DESIGN DECISION — EXCEPTION TO THE anterior.t MASK FOR SCDS/TULLIO (2026-07-09):
   PROBLEM: the Tullio phenomenon (dehiscence of the SUPERIOR/anterior canal) produces a VERTICAL-TORSIONAL
@@ -1028,7 +1091,7 @@ DESIGN DECISION — EXCEPTION TO THE anterior.t MASK FOR SCDS/TULLIO (2026-07-09
   of anterior-canal BPPV → a risk of REGRESSION of the validated tests (t1–t5 + the BPPV path) and a change
   to the established clinical convention "pure downbeat".
   CHOSEN: nysMag() was EXPORTED from the Vestibular module; NeuroVOR.pressureStimulus() builds the Tullio
-  vector from the FULL geometry (nysMag: anterior v1.00 : t0.78), BYPASSING the mask — LOCALLY, only for SCDS.
+  vector from the FULL geometry (nysMag: anterior v1.00 : t0.74), BYPASSING the mask — LOCALLY, only for SCDS.
   The NYS_SHOW mask remains globally in force (BPPV unchanged). The anterior canal's torsion is thus
   "hidden" for BPPV rendering, but AVAILABLE via the raw geometry for the pressure path.
   → see NeuroVOR MODULE / STAGE 7 · pressureStimulus() (Minor 2000, [H18]).

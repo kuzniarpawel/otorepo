@@ -27,9 +27,12 @@ export const Vestibular = (()=>{
   //   PION ∝ |x|(międzyuszna) · POZIOM ∝ |y|(czaszkowa) · SKRĘT ∝ |z|(nosowo-potyliczna).
   // ZNAK normalnej NIE jest konwencją: wybrany tak, by przejście bańka→ujście wzdłuż zmierzonej osi
   //   dawało DODATNI przyrost kąta (reguła prawej dłoni) — to on definiuje „rosnące φ = ampullofugalne".
-  // Kontrole: kanały wzajemnie prostopadłe (87.8/87.5/89.8°), koplanarność RA∥LP i RP∥LA 16.0° (Della
-  //   Santina podaje realne odchylenie tego rzędu — idealna koplanarność jest idealizacją), L = idealne
-  //   lustro P (0.000°). Nachylenie kanału bocznego od poziomu wychodzi 10.4°, nie kanoniczne ~30°:
+  // Kontrole: kanały wzajemnie prostopadłe (87.8/87.5/89.8° — kąty PŁASZCZYZN mod 180; między
+  //   znakowanymi normalnymi z pliku: 92.2/92.5/89.8, bo konwencja ampullofugalna odwraca część
+  //   wektorów), koplanarność RA∥LP i RP∥LA 16.0° (Della Santina podaje realne odchylenie tego rzędu
+  //   — idealna koplanarność jest idealizacją), L = lustro P (0.000° — KONWENCJA transkrypcji: wpisy L
+  //   są odbiciem wpisów P, nie niezależną rekonstrukcją; asymetria międzyuszna niemodelowana).
+  //   Nachylenie kanału bocznego od poziomu wychodzi 10.4°, nie kanoniczne ~30°:
   //   kanon opisuje POSTAWĘ NATURALNĄ, atlas jest w ramce skanu. Sprawdzone (sonda 39), czy da się to
   //   pogodzić jednym pochyleniem ramki — NIE: nachylenie ma MINIMUM przy +10° i rośnie dopiero przy
   //   ujemnych, a każde pochylenie ≠0 psuje test Roll albo head-hang. Ramka atlasu zostaje bez obrotu;
@@ -56,15 +59,18 @@ export const Vestibular = (()=>{
   }
   // MASKA KLINICZNA — geometria daje magnitudy, ale konwencja kliniczna decyduje, KTÓRE składowe
   // wyrażamy. true = odsłoń realną składową geometryczną; false = utrzymaj konwencję kliniczną.
-  //   posterior.h: geom.≈0.41 (klin. pomijany) · anterior.t: geom.≈0.78 (override: czysty downbeat)
-  //   horizontal.t: geom.≈0.29 (klin. czysto poziomy)
+  //   posterior.h: geom.≈0.21 (klin. pomijany) · anterior.t: geom.≈0.74 (override: czysty downbeat)
+  //   horizontal.t: geom.≈0.18 (klin. czysto poziomy)   [liczby żywe IE-Map 2026-08-13; stare
+  //   0.41/0.78/0.29 pochodziły z wektorów Wu]. UWAGA (ocena II, A4): flaga posterior.h NIE jest
+  //   gotowa do odsłonięcia — znakowana geometria daje kierunek KONTRA (−0.21), a quickPhase nadałby
+  //   ipsi (+0.21); przed ustawieniem true poprawić znak.
   const NYS_SHOW = { posterior:{h:false,t:true}, anterior:{h:false,t:false}, horizontal:{t:false} };
   function quickPhase(canal, ear /* 'L'|'P' */){
     const ipsi = ear==="P" ? +1 : -1;                 // + = strona prawa
     const m = nysMag(canal, ear);                     // realne magnitudy z CANAL_NORMALS
     if(canal==="horizontal") return {h: ipsi*m.h, v:0, t: NYS_SHOW.horizontal.t ? ipsi*m.t : 0};       // poziomy ku pobudzonemu uchu
-    if(canal==="posterior")  return {h: NYS_SHOW.posterior.h ? ipsi*m.h : 0, v:+m.v, t: NYS_SHOW.posterior.t ? ipsi*m.t : 0}; // upbeat + skręt ku uchu; realne v:t≈0.93:1
-    if(canal==="anterior")   return {h: NYS_SHOW.anterior.h ? ipsi*m.h : 0, v:-m.v, t: NYS_SHOW.anterior.t ? ipsi*m.t : 0};   // downbeat; override klin. t:0 (geom. skręt ≈0.78)
+    if(canal==="posterior")  return {h: NYS_SHOW.posterior.h ? ipsi*m.h : 0, v:+m.v, t: NYS_SHOW.posterior.t ? ipsi*m.t : 0}; // upbeat + skręt ku uchu; realne v:t≈0.81:1
+    if(canal==="anterior")   return {h: NYS_SHOW.anterior.h ? ipsi*m.h : 0, v:-m.v, t: NYS_SHOW.anterior.t ? ipsi*m.t : 0};   // downbeat; override klin. t:0 (geom. skręt ≈0.74)
     return {h:0,v:0,t:0};
   }
   // Szybka faza dla zadanego, pobudzonego/hamowanego kanału
@@ -211,7 +217,7 @@ export const Vestibular = (()=>{
     return {excited, mag, h:q0.h*s, v:q0.v*s, t:q0.t*s};
   }
   /* ---- dynamika cząstki (etap 2) ----
-     Otolit jako cząstka na łuku kanału (φ=kąt łuku; ampułka φ=0, ujście/odnoga wspólna φ≈180).
+     Otolit jako cząstka na łuku kanału (φ=kąt łuku; ampułka φ=0, ujście = ARC_SPAN 267–319° per kanał).
      Ruch przetłumiony (opór Stokesa, bez bezwładności): dφ/dt ∝ styczna składowa grawitacji.
      Przepływ ampullofugalny (+dφ/dt) pobudza kanał pionowy (Ewald III) i odchyla osklepek ξ,
      który relaksuje z długą stałą czasową (latencja → narastanie → wygasanie). */
@@ -277,7 +283,8 @@ export const Vestibular = (()=>{
   // symulacja kanalolitiazy: timeline = [{q, tTrans, tHold}, ...]
   // MODEL FENOMENOLOGICZNY/EDUKACYJNY (nie pełna hydrodynamika — brak ciśnienia transkupularnego, zmiennej
   //   średnicy przewodu, bezwładności płynu, wielu cząstek; pełny model: Squires/Hain/Stone). Szczegóły → engine_doc.txt.
-  // Stałe skalibrowane do literatury (kanał tylny): latencja ~1–3 s, szczyt ~7–9 s, trwanie ~25 s.
+  // Stałe skalibrowane do literatury (kanał tylny): latencja 2.25 s, szczyt 0.872 @10.15 s, trwanie
+  //   ~37 s (metryka |ξ|≷0.05; przemierzone 2026-08-13 — stare „~7–9 s / ~25 s" sprzed ARC_SPAN).
   //   tauP=6.5  — cząstka (opór); tauC=5 — osklepek (długa stała kanału ~4–6 s);
   //   gc=1.6 — wzmocnienie; phiExit=178 — koniec nieampułkowy = wyjście do ŁAGIEWKI (kan. pionowe: odnoga wspólna; poziomy: wprost);
   //   fStat/adh — adhezja otolitu (zrywana utrzymaną siłą styczną → latencja; silniejsza
@@ -286,13 +293,15 @@ export const Vestibular = (()=>{
   //   Anatomicznie „dotarcie do końca łuku" (φ=phiExit) ≠ „wpadnięcie do łagiewki" — to DWA zdarzenia. Złóg po
   //   dojściu do odnogi (φ≥phiExit−crusArc) WCHODZI DO KOMORY ODNOGI i PARKUJE: opuszcza czuły kanał, osklepek
   //   relaksuje (brak oczopląsu), czeka na ekspulsję do łagiewki. Warunek ekspulsji: −g[1] > crusGrav,
-  //   gdzie g to SIŁA WŁAŚCIWA (R7). Jeden warunek obejmuje obie drogi fizjologiczne:
-  //     • GRAWITACYJNA (wolna): przy głowie pionowej (siad) łagiewka jest POD odnogą → złóg wpada.
-  //       To daje ekspulsję Epleya PRZY SIADZIE + oczopląs liberacyjny.
-  //     • BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut (Semont ~180°) wyrzuca złóg siłami bezwładności.
-  //       Do 2026-08-05 stało tu osobne PROXY (kąt > crusFling ORAZ tempo > crusFlingRate) — ręczny
-  //       zamiennik brakującej fizyki. Po wprowadzeniu siły właściwej jest zbędne: sprawdzone, że bez
-  //       niego manewry czyszczą dalej 12/12. Usunięte, żeby jedna wielkość nie miała dwóch modeli.
+  //   gdzie g to SIŁA WŁAŚCIWA (R7). KOREKTA 2026-08-13 (ocena II, C7): działa wyłącznie droga
+  //     GRAWITACYJNA — przy głowie pionowej (siad) łagiewka jest POD odnogą → złóg wpada; to daje
+  //     ekspulsję Epleya PRZY SIADANIU + oczopląs liberacyjny. Droga „BEZWŁADNOŚCIOWA" jest
+  //     strukturalnie MARTWA: człon dośrodkowy a=ω×(ω×d) przy d=[±EAR_X, L>0, 0] ma a[1]≤0, więc
+  //     inercja może −f[1] tylko OBNIŻAĆ (rzut Semonta 180°/0.8 s: +1.18 g KU CZUBKOWI — hamuje;
+  //     zmierzone maksimum wzrostu −f[1] po 7 manewrach × 2 strony: 0.00000). Usunięte 2026-08-05
+  //     proxy (kąt > crusFling ORAZ tempo > crusFlingRate) zastąpiła grawitacja w bez-timerowym
+  //     siadzie, NIE inercja — manewry czyszczą dalej 12/12, bo inercja robi swoje w napędzie
+  //     WZDŁUŻ kanału (Semont z pivot=neck nie dowozi złogu do odnogi).
   //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
@@ -358,10 +367,11 @@ export const Vestibular = (()=>{
         if(!exited){
           if(crusGate && inCrus){
             // złóg w KOMORZE ODNOGI WSPÓLNEJ — poza czułym kanałem (osklepek relaksuje). Czeka na ekspulsję do łagiewki.
-            // g to już SIŁA WŁAŚCIWA (R7), więc ten jeden warunek obejmuje ekspulsję grawitacyjną (siad:
-            // łagiewka pod odnogą) I bezwładnościową (szybki przerzut). Dawne proxy crusFling/crusFlingRate
-            // — „kąt > 145° ORAZ tempo > 180°/s" — USUNIĘTE 2026-08-05: sprawdzone, że bez niego manewry
-            // czyszczą dalej 12/12, bo prawdziwy człon bezwładnościowy go zastąpił.
+            // g to SIŁA WŁAŚCIWA (R7), ale warunek realnie spełnia wyłącznie GRAWITACJA (siad: łagiewka
+            // pod odnogą) — człon dośrodkowy ma a[1]≤0, więc −f[1] podnieść nie może (ocena II, C7).
+            // Dawne proxy crusFling/crusFlingRate — „kąt > 145° ORAZ tempo > 180°/s" — USUNIĘTE 2026-08-05:
+            // manewry czyszczą dalej 12/12, bo ekspulsję przejęła grawitacja w bez-timerowym siadzie
+            // (inercja utrzymuje DOJAZD złogu do odnogi — napęd wzdłuż kanału).
             if(!expelling && -g[1] > crusGrav) expelling=true;
             if(expelling){                                     // transjent ekspulsji: φ pcrus→pex → oczopląs liberacyjny (ampullofugalny, TEN SAM znak co pierwotny)
               dphi=expelRate; let nphi=phi+dphi*dt;

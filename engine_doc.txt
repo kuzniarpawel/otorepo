@@ -3,7 +3,9 @@
  Pliki: src/engine/vestibular.js (Vestibular) · src/engine/neuro-vor.js (NeuroVOR)
         (monolit otorepo.html = zamrożone źródło złotego snapshotu — te same IIFE)
  Charakter: czyste moduły ES BEZ DOM (testowalne offline w node; importowalne w .mjs)
- Ostatnia aktualizacja: 2026-07-12 (dodano męczliwość oczopląsu: fatigueFactor + parametr rep)
+ Ostatnia aktualizacja: 2026-08-13 (V1 oceny II: sekcje Vestibular zsynchronizowane z kodem po
+                        przebudowie 2026-08-05/06 — geometria w całości z IE-Map [13], siła właściwa R7,
+                        phi0/sizeUm; skorygowane liczby kalibracji, walidacji i magnitud)
  Uwaga: `Vestibular` = fizyka BPPV (złóg otolitowy w kanale). `NeuroVOR` = warstwa
         toniczna/ośrodkowa (VOR, fiksacja, vHIT, oczopląs spojrzeniowy, skew, HINTS) —
         patrz sekcja „MODUŁ NeuroVOR" na końcu pliku.
@@ -57,8 +59,8 @@ quickPhase(canal, ear) -> {h, v, t}
    Oś szybkiej fazy dla POBUDZENIA kanału, ipsiwersyjnie do ucha (Ewald I).
    ear: "L"|"P". (ipsi = ear==="P" ? +1 : -1)
    horizontal → {h:ipsi, v:0,    t:0}      (poziomy ku pobudzonemu uchu; skręt maskowany)
-   posterior  → {h:0,    v:+0.93,t:ipsi}   (upbeat + skręt ku uchu; realne v:t≈0.93:1)
-   anterior   → {h:0,    v:-1,   t:0}      (CZYSTY downbeat; skręt geom. ~0.78 ZAMASKOWANY — NYS_SHOW.anterior.t=false)
+   posterior  → {h:0,    v:+0.81,t:ipsi}   (upbeat + skręt ku uchu; realne v:t≈0.81:1)
+   anterior   → {h:0,    v:-1,   t:0}      (CZYSTY downbeat; skręt geom. ~0.74 ZAMASKOWANY — NYS_SHOW.anterior.t=false)
    UWAGA — MASKA KLINICZNA (NYS_SHOW): quickPhase zwraca konwencję UI dla BPPV (przedni = czysty downbeat,
    poziomy bez skrętu). PEŁNA geometria (skręt przedniego ZACHOWANY, do lateralizacji) → NeuroVOR.qpFull()
    / Vestibular.nysMag(); używa jej warstwa HINTS (sakada vHIT / verticalBeat / SCDS). Zob. sekcja „MASKA KLINICZNA".
@@ -80,14 +82,10 @@ gHead(q) -> [x, y, z]
    Wektor grawitacji wyrażony w układzie głowy dla orientacji q.
    Pionowo-stojąca głowa (q=[1,0,0,0]) → [0,-1,0].
 
-qSupineYaw(deg) -> q
-   Orientacja „supine head-hanging" (pochylenie -100° wokół osi międzyusznej)
-   ze skrętem głowy o `deg` wokół osi czaszki (y). Użycie: Dix-Hallpike (±45),
-   Roll (±90). Uwaga: dodatni deg = prawe ucho w dół (konwencja 3D, NIE schematu UI).
-
-qPitch(deg) -> q
-   Czyste pochylenie wokół osi międzyusznej (x). +deg = skłon w przód (bow),
-   -deg = odchylenie w tył (lean). Użycie: test Bow & Lean.
+(qSupineYaw / qPitch — USUNIĘTE 2026-08-05. Kodowały starą konwencję pozy: stały zwis −100°
+   dla wszystkich póz leżących. Orientacje póz klinicznych NIE są już API silnika — buduje je
+   stepHeadQ(body, yaw, face) na tabeli POSE_SPEC w src/pose/maneuvers.js:
+   headQ = Rz(roll)·Rx(pitch)·Ry(yaw+dyaw); każdy kąt ma źródło w zdaniu instrukcji.)
 
 position({canal, side, variant, q}) -> {excited, mag, h, v, t}
    Statyczna stymulacja CHOREGO kanału w orientacji głowy q.
@@ -104,21 +102,33 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — ETAP 2 (dynamika cząstki) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145, crusFlingRate=180}) -> [{t, xi, phi, exited}, ...]
+simulateCanalith({canal, side, timeline, q0=null, phi0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...]
+   phiExit=null (domyślnie) = ZMIERZONY zakres łuku per kanał: ARC_SPAN {przedni 281.1 · tylny 318.8 ·
+   poziomy 267.3}. (Parametry crusFling/crusFlingRate USUNIĘTE 2026-08-05 — patrz komora odnogi niżej.)
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
    [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
     oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
-   timeline: tablica segmentów [{q, tTrans, tHold}, ...]
+   timeline: tablica segmentów [{q, tTrans, tHold, pivot}, ...]
        q      — orientacja docelowa (kwaternion)
        tTrans — czas przejścia do q [s] (interpolacja slerp od poprzedniego q)
        tHold  — czas utrzymania w q [s]
+       pivot  — oś obrotu kroku: "body" (biodra/kozetka, domyślne) | "neck" (sama głowa);
+                wybiera ramię członu bezwładnościowego R7 (LEVER.body 0.75 m / neck 0.12 m)
+   phi0 — jawny kąt startowy złogu [°]; null (domyślnie) = restPhi(canal,side): minimum grawitacyjne
+       w postawie pionowej, a gdy leży poza łukiem — osklepek (tylny 48.8° · poziomy 199.8° · przedni 3°).
+       UWAGA (ocena II, A2/A9): phi0 nie jest dziś WALIDOWANE, a stan adhezji (stuck/bond) liczy się
+       z restPhi/pionu NIEZALEŻNIE od phi0 — jawny start w innym miejscu łuku dziedziczy adhezję
+       policzoną dla innego miejsca (naprawa = parametr settled, plan V3 oceny II).
    q0 — orientacja STARTOWA (kwaternion); domyślnie null = q PIERWSZEGO segmentu (wsteczna zgodność).
        UWAGA (semantyka 1. segmentu): przy q0=null pierwszy segment NIE interpoluje z pozycji neutralnej —
        jego tTrans to czas JUŻ W pozycji startowej, NIE przejście z siadu. Aby wymusić przejście z danej
        orientacji do 1. q, podaj q0 (np. [1,0,0,0] = głowa neutralna). Konwencja UI: 1. segment ma tTrans:0,
        a przejście realizuje NASTĘPNY segment (maneuverTimeline: tTrans:0.8 per krok). Analogicznie simulateCupulolith.
    Model:
-       φ — kąt łuku cząstki (ampułka φ=0, ujście/odnoga wspólna φ≈180°); dolne ograniczenie 3°.
+       φ — kąt łuku cząstki (ampułka φ=0, ujście = ARC_SPAN[canal]: 267–319° per kanał); dolne
+       ograniczenie CUPULA_DEG=3° (0.17 mm od ŚRODKA bańki — punkt wewnątrz bańki) przy ZEROWYM
+       marginesie ujścia (asymetria końców łuku odnotowana w ocenie II, C6 — wrażliwe na nią: czas
+       opróżnienia poziomego przy zdrowym uchu w dole i próg degeneracji spoczynku przy pochyleniu +9.9°).
        Ruch przetłumiony (opór Stokesa, bez bezwładności):
            dφ/dt = (g_głowa · styczna(φ)) / tauP
        Osklepek (model 1. rzędu, długa stała czasowa):
@@ -130,31 +140,38 @@ simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=
    KOMORA ODNOGI WSPÓLNEJ + EKSPULSJA DO ŁAGIEWKI (kanały PIONOWE: tylny+przedni; poziomy NIE ma odnogi):
        Anatomicznie „dotarcie do końca łuku" (φ=phiExit) ≠ „wpadnięcie do łagiewki" — to DWA zdarzenia.
        • KANAŁ POZIOMY: brak odnogi wspólnej → koniec nieampułkowy uchodzi WPROST do łagiewki: po φ≥phiExit
-         otolit wchodzi do łagiewki JEDNOKIERUNKOWO (exited). (Bez zmian względem poprzedniej wersji.)
-       • KANAŁY PIONOWE (crusArc/crusGrav/crusFling): po dojściu do odnogi (φ≥phiExit−crusArc) otolit WCHODZI
+         otolit wchodzi do łagiewki JEDNOKIERUNKOWO (exited), z prędkością FIZYCZNĄ z grawitacji (~7–8 °/s).
+       • KANAŁY PIONOWE (crusArc/crusGrav): po dojściu do odnogi (φ≥phiExit−crusArc) otolit WCHODZI
          DO KOMORY ODNOGI i PARKUJE — opuszcza czuły kanał, osklepek relaksuje (ξ→0, brak oczopląsu), czeka na
-         ekspulsję do łagiewki. Dwie fizjologiczne drogi ekspulsji z odnogi:
-           – GRAWITACYJNA (wolna): przy głowie PIONOWEJ (siad) łagiewka jest pod odnogą → złóg wpada. Warunek
-             −gHead_y > crusGrav (rzut grawitacji na oś odnoga→łagiewka ≈ [0,−1,0]). Daje ekspulsję Epleya PRZY
-             SIADZIE (krok 5) + oczopląs LIBERACYJNY tam, gdzie klinicznie występuje.
-           – BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut o duży kąt (Semont ~180°) wyrzuca złóg z odnogi siłami
-             bezwładności niezależnie od grawitacji. Proxy DWUCZŁONOWY: kąt przejścia > crusFling ORAZ prędkość
-             kątowa kąt/tTrans > crusFlingRate [°/s]. [2026-08-05] Sam kąt NIE wystarcza — bezwładność jest
-             funkcją PRĘDKOŚCI, a poprzedni warunek kąt-only wyrzucał złóg także przy przerzucie 180° trwającym
-             20 s (9 °/s), co nie jest zjawiskiem bezwładnościowym. Domyślne 180 °/s dobrano tak, by przy
-             jednolitym tTrans=0.8 s aplikacji (maneuverTimeline) zachowanie WSZYSTKICH manewrów było
-             bit-identyczne (Semont krok 3: 155° / 0,8 s = 194 °/s → nadal wyrzuca; żaden krok planu nie leży
-             w pasie ryzyka 140–150°). tTrans=0 (skok orientacji) = przejście natychmiastowe → prędkość ∞.
-             Utrzymuje ekspulsję Semonta PRZY RZUCIE (krok 3).
+         ekspulsję do łagiewki. Warunek: −f[1] > crusGrav, gdzie f to SIŁA WŁAŚCIWA f=g−a (R7); realizuje się
+         GRAWITACYJNIE — przy głowie pionowej (siad) łagiewka jest pod odnogą → złóg wpada. Daje ekspulsję
+         Epleya przy siadaniu + oczopląs LIBERACYJNY tam, gdzie klinicznie występuje.
+         >>> KOREKTA 2026-08-13 (ocena II, C7): droga „BEZWŁADNOŚCIOWA" ekspulsji jest w tym modelu
+         STRUKTURALNIE MARTWA. Człon dośrodkowy a=ω×(ω×d) z ramieniem d=[±EAR_X, L>0, 0] daje a[1]≤0,
+         więc inercja może −f[1] wyłącznie OBNIŻAĆ (zmierzone maksimum wzrostu po 7 manewrach × 2 strony:
+         0.00000; rzut Semonta 180°/0.8 s daje +1.18 g KU CZUBKOWI — ekspulsję hamuje, a w Epleyu k4→k5
+         wręcz ją OPÓŹNIA: −f[1]=0.62 przy −g[1]=0.99, o włos nad progiem 0.6). Wszystkie ekspulsje 12/12
+         są grawitacyjne — w holdach końcowego siadu (Semont/Yacovino/Bascule) lub na końcu przejścia
+         siadania (Epley). Usunięte proxy crusFling/crusFlingRate (2026-08-05) zastąpiła więc grawitacja
+         w bez-timerowym siadzie, NIE człon bezwładnościowy; rola inercji R7 jest realna wyłącznie
+         w napędzie WZDŁUŻ kanału (bez niej Semont nie dowozi złogu do odnogi: pivot=neck → exited=false).
+         Prawdziwa droga bezwładnościowa wymagałaby członu stycznego α×d, którego dane pozy nie niosą. <<<
          Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w ~EXPEL_DUR(1.2 s) → TRANSJENT oczopląsu ampullofugalny
-         (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. exited=true jednokierunkowo (blokuje fazę odwróconą).
+         (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. exited=true jednokierunkowo (blokuje fazę
+         odwróconą). UWAGA (ocena II, B6): transjent jest SYNTETYCZNY — stała prędkość (pex−pcrus)/EXPEL_DUR,
+         niezależna od siły napędowej i rozmiaru cząstki; amplituda ∝ crusArc (dwie stałe konwencji).
        Ruch wsteczny w świetle kanału (dφ/dt<0, przed odnogą) → ξ<0 → oczopląs ODWRÓCONY.
-       WALIDACJA (offline, realne plany gen, obie strony): Epley ekspulsja/liberacyjny w KROKU 5 (siad, ξ~0.31);
-       Semont w KROKU 3 (rzut); Yacovino w KROKU 3 (broda do klatki); kanał poziomy (Lempert/Gufoni) BEZ ZMIAN;
-       Gufoni apo dalej nie czyści (konwersja). Diagnostyka (pojedyncza pozycja leżąca): złóg parkuje w odnodze
-       bez ekspulsji → oczopląs crescendo→decrescendo (wygasa), złóg NIE „znika" (bardziej fizjologiczne).
-   STAŁE SKALIBROWANE DO LITERATURY (kanał tylny, kanalolitiaza):
-       latencja ~1–3 s, czas do szczytu ~7–9 s, czas trwania napadu ~25 s;
+       WALIDACJA (przemierzone 2026-08-13, realne plany gen, obie strony): Epley ekspulsja/liberacyjny
+       w KROKU 5 (powrót do siadu — koniec przejścia); Semont w KROKU 4 (powrót do siadu, hold);
+       Yacovino w KROKU 4 (siad, broda przy klatce); Bascule w KROKU 5; kanał poziomy (Lempert/Gufoni geo)
+       wychodzi wprost; Gufoni apo nie czyści (konwersja — poprawnie). Diagnostyka (pojedyncza pozycja
+       prowokująca): złóg NIE dochodzi do odnogi — minimum grawitacyjne pozycji leży w świetle łuku
+       (Dix: φ(120 s)=159.5, exited=false) — oczopląs crescendo→decrescendo (wygasa), złóg zostaje w kanale.
+   STAŁE SKALIBROWANE DO LITERATURY (kanał tylny, kanalolitiaza) — LICZBY OBOWIĄZUJĄCE 2026-08-13
+       (metryka JAWNA: latencja/trwanie progiem |ξ|≷0.05; protokół q0=siad, tTrans 0.5 s):
+       tylny w Dix: latencja 2.25 s, szczyt ξ 0.872 @ 10.15 s, trwanie ~37 s (kryterium 3% szczytu: 42 s);
+       poziomy w Roll: 2.4 s / 0.696 @ 10.1 s / ~38 s; przedni w head-hang: 0.5 s (= brak latencji, R7) /
+       0.94 @ 25.3 s / ~57 s (3%: 61 s — POWYŻEJ progu <60 s; rozjazd z kartą testu: ocena II, A6).
        tauC=5 s odpowiada długiej stałej osklepka/kanału (~4–6 s).
    Zwraca: t [s], xi (znak = pobudzenie/hamowanie), phi [°], exited (bool).
    Parametry strojeniowe: tauP, tauC, gc, phiExit, fStat, adh.
@@ -165,10 +182,11 @@ simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=
          adh  ∝ r    (siła oderwania sfery od ścianki, skalowanie JKR/DMT).
        medium == r=1 → wynik IDENTYCZNY z dotychczasową kalibracją (bezpieczny domyślny).
        Emergentnie: DUŻA = krótsza latencja, silniejszy/szybszy oczopląs, szybsze wyjście;
-       MAŁA = długa latencja, słaby i wolny przebieg, MOŻE NIE osiągnąć φ=178° w skróconych holdach
-       manewru (np. Semont/Yacovino) — spójne z uzasadnieniem holdów ~30 s dla wolno osiadających
-       odłamków (Hain [2]) oraz z „extremely long-latency BPPV" [11]. Adresuje uproszczenie
-       „brak wpływu rozmiaru cząstki" z sekcji UPROSZCZENIA.
+       MAŁA = długa latencja, słaby i wolny przebieg i DŁUŻSZY minimalny hold (patrz tabela
+       minimalnych holdów w STATUS WALIDACJI; hold w aplikacji jest WYPROWADZANY — R4b — więc small
+       nadal czyści) — spójne z uzasadnieniem holdów ~30 s dla wolno osiadających odłamków (Hain [2])
+       oraz z „extremely long-latency BPPV" [11]. Adresuje uproszczenie „brak wpływu rozmiaru cząstki"
+       z sekcji UPROSZCZENIA.
    MĘCZLIWOŚĆ / FATIGABILITY (rep) — kryterium RÓŻNICUJĄCE kanalolitiaza↔kupulolitiaza [12].
        rep = numer powtórzenia prowokacji w tej samej sesji (0 = pierwsza = pełna odpowiedź). Mechanizm:
        zbity klaster otoconiów ROZPRASZA SIĘ przy powtórzeniach (seryjny Dix–Hallpike) na mniejsze, mniej
@@ -186,8 +204,11 @@ fatigueFactor(rep=0, {fatTau=2.0, fatFloor=0.06}) -> czynnik ∈ [fatFloor, 1]
 nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
    Klasyfikacja fazy względem kierunku prowokującego:
    "primary" (ξ>thr, pierwotny/liberatoryjny), "reversed" (ξ<-thr, odwrócony), "none".
+   UWAGA (ocena II, C3): API pomocnicze, obecnie NIEPODPIĘTE w src (żaden moduł go nie woła);
+   próg 0.05 jest w innej jednostce niż próg widoczności UI (0.10 na strength PO rektyfikacji).
 
-simulateCupulolith({canal, side, timeline, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
+simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
+   q0 — orientacja STARTOWA; semantyka jak w simulateCanalith (null = q pierwszego segmentu).
    size skaluje gain ∝ r³ (cięższy klaster otoconiów → silniejsze wychylenie osklepka); latencji brak
    (tauCup bez zmian). SIZE_R jak w simulateCanalith. medium == r=1 → wynik identyczny.
    Symulacja KUPULOLITIAZY: otolity przyklejone do osklepka → ciężki osklepek odchylany
@@ -222,9 +243,17 @@ dynNystagmus(canal, side, xi) -> {excited, intensity, h, v, t}
 --------------------------------------------------------------------------
  STAŁE I POMOCNICZE WEWNĘTRZNE (nieeksportowane)
 --------------------------------------------------------------------------
-qmul, qconj, qaxis(ax,deg), rotv(q,v), dot3, nrm3, nrm4 — algebra wektorów/kwaternionów.
-slerpQ(a,b,t) — interpolacja sferyczna kwaternionów (z obsługą półkuli i przypadku bliskiego).
-Q_SUPINE = qaxis([1,0,0],-100) — baza orientacji supine head-hanging.
+qmul, qconj, qaxis(ax,deg), rotv(q,v) — algebra kwaternionów: EKSPORTOWANE (rotv jako `rotate`)
+   dla warstwy pozy (maneuvers.js buduje z nich headQ i kinematykę FK). dot3, nrm3, nrm4, slerpQ
+   (interpolacja sferyczna z obsługą półkuli) — wewnętrzne.
+(Q_SUPINE — USUNIĘTE 2026-08-05 razem z qSupineYaw/qPitch; pozy pochodzą z POSE_SPEC.)
+POZOSTAŁE EKSPORTY (dotąd nieudokumentowane — ocena II, C1):
+   sizeR(size) -> r  (mnożnik promienia; walidacja > 0)
+   sizeUm(size) -> równoważna średnica kłębka [µm] (16/21/29 dla small/medium/big — prawo
+      Stokesa [15]; pokazywana na karcie manewru)
+   restPhi(canal, side) -> °  (spoczynek złogu w pionie: tylny 48.8 · poziomy 199.8 · przedni 3)
+   stałe: ARC_SPAN {anterior:281.1, posterior:318.8, horizontal:267.3} · CANAL_NORMALS · CANAL_GEOM
+      · CUP_WEAK=0.6 · EWALD_INHIB=0.45.
 
 GEOMETRIA KANAŁU — JEDNO ŹRÓDŁO [2026-08-05, gałąź feature/vestibular]
    Do tej daty silnik miał DWIE niezależne geometrie tego samego kanału: zmierzone CANAL_NORMALS
@@ -236,26 +265,25 @@ GEOMETRIA KANAŁU — JEDNO ŹRÓDŁO [2026-08-05, gałąź feature/vestibular]
    Etap 2 (wieczór): GEXC i uHC USUNIĘTE — były styczną zamrożoną w φ=90°. Zostało samo CANAL_GEOM + tangAt
    (duplikacja usunięta; rozbieżność płaszczyzn = 0.00° we wszystkich 6 kanałach).
 
-   wuToHead(n) = [-n0, n2, n1]   (Wu: x=lewo, y=przednio-tylny, z=góra → głowa: x=prawo, y=góra, z=nos)
-     Kontrola przeliczenia osi: normalna kanału poziomego wychodzi ≈[0.02, 0.95, −0.30] (w górę, lekko
-     ku tyłowi) = kanoniczne nachylenie ~30° kanału bocznego; koplanarność RP∥LA (0.988), RA∥LP (0.985).
+   Przeliczenie ramki źródłowej (od 2026-08-05, IE-Map [13]): Slicer-RAS → głowa: pozycje (X,Z,Y);
+     normalna jest wektorem OSIOWYM, a odwzorowanie ma wyznacznik −1, więc jej znak się odwraca
+     (komentarz w vestibular.js przy AMPULLA_DIR). Dawny helper wuToHead (przeliczenie ramki Wu)
+     NIE istnieje w kodzie — Wu 2021 pozostaje wyłącznie KONTROLĄ zewnętrzną (zgodność 17.1°).
 
-   AMPULLA_DIR — kierunek bańki (φ=0). ZAŁOŻENIE ANATOMICZNE, NIE POMIAR: Wu podaje wyłącznie orientacje
-     PŁASZCZYZN, a nie położenie bańki wzdłuż pętli. Używany jest tylko RZUT tych wektorów na zmierzoną
-     płaszczyznę. To JEDYNE pozostałe wejście geometryczne spoza pomiaru — i brakująca dana dla R1.
-       posterior P(-1,0,1) L(1,0,1) · anterior P(1,0,1) L(-1,0,1) · horizontal P(0.87,0,0.5) L(-0.87,0,0.5)
-   ARC_SPIN — znak normalnej przypinający konwencję „rosnące φ = ampullofugalne" (e2 = n × e1). Pomiar go
-     nie ustala (płaszczyzna = normalna z dokładnością do znaku). 6 bitów konwencji, nie geometria.
-       posterior P+1 L−1 · anterior P−1 L+1 · horizontal P+1 L−1
+   AMPULLA_DIR — kierunek bańki (φ=0). ZMIERZONY 2026-08-05 (IE-Map: rzut A−C na płaszczyznę PCA
+     kanału) — już NIE założenie anatomiczne. Wartości (ramka głowy; L = lustro P):
+       posterior P[-0.5174,-0.6498,0.5568] · anterior P[0.4703,-0.5693,0.6743]
+       · horizontal P[-0.1794,0.1705,0.9689]
+   ARC_SPIN — USUNIĘTY 2026-08-05: zwrot obiegu „rosnące φ = ampullofugalne" WYNIKA Z POMIARU
+     (monotonicznie dodatnie przyrosty kąta wzdłuż uporządkowanej osi Q0→Q4 dla wszystkich sześciu
+     kanałów), więc tabela 6 bitów konwencji przestała istnieć.
 
-CANAL_GEOM — WYPROWADZONE: {e1, e2, exc}; e1 = rzut AMPULLA_DIR na zmierzoną płaszczyznę, e2 = n × e1,
-             exc = +1 kanały pionowe (Ewald III) / −1 poziomy (Ewald II). Wartości wynikowe:
-   posterior  P:{e1 (-0.731,-0.010, 0.682), e2 ( 0.203,-0.958, 0.203)}
-              L:{e1 ( 0.727,-0.008, 0.687), e2 (-0.188,-0.964, 0.188)}
-   anterior   P:{e1 ( 0.621, 0.040, 0.783), e2 (-0.231,-0.945, 0.231)}
-              L:{e1 (-0.632, 0.035, 0.774), e2 ( 0.234,-0.944, 0.234)}
-   horizontal P:{e1 ( 0.877, 0.129, 0.462), e2 ( 0.480,-0.270,-0.835)}
-              L:{e1 (-0.876, 0.113, 0.469), e2 (-0.482,-0.256,-0.838)}
+CANAL_GEOM — WYPROWADZONE: {e1, e2, exc}; e1 = rzut ZMIERZONEGO AMPULLA_DIR na płaszczyznę PCA,
+             e2 = n × e1, exc = +1 kanały pionowe (Ewald III) / −1 poziomy (Ewald II).
+             Wartości żywe (2026-08-13; odtwarzalne sondą node → Vestibular.CANAL_GEOM; L = lustro P):
+   posterior  P:{e1 (-0.517,-0.650, 0.557), e2 ( 0.588,-0.743,-0.321)}
+   anterior   P:{e1 ( 0.470,-0.569, 0.674), e2 ( 0.364, 0.821, 0.439)}
+   horizontal P:{e1 (-0.179, 0.170, 0.969), e2 ( 0.983, 0.061, 0.171)}
 GEXC / uHC / CK — USUNIĘTE 2026-08-05. Były to osie pobudzenia liczone jako ±e1, czyli styczna
 w φ=90° — duplikat CANAL_GEOM zamrożony w jednym punkcie łuku. Zastąpione przez tangAt(G, φ),
 liczone w restPhi, czyli w tym samym miejscu, którym rusza symulacja.
@@ -267,6 +295,11 @@ liczone w restPhi, czyli w tym samym miejscu, którym rusza symulacja.
    nadal nie — zgodnie z R2). Złoty snapshot: 2 z 91 ekranów (patrz R5), reszta bajtowo bez zmian.
    NIE NAPRAWIA R1 — R1 to DŁUGOŚĆ łuku, nie orientacja płaszczyzny (φ_eq tylny 190.0→189.6, przedni
    194.0→207.1, czyli dla przedniego nawet dalej od końca łuku).
+   [AKTUALIZACJA 2026-08-13 — ocena II, C1/DYN-10] Liczby „SKUTKÓW ZMIANY" wyżej opisują stan z DNIA
+   uzgodnienia geometrii (przed R7/R4b) i NIE odtwarzają się na bieżącym silniku. Obowiązująca
+   kalibracja tylnego: latencja 2.25 s, szczyt 0.872 @10.15 s, trwanie ~37 s (|ξ|≷0.05) — patrz
+   STAŁE SKALIBROWANE. Zdanie „gufoniApo i bascule nadal nie [czyszczą]" było prawdziwe przed R7 —
+   od R7 Bascule CZYŚCI; jedynym niesprzątającym pozostaje Gufoni apo (manewr konwersji).
 
 --------------------------------------------------------------------------
  STATUS WALIDACJI (offline, node)
@@ -280,15 +313,17 @@ liczone w restPhi, czyli w tym samym miejscu, którym rusza symulacja.
      kontrast z kanalolitiazą (narastanie+wygasanie).
  [x] Etap 2: KALIBRACJA stałych do literatury (tylny, kanalolitiaza): latencja ~1.6 s,
      szczyt ~9 s, trwanie ~25 s (tauP=6.5, tauC=5, gc=1.6); adhezja otolitu (fStat=0.04, adh=0.2).
- [x] Etap 2: ROZMIAR CZĄSTKI (size small/medium/big). Walidacja offline (silnik w przeglądarce,
-     preview_eval — node niedostępny; moduł DOM-free, więc równoważne). Wyniki (posterior|P):
-       medium: lat 1.15 s, szczyt +8.45 s, ξpeak 0.81, trwanie 27 s — IDENTYCZNE z bazą (regresja OK).
-       small : lat 3.0 s,  szczyt +12.1 s, ξpeak 0.27 — dłuższa latencja, słabszy/wolniejszy.
-       big   : lat 0.25 s, szczyt +5.5 s,  ξpeak 2.80 (nasyca intensity→1) — krótka latencja, florydny.
-     Monotoniczność lat↓/ξ↑/szczyt↓ wraz z r potwierdzona dla wszystkich 6 kanałów, obie strony symetryczne.
-     Cupulolith: gain ∝ r³ dokładnie (small −0.41 / medium −0.85 / big −2.10). Manewry (plany gen, str. P):
-       WSZYSTKIE rozmiary (small/medium/big) osiągają φ=178° (exited) w Epleyu, Semoncie, Yacovino,
-       Lempercie i Gufonim geotropowym. 30 kombinacji manewr×strona×rozmiar, zero niepowodzeń.
+ [x] Etap 2: ROZMIAR CZĄSTKI (size small/medium/big). PRZEMIERZONE 2026-08-13 (node; protokół
+     q0=siad, tTrans 0.5 s, latencja progiem |ξ|>0.05 — stare liczby z 2026-07 nie odtwarzały się
+     po przebudowie geometrii 2026-08-05). Wyniki (posterior|P, Dix):
+       small : lat 4.2 s,  szczyt 0.29 @14.25 s (16 µm) — dłuższa latencja, słabszy/wolniejszy.
+       medium: lat 2.25 s, szczyt 0.87 @10.15 s (21 µm).
+       big   : lat 1.3 s,  szczyt 3.04 @6.85 s (nasyca intensity→1; 29 µm) — krótka latencja, florydny.
+     Monotoniczność lat↓/ξ↑/szczyt↓ wraz z r zachowana; obie strony symetryczne.
+     Cupulolith: gain ∝ r³ dokładnie (Roll chore-w-dole: small −0.24 / medium −0.51 / big −1.26;
+     stosunki 0.475 / 1 / 2.46 = r³). Manewry (plany gen, holdy wyprowadzane R4b):
+       WSZYSTKIE rozmiary osiągają ujście ARC_SPAN (exited) w Epleyu, Semoncie, Bascule, Yacovino,
+       Lempercie i Gufonim geotropowym — zero niepowodzeń (Gufoni apo z założenia nie czyści).
      >>> SPROSTOWANIE [2026-08-05]. Do tego dnia stało tu: „small — Semont (φmax 157) i Yacovino (φmax 128)
          NIE czyszczą w skróconych holdach (emergentne, klinicznie spójne)". To było NIEPRAWDZIWE na dwa
          sposoby. (1) Liczby nie odtwarzały się już nawet przy starym capie — po wprowadzeniu komory odnogi
@@ -297,37 +332,43 @@ liczone w restPhi, czyli w tym samym miejscu, którym rusza symulacja.
          w planie 120 s na krok. Przy KLINICZNIE ZALECONYM holdzie small czyści wszystko (Semont: suma
          252 s → exited; Yacovino: 123 s → exited). „Wolne odłamki nie czyszczą" opisywało więc granicę
          wydajnościową modelu, nie osiadanie cząstki, i zostało USUNIĘTE zamiast przywrócone. <<<
+     [HISTORYCZNE — obcięcie „cap" usunięte przez R4b 2026-08-05; holdy są dziś WYPROWADZANE z silnika]
      GŁĘBOKOŚĆ OBCIĘCIA (medium) — ile realnego holdu model faktycznie symuluje. Nierówna między manewrami,
        więc „czy manewr czyści" częściowo mierzy agresywność obcięcia, a nie geometrię kanału:
          semont 180 s → 36 s (20%) · gufoniGeo 120 s → 36 s (30%) · lempert 150 s → 66 s (44%)
          epley 90 s → 48 s (53%) · yacovino 60 s → 46 s (77%)
        Semont jest obcięty najmocniej i przez to najbardziej wrażliwy na zmiany stałych.
      CO NAPRAWDĘ ZOSTAJE Z WPŁYWU ROZMIARU — MINIMALNY HOLD NA KROK, przy którym manewr jeszcze czyści
-       (zmierzone; hold jednakowy na każdym kroku z timerem):
+       (PRZEMIERZONE 2026-08-13; hold jednakowy na każdym kroku z timerem, kroki bez timera 6 s):
                     small   medium   big     zalecenie w planie
-         epley       12 s     7 s     4 s          30 s
-         semont      18 s    10 s     5 s          90 s
-         yacovino    33 s    16 s     8 s          30 s   <-- JEDYNY CIENKI MARGINES
-         lempert     11 s     7 s     3 s          30 s
-         gufoniGeo   11 s     7 s     3 s          60 s
-       YACOVINO + DROBNY ZŁÓG to jedyne miejsce, gdzie próg (33 s) PRZEKRACZA hold nominalny (30 s).
-       Ratuje go dopiero sizedSeconds (holdMult 1.6 → 45 s). To jest fizycznie ugruntowany punkt
-       dydaktyczny „wolne odłamki wymagają dłuższych holdów" [2] — w przeciwieństwie do usuniętego wyżej.
+         epley       21 s    12 s     6 s          30 s
+         semont      58 s    30 s    14 s          90 s
+         yacovino    41 s    24 s    13 s          30 s   <-- JEDYNY PRÓG NAD HOLDEM NOMINALNYM
+         lempert      9 s     5 s     3 s          30 s
+         gufoniGeo    8 s     5 s     2 s          60 s
+       YACOVINO + DROBNY ZŁÓG to nadal jedyne miejsce, gdzie próg (41 s) PRZEKRACZA hold nominalny
+       (30 s); ratuje go sizedSeconds (holdMult 1.6 → 45 s), ale margines stopniał do 4 s (41 vs 45)
+       — najbardziej wrażliwe miejsce kalibracji (ocena II, V-DOC-11). Semont/small wymaga 58 s
+       (mieści się w zaleconych 90 s). Punkt dydaktyczny „wolne odłamki wymagają dłuższych
+       holdów" [2] zostaje.
 
 --------------------------------------------------------------------------
  PRZYKŁADY UŻYCIA
 --------------------------------------------------------------------------
+// Pozę buduje warstwa pozy — qSupineYaw usunięte z silnika (POSE_SPEC, 2026-08-05):
+import { stepHeadQ } from '../pose/maneuvers.js';
+const qDix = stepHeadQ('supineHang', 45, 'up');   // Dix–Hallpike strony PRAWEJ
+
 // Statycznie (diagnostyka): kierunek oczopląsu w Dix-Hallpike po stronie prawej
-Vestibular.position({canal:"posterior", side:"P", variant:"canalo",
-                     q: Vestibular.qSupineYaw(45)});
-// -> {excited:true, mag:~0.98, h:0, v:1, t:1}
+Vestibular.position({canal:"posterior", side:"P", variant:"canalo", q: qDix});
+// -> {excited:true, mag:0.935, h:0, v:0.812, t:1}          (URUCHOMIONE 2026-08-13)
 
 // Dynamicznie: przebieg ξ(t) dla pierwszej pozycji Epleya (tylny prawy)
-const tr = Vestibular.simulateCanalith({canal:"posterior", side:"P", timeline:[
-   {q:[1,0,0,0], tTrans:0, tHold:2},
-   {q:Vestibular.qSupineYaw(45), tTrans:1.5, tHold:25}
-]});
+const tr = Vestibular.simulateCanalith({canal:"posterior", side:"P", q0:[1,0,0,0],
+   timeline:[{q: qDix, tTrans:1.5, tHold:25}]});
+// szczyt ξ 0.872 @ 10.6 s; ostatnia próbka: t 26.5, ξ 0.229, φ 155.5, exited:false
 Vestibular.dynNystagmus("posterior","P", tr[tr.length-1].xi);
+// -> {excited:true, intensity:0.229, h:0, v:0.812, t:1}     (URUCHOMIONE 2026-08-13)
 
 --------------------------------------------------------------------------
  ZALEŻNOŚCI MIĘDZYWARSTWOWE
@@ -463,6 +504,8 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      Brakującą daną był kątowy odstęp bańka↔ujście. Dostarczona: Cárdenas-Serna & Jeffery (48 dorosłych
      błędników kostnych, Zenodo doi:10.5281/zenodo.4818568) — przedni 265.8°±7.1, tylny 307.0°±5.3,
      boczny 236.8°±10.1 od ŚRODKA bańki. Wstawione jako ARC_SPAN {266, 307, 237} zamiast globalnego 178°.
+     [AKTUALIZACJA: od wieczora 2026-08-05 ARC_SPAN pochodzi z atlasu IE-Map [13]: {281.1, 318.8, 267.3};
+      wartości Cárdenas-Serna pozostają kontrolą zewnętrzną rzędu wielkości.]
      ZWERYFIKOWANE PO ZMIANIE:
        • minimum grawitacyjne leży W ŁUKU we wszystkich 6 kanałach (było POZA w 4 z 6);
        • ODWRÓCENIE OCZOPLĄSU PRZY SIADANIU wróciło: po Dix–Hallpike ξ −0.782 (było +0.312 = brak),
@@ -492,6 +535,11 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      Wdrożone dokładnie tak, jak zapowiadał kierunek naprawy: złóg reaguje na SIŁĘ WŁAŚCIWĄ f = g − a.
      ω bierze się z tej samej interpolacji, która steruje pozą; człon styczny (α×d) pominięty, bo przy
      stałym tempie α=0 poza granicami segmentów — to zaniżenie bezwładności, nie zawyżenie.
+     [Dopisek 2026-08-13 (ocena II, DYN-12): dla kroków ŁĄCZONYCH (np. Epley k4→k5: odkręcenie+siadanie)
+      oś śruby slerpa ≠ sekwencja osi anatomicznych — inercja takich kroków ma charakter rzędu wielkości;
+      rzuty jednoosiowe (Semont 180°, rolka Lemperta) są odwzorowane wiernie. Dopisek 2 (ocena II, C7):
+      rola f=g−a jest realna w napędzie WZDŁUŻ kanału; do EKSPULSJI z odnogi inercja nie dokłada nic —
+      patrz korekta w opisie komory odnogi.]
      POTWIERDZENIE ILOŚCIOWE: ręcznie wpisany do LEAN_G wektor ku czubkowi głowy (+0.6) okazał się TĄ
      SAMĄ WIELKOŚCIĄ. Dla rzutu 180° w 0,8 s przy ramieniu 0,75 m wychodzi ω²L/g = 1,2 g w tym samym
      kierunku; 0,6 g odpowiada rzutowi w ~1,16 s. Ktoś kiedyś zmierzył tę fizykę okiem i wpisał wynik.
@@ -667,10 +715,14 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
  R9. NACHYLENIE KANAŁU BOCZNEGO 10.4° ZAMIAST KANONICZNYCH ~30° [2026-08-05, OTWARTE].
      TO NIE JEST BŁĄD DANYCH — to niewiadoma RAMKI. Rozstrzygnięte rozdzieleniem wielkości względnych
      od bezwzględnych (sonda 45):
-       NIEZALEŻNE OD RAMKI, wszystkie się zgadzają: kanały wzajemnie prostopadłe 87.8/89.8/87.5°,
-         koplanarność RA∥LP i RP∥LA 16.0° (realny zakres 10–20°), promienie łuku 3.50/3.32/2.68 mm
-         wobec Curthoys & Oman 3.3/3.2/2.4, średni kąt kanałów pionowych do strzałkowej 44.0° (kanon 45°),
-         lewa strona = idealne lustro prawej (0.000°).
+       NIEZALEŻNE OD RAMKI, wszystkie się zgadzają: kanały wzajemnie prostopadłe 87.8/89.8/87.5°
+         (kąty PŁASZCZYZN, mod 180 — między znakowanymi normalnymi z pliku wychodzi 92.2/92.5/89.8°,
+         bo konwencja ampullofugalna odwraca część wektorów; ocena II, C5), koplanarność RA∥LP i RP∥LA
+         16.0° (realny zakres 10–20°), promienie łuku 3.50/3.32/2.68 mm wobec Curthoys & Oman
+         3.3/3.2/2.4, średni kąt kanałów pionowych do strzałkowej 44.0° (kanon 45°), lewa strona =
+         lustro prawej (0.000° — KONWENCJA TRANSKRYPCJI: wpisy L są odbiciem wpisów P, nie niezależną
+         rekonstrukcją lewego ucha; realna asymetria międzyuszna, rzędu pojedynczych stopni, nie jest
+         modelowana — ocena II, C5).
        ZALEŻNE OD RAMKI, jedyne co odstaje: bezwzględne nachylenie kanału bocznego.
      Atlas izolowanej kości skroniowej NIE NIESIE informacji o postawie nawykowej głowy — nie ma w nim
      punktu odniesienia, który by ją wiązał. Żadna kontrola wewnętrzna nie może więc pochylenia ani
@@ -913,11 +965,10 @@ Funkcje (po xiEnvelope w pliku):
   ξ_peak≈0 (nie prowokuje). Instrukcja kliniczna mówi "90°"; kod był niespójny (45°), poprawiony.
 START CZĄSTKI: nie stała, tylko restPhi(canal,side) = minimum grawitacyjne w postawie pionowej,
 a gdy leży poza łukiem — osklepek. Tylny 48.8° · poziomy 199.8° · przedni 3°.
-WALIDACJA (offline, realne plany gen, obie strony, ujście = zmierzony ARC_SPAN):
-  Epley ✓✓ (49→158→230→307→319) · Yacovino ✓✓ (3→133→262→281) · Lempert ✓✓ · Gufoni geo ✓✓
-  Gufoni apogeotropowy ✗✗ — POPRAWNIE: manewr KONWERSJI (apo→geo), nie czyści wprost
-  Semont ✗✗ i Bascule ✗✗ — patrz R7 (brak członu bezwładnościowego); to JEDYNE manewry, które
-  przestały czyścić po wyprowadzeniu póz, i mają nazwaną przyczynę fizyczną, nie usterkę danych.
+WALIDACJA (przemierzone 2026-08-13, realne plany gen, obie strony, ujście = zmierzony ARC_SPAN):
+  Epley ✓✓ (49→158→230→307→319) · Yacovino ✓✓ (3→136→262→281) · Lempert ✓✓ · Gufoni geo ✓✓
+  Semont ✓✓ (49→138→268→319) · Bascule ✓✓ (49→3→140→307→319) — czyszczą od R7 (siła właściwa f=g−a)
+  Gufoni apogeotropowy ✗✗ — POPRAWNIE: manewr KONWERSJI (apo→geo), nie czyści wprost.
 
 
 === TEST KANAŁU PRZEDNIEGO (deep head-hang) + uwaga o spójności ===
@@ -939,7 +990,8 @@ Test deep head-hang: usunięto deklarację lateralizacji skrętem (latNote/label
 
 === RÓŻNICOWANIE W DIX-HALLPIKE: kanał tylny vs przedni (wyprowadzone z silnika) ===
 Probe dynamiczny (simulateCanalith, ξpeak≈0.81) w pozycji Dix-Hallpike potwierdza koplanarność LARP/RALP:
-  PRAWY Dix-Hallpike (qSupineYaw +45): tylny PRAWY → ↑+skrętny (v+1,t+1);  przedni LEWY → ↓downbeat (v-1,t0)
+  PRAWY Dix-Hallpike (qSupineYaw +45 — historyczna nazwa pozy sondy; dziś stepHeadQ('supineHang',45,'up')):
+        tylny PRAWY → ↑+skrętny (v+1,t+1);  przedni LEWY → ↓downbeat (v-1,t0)
   LEWY  Dix-Hallpike (qSupineYaw -45): tylny LEWY  → ↑+skrętny;            przedni PRAWY → ↓downbeat
 Różnicownik = kierunek pionowy: ↑→tylny (ucho dolne); ↓→przedni (ucho PRZECIWNE, ta sama płaszczyzna).
 (Po poprawce GEXC=-e1 statyczne position() zgadza się z dynamiką — nysFromGeom liczy oczopląs bezpośrednio.)
@@ -948,34 +1000,39 @@ animację (czysty downbeat), mechanizm (kanał przedni ucha przeciwnego), zalece
 CZERWONĄ FLAGĘ ośrodkową (izolowany/uporczywy downbeat bez latencji → móżdżek/pogranicze czaszk.-szyjne).
 
 === MAGNITUDY OCZOPLĄSU Z REALNYCH NORMALNYCH KANAŁÓW (zamiast idealnych 45°) ===
-ŹRÓDŁO (cytowane w kodzie, stała CANAL_NORMALS):
+ŹRÓDŁO (od 2026-08-05): atlas IE-Map [13] — TE SAME CANAL_NORMALS, z których pochodzi cała geometria
+  silnika (płaszczyzny z PCA punktów osi przewodu; patrz nagłówek vestibular.js i bibliografia).
   Wu S, Lin P, Zheng Y, Zhou Y, Liu Z, Yang X (2021). "Measurement of Human Semicircular Canal
-  Spatial Attitude". Front Neurol 12:741948. doi:10.3389/fneur.2021.741948  (MRI, n=55).
-  Kierunkowo zgodne z kanonem: Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP
-  (2005). "Orientation of human semicircular canals measured by 3D multiplanar CT reconstruction".
-  JARO 6:191-206. doi:10.1007/s10162-005-0003-x.
-  Walidacja wewnętrzna danych: koplanarność LARP/RALP — RA∥LP (cos≈0.985, ~10°), RP∥LA (cos≈0.988, ~9°).
+  Spatial Attitude". Front Neurol 12:741948 (MRI, n=55) — do 2026-08-05 źródło normalnych, dziś
+  KONTROLA ZEWNĘTRZNA (zgodność z IE-Map 17.1°). Kanon kierunkowy: Della Santina CC i wsp. (2005),
+  JARO 6:191-206. Walidacja wewnętrzna: koplanarność RA∥LP i RP∥LA 16.0° (kąt płaszczyzn).
 
-WEKTORY NORMALNE (układ Wu: x=lewo, y=przednio-tylny, z=góra):
-  RP[-0.651,0.702,0.287] LP[0.660,0.702,0.266] RA[0.749,0.577,0.324]
-  LA[-0.739,0.588,0.329] RH[-0.017,-0.299,0.954] LH[0.025,-0.279,0.960]
+WEKTORY NORMALNE (żywe CANAL_NORMALS, ramka głowy x=prawo, y=góra, z=nos; L = lustro P):
+  posterior P[0.6220, 0.1612, 0.7662] · anterior P[-0.8038, 0.0391, 0.5937]
+  · horizontal P[-0.0304, 0.9834, -0.1786]
 
-MAPOWANIE NA MAGNITUDY (biorę |składowe| — znak osi Wu nieistotny dla proporcji; kierunki bicia
-z konwencji klinicznej w quickPhase): PION ∝ |x|(międzyuszna), POZIOM ∝ |z|(czaszkowa),
-SKRĘT ∝ |y|(nosowo-potyliczna). nysMag() normalizuje do max=1.
+MAPOWANIE NA MAGNITUDY (|składowe| normalnej w RAMCE GŁOWY; kierunki bicia z konwencji klinicznej
+w quickPhase): PION ∝ |x|(międzyuszna) · POZIOM ∝ |y|(czaszkowa) · SKRĘT ∝ |z|(nosowo-potyliczna).
+nysMag() normalizuje do max=1.
 
-REALNE PROPORCJE (max=1):  tylny v0.93:h0.41:t1.00 · przedni v1.00:h0.44:t0.78 · poziomy v0.02:h1.00:t0.29
+REALNE PROPORCJE (max=1, żywe 2026-08-13):  tylny v0.81:h0.21:t1.00 · przedni v1.00:h0.05:t0.74
+  · poziomy v0.03:h1.00:t0.18
+  (Poprzednie liczby tej sekcji — 0.93/0.41/0.44/0.78/0.29 — pochodziły z wektorów Wu i po wymianie
+   źródła na IE-Map były nieaktualne; największy rozjazd: przedni h 0.44→0.05. Ocena II, GEO-3/K2.)
 
 MASKA KLINICZNA (stała NYS_SHOW) — geometria daje magnitudy, ale konwencja kliniczna decyduje,
 KTÓRE składowe wyrażamy (każdą można odsłonić flagą true):
-  posterior.h=false  geom.≈0.41 — klin. pomijany (tylny opisywany jako pionowo-skrętny)
-  posterior.t=true                — skręt wyrażony; realne v:t ≈ 0.93:1 (było sztywne 1:1)
-  anterior.t=false   geom.≈0.78 — OVERRIDE KLINICZNY: czysty downbeat. UWAGA: geometria daje
-                                   ISTOTNY skręt (~0.78× pionu); "przedni = czysty downbeat" jest
+  posterior.h=false  geom.≈0.21 — klin. pomijany (tylny opisywany jako pionowo-skrętny).
+                                   UWAGA (ocena II, A4): flaga NIE jest gotowa do odsłonięcia —
+                                   znakowana geometria daje kierunek KONTRA (−0.21), a quickPhase
+                                   nadałby ipsi (+0.21); przed odsłonięciem poprawić znak.
+  posterior.t=true                — skręt wyrażony; realne v:t ≈ 0.81:1 (było sztywne 1:1)
+  anterior.t=false   geom.≈0.74 — OVERRIDE KLINICZNY: czysty downbeat. UWAGA: geometria daje
+                                   ISTOTNY skręt (~0.74× pionu); "przedni = czysty downbeat" jest
                                    decyzją kliniczną (torsja obserwacyjnie śladowa), NIE wynikiem geometrii.
-  horizontal.t=false geom.≈0.29 — klin. czysto poziomy (geom. mały skręt pominięty)
+  horizontal.t=false geom.≈0.18 — klin. czysto poziomy (geom. mały skręt pominięty)
 Znaki bicia i maski zweryfikowane: tylny upbeat+skręt ipsi, przedni downbeat t=0, poziomy ku uchu.
-Jedyna od razu widoczna zmiana vs poprzednio: tylny v:t = 0.93:1 (realne) zamiast 1:1.
+Jedyna od razu widoczna zmiana vs poprzednio: tylny v:t = 0.81:1 (realne) zamiast 1:1.
 
 DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09):
   PROBLEM: fenomen Tullio (dehiscencja kanału GÓRNEGO/przedniego) daje oczopląs PIONOWO-SKRĘTNY,
@@ -986,7 +1043,7 @@ DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09)
   BPPV kanału przedniego → ryzyko REGRESJI zwalidowanych testów (t1–t5 + ścieżka BPPV) i zmiana
   utrwalonej konwencji klinicznej „czysty downbeat".
   WYBRANE: nysMag() WYEKSPORTOWANO z modułu Vestibular; NeuroVOR.pressureStimulus() buduje wektor
-  Tullio z PEŁNEJ geometrii (nysMag: przedni v1.00 : t0.78), OMIJAJĄC maskę — LOKALNIE, tylko dla SCDS.
+  Tullio z PEŁNEJ geometrii (nysMag: przedni v1.00 : t0.74), OMIJAJĄC maskę — LOKALNIE, tylko dla SCDS.
   Maska NYS_SHOW pozostaje globalnie w mocy (BPPV bez zmian). Skręt kanału przedniego jest więc
   „ukryty" dla renderowania BPPV, ale DOSTĘPNY przez surową geometrię dla ścieżki ciśnieniowej.
   → patrz MODUŁ NeuroVOR / ETAP 7 · pressureStimulus() (Minor 2000, [H18]).
