@@ -283,7 +283,11 @@ POZOSTAŁE EKSPORTY (dotąd nieudokumentowane — ocena II, C1):
    sizeR(size) -> r  (mnożnik promienia; walidacja > 0)
    sizeUm(size) -> równoważna średnica kłębka [µm] (16/21/29 dla small/medium/big — prawo
       Stokesa [15]; pokazywana na karcie manewru)
-   restPhi(canal, side) -> °  (spoczynek złogu w pionie: tylny 48.8 · poziomy 199.8 · przedni 3)
+   restPhi(canal, side) -> °  (spoczynek złogu w pionie: tylny 48.8 · poziomy 199.8 · przedni 3).
+      KLAMRA PER KANAŁ (od V7): minimum poza łukiem → PIONOWE: osklepek (zamierzone — brak stabilnego
+      spoczynku AC w pionie, R7); POZIOMY z minimum ZA UJŚCIEM: spoczynek na ujściu (kanał opróżnia
+      się pierwszym krokiem symulacji) zamiast dawnej cichej teleportacji ~264° do osklepka. Przy
+      ramce 0° gałąź poziomego nieosiągalna (eq=199.8) — uzbraja się od pochylenia ≥ +9.9° (R9).
    driveAt(canal, side, phiDeg, q, tauP=6.5) -> napęd styczny [rad/s] w DOWOLNYM punkcie łuku
       i orientacji (od V3; uogólnienie restDrive — restDrive = driveAt w restPhi i pionie,
       tożsamościowo). Zasili napęd presetów historii pozycyjnej (BLT_HISTORY, plan V5).
@@ -843,8 +847,9 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
       ARC_SPAN=267.3 i klamra restPhi TELEPORTUJE złóg o ~264° do osklepka — start w ramieniu
       bańkowym = fenotyp apogeotropowy w wariancie canalo; |g|_pł spada 0.181→0.031); próg leży
       na skraju pasma ±10°, które ten zapis sam nazywa nieusuwalną niepewnością postawy, a osobnik
-      o nachyleniu 0–3° przy średniej Della Santiny 20°±7 nie jest egzotyczny (rozdzielenie gałęzi
-      klamry per kanał = plan V7 oceny II). Przy pitch ≤ −28.2° kanał PRZEDNI zyskuje stabilny
+      o nachyleniu 0–3° przy średniej Della Santiny 20°±7 nie jest egzotyczny (gałąź klamry
+      ROZDZIELONA per kanał — WDROŻONE V7: minimum za ujściem poziomego → spoczynek na ujściu,
+      kanał opróżnia się zamiast teleportu; pionowe bez zmian). Przy pitch ≤ −28.2° kanał PRZEDNI zyskuje stabilny
       spoczynek w łuku → wraca adhezja i latencja — cała wyprowadzona sygnatura „AC-BPPV bez
       latencji" (R7/R3b) obowiązuje tylko dla pochyleń > ~−28°; przy −20° (wartość „nieodróżnialna")
       margines za ujściem to już tylko 7.2° (z 23.6° przy 0°). Dotychczasowe sondy badały wyłącznie

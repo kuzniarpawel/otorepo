@@ -188,7 +188,17 @@ export const Vestibular = (()=>{
   function restPhi(canal, side){
     const G=CANAL_GEOM[canal][side], g=gHead([1,0,0,0]);
     const a=Math.atan2(dot3(g,G.e2), dot3(g,G.e1))*180/Math.PI, eq=((a%360)+360)%360;
-    return (eq>CUPULA_DEG && eq<ARC_SPAN[canal]) ? eq : CUPULA_DEG;
+    if(eq>CUPULA_DEG && eq<ARC_SPAN[canal]) return eq;
+    // KLAMRA PER KANAŁ (2026-08-13, ocena II A3/V7): minimum ZA UJŚCIEM ≠ minimum za osklepkiem.
+    //   POZIOMY (koniec nieampułkowy uchodzi WPROST do łagiewki): minimum za ujściem → spoczynek NA
+    //   UJŚCIU — pierwszy krok symulacji wyprowadza złóg (kanał opróżnia się), zamiast dawnej cichej
+    //   TELEPORTACJI o ~264° do osklepka (start w ramieniu bańkowym = fenotyp apogeotropowy z niczego).
+    //   Przy ramce 0° gałąź jest dla poziomego NIEOSIĄGALNA (eq=199.8) — zmiana bezkosztowa; uzbraja
+    //   się dopiero przy pochyleniu ramki ≥ +9.9° (granice przedziału wolności: R9/engine_doc).
+    //   PIONOWE celowo BEZ zmiany: minimum za ujściem → osklepek (zamierzone — tak model koduje brak
+    //   stabilnego spoczynku kanału przedniego w pionie i wyprowadza brak latencji AC-BPPV, R7).
+    if(canal==="horizontal" && eq>=ARC_SPAN.horizontal) return ARC_SPAN.horizontal;
+    return CUPULA_DEG;
   }
   /* NAPĘD W SPOCZYNKU — decyduje, czy złóg jest w ogóle PRZYKLEJONY. Gdy spoczynek jest prawdziwym
      minimum (tylny, poziomy), styczna składowa = 0: złóg leży swobodnie i trzyma go adhezja, którą

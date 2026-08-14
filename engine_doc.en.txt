@@ -290,7 +290,12 @@ OTHER EXPORTS (undocumented until now — assessment II, C1):
    sizeR(size) -> r  (radius multiplier; validated > 0)
    sizeUm(size) -> equivalent clump diameter [µm] (16/21/29 for small/medium/big — Stokes'
       law [15]; shown on the maneuver card)
-   restPhi(canal, side) -> °  (debris rest when upright: posterior 48.8 · horizontal 199.8 · anterior 3)
+   restPhi(canal, side) -> °  (debris rest when upright: posterior 48.8 · horizontal 199.8 · anterior 3).
+      PER-CANAL CLAMP (since V7): a minimum outside the arc → VERTICAL canals: the cupula (intended —
+      no stable upright rest of the AC, R7); HORIZONTAL with the minimum BEYOND THE EXIT: rest AT the
+      exit (the canal empties on the first simulation step) instead of the old silent ~264° teleport
+      to the cupula. At a 0° frame the horizontal branch is unreachable (eq=199.8) — it arms only
+      from a pitch of ≥ +9.9° (R9).
    driveAt(canal, side, phiDeg, q, tauP=6.5) -> tangential drive [rad/s] at ANY point of the arc and
       ANY orientation (since V3; a generalisation of restDrive — restDrive = driveAt at restPhi and
       upright, identically). Will feed the drive of the positional-history presets (BLT_HISTORY, plan V5).
@@ -891,8 +896,9 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
       a start in the ampullary arm = an apogeotropic phenotype in the canalo variant; |g|_plane
       drops 0.181→0.031); the threshold lies at the edge of the ±10° band that this very write-up
       calls an irremovable posture uncertainty, and an individual with a 0–3° pitch against Della
-      Santina's mean of 20°±7 is not exotic (splitting the clamp's branches per canal = plan V7 of
-      assessment II). At pitch ≤ −28.2° the ANTERIOR canal gains a stable rest inside the arc →
+      Santina's mean of 20°±7 is not exotic (the clamp branch was SPLIT per canal — IMPLEMENTED in V7: a beyond-the-exit minimum of the
+      horizontal canal → rest at the exit, the canal empties instead of teleporting; vertical canals
+      unchanged). At pitch ≤ −28.2° the ANTERIOR canal gains a stable rest inside the arc →
       adhesion and latency return — the whole derived "AC-BPPV without latency" signature (R7/R3b)
       holds only for pitches > ~−28°; at −20° (the "indistinguishable" value) the margin past the
       opening is only 7.2° (down from 23.6° at 0°). The probes so far examined ONLY negative
