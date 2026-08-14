@@ -193,6 +193,34 @@ function engineOracle(h) {
     out.lightcupula = lc;
   }
 
+  // SPV-MOST (ocena II, V13/D6): pin śladu spvTrace — kompakt (pełny ślad za duży do golden):
+  // per przebieg {n, peak:[t,spvH,spvVert,spvTors] w DOKŁADNYM czasie szczytu |SPV| (łapie dryf
+  // amplitudy/latencji między węzłami siatki), grid5: co 5 s + ostatnia (łapie kształt/wygasanie)}.
+  if (h.spvTrace && h.engineXi && h.provokeQ && h.actTimeline && h.Vestibular) {
+    const r5 = x => +(+x).toFixed(5);
+    const mag = p => Math.hypot(p.spvH, p.spvVert, p.spvTors);
+    const compact = (sim, canal, side) => {
+      const tr = h.spvTrace(sim, canal, side);
+      let pk = tr[0]; for (const p of tr) if (mag(p) > mag(pk)) pk = p;
+      const step = Math.max(1, Math.round(5 / (tr[1].t - tr[0].t)));
+      const grid = [];
+      for (let i = step - 1; i < tr.length; i += step) grid.push(tr[i]);
+      if (grid[grid.length - 1] !== tr[tr.length - 1]) grid.push(tr[tr.length - 1]);
+      const row = p => [r5(p.t), r5(p.spvH), r5(p.spvVert), r5(p.spvTors)];
+      return { n: tr.length, peak: row(pk), grid5: grid.map(row) };
+    };
+    const spv = {};
+    for (const side of ['P', 'L']) {
+      spv[`dixAct/${side}`] = compact(h.Vestibular.simulateCanalith({ canal: 'posterior', side, q0: [1, 0, 0, 0], timeline: h.actTimeline('dix', side) }), 'posterior', side);
+      spv[`headhang/${side}`] = compact(h.engineXi('anterior', side, false, null, null), 'anterior', side);
+      spv[`rollGeo/${side}`] = compact(h.engineXi('horizontal', side, false, null, null), 'horizontal', side);
+      const qRoll = h.provokeQ('horizontal', side), tl = [{ q: qRoll, tTrans: 0.5, tHold: 60 }];
+      spv[`rollCupulo/${side}`] = compact(h.Vestibular.simulateCupulolith({ canal: 'horizontal', side, q0: [1, 0, 0, 0], timeline: tl }), 'horizontal', side);
+      spv[`rollLight/${side}`] = compact(h.Vestibular.simulateLightCupula({ canal: 'horizontal', side, q0: [1, 0, 0, 0], timeline: tl }), 'horizontal', side);
+    }
+    out.spv = spv;
+  }
+
   // LYING-DOWN (ocena II, V11/D2): pin liczb faz per scenariusz×strona — dom zaokrągla φ₀ i tnie ξ
   // progiem XI_CARD, więc dryf podprogowy byłby w dom niewidzialny (precedens sessionChain).
   if (h.ldtPhases) {
@@ -495,6 +523,7 @@ if (!CHECK) {
       diffKeys(snap.engine.sessionChain, gold.engine.sessionChain, 'engine.sessionChain/', diffs);   // V10/D1: bez tej linii pin byłby zapisywany, ale nigdy porównywany
       diffKeys(snap.engine.lyingdown, gold.engine.lyingdown, 'engine.lyingdown/', diffs);            // V11/D2: jw.
       diffKeys(snap.engine.lightcupula, gold.engine.lightcupula, 'engine.lightcupula/', diffs);      // V12/D3: jw.
+      diffKeys(snap.engine.spv, gold.engine.spv, 'engine.spv/', diffs);                              // V13/D6: jw.
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

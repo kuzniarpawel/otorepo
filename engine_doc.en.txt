@@ -336,6 +336,34 @@ simulateLightCupula({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1
    target as the arrows); a red flag in baranyClassify HC-geo; the UI state variant stays binary
    (the phenotype/mechanism split = D4).
 
+spvTrace(sim, canal, side) -> [{t, spvH, spvVert, spvTors}]   ·   XI_VIS   [module src/engine/spv-bridge.js]
+   SPV BRIDGE (assessment II, D6/V13) — a units adapter ξ(t) → SPV(t) [°/s] on a COMMON axis of both
+   engines; NO PHYSICS. A layer ABOVE the engines (bridge → {vestibular, neuro-vor}): vestibular.js
+   stays free of imports, SPV_MAX has ONE source (NeuroVOR.SPV_MAX=30). CONTRACT (for the
+   feature/vog-camera branch): t = seconds from the start of the provocation (grid 1:1 with sim);
+   spvH/spvVert/spvTors = SPV WITH THE SIGN of the FAST-PHASE direction in the ANATOMICAL frame
+   (+H toward the right ear, +Vert upbeat, +Tors upper poles toward the right; magnitude =
+   slow-phase velocity — the VNG "right-beating positive" convention); the screen mirror (camRx)
+   only in the render. Names spv* (the NeuroVOR dictionary), not bare h/v/t (in the repo =
+   dimensionless direction components; {t,h,v,t} from the D6 spec had a key collision — corrected).
+   SCALE: xiEff = ξ≥0 ? ξ : ξ·EWALD_INHIB — the Ewald II asymmetry STAYS (transduction physiology,
+   the camera sees it: the reversal after the Dix ~15 °/s, not the raw ~33; Roll geo 20.9/8.0; the
+   cupulo "affected-down weaker" exists only with it), the min(1,·) clamp does NOT enter (a render
+   clamp, not physics): ξ>1 attainable (Semont 1.05; size big ×2.46) → a trace >30 °/s is intended —
+   the trace and the animation deliberately diverge above ξ=1. ξ=1 ≡ SPV_MAX is a CALIBRATION
+   CHOICE (ξ has no Hz layer; sanity: Roll geo 0.696→~21 °/s within the published 20–70 band, Dix →
+   a vector peak |SPV| ~34 °/s). Vertical axis: common UNITS, not common ceilings (NeuroVOR damps
+   the vertical with VERT_W=0.5 — a tonic imbalance of the pair; BPPV computes from the cupular
+   deflection; VERT_W does not enter BPPV). XI_VIS = VIS_THRESH/SPV_MAX = 0.0667 — the visibility
+   threshold (2 °/s) in ξ for the EXCITATORY branch (inhibitory: /EWALD_INHIB ≈ 0.148); a trace
+   consumer compares |spv*| ≥ VIS_THRESH directly. The 0.05/0.10 thresholds NOT touched (different
+   scales — unification is a separate decision with a rebaseline). VOG WALL (the overlay contract):
+   the camera gives [{t: ms, x, y, conf}] → segmental estimates spvX/spvY in NORMALIZED image units
+   (the j/s→°/s calibration deliberately out of scope until near-IR) and NO torsion — until then the
+   overlay = SHAPE+TIMING, not amplitude; for PC torsion is the DOMINANT component of the model
+   (quickPhase t=1.0) — the camera will see ~0.81 of the vector. Oracle pin: engine.spv (10 runs
+   × {n, peak, grid5}).
+
 dynNystagmus(canal, side, xi) -> {excited, intensity, h, v, t}
    Conversion of instantaneous ξ (from simulateCanalith) into nystagmus components.
    excited = (xi>0); direction = quickPhase with the sign of excitation.

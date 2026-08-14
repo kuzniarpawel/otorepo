@@ -324,6 +324,31 @@ simulateLightCupula({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1
    (suwak yaw ±90°, dwa rzędy oczu heavy/light z JEDNEGO kąta, napisy z tego samego celu co strzałki);
    redflag w baranyClassify HC-geo; wariant stanu UI pozostaje binarny (rozdział fenotyp/mechanizm = D4).
 
+spvTrace(sim, canal, side) -> [{t, spvH, spvVert, spvTors}]   ·   XI_VIS   [moduł src/engine/spv-bridge.js]
+   MOST SPV (ocena II, D6/V13) — adapter jednostek ξ(t) → SPV(t) [°/s] na WSPÓLNEJ osi obu silników;
+   BEZ FIZYKI. Warstwa NAD silnikami (bridge → {vestibular, neuro-vor}): vestibular.js zostaje bez
+   importów, SPV_MAX ma JEDNO źródło (NeuroVOR.SPV_MAX=30). KONTRAKT (dla gałęzi feature/vog-camera):
+   t = sekundy od startu prowokacji (siatka 1:1 z sim); spvH/spvVert/spvTors = SPV ZE ZNAKIEM kierunku
+   FAZY SZYBKIEJ w ramce ANATOMICZNEJ (+H ku prawemu uchu, +Vert upbeat, +Tors górne bieguny ku prawemu;
+   moduł = prędkość fazy wolnej — konwencja VNG „right-beating dodatni"); lustro ekranu (camRx) dopiero
+   w renderze. Nazwy spv* (słownik NeuroVOR), nie gołe h/v/t (w repo = bezwymiarowe składowe kierunku;
+   {t,h,v,t} ze spec D6 miało kolizję klucza — skorygowane). SKALA: xiEff = ξ≥0 ? ξ : ξ·EWALD_INHIB —
+   asymetria Ewalda II ZOSTAJE (fizjologia transdukcji, kamera ją widzi: odwrócenie po Dixie ~15 °/s,
+   nie surowe ~33; Roll geo 20.9/8.0; „chore w dole słabsze" kupulo istnieje tylko z nią), klamra
+   min(1,·) NIE wchodzi (renderowa, nie fizyka): ξ>1 osiągalne (Semont 1.05; size big ×2.46) → ślad
+   >30 °/s zamierzony — ślad i animacja celowo rozjeżdżają się powyżej ξ=1. ξ=1 ≡ SPV_MAX to WYBÓR
+   KALIBRACYJNY (ξ bez warstwy Hz; sanity: Roll geo 0.696→~21 °/s w paśmie publikowanym 20–70, Dix →
+   szczyt |SPV| ~34 °/s wektorowo). Oś pionowa: wspólne JEDNOSTKI, nie sufity (NeuroVOR tłumi pion
+   VERT_W=0.5 — imbalans toniczny pary; BPPV liczy z wychylenia osklepka; VERT_W nie wchodzi do BPPV).
+   XI_VIS = VIS_THRESH/SPV_MAX = 0.0667 — próg widoczności (2 °/s) w ξ dla gałęzi POBUDZENIOWEJ
+   (hamująca: /EWALD_INHIB ≈ 0.148); konsument śladu porównuje wprost |spv*| ≥ VIS_THRESH. Progi
+   0.05/0.10 NIE ruszone (różne skale — unifikacja to osobna decyzja z rebaseline). MUR VOG (kontrakt
+   nałożenia): kamera daje [{t: ms, x, y, conf}] → estymaty segmentowe spvX/spvY w jednostkach
+   ZNORMALIZOWANYCH obrazu (kalibracja j/s→°/s świadomie poza zakresem do near-IR) i BEZ torsji —
+   nałożenie do tego czasu = KSZTAŁT+TIMING, nie amplituda; dla PC torsja jest składową DOMINUJĄCĄ
+   modelu (quickPhase t=1.0) — kamera zobaczy ~0.81 wektora. Pin wyroczni: engine.spv (10 przebiegów
+   × {n, peak, grid5}).
+
 dynNystagmus(canal, side, xi) -> {excited, intensity, h, v, t}
    Konwersja chwilowego ξ (z simulateCanalith) na składowe oczopląsu.
    excited = (xi>0); kierunek = quickPhase ze znakiem pobudzenia.
