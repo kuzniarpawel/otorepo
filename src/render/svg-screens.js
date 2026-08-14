@@ -526,7 +526,29 @@ function computeManSim(plan, size="medium"){
   const dt = sim.length>1 ? sim[1].t - sim[0].t : 0.05;
   const segs=[]; let t0=0;
   for(const seg of tl){ const dur=(seg.tTrans||0)+(seg.tHold||0); segs.push({t0,dur}); t0+=dur; }
-  return {sim, dt, segs, exited: sim.some(s=>s.exited)};
+  // D5/V17: prefiksowa „dawka" Sum|xi|*dt — substrat paska NUDNOŚCI (czysta suma po istniejących
+  // próbkach, zero wywołań silnika; cache currentManSim pokrywa bez zmiany klucza). SUROWE |ξ| bez
+  // rektyfikacji Ewalda II: konflikt czuciowy nie rektyfikuje — hamowanie mdli tak samo (świadoma
+  // decyzja, engine_doc WARSTWA OBJAWOWA; dla Lemperta ∫|ξ|=35.9 vs ∫REC=23.4).
+  const cum=new Array(sim.length); let acc=0;
+  for(let i=0;i<sim.length;i++){ acc+=Math.abs(sim[i].xi)*dt; cum[i]=acc; }
+  return {sim, dt, segs, cum, exited: sim.some(s=>s.exited)};
+}
+/* ============ D5/V17: WARSTWA OBJAWOWA — czysto widokowa nad istniejącym śladem ξ(t) ============
+   Zawrót ~ bieżące |ξ| SUROWE (bez min(1,·) — wartość ponad 1 zachowana w odczycie liczbowym, big
+   sięga 3.04); 100% paska = |ξ|=1, CELOWO ta sama kotwica co nasycenie animacji oczu (nysStrength:
+   min(1,|ξ|)) — pasek nasyca się tam, gdzie oczy przestają przyspieszać. Nudności = saturacja
+   wykładnicza dawki: 100·(1−exp(−Σ|ξ|dt / NAUS_I0)) — fizjologiczny plafon bez „railowania";
+   kalibracja NAUS_I0=25 ξ·s z sondy: pełny Epley/Semont/Yacovino/Lempert medium → 76–78%,
+   small 51%, big 97% (rozmiar złogu wyraźnie różnicuje). Oś czasu ABSOLUTNA fizyki manewru
+   (zegar animacji kroku, NIE timer użytkownika — objawy spójne z oczami, nie z zegarkiem);
+   nudności deterministyczne i bezstanowe (prefiks cum), odporne na skakanie po krokach. */
+const SYM_FLOOR=0.03;                          // próg widoczności zawrotu — ta sama konwencja co odcięcie 3% szczytu w xiEnvelope
+const NAUS_I0=25;                              // ξ·s — stała saturacji nudności (kalibracja wyżej)
+function symAt(man, tAbs){
+  if(!man || !man.sim || !man.cum || !man.sim.length) return {dizz:0, naus:0};
+  const i=Math.min(man.sim.length-1, Math.max(0, Math.round(tAbs/man.dt)));
+  return {dizz: Math.abs(man.sim[i].xi), naus: 100*(1-Math.exp(-(man.cum[i]||0)/NAUS_I0))};
 }
 // symulacja manewru z cache; klucz zawiera rozmiar → zmiana rozmiaru unieważnia cache i przelicza dynamikę.
 function currentManSim(){
@@ -655,7 +677,7 @@ function setupGuideAnim(){
   if(state.autostart && total>0){ state.running=true; }
   state.autostart=false; syncWake();
 
-  _otoStart=null; let last=performance.now(), lastSec=-1;
+  _otoStart=null; let last=performance.now(), lastSec=-1, lastDizz=-1, lastNaus=-1;
   // CZAS WĘDRÓWKI OTOLITU = CZAS OCZOPLĄSU (widok frontalny): oba grają przez to samo okno tEnd z silnika,
   // więc na flipkarcie obie strony kończą się razem. Zależność od rozmiaru cząstki niesie już samo tEnd
   // (mniejsza cząstka → wolniejsze osiadanie → dłuższe ξ(t) → dłuższa wędrówka). Widełki chronią skrajności.
@@ -708,6 +730,18 @@ function setupGuideAnim(){
       else{ placeOtolith(canal, 1, easeInOut((ot-0.65)/0.35)); }
     } else {
       placeOtolith(canal, fFrom+(fTo-fFrom)*easeInOut(ot), 0);
+    }
+    // D5/V17: pasek objawów — zegar ANIMACJI kroku (ten sam _otoStart co otolit/oczopląs), NIE timer
+    // użytkownika: przy timerze wydłużonym ręcznie objawy „zamierają" po końcu okna fizyki kroku —
+    // spójnie z oczopląsem, który też gra raz od wejścia w krok. Aktualizacja przy zmianie wartości
+    // zaokrąglonej (wzorzec lastSec — bez tekstowego spamu per klatka).
+    const sgSym=man.segs[Math.min(state.step, man.segs.length-1)];
+    if(sgSym){
+      const sv=symAt(man, sgSym.t0+Math.min((now-_otoStart)/1000, sgSym.dur));
+      const dp=sv.dizz<SYM_FLOOR?0:Math.min(100,Math.round(sv.dizz*100)), np2=Math.round(sv.naus);
+      if(dp!==lastDizz){ lastDizz=dp; const b=$("#symDizz"); if(b){ b.style.width=dp+"%"; b.classList.toggle("over", sv.dizz>=1); }
+        const vv=$("#symDizzV"); if(vv) vv.textContent="|ξ| "+(sv.dizz<SYM_FLOOR?"0.00":sv.dizz.toFixed(2)); }
+      if(np2!==lastNaus){ lastNaus=np2; const b=$("#symNaus"); if(b) b.style.width=np2+"%"; const vv=$("#symNausV"); if(vv) vv.textContent=np2+"%"; }
     }
     // TIMER (pasek liniowy + odliczanie) — czyta state.total na żywo (suwak działa od razu)
     const T=state.total;
@@ -856,8 +890,25 @@ function renderGuide(){
       <button class="ic" role="switch" aria-checked="${state.sound}" aria-label="${t("Sygnał dźwiękowy i wibracja","Sound signal and vibration")}" title="${t("Sygnał dźwiękowy","Sound signal")}" onclick="toggleSound(this)"><svg viewBox="0 0 24 24" fill="none"><path d="M5 9v6h4l5 4V5L9 9H5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M17 9.5a4 4 0 0 1 0 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>`;
   const sp = Math.max(0, Math.min(100, ((st.seconds||0)/120)*100));
+  // D5/V17: pasek objawów — OSTATNI wiersz .tcard w OBU wariantach (kroki bez timera też mają realne
+  // ξ, np. rzut Semonta). Wartości początkowe deterministyczne = symAt(man, seg.t0) — rezyduum
+  // z poprzedniego kroku (jak env(0) w manStepEnv); formaty toFixed/Math.round (golden stabilny).
+  const symRow=(()=>{
+    const sg=_man.segs[Math.min(state.step, _man.segs.length-1)];
+    const s0=symAt(_man, sg?sg.t0:0);
+    const d=s0.dizz, np=Math.round(s0.naus), over=d>=1;
+    const TIP=t("Poglądowo, z tej samej fizyki, która napędza oczopląs: natężenie zawrotu ~ bieżące odchylenie osklepka |ξ|, nudności ~ skumulowana „dawka” Σ|ξ|·Δt od początku manewru. To nie jest pomiar kliniczny.","Illustrative, from the same physics that drives the nystagmus: vertigo intensity ~ the current cupular deflection |ξ|, nausea ~ the cumulative \"dose\" Σ|ξ|·Δt since the maneuver began. This is not a clinical measurement.");
+    return `<div class="symrow" title="${TIP}">
+          <span class="symlbl">${t("Zawrót","Vertigo")}</span>
+          <div class="symbar"><div id="symDizz" class="symfill dizz${over?' over':''}" style="width:${d<SYM_FLOOR?0:Math.min(100,Math.round(d*100))}%"></div></div>
+          <span id="symDizzV" class="symval mono"${over?` title="${t("powyżej nasycenia odpowiedzi oka (|ξ| ≥ 1)","above the ocular response saturation (|ξ| ≥ 1)")}"`:""}>|ξ| ${d<SYM_FLOOR?"0.00":d.toFixed(2)}</span>
+          <span class="symlbl">${t("Nudności","Nausea")}</span>
+          <div class="symbar"><div id="symNaus" class="symfill naus" style="width:${np}%"></div></div>
+          <span id="symNausV" class="symval mono">${np}%</span>
+        </div>`;
+  })();
   const timerBlock=st.seconds==null
-    ? `<div class="tcard"><div class="trow1"><div class="nostimer-inline">${t("Krok bez odliczania — wykonaj płynnie, bez przerwy.","Step without a timer — perform smoothly, without pausing.")}</div>${tgIcons}</div></div>`
+    ? `<div class="tcard"><div class="trow1"><div class="nostimer-inline">${t("Krok bez odliczania — wykonaj płynnie, bez przerwy.","Step without a timer — perform smoothly, without pausing.")}</div>${tgIcons}</div>${symRow}</div>`
     : `<div class="tcard">
         <div class="trow1">
           <button id="btnGo" class="go" onclick="toggleTimer()">Start</button>
@@ -874,6 +925,7 @@ function renderGuide(){
           </div>
           <div class="ticks"><span style="left:25%" onclick="setStepSeconds(30)">0:30</span><span style="left:50%" onclick="setStepSeconds(60)">1:00</span><span class="r" style="left:100%" onclick="setStepSeconds(120)">2:00</span></div>
         </div>
+        ${symRow}
       </div>`;
   const headPanel = st.headSlot && st.headSlot.kind==="textOnly"
       ? `<div class="panelbox"><h4>${t("Głowa","Head")}</h4><div class="headnote">${st.headText}</div></div>`
@@ -887,6 +939,17 @@ function renderGuide(){
   // Manewr na KUPULOLITIAZĘ (mechanism:"cupulo", np. Bascule): karta „wędrówka otolitów" domyślnie NA WIERZCHU
   // (flipped) — pokazuje przyleganie/odklejanie od osklepka; osklepek dorysowany w labiryncie (opts.cupula).
   const cupuloMech = p.mechanism==="cupulo";
+  // D5/V17: karta „Co dalej — RD" na OSTATNIM kroku manewru CZYSZCZĄCEGO (ekspulsja bywa wcześniej —
+  // finał to naturalny moment „co dalej", a krok liberacyjny ma już libNote; Lempert czyści w 3/6).
+  // gufoniApo (konwersja, exited=false) karty ŚWIADOMIE nie dostaje — jego gufoniNote nakazuje ponowny
+  // Roll. Treść: frazowanie RD 1:1 z neuro-vor.js (spójność silników) + „~13%" z [H26] Özgirgin 2024.
+  const rdCard = (_man.exited && state.step===n-1)
+    ? `<div class="card" style="margin-top:10px">
+        <div class="obslabel" style="margin-bottom:4px">${t("Co dalej — zawroty rezydualne (RD)","What next — residual dizziness (RD)")}</div>
+        <div class="note">${t("Skuteczny manewr ≠ wyleczony pacjent: zawroty rezydualne utrzymują się u <b>31–61%</b> pacjentów po ustąpieniu oczopląsu (dysfunkcja łagiewki + niepełna kompensacja ośrodkowa).","A successful maneuver ≠ a cured patient: residual dizziness persists in <b>31–61%</b> of patients after the nystagmus resolves (utricular dysfunction + incomplete central compensation).")}</div>
+        <div class="note">${t("<b>Poradnictwo</b> — wyjaśnienie, skąd biorą się objawy i że ustępują samoistnie — <b>zbija RD do ~13%</b>.","<b>Counselling</b> — explaining where the symptoms come from and that they subside on their own — <b>cuts RD to ~13%</b>.")}</div>
+        <div class="note">${t("<b>Supresanty przedsionkowe są SZKODLIWE</b> — opóźniają kompensację. Zalecane: poradnictwo + rehabilitacja przedsionkowa (Özgirgin i wsp. 2024).","<b>Vestibular suppressants are HARMFUL</b> — they delay compensation. Recommended: counselling + vestibular rehabilitation (Özgirgin et al. 2024).")}</div></div>`
+    : "";
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${p.name}</b><span>${CANALS[p.canal].label}</span></div>
@@ -920,7 +983,7 @@ function renderGuide(){
       </div>
       <div class="title">${st.title}</div>
       <div class="instr">${st.instr}</div></div>
-    ${timerBlock}${state.session ? (()=>{   // pasek sesji (V10/D1) — inline za timerBlock: przy OFF ZERO bajtów różnicy (golden)
+    ${rdCard}${timerBlock}${state.session ? (()=>{   // rdCard (D5) i pasek sesji (V10) inline: przy pustych ZERO bajtów różnicy (golden)
       const S2=state.session, match=CANAL_OF[state.maneuverKey]===S2.canal;
       const chipS=(k,val)=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${val}</b></span>`;
       const chips = S2.exited

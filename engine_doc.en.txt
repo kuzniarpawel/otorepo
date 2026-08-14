@@ -1490,6 +1490,38 @@ DESIGN DECISION — EXCEPTION TO THE anterior.t MASK FOR SCDS/TULLIO (2026-07-09
   "hidden" for BPPV rendering, but AVAILABLE via the raw geometry for the pressure path.
   → see NeuroVOR MODULE / STAGE 7 · pressureStimulus() (Minor 2000, [H18]).
 
+=== SYMPTOM LAYER — the "Vertigo/Nausea" bar + the RD card (D5/V17, 2026-08-14) ===
+A PURELY VIEW-SIDE overlay on the maneuver's existing cupular-deflection trace ξ(t) (computeManSim) —
+zero engine calls, zero physics changes (proof: engine/pose is bit-for-bit at rebaseline).
+ VERTIGO ~ the current RAW |ξ| (no min(1,·)): 100% of the bar = |ξ|=1 — DELIBERATELY the same anchor
+   as the eye-animation saturation (nysStrength: min(1,|ξ|)) — the bar saturates exactly where the eyes
+   stop accelerating; a value above 1 is NOT lost (numeric readout + the .over class; big reaches 3.04 —
+   without this the layer would teach that size stops mattering above medium). The visibility floor
+   SYM_FLOOR=0.03 = the 3%-of-peak cut-off convention in xiEnvelope; XI_CARD=0.10 stays the threshold
+   of the nystagmus CARD — the bar deliberately also shows the subthreshold residue (the symptom may
+   persist after the card has gone out).
+ NAUSEA = exponential saturation of the accumulated dose: 100·(1−exp(−Σ|ξ|·Δt / NAUS_I0)),
+   NAUS_I0=25 ξ·s (a calibration constant). Calibration (probe 2026-08-14): a full Epley/Semont/
+   Yacovino/Lempert medium → 76–78% (the standard maneuvers cluster at ~3/4 of the scale), small 51%,
+   big 97%; during a medium Epley: after step 2 → 44%, after 3 → 63%, after 4 → 76% (these values are
+   PINNED in golden as the steps' initial states). The cum prefix is computed once in computeManSim —
+   nausea is deterministic and stateless, robust to jumping between steps.
+ A DELIBERATE DECISION — NAUSEA WITHOUT EWALD II RECTIFICATION: sensory conflict does not rectify,
+   inhibition nauseates just the same. Consequence: Lempert nauseates like Epley (∫|ξ|=35.9 vs 36.9)
+   despite its weaker nystagmus in the ampullofugal steps (∫REC=23.4). Do NOT "fix" this to ∫REC —
+   that would turn the symptom layer into a second nystagmus indicator.
+ CLOCK: the step's ANIMATION axis (the same start as otolith/nystagmus), NOT the user's timer — with
+   a manually extended timer the symptoms die out after the step's physics window ends, consistently
+   with the eyes (do not report this as a bug). BOUNDARY: an illustrative layer, not a clinical
+   measurement (the tooltip says so explicitly).
+ THE "WHAT NEXT — RD" CARD on the LAST step of a CLEARING maneuver (man.exited && step n−1; expulsion
+   can come earlier — the finale is the natural "what next" moment, and the liberatory step already
+   has its libNote): residual dizziness (RD) in 31–61% after the nystagmus has resolved (the utricle +
+   incomplete compensation), counselling cuts RD to ~13%, vestibular suppressants are HARMFUL —
+   counselling + rehabilitation [H26 Özgirgin 2024]; phrasing 1:1 with the NeuroVOR module (cross-engine
+   consistency). gufoniApo (a conversion, exited=false) DELIBERATELY gets no card — its note orders
+   a repeat Roll. Oracle scope: EXACTLY 65 guide/* keys (each = a .symrow insert; the 12 clearing
+   finales additionally get the RD card), dom with no new keys.
 
 ==========================================================================
  NeuroVOR MODULE — THE TONIC/CENTRAL LAYER (VOR · fixation · vHIT · HINTS)

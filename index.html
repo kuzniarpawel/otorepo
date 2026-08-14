@@ -258,6 +258,15 @@
   .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap;cursor:pointer;padding:4px 6px}
   .ticks span.r{transform:translateX(-100%)}
   .nostimer-inline{flex:1;font-size:13px;color:var(--muted)}
+  /* D5/V17: pasek objawow (Zawrot ~ |xi| biezace, Nudnosci ~ saturacja dawki) — ostatni wiersz .tcard */
+  .symrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .symlbl{font-size:11.5px;color:var(--muted);flex:0 0 auto}
+  .symbar{flex:1;min-width:70px;height:7px;border-radius:4px;background:var(--panel2);overflow:hidden}
+  .symfill{height:100%;transition:width .25s}
+  .symfill.dizz{background:var(--primary)}
+  .symfill.dizz.over{background:var(--ant)}
+  .symfill.naus{background:#b0813f}
+  .symval{font-size:11.5px;color:var(--muted);min-width:56px;text-align:right}
   .flipwrap{perspective:1200px;margin-bottom:10px}
   .flip{position:relative;min-height:200px;transition:transform .5s cubic-bezier(.4,.15,.2,1);transform-style:preserve-3d;cursor:pointer;outline:none}
   .flip.flipped{transform:rotateY(180deg)}

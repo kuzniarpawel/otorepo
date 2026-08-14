@@ -1399,6 +1399,35 @@ DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09)
   „ukryty" dla renderowania BPPV, ale DOSTĘPNY przez surową geometrię dla ścieżki ciśnieniowej.
   → patrz MODUŁ NeuroVOR / ETAP 7 · pressureStimulus() (Minor 2000, [H18]).
 
+=== WARSTWA OBJAWOWA — pasek „Zawrót/Nudności" + karta RD (D5/V17, 2026-08-14) ===
+CZYSTO WIDOKOWA nadbudowa nad istniejącym śladem ξ(t) manewru (computeManSim) — zero wywołań
+silnika, zero zmian fizyki (dowód: engine/pose bit-w-bit przy rebaseline).
+ ZAWRÓT ~ bieżące |ξ| SUROWE (bez min(1,·)): 100% paska = |ξ|=1 — CELOWO ta sama kotwica co
+   nasycenie animacji oczu (nysStrength: min(1,|ξ|)) — pasek nasyca się dokładnie tam, gdzie oczy
+   przestają przyspieszać; wartość ponad 1 NIE ginie (odczyt liczbowy + klasa .over; big sięga 3.04 —
+   bez tego warstwa uczyłaby, że rozmiar nie ma znaczenia powyżej medium). Próg widoczności
+   SYM_FLOOR=0.03 = konwencja odcięcia 3% szczytu w xiEnvelope; XI_CARD=0.10 zostaje progiem KARTY
+   oczopląsu — pasek celowo pokazuje też podprogowe rezyduum (objaw może trwać, gdy karta zgasła).
+ NUDNOŚCI = saturacja wykładnicza skumulowanej dawki: 100·(1−exp(−Σ|ξ|·Δt / NAUS_I0)),
+   NAUS_I0=25 ξ·s (stała kalibracyjna). Kalibracja (sonda 2026-08-14): pełny Epley/Semont/
+   Yacovino/Lempert medium → 76–78% (standardowe manewry klastrują ~3/4 skali), small 51%,
+   big 97%; w trakcie Epleya medium: po kroku 2 → 44%, po 3 → 63%, po 4 → 76% (te wartości są
+   PINOWANE w golden jako stany początkowe kroków). Prefiks cum liczony raz w computeManSim —
+   nudności deterministyczne i bezstanowe, odporne na skakanie po krokach.
+ DECYZJA ŚWIADOMA — NUDNOŚCI BEZ REKTYFIKACJI EWALDA II: konflikt czuciowy nie rektyfikuje,
+   hamowanie mdli tak samo. Konsekwencja: Lempert mdli jak Epley (∫|ξ|=35.9 vs 36.9) mimo słabszego
+   oczopląsu w krokach ampullofugalnych (∫REC=23.4). NIE „naprawiać" na ∫REC — to zmieniłoby
+   warstwę objawową w drugi wskaźnik oczopląsu.
+ ZEGAR: oś ANIMACJI kroku (ten sam start co otolit/oczopląs), NIE timer użytkownika — przy timerze
+   wydłużonym ręcznie objawy zamierają po końcu okna fizyki kroku, spójnie z oczami (nie zgłaszać
+   jako bug). GRANICA: warstwa poglądowa, nie pomiar kliniczny (tooltip mówi to wprost).
+ KARTA „CO DALEJ — RD" na OSTATNIM kroku manewru CZYSZCZĄCEGO (man.exited && krok n−1; ekspulsja
+   bywa wcześniej — finał to naturalny moment „co dalej", krok liberacyjny ma już libNote):
+   RD u 31–61% po ustąpieniu oczopląsu (łagiewka + niepełna kompensacja), poradnictwo zbija do ~13%,
+   supresanty przedsionkowe SZKODLIWE — poradnictwo + rehabilitacja [H26 Özgirgin 2024]; frazowanie
+   1:1 z modułu NeuroVOR (spójność silników). gufoniApo (konwersja, exited=false) karty ŚWIADOMIE
+   nie dostaje — jego nota nakazuje ponowny Roll. Zakres wyroczni: DOKŁADNIE 65 kluczy guide/*
+   (każdy = wstawka .symrow; 12 finałów czyszczących dodatkowo z kartą RD), dom bez nowych kluczy.
 
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)
