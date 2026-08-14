@@ -251,7 +251,10 @@ function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POS
 //   („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno 60 s = próg kliniczny 1 min z kryteriów Bárány.
 function engineXi(canal, side, persistent, q, init){
   // pivot:"body" — badany jest KŁADZIONY z siadu (rusza całe ciało), a nie sam obraca głowę.
-  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:40, pivot:"body"}];
+  // Okno PRZEDNIEGO 70 s (ocena II, A6/V8): napad AC trwa w silniku ~61 s (szczyt dopiero ~25 s) —
+  // wspólne okno 40 s ucinało animację przy 36% szczytu, w pół napadu. Zmienia wyłącznie tEnd animacji
+  // diagnostyki (manewrów nie zasila — tam manStepEnv).
+  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:(canal==="anterior"?70:40), pivot:"body"}];
   // q0 = POZYCJA WYJŚCIOWA (siad): bez niej pierwszy segment interpolował „z samego siebie", czyli test
   // zaczynał się już W pozycji prowokującej — złóg nie dostawał przejścia, które go w ogóle rusza.
   const q0=[1,0,0,0];
@@ -520,8 +523,13 @@ function maneuverSim(plan, size="medium"){
   return Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, timeline:maneuverTimeline(plan,size), size});
 }
 // v: "canalo" (kanalolitiaza / geotropowy) | "cupulo" (kupulolitiaza / apogeotropowy)
-const featsByVariant = v => v==="canalo"
-  ? [t("Latencja 1–5 s","Latency 1–5 s"),t("Przemijający (<60 s)","Transient (<60 s)"),t("Wyczerpuje się","Fatigues")]
+// CHIPY PER KANAŁ (ocena II, A6/V8): kanał PRZEDNI ma w silniku WYPROWADZONY brak latencji (R7: złóg
+// startuje dociśnięty do osklepka, 0.5 s = sam czas przejścia) i napad ~61 s — wspólne chipy
+// „Latencja 1–5 s"/„<60 s" przeczyły własnej fizyce (i klinice AC-BPPV: latencja krótka/nieobecna).
+const featsByVariant = (v, canal) => v==="canalo"
+  ? (canal==="anterior"
+      ? [t("Latencja krótka/nieobecna","Short/absent latency"),t("Przemijający (≈1 min)","Transient (≈1 min)"),t("Wyczerpuje się","Fatigues")]
+      : [t("Latencja 1–5 s","Latency 1–5 s"),t("Przemijający (<60 s)","Transient (<60 s)"),t("Wyczerpuje się","Fatigues")])
   : [t("Bez latencji","No latency"),t("Uporczywy (>60 s)","Persistent (>60 s)"),t("Nie wyczerpuje się","Does not fatigue")];
 
 /* ============ Bow & Lean: scenariusze historii pozycyjnej (ocena II, V5 — rozdział E) ============
@@ -701,15 +709,15 @@ const DIAG={
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
       ? t(`Kanalolitiaza kanału przedniego: oczopląs ku dołowi — czysty downbeat. Lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa/nieobecna) — stronę różnicuj reakcją na manewr i kontekstem klinicznym.`,`Anterior-canal canalithiasis: downward nystagmus — pure downbeat. Lateralization by nystagmus is UNRELIABLE (torsion trace/absent) — differentiate the side by the response to the maneuver and clinical context.`)
-      : t(`Kupulolitiaza kanału przedniego (bardzo rzadka): downbeat uporczywy, bez latencji. Strony nie da się pewnie ustalić oczopląsem.`,`Anterior-canal cupulolithiasis (very rare): persistent downbeat, no latency. The side cannot be reliably established by nystagmus.`),
+      : t(`Kupulolitiaza kanału przedniego (bardzo rzadka): downbeat uporczywy, bez latencji. Strony nie da się pewnie ustalić oczopląsem. Uwaga (model): w tej geometrii deep head-hang słabo obciąża osklepek przedni (cel statyczny ~0,05) — oczopląs na ekranie jest SŁABY, a po transjencie przejścia pozornie przygasa.`,`Anterior-canal cupulolithiasis (very rare): persistent downbeat, no latency. The side cannot be reliably established by nystagmus. Note (model): in this geometry the deep head-hang loads the anterior cupula only weakly (static target ~0.05) — the on-screen nystagmus is WEAK and appears to fade after the transition transient.`),
     phases:(A,v)=>[{
       ptitle:t("Głowa głęboko w tył","Head deep back"), ppos:t("Na plecach, głowa prosto, głęboko odchylona (~30° poniżej poziomu)","Supine, head straight, extended deeply (~30° below horizontal)"),
       body:"supineDeepHang", yaw:0, face:"up",   // było supineHang (20°) przy opisie mówiącym 30° — poza szła za opisem
       nys: nysFromGeom("anterior", A, v, stepHeadQ("supineDeepHang", 0, "up")),
       label:t(`ku dołowi — czysty downbeat (bez wyraźnej torsji)`,`downward — pure downbeat (no clear torsion)`),
       note: v==="canalo"
-        ? t("po latencji: czysty downbeat, narasta i wygasa, wyczerpuje się przy powtórzeniu. Oczopląsu nie używaj do ustalenia strony — torsja bywa śladowa/nieobecna.","after a latency: pure downbeat, crescendos and fades, fatigues on repetition. Do not use the nystagmus to establish the side — torsion may be trace/absent.")
-        : t("bez latencji, downbeat, uporczywy, nie wyczerpuje się przy powtórzeniu.","no latency, downbeat, persistent, does not fatigue on repetition.")
+        ? t("BEZ istotnej latencji (złóg startuje dociśnięty do osklepka — wyprowadzenie R7): czysty downbeat, narasta WOLNO (szczyt ~25 s), wygasa ~1 min, wyczerpuje się przy powtórzeniu. Oczopląsu nie używaj do ustalenia strony — torsja bywa śladowa/nieobecna.","WITHOUT significant latency (the debris starts pressed against the cupula — the R7 derivation): pure downbeat, builds SLOWLY (peak ~25 s), fades by ~1 min, fatigues on repetition. Do not use the nystagmus to establish the side — torsion may be trace/absent.")
+        : t("bez latencji, downbeat SŁABY (deep head-hang słabo obciąża osklepek przedni w tej geometrii), nie wyczerpuje się. Uporczywy pozycyjny downbeat to przede wszystkim czerwona flaga ośrodkowa — patrz klasyfikacja.","no latency, WEAK downbeat (the deep head-hang loads the anterior cupula only weakly in this geometry), does not fatigue. A persistent positional downbeat is first of all a central red flag — see the classification.")
     }]
   },
 };
@@ -738,7 +746,8 @@ function recommend(testKey,variant){
 // Klasyfikacja podtypu BPPV wg kryteriów Bárány Society (ICVD 2015): mapuje (kanał, wariant, strona, tryb downbeat)
 // na formalną etykietę + poziom pewności (established/emerging) + cechy różnicujące (latencja/czas/męczliwość/kierunek/
 // strona chora). Czysta funkcja kliniczna — jak recommend(); zasila kartę „Klasyfikacja" w diagnostyce. NIE zmienia
-// fizyki — synteza z konwencji już zakodowanych w DIAG (latNote/features). [engine_doc: KRYTERIA BARANY]
+// fizyki — synteza z konwencji już zakodowanych w DIAG (latNote/features). [Kryteria źródłowe: Bárány/ICVD 2015 —
+// von Brevern i wsp.; ocena II C: dawny odnośnik „engine_doc: KRYTERIA BARANY" wskazywał sekcję, której nie ma.]
 function baranyClassify(canal, variant, side, antMode){
   const S=sideN(side);
   const est={ tier:"established", tierLabel:t("zespół ustalony","established syndrome") };
@@ -751,7 +760,7 @@ function baranyClassify(canal, variant, side, antMode){
   if(canal==="posterior")
     return variant==="canalo"
       ? { ...est, subtype:t("BPPV kanału tylnego — kanalolitiaza","Posterior-canal BPPV — canalithiasis"),
-          crit:[[t("Latencja","Latency"),t("1–kilka s","1–a few s")],[t("Czas trwania","Duration"),"< 1 min"],[t("Męczliwość","Fatigability"),t("tak — złóg się rozprasza","yes — the debris disperses")],[t("Kierunek","Direction"),t("upbeat + skrętny ku uchu dolnemu","upbeat + torsional toward the lower ear")],[t("Strona chora","Affected side"),`${S} ${t("(ucho zależne)","(dependent ear)")}`]] }
+          crit:[[t("Latencja","Latency"),t("1–kilka s","1–a few s")],[t("Czas trwania","Duration"),"< 1 min"],[t("Męczliwość","Fatigability"),t("tak — złóg się rozprasza","yes — the debris disperses")],[t("Kierunek","Direction"),t("upbeat + skrętny ku uchu dolnemu","upbeat + torsional toward the lower ear")],[t("Odwrócenie przy siadaniu","Reversal on sitting up"),t("tak — po powrocie bije przeciwnie (złóg cofa się w kanale)","yes — beats the opposite way on return (the debris moves back in the canal)")],[t("Strona chora","Affected side"),`${S} ${t("(ucho zależne)","(dependent ear)")}`]] }
       : { ...emg, subtype:t("BPPV kanału tylnego — kupulolitiaza (atypowa)","Posterior-canal BPPV — cupulolithiasis (atypical)"),
           crit:[[t("Latencja","Latency"),t("brak","none")],[t("Czas trwania","Duration"),t("uporczywy (> 1 min)","persistent (> 1 min)")],[t("Męczliwość","Fatigability"),t("nie","no")],[t("Kierunek","Direction"),t("upbeat-skrętny, uporczywy","upbeat-torsional, persistent")],[t("Strona chora","Affected side"),S]] };
   // kanał poziomy (roll / bow-lean)
@@ -759,11 +768,12 @@ function baranyClassify(canal, variant, side, antMode){
     ? { ...est, subtype:t("BPPV kanału poziomego — kanalolitiaza (geotropowy)","Horizontal-canal BPPV — canalithiasis (geotropic)"),
         crit:[[t("Latencja","Latency"),t("sekundy","seconds")],[t("Czas trwania","Duration"),"< 1 min"],[t("Męczliwość","Fatigability"),t("tak","yes")],[t("Kierunek","Direction"),t("geotropowy (ku uchu w dole)","geotropic (toward the lower ear)")],[t("Strona chora","Affected side"),`${S} — ${t("SILNIEJSZA reakcja","STRONGER response")}`]] }
     : { ...est, subtype:t("BPPV kanału poziomego — kupulolitiaza (apogeotropowy)","Horizontal-canal BPPV — cupulolithiasis (apogeotropic)"),
-        crit:[[t("Latencja","Latency"),t("brak / krótka","none / brief")],[t("Czas trwania","Duration"),t("uporczywy","persistent")],[t("Męczliwość","Fatigability"),t("nie","no")],[t("Kierunek","Direction"),t("apogeotropowy (ku uchu w górze)","apogeotropic (toward the upper ear)")],[t("Strona chora","Affected side"),`${S} — ${t("SŁABSZA reakcja","WEAKER response")}`]] };
+        crit:[[t("Latencja","Latency"),t("brak / krótka","none / brief")],[t("Czas trwania","Duration"),t("uporczywy","persistent")],[t("Męczliwość","Fatigability"),t("nie","no")],[t("Kierunek","Direction"),t("apogeotropowy (ku uchu w górze)","apogeotropic (toward the upper ear)")],[t("Punkt zerowy (null point)","Null point"),t("zanik przy ~10–30° skrętu ku uchu choremu","abolished at ~10–30° rotation toward the affected ear")],[t("Strona chora","Affected side"),`${S} — ${t("SŁABSZA reakcja","WEAKER response")}`]],
+        redflag:t("Uporczywy pozycyjny DCPN bez punktu zerowego, kierunek niemieszczący się w jednym kanale lub ataksja → rozważ przyczynę OŚRODKOWĄ (CPN — przełącz na widok „Ośrodkowy”). Trwały GEOTROPOWY oczopląs >1 min sugeruje light cupula, nie kanalolitiazę.","Persistent positional DCPN without a null point, a direction that fits no single canal, or ataxia → consider a CENTRAL cause (CPN — switch to the \"Central\" view). Persistent GEOTROPIC nystagmus >1 min suggests light cupula, not canalithiasis.") };
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

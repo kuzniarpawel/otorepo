@@ -601,14 +601,22 @@ function manExitStep(man){
 //   którego przetłumiony model grawitacyjny nie zawiera. Patrz engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R2.
 function manFractions(man, plan){
   const n=plan.steps.length;
-  if(plan.mechanism==="cupulo" && !man.exited){   // GUFONI APO (konwersja apo→geo) ORAZ BASCULE (patrz wyżej): złóg WBITY w osklepek (krok1) → ODKLEJA się (krok2) →
-    return {fr: plan.steps.map((_,i)=> i===0?0.04 : i===1?0.34 : 0.72), exitStep:-1};   // WĘDRUJE do pozycji GEOTROPOWEJ w kanale (krok3) i tam zostaje (bez wyjścia do łagiewki).
+  if(plan.mechanism==="cupulo"){
+    if(!man.exited)   // GUFONI APO (konwersja apo→geo): złóg WBITY w osklepek (krok1) → ODKLEJA się (krok2) →
+      return {fr: plan.steps.map((_,i)=> i===0?0.04 : i===1?0.34 : 0.72), exitStep:-1};   // WĘDRUJE do pozycji GEOTROPOWEJ (krok3), bez wyjścia do łagiewki.
+    // BASCULE (od R7 CZYŚCI, exited=true — ocena II, C8/V8): ta sama narracja odklejania od osklepka,
+    // ale z REALNYM krokiem ekspulsji z fizyki. Dawna gałąź konwersji (cupulo && !exited) była dla
+    // Bascule MARTWA — komentarz twierdził „φ 90→11→78→3→51, exited=false" (liczby sprzed dwóch
+    // przebudów), a złóg skakał z osklepka (0.04) prosto na rampę 0.15 bez etapu odklejania.
+    const cure=Math.max(2, manExitStep(man));            // Bascule: segment 4 („Powrót do siadu")
+    const fr=plan.steps.map((_,i)=> i===0?0.04 : i===1?0.34 : i>=cure?1 : 0.34+(1-0.34)*((i-1)/(cure-1)));
+    return {fr, exitStep:cure};
   }
   if(!man.exited){          // KONWERSJA nie-kupulityczna: ruch wg φ z silnika, złóg NIE wychodzi do łagiewki.
     return {fr: plan.steps.map((_,i)=>phiToFrac(manPhi(man,i,1))), exitStep:-1};
   }
-  const vertical = plan.canal!=="horizontal" && plan.mechanism!=="cupulo";
-  const physExit = vertical ? manExitStep(man) : -1;     // pionowy: realny krok ekspulsji; poziomy/kupulo: schemat
+  const vertical = plan.canal!=="horizontal";
+  const physExit = vertical ? manExitStep(man) : -1;     // pionowy: realny krok ekspulsji; poziomy: schemat
   const cure=Math.max(1, physExit>=1 ? physExit : n-2), s0=0.15;   // krok kuracyjny; pozycja spoczynkowa złogu (blisko bańki)
   const fr=[];
   for(let i=0;i<n;i++) fr.push(i<=cure ? s0+(1-s0)*(i/cure) : 1);   // ramp do 1.0 w kroku kuracyjnym, potem łagiewka
@@ -634,8 +642,8 @@ function setupGuideAnim(){
   const blendOnly = exited && state.step>sched.exitStep;                  // krok po wyjściu — spoczynek w łagiewce
   // KUPULOLITIAZA (mechanism:"cupulo"): 1. krok = etap przylegania/odklejania złogu od osklepka, potem zwykła wędrówka.
   const cupuloAdh = state.plan.mechanism==="cupulo" && state.step===0;
-  const holdAdh = cupuloAdh && !man.exited;   // krok 1 = złóg WBITY w osklepek — TRZYMA się (bez odklejania/wędrówki). Dotyczy Gufoniego apo I Bascule: oba mają dziś exited=false (patrz manFractions).
-  const cupuloDetach = state.plan.mechanism==="cupulo" && !man.exited && state.step===1;   // GUFONI APO krok 2: ODKLEJANIE od osklepka (błona prostuje się) + start wędrówki złogu w kanale.
+  const holdAdh = cupuloAdh;                  // krok 1 = złóg WBITY w osklepek — TRZYMA się (bez odklejania/wędrówki). Warunkowane MECHANIZMEM, nie exited (ocena II, C8/V8): Bascule od R7 czyści (exited=true), a jego złóg w kroku 1 wciąż siedzi na osklepku.
+  const cupuloDetach = state.plan.mechanism==="cupulo" && state.step===1;   // krok 2: ODKLEJANIE od osklepka (błona prostuje się) + start wędrówki złogu w kanale — Gufoni apo I Bascule.
   const EA=0.04, CUP_ANG=17;                                             // pozycja złogu na osklepku (ułamek ścieżki, tuż przy bańce/grzebieniu) + kąt odgięcia błony
   if(cupuloAdh){ placeOtolith(canal, EA, 0); const c0=document.getElementById("labcupula"); if(c0) c0.setAttribute("transform",`rotate(${CUP_ANG} ${cupPivot})`); }
   else if(cupuloDetach){ placeOtolith(canal, EA, 0); const c1=document.getElementById("labcupula"); if(c1) c1.setAttribute("transform",`rotate(${CUP_ANG} ${cupPivot})`); }   // start kroku 2: złóg jeszcze na osklepku (odgiętym) — za moment się odkleja
@@ -1092,7 +1100,7 @@ function renderDiag(){
         : t("Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.","Debris adheres to the cupula, which deflects — the cupula becomes gravity-sensitive.");
       const face = v0 => `<h4>${t("Mechanizm","Mechanism")} — ${CANALS[effCanal].label} · ${v0==="canalo"?t("kanalolitiaza","canalithiasis"):t("kupulolitiaza","cupulolithiasis")}</h4>
         <div data-diagcanal="${v0}">${diagCanalSVG(effCanal)}</div>
-        <div class="features">${D.features(v0).map(f=>`<span>${f}</span>`).join("")}</div>
+        <div class="features">${D.features(v0, effCanal).map(f=>`<span>${f}</span>`).join("")}</div>
         <div class="note">${note(v0)}</div>
         <div class="note" style="color:var(--text)"><b>${t("Interpretacja:","Interpretation:")}</b> ${interp(v0)}</div>`;
       return `<div class="flipwrap" style="margin-top:12px"><div class="flip ${v==='cupulo'?'flipped':''}" id="mechflip" role="button" tabindex="0" aria-label="${t('Odwróć kartę mechanizmu: kanalolitiaza albo kupulolitiaza','Flip the mechanism card: canalithiasis or cupulolithiasis')}" onclick="flipDiagMech()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipDiagMech();}">

@@ -1,6 +1,6 @@
 // Akcje UI (onclick=… przez window): nawigacja, wybory, HINTS, zapis/odczyt pacjenta.
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { MANEUVERS, CANALS, sizedSeconds, CANAL_OF } from '../pose/maneuvers.js';
+import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF } from '../pose/maneuvers.js';
 import { state } from './state.js';
 import { $, releaseWake, beep } from '../runtime/registry.js';
 import { render, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
@@ -213,7 +213,14 @@ function resetDixProvoke(){ state.dixRep=0; render(); }
 // Generuje plan manewru i nakłada holdy zależne od rozmiaru złogu (małe = dłuższe utrzymanie pozycji).
 function genPlan(key, side){
   const plan=MANEUVERS[key].gen(side);
-  for(const st of plan.steps){ if(st.seconds!=null) st.seconds=sizedSeconds(st.seconds, state.size); }
+  // TIMER KROKU = max(zalecenie kliniczne, hold przy którym FIZYKA czyści) — ocena II, A7/V8.
+  // Dotąd karta uczyła sizedSeconds, a animacja/walidacja grały derivedHold: Bascule medium uczyła
+  // 30 s, choć model czyści dopiero od 45 s — użytkownik widział pełną liberację przy holdzie,
+  // którego fizyka nie potwierdza (fałszywy sukces). max() podnosi WYŁĄCZNIE timery poniżej holdu
+  // fizyki (dziś: tylko Bascule); zalecenia dłuższe (Semont 90 s) zostają. derivedHold null
+  // (Gufoni apo — konwersja) → samo zalecenie.
+  const h=derivedHold(plan, state.size);
+  for(const st of plan.steps){ if(st.seconds!=null) st.seconds=Math.max(sizedSeconds(st.seconds, state.size), h||0); }
   return plan;
 }
 // Zmiana rozmiaru złogu: przebuduj plan (nowe holdy), unieważnij cache dynamiki, przelicz od bieżącego kroku.
