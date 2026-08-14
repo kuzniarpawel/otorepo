@@ -403,7 +403,21 @@ export const Vestibular = (()=>{
     const c1=cross3(wv,d), a=cross3(wv,c1);
     return [g[0]-a[0]/G0, g[1]-a[1]/G0, g[2]-a[2]/G0];
   }
-  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0, bond0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
+  // D10/V15: SEGMENT BAŃKOWY (short arm) — ramię po łagiewkowej stronie osklepka, φ∈[SA_MIN, 3°).
+  // Styczna = tangAt PRZEDŁUŻONE na φ<3° (ten sam okrąg PCA tej samej rekonstrukcji IE-Map; ciągłość
+  // w 3° zmierzona: 0.000°). SA_MIN = −(360−ARC_SPAN)/2 = ŚRODEK luki przedsionkowej (punkt
+  // równoodległy od obu ujść; dalej „przewód" leżałby bliżej ujścia niebańkowego = już w łagiewce).
+  // STATUS: wyprowadzone z ARC_SPAN (ta sama rekonstrukcja), ale PODZIAŁ luki to założenie spoza
+  // pomiaru — granica źródła jak ARM_TRUNK/B8 (atlas Q0..Q4 STARTUJE w bańce, punktów za osklepkiem
+  // nie niesie — kierunek z ekstrapolacji okręgu, nie z surowych punktów). Wnioski fenotypowe są na
+  // głębokość startu NIEczułe (sonda: te same znaki dla φ₀ −10/−20/−32).
+  const SA_MIN={posterior:-20.6, anterior:-39.45, horizontal:-46.35};
+  // Kontakt złogu DOCIŚNIĘTEGO do osklepka (φ=3°, napęd ku bańce): cel statyczny ξ*=CUP_WEAK·exc·drv
+  // — TA SAMA formuła co kupulo-HC w position() (jedno źródło prawdy, zero nowych stałych). TYLKO HC:
+  // dla pionowych docisk = CISZA (ten sam wybór fenomenologiczny co „pionowe zostają na restPhi" —
+  // kontaktowy cel PC dawałby trwały upbeat 0.319 w siadzie, sprzeczny z kliniką).
+  const SA_CONTACT={posterior:false, anterior:false, horizontal:true};
+  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0, bond0=null, arm="long", jam=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
     reqCanal(canal, side, "simulateCanalith");
     if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
     if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
@@ -422,8 +436,24 @@ export const Vestibular = (()=>{
     if(!(crusGrav>0) || !isFinite(crusGrav)) throw new RangeError("simulateCanalith: crusGrav musi być liczbą > 0 (podano "+crusGrav+")");
     // WALIDACJA phi0 (ocena II, A9/V3) — do tej pory NaN dawał po cichu martwą symulację, start za pcrus
     // był snapowany WSTECZ, a phi0>phiExit wskrzeszał złóg spoza kanału z pełnym transjentem liberacyjnym.
-    if(phi0!=null && (!isFinite(phi0) || phi0<CUPULA_DEG || phi0>phiExit))
+    // WALIDACJE arm/jam (ocena II, D10/V15). arm="short" wybiera się JAWNIE (ujemne phi0 przy "long"
+    // dalej rzuca — cicha literówka nie staje się chorobą); walidacja "long" zostaje BAJT-W-BAJT.
+    if(arm!=="long" && arm!=="short") throw new RangeError('simulateCanalith: arm musi być "long"|"short" (podano '+arm+')');
+    if(arm==="short"){
+      if(phi0==null) throw new RangeError('simulateCanalith: arm="short" wymaga jawnego phi0 w ['+SA_MIN[canal]+', '+CUPULA_DEG+') — segment bańkowy nie ma kanonicznego spoczynku (restPhi jest łukiem długim)');
+      if(!isFinite(phi0) || phi0<SA_MIN[canal] || phi0>=CUPULA_DEG)
+        throw new RangeError('simulateCanalith: arm="short": phi0 musi być w ['+SA_MIN[canal]+', '+CUPULA_DEG+') (podano '+phi0+')');
+      if(jam!=null) throw new RangeError('simulateCanalith: jam w ramieniu bańkowym poza modelem (brak zwężenia po stronie bańkowej) — jam wymaga arm="long"');
+    } else if(phi0!=null && (!isFinite(phi0) || phi0<CUPULA_DEG || phi0>phiExit))
       throw new RangeError("simulateCanalith: phi0 musi być w ["+CUPULA_DEG+", phiExit="+phiExit+"] (podano "+phi0+")");
+    if(jam!=null){
+      if(typeof jam!=="object") throw new TypeError("simulateCanalith: jam musi być obiektem {phi, xi, thrG?, dir?}");
+      if(!isFinite(jam.phi) || jam.phi<CUPULA_DEG || jam.phi>phiExit) throw new RangeError("simulateCanalith: jam.phi musi być w ["+CUPULA_DEG+", "+phiExit+"] (podano "+jam.phi+")");
+      if(typeof jam.xi!=="number" || !isFinite(jam.xi) || jam.xi===0) throw new RangeError("simulateCanalith: jam.xi musi być NIEZEROWĄ liczbą skończoną (znak = kierunek oczopląsu sprzed zaklinowania; podano "+jam.xi+")");
+      if(jam.thrG!=null && (!(jam.thrG>0)||!isFinite(jam.thrG))) throw new RangeError("simulateCanalith: jam.thrG musi być liczbą > 0 (podano "+jam.thrG+")");
+      if(jam.dir!=null && jam.dir!==1 && jam.dir!==-1) throw new RangeError("simulateCanalith: jam.dir musi być 1 lub -1 (podano "+jam.dir+")");
+      if(jam.bond!=null && (!(jam.bond>0)||!isFinite(jam.bond))) throw new RangeError("simulateCanalith: jam.bond musi być liczbą > 0 (podano "+jam.bond+")");
+    }
     // WALIDACJA bond0/xi0 (ocena II, D1/V10) — parametry ŁAŃCUCHOWANIA SESJI. bond0 = UŁAMEK pełnej
     // adhezji [0..1] — jednostka NIEZALEŻNA od size (final.bond jest w adh·r: łańcuchowanie surowego
     // bond między przebiegami o różnym size przekłamywało stan wiązania — bondFrac przenosi się czysto).
@@ -462,7 +492,9 @@ export const Vestibular = (()=>{
     const qStart=q0!=null?reqQuat(q0,"simulateCanalith q0"):null;
     const holdDrive = phi0!=null ? driveAt(canal, side, phi0, qStart!=null?qStart:[1,0,0,0], tauP)
                                  : restDrive(canal, side, tauP);
-    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=xi0, t=0, exited=false, stuck=settled && (bond0==null || bond0>0) && Math.abs(holdDrive)<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, bond=bond0!=null?bond0*adh:adh, qPrev=qStart!=null?qStart:reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    let phi=(jam!=null?jam.phi:(phi0!=null?phi0:restPhi(canal,side)))*D, xi=xi0, t=0, exited=false, stuck=jam==null && settled && (bond0==null || bond0>0) && Math.abs(holdDrive)<=fStat, inCrus=arm==="long" && crusGate && phi0!=null && phi0 > phiExit-crusArc, bond=bond0!=null?bond0*adh:adh, qPrev=qStart!=null?qStart:reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    let jamState=jam!=null, pressed=false, tRelease=null;   // D10/V15: stan jamu i docisku do osklepka
+    let jamB=jam!=null ? (jam.bond!=null?jam.bond:0.3) : 0; // zapas zaklinowania [g·s] — kryterium UTRZYMANEJ nadwyżki (lustro bramki adhezji): iglica bezwładności przejścia NIE uwalnia, utrzymana poza tak (0.3 = wybór kalibracyjny)
     let nPrev=null;   // B8 (V14a): kąt karku POPRZEDNIEGO segmentu [νP, Y] — jak qPrev; pierwszy segment = wartości własne (stałe ramię); q0 nie niesie rozkładu karku (granica udokumentowana)
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
@@ -477,7 +509,44 @@ export const Vestibular = (()=>{
         const g = u<1 ? specForce(g0v, wv, side, pivot, pP+u*(nP-pP), pY+u*(nY-pY)) : g0v;   // W TRAKCIE przejścia siła właściwa; kark z TEJ SAMEJ interpolacji co poza (rozszerzenie zasady R7); w holdzie ω=0 → f=g
         let dphi=0, flow=0;
         if(!exited){
-          if(crusGate && inCrus){
+          if(jamState){
+            // CANALITH JAM (D10/V15): czop blokuje przewód — osklepek TRZYMANY na jam.xi (zamrożony
+            // niezerowy cel jak simCupStatic; stan ustalony dokładnie jam.xi) → oczopląs POZYCJO-
+            // -NIEZALEŻNY („wygląda ośrodkowo"). Wejście w jam WYŁĄCZNIE JAWNE (parametrem) —
+            // emergencja wymagałaby średnic przewodu, których żadne źródło repo nie niesie (granica
+            // źródła). UWOLNIENIE: styczna składowa siły właściwej PRZECIWNA kierunkowi zaklinowania
+            // przekracza próg płynięcia (rodzina Coulomba/Binghama jak crusGrav V14; thrG = wybór
+            // kalibracyjny). Zmierzona mapa uwolnień (PC, czop przy pcrus): deep head-hang 0.702 =
+            // JEDYNA standardowa poza > 0.6 → przewidywanie testowalne: Epley czopu NIE uwalnia,
+            // uwalnia Yacovino. Po uwolnieniu: silny transjent ODWRÓCONY, potem zwykła kanalolitiaza.
+            flow=jam.xi/tauC;
+            const rel = -(jam.dir!=null?jam.dir:1) * dot3(g,tang(phi));
+            if(rel > (jam.thrG!=null?jam.thrG:crusGrav)){                 // nadwyżka UTRZYMANA zużywa zapas (jak zrywanie adhezji)
+              jamB -= (rel-(jam.thrG!=null?jam.thrG:crusGrav))*dt;
+              if(jamB<=0){ jamState=false; stuck=false; tRelease=t; }
+            }
+          } else if(arm==="short"){
+            // SEGMENT BAŃKOWY (D10/V15): TA SAMA fizyka Stokesa, inne krańce. Bariera osklepka JAWNA
+            // z realnym dojazdem (transjent dojścia uczciwie w flow; reżim przetłumiony — cząstka
+            // STAJE, bez odbicia); osklepek jest barierą dla CZĄSTKI, nie dla ciśnienia — flow bez
+            // gałęzi znaku (fenotyp APO wolnego złogu w ramieniu bańkowym wychodzi EMERGENTNIE
+            // z geometrii: reguła Choung apo, jednostronny null point, samooczyszczenie w siadzie).
+            // Wyjście przez SA_MIN = do łagiewki (samowyleczenie). Docisk (φ=3°, napęd ku bańce):
+            // człon kontaktowy TYLKO HC (SA_CONTACT) — cel jak kupulo-HC, flow=ξ*/tauC.
+            const drive=dot3(g,tang(phi))/tauP;
+            if(stuck && Math.abs(drive)>fStat){ bond-=(Math.abs(drive)-fStat)*dt; if(bond<=0) stuck=false; }
+            if(!stuck){
+              dphi=drive; let nphi=phi+dphi*dt;
+              if(nphi>=CUPULA_DEG*D){ dphi=Math.max(0,CUPULA_DEG*D-phi)/dt; nphi=CUPULA_DEG*D; pressed=true; } else pressed=false;
+              if(nphi<=SA_MIN[canal]*D){ dphi=Math.min(0,SA_MIN[canal]*D-phi)/dt; nphi=SA_MIN[canal]*D; exited=true; pressed=false; }
+              phi=nphi; flow=gc*G.exc*dphi;
+              if(pressed && SA_CONTACT[canal]){
+                const drv=dot3(g,tang(CUPULA_DEG*D));
+                if(drv>0) flow += CUP_WEAK*G.exc*drv/tauC;     // ξ_ss=CUP_WEAK·exc·drv — cel identyczny z kupulo-HC w position()
+                else pressed=false;
+              }
+            }
+          } else if(crusGate && inCrus){
             // złóg w KOMORZE ODNOGI WSPÓLNEJ — poza czułym kanałem (osklepek relaksuje). Czeka na ekspulsję do łagiewki.
             // g to SIŁA WŁAŚCIWA (R7), ale warunek realnie spełnia wyłącznie GRAWITACJA (siad: łagiewka
             // pod odnogą) — człon dośrodkowy ma a[1]≤0, więc −f[1] podnieść nie może (ocena II, C7).
@@ -531,7 +600,8 @@ export const Vestibular = (()=>{
     // łańcuchowania; bond (jednostki WEWNĘTRZNE adh·r) zostaje dla zgodności — footgun między size udokumentowany.
     out.final = { phi: phi/D, xi, bond, stuck, exited, inCrus,
                   bondFrac: adh>0 ? Math.min(1, Math.max(0, bond)/adh) : 0,
-                  expelDur: (expT0!=null && expT1!=null) ? expT1-expT0 : null };   // B6: trwanie ekspulsji = WYNIK (null = ekspulsji nie było); pilnowane pasmem EXPEL_SANE w wyroczni
+                  expelDur: (expT0!=null && expT1!=null) ? expT1-expT0 : null,     // B6: trwanie ekspulsji = WYNIK (null = ekspulsji nie było); pilnowane pasmem EXPEL_SANE w wyroczni
+                  arm, pressed, jammed: jamState, tRelease };                       // D10/V15: segment, docisk do osklepka, stan jamu, moment uwolnienia
     return out;
   }
   // ξ (odchylenie osklepka) → składowe oczopląsu (kierunek z etapu 0, znak z pobudzenia)
@@ -615,8 +685,14 @@ export const Vestibular = (()=>{
       throw new RangeError("simulateLightCupula: gain musi być liczbą > 0 (podano "+gain+")");
     return simCupStatic({...opts, gain, variant:"light"});
   }
+  // FASADY D10/V15 (wzorzec V12): jawne wejścia w short-arm i jam — mechanizm wybiera się fasadą/parametrem.
+  function simulateShortArm(opts){ return simulateCanalith({...opts, arm:"short"}); }
+  function simulateCanalithJam(opts){
+    if(!opts || !opts.jam) throw new TypeError("simulateCanalithJam: wymagane jam:{phi, xi, thrG?, dir?}");
+    return simulateCanalith(opts);
+  }
   return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, position, sizeR, sizeUm,
-          simulateCanalith, simulateCupulolith, simulateLightCupula, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, driveAt, CUP_WEAK, LIGHT_W, EWALD_INHIB};
+          simulateCanalith, simulateCupulolith, simulateLightCupula, simulateShortArm, simulateCanalithJam, dynNystagmus, nystagmusPhase, fatigueFactor,
+          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, SA_MIN, restPhi, driveAt, CUP_WEAK, LIGHT_W, EWALD_INHIB};
 })();
 

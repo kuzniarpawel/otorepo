@@ -247,6 +247,45 @@ function engineOracle(h) {
     out.spv = spv;
   }
 
+  // SHORT-ARM + JAM (ocena II, V15/D10): piny segmentu bańkowego i czopu. TWARDY INWARIANT (throw,
+  // nie pin — fenotypu nie wolno zapiec do golden): znak szczytu short-arm HC/Roll PRZECIWNY do
+  // long-arm w tej samej pozie (wolny złóg w ramieniu bańkowym = fenotyp APO, domknięcie R11).
+  if (h.Vestibular && h.Vestibular.simulateShortArm && h.stepHeadQ && h.maneuverTimeline) {
+    const r5 = x => x == null ? null : +(+x).toFixed(5);
+    const peakOf = sim => { let p = sim[0]; for (const s of sim) if (Math.abs(s.xi) > Math.abs(p.xi)) p = s; return p; };
+    const sa = {};
+    for (const side of ['P', 'L']) {
+      const twd = side === 'P' ? 1 : -1;
+      const tlAff = [{ q: h.stepHeadQ('supineFlex', 90 * twd, 'up'), tTrans: 0.8, tHold: 30 }];
+      const tlHea = [{ q: h.stepHeadQ('supineFlex', -90 * twd, 'up'), tTrans: 0.8, tHold: 40 }];
+      const sAff = h.Vestibular.simulateShortArm({ canal: 'horizontal', side, q0: [1, 0, 0, 0], phi0: -20, settled: false, timeline: tlAff });
+      const sHea = h.Vestibular.simulateShortArm({ canal: 'horizontal', side, q0: [1, 0, 0, 0], phi0: -20, settled: false, timeline: tlHea });
+      const lAff = h.Vestibular.simulateCanalith({ canal: 'horizontal', side, q0: [1, 0, 0, 0], timeline: tlAff });
+      if (Math.sign(peakOf(sAff).xi) !== -Math.sign(peakOf(lAff).xi))
+        throw new Error(`WYROCZNIA FENOTYPU (V15/D10): short-arm HC/${side} nie jest APO — znak szczytu == long-arm`);
+      const dixSA = h.Vestibular.simulateShortArm({ canal: 'posterior', side, q0: [1, 0, 0, 0], phi0: -10, settled: false, timeline: [{ q: h.stepHeadQ('supineHang', 45 * twd, 'up'), tTrans: 0.8, tHold: 40 }] });
+      const hhSA = h.Vestibular.simulateShortArm({ canal: 'posterior', side, q0: [1, 0, 0, 0], phi0: -10, settled: false, timeline: [{ q: h.stepHeadQ('supineDeepHang', 0, 'up'), tTrans: 0.8, tHold: 40 }] });
+      const acSA = h.Vestibular.simulateShortArm({ canal: 'anterior', side, q0: [1, 0, 0, 0], phi0: -10, settled: false, timeline: [{ q: [1, 0, 0, 0], tTrans: 0.5, tHold: 15 }] });
+      sa[side] = {
+        rollAff: { plateau: r5(sAff[sAff.length - 1].xi), pressed: sAff.final.pressed },
+        rollHealthy: { peak: r5(peakOf(sHea).xi), exited: sHea.final.exited },
+        dixIpsi: { peak: r5(peakOf(dixSA).xi), finalPhi: r5(dixSA.final.phi) },
+        headhang: { peak: r5(peakOf(hhSA).xi) },
+        acSit: { exited: acSA.final.exited, peak: r5(peakOf(acSA).xi) } };
+    }
+    out.shortarm = sa;
+    const jamRes = {};
+    for (const side of ['P', 'L']) {
+      const jam = { phi: 306.8, xi: 0.5, dir: 1 };
+      const ep = h.Vestibular.simulateCanalithJam({ canal: 'posterior', side, q0: [1, 0, 0, 0], jam, timeline: h.maneuverTimeline(h.genPlan('epley', side), 'medium') });
+      const yac = h.Vestibular.simulateCanalithJam({ canal: 'posterior', side, q0: [1, 0, 0, 0], jam,
+        timeline: [{ q: h.stepHeadQ('supineDeepHang', 0, 'up'), tTrans: 0.8, tHold: 30 }, { q: [1, 0, 0, 0], tTrans: 0.8, tHold: 90 }] });
+      jamRes[side] = { epley: { xiMid: r5(ep[Math.floor(ep.length / 2)].xi), jammed: ep.final.jammed, tRelease: r5(ep.final.tRelease) },
+        deepHang: { jammed: yac.final.jammed, tRelease: r5(yac.final.tRelease), exited: yac.final.exited } };
+    }
+    out.jam = jamRes;
+  }
+
   // LYING-DOWN (ocena II, V11/D2): pin liczb faz per scenariusz×strona — dom zaokrągla φ₀ i tnie ξ
   // progiem XI_CARD, więc dryf podprogowy byłby w dom niewidzialny (precedens sessionChain).
   if (h.ldtPhases) {
@@ -550,6 +589,8 @@ if (!CHECK) {
       diffKeys(snap.engine.lyingdown, gold.engine.lyingdown, 'engine.lyingdown/', diffs);            // V11/D2: jw.
       diffKeys(snap.engine.lightcupula, gold.engine.lightcupula, 'engine.lightcupula/', diffs);      // V12/D3: jw.
       diffKeys(snap.engine.spv, gold.engine.spv, 'engine.spv/', diffs);                              // V13/D6: jw.
+      diffKeys(snap.engine.shortarm, gold.engine.shortarm, 'engine.shortarm/', diffs);               // V15/D10: jw.
+      diffKeys(snap.engine.jam, gold.engine.jam, 'engine.jam/', diffs);                              // V15/D10: jw.
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

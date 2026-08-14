@@ -960,6 +960,33 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
       niesie wyłącznie LATENCJĘ (krzywej powrotu latencji nikt nie zmierzył — stała kalibracyjna,
       nie literaturowa). Sekwencyjny Roll (chore→centrum→zdrowe) przemieszcza złóg między fazami —
       amplitudy faz sesji nie są czystym porównaniem Ewalda (R10/Bhandari; karta mówi to wprost).]
+     [D10-STATUS 2026-08-14 (ocena II, V15): DOSTARCZONE-CZĘŚCIOWO — SHORT-ARM + CANALITH JAM (silnik
+      + piny + noty; trzeci wariant UI/scenariusze/sesja czekają na D4 — wzorzec V12). SEGMENT BAŃKOWY:
+      arm="short", φ∈[SA_MIN, 3°) — styczna = tangAt PRZEDŁUŻONE na ten sam okrąg PCA (ciągłość w 3°:
+      0.000°); SA_MIN = −(360−ARC_SPAN)/2 = środek luki przedsionkowej {PC −20.6° · AC −39.45° ·
+      HC −46.35°} (≈1.1/2.2/2.6 mm) — wyprowadzone z ARC_SPAN, PODZIAŁ luki = granica źródła (atlas
+      punktów za osklepkiem nie niesie; wnioski fenotypowe nieczułe na głębokość startu). Bariera
+      osklepka JAWNA z obu stron z realnym dojazdem (cząstka nie przechodzi; przejście = zdarzenie
+      spoza modelu); flow bez gałęzi znaku (osklepek = bariera dla CZĄSTKI, nie ciśnienia) → fenotyp
+      APO wolnego złogu EMERGENTNY: reguła Choung apo (bow −0.287 ku zdrowej / lean +0.625 ku chorej),
+      Roll: plateau przy chorej w dole −0.375 = DOKŁADNIE cel kupulo (kontakt: ξ*=CUP_WEAK·exc·drv,
+      ta sama formuła, TYLKO HC — pionowe docisk=cisza, wybór jak restPhi), zdrowa w dole: transjent
+      i WYJŚCIE (sam Roll czyści ramię — emergentne uzasadnienie Gufoni-apo/Zuma); RÓŻNICE od kupulo:
+      null point JEDNOSTRONNY (8–9° ku chorej: poniżej złóg odpływa/EXIT, powyżej trwałe apo; kupulo
+      dwustronny), latencja wędrówki 0.3–3 s, męczliwość rep, samooczyszczenie w siadzie ~20–30 s.
+      PC-SA: NIEMY docisk w siadzie i ipsilateralnym Dixie (Dix ujemny mimo choroby!), rusza go deep
+      head-hang (DOWNBEAT) — emergentny „atypowy pozycyjny downbeat" (kategoria emerging), jednostrzałowy.
+      JAM: wejście WYŁĄCZNIE jawne (jam:{phi, xi, thrG?, dir?, bond?}; emergencja wymagałaby średnic
+      przewodu — granica źródła); ξ trzymany na jam.xi (POZYCJO-NIEZALEŻNY — „wygląda ośrodkowo");
+      uwolnienie kryterium UTRZYMANEJ nadwyżki (lustro bramki adhezji: zapas jam.bond=0.3 g·s, wybór
+      kalibracyjny — iglica bezwładności przejścia NIE uwalnia); mapa: deep head-hang 0.702 = jedyna
+      standardowa poza > progu 0.6 → PRZEWIDYWANIE TESTOWALNE: Epley czopu nie uwalnia (plateau 0.500
+      przez cały manewr), uwalnia Yacovino (tRelease ~3 s, potem transjent odwrócony i zwykła
+      kanalolitiaza). final: {arm, pressed, jammed, tRelease}. Wyrocznie: piny engine.shortarm/jam
+      + TWARDY inwariant fenotypu (sign(short)=−sign(long) w Rollu — throw, nie pin); noty w latNote
+      Rolla/B&L (cupulo) i redflagu HC-apo: „apo przemijający/męczliwy → wolny złóg w ramieniu
+      bańkowym, nie kupulopatia" (domknięcie R11: geo={canalo, light}, apo={cupulo, short-arm},
+      jam=pozycjo-niezależny).]
      [D2-STATUS 2026-08-14 (ocena II, V11): DOSTARCZONE — LYING-DOWN/SITTING-UP (karta DIAG „lyingdown",
       kanał poziomy). Fizyka: leżenie (supineFlex, poza testu Roll) przesuwa równowagę HC ledwie o ~9°
       (siad 199.8° → 191.0°) — kierunek oczopląsu położenia (LDN) czyta stronę złogu WZGLĘDEM tej
