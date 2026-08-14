@@ -130,7 +130,19 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
        tTrans — transition time to q [s] (slerp interpolation from the previous q)
        tHold  — hold time at q [s]
        pivot  — the step's rotation axis: "body" (hips/couch, default) | "neck" (the head alone);
-                selects the lever arm of the R7 inertial term (LEVER.body 0.75 m / neck 0.12 m)
+                selects the lever arm of the R7 inertial term (LEVER.body 0.75 m / neck 0.12 m).
+                B8 (V14): a segment also accepts optional neckPitch/neckYaw [°] (the neck angle:
+                ν=pitch−trunk, Y=yaw+dyaw — computed in maneuvers.stepNeck from the pose table); with
+                pivot="body" and ν≠0 the arm = Rx(ν)Ry(Y)⁻¹·[0, ARM_TRUNK, 0] + [±EAR_X, LEVER.neck, 0],
+                ARM_TRUNK = LEVER.body − LEVER.neck = 0.63 m (the hips→C7 / C7→labyrinth split;
+                50th-percentile anthropometry, Drillis & Contini 1966; STATUS: an assumption from
+                outside the code, a "source boundary", ±10% — the sum returns to the R7 calibration
+                bit-for-bit). Neck in line → EXACTLY the old arm (the literal branch). Measured
+                effects: Yacovino 3→4 inertial contribution 0.295→0.222 g toward the vertex + a
+                0.175 g naso-occipital component (assessment II targets hit to 0.001); Lempert
+                untouched (the neck transitions occur after the debris has exited); the neck is
+                interpolated with the SAME u as the pose slerp. Diagnostics deliberately NOT wired
+                (that would shift the CALIBRATED CONSTANTS: Dix 2.25→2.40 s etc.) — a separate candidate.
    phi0 — explicit starting arc angle of the debris [°]; null (default) = restPhi(canal,side): the
        gravitational minimum in the upright posture, or the cupula when that minimum lies outside the arc
        (posterior 48.8° · horizontal 199.8° · anterior 3°).
@@ -189,24 +201,47 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
          the otolith enters the utricle ONE-WAY (exited), at a PHYSICAL speed derived from gravity (~7–8 °/s).
        • VERTICAL CANALS (crusArc/crusGrav): after reaching the crus (φ≥phiExit−crusArc) the otolith ENTERS
          THE CRUS CHAMBER and PARKS — it leaves the sensitive canal, the cupula relaxes (ξ→0, no nystagmus), it waits for
-         expulsion into the utricle. Condition: −f[1] > crusGrav, where f is the SPECIFIC FORCE f=g−a (R7); it is
-         realized GRAVITATIONALLY — with the head upright (sitting) the utricle is below the crus → the debris
-         falls in. Gives Epley expulsion at sitting up + a LIBERATORY nystagmus where it clinically occurs.
-         >>> CORRECTION 2026-08-13 (assessment II, C7): the "INERTIAL" expulsion route is STRUCTURALLY DEAD
-         in this model. The centripetal term a=ω×(ω×d) with the lever d=[±EAR_X, L>0, 0] gives a[1]≤0,
-         so inertia can only LOWER −f[1] (measured maximum increase across 7 maneuvers × 2 sides:
-         0.00000; the Semont 180°/0.8 s swing gives +1.18 g TOWARD THE VERTEX — it inhibits the expulsion,
-         and in Epley s4→s5 it even DELAYS it: −f[1]=0.62 against −g[1]=0.99, a hair above the 0.6 threshold).
-         All 12/12 expulsions are gravitational — in the final sitting holds (Semont/Yacovino/Bascule) or at
-         the end of the sit-up transition (Epley). The removed crusFling/crusFlingRate proxy (2026-08-05) was
-         thus replaced by gravity in the timer-less sitting position, NOT by the inertial term; the role of the
-         R7 inertia is real only in the drive ALONG the canal (without it Semont does not deliver the debris
-         to the crus: pivot=neck → exited=false). A true inertial route would require the tangential term α×d,
-         which the pose data do not carry. <<<
-         Expulsion advances φ: (phiExit−crusArc)→phiExit over ~EXPEL_DUR(1.2 s) → an ampullofugal nystagmus TRANSIENT
-         (the SAME sign as the original) = liberatory/confirmatory. exited=true one-way (blocks the reversed
-         phase). NOTE (assessment II, B6): the transient is SYNTHETIC — a constant speed (pex−pcrus)/EXPEL_DUR,
-         independent of the driving force and the particle size; amplitude ∝ crusArc (two convention constants).
+         expulsion into the utricle.
+         >>> B6-RESOLUTION (2026-08-14, V14c) — ONE LAW OF MOTION: in the chamber dφ/dt = max(0,
+         dot(f, tangAt(G,φ)) − crusGrav)/tauP. The thesis "the chamber lies off the active arc" FELL
+         after measurement: the [pcrus, pex] zone is the MEASURED final arc segment of the IE-Map
+         atlas (the exit = the entrance to the vestibule), so tangAt applies there and IS the crus
+         direction (PC at the exit: the tangent 9.3° from the "head-down" axis — the old −f[1] was
+         a canal-blind approximation of this projection). crusGrav=0.6 stays without recalibration
+         but changes meaning: the STANDING (yield) THRESHOLD of the wide chamber (Coulomb friction
+         of the debris on the wall — the Bingham yield limit; in the narrow lumen the debris flows
+         like a piston, threshold 0, adhesion is carried by fStat/adh: one physics, two geometries).
+         Speed ∝ the force excess, /tauP — Stokes recovered (times ∝ r⁻²: T small/med 1.60–1.64
+         vs theory 1.644).
+         EMERGENT: PC expels while sitting as before (projection 0.965–0.987 > 0.6, the same steps
+         as in the validation below), while AC requires the CHIN ON THE CHEST (pure sitting
+         0.401 < 0.6; chin 0.81–0.88) — the closing Yacovino instruction becomes physically
+         LOAD-BEARING. Expulsion times (medium, nominal): Epley 3.80 s · Semont/Bascule 3.85 s ·
+         Yacovino 5.50 s (small 6.1–9.0 s, big 2.2–3.1 s); final.expelDur reports the duration
+         (null = no expulsion happened); the former constant EXPEL_DUR=1.2 s (10 °/s regardless of
+         force and size) is REMOVED from the motion — historical. The liberatory transient stops
+         being ∝ crusArc (a convention) and starts carrying FORCE and SIZE: medium Epley 0.25 <
+         Semont/Bascule 0.28 < Yacovino 0.32; small 0.10–0.16 (weak, long — consistent with
+         "extremely long-latency BPPV"), big 0.70–0.83 (short, strong). Yacovino medium 0.545→0.317
+         crosses the 0.5 display threshold → the step-4 card says "weak/fading nystagmus" instead
+         of "strongest" (the only 2 dom rebaseline keys). Chamber speeds 1.33–5.58 °/s lie INSIDE
+         the physical band of HC exits 1.27–14.61 °/s — the two exit models MERGED into one law
+         (the chamber merely subtracts the standing threshold). The `expelling` latch removed
+         (motion follows the force; continuity without a cliff); "eternal creep just above the
+         threshold" is guarded by the HARD EXPEL_SANE=[0.5, 12] s oracle (snapshot.mjs, 72/72;
+         measured envelope 1.95–9.90 s). <<<
+         >>> CORRECTION 2026-08-13 (assessment II, C7) + V14 UPDATE: the "INERTIAL" expulsion route
+         remains DEAD. The centripetal term a=ω×(ω×d) with the OLD lever d=[±EAR_X, L>0, 0] gave
+         a[1]≤0 algebraically; with the B8 arm (z≠0) the claim becomes NUMERICAL — the measured
+         maximum positive contribution across 7 maneuvers × 2 sides: ≤0.0012 g at the 0.6 threshold
+         (the Semont 180°/0.8 s swing gives +1.18 g TOWARD THE VERTEX — it inhibits the expulsion).
+         All expulsions are gravitational — in the final sitting holds or at the end of the sit-up
+         transition; the role of the R7 inertia is real only in the drive ALONG the canal (without it
+         Semont does not deliver the debris to the crus: pivot=neck → exited=false). A true inertial
+         route would require the tangential term α×d, which the pose data do not carry. <<<
+         Expulsion advances φ: (phiExit−crusArc)→phiExit → an ampullofugal nystagmus TRANSIENT
+         (the SAME sign as the original) = liberatory/confirmatory. exited=true one-way (blocks the
+         reversed phase; return to the canal / jam = out of scope, a D10 candidate).
        Backward motion in the canal lumen (dφ/dt<0, before the crus) → ξ<0 → REVERSED nystagmus.
        VALIDATION (re-measured 2026-08-13, real generated plans, both sides): Epley expulsion/liberatory
        at STEP 5 (return to sitting — end of the transition); Semont at STEP 4 (return to sitting, hold);
@@ -469,6 +504,14 @@ uHC(side) — DERIVED as +e1 of the horizontal canal (gravity TOWARD the ampulla
      ratios 0.475 / 1 / 2.46 = r³). Maneuvers (generated plans, R4b-derived holds):
        ALL sizes reach the ARC_SPAN exit (exited) in Epley, Semont, Bascule, Yacovino, Lempert and
        geotropic Gufoni — zero failures (Gufoni apo by design does not clear).
+     >>> V14 UPDATE (B6+B8, 2026-08-14): cleaning re-measured with the force-dependent expulsion
+         and the neck arm — 108/108 (6 maneuvers × 2 sides × 3 sizes × {nominal, tauP×0.9, ×1.1});
+         Gufoni apo still a conversion. derivedHold: ONLY u changed (non-timed steps, invisible in
+         the timer) + the Semont small h 60→75: epley small u 6→9 · semont small {60,15}→{75,9} ·
+         bascule small u 6→9 · yacovino small u 9→18, medium u 6→9; UI TIMERS unchanged
+         (sizedSeconds dominates — Semont small: max(120,75)=120). Margins: the guard's global
+         minimum RISES 1.00 s (old semont small) → 1.70 s (yacovino medium ×1.1); the expelDur band
+         1.95–9.90 s under the hard EXPEL_SANE=[0.5,12] oracle (72/72). <<<
      >>> CORRECTION [2026-08-05]. Until that day this read: "small — Semont (φmax 157) and Yacovino
          (φmax 128) do NOT clear in the shortened holds (emergent, clinically consistent)". That was FALSE
          in two ways. (1) The numbers no longer reproduced even under the old cap — with the common-crus
