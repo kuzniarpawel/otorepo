@@ -92,15 +92,24 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
    Static stimulation of the AFFECTED canal in head orientation q.
    side: "L"|"P"; variant: "canalo" (geotropic) | "cupulo" (apogeotropic).
    Mechanism: projection of gravity onto the canal's excitation axis → flow → Ewald.
-     drive = g · tangAt(G, restPhi(canal,side));  proj = G.exc · drive
-     excited = (horizontal canal && variant==="cupulo") ? proj<0 : proj>0
+     drive = g · tangAt(G, φ_eval);  proj = G.exc · drive;  excited = proj>0 (ONE Ewald rule)
+     φ_eval = restPhi(canal,side) for FREE debris (canalo; also cupulo of the VERTICAL canals — an
+       explicit phenomenological choice, see the code comment) · CUPULA_DEG for HORIZONTAL-CANAL CUPULO.
+       [2026-08-13, assessment II A1/V4: cupulolithiasis debris sits ON THE CUPULA, not at the free-debris
+        rest (199.8°); the old proj<0 inversion held the Roll sign only by an antipodal coincidence
+        (restPhi HC ~197° from the ampulla), while computing the null point on the WRONG side and
+        reversing apo Bow&Lean against the Choung rule and the card own text. After the fix: apo Roll
+        with an INTRINSIC asymmetry 0.832 (affected down) / 0.885 (healthy), null point at yaw +8..9°
+        toward the AFFECTED ear (clinically 10–30°), apo B&L per the rule (bow→healthy, lean→affected —
+        the arrow agrees with the label), pseudo-SN when sitting 0.052.]
      G.exc = +1 vertical canals (Ewald III: ampullofugal excites) · −1 horizontal (Ewald II).
      [2026-08-05] It used to be proj = g·GEXC[canal] (vertical) or g·uHC(side) (horizontal) — both of
      those axes are the tangent taken at φ=90°, i.e. at the very constant restPhi removed. The test
      card could therefore show a direction OPPOSITE to the dynamics of the same pose. GEXC and uHC
      have been DELETED.
    excited: bool; mag = |proj| (raw force); {h,v,t} = quickPhase with the sign of excitation.
-   VALIDATED: Dix-Hallpike (posterior), Roll (geo/apo), Bow & Lean.
+   VALIDATED: Dix-Hallpike (posterior), Roll (geo/apo), APO Bow & Lean (consistent with the card since
+   V4); CANALO Bow & Lean remains a watershed/positional-history matter (R8/R10 — plan V5).
 
 — STAGE 2 (particle dynamics) ————————————————————————————————————————
 
@@ -243,9 +252,13 @@ simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.
        target = CUP_WEAK · gain · |proj| · (excited ? +1 : -1)
                 where proj/excited from position({canal,side,variant:"cupulo",q}) (Ewald's rule;
                 horizontal: apogeotropic = reversed relative to geotropic)
-                CUP_WEAK=0.6 — CUPULOLITHIASIS WEAKER THAN CANALITHIASIS [1] (debris attached to the cupula
+                CUP_WEAK=0.45 — CUPULOLITHIASIS WEAKER THAN CANALITHIASIS [1] (debris attached to the cupula
                 deflects it more weakly than a bolus of free otoconia driving the endolymph column). The SAME
                 coefficient scales the diagnostic nystagmus of the "cupulo" variant (nysFromGeom) — a single source of truth.
+                [RECALIBRATION 0.6→0.45, 2026-08-13 (assessment II B2/V4): calibrated to the OBSERVED
+                 quantity — the emergent apo/geo ratio of ξ peaks was 0.736 at 0.6 (just OUTSIDE the
+                 literature band 0.4–0.7); 0.45 gives 0.538 = mid-band. For the vertical canals the band
+                 is an extrapolation.]
        dξ/dt = (target - ξ) / tauCup           (fast relaxation)
    Emergent features (contrast to canalithiasis):
        - NO LATENCY (ξ follows gravity immediately; tauCup small)
@@ -282,7 +295,7 @@ OTHER EXPORTS (undocumented until now — assessment II, C1):
       ANY orientation (since V3; a generalisation of restDrive — restDrive = driveAt at restPhi and
       upright, identically). Will feed the drive of the positional-history presets (BLT_HISTORY, plan V5).
    constants: ARC_SPAN {anterior:281.1, posterior:318.8, horizontal:267.3} · CANAL_NORMALS · CANAL_GEOM
-      · CUP_WEAK=0.6 · EWALD_INHIB=0.45.
+      · CUP_WEAK=0.45 (since V4 — calibrated to the emergent apo/geo ratio 0.538) · EWALD_INHIB=0.45.
 
 CANAL GEOMETRY — SINGLE SOURCE [2026-08-05, branch feature/vestibular]
    Until that date the engine carried TWO independent geometries of the same canal: the measured
@@ -524,7 +537,7 @@ SIMPLIFICATIONS RELATIVE TO FULL MODELS:
   - no amplification in the narrow duct (the main latency mechanism per [1]);
   - particle size: SUPPORTED as a scaling parameter (size → tauP∝r⁻², gc∝r³, adh∝r);
     still no wall interactions and no velocity storage;
-  - cupulolithiasis WEAKER than canalithiasis [1]: MODELED by a single coefficient CUP_WEAK=0.6
+  - cupulolithiasis WEAKER than canalithiasis [1]: MODELED by a single coefficient CUP_WEAK=0.45
     (amplitude multiplier of ξ in simulateCupulolith AND of the diagnostic nystagmus of the "cupulo" variant in nysFromGeom);
     residual simplification: the coefficient is GLOBAL (not per-canal or per-geometry), a calibration value;
   - fatigability (dispersion of the compact debris on repetition) MODELED as a factor scaling
@@ -636,6 +649,13 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
          to the DIRECTION of gravity alone, with no debris travel — but a weak one: ξ 0.100 (bow) and
          −0.087 (lean), against ~0.7 in the Roll test. Seven times smaller.
        • THE DIRECTION is opposite to the Choung rule in BOTH forms, not only the geotropic one.
+         [UPDATE 2026-08-13, assessment II A1/V4: for the CUPULOLITHIC form this was an ARTEFACT of the
+          evaluation point — the heavy-cupula target was computed at the free-debris rest (199.8°) instead
+          of at the cupula. After moving the target to CUPULA_DEG (V4) the apo directions AGREE with the
+          Choung rule and the card text (bow→healthy, lean→affected; apo Roll preserved 0.832/0.885, null
+          point at yaw +8..9° toward the affected ear). The opposite-direction statement now applies ONLY
+          to canalithiasis — and there the culprit is the start φ₀ (R10, the watershed), not the test
+          geometry. Plan V5.]
      WHERE EXACTLY THE DISAGREEMENT SITS (probe r8c, the clinical reasoning taken apart step by step):
        AGREEMENT about the position — in the bow the canal stands VERTICAL (|g| in its plane 0.98) and its
          lowest point is the AMPULLA (φ_eq 10.0°); in the lean it is vertical too (0.94) with the lowest

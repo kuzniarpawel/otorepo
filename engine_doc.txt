@@ -91,14 +91,23 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
    Statyczna stymulacja CHOREGO kanału w orientacji głowy q.
    side: "L"|"P"; variant: "canalo" (geotropowy) | "cupulo" (apogeotropowy).
    Mechanizm: składowa STYCZNA grawitacji w miejscu, GDZIE ZŁÓG LEŻY → przepływ → Ewald.
-     drive = g · tangAt(G, restPhi(canal,side));  proj = G.exc · drive
-     excited = (kanał poziomy && variant==="cupulo") ? proj<0 : proj>0
+     drive = g · tangAt(G, φ_oceny);  proj = G.exc · drive;  excited = proj>0 (JEDNA reguła Ewalda)
+     φ_oceny = restPhi(canal,side) dla WOLNEGO złogu (canalo; także kupulo kanałów PIONOWYCH — jawny
+       wybór fenomenologiczny, komentarz w kodzie) · CUPULA_DEG dla KUPULO KANAŁU POZIOMEGO.
+       [2026-08-13, ocena II A1/V4: złóg kupulolityczny siedzi NA OSKLEPKU, nie w spoczynku wolnego
+        złogu (199.8°); dawna inwersja proj<0 trzymała znak Rolla wyłącznie antypodycznym zbiegiem
+        (restPhi HC ~197° od bańki), a liczyła null point po ZŁEJ stronie i odwracała Bow&Lean apo
+        względem reguły Choung i tekstu własnej karty. Po poprawce: Roll apo z WEWNĘTRZNĄ asymetrią
+        0.832 (chore w dole) / 0.885 (zdrowe), null point yaw +8..9° ku CHOREMU (klinicznie 10–30°),
+        B&L apo wg reguły (skłon→zdrowa, odchylenie→chora — strzałka zgodna z napisem), pseudo-SN
+        w siadzie 0.052.]
      G.exc = +1 kanały pionowe (Ewald III: ampullofugalny pobudza) · −1 poziomy (Ewald II).
      [2026-08-05] Było: proj = g·GEXC[kanał] (pionowe) albo g·uHC(side) (poziomy) — obie te osie to
      styczna liczona w φ=90°, czyli w tej samej wpisanej stałej, którą usunął restPhi. Karta testu
      potrafiła przez to pokazać kierunek PRZECIWNY do dynamiki tej samej pozy. GEXC i uHC USUNIĘTE.
    excited: bool; mag = |proj| (siła surowa); {h,v,t} = quickPhase ze znakiem pobudzenia.
-   ZWALIDOWANE: Dix-Hallpike (tylny), Roll (geo/apo), Bow & Lean.
+   ZWALIDOWANE: Dix-Hallpike (tylny), Roll (geo/apo), Bow & Lean APO (zgodny z kartą od V4);
+   Bow & Lean CANALO pozostaje sprawą wododziału/historii pozycyjnej (R8/R10 — plan V5).
 
 — ETAP 2 (dynamika cząstki) ————————————————————————————————————————
 
@@ -237,9 +246,12 @@ simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.
        target = CUP_WEAK · gain · |proj| · (excited ? +1 : -1)
                 gdzie proj/excited z position({canal,side,variant:"cupulo",q}) (reguła Ewalda;
                 poziomy: apogeotropowy = odwrócony względem geotropowego)
-                CUP_WEAK=0.6 — KUPULOLITIAZA SŁABSZA OD KANALOLITIAZY [1] (złóg przyklejony do osklepka
+                CUP_WEAK=0.45 — KUPULOLITIAZA SŁABSZA OD KANALOLITIAZY [1] (złóg przyklejony do osklepka
                 odchyla go słabiej niż bolus swobodnych otoconiów napędzający kolumnę endolimfy). TEN SAM
                 współczynnik skaluje oczopląs diagnostyczny wariantu "cupulo" (nysFromGeom) — jedno źródło prawdy.
+                [REKALIBRACJA 0.6→0.45, 2026-08-13 (ocena II B2/V4): kalibrowana do wielkości OBSERWOWANEJ —
+                 emergentny stosunek szczytów ξ apo/geo wynosił przy 0.6 aż 0.736 (tuż POZA pasmem piśmienniczym
+                 0.4–0.7); 0.45 daje 0.538 = środek pasma. Dla kanałów pionowych pasmo jest ekstrapolacją.]
        dξ/dt = (target - ξ) / tauCup           (szybka relaksacja)
    Cechy emergentne (kontrast do kanalolitiazy):
        - BRAK LATENCJI (ξ podąża natychmiast za grawitacją; tauCup małe)
@@ -276,7 +288,7 @@ POZOSTAŁE EKSPORTY (dotąd nieudokumentowane — ocena II, C1):
       i orientacji (od V3; uogólnienie restDrive — restDrive = driveAt w restPhi i pionie,
       tożsamościowo). Zasili napęd presetów historii pozycyjnej (BLT_HISTORY, plan V5).
    stałe: ARC_SPAN {anterior:281.1, posterior:318.8, horizontal:267.3} · CANAL_NORMALS · CANAL_GEOM
-      · CUP_WEAK=0.6 · EWALD_INHIB=0.45.
+      · CUP_WEAK=0.45 (od V4 — kalibrowana do emergentnego stosunku apo/geo 0.538) · EWALD_INHIB=0.45.
 
 GEOMETRIA KANAŁU — JEDNO ŹRÓDŁO [2026-08-05, gałąź feature/vestibular]
    Do tej daty silnik miał DWIE niezależne geometrie tego samego kanału: zmierzone CANAL_NORMALS
@@ -513,7 +525,7 @@ UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI:
   - brak wzmocnienia w wąskim przewodzie (główny mechanizm latencji wg [1]);
   - rozmiar cząstki: OBSŁUGIWANY jako parametr skalujący (size → tauP∝r⁻², gc∝r³, adh∝r);
     nadal brak oddziaływań ze ściankami i magazynowania prędkości;
-  - kupulolitiaza SŁABSZA od kanalolitiazy [1]: ZAMODELOWANA jednym współczynnikiem CUP_WEAK=0.6
+  - kupulolitiaza SŁABSZA od kanalolitiazy [1]: ZAMODELOWANA jednym współczynnikiem CUP_WEAK=0.45
     (mnożnik amplitudy ξ w simulateCupulolith ORAZ oczopląsu diagnostycznego wariantu "cupulo" w nysFromGeom);
     residualne uproszczenie: współczynnik GLOBALNY (nie per-kanał ani per-geometria), wartość kalibracyjna;
   - męczliwość (rozproszenie zbitego złogu przy powtórzeniach) MODELOWANA jako czynnik skalujący
@@ -616,6 +628,12 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
          KIERUNEK grawitacji, bez wędrówki złogu — ale słaba: ξ 0.100 (skłon) i −0.087 (odchylenie),
          wobec ~0.7 w teście Roll. To siedem razy mniej.
        • KIERUNEK jest przeciwny do reguły Choung w OBU postaciach, nie tylko w geotropowej.
+         [AKTUALIZACJA 2026-08-13, ocena II A1/V4: dla postaci KUPULOLITYCZNEJ był to ARTEFAKT punktu
+          oceny — cel ciężkiego osklepka liczono w restPhi wolnego złogu (199.8°) zamiast przy osklepku.
+          Po przeniesieniu celu do CUPULA_DEG (V4) kierunki apo są ZGODNE z regułą Choung i tekstem karty
+          (skłon→zdrowa, odchylenie→chora; Roll apo zachowany 0.832/0.885, null point yaw +8..9° ku
+          choremu). Zdanie o kierunku przeciwnym dotyczy odtąd WYŁĄCZNIE kanalolitiazy — a tam winowajcą
+          jest start φ₀ (R10, wododział), nie geometria testu. Plan V5.]
      GDZIE DOKŁADNIE LEŻY SPÓR (sonda r8c, rozbiór rozumowania klinicznego krok po kroku):
        ZGODA co do pozycji — w skłonie kanał staje PIONOWO (|g| w jego płaszczyźnie 0.98) i najniższym
          punktem jest BAŃKA (φ_eq 10.0°); w odchyleniu też pionowo (0.94), a najniższy punkt leży

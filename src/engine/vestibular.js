@@ -215,11 +215,26 @@ export const Vestibular = (()=>{
     if(variant!=null && variant!=="cupulo" && variant!=="canalo") throw new TypeError('position: nieznany variant "'+variant+'" (dozwolone: "cupulo"|"canalo"|brak)');
     q=reqQuat(q, "position");            // waliduje (skończony, dł. 4) i normalizuje
     const g=gHead(q), G=CANAL_GEOM[canal][side];
-    // napęd styczny TAM, GDZIE ZŁÓG LEŻY (restPhi) — ta sama wielkość, którą całkuje simulateCanalith,
+    // napęd styczny TAM, GDZIE ZŁÓG LEŻY — ta sama wielkość, którą całkuje simulateCanalith,
     // więc karta testu i symulacja nie mogą już pokazać przeciwnych kierunków.
-    const drive=dot3(g, tangAt(G, restPhi(canal, side)));   // >0 = ampullofugalny (rosnące φ)
+    // KUPULOLITIAZA KANAŁU POZIOMEGO — CEL PRZY OSKLEPKU (2026-08-13, ocena II A1/V4). Złóg kupulolityczny
+    //   siedzi NA OSKLEPKU (φ≈0–3°), nie w restPhi wolnego złogu (199.8°): ciężki osklepek wychyla rzut
+    //   grawitacji na styczną PRZY BAŃCE, ze STANDARDOWĄ regułą Ewalda II (G.exc), bez gałęzi specjalnej.
+    //   Dawna inwersja proj<0 (liczona w restPhi) trzymała znak Rolla wyłącznie antypodycznym zbiegiem
+    //   (restPhi HC leży ~197° od bańki, cos=−0.957), ale: null point wypadał po ZŁEJ stronie (yaw −9°
+    //   ku zdrowemu; klinika: 10–30° ku CHOREMU), Bow&Lean apo przeczył regule Choung i tekstowi własnej
+    //   karty, pseudo-SN w siadzie był zerem z konstrukcji, a asymetria Rolla żyła tylko z rektyfikacji
+    //   wyświetlacza. Po poprawce (zmierzone): Roll apo zachowany z WEWNĘTRZNĄ asymetrią we właściwą
+    //   stronę (chore w dole 0.832 < zdrowe 0.885), null point yaw +8..9° ku CHOREMU, B&L apo wg reguły
+    //   (skłon→zdrowa 0.120, odchylenie→chora 0.130), pseudo-SN w siadzie 0.052 (słaby — jak klinicznie).
+    // KANAŁY PIONOWE świadomie ZOSTAJĄ na restPhi (wybór fenomenologiczny, nie fizyka): czysty cel przy
+    //   osklepku dawałby PC silny UPORCZYWY bodziec w siadzie (0.708) — sprzeczny z kliniką; w Dix oba
+    //   punkty dają ten sam znak (magnituda przy osklepku 2.35× mniejsza). AC: restPhi=3=CUPULA_DEG,
+    //   więc obie reguły są tożsame z konstrukcji.
+    const cupHC = (variant==="cupulo" && canal==="horizontal");
+    const drive=dot3(g, tangAt(G, cupHC ? CUPULA_DEG : restPhi(canal, side)));   // >0 = ampullofugalny (rosnące φ)
     let proj=G.exc*drive;                                   // exc: +1 pionowe (Ewald III), −1 poziomy (Ewald II)
-    const excited = (canal==="horizontal" && variant==="cupulo") ? proj<0 : proj>0;   // geo/apo odwracają się tylko w kanale poziomym
+    const excited = proj>0;                                 // JEDNA reguła Ewalda — inwersja cupulo-HC zbędna po przeniesieniu punktu oceny
     const q0=quickPhase(canal, side), s=excited?1:-1, mag=Math.abs(proj);
     return {excited, mag, h:q0.h*s, v:q0.v*s, t:q0.t*s};
   }
@@ -450,10 +465,15 @@ export const Vestibular = (()=>{
   //   napędza całą kolumnę endolimfy (efekt „tłoka"). Klinicznie: oczopląs kupulolityczny jest MNIEJ intensywny,
   //   lecz UPORCZYWY (bez wygasania) i NIEmęczliwy — uporczywość/niemęczliwość już modelujemy (tauCup, brak rep),
   //   ten współczynnik domyka RÓŻNICĘ SIŁY. Skaluje ξ (simulateCupulolith) i oczopląs diagnostyczny wariantu
-  //   „cupulo" (nysFromGeom) — JEDNO źródło prawdy. Wartość = wybór KALIBRACYJNY (model fenomenologiczny), spójny
-  //   z „mniej intensywny, bardziej uporczywy" i z zakresem SPV apogeotropowy ≈ 0.4–0.7× geotropowy (kan. poziomy);
-  //   NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik (uproszczenie: nie per-kanał/per-geometria).
-  const CUP_WEAK=0.6;
+  //   „cupulo" (nysFromGeom) — JEDNO źródło prawdy. Wartość = wybór KALIBRACYJNY (model fenomenologiczny):
+  //   KALIBROWANA DO WIELKOŚCI OBSERWOWANEJ (2026-08-13, ocena II B2/K4), nie do samej stałej — pasmo
+  //   piśmiennicze SPV apogeotropowy ≈ 0.4–0.7× geotropowy (kan. poziomy) porównuje się z EMERGENTNYM
+  //   stosunkiem szczytów ξ obu symulacji, a ten przy 0.6 wynosił 0.736 (tuż POZA pasmem: cel statyczny
+  //   kupulo przewyższa szczyt dynamiczny kanalo). 0.45 daje stosunek ~0.54 = środek pasma (z celem przy
+  //   osklepku po A1: 0.45·0.832/0.696). NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik
+  //   (uproszczenie: nie per-kanał/per-geometria; dla kanałów PIONOWYCH pasmo 0.4–0.7 jest ekstrapolacją
+  //   bez własnej normy piśmienniczej).
+  const CUP_WEAK=0.45;
   // REKTYFIKACJA EWALDA II — o ile słabsza jest odpowiedź HAMUJĄCA niż pobudzająca. Jedno źródło: ta sama
   // stała rządzi dynamiką (dynNystagmus) i kartą testu (nysFromGeom w pose/maneuvers.js), gdzie do
   // 2026-08-05 stały DWA niezależne literalne 0.45.

@@ -260,6 +260,20 @@ function domOracle(h, win) {
       });
     }
   }
+  // diagnostyka: wariant KUPULO (test × strona) — pokrycie dodane 2026-08-13 (ocena II, V4/E.4).
+  // Fizyka kupulo-HC zmieniła punkt oceny (A1: cel przy osklepku) i CUP_WEAK (B2: 0.6→0.45), a złote
+  // ekrany widziały dotąd WYŁĄCZNIE wariant domyślny (canalo) — regresje ekranów kupulo były niewidzialne.
+  for (const key of Object.keys(h.DIAG || {})) {
+    for (const side of ['P', 'L']) {
+      grab(`diag/${key}/${side}/cupulo`, () => {
+        if (h.openTest) h.openTest(key); else Object.assign(h.state, { testKey: key, screen: 'diag' });
+        if (h.setDiagSide) h.setDiagSide(side); else h.state.side = side;
+        if (h.setVariant) h.setVariant('cupulo'); else h.state.variant = 'cupulo';
+        h.render();
+      });
+    }
+  }
+  if (h.setVariant) h.setVariant('canalo'); else if (h.state) h.state.variant = 'canalo';   // higiena: nie przenoś wariantu na dalsze sekcje
 
   // HINTS — presety
   for (const p of Object.keys(h.HINTS_PRESETS || {})) {
