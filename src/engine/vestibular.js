@@ -317,6 +317,8 @@ export const Vestibular = (()=>{
     if(!seg || typeof seg!=="object") throw new TypeError(where+": timeline["+i+"] musi być obiektem {q, tTrans, tHold}");
     for(const k of ["tTrans","tHold"])
       if(seg[k]!=null && (!(seg[k]>=0) || !isFinite(seg[k]))) throw new RangeError(where+": timeline["+i+"]."+k+" musi być liczbą ≥ 0 (podano "+seg[k]+")");
+    for(const k of ["neckPitch","neckYaw"])   // B8 (V14a): kąt karku segmentu [°] — opcjonalny, skończony
+      if(seg[k]!=null && !Number.isFinite(seg[k])) throw new RangeError(where+": timeline["+i+"]."+k+" musi być liczbą skończoną (podano "+seg[k]+")");
     return reqQuat(seg.q, where+" timeline["+i+"]");
   }
   // symulacja kanalolitiazy: timeline = [{q, tTrans, tHold}, ...]
@@ -365,6 +367,25 @@ export const Vestibular = (()=>{
        earX 0.075 m — półrozstaw międzyuszny: błędnik NIE leży na osi czaszki, więc sam skręt szyi
                       też daje (mały) człon dośrodkowy. Bez tego skręt głowy byłby zupełnie bezwładny. */
   const G0=9.81, LEVER={body:0.75, neck:0.12}, EAR_X=0.075;
+  // B8 (ocena II, V14a): RAMIĘ Z POZY. Podział skalibrowanego LEVER.body=0.75 (kotwica R7) na człon
+  // TUŁOWIOWY biodra→C7 i SZYJNY C7→błędnik — celowo RÓŻNICĄ, nie literałem: suma wraca do kalibracji
+  // bitowo (ARM_TRUNK+LEVER.neck===LEVER.body). Antropometria 50c (Drillis & Contini 1966): krętarz
+  // ≈0.53H, C7 ≈0.86H, tragion ≈0.93H → człon szyjny ≈0.12 m (trafia w LEVER.neck), suma anatomiczna
+  // ≈0.70 vs modelowe 0.75 (ramię EFEKTYWNE — oś przejścia body to kozetka, poniżej krętarza). STATUS
+  // podziału: założenie SPOZA kodu, „granica źródła" jak ramka IE-Map; zmienność osobnicza ±10%.
+  const ARM_TRUNK = LEVER.body - LEVER.neck;   // 0.63 m biodra→C7
+  // ramię oś-obrotu→błędnik w RAMCE GŁOWY, zależne od kąta KARKU (neckP=pitch−trunk, neckY=yaw+dyaw [°]).
+  // pivot="neck": ramię kark→błędnik jest wektorem SZTYWNYM głowy — poprawne dla każdego kąta, bez zmian.
+  // pivot="body" i kark w linii (neckP=0): DOKŁADNIE stary wektor (literalna gałąź — bit-tożsamość
+  // strukturalna). Kark zgięty: człon tułowiowy obraca się WZGLĘDEM głowy odwrotnością rotacji karku
+  // Rx(ν)∘Ry(Y) — dokładnie rozkład POSE_SPEC (headQ = torso ∘ kark; tożsamość zweryfikowana 2.2e-16).
+  function armVec(side, pivot, neckP, neckY){
+    const ex = side==="P" ? EAR_X : -EAR_X;
+    if(pivot!=="body" || !neckP) return [ex, LEVER[pivot]||LEVER.body, 0];
+    const qn = qmul(qaxis([1,0,0], neckP), qaxis([0,1,0], neckY||0));
+    const tr = rotv(qconj(qn), [0, ARM_TRUNK, 0]);
+    return [ex+tr[0], LEVER.neck+tr[1], tr[2]];
+  }
   function angVel(qPrev, sq, tTrans){        // ω [rad/s] w RAMCE GŁOWY (oś obrotu względnego jest w niej stała)
     if(!(tTrans>0)) return [0,0,0];
     let r=qmul(qconj(qPrev), sq); if(r[0]<0) r=[-r[0],-r[1],-r[2],-r[3]];
@@ -372,9 +393,9 @@ export const Vestibular = (()=>{
     const w=2*Math.atan2(v, r[0])/tTrans;
     return [w*r[1]/v, w*r[2]/v, w*r[3]/v];
   }
-  function specForce(g, wv, side, pivot){    // f = g − a/g0, a = ω × (ω × d) [dośrodkowe]
+  function specForce(g, wv, side, pivot, neckP, neckY){   // f = g − a/g0, a = ω × (ω × d) [dośrodkowe]
     if(!wv[0] && !wv[1] && !wv[2]) return g;
-    const d=[(side==="P"?EAR_X:-EAR_X), LEVER[pivot]||LEVER.body, 0];   // oś obrotu → błędnik, w ramce głowy
+    const d=armVec(side, pivot, neckP, neckY);              // oś obrotu → błędnik, w ramce głowy (B8: z kąta karku)
     const c1=cross3(wv,d), a=cross3(wv,c1);
     return [g[0]-a[0]/G0, g[1]-a[1]/G0, g[2]-a[2]/G0];
   }
@@ -438,15 +459,18 @@ export const Vestibular = (()=>{
     const holdDrive = phi0!=null ? driveAt(canal, side, phi0, qStart!=null?qStart:[1,0,0,0], tauP)
                                  : restDrive(canal, side, tauP);
     let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=xi0, t=0, exited=false, stuck=settled && (bond0==null || bond0>0) && Math.abs(holdDrive)<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, expelling=false, bond=bond0!=null?bond0*adh:adh, qPrev=qStart!=null?qStart:reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    let nPrev=null;   // B8 (V14a): kąt karku POPRZEDNIEGO segmentu [νP, Y] — jak qPrev; pierwszy segment = wartości własne (stałe ramię); q0 nie niesie rozkładu karku (granica udokumentowana)
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const wv = angVel(qPrev, sq, seg.tTrans);          // prędkość kątowa przejścia (stała — slerp o stałym tempie)
       const pivot = seg.pivot || "body";                  // oś obrotu kroku: "body" (biodra/kozetka) | "neck" (sama głowa)
+      const nP=seg.neckPitch||0, nY=seg.neckYaw||0;       // B8: kark segmentu (brak pól = 0 = stara ścieżka armVec literalnie)
+      const pP=nPrev?nPrev[0]:nP, pY=nPrev?nPrev[1]:nY;
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
         const g0v=gHead(slerpQ(qPrev,sq,u));
-        const g = u<1 ? specForce(g0v, wv, side, pivot) : g0v;   // W TRAKCIE przejścia działa siła właściwa; w holdzie ω=0 → f=g
+        const g = u<1 ? specForce(g0v, wv, side, pivot, pP+u*(nP-pP), pY+u*(nY-pY)) : g0v;   // W TRAKCIE przejścia siła właściwa; kark z TEJ SAMEJ interpolacji co poza (rozszerzenie zasady R7); w holdzie ω=0 → f=g
         let dphi=0, flow=0;
         if(!exited){
           if(crusGate && inCrus){
@@ -479,7 +503,7 @@ export const Vestibular = (()=>{
         xi+=dt*(-xi/tauC + flow); t+=dt;
         out.push({t, xi, phi:phi/D, exited});
       }
-      qPrev=sq;
+      qPrev=sq; nPrev=[nP,nY];
     }
     // STAN KOŃCOWY do łańcuchowania sesji (ocena II, V3+V10 — fundament D1/R10): pre=simulateCanalith(historia);
     // test=simulateCanalith({phi0:pre.final.phi, xi0:pre.final.xi, bond0:pre.final.bondFrac, settled:true, ...})
