@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, ldtPhases, SCEN_DRIVEN, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -785,7 +785,7 @@ function renderSetup(){
   } else {
     const testOpt=k=>`<button class="opt" aria-pressed="${state.testKey===k}" onclick="openTest('${k}')">${DIAG[k].name}<small>${DIAG[k].tests}</small></button>`;
     body=`<div class="group"><div class="label"><span class="eyebrow">${t("Test diagnostyczny","Diagnostic test")}</span><span class="hint">${t("stronę ustalisz na karcie testu","set the side on the test card")}</span></div>
-        <div class="seg">${testOpt("dix")}${testOpt("roll")}${testOpt("bowlean")}${testOpt("headhang")}</div></div>`;
+        <div class="seg">${testOpt("dix")}${testOpt("roll")}${testOpt("bowlean")}${testOpt("lyingdown")}${testOpt("headhang")}</div></div>`;
   }
   $("#app").innerHTML=`
     <div class="topbar">
@@ -981,14 +981,28 @@ function diagClassifyCard(canal, v, side, antMode){
       <div class="obslabel" style="margin-bottom:8px">${t("Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe","Bárány classification (ICVD) and central differentiation")}</div>
       ${seg}${central?cpn:bppv}</div>`;
 }
+// ===== Selektor scenariuszy historii pozycyjnej (V5; od V11/D2 WSPÓLNY dla kart B&L i lying-down) =====
+// state.bltScenario jest CELOWO jednym polem obu kart HC: scenariusz = historia PACJENTA, nie testu —
+// „ta sama godzina życia pacjenta → dwa testy" (bltInit memo współdzielone). Ekstrakcja bajt-w-bajt
+// z bltPanel (dowód: --check 0 diff po samej ekstrakcji, przed featurą V11).
+function scenPanelHTML(A, scen, banner){
+  const btn=k=>{ const ini=bltInit(A,k);
+    const small = ini.exitedInHistory ? t("kanał opróżniony","canal emptied")
+      : ini.phi0!=null ? `φ₀ ≈ ${Math.round(ini.phi0)}°` : t("φ₀ ≈ 200° (spoczynek)","φ₀ ≈ 200° (rest)");
+    return `<button class="opt" aria-pressed="${scen===k}" onclick="setBltScenario('${k}')"><b>${BLT_HISTORY[k].label}</b><small>${small}</small></button>`; };
+  return `<div class="obsrow"><div class="obslabel">${t("Historia pozycyjna przed testem (ustala położenie złogu):","Positional history before the test (pins the debris position):")}</div>
+      <div class="seg" style="flex-wrap:wrap">${Object.keys(BLT_HISTORY).map(btn).join("")}</div>
+      <div class="note" style="margin-top:8px">${banner}</div></div>`;
+}
 function renderDiag(){
   const D=DIAG[state.testKey], A=state.side, v=state.variant;   // D = obiekt testu (NIE koliduj z importem t = tlumaczenie)
   const isDix = state.testKey==="dix";
   const antMode = isDix && state.dixObs==="ant";          // zaobserwowano downbeat → kanał PRZEDNI
   const effCanal = antMode ? "anterior" : D.canal;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
-  const rawPhases = D.phases(A, v, state.bltScenario);      // 3. argument: scenariusz historii Bow & Lean (inne testy go ignorują)
+  const rawPhases = D.phases(A, v, state.bltScenario);      // 3. argument: scenariusz historii (karty SCEN_DRIVEN: bowlean, lyingdown; inne testy go ignorują)
   const bltMeta = rawPhases.blt || null;                    // metadane scenariusza (właściwość na tablicy — .map ją gubi, więc łapiemy tu)
+  const ldtMeta = rawPhases.ldt || null;                    // analogicznie dla lying-down (V11/D2)
   const phases = rawPhases.map(ph => antMode
     ? { ...ph, nys: nysFromGeom("anterior", effSide, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),   // TA SAMA poza co reszta aplikacji (było własne qSupineYaw = zwis 10° zamiast opisanych 20°)
         label: t("ku dołowi — czysty downbeat (kanał przedni)","downward — pure downbeat (anterior canal)"),
@@ -1006,7 +1020,7 @@ function renderDiag(){
   // z jednego stanu, sprzeczność strukturalnie niemożliwa. Bowlean poza nadpisaniem (karta B&L ma własne
   // scenariusze historii — integracja to kandydat V11); antMode poza (kanał efektywny ≠ kanał sesji).
   const S = state.session;
-  const sessDrive = S && v==="canalo" && !antMode && state.testKey!=="bowlean" && S.canal===effCanal && S.side===effSide;
+  const sessDrive = S && v==="canalo" && !antMode && !SCEN_DRIVEN.has(state.testKey) && S.canal===effCanal && S.side===effSide;
   if(sessDrive){
     const pv = sessionPreview(S, state.testKey);
     const sInit = sessionInit(S);
@@ -1096,14 +1110,14 @@ function renderDiag(){
     const actChip = chipS(t("akty","acts"), `${S.acts.length} · ${Math.round(S.tSession)} s`);
     const mismatch = !(S.canal===effCanal && S.side===effSide);
     const bst="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center";
-    const btnProvoke = (!isDix && state.testKey!=="bowlean" && !mismatch && v==="canalo" && !S.exited)
+    const btnProvoke = (!isDix && !SCEN_DRIVEN.has(state.testKey) && !mismatch && v==="canalo" && !S.exited)
       ? `<button class="opt" style="${bst}" onclick="sessionProvoke()">${t("▶ Wykonaj test w sesji","▶ Run the test in the session")}</button>` : "";
     const btnRest = `<button class="opt" style="${bst};opacity:.9" onclick="sessionRest()">${t("⏸ Przerwa 10 min (siad)","⏸ 10-min break (sitting)")}</button>`;
     const btnReset = `<button class="opt" style="${bst};opacity:.85" onclick="resetSession()">${t("Reset (nowy złóg)","Reset (new debris)")}</button>`;
     const noteTxt = v==="cupulo"
       ? t("Kupulolitiaza: brak wolnej cząstki w świetle — wynik NIE zależy od historii (test powtarzalny); stan sesji dotyczy postaci kanalolitycznej.","Cupulolithiasis: no free particle in the lumen — the result does NOT depend on history (the test is repeatable); the session state applies to the canalithiasis form.")
-      : state.testKey==="bowlean"
-        ? t("Karta Bow & Lean używa własnych scenariuszy historii (wyżej) — akty sesji aktualizują stan złogu, ale nie nadpisują tej karty.","The Bow & Lean card uses its own history scenarios (above) — session acts update the debris state but do not override this card.")
+      : SCEN_DRIVEN.has(state.testKey)
+        ? t("Ta karta używa scenariuszy historii pozycyjnej — akty sesji aktualizują stan złogu, ale nie nadpisują karty.","This card uses positional-history scenarios — session acts update the debris state but do not override the card.")
         : mismatch
           ? t("Podgląd sesji nieaktywny: kanał/strona tej karty ≠ tożsamość złogu sesji.","Session preview inactive: this card's canal/side ≠ the session debris identity.")
           : (isDix
@@ -1117,22 +1131,17 @@ function renderDiag(){
   })() : "";
   // ===== Bow & Lean: scenariusze historii pozycyjnej + reguła kliniczna + mapa wododziału (ocena II, V5) =====
   const isBlt = state.testKey==="bowlean";
+  const isLdt = state.testKey==="lyingdown";               // V11/D2 — panel/badge niżej, selektor WSPÓLNY (scenPanelHTML)
   const bltPanel = isBlt ? (()=>{
     if(v==="cupulo") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Kupulolitiaza: ciężki osklepek reaguje na sam kierunek grawitacji — wynik NIE zależy od historii pozycyjnej (scenariusze dotyczą postaci kanalolitycznej). Test powtarzalny — to jego cecha różnicująca.","Cupulolithiasis: the heavy cupula responds to the direction of gravity itself — the result does NOT depend on positional history (the scenarios apply to the canalithiasis form). The test is repeatable — its differentiating feature.")}</div></div>`;
     const scen=state.bltScenario||"textbook";
-    const btn=k=>{ const ini=bltInit(A,k);
-      const small = ini.exitedInHistory ? t("kanał opróżniony","canal emptied")
-        : ini.phi0!=null ? `φ₀ ≈ ${Math.round(ini.phi0)}°` : t("φ₀ ≈ 200° (spoczynek)","φ₀ ≈ 200° (rest)");
-      return `<button class="opt" aria-pressed="${scen===k}" onclick="setBltScenario('${k}')"><b>${BLT_HISTORY[k].label}</b><small>${small}</small></button>`; };
     const ini=bltInit(A,scen);
     const banner = ini.exitedInHistory
       ? t("Historia pozycyjna OPRÓŻNIŁA kanał (złóg wpadł do łagiewki, zanim test się zaczął) — obie fazy będą nieme.","The positional history EMPTIED the canal (the debris fell into the utricle before the test began) — both phases will be mute.")
       : ini.phi0!=null
         ? t(`Scenariusz ustala położenie złogu: φ₀ ≈ ${Math.round(ini.phi0)}° — POLICZONE symulacją historii przez silnik, nie wpisane. Strzałki i napisy poniżej to WYNIK symulacji dla tego położenia (złóg świeżo przemieszczony — bez bramki adhezji), nie reguła.`,`The scenario pins the debris position: φ₀ ≈ ${Math.round(ini.phi0)}° — COMPUTED by simulating the history through the engine, not typed in. The arrows and labels below are the SIMULATION RESULT for this position (freshly displaced debris — no adhesion gate), not a rule.`)
         : t("Start nieoznaczony = spoczynek modelu φ₀ ≈ 200°, czyli 9,9° ZA wododziałem skłonu (190°), z pełną adhezją — model uczciwie NIE rozstrzyga kierunku. Tak wygląda pacjent bez znanej historii pozycyjnej.","Start indeterminate = the model's rest φ₀ ≈ 200°, i.e. 9.9° BEYOND the bow watershed (190°), with full adhesion — the model honestly does NOT resolve the direction. This is the patient with no known positional history.");
-    return `<div class="obsrow"><div class="obslabel">${t("Historia pozycyjna przed testem (ustala położenie złogu):","Positional history before the test (pins the debris position):")}</div>
-      <div class="seg" style="flex-wrap:wrap">${Object.keys(BLT_HISTORY).map(btn).join("")}</div>
-      <div class="note" style="margin-top:8px">${banner}</div></div>`;
+    return scenPanelHTML(A, scen, banner);
   })() : "";
   const bltExtras = isBlt ? (()=>{
     const ruleTxt=t("Reguła kliniczna (Choung 2006): skłon → ucho chore, odchylenie → zdrowe; w postaci apogeotropowej odwrotnie.","Clinical rule (Choung 2006): bow → affected ear, lean → healthy; reversed in the apogeotropic form.");
@@ -1158,6 +1167,29 @@ function renderDiag(){
     </div>` : "";
     return ruleCard + mapCard;
   })() : "";
+  // ===== Lying-down (ocena II, V11/D2): selektor scenariuszy WSPÓLNY z B&L + badge zgodności =====
+  const ldtPanel = isLdt ? (()=>{
+    if(v==="cupulo") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Kupulolitiaza: ciężki osklepek reaguje na sam kierunek grawitacji — wynik NIE zależy od historii pozycyjnej (scenariusze dotyczą postaci kanalolitycznej). Uporczywy oczopląs położenia + pseudo-SN w siadzie.","Cupulolithiasis: the heavy cupula responds to the direction of gravity itself — the result does NOT depend on positional history (the scenarios apply to the canalithiasis form). Persistent lying-down nystagmus + pseudo-SN in sitting.")}</div></div>`;
+    const scen=state.bltScenario||"textbook";
+    const ini=bltInit(A,scen);
+    const banner = ini.exitedInHistory
+      ? t("Historia pozycyjna OPRÓŻNIŁA kanał (złóg wpadł do łagiewki, zanim test się zaczął) — obie fazy będą nieme.","The positional history EMPTIED the canal (the debris fell into the utricle before the test began) — both phases will be mute.")
+      : ini.phi0!=null
+        ? t(`Scenariusz ustala położenie złogu: φ₀ ≈ ${Math.round(ini.phi0)}° — policzone symulacją historii przez silnik. Równowaga leżenia ≈190°: od tego, PO KTÓREJ jej stronie leży złóg, zależy kierunek oczopląsu położenia (ta sama fizyka wododziału co w Bow & Lean).`,`The scenario pins the debris position: φ₀ ≈ ${Math.round(ini.phi0)}° — computed by simulating the history through the engine. The lying equilibrium is ≈190°: WHICH side of it the debris lies on sets the lying-down nystagmus direction (the same watershed physics as in Bow & Lean).`)
+        : t("Start nieoznaczony = spoczynek modelu φ₀ ≈ 200° z pełną adhezją: napęd położenia (0.026) nie zrywa wiązania (próg 0.04) — test niemy. Tak wygląda pacjent bez LDN (klinicznie 32–62% chorych).","Start indeterminate = the model's rest φ₀ ≈ 200° with full adhesion: the lying-down drive (0.026) does not break the bond (threshold 0.04) — the test is mute. This is the patient without LDN (clinically 32–62% of patients).");
+    return scenPanelHTML(A, scen, banner);
+  })() : "";
+  const ldtExtras = isLdt ? (()=>{
+    const ruleTxt=t("Reguła kliniczna: położenie → geo ku uchu ZDROWEMU / apo ku CHOREMU; siadanie odwraca kierunek (wyprowadzenie mechaniczne). LDN i PSN to znaki POMOCNICZE lateralizacji — nie kryterium Bárány.","Clinical rule: lying down → geo toward the HEALTHY ear / apo toward the AFFECTED one; sitting up reverses the direction (mechanical derivation). LDN and PSN are SECONDARY lateralization signs — not Bárány criteria.");
+    let badge, badgeCol="#3a8f6f";
+    if(v==="cupulo"){ badge=t("model ZGODNY z regułą apogeotropową — położenie ku chorej (cel przy osklepku), pseudo-SN w siadzie ku chorej","model AGREES with the apogeotropic rule — lying down toward the affected side (target at the cupula), pseudo-SN in sitting toward the affected side"); }
+    else if(ldtMeta && ldtMeta.exitedInHistory){ badge=t("kanał opróżniony — reguły nie ma na czym testować","canal emptied — nothing left to test the rule on"); badgeCol="#8a93a6"; }
+    else if(ldtMeta && nysFromDyn("horizontal", A, ldtMeta.lieXi, false).strength < XI_CARD){ badge=t("model NIE ROZSTRZYGA — brak LDN (klinicznie 32–62% chorych; GT0 = 56,7% geo w serii Califano 2026)","the model DOES NOT RESOLVE it — no LDN (clinically 32–62% of patients; GT0 = 56.7% of geo in the Califano 2026 series)"); badgeCol="#8a93a6"; }
+    else if(ldtMeta && ldtMeta.lieXi<0){ badge=t("model ZGODNY z wzorcem geotropowym w tym scenariuszu (położenie ku zdrowej — emergentnie); siadanie w modelu podprogowe","model AGREES with the geotropic pattern in this scenario (lying down toward the healthy side — emergently); sitting up is subthreshold in the model"); }
+    else { badge=t("położenie ku CHOREJ — wzorzec GT− (~7% serii Califano 2026): złóg za równowagą leżenia; odczyt położenia wyjściowego, nie błąd reguły","lying down toward the AFFECTED side — the GT− pattern (~7% of the Califano 2026 series): debris beyond the lying equilibrium; a readout of the starting position, not a failure of the rule"); badgeCol="#b0813f"; }
+    return `<div class="card" style="margin-bottom:4px"><div class="obslabel" style="margin-bottom:4px">${ruleTxt}</div>
+      <div style="display:inline-block;padding:4px 10px;border-radius:12px;background:${badgeCol}22;border:1px solid ${badgeCol};font-size:12.5px;color:#D4DEE8">${badge}</div></div>`;
+  })() : "";
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
@@ -1168,7 +1200,7 @@ function renderDiag(){
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
       </div></div>` : ""}
-    ${sessionPanel}${bltPanel}${phaseHTML}${fatPanel}${bltExtras}
+    ${sessionPanel}${bltPanel}${ldtPanel}${phaseHTML}${fatPanel}${bltExtras}${ldtExtras}
     ${(()=>{
       const interp = v0 => antMode
         ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)

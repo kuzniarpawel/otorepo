@@ -173,6 +173,20 @@ function engineOracle(h) {
     out.sessionChain = chain;
   }
 
+  // LYING-DOWN (ocena II, V11/D2): pin liczb faz per scenariusz×strona — dom zaokrągla φ₀ i tnie ξ
+  // progiem XI_CARD, więc dryf podprogowy byłby w dom niewidzialny (precedens sessionChain).
+  if (h.ldtPhases) {
+    const r5 = x => x == null ? null : +(+x).toFixed(5);
+    const ldt = {};
+    for (const scen of ['textbook', 'afterDix', 'afterRoll', 'neutral'])
+      for (const side of ['P', 'L']) {
+        const P = h.ldtPhases(side, scen);
+        ldt[`${scen}/${side}`] = { phi0: r5(P.init.phi0), lie: r5(P.lie.xi), sit: r5(P.sit.xi),
+          phiAfterLie: r5(P.phiAfterLie), exited: P.exited };
+      }
+    out.lyingdown = ldt;
+  }
+
   // NeuroVOR — czyste odczyty kliniczne dla zestawu pacjentów
   const NV = h.NeuroVOR;
   if (NV) {
@@ -333,6 +347,19 @@ function domOracle(h, win) {
     }
   }
   if (h.setBltScenario) h.setBltScenario('textbook'); else if (h.state) h.state.bltScenario = 'textbook';   // higiena
+  // Lying-down (ocena II, V11/D2): scenariusze WSPÓLNE z B&L (state.bltScenario) — lustro sekcji wyżej.
+  // Bazowe diag/lyingdown/{P,L}(+/cupulo) łapie już pętla po Object.keys(DIAG); tu pozostałe scenariusze.
+  for (const scen of ['afterDix', 'afterRoll', 'neutral']) {
+    for (const side of ['P', 'L']) {
+      grab(`diag/lyingdown/${side}/scen-${scen}`, () => {
+        if (h.openTest) h.openTest('lyingdown'); else Object.assign(h.state, { testKey: 'lyingdown', screen: 'diag' });
+        if (h.setDiagSide) h.setDiagSide(side); else h.state.side = side;
+        if (h.setBltScenario) h.setBltScenario(scen); else h.state.bltScenario = scen;
+        h.render();
+      });
+    }
+  }
+  if (h.setBltScenario) h.setBltScenario('textbook'); else if (h.state) h.state.bltScenario = 'textbook';   // higiena
 
   // HINTS — presety
   for (const p of Object.keys(h.HINTS_PRESETS || {})) {
@@ -446,6 +473,7 @@ if (!CHECK) {
       diffKeys(snap.engine.plans, gold.engine.plans, 'engine.plans/', diffs);
       diffKeys(snap.engine.neuro, gold.engine.neuro, 'engine.neuro/', diffs);
       diffKeys(snap.engine.sessionChain, gold.engine.sessionChain, 'engine.sessionChain/', diffs);   // V10/D1: bez tej linii pin byłby zapisywany, ale nigdy porównywany
+      diffKeys(snap.engine.lyingdown, gold.engine.lyingdown, 'engine.lyingdown/', diffs);            // V11/D2: jw.
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

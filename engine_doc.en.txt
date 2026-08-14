@@ -830,8 +830,8 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
        protocol. The map and the zones = the geometry of ONE atlas (Reid's frame; the 9.8° margin <
        between-subject variability).
      FOLLOW-UP: the full stuck(phi0,q0) gate and re-adhesion DELIVERED 2026-08-14 (V10 — see the
-       simulateCanalith signature and R10-STATUS); the "lying-down/sitting-up test" on the same
-       machinery (D2) — open.
+       simulateCanalith signature and R10-STATUS); the "lying-down/sitting-up test" DELIVERED
+       2026-08-14 (V11/D2 — see the D2 STATUS under R10).
 
  R11. THE ENGINE EQUATES PHENOTYPE WITH MECHANISM: geo≡canalolithiasis, apo≡cupulolithiasis [2026-08-06, OPEN].
      Came out of verifying H5. For the horizontal canal variantLabels asserts outright "Canalithiasis
@@ -916,6 +916,33 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
       a calibration constant, not a literature one). A sequential Roll (affected→centre→healthy) moves
       the debris between phases — the session's phase amplitudes are not a pure Ewald comparison
       (R10/Bhandari; the card says so outright).]
+     [D2 STATUS 2026-08-14 (assessment II, V11): DELIVERED — LYING-DOWN/SITTING-UP (the DIAG card
+      "lyingdown", horizontal canal). Physics: lying down (supineFlex, the Roll test's pose) shifts
+      the HC equilibrium by barely ~9° (sitting 199.8° → 191.0°) — the direction of the lying-down
+      nystagmus (LDN) reads the debris's side RELATIVE TO that equilibrium: φ₀<190° → toward the
+      HEALTHY side (an EMERGENT geotropic pattern; textbook 146.2° → −0.382), φ₀>190° → toward the
+      AFFECTED side (the GT− pattern, ~7% of the Califano 2026 series; afterRoll 220.5° → +0.254);
+      rest with full adhesion → the test is SILENT (drive 0.026 ≤ fStat 0.04; clinically the LDN is
+      absent in 32–62%). SITTING UP is always subthreshold in the model (−0.028; the debris returns
+      ampullofugally 190→200°) — the clinical sitting-up rule (geo→toward the affected) is a
+      mechanical derivation WITHOUT series of its own (a gap named on the card). The LDT NEVER
+      removes the debris (no φ₀ in 5–265° does; contrast with the B&L bow); after the test the
+      debris sits in the subthreshold zone 195–196° for all presets — the order of tests carries
+      physical meaning (R10). CUPULO (V4 physics, target at the cupula): lying down +0.059 toward
+      the AFFECTED side (persistent; null point at yaw ~8.6° toward the affected — the clinical band
+      10–30°), pseudo-SN when sitting +0.024 toward the affected (Asprella 2008: apo ipsilesional;
+      differentiation from a true SN by PITCH MODULATION — the model's null pitch at +23.6° of
+      flexion ≈ the clinical head-pitch test at ~30° — not by fixation); the model does NOT
+      reproduce the reversal on sitting up alone. Scenarios SHARED with the B&L (BLT_HISTORY +
+      state.bltScenario — one patient history feeds two tests; the bltInit memo is shared); the
+      scenario cards stay outside the session's acts (the SCEN_DRIVEN predicate — a guard against
+      the silent fallback to the Dix act). Anchors: Han 2006 (Neurology, n=152: LDN 38.2%), Koo 2006
+      (75%/80% geo/apo agreement), Oh 2014 (counterexample: 56% overall), Xia 2026 (96–97% accuracy
+      with a REPEATED LDT), Califano/Gufoni 2026 (GT0/GT+/GT− = a readout of the debris's starting
+      position — exactly the model's mechanism), Asprella-Libonati 2008/2014 (PSN; in 20.5% of
+      "neuritis" cases in the ED the pitch test unmasked LSC-BPPV). LDN/PSN = SECONDARY signs of
+      lateralization, not a Bárány 2015 criterion. Oracles: +10 dom keys (116→126) +
+      engine.lyingdown (8 pins per scenario×side).]
 
  R9. LATERAL-CANAL PITCH 10.4° INSTEAD OF THE CANONICAL ~30° [2026-08-05, OPEN].
      THIS IS NOT A DATA ERROR — it is a FRAME unknown. Settled by separating relative from absolute

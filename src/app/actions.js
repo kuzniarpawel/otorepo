@@ -1,6 +1,6 @@
 // Akcje UI (onclick=… przez window): nawigacja, wybory, HINTS, zapis/odczyt pacjenta.
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF, DIAG, actTimeline, sessionSim, SIT_SEG, SESSION_REST, readhesion, maneuverTimeline } from '../pose/maneuvers.js';
+import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF, DIAG, actTimeline, sessionSim, SIT_SEG, SESSION_REST, readhesion, maneuverTimeline, SCEN_DRIVEN } from '../pose/maneuvers.js';
 import { state } from './state.js';
 import { $, releaseWake, beep } from '../runtime/registry.js';
 import { render, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
@@ -252,9 +252,10 @@ function commitAct(kind, timeline, restSecs){
   S.acts.push({kind, t:Math.round(dur)}); S.tSession+=dur;   // render() u WYWOŁUJĄCEGO — sessionProvoke inkrementuje rep PO commicie, render musi widzieć stan końcowy
 }
 // prowokacja bieżącego testu jako akt; rep++ PO symulacji (pierwsza prowokacja = pełna odpowiedź).
-// Bowlean poza aktami sesji — karta B&L ma własne scenariusze historii (V5); integracja = kandydat V11.
+// Karty scenariuszowe (SCEN_DRIVEN: bowlean, lyingdown) poza aktami sesji — mają własne scenariusze
+// historii (V5/V11); integracja = odłożony kandydat.
 function sessionProvoke(){
-  const S=state.session; if(!S || !state.testKey || state.testKey==="bowlean") return;
+  const S=state.session; if(!S || !state.testKey || SCEN_DRIVEN.has(state.testKey)) return;
   commitAct(state.testKey, actTimeline(state.testKey, S.side), SESSION_REST);
   S.rep=(S.rep||0)+1; if(state.testKey==="dix") state.dixRep=S.rep;
   render();

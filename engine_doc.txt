@@ -790,7 +790,8 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
        nie — nie porównywać φ₀ między zapisami bez protokołu. Mapa i strefy = geometria JEDNEGO
        atlasu (ramka Reida; margines 9.8° < zmienność międzyosobnicza).
      FOLLOW-UP: pełna bramka stuck(phi0,q0) i re-adhezja DOSTARCZONE 2026-08-14 (V10 — patrz sygnatura
-       simulateCanalith i R10-STATUS); „lying-down/sitting-up test" na tej samej maszynerii (D2) — otwarte.
+       simulateCanalith i R10-STATUS); „lying-down/sitting-up test" DOSTARCZONY 2026-08-14 (V11/D2 —
+       patrz D2-STATUS pod R10).
 
  R11. SILNIK UTOŻSAMIA FENOTYP Z MECHANIZMEM: geo≡kanalolitiaza, apo≡kupulolitiaza [2026-08-06, OTWARTE].
      Wyszło z weryfikacji H5. variantLabels dla kanału poziomego twierdzi wprost
@@ -865,6 +866,29 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
       niesie wyłącznie LATENCJĘ (krzywej powrotu latencji nikt nie zmierzył — stała kalibracyjna,
       nie literaturowa). Sekwencyjny Roll (chore→centrum→zdrowe) przemieszcza złóg między fazami —
       amplitudy faz sesji nie są czystym porównaniem Ewalda (R10/Bhandari; karta mówi to wprost).]
+     [D2-STATUS 2026-08-14 (ocena II, V11): DOSTARCZONE — LYING-DOWN/SITTING-UP (karta DIAG „lyingdown",
+      kanał poziomy). Fizyka: leżenie (supineFlex, poza testu Roll) przesuwa równowagę HC ledwie o ~9°
+      (siad 199.8° → 191.0°) — kierunek oczopląsu położenia (LDN) czyta stronę złogu WZGLĘDEM tej
+      równowagi: φ₀<190° → ku ZDROWEJ (wzorzec geotropowy EMERGENTNY; textbook 146.2° → −0.382),
+      φ₀>190° → ku CHOREJ (wzorzec GT− ~7% serii Califano 2026; afterRoll 220.5° → +0.254); spoczynek
+      z pełną adhezją → test NIEMY (napęd 0.026 ≤ fStat 0.04; klinicznie LDN nieobecny u 32–62%).
+      SIADANIE w modelu zawsze podprogowe (−0.028; złóg wraca odampułkowo 190→200°) — kliniczna reguła
+      siadania (geo→ku chorej) to wyprowadzenie mechaniczne BEZ własnych serii (luka nazwana na karcie).
+      LDT NIGDY nie usuwa złogu (żadne φ₀ 5–265°; kontrast ze skłonem B&L); po teście złóg w strefie
+      podprogowej 195–196° dla wszystkich presetów — kolejność testów ma fizyczne znaczenie (R10).
+      KUPULO (fizyka V4, cel przy osklepku): leżenie +0.059 ku CHOREJ (uporczywy; null point yaw ~8.6°
+      ku chorej — pasmo kliniczne 10–30°), pseudo-SN w siadzie +0.024 ku chorej (Asprella 2008: apo
+      ipsilezjonalnie; różnicowanie od prawdziwego SN MODULACJĄ PITCH — null pitch modelu +23.6°
+      zgięcia ≈ kliniczny head-pitch test ~30° — nie fiksacją); model NIE odtwarza odwrócenia przy
+      samym siadaniu. Scenariusze WSPÓLNE z B&L (BLT_HISTORY + state.bltScenario — jedna historia
+      pacjenta karmi dwa testy; bltInit memo współdzielone); karty scenariuszowe poza aktami sesji
+      (predykat SCEN_DRIVEN — strażnik przed cichym fallbackiem aktu Dixa). Kotwice: Han 2006
+      (Neurology, n=152: LDN 38.2%), Koo 2006 (75%/80% zgodności geo/apo), Oh 2014 (kontrprzykład:
+      56% łącznie), Xia 2026 (96–97% trafności przy POWTARZANYM LDT), Califano/Gufoni 2026 (GT0/GT+/
+      GT− = odczyt położenia wyjściowego złogu — dokładnie mechanizm modelu), Asprella-Libonati
+      2008/2014 (PSN; u 20.5% „zapaleń neuronu" w SOR pitch-test ujawnił LSC-BPPV). LDN/PSN = znaki
+      POMOCNICZE lateralizacji, nie kryterium Bárány 2015. Wyrocznie: +10 kluczy dom (116→126)
+      + engine.lyingdown (8 pinów per scenariusz×strona).]
 
  R9. NACHYLENIE KANAŁU BOCZNEGO 10.4° ZAMIAST KANONICZNYCH ~30° [2026-08-05, OTWARTE].
      TO NIE JEST BŁĄD DANYCH — to niewiadoma RAMKI. Rozstrzygnięte rozdzieleniem wielkości względnych

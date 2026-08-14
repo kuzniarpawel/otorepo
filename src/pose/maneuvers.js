@@ -632,6 +632,44 @@ function bltZones(side){
   _bltMemo.set(k,pts); return pts;
 }
 
+/* ============ Lying-down / sitting-up (ocena II, V11/D2) ============
+   Test położeniowy kanału poziomego: siad → leżenie (supineFlex, poza testu Roll) → siad. Fizyka
+   (pomiary 2026-08-14): leżenie przesuwa równowagę HC ledwie o ~9° DOampułkowo (siad 199.8° →
+   supineFlex 191.0°) — cała karta z tego wynika. KANALO: oczopląs POŁOŻENIA ku ZDROWEJ dla φ₀<190°
+   (reguła geotropowa EMERGENTNA — Han 2006, Koo 2006: LDN kontralezjonalny w geo), ku CHOREJ dla
+   φ₀>190° (wynik „mylący" GT− ~7% serii Califano 2026 — odczyt położenia wyjściowego złogu);
+   SIADANIE zawsze podprogowe (−0.028, złóg wraca 190→200° ODampułkowo) — kliniczna reguła siadania
+   (geo→ku chorej) to wyprowadzenie mechaniczne BEZ własnych serii (luka nazwana na karcie). Spoczynek
+   z pełną adhezją: napęd 0.026 ≤ fStat → test NIEMY („model nie rozstrzyga", spójnie z E; klinicznie
+   LDN nieobecny u 32–62%). LDT NIGDY nie usuwa złogu (żadne φ₀ 5–265°; leżenie i siadanie przyciągają
+   ku 190–200°, nigdy ku ujściu 267°) — twardy kontrast ze skłonem B&L. Po LDT złóg ląduje w strefie
+   podprogowej 195–196° dla WSZYSTKICH presetów — kolejność testów ma fizyczne znaczenie (R10).
+   KUPULO (V4, cel przy osklepku): leżenie +0.059 ku CHOREJ (uporczywy; null point yaw ~8.6° ku chorej
+   — klinicznie 10–30°), pseudo-SN w siadzie +0.024 ku chorej (Asprella 2008: apo→ipsilezjonalnie);
+   model NIE odtwarza odwrócenia przy siadaniu (null pitch +23.6° zgięcia ≈ kliniczny HPT ~30°). */
+function ldtPhases(side, scen){
+  const k="ldt#"+side+"#"+(scen||"textbook"); if(_bltMemo.has(k)) return _bltMemo.get(k);
+  const init=bltInit(side, scen||"textbook");
+  const out={init, lie:{xi:0}, sit:{xi:0}, phiAfterLie:null, exited:init.exitedInHistory};
+  if(!init.exitedInHistory){
+    const qSit=[1,0,0,0], qLie=stepHeadQ("supineFlex",0,"up");
+    const segs=[{q:qLie,tTrans:0.8,tHold:30,pivot:"body"},{q:qSit,tTrans:0.8,tHold:30,pivot:"body"}];
+    const sim=Vestibular.simulateCanalith({canal:"horizontal", side, q0:qSit, phi0:init.phi0, settled:init.settled, timeline:segs});
+    const t1=30.8;                                       // granica faz: przejście+hold położenia (ogon ξ przy t1 ≈ 0 — fazy nieskontaminowane)
+    for(const s of sim){
+      if(s.t<=t1){ if(Math.abs(s.xi)>Math.abs(out.lie.xi)) out.lie.xi=s.xi; out.phiAfterLie=s.phi; }
+      else if(Math.abs(s.xi)>Math.abs(out.sit.xi)) out.sit.xi=s.xi;
+      if(s.exited) out.exited=true;
+    }
+  }
+  _bltMemo.set(k,out); return out;
+}
+// Karty sterowane SCENARIUSZAMI historii — poza podglądem i aktami sesji (decyzja V10, symetrycznie;
+// integracja sesja↔karty scenariuszowe = odłożony kandydat). WSPÓLNY predykat zamiast literałów
+// „bowlean" w strażnikach: pominięcie jednego strażnika uruchamiałoby PO CICHU fallback aktu Dixa
+// (ACT_STEPS[testKey]||ACT_STEPS.dix — poza kanału TYLNEGO!) pod testem poziomym.
+const SCEN_DRIVEN=new Set(["bowlean","lyingdown"]);
+
 /* ============ Sesja ciągła (ocena II, V10/D1 — domknięcie R10, rozstrzygnięcie B7) ============
    Stan JEDNEGO złogu (state.session, default OFF=null) przewlekany między badaniami tej samej wizyty:
    położenie φ, wiązanie bondFrac, ogon ξ — wszystko z out.final poprzedniego aktu (łańcuch ≡ jedna
@@ -671,6 +709,7 @@ const ACT_STEPS={                     // pozy aktu per test W KOLEJNOŚCI WYKONA
   roll:     A=>[{body:"supineFlex", yaw:A==="P"?90:-90, face:"up", hold:20},
                 {body:"supineFlex", yaw:0,              face:"up", hold:5},    // POWRÓT DO CENTRUM (Pagnini–McClure) — bez niego druga strona dostaje przemach 180° zamiast 90°
                 {body:"supineFlex", yaw:A==="P"?-90:90, face:"up", hold:20}],
+  lyingdown:A=>[{body:"supineFlex", yaw:0, face:"up", hold:30}],               // V11/D2: bezpiecznik fallbacku ||ACT_STEPS.dix (test i tak POZA aktami — SCEN_DRIVEN) + zaczep przyszłej integracji
 };
 const PHASE_OF={ roll:[0,2] };        // mapowanie kroków aktu → fazy karty (centrum nie ma karty); reszta: tożsamość
 function actTimeline(testKey, side){
@@ -818,6 +857,67 @@ const DIAG={
         : t("bez latencji, downbeat SŁABY (deep head-hang słabo obciąża osklepek przedni w tej geometrii), nie wyczerpuje się. Uporczywy pozycyjny downbeat to przede wszystkim czerwona flaga ośrodkowa — patrz klasyfikacja.","no latency, WEAK downbeat (the deep head-hang loads the anterior cupula only weakly in this geometry), does not fatigue. A persistent positional downbeat is first of all a central red flag — see the classification.")
     }]
   },
+  // ============ Lying-down / sitting-up (ocena II, V11/D2) — patrz komentarz przy ldtPhases ============
+  lyingdown:{ get name(){return t("Test położenia i siadania (lying-down)","Lying-down / sitting-up test");}, get tests(){return t("kanał poziomy — lateralizacja","horizontal canal — lateralization");}, canal:"horizontal",
+    get intro(){return t("Z siadu połóż pacjenta na wznak z głową lekko uniesioną (~30°, jak do testu Roll), bez obrotu. Obserwuj oczopląs po położeniu, następnie posadź i obserwuj ponownie.","From sitting, lay the patient supine with the head slightly raised (~30°, as for the Roll test), without turning. Watch for nystagmus after lying down, then sit the patient up and watch again.");},
+    features:featsByVariant,
+    latNote:(A,v)=> v==="canalo"
+      ? t("Kierunek i obecność oczopląsu położenia (LDN) zależą od miejsca złogu na starcie — wybierz scenariusz historii nad fazami. Wzorzec geotropowy (położenie → ku uchu ZDROWEMU, odampułkowo) WYNIKA z fizyki dla φ₀<190°. LDN to znak POMOCNICZY lateralizacji (obecny u ~38–68% chorych; nie jest kryterium Bárány) — rozstrzyga zwłaszcza przy symetrycznym teście Roll.","The direction and presence of the lying-down nystagmus (LDN) depend on where the debris starts — pick a history scenario above the phases. The geotropic pattern (lying down → toward the HEALTHY ear, ampullofugal) FOLLOWS from physics for φ₀<190°. LDN is a SECONDARY sign of lateralization (present in ~38–68% of patients; not a Bárány criterion) — it settles the side especially when the Roll test is symmetric.")
+      : t("Apogeotropowy (kupulolitiaza): położenie → oczopląs KU UCHU CHOREMU (ampulopetalne odchylenie ciężkiego osklepka), uporczywy; w siadzie słaby pseudo-spontaniczny oczopląs (PSN) ku chorej. Null point ~10–30° skrętu głowy ku uchu choremu (model: ~9°). Wynik nie zależy od historii pozycyjnej.","Apogeotropic (cupulolithiasis): lying down → nystagmus TOWARD THE AFFECTED ear (ampullopetal deflection of the heavy cupula), persistent; in sitting a weak pseudo-spontaneous nystagmus (PSN) toward the affected side. Null point at ~10–30° of head turn toward the affected ear (model: ~9°). The result does not depend on positional history."),
+    phases:(A,v,scen)=>{ const S=scen||"textbook";
+      const mkPose=(key)=> key==="lie"
+        ? {ptitle:t("Położenie (lying-down)","Lying down"), ppos:t("Na wznak, głowa uniesiona ~30° (pozycja testu Roll), bez obrotu","Supine, head raised ~30° (Roll-test position), no turning"), body:"supineFlex", yaw:0, face:"up"}
+        : {ptitle:t("Siadanie (sitting-up)","Sitting up"), ppos:t("Powrót do siadu, głowa prosto","Back to sitting, head straight"), body:"sit", yaw:0, face:"fwd"};
+      if(v==="cupulo"){
+        // KUPULO: kierunek z FIZYKI (cel przy osklepku — V4); napis z TEJ SAMEJ odpowiedzi (anat.h).
+        const mk=(key)=>{ const p=mkPose(key);
+          const q = key==="lie" ? stepHeadQ("supineFlex",0,"up") : stepHeadQ("sit",0,"fwd");
+          const nys=nysFromGeom("horizontal", A, v, q, "flat");
+          const towardA = A==="P" ? nys.anat.h>0 : nys.anat.h<0;
+          return {...p, nys, label: bltDirWord(A, towardA) + (key==="lie" ? "" : t(" (pseudo-SN, słaby)"," (pseudo-SN, weak)")),
+            note: key==="lie"
+              ? t("Ciężki osklepek odchyla się ampulopetalnie — uporczywie, bez latencji. Null point: skręć głowę ~10–30° ku uchu choremu (model: ~9°) — oczopląs znika; to potwierdza stronę.","The heavy cupula deflects ampullopetally — persistently, without latency. Null point: turn the head ~10–30° toward the affected ear (model: ~9°) — the nystagmus vanishes; this confirms the side.")
+              : t("Pseudo-spontaniczny oczopląs (Asprella): słaby (cel statyczny ~0,05), w siadzie BEZ prowokacji — w SOR bywa mylony z zapaleniem neuronu. Różnicuj MODULACJĄ pitch (znika ~30° przodozgięcia, odwraca się głębiej), NIE fiksacją. Model nie odtwarza odwrócenia przy samym siadaniu (null pitch ~24° zgięcia).","Pseudo-spontaneous nystagmus (Asprella): weak (static target ~0.05), present in sitting WITHOUT provocation — in the ED it can mimic vestibular neuritis. Differentiate by PITCH MODULATION (vanishes at ~30° of flexion, reverses deeper), NOT by fixation. The model does not reproduce a reversal on sitting up itself (null pitch at ~24° of flexion).")};
+        };
+        const arr=[mk("lie"), mk("sit")];
+        arr.ldt={scen:null, cupulo:true}; return arr;
+      }
+      // CANALO: strzałka + napis + obwiednia animacji z JEDNEJ symulacji sekwencji (leżenie→siad).
+      const P=ldtPhases(A, S), init=P.init;
+      const mk=(key)=>{ const p=mkPose(key), xi=P[key==="lie"?"lie":"sit"].xi;
+        const N=nysFromDyn("horizontal", A, xi, false);
+        const emptied = init.exitedInHistory;
+        const resolved = !emptied && N.strength>=XI_CARD;
+        const q = key==="lie" ? stepHeadQ("supineFlex",0,"up") : stepHeadQ("sit",0,"fwd");
+        const iniAnim = key==="lie" ? {phi0:init.phi0, settled:init.settled}
+                                    : {phi0:P.phiAfterLie, settled:false};   // siadanie startuje tam, gdzie zostawiło je leżenie
+        const nys={kind:N.kind, dir:resolved?N.dir:0, vdir:N.vdir, strength:resolved?N.strength:0,
+                   excited:N.excited, persistent:false, canal:"horizontal", side:A,
+                   q, anat:resolved?N.anat:{h:0,v:0,t:0}, init:iniAnim, unresolved:!resolved};
+        let label, note;
+        if(emptied){
+          label = t("kanał opróżniony już PRZED testem","the canal was emptied BEFORE the test");
+          note = t("Historia pozycyjna usunęła złóg z kanału — test niemy, pacjent w praktyce wyleczony.","The positional history removed the debris from the canal — the test is mute; in practice the patient is cured.");
+        } else if(!resolved){
+          label = key==="lie" ? t("model nie rozstrzyga","the model does not resolve it")
+                              : t("napęd podprogowy — model nie rozstrzyga","subthreshold drive — the model does not resolve it");
+          note = key==="lie"
+            ? t(`Leżenie przesuwa równowagę ledwie o ~9° (siad 200° → leżenie 190°): przy spoczynku z pełną adhezją napęd (0.026) nie zrywa wiązania (próg 0.04), a złóg blisko 190° prawie nie ma drogi. Klinicznie LDN jest NIEOBECNY u 32–62% chorych — to ta sama fizyka.`,`Lying down shifts the equilibrium by barely ~9° (sitting 200° → lying 190°): at rest with full adhesion the drive (0.026) does not break the bond (threshold 0.04), and debris near 190° has almost no path. Clinically the LDN is ABSENT in 32–62% of patients — the same physics.`)
+            : t("Siadanie prowadzi złóg z powrotem ODampułkowo (190→200°) — w modelu odpowiedź zawsze podprogowa. Kliniczna reguła siadania (geo → ku uchu choremu) to wyprowadzenie mechaniczne BEZ własnych serii liczbowych — luka dowodowa, nie pewnik.","Sitting up carries the debris back ampullofugally (190→200°) — in the model the response is always subthreshold. The clinical sitting-up rule (geo → toward the affected ear) is a mechanical derivation WITHOUT its own numeric series — an evidence gap, not a certainty.");
+        } else {
+          label = bltDirWord(A, xi>0) + (N.strength<0.25 ? t(" (słaby)"," (weak)") : "");
+          note = xi<0
+            ? t("Złóg przed równowagą leżenia (φ₀<190°): położenie zsuwa go ODampułkowo → hamowanie → oczopląs ku uchu ZDROWEMU. Wzorzec geotropowy (Han 2006, Koo 2006) — tu WYNIKA z fizyki.","Debris before the lying equilibrium (φ₀<190°): lying down slides it ampullofugally → inhibition → nystagmus toward the HEALTHY ear. The geotropic pattern (Han 2006, Koo 2006) — here it FOLLOWS from physics.")
+            : t("Złóg ZA równowagą leżenia (φ₀>190°): położenie przesuwa go DOampułkowo → pobudzenie → oczopląs ku uchu CHOREMU — odwrotnie niż uczy reguła geotropowa (wzorzec GT−, ~7% serii Califano 2026). To odczyt POŁOŻENIA WYJŚCIOWEGO złogu, nie błąd reguły — ta sama fizyka wododziału co w Bow & Lean.","Debris BEYOND the lying equilibrium (φ₀>190°): lying down moves it ampullopetally → excitation → nystagmus toward the AFFECTED ear — opposite to the geotropic rule (the GT− pattern, ~7% of the Califano 2026 series). This reads out the debris STARTING POSITION, not a failure of the rule — the same watershed physics as in Bow & Lean.");
+        }
+        return {...p, nys, label, note};
+      };
+      const arr=[mk("lie"), mk("sit")];
+      arr.ldt={scen:S, phi0:init.phi0, settled:init.settled, exitedInHistory:init.exitedInHistory,
+               lieXi:P.lie.xi, sitXi:P.sit.xi, phiAfterLie:P.phiAfterLie};
+      return arr;
+    }
+  },
 };
 function variantLabels(canal){
   return canal==="horizontal"
@@ -871,7 +971,7 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, ldtPhases, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
