@@ -936,6 +936,12 @@ function renderGuide(){
     ? `<div class="note">${t('Manewr <b>konwersji</b>: złóg nie opuszcza kanału — celem jest przekształcenie postaci apogeotropowej w geotropową. Po nim wykonaj ponowny Roll test i lecz postać geotropową (Lempert / Gufoni geotropowy).','<b>Conversion</b> maneuver: the debris does not leave the canal — the goal is to convert the apogeotropic form into the geotropic one. Afterward repeat the Roll test and treat the geotropic form (Lempert / Gufoni geotropic).')}</div>` : "";
   const basculeNote = state.maneuverKey==="bascule"
     ? `<div class="note">${t('Manewr <b>uwalniający</b> dla <b>kupulolitiazy</b>: rytmiczne bujanie bok–bok wytwarza siły bezwładności, które odrywają złóg przylegający do osklepka (cupula) i przenoszą go do łagiewki. Powtarzaj przerzuty do 5 serii; po manewrze wykonaj ponowny Dix–Hallpike.','<b>Releasing</b> maneuver for <b>cupulolithiasis</b>: rhythmic side-to-side rocking generates inertial forces that detach debris adhering to the cupula and carry it into the utricle. Repeat the swings up to 5 series; after the maneuver repeat the Dix–Hallpike.')}</div>` : "";
+  // D11/V18: noty mechanizmowe nowych manewrów HC-kupulo (wzór gufoniNote/basculeNote; Kim z OBOWIĄZKOWĄ
+  // notą o wibracji poza modelem — inaczej karta uczyłaby, że wibracja jest zbędna).
+  const zumaNote = state.maneuverKey==="zuma"
+    ? `<div class="note">${t('Manewr <b>uwalniający</b> dla <b>kupulolitiazy kanału poziomego</b> — bez etapu konwersji: szybki dekubit na bok chory odrywa złóg od osklepka (rzut bezwładnościowy), a kolejne pozycje przenoszą go przez ramię długie do łagiewki. Skuteczność ~56% po pojedynczym manewrze; po nim ponowny Roll test.','<b>Releasing</b> maneuver for <b>horizontal-canal cupulolithiasis</b> — without a conversion stage: the rapid decubitus onto the affected side detaches the debris from the cupula (inertial jolt), and the subsequent positions carry it through the long arm into the utricle. ~56% efficacy after a single maneuver; repeat the Roll test afterward.')}</div>` : "";
+  const kimNote = state.maneuverKey==="kim"
+    ? `<div class="note">${t('Manewr <b>CRM (Kim 2012)</b> dla kupulolitiazy kanału poziomego. <b>Granica modelu:</b> protokół kliniczny zawiera WIBRACJĘ wyrostka sutkowatego jako integralny element odrywania złogu — silnik nie ma wejścia wibracyjnego i w modelu czyszczą same zmiany pozycji. NIE wyciągaj stąd wniosku, że wibracja jest zbędna. Skuteczność natychmiastowa ~36%; po manewrze ponowny Roll test.','The <b>CRM maneuver (Kim 2012)</b> for horizontal-canal cupulolithiasis. <b>Model boundary:</b> the clinical protocol includes MASTOID VIBRATION as an integral part of detaching the debris — the engine has no vibration input, and in the model the position changes alone do the clearing. Do NOT conclude that the vibration is unnecessary. Immediate efficacy ~36%; repeat the Roll test afterward.')}</div>` : "";
   // Manewr na KUPULOLITIAZĘ (mechanism:"cupulo", np. Bascule): karta „wędrówka otolitów" domyślnie NA WIERZCHU
   // (flipped) — pokazuje przyleganie/odklejanie od osklepka; osklepek dorysowany w labiryncie (opts.cupula).
   const cupuloMech = p.mechanism==="cupulo";
@@ -969,10 +975,10 @@ function renderGuide(){
             <div class="nyslabel"><span class="arrow">${arrowGlyph(gn)}</span><span>${gn.label}</span></div>${libNote}
             ${gravArrow}
             <div class="fliphint">${FLIP_ICO} ${t("wędrówka otolitów","otolith migration")}</div></div>
-          <div class="face back panelbox"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}
+          <div class="face back panelbox"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}${zumaNote}${kimNote}
             <div class="fliphint">${FLIP_ICO} ${t("widok frontalny","frontal view")}</div></div>
         </div></div>`
-      : `<div class="panelbox" style="margin-bottom:12px"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}</div>`}
+      : `<div class="panelbox" style="margin-bottom:12px"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}${zumaNote}${kimNote}</div>`}
     <div class="card stepcard">
       <div class="stephead">
         <button class="stepnav" ${state.step===0?"disabled":""} onclick="goStep(${state.step-1})" aria-label="${t("Poprzedni krok","Previous step")}"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -1360,9 +1366,9 @@ function renderDiag(){
       // D4/V16: primary==null (light cupula — manewrów nie ma) → sama nota, bez przycisków i bez „Potwierdź stronę…"
       if(rec.primary==null) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--text)">${rec.note}</div></div>`;
-      const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}')">${idx===0?t('Rozpocznij: ','Start: '):t('Alternatywa: ','Alternative: ')}${MANEUVERS[k].label} — ${MANEUVERS[k].desc}</button>`).join("");
+      const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}')">${idx===0?t('Rozpocznij: ','Start: '):t('Alternatywa: ','Alternative: ')}${MANEUVERS[k].label}${rec.altNotes&&rec.altNotes[k]?` · ${rec.altNotes[k]}`:""} — ${MANEUVERS[k].desc}</button>`).join("");
       return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
-        <div class="note" style="color:var(--text)">${rec.note}</div>
+        <div class="note" style="color:var(--text)">${rec.note}</div>${rec.home?`<div class="note">${rec.home}</div>`:""}
         <div class="note">${t(`Leczenie dla strony <b>${SIDE[effSide]}</b>.`,`Treatment for the <b>${effSide==="L"?"left":"right"}</b> side.`)} ${antMode?t("Strona kanału przedniego niepewna — potwierdź deep head-hangiem i dopiero po wykluczeniu przyczyny ośrodkowej.","The anterior-canal side is uncertain — confirm with the deep head-hang and only after ruling out a central cause."):t("Potwierdź stronę regułą lateralizacji powyżej, zanim rozpoczniesz manewr.","Confirm the side with the lateralization rule above before starting the maneuver.")}</div>
         <div class="recobtns">${btns}</div></div>`; })()}
     ${ovVec?`<div class="note" style="border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px">〰 ${t(`NAKŁADKA AVS: oczopląs toniczny ${ovVec.spv.toFixed(1)}°/s ku stronie ${SIDE[ovVec.ear]||"?"} jest obecny już PRZED testem pozycyjnym, w KAŻDEJ pozycji i NIE wyczerpuje się — to obraz AVS (HINTS), nie t-EVS/BPPV (latencja + paroksyzm + wyczerpywanie). Wyłącz nakładkę na ekranie HINTS.`,`AVS OVERLAY: a tonic nystagmus of ${ovVec.spv.toFixed(1)}°/s toward the ${ovVec.ear==="P"?"right":"left"} side is present BEFORE the positional test, in EVERY position, and does NOT fatigue — an AVS picture (HINTS), not t-EVS/BPPV (latency + paroxysm + fatigability). Turn the overlay off on the HINTS screen.`)}</div>`:""}

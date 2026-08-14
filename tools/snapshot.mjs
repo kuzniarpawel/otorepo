@@ -137,7 +137,7 @@ function engineOracle(h) {
   // (small/big mają większe — patrz tabela minimalnych holdów w engine_doc).
   if (h.Vestibular && h.maneuverTimeline) {
     const sensFails = [];
-    for (const key of ['epley', 'semont', 'bascule', 'lempert', 'gufoniGeo', 'yacovino'])
+    for (const key of ['epley', 'semont', 'bascule', 'lempert', 'gufoniGeo', 'yacovino', 'zuma', 'kim'])   // D11/V18: nowe manewry POD ochroną tauP±10% od urodzenia (pre-test projektu: zielony)
       for (const side of ['P', 'L'])
         for (const mult of [0.9, 1.1]) {
           try {
@@ -148,7 +148,7 @@ function engineOracle(h) {
           } catch (e) { sensFails.push(`${key}/${side}@tauPx${mult}:ERR ${e.message}`); }
         }
     if (sensFails.length) throw new Error('WYROCZNIA WRAŻLIWOŚCI (tauP±10%) NIE PRZESZŁA: ' + sensFails.join(', '));
-    out.sensitivity = 'PASS(tauP±10%: 6 manewrów × 2 strony × 2 mnożniki = 24/24)';
+    out.sensitivity = 'PASS(tauP±10%: 8 manewrów × 2 strony × 2 mnożniki = 32/32)';
 
     // WYROCZNIA EKSPULSJI (ocena II, V14c/B6): trwanie ekspulsji z komory odnogi (final.expelDur) musi
     // mieścić się w paśmie EXPEL_SANE — dolna granica łapie regresję typu „teleport" (powrót ukrytej

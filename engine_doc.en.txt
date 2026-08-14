@@ -1440,6 +1440,41 @@ UI: in the Dix test, the 'Observed nystagmus' toggle (↑torsional / ↓downbeat
 the animation (pure downbeat), the mechanism (anterior canal of the opposite ear), the recommendation (Yacovino) and shows
 a CENTRAL RED FLAG (isolated/persistent downbeat without latency → cerebellum/craniocervical junction).
 
+=== D11/V18 (2026-08-14): ZUMA E MAIA + KIM (CRM) + recommend NOTES (KLIN-3) ===
+TWO NEW MANEUVERS for HORIZONTAL-canal cupulolithiasis — built entirely from EXISTING POSE_SPEC poses
+(zero new bodies; free step yaw), mechanism:"cupulo" (adhesion/detachment narrative as in
+Bascule/Gufoni apo), the old maneuverSim/derivedHold path (dh={h:30,u:6} derived).
+ ZUMA (2016; efficacy ~56%): sitting → FAST decubitus onto the AFFECTED side (the inertial throw =
+   breaking of the adhesion gate — the SAME mechanism with which the engine plays the Bascule pattern;
+   there is no separate "detach" model) → nose to the ceiling → supine, head toward the healthy side
+   → slight neck flexion → sitting; clinical holds 3 min (the card clamps to 120 s — the sizedSeconds
+   clamp NOT touched: raising it would change existing small plans). Step 3 follows the original figure
+   (nose STRAIGHT up at the ceiling); the description of the steps shared with Appiani gives 45°
+   (PMC9220154) — the physics is INSENSITIVE (both versions clear), the discrepancy noted in the code.
+ KIM (CRM 2012; ~36%): supine → affected side with the nose 45° into the floor + mastoid VIBRATION
+   (30 s) → nose to horizontal → supine → healthy side → prone → sitting. SOURCE BOUNDARY: the engine
+   has NO vibration input — in the model the position changes ALONE do the clearing; the card's note
+   says this outright (it must not teach that the vibration is unnecessary).
+ PHYSICAL PROBE (D11 design): both maneuvers exited=true in ALL three honest starts —
+   (A) the pipeline restPhi 199.8°, (B) a cupulo-canal deposit phi0=4° settled (adhesion broken by
+   the throw, motion from ~8.9 s), (C) the V15 short-arm (exit through SA_MIN into the utricle).
+   EMERGENT CONTRAST: Gufoni apo from start (B) does NOT clear (phi_end 191.6° — a pure apo→geo
+   conversion) — the engine reproduces Zuma's clinical raison d'etre on its own. Cognitive convention
+   (as with the Bascule pattern): the cupulo-canal start is a PROXY for an adherent deposit — a true
+   deposit ON the cupula is represented by the card's narrative, not by φ.
+ ORACLES: zuma+kim added to the HARD tauP±10% sensitivity oracle (24/24→32/32; throw, not pin);
+   EXPEL_SANE unchanged (HC: expelDur=null deliberately out of band, like Lempert/Gufoni); new keys
+   engine.plans/{zuma,kim} + dom guide 26 (with the D5 symptom bar and the RD card from birth —
+   both clean).
+ recommend NOTES (D11 content): home = the HOME note (Brandt-Daroff for the posterior canal — both
+   variants, habituation-dispersion; Vannucchi's forced prolonged position (FPP) for HC geo: sleeping
+   on the HEALTHY side — the engine reproduces it emergently in the continuous session) + altNotes =
+   a button addendum (lempert "after conversion" for apo); the apo note rebuilt (Lempert only AFTER
+   conversion; Zuma/Kim as directly targeted maneuvers); labels "Gufoni (Appiani, geo/apogeotropic)" —
+   the eponym (Appiani 2001 geo / 2005 apo); GENERATOR names untouched (pin pose + guide headers
+   bit-for-bit). home DELIBERATELY absent for headhang (central rule-out first) and HC apo (there is
+   no home alternative).
+
 === NYSTAGMUS MAGNITUDES FROM REAL CANAL NORMALS (instead of ideal 45°) ===
 SOURCE (since 2026-08-05): the IE-Map atlas [13] — the SAME CANAL_NORMALS from which the engine's entire
   geometry derives (planes from a PCA of the duct-axis points; see the vestibular.js header and the bibliography).

@@ -1350,6 +1350,37 @@ UI: w teście Dix przełącznik 'Zaobserwowany oczopląs' (↑skrętny / ↓down
 animację (czysty downbeat), mechanizm (kanał przedni ucha przeciwnego), zalecenie (Yacovino) i pokazuje
 CZERWONĄ FLAGĘ ośrodkową (izolowany/uporczywy downbeat bez latencji → móżdżek/pogranicze czaszk.-szyjne).
 
+=== D11/V18 (2026-08-14): ZUMA E MAIA + KIM (CRM) + NOTY recommend (KLIN-3) ===
+DWA NOWE MANEWRY dla kupulolitiazy kanału POZIOMEGO — w całości z ISTNIEJĄCYCH póz POSE_SPEC
+(zero nowych body; wolny yaw kroku), mechanism:"cupulo" (narracja przylegania/odklejania jak
+Bascule/Gufoni apo), stary tor maneuverSim/derivedHold (dh={h:30,u:6} wyprowadzone).
+ ZUMA (2016; skuteczność ~56%): siad → SZYBKI dekubit na bok CHORY (rzut bezwładnościowy = zerwanie
+   bramki adhezji — TEN SAM mechanizm, którym silnik gra Bascule; osobnego modelu „detach" nie ma)
+   → nos ku sufitowi → plecy z głową ku zdrowemu → lekkie przygięcie → siad; holdy kliniczne 3 min
+   (karta klamruje do 120 s — clamp sizedSeconds NIE ruszany: podniesienie zmieniłoby istniejące
+   plany small). Krok 3 wg ryciny oryginalnej (nos PROSTO w sufit); opis kroków wspólnych z Appianim
+   podaje 45° (PMC9220154) — fizyka NIECZUŁA (obie wersje czyszczą), rozbieżność odnotowana w kodzie.
+ KIM (CRM 2012; ~36%): plecy → bok chory z nosem 45° w podłogę + WIBRACJA wyrostka (30 s) → nos do
+   poziomu → plecy → bok zdrowy → brzuch → siad. GRANICA ŹRÓDŁA: silnik NIE MA wejścia wibracyjnego —
+   w modelu czyszczą SAME zmiany pozycji; nota na karcie mówi to wprost (nie wolno uczyć, że wibracja
+   jest zbędna).
+ SONDA FIZYCZNA (projekt D11): oba manewry exited=true we WSZYSTKICH trzech uczciwych startach —
+   (A) pipeline restPhi 199.8°, (B) złóg kupulo-kanałowy phi0=4° settled (adhezja zrywana rzutem,
+   ruch od ~8.9 s), (C) short-arm V15 (wyjście przez SA_MIN do łagiewki). KONTRAST EMERGENTNY:
+   Gufoni apo na starcie (B) NIE czyści (phi_end 191.6° — czysta konwersja apo→geo) — silnik sam
+   odtwarza kliniczną rację bytu Zumy. Konwencja poznawcza (jak Bascule): start kupulo-kanałowy to
+   PROXY złogu przylegającego — prawdziwy złóg NA osklepku reprezentuje narracja karty, nie φ.
+ WYROCZNIE: zuma+kim dopisane do TWARDEJ wyroczni wrażliwości tauP±10% (24/24→32/32; throw, nie pin);
+   EXPEL_SANE bez zmian (HC: expelDur=null świadomie poza pasmem, jak Lempert/Gufoni); nowe klucze
+   engine.plans/{zuma,kim} + dom guide 26 (z paskiem objawów D5 i kartą RD od urodzenia — oba czyszczą).
+ NOTY recommend (D11-treść): home = nota DOMOWA (Brandt-Daroff przy kanale tylnym — oba warianty,
+   habituacja/dyspersja; FPP Vannucchiego przy HC geo: sen na boku ZDROWYM — silnik odtwarza
+   emergentnie w sesji ciągłej) + altNotes = dopisek przycisku (lempert „po konwersji" przy apo);
+   nota apo przebudowana (Lempert dopiero PO konwersji; Zuma/Kim jako manewry celowane wprost);
+   etykiety „Gufoni (Appiani, geo/apogeotropowy)" — eponim (Appiani 2001 geo / 2005 apo); nazwy
+   GENERATORÓW nietknięte (pin pose + nagłówki guide bit-w-bit). home ŚWIADOMIE nieobecne przy
+   headhang (najpierw wykluczenie ośrodkowe) i HC apo (domowej alternatywy nie ma).
+
 === MAGNITUDY OCZOPLĄSU Z REALNYCH NORMALNYCH KANAŁÓW (zamiast idealnych 45°) ===
 ŹRÓDŁO (od 2026-08-05): atlas IE-Map [13] — TE SAME CANAL_NORMALS, z których pochodzi cała geometria
   silnika (płaszczyzny z PCA punktów osi przewodu; patrz nagłówek vestibular.js i bibliografia).

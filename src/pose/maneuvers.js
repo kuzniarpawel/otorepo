@@ -157,18 +157,71 @@ function gufoniApo(side){
      instr:t(`Posadź pacjenta, NIE zmieniając ustawienia głowy — pozostaje skręcona ~90° (nos skierowany w bok). Cel: przekształcenie postaci apogeotropowej w geotropową. Wykonaj ponowny Roll test; jeśli potwierdzi postać geotropową, lecz odpowiednio (Lempert lub Gufoni geotropowy).`,`Sit the patient up WITHOUT changing the head position — it stays rotated ~90° (nose pointing to the side). Goal: convert the apogeotropic form into the geotropic one. Repeat the Roll test; if it confirms the geotropic form, treat accordingly (Lempert or Gufoni geotropic).`)},
   ]};
 }
+// D11/V18: Zuma e Maia (2016) — manewr uwalniający dla KUPULOLITIAZY kanału POZIOMEGO (postać
+// apogeotropowa) BEZ etapu konwersji: szybki dekubit na bok CHORY wytwarza rzut bezwładnościowy
+// odrywający złóg od osklepka (ta sama bramka adhezji, którą silnik gra w Bascule), kolejne pozycje
+// przenoszą go przez ramię długie do łagiewki. Sonda fizyczna (2026-08-14): czyści kanał we
+// WSZYSTKICH trzech uczciwych startach — pipeline restPhi, złóg kupulo-kanałowy (phi0=4°, settled)
+// i short-arm (V15); kontrast emergentny: Gufoni apo na starcie kupulo-kanałowym NIE czyści
+// (konwersja, phi_end 191.6°) — silnik sam odtwarza rację bytu Zumy. Kroki z ISTNIEJĄCYCH póz
+// (zero nowych body); k3 wg ryciny oryginalnej: nos prosto ku sufitowi (rozbieżność źródeł: opis
+// wspólnych kroków z Appianim podaje 45° — PMC9220154; fizyka nieczuła, obie wersje czyszczą).
+// Kliniczne holdy 3 min — sizedSeconds klamruje kartę do 120 s, instrukcja niesie pełny czas.
+function zuma(side){
+  const A=side, H=otherSide(side), sideA=A==="L"?"sideL":"sideR", yawH=A==="P"?-90:90;
+  return {name:t("Manewr Zuma e Maia","Zuma e Maia maneuver"),canal:"horizontal",side,mechanism:"cupulo",headCamera:"topDownBehind",steps:[   // mechanism:"cupulo" → narracja przylegania (krok 1) i odklejania (krok 2)
+    {title:t("Pozycja wyjściowa","Starting position"),body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:0.02,
+     instr:t(`Pacjent siedzi na środku kozetki, twarzą do badającego, głowa prosto.`,`The patient sits in the middle of the couch, facing the examiner, head straight.`)},
+    {title:t("Szybki dekubit na bok chory","Rapid decubitus onto the affected side"),body:sideA,yaw:0,face:"fwd",seconds:180,progress:0.25,
+     instr:t(`SZYBKO połóż pacjenta na bok chory (${sideN(A)}) — rzut bezwładnościowy odrywa złóg od osklepka. Głowa w linii ciała. Utrzymaj ~3 min.`,`QUICKLY lay the patient onto the affected side (${sideN(A)}) — the inertial jolt detaches the debris from the cupula. Head in line with the body. Hold ~3 min.`)},
+    {title:t("Obrót głowy nosem ku sufitowi","Turn the head, nose toward the ceiling"),body:sideA,yaw:yawH,face:"fwd",seconds:180,progress:0.45,
+     instr:t(`Nie zmieniając ułożenia ciała, obróć głowę tak, aby nos był skierowany prosto ku sufitowi. Utrzymaj ~3 min.`,`Without changing the body position, turn the head so the nose points straight toward the ceiling. Hold ~3 min.`)},
+    {title:t("Obrót na plecy, głowa ku zdrowemu","Roll supine, head toward the healthy side"),body:"supineFlat",yaw:yawH,face:"up",seconds:180,progress:0.65,
+     instr:t(`Obróć ciało do leżenia na plecach; głowa pozostaje skręcona 90° ku stronie zdrowej (${sideN(H)}). Utrzymaj ~3 min.`,`Roll the body to lie supine; the head stays rotated 90° toward the healthy side (${sideN(H)}). Hold ~3 min.`)},
+    {title:t("Lekkie przygięcie głowy","Slight head flexion"),body:"supineFlex",yaw:yawH,face:"up",seconds:180,progress:0.85,
+     instr:t(`Unieś lekko głowę (przygięcie ~30°, jak do testu Roll), wciąż skręconą ku stronie zdrowej — ułatwia zsyp złogu do łagiewki. Utrzymaj ~3 min.`,`Raise the head slightly (~30° flexion, as for the Roll test), still rotated toward the healthy side — this eases the debris descent into the utricle. Hold ~3 min.`)},
+    {title:t("Powrót do siadu","Return to sitting"),body:"sitFront",yaw:0,face:"fwd",seconds:null,progress:1.0,
+     instr:t(`Powoli posadź pacjenta i wyprostuj głowę. Po manewrze wykonaj ponowny Roll test. Koniec.`,`Slowly sit the patient up and straighten the head. Afterward repeat the Roll test. End.`)},
+  ]};
+}
+// D11/V18: Kim (CRM, 2012) — pierwszy manewr celowany wprost w kupulolitiazę kanału poziomego.
+// GRANICA ŹRÓDŁA: kliniczny protokół zawiera WIBRACJĘ wyrostka sutkowatego jako integralny element
+// odrywania złogu — silnik nie ma wejścia wibracyjnego, w modelu czyszczą SAME zmiany pozycji
+// (sonda: exited we wszystkich trzech startach). Nota na karcie mówi to wprost — nie wolno uczyć,
+// że wibracja jest zbędna. Skuteczność natychmiastowa ~36% (niższa niż Zuma ~56%).
+function kim(side){
+  const A=side, H=otherSide(side), sideA=A==="L"?"sideL":"sideR", sideH=H==="L"?"sideL":"sideR", yawD=A==="P"?45:-45;
+  return {name:t("Manewr Kima (CRM)","Kim maneuver (CRM)"),canal:"horizontal",side,mechanism:"cupulo",headCamera:"topDownBehind",steps:[
+    {title:t("Leżenie na plecach","Lying supine"),body:"supineFlat",yaw:0,face:"up",seconds:120,progress:0.05,
+     instr:t(`Pacjent leży na plecach, głowa w linii ciała, twarz ku sufitowi. Utrzymaj ~2 min.`,`The patient lies supine, head in line with the body, face toward the ceiling. Hold ~2 min.`)},
+    {title:t("Na bok chory, nos 45° ku podłodze","Onto the affected side, nose 45° toward the floor"),body:sideA,yaw:yawD,face:"fwd",seconds:120,progress:0.28,
+     instr:t(`Obróć pacjenta na bok chory (${sideN(A)}) i skręć głowę tak, aby nos był 45° ku podłodze. Tu protokół stosuje WIBRACJĘ wyrostka sutkowatego (~30 s) — odrywa złóg od osklepka; model jej nie liczy (granica modelu). Utrzymaj ~2 min.`,`Turn the patient onto the affected side (${sideN(A)}) and rotate the head so the nose points 45° toward the floor. Here the protocol applies MASTOID VIBRATION (~30 s) — it detaches the debris from the cupula; the model does not compute it (a model boundary). Hold ~2 min.`)},
+    {title:t("Nos wraca do poziomu","Nose back to horizontal"),body:sideA,yaw:0,face:"fwd",seconds:120,progress:0.45,
+     instr:t(`Nie zmieniając ułożenia ciała, wróć głową do linii ciała (nos poziomo). Utrzymaj ~2 min.`,`Without changing the body position, return the head to the body line (nose horizontal). Hold ~2 min.`)},
+    {title:t("Na plecy, twarz ku sufitowi","Supine, face toward the ceiling"),body:"supineFlat",yaw:0,face:"up",seconds:120,progress:0.62,
+     instr:t(`Obróć pacjenta na plecy, twarz ku sufitowi. Utrzymaj ~2 min.`,`Roll the patient supine, face toward the ceiling. Hold ~2 min.`)},
+    {title:t("Na bok zdrowy","Onto the healthy side"),body:sideH,yaw:0,face:"fwd",seconds:120,progress:0.78,
+     instr:t(`Obróć pacjenta na bok zdrowy (${sideN(H)}), głowa w linii ciała. Utrzymaj ~2 min.`,`Turn the patient onto the healthy side (${sideN(H)}), head in line with the body. Hold ~2 min.`)},
+    {title:t("Na brzuch, nos w dół","Prone, nose down"),body:"prone",yaw:0,face:"down",seconds:120,progress:0.92,
+     instr:t(`Kontynuuj obrót na brzuch — nos ku podłodze. Utrzymaj ~2 min.`,`Continue the roll to prone — nose toward the floor. Hold ~2 min.`)},
+    {title:t("Powrót do siadu","Return to sitting"),body:"sit",yaw:0,face:"fwd",seconds:null,progress:1.0,
+     instr:t(`Powoli posadź pacjenta. Po manewrze wykonaj ponowny Roll test. Koniec.`,`Slowly sit the patient up. Afterward repeat the Roll test. End.`)},
+  ]};
+}
 const MANEUVERS={
   epley:{label:"Epley", get desc(){return t("kanał tylny","posterior canal");}, gen:epley},
   semont:{label:"Semont", get desc(){return t("kanał tylny","posterior canal");}, gen:semont},
   bascule:{label:"Bascule", get desc(){return t("kupulolitiaza (k. tylny)","cupulolithiasis (post. canal)");}, gen:bascule},
   lempert:{label:"Lempert (BBQ)", get desc(){return t("kanał poziomy","horizontal canal");}, gen:lempert},
-  gufoniGeo:{get label(){return t("Gufoni (geotropowy)","Gufoni (geotropic)");}, get desc(){return t("kanał poziomy","horizontal canal");}, gen:gufoniGeo},
-  gufoniApo:{get label(){return t("Gufoni (apogeotropowy)","Gufoni (apogeotropic)");}, get desc(){return t("kanał poziomy","horizontal canal");}, gen:gufoniApo},
+  gufoniGeo:{get label(){return t("Gufoni (Appiani, geotropowy)","Gufoni (Appiani, geotropic)");}, get desc(){return t("kanał poziomy","horizontal canal");}, gen:gufoniGeo},   // D11: eponim Appiani (2001 geo / 2005 apo); nazwy GENERATORÓW nietknięte (pin pose + nagłówki guide)
+  gufoniApo:{get label(){return t("Gufoni (Appiani, apogeotropowy)","Gufoni (Appiani, apogeotropic)");}, get desc(){return t("kanał poziomy","horizontal canal");}, gen:gufoniApo},
   yacovino:{label:"Yacovino", get desc(){return t("kanał przedni","anterior canal");}, gen:yacovino},
+  zuma:{label:"Zuma e Maia", get desc(){return t("kupulolitiaza (k. poziomy)","cupulolithiasis (horiz. canal)");}, gen:zuma},
+  kim:{label:"Kim (CRM)", get desc(){return t("kupulolitiaza (k. poziomy)","cupulolithiasis (horiz. canal)");}, gen:kim},
 };
 const CANALS={
   posterior:{get label(){return t("Kanał tylny","Posterior canal");}, get note(){return t("najczęstszy (~85%)","most common (~85%)");}, color:"var(--post)",maneuvers:["epley","semont","bascule"]},
-  horizontal:{get label(){return t("Kanał poziomy","Horizontal canal");}, note:"~10%", color:"var(--horiz)",maneuvers:["lempert","gufoniGeo","gufoniApo"]},
+  horizontal:{get label(){return t("Kanał poziomy","Horizontal canal");}, note:"~10%", color:"var(--horiz)",maneuvers:["lempert","gufoniGeo","gufoniApo","zuma","kim"]},
   anterior:{get label(){return t("Kanał przedni","Anterior canal");}, get note(){return t("rzadki (~1–2%)","rare (~1–2%)");}, color:"var(--ant)",maneuvers:["yacovino"]},
 };
 
@@ -1142,11 +1195,19 @@ function mechLabels(canal, v){
 // dobór manewru leczniczego na podstawie testu + wariantu (+ opcjonalny mechanizm D4/V16;
 // brak parametru albo mechanizm klasyczny = dokładnie dawny wynik). UWAGA: primary może być null
 // (light cupula — manewrów nie ma) — render MUSI to strażnikować, zanim sięgnie do MANEUVERS[k].
+// D11/V18 (ocena II, KLIN-3): rozszerzenia CZYSTO TEKSTOWE — pola opcjonalne:
+//   home = nota domowa (Brandt-Daroff przy kanale tylnym; FPP Vannucchiego przy HC geo),
+//   altNotes = {kluczManewru → dopisek przy przycisku alternatywy} (dziś: lempert „po konwersji").
+// home ŚWIADOMIE nieobecne przy headhang (kanał przedni: najpierw wykluczenie ośrodkowe — nie wolno
+// wysyłać do domu z ćwiczeniami przed wykluczeniem CPN) i przy HC apo (domowej alternatywy nie ma).
 function recommend(testKey,variant,mech){
+  // Brandt-Daroff: WSPÓLNA treść dla obu wariantów kanału tylnego (habituacja/dyspersja niezależna
+  // od mechanizmu); 31–61% = zakres RD z Özgirgin 2024 — spójnie z kartą RD przewodnika (D5/V17).
+  const BD=t("Ćwiczenia Brandta-Daroff (dom): z siadu szybko połóż się na bok, odczekaj do ustąpienia zawrotu (co najmniej 30 s), usiądź, powtórz na drugi bok; 5 powtórzeń w serii, 2–3 serie dziennie. Mechanizm habituacyjno-dyspersyjny — skuteczność niższa niż repozycji, ale nie wymaga badającego. Rola: uzupełnienie PO manewrze (m.in. przy zawrotach rezydualnych, które po skutecznej repozycji dotyczą 31–61% chorych) albo postępowanie tymczasowe, gdy manewr repozycyjny jest niedostępny lub źle tolerowany.","Brandt-Daroff exercises (home): from sitting, lie down quickly onto one side, wait until the vertigo subsides (at least 30 s), sit up, repeat to the other side; 5 repetitions per set, 2–3 sets daily. A habituation-dispersion mechanism — less effective than repositioning, but requires no examiner. Role: an adjunct AFTER the maneuver (e.g. for residual dizziness, which follows successful repositioning in 31–61% of patients) or an interim measure when a repositioning maneuver is unavailable or poorly tolerated.");
   if(testKey==="dix"){
     return variant==="canalo"
-      ? {primary:"epley",alts:["semont"],note:t("Kanalolitiaza kanału tylnego — preferowany manewr Epleya; alternatywnie Semont.","Posterior-canal canalithiasis — the Epley maneuver is preferred; Semont as an alternative.")}
-      : {primary:"semont",alts:["bascule","epley"],note:t("Kupulolitiaza kanału tylnego (rzadka) — preferowany manewr uwalniający Semonta. W postaciach opornych/atypowych rozważ manewr Bascule („huśtawka” bok–bok odrywa złóg od osklepka). Epley służy głównie kanalolitiazie.","Posterior-canal cupulolithiasis (rare) — the Semont liberatory maneuver is preferred. In resistant/atypical forms consider the Bascule maneuver (side-to-side 'rocking' detaches the debris from the cupula). Epley mainly serves canalithiasis.")};
+      ? {primary:"epley",alts:["semont"],home:BD,note:t("Kanalolitiaza kanału tylnego — preferowany manewr Epleya; alternatywnie Semont.","Posterior-canal canalithiasis — the Epley maneuver is preferred; Semont as an alternative.")}
+      : {primary:"semont",alts:["bascule","epley"],home:BD,note:t("Kupulolitiaza kanału tylnego (rzadka) — preferowany manewr uwalniający Semonta. W postaciach opornych/atypowych rozważ manewr Bascule („huśtawka” bok–bok odrywa złóg od osklepka). Epley służy głównie kanalolitiazie.","Posterior-canal cupulolithiasis (rare) — the Semont liberatory maneuver is preferred. In resistant/atypical forms consider the Bascule maneuver (side-to-side 'rocking' detaches the debris from the cupula). Epley mainly serves canalithiasis.")};
   }
   if(testKey==="headhang"){
     return variant==="canalo"
@@ -1159,8 +1220,11 @@ function recommend(testKey,variant,mech){
   if(m==="light") return {primary:null, alts:[], note:t("Light cupula — manewry repozycyjne NIESKUTECZNE (0% w opisanych seriach): nie ma wolnego złogu do repozycji. Postać ustępuje SAMOISTNIE w dniach–tygodniach. Leczeniem jest rozpoznanie (null point!), wyjaśnienie i obserwacja; unikaj supresantów przedsionkowych. Uporczywy DCPN bez punktu zerowego lub objawy ośrodkowe → diagnostyka ośrodkowa.","Light cupula — repositioning maneuvers are INEFFECTIVE (0% in reported series): there is no free debris to reposition. The form resolves SPONTANEOUSLY within days–weeks. The treatment is recognition (the null point!), explanation and observation; avoid vestibular suppressants. A persistent DCPN without a null point or central signs → central work-up.")};
   if(m==="short") return {primary:"gufoniApo", alts:["lempert"], note:t("Wolny złóg w RAMIENIU BAŃKOWYM (apo przemijający): postać często czyści się SAMA diagnostyką i siadem — faza „zdrowe ucho w dole” testu Roll wyprowadza złóg do łagiewki (fizyka silnika). Jeśli oczopląs się utrzymuje, postępuj jak w postaci apogeotropowej (Gufoni apo → ponowny test); ustalonego manewru swoistego dla ramienia bańkowego piśmiennictwo nie ma. UWAGA — nie mylić z canalith jam: predykcja „Epley nieskuteczny / Yacovino skuteczny” dotyczy zaklinowanego złogu (jam), nie ramienia bańkowego.","Free debris in the SHORT (ampullar) ARM (transient apo): the form often clears ITSELF through diagnostics and sitting — the Roll test's healthy-ear-down phase carries the debris into the utricle (engine physics). If the nystagmus persists, manage as the apogeotropic form (apogeotropic Gufoni → re-test); the literature has no established short-arm-specific maneuver. CAUTION — do not confuse with canalith jam: the \"Epley ineffective / Yacovino effective\" prediction concerns an impacted plug (jam), not the short arm.")};
   return variant==="canalo"
-    ? {primary:"lempert",alts:["gufoniGeo"],note:t("Geotropowy (kanalolitiaza) kanału poziomego — rolka Lemperta ku stronie zdrowej lub manewr Gufoniego (geotropowy).","Geotropic (canalithiasis) of the horizontal canal — Lempert roll toward the healthy side or the Gufoni maneuver (geotropic).")}
-    : {primary:"gufoniApo",alts:["lempert"],note:t("Apogeotropowy (kupulolitiaza) — manewr Gufoniego (apogeotropowy) przekształca postać w geotropową; następnie ponowny test i leczenie postaci geotropowej.","Apogeotropic (cupulolithiasis) — the Gufoni maneuver (apogeotropic) converts the form into a geotropic one; then re-test and treat the geotropic form.")};
+    ? {primary:"lempert",alts:["gufoniGeo"],
+       home:t("Pozycja wymuszona Vannucchiego (FPP, dom): sen przez całą noc na boku ZDROWYM — grawitacja przez wiele godzin wyprowadza złóg z kanału poziomego ku łagiewce. Silnik odtwarza to emergentnie: w sesji ciągłej długie leżenie na zdrowym boku opróżnia kanał (ta sama fizyka, którą pokazują scenariusze historii pozycyjnej). Opcja, gdy manewr jest niedostępny lub źle tolerowany, oraz uzupełnienie po repozycji.","Vannucchi's forced prolonged position (FPP, home): sleep through the whole night on the HEALTHY side — over many hours gravity carries the debris out of the horizontal canal toward the utricle. The engine reproduces this emergently: in the continuous session, prolonged lying on the healthy side empties the canal (the same physics the positional-history scenarios show). An option when a maneuver is unavailable or poorly tolerated, and an adjunct after repositioning."),
+       note:t("Geotropowy (kanalolitiaza) kanału poziomego — rolka Lemperta ku stronie zdrowej lub manewr Gufoniego (geotropowy).","Geotropic (canalithiasis) of the horizontal canal — Lempert roll toward the healthy side or the Gufoni maneuver (geotropic).")}
+    : {primary:"gufoniApo",alts:["zuma","lempert"],altNotes:{lempert:t("po konwersji","after conversion")},
+       note:t("Apogeotropowy (kupulolitiaza) — manewr Gufoniego (apogeotropowy) przekształca postać w geotropową; następnie ponowny test i leczenie postaci geotropowej. Rolka Lemperta ma sens dopiero PO konwersji — nie działa na złóg związany z osklepkiem. W literaturze opisano też manewry celowane wprost w postać apogeotropową — Zuma e Maia i Kim — próbujące oderwać złóg od osklepka bez etapu konwersji; stosuj według dostępności i własnego doświadczenia.","Apogeotropic (cupulolithiasis) — the Gufoni maneuver (apogeotropic) converts the form into a geotropic one; then re-test and treat the geotropic form. The Lempert roll makes sense only AFTER conversion — it does not act on debris bound to the cupula. The literature also describes maneuvers aimed directly at the apogeotropic form — Zuma e Maia and Kim — which try to detach the debris from the cupula without a conversion stage; use according to availability and your own experience.")};
 }
 // Klasyfikacja podtypu BPPV wg kryteriów Bárány Society (ICVD 2015): mapuje (kanał, wariant, strona, tryb downbeat)
 // na formalną etykietę + poziom pewności (established/emerging) + cechy różnicujące (latencja/czas/męczliwość/kierunek/
@@ -1209,10 +1273,10 @@ function baranyClassify(canal, variant, side, antMode, mech){
         crit:[[t("Latencja","Latency"),t("brak / krótka","none / brief")],[t("Czas trwania","Duration"),t("uporczywy","persistent")],[t("Męczliwość","Fatigability"),t("nie","no")],[t("Kierunek","Direction"),t("apogeotropowy (ku uchu w górze)","apogeotropic (toward the upper ear)")],[t("Punkt zerowy (null point)","Null point"),t("zanik przy ~10–30° skrętu ku uchu choremu","abolished at ~10–30° rotation toward the affected ear")],[t("Strona chora","Affected side"),`${S} — ${t("SŁABSZA reakcja","WEAKER response")}`]],
         redflag:t("Uporczywy pozycyjny DCPN bez punktu zerowego, kierunek niemieszczący się w jednym kanale lub ataksja → rozważ przyczynę OŚRODKOWĄ (CPN — przełącz na widok „Ośrodkowy”). Trwały GEOTROPOWY oczopląs >1 min sugeruje light cupula, nie kanalolitiazę; apo PRZEMIJAJĄCY i męczliwy → wolny złóg w ramieniu bańkowym (D10), nie kupulopatia.","Persistent positional DCPN without a null point, a direction that fits no single canal, or ataxia → consider a CENTRAL cause (CPN — switch to the \"Central\" view). Persistent GEOTROPIC nystagmus >1 min suggests light cupula, not canalithiasis; a TRANSIENT, fatiguing apo → free debris in the short (ampullar) arm (D10), not cupulopathy.") };
 }
-const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
+const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior",zuma:"horizontal",kim:"horizontal"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepGravity, stepHeadQ, composeHead, fkJoints, bodyClass, bodyJoints, gravArrowFor, sizedSeconds, maneuverTimeline, maneuverSim, variantLabels, recommend });
+Object.assign(window, { makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepGravity, stepHeadQ, composeHead, fkJoints, bodyClass, bodyJoints, gravArrowFor, sizedSeconds, maneuverTimeline, maneuverSim, variantLabels, recommend });
