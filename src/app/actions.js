@@ -1,6 +1,6 @@
 // Akcje UI (onclick=… przez window): nawigacja, wybory, HINTS, zapis/odczyt pacjenta.
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF } from '../pose/maneuvers.js';
+import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF, DIAG, actTimeline, sessionSim, SIT_SEG, SESSION_REST, readhesion, maneuverTimeline } from '../pose/maneuvers.js';
 import { state } from './state.js';
 import { $, releaseWake, beep } from '../runtime/registry.js';
 import { render, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
@@ -192,13 +192,18 @@ function loadHintsFromStore(){
   try{ const s=localStorage.getItem('otorepo_hints_patient'); if(!s) return false;
     state.hintsCustom=NeuroVOR.makePatient(JSON.parse(s)); return true; }catch(e){ return false; }
 }
-function pickSide(s){ state.side=s; render(); }
+function pickSide(s){ if(state.session && state.side!==s) state.session=freshSession(state.session.canal, s, state.session.size);   // strona = tożsamość złogu (D1)
+  state.side=s; render(); }
 function pickCanal(k){ state.canal=k; const keys=CANALS[k].maneuvers; if(!keys.includes(state.maneuverKey)) state.maneuverKey=keys.length===1?keys[0]:null; render(); }
 function pickMan(k){ state.maneuverKey=k; render(); }
-function pickTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.diagPhaseFace=0; render(); }
+function pickTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.diagPhaseFace=0;
+  if(state.session && DIAG[k].canal!==state.session.canal) state.session=freshSession(DIAG[k].canal, state.side, state.size);   // inny kanał = nowy złóg; ten sam (roll↔bowlean, dix↔manewry PC) DZIELI sesję (R10)
+  render(); }
 // kliknięcie pozycji = od razu otwórz (bez osobnego przycisku CTA)
 function openMan(k){ state.maneuverKey=k; startPlan(); }
-function openTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.diagPhaseFace=0; state.screen="diag"; render(); }
+function openTest(k){ state.testKey=k; state.dixObs="post"; state.dixRep=0; state.diagCentral=false; state.diagPhaseFace=0;
+  if(state.session && DIAG[k].canal!==state.session.canal) state.session=freshSession(DIAG[k].canal, state.side, state.size);
+  state.screen="diag"; render(); }
 function setDixObs(o){ state.dixObs=o; state.dixRep=0; render(); }
 // Diagnostyka: przełącznik „obwodowy (BPPV) ↔ ośrodkowy (CPN)" w karcie klasyfikacji Bárány.
 function toggleDiagCentral(v){ state.diagCentral=!!v; render(); }
@@ -208,8 +213,71 @@ function setBltScenario(k){ state.bltScenario=k; render(); }
 // Męczliwość oczopląsu: powtórna prowokacja Dix-Hallpike (rep++) → kanalolitiaza słabnie (fatigueFactor);
 // kupulolitiaza nie. Reset zeruje serię. Nie zerujemy przy przełączeniu mechanizmu (flip) — po to, by przy tym
 // samym rep pokazać kontrast kanalo↔kupulo.
-function repeatDixProvoke(){ state.dixRep=(state.dixRep||0)+1; render(); }
-function resetDixProvoke(){ state.dixRep=0; render(); }
+// W SESJI (D1/V10) powtórzenie = AKT: łańcuch fizyki (pozycja+wiązanie+ogon ξ) × dyspersja (rep) z JEDNEGO
+// naciśnięcia — bez podwójnego liczenia (dyspersja siedzi w ξ symulacji; render nie mnoży przez fatigueFactor).
+function repeatDixProvoke(){ if(state.session){ sessionProvoke(); return; }
+  state.dixRep=(state.dixRep||0)+1; render(); }
+// W SESJI reset serii = nowy złóg (rep jest częścią stanu fizycznego — zerowanie samego licznika przy
+// zachowanym położeniu złogu byłoby niefizyczne); poza sesją — jak dotąd, sam licznik.
+function resetDixProvoke(){ if(state.session){ state.dixRep=0; resetSession(); return; }
+  state.dixRep=0; render(); }
+
+/* ============ Sesja ciągła (ocena II, V10/D1 — pamięć pozycji / domknięcie R10) ============
+   state.session = stan JEDNEGO złogu (canal/side/size to jego tożsamość — zmiana każdej z nich zaczyna
+   nowy złóg). phi=null → spoczynek naturalny (restPhi silnika); exited → kanał wyczyszczony (kontrolny
+   test niemy). Zegar aktowy: tSession = suma czasów SYMULOWANYCH timeline'ów (zero wall-clock — wyrocznie
+   deterministyczne). Kupulolitiaza sesji nie czyta (brak wolnej cząstki; wynik nie zależy od historii). */
+function freshSession(canal, side, size){
+  return {canal, side, size, phi:null, xi:0, bondFrac:1, stuck:true, exited:false, inCrus:false,
+          rep:0, acts:[], tSession:0};
+}
+function toggleSessionMode(on){
+  const c = state.testKey ? DIAG[state.testKey].canal : (CANAL_OF[state.maneuverKey]||"posterior");
+  state.session = on ? freshSession(c, state.side, state.size) : null;
+  syncSessionBar(); render();
+}
+function resetSession(){ const S=state.session; if(!S) return;
+  state.session=freshSession(S.canal, S.side, S.size); if(state.testKey==="dix") state.dixRep=0; render(); }
+// AKT: jedna nić symulacji (prowokacja/manewr + powrót do siadu + spoczynek) → out.final → stan sesji.
+// Transport w spoczynku liczy SILNIK (w timeline); odrost wiązania za ten sam spoczynek dokłada
+// readhesion() post-hoc (silnik świadomie nie ma re-adhezji w pętli — patrz maneuvers.js/TAU_BOND).
+function commitAct(kind, timeline, restSecs){
+  const S=state.session; if(!S) return;
+  const dur=timeline.reduce((a,g)=>a+(g.tTrans||0)+(g.tHold||0),0);
+  if(!S.exited){
+    const f=sessionSim(S, timeline).final;
+    Object.assign(S, {phi:f.exited?null:f.phi, xi:f.exited?0:f.xi,
+      bondFrac:readhesion(f.bondFrac, restSecs||0), stuck:f.stuck, exited:f.exited, inCrus:f.inCrus});
+  }
+  S.acts.push({kind, t:Math.round(dur)}); S.tSession+=dur;   // render() u WYWOŁUJĄCEGO — sessionProvoke inkrementuje rep PO commicie, render musi widzieć stan końcowy
+}
+// prowokacja bieżącego testu jako akt; rep++ PO symulacji (pierwsza prowokacja = pełna odpowiedź).
+// Bowlean poza aktami sesji — karta B&L ma własne scenariusze historii (V5); integracja = kandydat V11.
+function sessionProvoke(){
+  const S=state.session; if(!S || !state.testKey || state.testKey==="bowlean") return;
+  commitAct(state.testKey, actTimeline(state.testKey, S.side), SESSION_REST);
+  S.rep=(S.rep||0)+1; if(state.testKey==="dix") state.dixRep=S.rep;
+  render();
+}
+// manewr zaliczony do sesji JAWNYM przyciskiem (render nie może commitować) + końcowy siad.
+function sessionManeuver(){
+  const S=state.session; if(!S || !state.plan || CANAL_OF[state.maneuverKey]!==S.canal) return;
+  commitAct(state.maneuverKey, [...maneuverTimeline(state.plan, S.size), SIT_SEG], SESSION_REST);
+  render();
+}
+// Przerwa 10 min w siadzie: transport złogu liczy silnik (600 s), wiązanie odrasta (readhesion → latencja
+// wraca częściowo), rep BEZ zmian (re-agregacja kłębka w siadzie niezmierzona — luka; Imai mierzy amplitudę).
+function sessionRest(){
+  const S=state.session; if(!S) return;
+  commitAct("rest", [{q:[1,0,0,0], tTrans:0.8, tHold:600, pivot:"body"}], 600);
+  render();
+}
+function syncSessionBar(){
+  const bar=$("#sessionbar"); if(!bar) return;
+  const b=bar.querySelector("button[data-session]"); if(!b) return;
+  b.setAttribute("aria-pressed", String(!!state.session));
+  b.textContent=t("Sesja ciągła","Continuous session");
+}
 // Generuje plan manewru i nakłada holdy zależne od rozmiaru złogu (małe = dłuższe utrzymanie pozycji).
 function genPlan(key, side){
   const plan=MANEUVERS[key].gen(side);
@@ -225,15 +293,21 @@ function genPlan(key, side){
 }
 // Zmiana rozmiaru złogu: przebuduj plan (nowe holdy), unieważnij cache dynamiki, przelicz od bieżącego kroku.
 function pickSize(s){ if(state.size===s) return; state.size=s;
+  if(state.session) state.session=freshSession(state.session.canal, state.session.side, s);   // bond/dynamika skalują się r — łańcuch między size to footgun (D1)
   if(state.plan && state.screen==="guide"){ state.plan=genPlan(state.maneuverKey, state.side); }
   render(); }
 // Repozycja: zmiana strony PRZEBUDOWUJE plan i restartuje manewr od kroku 0
-function setGuideSide(s){ if(state.side===s) return; state.side=s; state.plan=genPlan(state.maneuverKey,s); state.step=0; state.autostart=false; render(); }
+function setGuideSide(s){ if(state.side===s) return; state.side=s;
+  if(state.session) state.session=freshSession(state.session.canal, s, state.session.size);
+  state.plan=genPlan(state.maneuverKey,s); state.step=0; state.autostart=false; render(); }
 // Diagnostyka: zmiana strony tylko odświeża predykcje (brak bieżącego kroku — fazy widoczne naraz)
-function setDiagSide(s){ if(state.side===s) return; state.side=s; state.dixRep=0; render(); }
+function setDiagSide(s){ if(state.side===s) return; state.side=s; state.dixRep=0;
+  if(state.session) state.session=freshSession(state.session.canal, s, state.session.size);
+  render(); }
 function startPlan(){ state.plan=genPlan(state.maneuverKey,state.side); state.step=0; state.autostart=false; state.screen="guide"; render(); }
 function startManeuver(key){
   state.mode="treat"; state.maneuverKey=key; state.canal=CANAL_OF[key];
+  if(state.session && CANAL_OF[key]!==state.session.canal) state.session=freshSession(CANAL_OF[key], state.side, state.size);
   state.plan=genPlan(key,state.side); state.step=0; state.autostart=false; state.screen="guide"; render();
 }
 function startDiag(){ state.screen="diag"; render(); }
@@ -252,11 +326,11 @@ function syncLangBar(){
   bar.querySelectorAll("button[data-lang]").forEach(b=>
     b.setAttribute("aria-pressed", String(b.getAttribute("data-lang")===state.lang)));
 }
-function setLangUI(lang){ setLang(lang); if(state.plan && state.screen==="guide"){ state.plan=genPlan(state.maneuverKey, state.side); } syncLangBar(); render(); }   // regeneruj plan → instrukcje kroków w nowym jezyku (wzorzec jak pickSize)
+function setLangUI(lang){ setLang(lang); if(state.plan && state.screen==="guide"){ state.plan=genPlan(state.maneuverKey, state.side); } syncLangBar(); syncSessionBar(); render(); }   // regeneruj plan → instrukcje kroków w nowym jezyku (wzorzec jak pickSize); etykieta sesji też przez t()
 
 
-export { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar };
+export { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, freshSession, toggleSessionMode, resetSession, sessionProvoke, sessionManeuver, sessionRest, syncSessionBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar });
+Object.assign(window, { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, toggleSessionMode, resetSession, sessionProvoke, sessionManeuver, sessionRest, syncSessionBar });

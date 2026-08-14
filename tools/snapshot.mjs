@@ -151,6 +151,28 @@ function engineOracle(h) {
     out.sensitivity = 'PASS(tauP±10%: 6 manewrów × 2 strony × 2 mnożniki = 24/24)';
   }
 
+  // SESJA CIĄGŁA (ocena II, V10/D1): pin ŁAŃCUCHA STANU — czyste liczby final, nie DOM.
+  // Sekwencja kanoniczna: Dix#1 → (karta Dix#2 przy rep=1: peak/latencja) → Dix#2 → przerwa 10 min
+  // (odrost wiązania readhesion) → Epley → exited. Lustro commitAct z actions.js (bez DOM).
+  if (h.sessionSim && h.actTimeline && h.readhesion && h.maneuverTimeline) {
+    const S = { canal: 'posterior', side: 'P', size: 'medium', phi: null, xi: 0, bondFrac: 1, stuck: true, exited: false, inCrus: false, rep: 0 };
+    const act = (timeline, rest) => { const f = h.sessionSim(S, timeline).final;
+      Object.assign(S, { phi: f.exited ? null : f.phi, xi: f.exited ? 0 : f.xi, bondFrac: h.readhesion(f.bondFrac, rest), stuck: f.stuck, exited: f.exited, inCrus: f.inCrus }); };
+    const r5 = x => x == null ? null : +(+x).toFixed(5);
+    const chain = {};
+    act(h.actTimeline('dix', 'P'), h.SESSION_REST); S.rep = 1;
+    chain.afterDix1 = { phi: r5(S.phi), bondFrac: r5(S.bondFrac), stuck: S.stuck, exited: S.exited };
+    let pk = 0, lat = null;
+    for (const s of h.sessionSim(S, h.actTimeline('dix', 'P'))) { if (Math.abs(s.xi) > 0.05 && lat == null) lat = s.t; if (Math.abs(s.xi) > Math.abs(pk)) pk = s.xi; }
+    chain.dix2 = { peak: r5(pk), lat: r5(lat) };
+    act(h.actTimeline('dix', 'P'), h.SESSION_REST); S.rep = 2;
+    act([{ q: [1, 0, 0, 0], tTrans: 0.8, tHold: 600, pivot: 'body' }], 600);
+    chain.afterRest = { bondFrac: r5(S.bondFrac), stuck: S.stuck };
+    act([...h.maneuverTimeline(h.genPlan('epley', 'P'), 'medium'), h.SIT_SEG], h.SESSION_REST);
+    chain.afterEpley = { exited: S.exited, phi: S.phi };
+    out.sessionChain = chain;
+  }
+
   // NeuroVOR — czyste odczyty kliniczne dla zestawu pacjentów
   const NV = h.NeuroVOR;
   if (NV) {
@@ -338,6 +360,20 @@ function domOracle(h, win) {
   grab('hints/scenario/neuritisR/fix', () => { if (h.openHints) h.openHints('neuritisR'); if (h.setHintsFix) h.setHintsFix(true); h.render(); });
   grab('hints/scenario/neuritisR/gaze30', () => { if (h.openHints) h.openHints('neuritisR'); if (h.setHintsGaze) h.setHintsGaze(30); h.render(); });
 
+  // SESJA CIĄGŁA (ocena II, V10/D1) — default OFF ⇒ klucze czysto ADDYTYWNE; łańcuch stanu MIĘDZY
+  // grabami jest zamierzony i deterministyczny (jak scen-*). Pinowane: panel+chipy świeżej sesji,
+  // akt 1 i 2 (B7: druga prowokacja bez latencji mech. × dyspersja rep), zaliczenie Epleya w guide,
+  // kontrolny Dix po repozycji (fazy nieme, openTest NIE resetuje — ten sam kanał) i powrót do OFF
+  // (dixRep=2 zostaje — pin reguły lustrzenia licznika).
+  if (h.toggleSessionMode && h.sessionProvoke && h.sessionManeuver) {
+    grab('diag/dix/P/session-on', () => { if (h.openTest) h.openTest('dix'); if (h.setDiagSide) h.setDiagSide('P'); h.toggleSessionMode(true); h.render(); });
+    grab('diag/dix/P/session-act1', () => { h.sessionProvoke(); h.render(); });
+    grab('diag/dix/P/session-act2', () => { h.sessionProvoke(); h.render(); });
+    grab('guide/epley/P/session-commit', () => { if (h.startManeuver) h.startManeuver('epley'); h.sessionManeuver(); h.render(); });
+    grab('diag/dix/P/session-control', () => { if (h.openTest) h.openTest('dix'); h.render(); });
+    grab('diag/dix/P/session-off', () => { h.toggleSessionMode(false); h.render(); });
+  }
+
   return out;
 }
 
@@ -409,6 +445,7 @@ if (!CHECK) {
     if (layer === 'engine') {
       diffKeys(snap.engine.plans, gold.engine.plans, 'engine.plans/', diffs);
       diffKeys(snap.engine.neuro, gold.engine.neuro, 'engine.neuro/', diffs);
+      diffKeys(snap.engine.sessionChain, gold.engine.sessionChain, 'engine.sessionChain/', diffs);   // V10/D1: bez tej linii pin byłby zapisywany, ale nigdy porównywany
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

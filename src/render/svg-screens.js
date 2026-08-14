@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -916,7 +916,21 @@ function renderGuide(){
       </div>
       <div class="title">${st.title}</div>
       <div class="instr">${st.instr}</div></div>
-    ${timerBlock}
+    ${timerBlock}${state.session ? (()=>{   // pasek sesji (V10/D1) — inline za timerBlock: przy OFF ZERO bajtów różnicy (golden)
+      const S2=state.session, match=CANAL_OF[state.maneuverKey]===S2.canal;
+      const chipS=(k,val)=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${val}</b></span>`;
+      const chips = S2.exited
+        ? `<span style="display:inline-flex;gap:6px;align-items:baseline;background:#3a8f6f22;border:1px solid #3a8f6f;border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><b>✓ ${t("złóg w łagiewce — kanał czysty","debris in the utricle — canal clear")}</b></span>`
+        : chipS("φ", S2.phi==null ? t("spoczynek","rest") : `≈ ${Math.round(S2.phi)}°`) + chipS(t("wiązanie","bond"), `${Math.round(S2.bondFrac*100)}%`);
+      const btn = (match && !S2.exited)
+        ? `<button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center" onclick="sessionManeuver()">${t("✓ Zalicz manewr do sesji","✓ Log the maneuver into the session")}</button>` : "";
+      return `<div class="card" style="margin-top:10px">
+        <div class="obslabel" style="margin-bottom:4px">${t("Sesja ciągła","Continuous session")}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${chips}${chipS(t("akty","acts"), `${S2.acts.length} · ${Math.round(S2.tSession)} s`)}${btn}</div>
+        <div class="note">${match
+          ? t("„Zalicz” symuluje PEŁNY przebieg manewru z bieżącego stanu złogu (jedna nić: kroki + powrót do siadu) i zapisuje wynik do sesji — kontrolny test pozycyjny pokaże stan po repozycji.","\"Log\" simulates the FULL maneuver from the current debris state (a single thread: steps + return to sitting) and writes the result into the session — a control positional test will show the post-repositioning state.")
+          : t("Manewr innego kanału niż złóg sesji — zaliczenie nieaktywne.","A maneuver for a different canal than the session debris — logging inactive.")}</div></div>`;
+    })() : ""}
     <p class="footnote">${t("Po zakończeniu odczekaj zgodnie z protokołem i rozważ ponowny test pozycyjny.","When finished, wait per protocol and consider repeating the positional test.")}</p>`;
   if(can3d && state.view3d) mount3D("guide", ps, p.side);
   requestAnimationFrame(setupGuideAnim);
@@ -982,9 +996,41 @@ function renderDiag(){
     : ph);
   // MĘCZLIWOŚĆ: przy powtórzeniach prowokacji Dix-Hallpike kanalolitiaza SŁABNIE, kupulolitiaza NIE (różnicowanie).
   // fatigue = ortogonalny mnożnik amplitudy (startNys/startDialNysIn); kupulo = 1 (nie wyczerpuje się).
+  // W SESJI (V10/D1) mnożnik = 1: dyspersja (rep→gc) siedzi już w ξ symulacji sesji — mnożenie w renderze
+  // liczyłoby ją DWA razy.
   const dixRep = (isDix && !antMode) ? (state.dixRep||0) : 0;
-  const fatFactor = v==="cupulo" ? 1 : Vestibular.fatigueFactor(dixRep);
+  const fatFactor = (v==="cupulo" || state.session) ? 1 : Vestibular.fatigueFactor(dixRep);
   phases.forEach(ph=>{ if(ph.nys) ph.nys.fatigue = fatFactor; });
+  // ===== Sesja ciągła (ocena II, V10/D1): fazy karty liczone ze STANU sesji — jedna nić symulacji, a TEN SAM
+  // init płynie do obwiedni animacji (szew V5: startNys/startDialNysIn → engineXi(nys.init)) — karta i animacja
+  // z jednego stanu, sprzeczność strukturalnie niemożliwa. Bowlean poza nadpisaniem (karta B&L ma własne
+  // scenariusze historii — integracja to kandydat V11); antMode poza (kanał efektywny ≠ kanał sesji).
+  const S = state.session;
+  const sessDrive = S && v==="canalo" && !antMode && state.testKey!=="bowlean" && S.canal===effCanal && S.side===effSide;
+  if(sessDrive){
+    const pv = sessionPreview(S, state.testKey);
+    const sInit = sessionInit(S);
+    phases.forEach((ph,i)=>{
+      if(!ph.nys) return;
+      const xi = pv.exited ? 0 : (pv.phases[i]||{xi:0}).xi;
+      const N = nysFromDyn(effCanal, effSide, xi, false);
+      if(pv.exited || N.strength < XI_CARD){
+        Object.assign(ph.nys, {dir:0, vdir:1, strength:0, anat:{h:0,v:0,t:0}, unresolved:true, init:null, fatigue:1});
+        ph.label = pv.exited
+          ? t("kanał wyczyszczony — brak odpowiedzi","canal cleared — no response")
+          : t("odpowiedź podprogowa (złóg blisko równowagi lub związany)","subthreshold response (debris near equilibrium or bound)");
+        ph.note = pv.exited
+          ? t("Złóg opuścił kanał w tej sesji — prowokacja niema. Tak wygląda kontrolny test zaraz po skutecznej repozycji. Uwaga kliniczna: ujemny test NATYCHMIAST po manewrze nie dowodzi wyleczenia (NPV ~72% — nakłada się męczliwość); wiarygodna kontrola śródsesyjna po ≥30 min siadu, formalna ocena wg AAO-HNS w ciągu miesiąca.","The debris left the canal in this session — the provocation is mute. This is what a control test right after successful repositioning looks like. Clinical caveat: a negative test IMMEDIATELY after the maneuver does not prove cure (NPV ~72% — fatigability overlaps); a reliable within-session check needs ≥30 min upright, formal reassessment per AAO-HNS within a month.")
+          : t("Stan sesji: złóg leży blisko równowagi tej pozycji albo trzyma go wiązanie — napęd podprogowy.","Session state: the debris lies near this position's equilibrium or is held by its bond — subthreshold drive.");
+      } else {
+        Object.assign(ph.nys, {dir:N.dir, vdir:N.vdir, strength:N.strength, anat:N.anat, excited:N.excited,
+          reversed:N.reversed, unresolved:false, fatigue:1, init:sInit});
+        ph.label = N.label;
+        if(state.testKey==="roll") ph.note = t("Sesja liczy Roll jako SEKWENCJĘ (chore→centrum→zdrowe): pierwsza faza PRZEMIESZCZA złóg, więc amplitudy faz nie są już czystym porównaniem Ewalda z karty statycznej (fazy izolowane) — kolejność wykonania zmienia wynik (R10, Bhandari 2022).","The session computes the Roll as a SEQUENCE (affected→center→healthy): the first phase DISPLACES the debris, so the phase amplitudes are no longer the static card's clean Ewald comparison (isolated phases) — the order of execution changes the result (R10, Bhandari 2022).");
+        else if(S.acts.length>0) ph.note = t(`Stan sesji (po ${S.acts.length} ${S.acts.length===1?"akcie":"aktach"}): amplituda i latencja WYNIKAJĄ z położenia złogu i wiązania po poprzednich aktach — męczliwość to głównie pozycja, nie „zużycie" (panel sesji niżej).`,`Session state (after ${S.acts.length} act${S.acts.length===1?"":"s"}): amplitude and latency FOLLOW from the debris position and bond after the previous acts — fatigability is mostly position, not "wear" (session panel below).`);
+      }
+    });
+  }
   // N7 (D6): NAKLADKA AVS — toniczny oczoplas NeuroVOR (skladowa POZIOMA) obecny w KAZDEJ pozycji testu
   // i NIEwyczerpujacy sie: fundament taksonomii GRACE-3 (AVS vs t-EVS) wreszcie demonstrowalny obok
   // przejsciowego, meczliwego oczoplasu BPPV. Default OFF -> zadna wyrocznia dom nie rusza sie bez wlaczenia.
@@ -1036,6 +1082,38 @@ function renderDiag(){
         <span style="font-size:12px;color:var(--muted);min-width:84px;text-align:right">${t("amplituda","amplitude")} ${pct}%</span>
       </div>
       <div class="note">${note}</div></div>`;
+  })() : "";
+  // ===== Panel SESJI CIĄGŁEJ (ocena II, V10/D1): chipy stanu złogu + akty (renderowany WYŁĄCZNIE gdy
+  // state.session — default OFF nie dodaje ani bajta do #app, golden nietknięte) =====
+  const sessionPanel = S ? (()=>{
+    const chipS=(k,val)=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${val}</b></span>`;
+    const chips = S.exited
+      ? `<span style="display:inline-flex;gap:6px;align-items:baseline;background:#3a8f6f22;border:1px solid #3a8f6f;border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><b>✓ ${t("złóg w łagiewce — kanał czysty","debris in the utricle — canal clear")}</b></span>`
+      : chipS("φ", S.phi==null ? t("spoczynek naturalny","natural rest") : `≈ ${Math.round(S.phi)}°`)
+        + chipS(t("wiązanie","bond"), `${Math.round(S.bondFrac*100)}%`)
+        + chipS(t("stan","state"), S.inCrus ? t("w odnodze (parking)","in the crus (parked)") : t("w świetle kanału","in the canal lumen"))
+        + (S.rep ? chipS(t("prowokacje","provocations"), S.rep) : "");
+    const actChip = chipS(t("akty","acts"), `${S.acts.length} · ${Math.round(S.tSession)} s`);
+    const mismatch = !(S.canal===effCanal && S.side===effSide);
+    const bst="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center";
+    const btnProvoke = (!isDix && state.testKey!=="bowlean" && !mismatch && v==="canalo" && !S.exited)
+      ? `<button class="opt" style="${bst}" onclick="sessionProvoke()">${t("▶ Wykonaj test w sesji","▶ Run the test in the session")}</button>` : "";
+    const btnRest = `<button class="opt" style="${bst};opacity:.9" onclick="sessionRest()">${t("⏸ Przerwa 10 min (siad)","⏸ 10-min break (sitting)")}</button>`;
+    const btnReset = `<button class="opt" style="${bst};opacity:.85" onclick="resetSession()">${t("Reset (nowy złóg)","Reset (new debris)")}</button>`;
+    const noteTxt = v==="cupulo"
+      ? t("Kupulolitiaza: brak wolnej cząstki w świetle — wynik NIE zależy od historii (test powtarzalny); stan sesji dotyczy postaci kanalolitycznej.","Cupulolithiasis: no free particle in the lumen — the result does NOT depend on history (the test is repeatable); the session state applies to the canalithiasis form.")
+      : state.testKey==="bowlean"
+        ? t("Karta Bow & Lean używa własnych scenariuszy historii (wyżej) — akty sesji aktualizują stan złogu, ale nie nadpisują tej karty.","The Bow & Lean card uses its own history scenarios (above) — session acts update the debris state but do not override this card.")
+        : mismatch
+          ? t("Podgląd sesji nieaktywny: kanał/strona tej karty ≠ tożsamość złogu sesji.","Session preview inactive: this card's canal/side ≠ the session debris identity.")
+          : (isDix
+              ? t(`„↻ Powtórz prowokację" wykonuje AKT sesji: łańcuch fizyki (pozycja+wiązanie+ogon ξ) × dyspersja (rep). Akt = prowokacja + powrót do siadu + ${SESSION_REST} s spoczynku — transport złogu liczy silnik.`,`"↻ Repeat provocation" performs a session ACT: physics chain (position+bond+ξ tail) × dispersion (rep). An act = provocation + return to sitting + ${SESSION_REST} s of rest — the engine computes the debris transport.`)
+              : t(`Akt = prowokacja + powrót do siadu + ${SESSION_REST} s spoczynku (jedna nić symulacji).`,`An act = provocation + return to sitting + ${SESSION_REST} s of rest (a single simulation thread).`));
+    return `<div class="card" style="margin-bottom:4px">
+      <div class="obslabel" style="margin-bottom:4px">${t("Sesja ciągła — stan złogu (jeden pacjent)","Continuous session — debris state (one patient)")}</div>
+      <div style="margin-bottom:8px">${chips}${actChip}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">${btnProvoke}${btnRest}${btnReset}</div>
+      <div class="note">${noteTxt} ${t("Zmiana kanału, strony lub rozmiaru zaczyna nowy złóg.","Changing the canal, side or size starts new debris.")}</div></div>`;
   })() : "";
   // ===== Bow & Lean: scenariusze historii pozycyjnej + reguła kliniczna + mapa wododziału (ocena II, V5) =====
   const isBlt = state.testKey==="bowlean";
@@ -1090,7 +1168,7 @@ function renderDiag(){
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
       </div></div>` : ""}
-    ${bltPanel}${phaseHTML}${fatPanel}${bltExtras}
+    ${sessionPanel}${bltPanel}${phaseHTML}${fatPanel}${bltExtras}
     ${(()=>{
       const interp = v0 => antMode
         ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)

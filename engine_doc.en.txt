@@ -113,13 +113,13 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — STAGE 2 (particle dynamics) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...] (+ a .final property)
+simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0, bond0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...] (+ a .final property)
    phiExit=null (default) = the MEASURED arc span per canal: ARC_SPAN {anterior 281.1 · posterior 318.8 ·
    horizontal 267.3}. (The crusFling/crusFlingRate parameters were REMOVED 2026-08-05 — see the crus chamber below.)
    VALIDATIONS (since 2026-08-13, assessment II A10): dt>0 · tauP>0 · tauC>dt/2 (Euler stability) ·
    gc>0 · fStat≥0 · adh≥0 · 0≤crusArc<phiExit−3 · crusGrav>0 — a clear RangeError instead of silent
    nonsense (gc<0 flipped the nystagmus side, crusArc>phiExit killed the test without a trace).
-   since V3 also phi0 ∈ [CUPULA_DEG, phiExit] (described below).
+   since V3 also phi0 ∈ [CUPULA_DEG, phiExit] (described below); since V10 also bond0 ∈ [0,1] and finite xi0.
    Simulation of CANALITHIASIS: the otolith as a particle on the canal arc.
    [PHENOMENOLOGICAL MODEL — a proxy for the dynamics, not full hydrodynamics; see the "MODEL NATURE" header
     and "SIMPLIFICATIONS RELATIVE TO FULL MODELS".]
@@ -137,18 +137,32 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.
        a full liberatory transient) or teleports. A start in the CRUS ZONE (phi0 > phiExit−crusArc, vertical
        canals) = the debris STARTS IN THE CHAMBER (inCrus) instead of the old backward snap to pcrus.
    settled — the adhesion state at start (assessment II, A2/V3). true (default) = SETTLED debris: the
-       adhesion gate as before, computed from the resting drive at restPhi and UPRIGHT (deliberately NOT
-       at phi0/q0 — the full gate fix is the continuous-session project D1; the default path is
-       bit-identical, proof: 34 scenarios × 48,144 samples, max difference 0). false = FRESHLY DISPLACED
-       debris (positional history deposited it moments ago; the bond has not had time to form) — starts
-       without the gate. The same distinction — "held by the bond vs held by gravity" — with which the
-       engine explains the missing latency of the anterior canal. Without settled=false the gate —
-       evaluated at someone else's point — quenches to 0.000 even responses of free amplitude |ξ|>1
-       (Bow & Lean: dead bands ~20% of the arc, the 205° cliff).
-   .final — the FINAL STATE {phi, xi, bond, stuck, exited, inCrus} as a property ON THE RESULT ARRAY
-       (JSON.stringify of arrays skips it — oracles untouched). For session chaining (D1):
-       pre=simulateCanalith(history); test=simulateCanalith({phi0: pre.final.phi, settled:false, …}).
-       NOTE: bond is in internal units after size scaling — carry size together with the state.
+       adhesion gate from the resting drive; false = FRESHLY DISPLACED debris (positional history
+       deposited it moments ago; the bond has not had time to form) — starts without the gate. The same
+       distinction — "held by the bond vs held by gravity" — with which the engine explains the missing
+       latency of the anterior canal. Without settled=false the gate quenched to 0.000 even responses
+       of free amplitude |ξ|>1 (Bow & Lean: dead bands ~20% of the arc, the 205° cliff).
+       THE GATE AT THE STARTING POINT (since V10, assessment II D1 — closure of artefact A2): for
+       phi0≠null the resting drive is computed as driveAt(canal, side, phi0, q0-or-upright) — WHERE the
+       debris lies, and in the STARTING orientation; for phi0=null LITERALLY the old restDrive(restPhi,
+       upright) — the same bits, the default path untouched (proof V3: 34 scenarios × 48,144 samples,
+       max difference 0; proof V10: snapshot dom=110 byte-identical PASS before extending the oracles).
+       The old gate froze debris parked after a Dix (φ₀=159.5°, sitting: |driveAt|=0.142>fStat while
+       |restDrive(restPhi)|≈0 → STUCK) for 2.05 s of bond consumption at someone else's point.
+   xi0 — the cupular deflection at start (since V10; default 0). Carries the ξ tail of the previous run:
+       chaining through {phi0, xi0, bond0, settled:true} is BIT-FOR-BIT identical to a single timeline
+       (measured: max|Δ(ξ,φ)| = 0.0e+0 over the 1432 samples of the second act) — the B7 resolution
+       stands on this identity (below, the FATIGABILITY section).
+   bond0 — the bond state at start as a FRACTION of full adhesion ∈ [0,1] (since V10; null = 1). The
+       unit is INDEPENDENT of size — the engine multiplies internally by the rescaled adh·r, which
+       closes the documented footgun of chaining the raw final.bond between runs of different size.
+       bond0=0 ≡ settled:false (the gate term (bond0==null || bond0>0) — continuity at zero).
+   .final — the FINAL STATE {phi, xi, bond, stuck, exited, inCrus, bondFrac} as a property ON THE RESULT
+       ARRAY (JSON.stringify of arrays skips it — oracles untouched). For session chaining (D1):
+       pre=simulateCanalith(history); test=simulateCanalith({phi0: pre.final.phi, xi0: pre.final.xi,
+       bond0: pre.final.bondFrac, settled:true, …}) — the chain is bit-for-bit identical to a single
+       thread. bondFrac = the bond as a fraction [0,1] (clamped; the ONLY form for chaining); the raw
+       bond (internal units adh·r) stays for compatibility — the between-size footgun is documented.
    q0 — STARTING orientation (quaternion); default null = the q of the FIRST segment (backward compatibility).
        NOTE (semantics of the 1st segment): with q0=null the first segment does NOT interpolate from the neutral position —
        its tTrans is time ALREADY IN the starting position, NOT a transition from sitting. To force a transition from a given
@@ -236,6 +250,17 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.
        → IDENTICAL result (backward compatibility). Example (posterior canal): peak ξ 0.81→0.51→0.33→0.22→0.15 for
        rep 0..4. CUPULOLITHIASIS (simulateCupulolith) has NO rep — the debris adheres to the cupula, does not disperse
        → does NOT fatigue; the difference is an emergent differentiating feature.
+       B7-RESOLUTION (2026-08-14, V10): a series in the same session = a STATE CHAIN (canonical) — a
+       repeated provocation is a new run with {phi0, xi0, bond0} from the previous final (bit-for-bit
+       identical to a single timeline), COMPOSED with rep (dispersion within the same call). Emergently:
+       the second provocation comes WITHOUT mechanical latency (the bond is broken) and weaker
+       (position × dispersion); artefact B9 (threshold latency growing with rep at constant mechanics)
+       disappears, because a fresh-start-with-rep is no longer the model of a repetition within the
+       session. rep ALONE (a fresh start) = dispersion/ensemble averaging — semantics from outside the
+       session. Between visits the bond regrows (readhesion, the domain layer) and rep returns to 0
+       (re-aggregation of the clump). ANCHORS: the fatigability mechanism is mainly POSITIONAL
+       (Imai 2021/2025/2026, Boselli 2014, Yang & Gao 2022 — see R10-STATUS); dispersion = a secondary
+       hypothesis, the card does not state it as fact.
 
 fatigueFactor(rep=0, {fatTau=2.0, fatFloor=0.06}) -> factor ∈ [fatFloor, 1]
    Pure fatigability factor: fatFloor + (1−fatFloor)·exp(−rep/fatTau); rep 0/negative/NaN → 1; monotonic
@@ -804,9 +829,9 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
        robust to that, the numbers are not — do not compare φ₀ between write-ups without the
        protocol. The map and the zones = the geometry of ONE atlas (Reid's frame; the 9.8° margin <
        between-subject variability).
-     FOLLOW-UP (deliberately deferred): the full stuck(phi0,q0) gate and a re-adhesion model = the
-       continuous-session project (assessment II, D1); the "lying-down/sitting-up test" on the same
-       machinery (D2).
+     FOLLOW-UP: the full stuck(phi0,q0) gate and re-adhesion DELIVERED 2026-08-14 (V10 — see the
+       simulateCanalith signature and R10-STATUS); the "lying-down/sitting-up test" on the same
+       machinery (D2) — open.
 
  R11. THE ENGINE EQUATES PHENOTYPE WITH MECHANISM: geo≡canalolithiasis, apo≡cupulolithiasis [2026-08-06, OPEN].
      Came out of verifying H5. For the horizontal canal variantLabels asserts outright "Canalithiasis
@@ -867,8 +892,30 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
       can be an unlabelled therapeutic maneuver (the V5 card says so outright in the "after a Roll"
       scenario). NOTE on the table above: its φ₀ values (132.3/164.9/267.3) come from OTHER history
       protocols than the BLT_HISTORY presets (146.2/173.0/220.5) — φ₀ is a function of the protocol;
-      it is the ZONE that is robust. STILL OPEN: a continuous session of the whole examination
-      (each test starting from the previous state; requires re-adhesion bond(t)) = project D1.]
+      it is the ZONE that is robust.]
+     [STATUS 2026-08-14 (assessment II, V10): DELIVERED — CONTINUOUS SESSION. Engine: xi0 + bond0
+      (a fraction [0,1], independent of size) + final.bondFrac + the stuck gate AT THE STARTING POINT
+      (phi0, q0) — chaining {phi0, xi0, bond0, settled:true} is BIT-FOR-BIT identical to a single
+      timeline (0.0e+0 over 1432 samples). Domain layer: readhesion(bondFrac, gap, tauB=TAU_BOND=1800 s)
+      — re-adhesion BETWEEN examinations (a pure function, deliberately NOT in the loop: gated regrowth
+      at |drive|≤fStat would re-engage stuck through the 56 s live tail of an AC attack and kill it
+      entirely) + acts (ACT_STEPS/actTimeline: provocation + return to sitting + 30 s of rest, one
+      thread) + sessionPreview (the card's phases with a memo of the full signature). App: state.session
+      (default OFF=null → bit-identical path, proof: snapshot dom=110 byte-identical PASS before
+      extending the oracles), a toggle in the shell outside #app, a chip panel, provocation/maneuver/
+      10-min-break acts, reset rules (canal/side/size = the debris's identity). Oracles: +6 dom
+      session-* keys + engine.sessionChain (dom 110→116, purely additive).
+      CLINICAL ANCHORS: fatigability is POSITION, not "wear" — Imai 2021 (the return of the response is
+      gated by the resting position: sitting 10 min→70%, lying toward the affected side→7%),
+      Imai 2025/2026 (mechanically returning the debris toward the ampulla restores the nystagmus in
+      90% — causal proof), Imai 2018 (fatigability vanishes within ≤30 min of sitting). The engine
+      reproduces the mechanism by transport (a provocation from the ~159° parking spot → response
+      0.004; after sitting it returns). DOCUMENTED MISMATCH: transport while sitting (slide τ ≈7.5 s)
+      restores the position in ~30 s, Imai's clinic in 10–30 min — a candidate for a future
+      calibration; TAU_BOND carries ONLY the LATENCY (nobody has measured the latency-recovery curve —
+      a calibration constant, not a literature one). A sequential Roll (affected→centre→healthy) moves
+      the debris between phases — the session's phase amplitudes are not a pure Ewald comparison
+      (R10/Bhandari; the card says so outright).]
 
  R9. LATERAL-CANAL PITCH 10.4° INSTEAD OF THE CANONICAL ~30° [2026-08-05, OPEN].
      THIS IS NOT A DATA ERROR — it is a FRAME unknown. Settled by separating relative from absolute

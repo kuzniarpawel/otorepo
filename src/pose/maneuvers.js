@@ -269,7 +269,10 @@ function engineXi(canal, side, persistent, q, init){
   // wpływu (brak cząstki). Brak init = dokładnie dotychczasowa ścieżka.
   return persistent
     ? Vestibular.simulateCupulolith({canal, side, timeline, q0})
-    : Vestibular.simulateCanalith({canal, side, timeline, q0, ...(init ? {phi0:init.phi0, settled:init.settled} : {})});
+    // spread WARUNKOWY per pole (D1/V10): BLT (V5) podaje tylko {phi0,settled} → wywołanie bit-identyczne;
+    // sesja dodaje bond0/xi0/rep tym samym szwem — obwiednia animacji liczy się z TEGO SAMEGO stanu co karta.
+    : Vestibular.simulateCanalith({canal, side, timeline, q0, ...(init ? {phi0:init.phi0, settled:init.settled,
+        ...(init.bond0!=null?{bond0:init.bond0}:{}), ...(init.xi0!=null?{xi0:init.xi0}:{}), ...(init.rep!=null?{rep:init.rep}:{})} : {})});
 }
 // znormalizowana obwiednia czasowa z ξ(t): env(sekundy)∈[0,1] oraz tEnd (gdy |ξ|<3% szczytu po szczycie)
 function xiEnvelope(sim){
@@ -628,6 +631,76 @@ function bltZones(side){
   }
   _bltMemo.set(k,pts); return pts;
 }
+
+/* ============ Sesja ciągła (ocena II, V10/D1 — domknięcie R10, rozstrzygnięcie B7) ============
+   Stan JEDNEGO złogu (state.session, default OFF=null) przewlekany między badaniami tej samej wizyty:
+   położenie φ, wiązanie bondFrac, ogon ξ — wszystko z out.final poprzedniego aktu (łańcuch ≡ jedna
+   timeline BIT-W-BIT, patrz vestibular.js). Męczliwość klinicznie to POZYCJA, nie „zużycie" (Imai 2021:
+   powrót odpowiedzi bramkowany pozycją spoczynku — siad 10 min→70%, leżenie ku choremu→7%; Imai
+   2025/2026: mechaniczne odprowadzenie złogu ku bańce przywraca oczopląs u 90% — dowód przyczynowy).
+   Silnik odtwarza ten mechanizm transportem: prowokacja z parkingu (~159°) daje odpowiedź martwą
+   (0.004), po spoczynku w siadzie złóg osiada z powrotem ku restPhi i odpowiedź wraca. ROZJAZD
+   UDOKUMENTOWANY: transport w siadzie (τ zsuwu tauP/A ≈ 7.5 s) przywraca pozycję w ~30 s, klinika
+   Imai — w 10–30 min; rep (dyspersja, fatigueFactor→gc) zostaje jako HIPOTEZA WTÓRNA składana w tym
+   samym wywołaniu. B7-ROZWIĄZANIE: seria w sesji = łańcuch stanu (kanoniczna); rep solo = dyspersja;
+   między wizytami bond odrasta (readhesion), a rep wraca do 0 (kłębek re-agreguje). */
+// RE-ADHEZJA MIĘDZY BADANIAMI — czysta funkcja, ŚWIADOMIE nie w pętli silnika: b(t)=1−(1−b0)·e^(−t/τB).
+// TAU_BOND=1800 s to stała kalibracyjna klasy tauP/tauC, NIE wartość literaturowa (krzywej powrotu
+// latencji nikt nie zmierzył — luka; Imai mierzy AMPLITUDĘ, którą u nas niesie transport+rep).
+// Kotwica dwustronna: przerwy sesyjne 30–120 s → 1.7–6.4% wiązania (latencja ≈ brak — seryjny Dix
+// nie odzyskuje latencji), doba → 100% (pierwsza prowokacja wizyty ma znów pełną latencję 2.25 s).
+// τB ≫ timeline (70 s) ⇒ odrost w biegu <3.9% — pominięcie uczciwe; bramkowany odrost w pętli
+// zabiłby cały napad AC (|drive|<fStat od t=0.5 s przy żywym ξ przez 56 s — sonda 2026-08-14).
+const TAU_BOND=1800;
+function readhesion(bondFrac, gapSeconds, tauB=TAU_BOND){
+  if(!(gapSeconds>=0) || !isFinite(gapSeconds)) throw new RangeError("readhesion: gapSeconds musi być liczbą >= 0 (podano "+gapSeconds+")");
+  if(!(tauB>0) || !isFinite(tauB)) throw new RangeError("readhesion: tauB musi być liczbą > 0 (podano "+tauB+")");
+  const b0=Math.min(1, Math.max(0, bondFrac??0));
+  return 1-(1-b0)*Math.exp(-gapSeconds/tauB);
+}
+// AKT = prowokacja + POWRÓT DO SIADU + spoczynek, jedna nić symulacji (zegar aktowy — zero wall-clock;
+// czas sesji to suma czasów timeline'ów). SESSION_REST=30 s = standardowa pauza kliniczna między
+// prowokacjami; fizycznie robi dokładnie to, po co jest: wolny złóg osiada ku minimum siadu (transport
+// liczony tym samym silnikiem), a osklepek relaksuje (6·tauC). ξ i bond przenosimy MIMO TO jawnie
+// (xi0/bond0) — łańcuch pozostaje bitowo tożsamy z jedną timeline, bez aproksymacji.
+const SESSION_REST=30;
+const SIT_SEG={q:[1,0,0,0], tTrans:0.8, tHold:SESSION_REST, pivot:"body"};
+const ACT_STEPS={                     // pozy aktu per test W KOLEJNOŚCI WYKONANIA (bez końcowego siadu)
+  dix:      A=>[{body:"supineHang",     yaw:A==="P"?45:-45, face:"up", hold:40}],
+  headhang: A=>[{body:"supineDeepHang", yaw:0,              face:"up", hold:40}],
+  roll:     A=>[{body:"supineFlex", yaw:A==="P"?90:-90, face:"up", hold:20},
+                {body:"supineFlex", yaw:0,              face:"up", hold:5},    // POWRÓT DO CENTRUM (Pagnini–McClure) — bez niego druga strona dostaje przemach 180° zamiast 90°
+                {body:"supineFlex", yaw:A==="P"?-90:90, face:"up", hold:20}],
+};
+const PHASE_OF={ roll:[0,2] };        // mapowanie kroków aktu → fazy karty (centrum nie ma karty); reszta: tożsamość
+function actTimeline(testKey, side){
+  return [...(ACT_STEPS[testKey]||ACT_STEPS.dix)(side)
+    .map(st=>({q:stepHeadQ(st.body,st.yaw,st.face), tTrans:0.8, tHold:st.hold, pivot:"body"})), SIT_SEG];
+}
+// stan sesji → parametry startowe silnika. settled:true ZAWSZE — o zatrzymaniu decyduje UCZCIWA bramka
+// w (phi0, q0) + bond0 (bond0=0 ≡ settled:false); phi=null = spoczynek naturalny (restPhi, jak dotąd).
+const sessionInit=S=>({ ...(S.phi!=null?{phi0:S.phi}:{}), settled:true,
+  bond0:Math.min(1,Math.max(0,S.bondFrac)), xi0:S.xi||0, rep:S.rep||0 });
+const sessionSim=(S,timeline)=>Vestibular.simulateCanalith({canal:S.canal, side:S.side, size:S.size,
+  q0:[1,0,0,0], timeline, ...sessionInit(S)});
+// podgląd karty diag bez commitu: szczyt ξ per faza z JEDNEJ nici (okna czasowe jak w bltPhases).
+// Memo kluczem PEŁNEJ sygnatury stanu (strażnik KLIN-7). Bowlean POZA sesyjnym podglądem — karta B&L
+// ma własne scenariusze historii (V5); głębsza integracja = kandydat V11.
+const _sessMemo=new Map();
+const sessKey=S=>[S.canal,S.side,S.size,S.phi==null?"-":S.phi.toFixed(3),S.bondFrac.toFixed(4),(S.xi||0).toFixed(4),S.rep||0].join("#");
+function sessionPreview(S, testKey){
+  const k="pv#"+testKey+"#"+sessKey(S); if(_sessMemo.has(k)) return _sessMemo.get(k);
+  const steps=(ACT_STEPS[testKey]||ACT_STEPS.dix)(S.side), map=PHASE_OF[testKey]||steps.map((_,i)=>i);
+  const out={phases:map.map(()=>({xi:0})), exited:!!S.exited};
+  if(!S.exited){
+    const sim=sessionSim(S, actTimeline(testKey, S.side));
+    const bounds=[]; let t0=0; for(const st of steps){ t0+=0.8+st.hold; bounds.push(t0); }
+    for(const s of sim){ const i=bounds.findIndex(b=>s.t<=b), pi=map.indexOf(i);
+      if(pi>=0 && Math.abs(s.xi)>Math.abs(out.phases[pi].xi)) out.phases[pi].xi=s.xi; }
+    out.exited=sim.final.exited;
+  }
+  _sessMemo.set(k,out); return out;
+}
 const DIAG={
   dix:{ get name(){return t("Manewr Dix–Hallpike","Dix–Hallpike test");}, get tests(){return t("kanał tylny","posterior canal");}, canal:"posterior",
     get intro(){return t("Z siadu obróć głowę 45° w stronę badaną, połóż szybko na plecach z głową odchyloną ~20° poniżej poziomu.","From sitting, turn the head 45° toward the tested side, then lay the patient supine quickly with the head extended ~20° below horizontal.");},
@@ -798,7 +871,7 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

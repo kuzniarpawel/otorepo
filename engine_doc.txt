@@ -111,13 +111,13 @@ position({canal, side, variant, q}) -> {excited, mag, h, v, t}
 
 — ETAP 2 (dynamika cząstki) ————————————————————————————————————————
 
-simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...] (+ właściwość .final)
+simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0, bond0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}) -> [{t, xi, phi, exited}, ...] (+ właściwość .final)
    phiExit=null (domyślnie) = ZMIERZONY zakres łuku per kanał: ARC_SPAN {przedni 281.1 · tylny 318.8 ·
    poziomy 267.3}. (Parametry crusFling/crusFlingRate USUNIĘTE 2026-08-05 — patrz komora odnogi niżej.)
    WALIDACJE (od 2026-08-13, ocena II A10): dt>0 · tauP>0 · tauC>dt/2 (stabilność Eulera) · gc>0 ·
    fStat≥0 · adh≥0 · 0≤crusArc<phiExit−3 · crusGrav>0 — jasny RangeError zamiast cichego nonsensu
    (gc<0 odwracało stronę oczopląsu, crusArc>phiExit uśmiercało test bez śladu); od V3 także
-   phi0 ∈ [CUPULA_DEG, phiExit] (opis niżej).
+   phi0 ∈ [CUPULA_DEG, phiExit] (opis niżej); od V10 także bond0 ∈ [0,1] i xi0 skończone.
    Symulacja KANALOLITIAZY: otolit jako cząstka na łuku kanału.
    [MODEL FENOMENOLOGICZNY — proxy dynamiki, nie pełna hydrodynamika; patrz nagłówek „CHARAKTER MODELU"
     oraz „UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI".]
@@ -134,17 +134,32 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.
        liberacyjny) i teleportem. Start w STREFIE ODNOGI (phi0 > phiExit−crusArc, kanały pionowe) =
        start W KOMORZE (inCrus) zamiast dawnego snapu wstecznego do pcrus.
    settled — stan adhezji na starcie (ocena II, A2/V3). true (domyślnie) = złóg OSIADŁY: bramka adhezji
-       jak dotąd, liczona z napędu postojowego w restPhi i PIONIE (świadomie NIE w phi0/q0 — pełna
-       naprawa bramki = projekt sesji ciągłej D1; ścieżka domyślna bit-identyczna, dowód: 34 scenariusze
-       × 48 144 próbki, maks. różnica 0). false = złóg ŚWIEŻO PRZEMIESZCZONY (historia pozycyjna
-       odłożyła go przed chwilą; wiązanie nie zdążyło się wytworzyć) — start bez bramki. To samo
-       rozróżnienie „trzyma wiązanie vs trzyma grawitacja", którym silnik tłumaczy brak latencji kanału
-       przedniego. Bez settled=false bramka — ewaluowana w cudzym punkcie — wygasza do 0.000 nawet
-       odpowiedzi o swobodnej amplitudzie |ξ|>1 (Bow & Lean: martwe pasma ~20% łuku, klif 205°).
-   .final — STAN KOŃCOWY {phi, xi, bond, stuck, exited, inCrus} jako właściwość NA TABLICY wyników
-       (JSON.stringify tablic ją pomija — wyrocznie nietknięte). Do łańcuchowania sesji (D1):
-       pre=simulateCanalith(historia); test=simulateCanalith({phi0: pre.final.phi, settled:false, …}).
-       UWAGA: bond w jednostkach wewnętrznych po skalowaniu rozmiarem — przenoś size razem ze stanem.
+       z napędu postojowego; false = złóg ŚWIEŻO PRZEMIESZCZONY (historia pozycyjna odłożyła go przed
+       chwilą; wiązanie nie zdążyło się wytworzyć) — start bez bramki. To samo rozróżnienie „trzyma
+       wiązanie vs trzyma grawitacja", którym silnik tłumaczy brak latencji kanału przedniego. Bez
+       settled=false bramka wygaszała do 0.000 nawet odpowiedzi o swobodnej amplitudzie |ξ|>1
+       (Bow & Lean: martwe pasma ~20% łuku, klif 205°).
+       BRAMKA W PUNKCIE STARTU (od V10, ocena II D1 — domknięcie artefaktu A2): dla phi0≠null napęd
+       postojowy liczony driveAt(canal, side, phi0, q0-lub-pion) — TAM, gdzie złóg leży, i w orientacji
+       STARTOWEJ; dla phi0=null DOSŁOWNIE stary restDrive(restPhi, pion) — te same bity, ścieżka
+       domyślna nietknięta (dowód V3: 34 scenariusze × 48 144 próbki, maks. różnica 0; dowód V10:
+       snapshot dom=110 bajtowo PASS przed rozszerzeniem wyroczni). Stara bramka mroziła złóg
+       zaparkowany po Dixie (φ₀=159.5°, siad: |driveAt|=0.142>fStat, a |restDrive(restPhi)|≈0 → STUCK)
+       na 2.05 s zużywania wiązania w cudzym punkcie.
+   xi0 — wychylenie osklepka na starcie (od V10; domyślnie 0). Przenosi ogon ξ poprzedniego przebiegu:
+       łańcuch przez {phi0, xi0, bond0, settled:true} jest BIT-W-BIT tożsamy z jedną timeline
+       (zmierzone: max|Δ(ξ,φ)| = 0.0e+0 na 1432 próbkach drugiego aktu) — na tej tożsamości stoi
+       rozstrzygnięcie B7 (niżej, sekcja MĘCZLIWOŚĆ).
+   bond0 — stan wiązania na starcie jako UŁAMEK pełnej adhezji ∈ [0,1] (od V10; null = 1). Jednostka
+       NIEZALEŻNA od size — silnik mnoży wewnętrznie przez przeskalowane adh·r, co domyka udokumentowany
+       footgun łańcuchowania surowego final.bond między przebiegami o różnym size. bond0=0 ≡
+       settled:false (człon bramki (bond0==null || bond0>0) — ciągłość w zerze).
+   .final — STAN KOŃCOWY {phi, xi, bond, stuck, exited, inCrus, bondFrac} jako właściwość NA TABLICY
+       wyników (JSON.stringify tablic ją pomija — wyrocznie nietknięte). Do łańcuchowania sesji (D1):
+       pre=simulateCanalith(historia); test=simulateCanalith({phi0: pre.final.phi, xi0: pre.final.xi,
+       bond0: pre.final.bondFrac, settled:true, …}) — łańcuch tożsamy z jedną nicią bit-w-bit.
+       bondFrac = wiązanie jako ułamek [0,1] (clamp; JEDYNA postać do łańcuchowania); surowy bond
+       (jednostki wewnętrzne adh·r) zostaje dla zgodności — footgun między size udokumentowany.
    q0 — orientacja STARTOWA (kwaternion); domyślnie null = q PIERWSZEGO segmentu (wsteczna zgodność).
        UWAGA (semantyka 1. segmentu): przy q0=null pierwszy segment NIE interpoluje z pozycji neutralnej —
        jego tTrans to czas JUŻ W pozycji startowej, NIE przejście z siadu. Aby wymusić przejście z danej
@@ -229,6 +244,16 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.
        → wynik IDENTYCZNY (wsteczna zgodność). Przykład (kanał tylny): szczyt ξ 0.81→0.51→0.33→0.22→0.15 dla
        rep 0..4. KUPULOLITIAZA (simulateCupulolith) NIE ma rep — złóg przylega do osklepka, nie rozprasza się
        → NIE męczy się; różnica jest emergentną cechą różnicującą.
+       B7-ROZWIĄZANIE (2026-08-14, V10): seria w tej samej sesji = ŁAŃCUCH STANU (kanoniczna) — powtórzenie
+       prowokacji to nowy przebieg z {phi0, xi0, bond0} z final poprzedniego (tożsamy z jedną timeline
+       bit-w-bit), SKŁADANY z rep (dyspersja w tym samym wywołaniu). Emergentnie: druga prowokacja BEZ
+       latencji mechanicznej (wiązanie zerwane) i słabsza (pozycja × dyspersja); artefakt B9 (latencja
+       progowa rosnąca z rep przy stałej mechanice) znika, bo świeży-start-z-rep przestał być modelem
+       powtórzenia w sesji. rep SOLO (świeży start) = dyspersja/uśrednienie po zespole — semantyka spoza
+       sesji. Między wizytami wiązanie odrasta (readhesion, warstwa domenowa), a rep wraca do 0
+       (re-agregacja kłębka). KOTWICE: mechanizm męczliwości jest głównie POZYCYJNY (Imai 2021/2025/2026,
+       Boselli 2014, Yang & Gao 2022 — patrz R10-STATUS); dyspersja = hipoteza wtórna, karta nie podaje
+       jej jako faktu.
 
 fatigueFactor(rep=0, {fatTau=2.0, fatFloor=0.06}) -> czynnik ∈ [fatFloor, 1]
    Czysty czynnik męczliwości: fatFloor + (1−fatFloor)·exp(−rep/fatTau); rep 0/ujemny/NaN → 1; monotoniczny
@@ -764,8 +789,8 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
        tabela R10 z innymi protokołami dawała 132.3/164.9/267.3); STREFA jest na to odporna, liczby
        nie — nie porównywać φ₀ między zapisami bez protokołu. Mapa i strefy = geometria JEDNEGO
        atlasu (ramka Reida; margines 9.8° < zmienność międzyosobnicza).
-     FOLLOW-UP (świadomie odłożone): pełna bramka stuck(phi0,q0) i model re-adhezji = projekt sesji
-       ciągłej (ocena II, D1); „lying-down/sitting-up test" na tej samej maszynerii (D2).
+     FOLLOW-UP: pełna bramka stuck(phi0,q0) i re-adhezja DOSTARCZONE 2026-08-14 (V10 — patrz sygnatura
+       simulateCanalith i R10-STATUS); „lying-down/sitting-up test" na tej samej maszynerii (D2) — otwarte.
 
  R11. SILNIK UTOŻSAMIA FENOTYP Z MECHANIZMEM: geo≡kanalolitiaza, apo≡kupulolitiaza [2026-08-06, OTWARTE].
      Wyszło z weryfikacji H5. variantLabels dla kanału poziomego twierdzi wprost
@@ -819,8 +844,27 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
       także SKŁON usuwa złóg dla φ₀∈(191°,267°), więc BLT bywa nieoznakowanym manewrem leczniczym
       (karta V5 mówi to wprost w scenariuszu „po Roll"). UWAGA do tabeli wyżej: jej φ₀ (132.3/164.9/
       267.3) pochodzą z INNYCH protokołów historii niż presety BLT_HISTORY (146.2/173.0/220.5) —
-      φ₀ jest funkcją protokołu, odporna jest STREFA. OTWARTE pozostaje: sesja ciągła całego badania
-      (każdy test startuje ze stanu poprzedniego; wymaga re-adhezji bond(t)) = projekt D1.]
+      φ₀ jest funkcją protokołu, odporna jest STREFA.]
+     [STATUS 2026-08-14 (ocena II, V10): DOSTARCZONE — SESJA CIĄGŁA. Silnik: xi0 + bond0 (ułamek [0,1],
+      niezależny od size) + final.bondFrac + bramka stuck w PUNKCIE STARTU (phi0, q0) — łańcuch
+      {phi0, xi0, bond0, settled:true} jest BIT-W-BIT tożsamy z jedną timeline (0.0e+0 na 1432 próbkach).
+      Warstwa domenowa: readhesion(bondFrac, gap, tauB=TAU_BOND=1800 s) — re-adhezja MIĘDZY badaniami
+      (czysta funkcja, świadomie NIE w pętli: bramkowany odrost przy |drive|≤fStat re-engażowałby stuck
+      przez 56 s żywego ogona napadu AC i zabiłby go w całości) + akty (ACT_STEPS/actTimeline: prowokacja
+      + powrót do siadu + 30 s spoczynku, jedna nić) + sessionPreview (fazy karty z memo pełnej sygnatury).
+      Aplikacja: state.session (default OFF=null → ścieżka bit-identyczna, dowód: snapshot dom=110
+      bajtowo PASS przed rozszerzeniem wyroczni), toggle w powłoce poza #app, panel chipów, akty
+      prowokacji/manewru/przerwy 10 min, reguły resetu (kanał/strona/rozmiar = tożsamość złogu).
+      Wyrocznie: +6 kluczy dom session-* + engine.sessionChain (dom 110→116, czysto addytywne).
+      KOTWICE KLINICZNE: męczliwość to POZYCJA, nie „zużycie" — Imai 2021 (powrót odpowiedzi bramkowany
+      pozycją spoczynku: siad 10 min→70%, leżenie ku choremu→7%), Imai 2025/2026 (mechaniczne
+      odprowadzenie złogu ku bańce przywraca oczopląs u 90% — dowód przyczynowy), Imai 2018 (męczliwość
+      znika w ≤30 min siadu). Silnik odtwarza mechanizm transportem (prowokacja z parkingu ~159° →
+      odpowiedź 0.004; po siadzie wraca). ROZJAZD UDOKUMENTOWANY: transport w siadzie (τ zsuwu ≈7.5 s)
+      przywraca pozycję w ~30 s, klinika Imai w 10–30 min — kandydat na przyszłą kalibrację; TAU_BOND
+      niesie wyłącznie LATENCJĘ (krzywej powrotu latencji nikt nie zmierzył — stała kalibracyjna,
+      nie literaturowa). Sekwencyjny Roll (chore→centrum→zdrowe) przemieszcza złóg między fazami —
+      amplitudy faz sesji nie są czystym porównaniem Ewalda (R10/Bhandari; karta mówi to wprost).]
 
  R9. NACHYLENIE KANAŁU BOCZNEGO 10.4° ZAMIAST KANONICZNYCH ~30° [2026-08-05, OTWARTE].
      TO NIE JEST BŁĄD DANYCH — to niewiadoma RAMKI. Rozstrzygnięte rozdzieleniem wielkości względnych

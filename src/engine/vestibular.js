@@ -371,7 +371,7 @@ export const Vestibular = (()=>{
     const c1=cross3(wv,d), a=cross3(wv,c1);
     return [g[0]-a[0]/G0, g[1]-a[1]/G0, g[2]-a[2]/G0];
   }
-  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
+  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0, bond0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
     reqCanal(canal, side, "simulateCanalith");
     if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
     if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
@@ -392,6 +392,15 @@ export const Vestibular = (()=>{
     // był snapowany WSTECZ, a phi0>phiExit wskrzeszał złóg spoza kanału z pełnym transjentem liberacyjnym.
     if(phi0!=null && (!isFinite(phi0) || phi0<CUPULA_DEG || phi0>phiExit))
       throw new RangeError("simulateCanalith: phi0 musi być w ["+CUPULA_DEG+", phiExit="+phiExit+"] (podano "+phi0+")");
+    // WALIDACJA bond0/xi0 (ocena II, D1/V10) — parametry ŁAŃCUCHOWANIA SESJI. bond0 = UŁAMEK pełnej
+    // adhezji [0..1] — jednostka NIEZALEŻNA od size (final.bond jest w adh·r: łańcuchowanie surowego
+    // bond między przebiegami o różnym size przekłamywało stan wiązania — bondFrac przenosi się czysto).
+    // xi0 = wychylenie osklepka na starcie (przenosi ogon ξ poprzedniego przebiegu: łańcuch ≡ jedna
+    // timeline BIT-W-BIT — na tej tożsamości stoi rozstrzygnięcie B7).
+    if(bond0!=null && (!(bond0>=0 && bond0<=1) || !isFinite(bond0)))
+      throw new RangeError("simulateCanalith: bond0 musi być ułamkiem pełnej adhezji w [0, 1] (podano "+bond0+")");
+    if(typeof xi0!=="number" || !isFinite(xi0))
+      throw new RangeError("simulateCanalith: xi0 musi być liczbą skończoną (podano "+xi0+")");
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D, pcrus=(phiExit-crusArc)*D;
     const crusGate=(canal==="posterior"||canal==="anterior");   // odnoga wspólna TYLKO dla kanałów pionowych; poziomy → wyjście wprost
@@ -404,13 +413,24 @@ export const Vestibular = (()=>{
     // postojowy w restPhi i pionie; ścieżka bit-identyczna). false = złóg ŚWIEŻO PRZEMIESZCZONY
     // (historia pozycyjna odłożyła go przed chwilą — wiązanie nie zdążyło się wytworzyć): start bez
     // bramki. Uzasadnienie fizyczne = ten sam mechanizm, którym silnik tłumaczy brak latencji kanału
-    // przedniego (restDrive wyżej: „nie trzyma go wiązanie, tylko grawitacja"); model i tak nie ma
-    // re-adhezji (raz zerwane wiązanie nie wraca). Bez tego bramka — ewaluowana w CUDZYM punkcie
-    // (restPhi zamiast phi0) — wygasza do 0.000 nawet odpowiedzi o swobodnej amplitudzie |ξ|>1
-    // i robi z odpowiedzi funkcję schodkową phi0 z ~20% martwego łuku (klif 205°).
+    // przedniego (restDrive wyżej: „nie trzyma go wiązanie, tylko grawitacja"); w PĘTLI re-adhezji nie ma
+    // (raz zerwane wiązanie nie odrasta W BIEGU — bramkowany odrost przy |drive|≤fStat re-engażowałby
+    // stuck przez 56 s żywego ogona napadu AC i zabiłby go w całości; sonda 2026-08-14). Odrost MIĘDZY
+    // badaniami → readhesion() w warstwie domenowej (maneuvers.js, D1/B7). Bez `settled` bramka —
+    // ewaluowana w CUDZYM punkcie (restPhi zamiast phi0) — wygasza do 0.000 nawet odpowiedzi o swobodnej
+    // amplitudzie |ξ|>1 i robi z odpowiedzi funkcję schodkową phi0 z ~20% martwego łuku (klif 205°).
     // Start w strefie odnogi (phi0>phiExit−crusArc, kanały pionowe): złóg STARTUJE W KOMORZE (inCrus)
     // zamiast dawnego snapu WSTECZNEGO do pcrus — czeka na ekspulsję jak każdy zaparkowany złóg.
-    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=0, t=0, exited=false, stuck=settled && Math.abs(restDrive(canal,side,tauP))<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    // BRAMKA W PUNKCIE STARTU (ocena II, D1/V10 — domknięcie artefaktu A2): dla phi0!=null napęd
+    // postojowy liczony TAM, GDZIE ZŁÓG LEŻY, i w orientacji STARTOWEJ (q0 = poza spoczynkowa przed
+    // badaniem; bez q0 — pion). Stara bramka mroziła złóg zaparkowany po Dixie (φ₀=159.5°, siad:
+    // |driveAt|=0.142>fStat, a |restDrive(restPhi)|≈0 → STUCK) na 2.05 s zużywania wiązania w cudzym
+    // punkcie. phi0=null → DOSŁOWNIE stary restDrive (te same bity — ścieżka domyślna nietknięta).
+    // Człon (bond0==null || bond0>0): bond0=0 ≡ settled:false (ciągłość w zerze, bez klifu 0→0⁺).
+    const qStart=q0!=null?reqQuat(q0,"simulateCanalith q0"):null;
+    const holdDrive = phi0!=null ? driveAt(canal, side, phi0, qStart!=null?qStart:[1,0,0,0], tauP)
+                                 : restDrive(canal, side, tauP);
+    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=xi0, t=0, exited=false, stuck=settled && (bond0==null || bond0>0) && Math.abs(holdDrive)<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, expelling=false, bond=bond0!=null?bond0*adh:adh, qPrev=qStart!=null?qStart:reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const wv = angVel(qPrev, sq, seg.tTrans);          // prędkość kątowa przejścia (stała — slerp o stałym tempie)
@@ -454,12 +474,14 @@ export const Vestibular = (()=>{
       }
       qPrev=sq;
     }
-    // STAN KOŃCOWY do łańcuchowania sesji (ocena II, V3 — fundament D1/R10): pre=simulateCanalith(historia);
-    // test=simulateCanalith({phi0:pre.final.phi, settled:false, ...}). Właściwość NA TABLICY — JSON.stringify
-    // tablic ją pomija (wyrocznie serializujące nie widzą zmiany), iteracja for-of/length/map bez zmian.
-    // UWAGA: bond jest w jednostkach WEWNĘTRZNYCH po skalowaniu rozmiarem (adh*r) — łańcuchowanie między
-    // przebiegami o różnym size przekłamie stan wiązania; przenoś size razem ze stanem.
-    out.final = { phi: phi/D, xi, bond, stuck, exited, inCrus };
+    // STAN KOŃCOWY do łańcuchowania sesji (ocena II, V3+V10 — fundament D1/R10): pre=simulateCanalith(historia);
+    // test=simulateCanalith({phi0:pre.final.phi, xi0:pre.final.xi, bond0:pre.final.bondFrac, settled:true, ...})
+    // — łańcuch tak zbudowany jest BIT-W-BIT tożsamy z jedną timeline (rozstrzygnięcie B7). Właściwość NA
+    // TABLICY — JSON.stringify tablic ją pomija (wyrocznie serializujące nie widzą zmiany), iteracja bez zmian.
+    // bondFrac = wiązanie jako UŁAMEK [0..1] (clamp: bond kończy ujemnie po zerwaniu) — JEDYNA postać do
+    // łańcuchowania; bond (jednostki WEWNĘTRZNE adh·r) zostaje dla zgodności — footgun między size udokumentowany.
+    out.final = { phi: phi/D, xi, bond, stuck, exited, inCrus,
+                  bondFrac: adh>0 ? Math.min(1, Math.max(0, bond)/adh) : 0 };
     return out;
   }
   // ξ (odchylenie osklepka) → składowe oczopląsu (kierunek z etapu 0, znak z pobudzenia)
