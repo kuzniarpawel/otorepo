@@ -509,10 +509,16 @@ function stepPivot(prev, st){
   const a=poseOf(prev.body, prev.face), b=poseOf(st.body, st.face);
   return (a.roll!==b.roll || a.trunk!==b.trunk) ? "body" : "neck";
 }
+// B8 (ocena II, V14b): kąt KARKU kroku z TEJ SAMEJ tabeli pozy co stepPivot (jedno źródło rozkładu
+// headQ = torso ∘ kark) — ν = pitch − trunk (jak bodyJoints), Y = yaw + dyaw. Zasila ramię
+// bezwładności armVec w silniku (segment.neckPitch/neckYaw). Diagnostyka (engineXi/BLT/LDT/sesja)
+// świadomie NIEokablowana — przesunęłaby zakotwiczone latencje STAŁYCH SKALIBROWANYCH (osobny kandydat).
+function stepNeck(st){ const s=poseOf(st.body, st.face); return { p: s.pitch - s.trunk, y: st.yaw + s.dyaw }; }
 function timelineWithHold(plan, h, u=UNTIMED_STEPS[0]){
-  return plan.steps.map((st,i)=>({ q: stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8,
-    pivot: stepPivot(plan.steps[i-1], st),
-    tHold: st.seconds!=null ? h : u }));
+  return plan.steps.map((st,i)=>{ const n=stepNeck(st);
+    return { q: stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8,
+      pivot: stepPivot(plan.steps[i-1], st), neckPitch:n.p, neckYaw:n.y,
+      tHold: st.seconds!=null ? h : u }; });
 }
 // najmniejsza para {h, u}: h z HOLD_STEPS (kroki z timerem), u z UNTIMED_STEPS (kroki bez timera),
 // przy której manewr wyprowadza złóg NOMINALNIE ORAZ przy tauP×TAUP_GUARD (wolniejsza cząstka =
@@ -541,13 +547,15 @@ function derivedHold(plan, size){
 }
 function maneuverTimeline(plan, size="medium"){
   const dh=derivedHold(plan,size);
-  return plan.steps.map((st,i)=>({
-    q: stepHeadQ(st.body, st.yaw, st.face),
-    tTrans: 0.8,
-    pivot: stepPivot(plan.steps[i-1], st),                                // oś obrotu → ramię bezwładności (R7)
-    tHold: st.seconds==null ? (dh ? dh.u : UNTIMED_STEPS[0])
-                            : (dh ? dh.h : st.seconds)                    // fallback: hold zalecony klinicznie
-  }));
+  return plan.steps.map((st,i)=>{ const n=stepNeck(st);                   // B8: kark do ramienia bezwładności — OBA tory (derivedHold liczy timelineWithHold z tą samą fizyką)
+    return {
+      q: stepHeadQ(st.body, st.yaw, st.face),
+      tTrans: 0.8,
+      pivot: stepPivot(plan.steps[i-1], st),                              // oś obrotu → ramię bezwładności (R7)
+      neckPitch: n.p, neckYaw: n.y,
+      tHold: st.seconds==null ? (dh ? dh.u : UNTIMED_STEPS[0])
+                              : (dh ? dh.h : st.seconds)                  // fallback: hold zalecony klinicznie
+    }; });
 }
 // pełna symulacja manewru → φ(t) cząstki w kanale (dynamika repozycji)
 function maneuverSim(plan, size="medium"){
