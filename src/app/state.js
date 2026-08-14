@@ -7,6 +7,7 @@ import { HINTS_PRESETS } from './actions.js';
 const state={
   mode:"treat", screen:"setup",
   side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:"post", dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
+  bltScenario:"textbook",   // Bow & Lean: scenariusz historii pozycyjnej (klucz BLT_HISTORY; ocena II V5)
   diagCentral:false,
   neuroOverlay:null,   // N7/D6: pacjent NeuroVOR nalozony TONICZNIE na ekrany diagnostyki pozycyjnej (null=wyl) — demonstracja AVS vs t-EVS (GRACE-3)   // przełącznik karty klasyfikacji: false=obwodowy (BPPV, klasyfikacja Bárány) · true=ośrodkowy (CPN)
   diagPhaseFace:0,     // odsłonięta faza karty pozycji (Bow&Lean/Roll): 0=przód/bow · 1=tył/lean. W STANIE, by przetrwać re-render (np. przełącznik 3D nie przewraca karty)

@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -87,7 +87,7 @@ function startDialNysIn(container, nys){
   const a=nys.anat||{h:0,v:0,t:0}, amp=(nys.strength||1)*(nys.fatigue==null?1:nys.fatigue);   // fatigue: męczliwość przy powtórzeniach (Dix-Hallpike)
   const hx=a.h*flip*2.2*amp, upY=a.v*2*amp, rot=a.t*flip*12*amp;   // poziom (odbity) / pion / skręt (odbity)
   const fast=0.17, T=720, start=performance.now();
-  const {env, tEnd} = xiEnvelope(engineXi(nys.canal, nys.side, nys.persistent, nys.q));
+  const {env, tEnd} = xiEnvelope(engineXi(nys.canal, nys.side, nys.persistent, nys.q, nys.init));
   loopRAF((now)=>{
     if(container.__dialTok!==token || !document.body.contains(container)) return false;
     const elapsed=(now-start)/1000;
@@ -396,7 +396,7 @@ function startNys(container,nys,envOv){
   // kupulolitiaza → uporczywa. Animacja gra RAZ i się zatrzymuje (koniec pętli).
   const canal=nys.canal||"posterior", side=nys.side||"P";
   const ov = (nys.ov && nys.ov.amp>0) ? nys.ov : null;   // N7/D6: toniczna nakladka AVS — bez obwiedni xi, nie wygasa
-  const {env, tEnd} = envOv || xiEnvelope(engineXi(canal, side, nys.persistent, nys.q));
+  const {env, tEnd} = envOv || xiEnvelope(engineXi(canal, side, nys.persistent, nys.q, nys.init));
   loopRAF((now)=>{
     if(container.__nysTok!==token || !document.body.contains(container)) return false;
     const elapsed=(now-start)/1000;                      // sekundy
@@ -414,7 +414,46 @@ function arrowGlyph(nys){
   if(nys.kind==="upbeatTorsional"){ const va=(nys.vdir==null?1:nys.vdir)<0?"↓":"↑";
     if(!nys.dir) return va;                                  // czysty pionowy (np. kanał przedni — downbeat bez torsji)
     return nys.dir<0?`${va} ↺`:`${va} ↻`; }
+  if(!nys.dir) return "•";                                   // poziomy NIEROZSTRZYGNIĘTY (Bow & Lean: wododział / kanał pusty — ocena II V5)
   return nys.dir<0?"⟵":"⟶";
+}
+
+/* ============ SVG: mapa wododziału Bow & Lean (ocena II, V5/W5) ============
+   Łuk kanału poziomego 3–267.3° ze strefami odpowiedzi BLT policzonymi Z SILNIKA (bltZones —
+   przemiatanie φ₀ z adhezją świeżego depozytu): zielona = pełna reguła Choung (skłon→chora
+   I odchylenie→zdrowa), bursztynowa = wzorzec odwrócony, szara = mieszany; wyblakłe = odpowiedź
+   podprogowa (< XI_CARD). Mapa opisuje geometrię TEGO modelu (jeden atlas, ramka Reida). */
+function bltWatershedSVG(side, curPhi0){
+  const pts=bltZones(side);
+  const cx=150, cy=126, R=88, W=20;
+  const pt=(deg,r)=>{ const a=deg*Math.PI/180; return {x:cx+(r??R)*Math.sin(a), y:cy-(r??R)*Math.cos(a)}; };
+  const arc=(a0,a1,color,op)=>{ const p0=pt(a0), p1=pt(a1);
+    return `<path d="M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${R} ${R} 0 ${(a1-a0)>180?1:0} 1 ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}" stroke="${color}" stroke-width="${W}" fill="none" stroke-linecap="butt" opacity="${op}"/>`; };
+  const segs=[]; let run=null;
+  for(const p of pts){ const key=p.zone+(p.sub?"#s":"");
+    if(!run || run.key!==key){ run={key, zone:p.zone, sub:p.sub, a0:p.phi0-2.5, a1:p.phi0+2.5}; segs.push(run); }
+    else run.a1=p.phi0+2.5; }
+  const col={choung:"#3a8f6f", reversed:"#b0813f", mixed:"#8a93a6"};
+  const arcs=segs.map(s=>arc(Math.max(3,s.a0), Math.min(267.3,s.a1), col[s.zone], s.sub?0.33:0.95)).join("");
+  const tick=(deg)=>{ const p0=pt(deg,R-14), p1=pt(deg,R+14);
+    return `<line x1="${p0.x.toFixed(1)}" y1="${p0.y.toFixed(1)}" x2="${p1.x.toFixed(1)}" y2="${p1.y.toFixed(1)}" stroke="var(--muted)" stroke-width="1.4"/>`; };
+  const label=(deg,txt,r)=>{ const p=pt(deg,r??R+24), anchor=p.x>cx+6?"start":(p.x<cx-6?"end":"middle");
+    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" font-size="10" fill="var(--muted)" text-anchor="${anchor}" dominant-baseline="middle">${txt}</text>`; };
+  const rest=pt(199.8);
+  const restDot=`<circle cx="${rest.x.toFixed(1)}" cy="${rest.y.toFixed(1)}" r="4" fill="#D4DEE8" stroke="#22303e" stroke-width="1.2"/>`;
+  const cur = curPhi0!=null ? (()=>{ const c=pt(curPhi0);
+    return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="6" fill="var(--primary)" stroke="#fff" stroke-width="2"/>`; })() : "";
+  return `<svg viewBox="0 0 300 252" style="width:100%;max-width:340px;display:block;margin:0 auto">
+    ${arcs}
+    ${tick(3)}${tick(267.3)}${tick(190)}
+    ${label(3, t("bańka (φ=3°)","ampulla (φ=3°)"))}
+    ${label(267.3, t("ujście (267°)","exit (267°)"))}
+    ${label(190, t("wododział skłonu 190°","bow watershed 190°"))}
+    ${restDot}${label(199.8, t("spoczynek 199,8°","rest 199.8°"), R+34)}
+    ${cur}${curPhi0!=null?label(curPhi0, "φ₀", R-30):""}
+    <text x="${cx}" y="${cy-6}" font-size="11" fill="var(--muted)" text-anchor="middle">${t("kanał poziomy","horizontal canal")}</text>
+    <text x="${cx}" y="${cy+10}" font-size="10" fill="var(--muted)" text-anchor="middle">${t("strona","side")} ${side==="P"?t("prawa","right"):t("lewa","left")}</text>
+  </svg>`;
 }
 
 /* ============ SVG: mechanizm otolitu (kanalo vs kupulo) ============ */
@@ -926,7 +965,9 @@ function renderDiag(){
   const antMode = isDix && state.dixObs==="ant";          // zaobserwowano downbeat → kanał PRZEDNI
   const effCanal = antMode ? "anterior" : D.canal;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
-  const phases = D.phases(A,v).map(ph => antMode
+  const rawPhases = D.phases(A, v, state.bltScenario);      // 3. argument: scenariusz historii Bow & Lean (inne testy go ignorują)
+  const bltMeta = rawPhases.blt || null;                    // metadane scenariusza (właściwość na tablicy — .map ją gubi, więc łapiemy tu)
+  const phases = rawPhases.map(ph => antMode
     ? { ...ph, nys: nysFromGeom("anterior", effSide, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),   // TA SAMA poza co reszta aplikacji (było własne qSupineYaw = zwis 10° zamiast opisanych 20°)
         label: t("ku dołowi — czysty downbeat (kanał przedni)","downward — pure downbeat (anterior canal)"),
         note: t(`To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.`,`This is NOT the posterior canal. Downbeat in the Dix-Hallpike indicates the ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}) — the same plane as the posterior canal of the lower ear (LARP/RALP). Head positioning unchanged; only the observed nystagmus differs.`) }
@@ -956,7 +997,7 @@ function renderDiag(){
         <div class="panelbox"><h4>${t("Głowa (z góry)","Head (top-down)")}</h4><div data-dialnys="${i}">${headDial(phs,"topDownBehind")}</div></div></div>
       <div class="panelbox" style="margin-top:10px"><h4>${t("Widok frontalny","Frontal view")}</h4>
         <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-nys="${i}">${eyesSVG()}</div><span class="emk">L</span></div>
-        <div class="nyslabel"><span class="arrow">${arrowGlyph(ph.nys)}</span><span>${ph.label}${ph.nys.persistent?t(" · uporczywy"," · persistent"):t(" · przemijający"," · transient")}</span></div>
+        <div class="nyslabel"><span class="arrow">${arrowGlyph(ph.nys)}</span><span>${ph.label}${ph.nys.unresolved?"":(ph.nys.persistent?t(" · uporczywy"," · persistent"):t(" · przemijający"," · transient"))}</span></div>
         ${gravArrowFor(phs)}</div>
       <div class="note">${ph.note}</div>`;};
   const phaseHTML = phases.length===2
@@ -988,6 +1029,49 @@ function renderDiag(){
       </div>
       <div class="note">${note}</div></div>`;
   })() : "";
+  // ===== Bow & Lean: scenariusze historii pozycyjnej + reguła kliniczna + mapa wododziału (ocena II, V5) =====
+  const isBlt = state.testKey==="bowlean";
+  const bltPanel = isBlt ? (()=>{
+    if(v==="cupulo") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Kupulolitiaza: ciężki osklepek reaguje na sam kierunek grawitacji — wynik NIE zależy od historii pozycyjnej (scenariusze dotyczą postaci kanalolitycznej). Test powtarzalny — to jego cecha różnicująca.","Cupulolithiasis: the heavy cupula responds to the direction of gravity itself — the result does NOT depend on positional history (the scenarios apply to the canalithiasis form). The test is repeatable — its differentiating feature.")}</div></div>`;
+    const scen=state.bltScenario||"textbook";
+    const btn=k=>{ const ini=bltInit(A,k);
+      const small = ini.exitedInHistory ? t("kanał opróżniony","canal emptied")
+        : ini.phi0!=null ? `φ₀ ≈ ${Math.round(ini.phi0)}°` : t("φ₀ ≈ 200° (spoczynek)","φ₀ ≈ 200° (rest)");
+      return `<button class="opt" aria-pressed="${scen===k}" onclick="setBltScenario('${k}')"><b>${BLT_HISTORY[k].label}</b><small>${small}</small></button>`; };
+    const ini=bltInit(A,scen);
+    const banner = ini.exitedInHistory
+      ? t("Historia pozycyjna OPRÓŻNIŁA kanał (złóg wpadł do łagiewki, zanim test się zaczął) — obie fazy będą nieme.","The positional history EMPTIED the canal (the debris fell into the utricle before the test began) — both phases will be mute.")
+      : ini.phi0!=null
+        ? t(`Scenariusz ustala położenie złogu: φ₀ ≈ ${Math.round(ini.phi0)}° — POLICZONE symulacją historii przez silnik, nie wpisane. Strzałki i napisy poniżej to WYNIK symulacji dla tego położenia (złóg świeżo przemieszczony — bez bramki adhezji), nie reguła.`,`The scenario pins the debris position: φ₀ ≈ ${Math.round(ini.phi0)}° — COMPUTED by simulating the history through the engine, not typed in. The arrows and labels below are the SIMULATION RESULT for this position (freshly displaced debris — no adhesion gate), not a rule.`)
+        : t("Start nieoznaczony = spoczynek modelu φ₀ ≈ 200°, czyli 9,9° ZA wododziałem skłonu (190°), z pełną adhezją — model uczciwie NIE rozstrzyga kierunku. Tak wygląda pacjent bez znanej historii pozycyjnej.","Start indeterminate = the model's rest φ₀ ≈ 200°, i.e. 9.9° BEYOND the bow watershed (190°), with full adhesion — the model honestly does NOT resolve the direction. This is the patient with no known positional history.");
+    return `<div class="obsrow"><div class="obslabel">${t("Historia pozycyjna przed testem (ustala położenie złogu):","Positional history before the test (pins the debris position):")}</div>
+      <div class="seg" style="flex-wrap:wrap">${Object.keys(BLT_HISTORY).map(btn).join("")}</div>
+      <div class="note" style="margin-top:8px">${banner}</div></div>`;
+  })() : "";
+  const bltExtras = isBlt ? (()=>{
+    const ruleTxt=t("Reguła kliniczna (Choung 2006): skłon → ucho chore, odchylenie → zdrowe; w postaci apogeotropowej odwrotnie.","Clinical rule (Choung 2006): bow → affected ear, lean → healthy; reversed in the apogeotropic form.");
+    let badge, badgeCol="#3a8f6f";
+    if(v==="cupulo"){ badge=t("model ZGODNY z regułą apogeotropową — kierunek liczy fizyka (cel przy osklepku)","model AGREES with the apogeotropic rule — the direction is computed by physics (target at the cupula)"); }
+    else if(bltMeta && bltMeta.exitedInBow && (bltMeta.bowXi||0)<-0.23){ badge=t("skłon MYLI (bije ku zdrowej — złóg za wododziałem) i usuwa złóg z kanału: test zadziałał jak manewr","the bow MISLEADS (beats toward healthy — debris beyond the watershed) and removes the debris: the test acted as a maneuver"); badgeCol="#b0813f"; }
+    else if(bltMeta && (bltMeta.exitedInHistory || bltMeta.exitedInBow)){ badge=t("kanał opróżniony — reguły nie ma na czym testować (test zadziałał jak manewr)","canal emptied — nothing left to test the rule on (the test acted as a maneuver)"); badgeCol="#8a93a6"; }
+    else if(bltMeta && bltMeta.bowXi>0 && bltMeta.leanXi<0 && Math.abs(bltMeta.bowXi)>0.1){ badge=t("model ZGODNY z regułą w tym scenariuszu — reguła Choung WYNIKA tu z fizyki","model AGREES with the rule in this scenario — the Choung rule FOLLOWS from physics here"); }
+    else if(bltMeta && Math.max(Math.abs(bltMeta.bowXi||0),Math.abs(bltMeta.leanXi||0))<0.12){ badge=t("model NIE ROZSTRZYGA — złóg na wododziale (tak wygląda 11,5–45% chorych bez odpowiedzi BLT)","the model DOES NOT RESOLVE it — debris on the watershed (this is what the 11.5–45% of BLT non-responders look like)"); badgeCol="#8a93a6"; }
+    else { badge=t("model PRZECIWNY regule w tym scenariuszu — złóg za wododziałem","model OPPOSES the rule in this scenario — debris beyond the watershed"); badgeCol="#b0813f"; }
+    const ruleCard=`<div class="card" style="margin-bottom:4px"><div class="obslabel" style="margin-bottom:4px">${ruleTxt}</div>
+      <div style="display:inline-block;padding:4px 10px;border-radius:12px;background:${badgeCol}22;border:1px solid ${badgeCol};font-size:12.5px;color:#D4DEE8">${badge}</div></div>`;
+    const mapCard = v==="canalo" ? `<div class="card" style="margin-bottom:4px">
+      <div class="obslabel" style="margin-bottom:6px">${t("Mapa wododziału — od czego zależy wynik BLT","Watershed map — what the BLT outcome depends on")}</div>
+      ${bltWatershedSVG(A, bltMeta?bltMeta.phi0:null)}
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:6px">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3a8f6f"></span> ${t("pełna reguła Choung","full Choung rule")}</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b0813f"></span> ${t("wzorzec odwrócony","reversed pattern")}</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#8a93a6"></span> ${t("mieszany","mixed")}</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3a8f6f;opacity:.33"></span> ${t("odpowiedź podprogowa","subthreshold response")}</span>
+      </div>
+      <div class="note">${t("Kierunek, obecność i siła odpowiedzi zależą od tego, GDZIE złóg leży przed testem — a to ustala ostatnia godzina życia pacjenta, nie anatomia. Pełną regułę Choung daje ~68% możliwych położeń (z progiem widoczności ~60%) — ten sam rząd co kliniczne odsetki poprawnych odpowiedzi; klinicznie BLT jest niemy lub mylący u 11,5–45% chorych (Choung 11,5% · Lee 20% · Kim 45%). Domyślny spoczynek modelu (199,8°) leży 9,9° za wododziałem skłonu. Mapa policzona z silnika dla geometrii tego modelu (jeden atlas, ramka Reida).","The direction, presence and strength of the response depend on WHERE the debris lies before the test — set by the patient's last hour, not by anatomy. The full Choung rule holds for ~68% of possible positions (~60% with the visibility threshold) — the same order as the clinical rates of correct responses; clinically the BLT is mute or misleading in 11.5–45% of patients (Choung 11.5% · Lee 20% · Kim 45%). The model's default rest (199.8°) lies 9.9° beyond the bow watershed. Map computed from the engine for this model's geometry (a single atlas, Reid's frame).")}</div>
+    </div>` : "";
+    return ruleCard + mapCard;
+  })() : "";
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
@@ -998,7 +1082,7 @@ function renderDiag(){
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
       </div></div>` : ""}
-    ${phaseHTML}${fatPanel}
+    ${bltPanel}${phaseHTML}${fatPanel}${bltExtras}
     ${(()=>{
       const interp = v0 => antMode
         ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)

@@ -249,15 +249,18 @@ function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POS
 //   postaci uporczywej dawało tEnd 18,5 s przeciw 29,8–39,8 s dla przejściowej, czyli oczopląs „uporczywy"
 //   zatrzymywał się PIERWSZY — dokładne odwrócenie cechy różnicującej, której uczy ta sama karta
 //   („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno 60 s = próg kliniczny 1 min z kryteriów Bárány.
-function engineXi(canal, side, persistent, q){
+function engineXi(canal, side, persistent, q, init){
   // pivot:"body" — badany jest KŁADZIONY z siadu (rusza całe ciało), a nie sam obraca głowę.
   const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:40, pivot:"body"}];
   // q0 = POZYCJA WYJŚCIOWA (siad): bez niej pierwszy segment interpolował „z samego siebie", czyli test
   // zaczynał się już W pozycji prowokującej — złóg nie dostawał przejścia, które go w ogóle rusza.
   const q0=[1,0,0,0];
+  // init {phi0, settled} (ocena II, V5): warunki początkowe scenariusza historii pozycyjnej (Bow & Lean) —
+  // obwiednia animacji liczy się z TEGO SAMEGO stanu, z którego karta wzięła kierunek. Kupulolitiaza bez
+  // wpływu (brak cząstki). Brak init = dokładnie dotychczasowa ścieżka.
   return persistent
     ? Vestibular.simulateCupulolith({canal, side, timeline, q0})
-    : Vestibular.simulateCanalith({canal, side, timeline, q0});
+    : Vestibular.simulateCanalith({canal, side, timeline, q0, ...(init ? {phi0:init.phi0, settled:init.settled} : {})});
 }
 // znormalizowana obwiednia czasowa z ξ(t): env(sekundy)∈[0,1] oraz tEnd (gdy |ξ|<3% szczytu po szczycie)
 function xiEnvelope(sim){
@@ -521,6 +524,77 @@ const featsByVariant = v => v==="canalo"
   ? [t("Latencja 1–5 s","Latency 1–5 s"),t("Przemijający (<60 s)","Transient (<60 s)"),t("Wyczerpuje się","Fatigues")]
   : [t("Bez latencji","No latency"),t("Uporczywy (>60 s)","Persistent (>60 s)"),t("Nie wyczerpuje się","Does not fatigue")];
 
+/* ============ Bow & Lean: scenariusze historii pozycyjnej (ocena II, V5 — rozdział E) ============
+   WODODZIAŁ (R8/R10): w kanalolitiazie HC obecność, kierunek i amplituda odpowiedzi BLT zależą od
+   położenia złogu NA STARCIE, a to ustala historia pozycyjna pacjenta — nie anatomia. Domyślny
+   spoczynek modelu (restPhi 199.8°) leży 9.9° ZA wododziałem skłonu (189.9°), a napęd skłonu (0.026)
+   nie zrywa adhezji (fStat 0.04) — stąd bez znanej historii model UCZCIWIE nie rozstrzyga kierunku.
+   Preset = historia jako TIMELINE PÓZ; φ₀ jest WYPROWADZANE tą samą symulacją, która liczy test
+   (wzorzec derivedHold: liczba jest wynikiem, nie stałą — nie zestarzeje się przy rekalibracji
+   geometrii). settled:false = złóg świeżo przemieszczony (V3, bez bramki adhezji). STRZAŁKA I NAPIS
+   pochodzą z JEDNEGO ξ (bltDirWord) — sprzeczność strzałka↔napis jest strukturalnie niemożliwa.
+   Kupulolitiaza: scenariusz BEZ wpływu (brak cząstki w świetle) — silnik emergentnie odtwarza
+   „BLT powtarzalny w trwałej cupulopatii" (poprawiona H5); kierunki kupulo liczy fizyka od V4. */
+const BLT_HISTORY = {
+  textbook:  { get label(){return t("Po nocy na boku chorym","After a night on the affected side");}, settled:false,
+               steps: A => [{body:A==="P"?"sideR":"sideL", yaw:0, face:"fwd", hold:300}, {body:"sit", yaw:0, face:"fwd", hold:30}] },
+  afterDix:  { get label(){return t("Po teście Dix–Hallpike'a","After a Dix–Hallpike test");}, settled:false,
+               steps: A => [{body:"supineHang", yaw:A==="P"?45:-45, face:"up", hold:40}, {body:"sit", yaw:0, face:"fwd", hold:30}] },
+  afterRoll: { get label(){return t("Po teście Roll (oba boki)","After a Roll test (both sides)");}, settled:false,
+               steps: A => [{body:"supineFlex", yaw:A==="P"?90:-90, face:"up", hold:20}, {body:"supineFlex", yaw:A==="P"?-90:90, face:"up", hold:20}, {body:"sit", yaw:0, face:"fwd", hold:30}] },
+  neutral:   { get label(){return t("Długi siad — start nieoznaczony","Prolonged sitting — start indeterminate");}, settled:true, steps:null },
+};
+const _bltMemo=new Map();                        // sondowanie scenariusza = 1-2 symulacje; pamiętamy per (strona, scenariusz)
+// φ₀ presetu = WYNIK symulacji historii przez silnik (nie wpisana stała).
+function bltInit(side, scen){
+  const sc=BLT_HISTORY[scen]||BLT_HISTORY.neutral;
+  if(!sc.steps) return {phi0:null, settled:true, exitedInHistory:false};
+  const k="init#"+side+"#"+scen; if(_bltMemo.has(k)) return _bltMemo.get(k);
+  const timeline=sc.steps(side).map(st=>({q:stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8, tHold:st.hold, pivot:"body"}));
+  const sim=Vestibular.simulateCanalith({canal:"horizontal", side, q0:[1,0,0,0], timeline});
+  const out={phi0: sim.final.exited?null:sim.final.phi, settled:sc.settled, exitedInHistory:sim.final.exited};
+  _bltMemo.set(k,out); return out;
+}
+// TEST jako JEDNA oś czasu (skłon→siad→odchylenie) — tak test jest wykonywany, a wykonany skłon
+// masywnie przemieszcza złóg (w sekwencji odpowiedź lean bywa 2× silniejsza niż w izolacji).
+function bltPhases(side, scen){
+  const k="ph#"+side+"#"+scen; if(_bltMemo.has(k)) return _bltMemo.get(k);
+  const init=bltInit(side, scen);
+  const out={init, bow:{xi:0, exited:false}, lean:{xi:0}, exited:init.exitedInHistory};
+  if(!init.exitedInHistory){
+    const qSit=[1,0,0,0], qBow=stepHeadQ("sit",0,"down"), qLean=stepHeadQ("sit",0,"up");
+    const segs=[{q:qBow,tTrans:0.8,tHold:30,pivot:"neck"},{q:qSit,tTrans:0.8,tHold:5,pivot:"neck"},{q:qLean,tTrans:0.8,tHold:30,pivot:"neck"}];
+    const sim=Vestibular.simulateCanalith({canal:"horizontal", side, q0:qSit, phi0:init.phi0, settled:init.settled, timeline:segs});
+    const t1=30.8, t2=36.6;                      // granice faz (tTrans+tHold narastająco)
+    for(const s of sim){
+      if(s.t<=t1){ if(Math.abs(s.xi)>Math.abs(out.bow.xi)) out.bow.xi=s.xi; if(s.exited) out.bow.exited=true; }
+      else if(s.t>t2 && !out.bow.exited){ if(Math.abs(s.xi)>Math.abs(out.lean.xi)) out.lean.xi=s.xi; }
+    }
+    out.exited=sim.final.exited;
+  }
+  _bltMemo.set(k,out); return out;
+}
+// napis kierunku GENEROWANY z tego samego ξ/znaku co strzałka (jedno źródło prawdy).
+const bltDirWord=(A,positive)=> positive
+  ? t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`)
+  : t(`bije ku stronie zdrowej (${sideN(otherSide(A))})`,`beats toward the healthy side (${sideN(otherSide(A))})`);
+// MAPA WODODZIAŁU (rycina dydaktyczna): przemiatanie φ₀ co 5° z adhezją świeżego depozytu —
+// per punkt znak/siła odpowiedzi skłonu i odchylenia (fazy IZOLOWANE: mapa opisuje położenie startowe).
+function bltZones(side){
+  const k="zones#"+side; if(_bltMemo.has(k)) return _bltMemo.get(k);
+  const qSit=[1,0,0,0], qBow=stepHeadQ("sit",0,"down"), qLean=stepHeadQ("sit",0,"up");
+  const peak=(phi0,q)=>{ const sim=Vestibular.simulateCanalith({canal:"horizontal", side, q0:qSit, phi0, settled:false,
+      timeline:[{q, tTrans:0.8, tHold:30, pivot:"neck"}]});
+    let p=0; for(const s of sim) if(Math.abs(s.xi)>Math.abs(p)) p=s.xi; return p; };
+  const pts=[];
+  for(let phi0=5; phi0<=265; phi0+=5){
+    const b=peak(phi0,qBow), l=peak(phi0,qLean);
+    const ib=Vestibular.dynNystagmus("horizontal", side, b).intensity, il=Vestibular.dynNystagmus("horizontal", side, l).intensity;
+    const zone = (b>0 && l<0) ? "choung" : (b<0 && l>0) ? "reversed" : "mixed";
+    pts.push({phi0, bow:+b.toFixed(3), lean:+l.toFixed(3), zone, sub: Math.max(ib,il)<XI_CARD});
+  }
+  _bltMemo.set(k,pts); return pts;
+}
 const DIAG={
   dix:{ get name(){return t("Manewr Dix–Hallpike","Dix–Hallpike test");}, get tests(){return t("kanał tylny","posterior canal");}, canal:"posterior",
     get intro(){return t("Z siadu obróć głowę 45° w stronę badaną, połóż szybko na plecach z głową odchyloną ~20° poniżej poziomu.","From sitting, turn the head 45° toward the tested side, then lay the patient supine quickly with the head extended ~20° below horizontal.");},
@@ -560,21 +634,66 @@ const DIAG={
     get intro(){return t("W siadzie wykonaj skłon głowy w przód (bow), następnie odchylenie do tyłu (lean).","While sitting, bend the head forward (bow), then tilt it back (lean).");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? t(`Geotropowy: skłon (bow) bije ku stronie chorej → ${sideN(A)}.`,`Geotropic: the bow beats toward the affected side → ${sideN(A)}.`)
-      : t(`Apogeotropowy: kierunki odwrócone — skłon bije ku stronie zdrowej.`,`Apogeotropic: directions reversed — the bow beats toward the healthy side.`),
-    phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
-      return [
-        {ptitle:t("Skłon w przód (bow)","Forward bend (bow)"), ppos:t("Siad, skłon tułowia w przód ~45°, nos ku podłodze","Sitting, trunk bent forward ~45°, nose toward the floor"),
-         body:"sit", yaw:0, face:"down",
-         nys: nysFromGeom("horizontal", A, v, stepHeadQ("sit", 0, "down"), "flat"),
-         label: geo?t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`):t(`bije ku stronie zdrowej (${sideN(H)})`,`beats toward the healthy side (${sideN(H)})`),
-         note: geo?t("Geotropowy: skłon wskazuje stronę chorą.","Geotropic: the bow indicates the affected side."):t("Apogeotropowy: kierunek odwrócony.","Apogeotropic: direction reversed.")},
-        {ptitle:t("Odchylenie do tyłu (lean)","Backward tilt (lean)"), ppos:t("Siad, głowa odchylona do tyłu","Sitting, head tilted back"),
-         body:"sit", yaw:0, face:"up",
-         nys: nysFromGeom("horizontal", A, v, stepHeadQ("sit", 0, "up"), "flat"),
-         label: geo?t(`bije ku stronie zdrowej (${sideN(H)})`,`beats toward the healthy side (${sideN(H)})`):t(`bije ku stronie chorej (${sideN(A)})`,`beats toward the affected side (${sideN(A)})`),
-         note: geo?t("Przy odchyleniu kierunek odwraca się (ku zdrowej).","On leaning back, the direction reverses (toward the healthy side)."):t("Apogeotropowy: odchylenie bije ku chorej.","Apogeotropic: the lean beats toward the affected side.")},
-      ];
+      ? t("Kierunek i obecność odpowiedzi zależą od położenia złogu na starcie, a to ustala HISTORIA POZYCYJNA — wybierz scenariusz nad fazami. Reguła Choung (skłon→chora, odchylenie→zdrowa) WYNIKA z fizyki, gdy złóg leży przed wododziałem skłonu (φ₀<190°).","The direction and presence of the response depend on where the debris starts, which is set by the POSITIONAL HISTORY — pick a scenario above the phases. The Choung rule (bow→affected, lean→healthy) FOLLOWS from physics whenever the debris lies before the bow watershed (φ₀<190°).")
+      : t("Apogeotropowy (kupulolitiaza): skłon bije ku stronie zdrowej, odchylenie ku chorej. Wynik NIE zależy od historii pozycyjnej (brak wolnej cząstki) — test powtarzalny w trwałej kupulopatii.","Apogeotropic (cupulolithiasis): the bow beats toward the healthy side, the lean toward the affected one. The result does NOT depend on positional history (no free particle) — the test is repeatable in persistent cupulopathy."),
+    phases:(A,v,scen)=>{ const S=scen||"textbook";
+      const mkPose=(key)=> key==="bow"
+        ? {ptitle:t("Skłon w przód (bow)","Forward bend (bow)"), ppos:t("Siad, skłon tułowia w przód ~45°, nos ku podłodze","Sitting, trunk bent forward ~45°, nose toward the floor"), body:"sit", yaw:0, face:"down"}
+        : {ptitle:t("Odchylenie do tyłu (lean)","Backward tilt (lean)"), ppos:t("Siad, głowa odchylona do tyłu","Sitting, head tilted back"), body:"sit", yaw:0, face:"up"};
+      if(v==="cupulo"){
+        // KUPULO: kierunek z FIZYKI (position, cel przy osklepku — V4); napis GENEROWANY z tej samej
+        // odpowiedzi (anat.h), więc nie może przeczyć strzałce. Scenariusz historii bez wpływu.
+        const mk=(key)=>{ const p=mkPose(key);
+          const nys=nysFromGeom("horizontal", A, v, stepHeadQ("sit", 0, key==="bow"?"down":"up"), "flat");
+          const towardA = A==="P" ? nys.anat.h>0 : nys.anat.h<0;
+          return {...p, nys, label: bltDirWord(A, towardA),
+            note: key==="bow"
+              ? t("Kupulolitiaza: ciężki osklepek reaguje na sam KIERUNEK grawitacji — bez latencji, uporczywie, niezależnie od położenia złogu (test powtarzalny).","Cupulolithiasis: the heavy cupula responds to the DIRECTION of gravity itself — no latency, persistently, regardless of debris position (repeatable test).")
+              : t("Odchylenie odwraca rzut grawitacji na osklepek → kierunek przeciwny niż w skłonie.","Leaning back reverses the gravity projection on the cupula → direction opposite to the bow.")};
+        };
+        const arr=[mk("bow"), mk("lean")];
+        arr.blt={scen:null, cupulo:true}; return arr;
+      }
+      // CANALO: strzałka + napis + obwiednia animacji z JEDNEJ symulacji sekwencji (skłon→siad→odchylenie)
+      // dla scenariusza historii pozycyjnej. |strength| < XI_CARD → karta uczciwie „model nie rozstrzyga".
+      const P=bltPhases(A, S), init=P.init;
+      const mk=(key)=>{ const p=mkPose(key), xi=P[key].xi;
+        const N=nysFromDyn("horizontal", A, xi, false);
+        const emptied = init.exitedInHistory || (key==="lean" && P.bow.exited);
+        const resolved = !emptied && N.strength>=XI_CARD;
+        const nys={kind:N.kind, dir:resolved?N.dir:0, vdir:N.vdir, strength:resolved?N.strength:0,
+                   excited:N.excited, persistent:false, canal:"horizontal", side:A,
+                   q:stepHeadQ("sit",0,key==="bow"?"down":"up"), anat:resolved?N.anat:{h:0,v:0,t:0},
+                   init:{phi0:init.phi0, settled:init.settled}, unresolved:!resolved};
+        let label, note;
+        if(emptied){
+          label = init.exitedInHistory
+            ? t("kanał opróżniony już PRZED testem","the canal was emptied BEFORE the test")
+            : t("kanał opróżniony w fazie skłonu","the canal was emptied during the bow phase");
+          note = t("Historia pozycyjna/poprzednia faza usunęła złóg z kanału — test niemy, pacjent w praktyce wyleczony (ta sama zasada, na której działa wymuszona pozycja Vannucchiego).","The positional history/previous phase removed the debris from the canal — the test is mute; in practice the patient is cured (the very principle behind Vannucchi's forced prolonged position).");
+        } else if(key==="bow" && P.bow.exited){
+          if(resolved){   // złóg ZA wododziałem, ale w zasięgu napędu: skłon bije ku ZDROWEJ (myląco!) i po drodze USUWA złóg
+            label = bltDirWord(A, xi>0) + t(" — i złóg opuszcza kanał"," — and the debris leaves the canal");
+            note = t("Złóg za wododziałem (φ₀>190°): skłon bije ku stronie ZDROWEJ — dokładnie PRZECIWNIE do reguły Choung (wynik MYLĄCY) — i jednocześnie wyprowadza złóg do łagiewki: diagnostyka wykonuje pracę manewru. Kolejne fazy i testy będą nieme.","Debris beyond the watershed (φ₀>190°): the bow beats toward the HEALTHY side — exactly OPPOSITE to the Choung rule (a MISLEADING result) — while carrying the debris into the utricle: the diagnostic does the maneuver's job. Subsequent phases and tests will be mute.");
+          } else {        // złóg tuż przy ujściu: wyjście niemal bez wychylenia osklepka
+            label = t("złóg opuszcza kanał — bez wyraźnego oczopląsu","the debris leaves the canal — no distinct nystagmus");
+            note = t("Złóg leżał przy ujściu (φ₀ blisko końca łuku): skłon dopycha go do łagiewki niemal bez wychylenia osklepka — CICHE SAMOWYLECZENIE. Kolejne fazy i testy będą nieme.","The debris lay near the exit (φ₀ close to the arc end): the bow pushes it into the utricle with barely any cupular deflection — SILENT SELF-CLEARING. Subsequent phases and tests will be mute.");
+          }
+        } else if(!resolved){
+          label = t("model nie rozstrzyga","the model does not resolve it");
+          note = t(`Złóg spoczywa na WODODZIALE skłonu (φ₀≈${Math.round(init.phi0??Vestibular.restPhi("horizontal",A))}°, szczyt 190°), a napęd (0.026) nie zrywa adhezji (próg 0.04) — model uczciwie nie wskazuje kierunku. Klinicznie BLT jest niemy lub mylący u 11,5–45% chorych; wybierz scenariusz historii, by zobaczyć, kiedy reguła działa.`,`The debris rests on the bow WATERSHED (φ₀≈${Math.round(init.phi0??Vestibular.restPhi("horizontal",A))}°, crest 190°), and the drive (0.026) does not break adhesion (threshold 0.04) — the model honestly does not pick a direction. Clinically the BLT is mute or misleading in 11.5–45% of patients; pick a history scenario to see when the rule works.`);
+        } else {
+          label = bltDirWord(A, xi>0) + (N.strength<0.25 ? t(" (słaby)"," (weak)") : "");
+          note = key==="bow"
+            ? t("Skłon przenosi złóg DOampułkowo → pobudzenie (Ewald II) → oczopląs ku uchu choremu. Reguła Choung — tu WYNIKA z fizyki, bo scenariusz ustala położenie złogu.","The bow carries the debris ampullopetally → excitation (Ewald II) → nystagmus toward the affected ear. The Choung rule — here it FOLLOWS from physics, because the scenario pins the debris position.")
+            : t("Odchylenie odwraca przepływ (ODampułkowy) → hamowanie → bije ku uchu zdrowemu, słabiej (rektyfikacja pobudzenie/hamowanie).","Leaning back reverses the flow (ampullofugal) → inhibition → beats toward the healthy ear, more weakly (excitation/inhibition rectification).");
+        }
+        return {...p, nys, label, note};
+      };
+      const arr=[mk("bow"), mk("lean")];
+      arr.blt={scen:S, phi0:init.phi0, settled:init.settled, exitedInHistory:init.exitedInHistory,
+               exitedInBow:P.bow.exited, bowXi:P.bow.xi, leanXi:P.lean.xi};
+      return arr;
     }
   },
   headhang:{ get name(){return t("Test deep head-hang","Deep head-hang test");}, get tests(){return t("kanał przedni","anterior canal");}, canal:"anterior",
@@ -644,7 +763,7 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

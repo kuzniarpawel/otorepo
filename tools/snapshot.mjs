@@ -274,6 +274,20 @@ function domOracle(h, win) {
     }
   }
   if (h.setVariant) h.setVariant('canalo'); else if (h.state) h.state.variant = 'canalo';   // higiena: nie przenoś wariantu na dalsze sekcje
+  // Bow & Lean: scenariusze historii pozycyjnej (ocena II, V5/E.4) — wyrocznia musi widzieć WSZYSTKIE
+  // stany karty (textbook jest już w diag/bowlean/{P,L}; tu pozostałe trzy, w tym „model nie rozstrzyga"
+  // i „test zadziałał jak manewr" — inaczej regresje trybu uczciwego byłyby niewidzialne).
+  for (const scen of ['afterDix', 'afterRoll', 'neutral']) {
+    for (const side of ['P', 'L']) {
+      grab(`diag/bowlean/${side}/scen-${scen}`, () => {
+        if (h.openTest) h.openTest('bowlean'); else Object.assign(h.state, { testKey: 'bowlean', screen: 'diag' });
+        if (h.setDiagSide) h.setDiagSide(side); else h.state.side = side;
+        if (h.setBltScenario) h.setBltScenario(scen); else h.state.bltScenario = scen;
+        h.render();
+      });
+    }
+  }
+  if (h.setBltScenario) h.setBltScenario('textbook'); else if (h.state) h.state.bltScenario = 'textbook';   // higiena
 
   // HINTS — presety
   for (const p of Object.keys(h.HINTS_PRESETS || {})) {
