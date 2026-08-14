@@ -1022,6 +1022,37 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
       a calibration constant, not a literature one). A sequential Roll (affected→centre→healthy) moves
       the debris between phases — the session's phase amplitudes are not a pure Ewald comparison
       (R10/Bhandari; the card says so outright).]
+     [D10 STATUS 2026-08-14 (assessment II, V15): DELIVERED-PARTIALLY — SHORT ARM + CANALITH JAM
+      (engine + pins + notes; the third UI variant/scenarios/session wait for D4 — the V12 pattern).
+      AMPULLAR SEGMENT: arm="short", φ∈[SA_MIN, 3°) — the tangent = tangAt EXTENDED onto the same
+      PCA circle (continuity at 3°: 0.000°); SA_MIN = −(360−ARC_SPAN)/2 = the midpoint of the
+      vestibular gap {PC −20.6° · AC −39.45° · HC −46.35°} (≈1.1/2.2/2.6 mm) — derived from
+      ARC_SPAN, the SPLIT of the gap = a source boundary (the atlas carries no points beyond the
+      cupula; the phenotype conclusions are insensitive to the starting depth). The cupula barrier
+      is EXPLICIT on both sides with a real arrival (the particle never crosses; a crossing = an
+      event outside the model); flow without a sign branch (the cupula is a barrier to the PARTICLE,
+      not to pressure) → the free-debris APO phenotype is EMERGENT: the Choung apo rule (bow −0.287
+      toward the healthy side / lean +0.625 toward the affected side), Roll: the plateau with the
+      affected ear down −0.375 = EXACTLY the cupulo target (contact: ξ*=CUP_WEAK·exc·drv, the same
+      formula, HC ONLY — vertical canals: contact = silence, the same choice as restPhi), healthy
+      ear down: a transient and an EXIT (the Roll itself clears the short arm — an emergent
+      rationale for Gufoni-apo/Zuma); DIFFERENCES from cupulo: a ONE-SIDED null point (8–9° toward
+      the affected side: below it the debris drains away/EXITS, above it a persistent apo; cupulo is
+      two-sided), migration latency 0.3–3 s, rep fatigability, self-clearing while sitting
+      ~20–30 s. PC-SA: a SILENT press in sitting and in the ipsilateral Dix (the Dix is negative
+      despite the disease!), moved by the deep head-hang (DOWNBEAT) — an emergent "atypical
+      positional downbeat" (an emerging category), one-shot. JAM: entry is EXPLICIT only (jam:{phi,
+      xi, thrG?, dir?, bond?}; emergence would need duct diameters — a source boundary); ξ is held
+      at jam.xi (POSITION-INDEPENDENT — "looks central"); release by a SUSTAINED excess (a mirror
+      of the adhesion gate: reserve jam.bond=0.3 g·s, a calibration choice — a transition inertia
+      spike does NOT release); map: deep head-hang 0.702 = the only standard pose above the 0.6
+      threshold → TESTABLE PREDICTION: the Epley does not free the jam (a plateau of 0.500 through
+      the whole maneuver), the Yacovino does (tRelease ~3 s, then a reversed transient and ordinary
+      canalithiasis). final: {arm, pressed, jammed, tRelease}. Oracles: the engine.shortarm/jam
+      pins + a HARD phenotype invariant (sign(short)=−sign(long) in the Roll — a throw, not a
+      pin); notes in the Roll/B&L latNote (cupulo) and in the HC-apo red flag: "a transient/
+      fatiguing apo → free debris in the short (ampullar) arm, not cupulopathy" (closing R11:
+      geo={canalo, light}, apo={cupulo, short-arm}, jam=position-independent).]
      [D2 STATUS 2026-08-14 (assessment II, V11): DELIVERED — LYING-DOWN/SITTING-UP (the DIAG card
       "lyingdown", horizontal canal). Physics: lying down (supineFlex, the Roll test's pose) shifts
       the HC equilibrium by barely ~9° (sitting 199.8° → 191.0°) — the direction of the lying-down
