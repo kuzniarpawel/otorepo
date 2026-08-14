@@ -34,7 +34,9 @@ import { MANEUVERS } from '../src/pose/maneuvers.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 let ok = 0; const bledy = [];
-const T = (tag, w, opis) => { if (w) ok++; else bledy.push(`${tag}: ${opis}`); };
+/* OTOREPO_TAGI=1 wypisuje KAZDY sprawdzany tag. Zapadka liczbowa mowi, ze przypadek zniknal,
+   ale nie ktory — bez tego trzeba by ja podniesc na slepo, czyli obejsc. */
+const T = (tag, w, opis) => { if (process.env.OTOREPO_TAGI) console.log('TAG', tag); if (w) ok++; else bledy.push(`${tag}: ${opis}`); };
 const eq = (tag, a, b) => T(tag, JSON.stringify(a) === JSON.stringify(b), `oczekiwano ${JSON.stringify(b)}, jest ${JSON.stringify(a)}`);
 
 const D = (p) => naukaDeps(p);
@@ -436,7 +438,13 @@ const KLUCZE = new Map(BIBLIOTEKA.map(p => [p.id, kluczPrzypadku(p, D(p))]));
 }
 
 /* ═══════════ M. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 576;
+/* 576 -> 575 po wprowadzeniu silnikow z ocena II. ZMIERZONE zrzutem tagow (OTOREPO_TAGI=1),
+   a nie podniesione na slepo: dla przypadku `downbeat-staly` znikly DWA przypadki
+   E3/przezyla-nie-bledna/anterior:{L,P}, a doszedl JEDEN H8/pustka-z-flaga. Znaczy to, ze
+   uporczywy downbeat przestal miec bronioną odpowiedz obwodowa (kanal przedni) i zamiast niej
+   podnosi flage — czyli model przestal tlumaczyc klasyczna ceche osrodkowa przez BPPV.
+   To zmiana POZADANA, nie utrata zakresu. */
+const OCZEKIWANE = 575;
 if (bledy.length) {
   console.error(`✗ nauka:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

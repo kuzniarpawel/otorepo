@@ -7,6 +7,12 @@ import { HINTS_PRESETS } from './actions.js';
 const state={
   mode:"treat", screen:"start",   // Blok 4: wejsciem jest ekran oparty na CELU, nie wybor modulu. Golden bez zmian: domOracle ustawia screen jawnie dla kazdego scenariusza (snapshot.mjs:305).
   side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:null, dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
+  /* Bow & Lean: scenariusz HISTORII POZYCYJNEJ (klucz BLT_HISTORY, ocena II V5). Kierunek próby
+     zależy od tego, gdzie złóg był PRZED nią — `bltPhases` bierze stąd warunki początkowe.
+     Bez tego pola silnik leci na wewnętrznym fallbacku „textbook" i wododział jest nieosiągalny.
+     PRZEŁĄCZNIKA UI NIE MA jeszcze na tej gałęzi (pakiet klinika-UI V8 siedzi w svg-screens.js,
+     które futureUI przepisał) — pole jest gotowe, ekran do niego dojdzie osobno. */
+  bltScenario:"textbook",
   diagCentral:false,   // przełącznik karty klasyfikacji: false=obwodowy (BPPV, klasyfikacja Bárány) · true=ośrodkowy (CPN)
   diagPhaseFace:0,     // odsłonięta faza karty pozycji (Bow&Lean/Roll): 0=przód/bow · 1=tył/lean. W STANIE, by przetrwać re-render (np. przełącznik 3D nie przewraca karty)
   size:"medium",                                   // rozmiar/gęstość złogu otoconiów (small|medium|big) → dynamika + holdy + animacja

@@ -169,8 +169,26 @@ const NERW_PELNY = _NV.nerveBranchLesion('P','superior',1);
   // D8: każdy scenariusz silnika jest referencją co najmniej jednego eksperymentu ALBO jest
   //     świadomie pominięty — inaczej model silnika po cichu przestaje być dostępny.
   const uzyte = new Set(EKSPERYMENTY.map(e => e.referencja));
+  /* POMINIETE SWIADOMIE — kazdy z powodem, zamiast dotychczasowej tolerancji „najwyzej jeden",
+     ktora byla liczba bez nazwiska. Te szesc presetow przyszlo z ocena II silnika (N5) i nie ma
+     jeszcze wlasnych stanowisk: napisanie ich to NOWA TRESC DYDAKTYCZNA (pytanie, parametry,
+     spodziewany obraz), a nie czesc wprowadzenia silnikow. Lista jest ZAMKNIETA: siodmy preset
+     bez stanowiska zapali wyrocznie zamiast przemknac. */
+  const POMINIETE = {
+    neuritisL:      'lustrzane odbicie neuritisR — to samo stanowisko, druga strona',
+    vmInterictal:   'migrena przedsionkowa miedzy napadami: obraz prawie prawidlowy, stanowisko wymaga wlasnego pytania',
+    labyrinthitisR: 'zapalenie blednika — czeka na stanowisko z osia sluchowa (hearingL/R)',
+    aicaR:          'zawal AICA — jw.; sedno to HIT obwodowy RAZEM z gluchota',
+    downbeat:       'oczoplas bijacy ku dolowi: obraz osrodkowy bez lateralizacji, osobny watek',
+    residual:       'zawroty resztkowe po skutecznej repozycji — faza PO luku klinicznym aplikacji',
+  };
   const nieuzyte = scen.filter(s => !uzyte.has(s));
-  T('D8/scenariusze-uzyte', nieuzyte.length <= 1, `scenariusze bez eksperymentu: ${nieuzyte.join(', ')}`);
+  const bezPowodu = nieuzyte.filter(s => !POMINIETE[s]);
+  T('D8/scenariusze-uzyte', bezPowodu.length === 0,
+    `scenariusze bez eksperymentu i bez powodu: ${bezPowodu.join(', ')}`);
+  const martwe = Object.keys(POMINIETE).filter(s => !scen.includes(s) || uzyte.has(s));
+  T('D8b/lista-pominietych-zywa', martwe.length === 0,
+    `na liscie pominietych stoja scenariusze, ktore juz maja stanowisko albo zniknely: ${martwe.join(', ')}`);
 }
 
 /* ═══════════ E. RESET DO REFERENCJI ═══════════
@@ -257,15 +275,18 @@ const NERW_PELNY = _NV.nerveBranchLesion('P','superior',1);
   const wysokiTon = D.obraz(D.pacjent({ toneR: 200 }));
   const prawidlowyTon = D.obraz(D.pacjent({ toneR: 150 }));
   const hcPatologiczny = (r) => JSON.stringify(r.vhit && r.vhit.HC || {}).includes('"abnormal":true');
-  T('H1a/nasycenie-przy-200', hcPatologiczny(wysokiTon),
-    'silnik przestal nasycac aferentu przy tonie 200 Hz — popraw opis granicy przy toneL/toneR');
+  /* ODWROCONE PO OCENIE II: aferent NIE nasyca sie juz przy predkosci pchniecia (zmierzone 150-300 Hz).
+     Bramka pilnuje teraz tego, co jest CECHA ROZNICUJACA fazy drazniena Meniere'a: vHIT zostaje
+     prawidlowy przy KAZDYM tonie. Gdyby silnik wrocil do psucia vHIT tonem, zapali sie natychmiast. */
+  T('H1a/ton-nie-psuje-vhit', !hcPatologiczny(wysokiTon),
+    'silnik znowu psuje vHIT samym tonem (200 Hz) mimo sprawnego kanalu — popraw opis granicy przy toneL/toneR');
   T('H1b/150-jeszcze-nie', !hcPatologiczny(prawidlowyTon),
     'ton 150 Hz (faza drazniena Meniere) zaczal psuc vHIT — popraw opis granicy przy toneL/toneR');
   T('H1c/granica-nazwana', gr('toneL') && gr('toneR'), 'ton musi niesc nazwana granice modelu');
 
   // H2: pelne wypadniecie to w tym silniku gain 0,35, a nie 0.
   const pelne = D.pacjent(NERW_PELNY);
-  eq('H2a/pelne-wypadniecie-035', Math.round(pelne.gainR * 100) / 100, 0.35);
+  eq('H2a/pelne-wypadniecie-010', Math.round(pelne.gainR * 100) / 100, 0.10);
   T('H2b/granica-nazwana', gr('gainL') && gr('gainR'), 'wzmocnienie musi niesc nazwana granice modelu');
 
   // H3: odczyt VEMP jest ASYMETRIA — obustronna utrata jest w opisie badania NIEMA.
@@ -274,14 +295,19 @@ const NERW_PELNY = _NV.nerveBranchLesion('P','superior',1);
   const obustronnie = D.obraz(D.pacjent({ sacculeR: 0, sacculeL: 0 }));
   T('H3a/jednostronnie-widac', zdaniaO(jednostronnie, /VEMP/i).length >= 1,
     'jednostronna utrata woreczka musi dac zdanie o VEMP');
-  T('H3b/obustronnie-nieme', zdaniaO(obustronnie, /VEMP/i).length === 0,
+  /* ODWROCONE: obustronna utrata byla NIEMA (odczyt szedl z asymetrii, wiec jej nie widzial) i to
+     wlasnie jest pulapka kliniczna. Nowy silnik nazywa ja wprost — bramka wymaga tego zdania. */
+  T('H3b/obustronnie-nazwane', zdaniaO(obustronnie, /VEMP/i).length >= 1,
     'silnik zaczal widziec obustronna utrate VEMP — popraw opis granicy przy sacculeL/R i utricleL/R');
   T('H3c/granica-nazwana', gr('sacculeL') && gr('sacculeR') && gr('utricleL') && gr('utricleR'),
     'otolity musza niesc nazwana granice modelu');
 
   // H4: izolowany ubytek kanalu PIONOWEGO — lokalizacja obwodowa i „objaw osrodkowy" naraz.
   const pionowy = D.obraz(D.pacjent({ tonePcR: 0, gainPcR: 0.35 }));
-  T('H4a/sprzecznosc-istnieje', (pionowy.centralSigns || []).length >= 1 && (pionowy.peripheralSigns || []).length >= 1,
+  /* ODWROCONE: izolowany ubytek kanalu pionowego dawal FALSZYWY objaw osrodkowy. Nowy silnik daje
+     sama lokalizacje obwodowa (zmierzone: 4 obwodowe, 0 osrodkowych) — bramka pilnuje, ze falszywy
+     alarm nie wroci. */
+  T('H4a/bez-falszywego-osrodka', (pionowy.centralSigns || []).length === 0 && (pionowy.peripheralSigns || []).length >= 1,
     'silnik przestal wystawiac objaw osrodkowy przy izolowanym ubytku kanalu pionowego — popraw opis granicy');
   T('H4b/granica-nazwana', gr('tonePcL') && gr('tonePcR') && gr('toneAcL') && gr('toneAcR'),
     'kanaly pionowe musza niesc nazwana granice modelu');
@@ -297,7 +323,7 @@ const NERW_PELNY = _NV.nerveBranchLesion('P','superior',1);
 }
 
 /* ═══════════ I. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 557;
+const OCZEKIWANE = 580;   /* 557 + 22 (hearingL/hearingR w slowniku) + D8b */
 if (bledy.length) {
   console.error(`✗ lab:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

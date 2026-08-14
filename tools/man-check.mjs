@@ -20,7 +20,7 @@ import {
 } from '../src/app/man-model.js';
 import { manDeps } from '../src/app/man-deps.js';
 import { nowyZegar, startZegara, pauzaZegara, wznowZegar, resetZegara, odliczono, ustawOdliczono, odnotujLuke, PROG_LUKI_MS } from '../src/runtime/hold-clock.js';
-import { MANEUVERS, CANALS, CANAL_OF, DIAG, recommend, sizedSeconds, LEAN_G, BASE_G, SIDE_FORMY } from '../src/pose/maneuvers.js';
+import { MANEUVERS, CANALS, CANAL_OF, DIAG, recommend, sizedSeconds, stepGravity, SIDE_FORMY } from '../src/pose/maneuvers.js';
 import { state } from '../src/app/state.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -117,7 +117,12 @@ for (const k of ['epley', 'semont', 'yacovino']) {
   T('PZ4/leanR-LEWY', /boku lewym/.test(pl('leanR', 'fwd')), 'leanR to bok LEWY — odwrócenie względem sideR');
   // Sprawdzenie wobec FIZYKI, a nie wobec komentarza: gHead dla pozy na boku ma znak wzdłuż osi
   // usznej (x>0 = grawitacja ku PRAWEMU uchu = pacjent leży na prawym boku).
-  const g = (b) => LEAN_G[b + '|fwd'] || BASE_G[b + '|fwd'];
+  /* BASE_G/LEAN_G zniknely razem z przebudowa pozy (ocena II: POSE_SPEC zastapil tablice
+     grawitacji). Pytanie bramki sie nie zmienilo — czy nazwa boku zgadza sie ze ZNAKIEM
+     grawitacji w ramce glowy — wiec pytamy o to samo, tylko przez publiczne stepGravity,
+     ktore liczy g z POSE_SPEC. To jest MOCNIEJSZE zrodlo: mierzy poze faktycznie uzywana
+     przez manewr, a nie tablice obok niej. */
+  const g = (b) => stepGravity(b, 0, 'fwd');
   T('PZ5/zgodne-z-fizyka', g('leanL')[0] > 0 && g('leanR')[0] < 0 && g('sideL')[0] < 0 && g('sideR')[0] > 0,
     'nazwy boków muszą zgadzać się ze znakiem grawitacji w ramce głowy, nie z intuicją');
   T('PZ6/komplet', Object.keys(POZYCJE_CIALA).every(b => !!pl(b, 'fwd')), 'każda poza ciała ma nazwę');

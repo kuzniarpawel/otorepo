@@ -252,9 +252,14 @@ for (const v of ['p1', 'm1', 'zero']) {
   const bezSily = new Set([...zSila].map(s => s.split('#')[0]));
   eq('SUG6/roll-z-sila', zSila.size, 4);
   eq('SUG6b/roll-bez-sily', bezSily.size, 2);
-  // …i to samo dla bow&leana, gdzie dwuznaczność jest STRUKTURALNA: siła jest symetryczna,
-  // więc odciski zlewają się parami niezależnie od tego, czy ją liczymy.
-  eq('SUG7/bowlean-dwuznacznosc-strukturalna', new Set(kandydatury('bowlean').map(k => odciskPredykcji(k, 'bowlean', DEPS))).size, 2);
+  /* BOW & LEAN PO OCENIE II SILNIKA (wododzial R8). Do tej pory dwuznacznosc byla STRUKTURALNA:
+     sila jest symetryczna, wiec odciski zlewaly sie parami — 4 kandydatury dawaly 2 odciski.
+     Nowy silnik liczy probe z WARUNKOW POCZATKOWYCH (BLT_HISTORY): przy ZNANEJ historii pozycyjnej
+     — a domyslny scenariusz `textbook` wlasnie taka jest — kierunek przestaje byc symetryczny
+     i kazda kandydatura ma wlasny odcisk. ZMIERZONE: 4.
+     To nie jest osłabienie ostroznosci, tylko jej przeniesienie we wlasciwe miejsce: bez znanej
+     historii silnik nadal ODMAWIA rozstrzygniecia strony (patrz BL2/BL3 nizej), zamiast zgadywac. */
+  eq('SUG7/bowlean-rozdziela-przy-znanej-historii', new Set(kandydatury('bowlean').map(k => odciskPredykcji(k, 'bowlean', DEPS))).size, 4);
 }
 
 /* ============ 9. SEP — zero słownictwa rozpoznania i zero procentów ============ */

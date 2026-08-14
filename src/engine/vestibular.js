@@ -11,17 +11,36 @@ export const Vestibular = (()=>{
   // Ewald I (swoistość płaszczyzny): oś szybkiej fazy dla POBUDZENIA kanału,
   // ipsiwersyjnie do pobudzonego ucha.
   // --- Realne wektory normalne kanałów (magnitudy oczopląsu zamiast idealnych 45°) ---
-  // Źródło: Wu, Lin, Zheng, Zhou, Liu, Yang (2021) "Measurement of Human Semicircular Canal
-  //   Spatial Attitude", Front. Neurol. 12:741948, doi:10.3389/fneur.2021.741948 (MRI, n=55).
-  //   Kierunkowo zgodne z kanonem: Della Santina i wsp. (2005), JARO 6:191-206,
-  //   doi:10.1007/s10162-005-0003-x. Dane potwierdzają koplanarność LARP/RALP (RA∥LP, RP∥LA).
-  // Układ Wu: x=lewo, y=przednio-tylny, z=góra. Magnitudy biorę z |składowych| (znak osi Wu
-  //   nieistotny dla proporcji; kierunki bicia zostają z konwencji klinicznej poniżej):
-  //   PION ∝ |x|(międzyuszna) · POZIOM ∝ |z|(czaszkowa) · SKRĘT ∝ |y|(nosowo-potyliczna).
+  // Źródło: atlas IE-Map — Ahmadi, Raiser, Rühl, Flanagin, zu Eulenburg (2021) „IE-Map: a novel in-vivo
+  //   atlas and template of the human inner ear", Sci Rep 11:3293, doi:10.1038/s41598-021-82716-0
+  //   (MRI 3T, CISS 0.5 mm izo → template 0.2 mm izo, n=63 osób / 126 uszu, CC BY 4.0).
+  //   Dla każdego kanału dopasowana płaszczyzna PCA przez uporządkowane punkty osi przewodu. TA SAMA
+  //   rekonstrukcja, z której pochodzą AMPULLA_DIR i ARC_SPAN, więc płaszczyzna, położenie bańki
+  //   i długość łuku mówią o jednym i tym samym kanale.
+  //   RAMKA: template jest wyrównany do STANDARDOWEJ PŁASZCZYZNY REIDA (punkt podoczodołowy + przewód
+  //   słuchowy zewnętrzny, obustronnie) — czyli do zdefiniowanej płaszczyzny czaszkowej, nie do ramki
+  //   skanera. Dlatego ramkę atlasu bierzemy jako ramkę głowy BEZ obrotu (patrz engine_doc R9).
+  //   Wcześniej normalne brano z Wu i wsp. 2021 (Front. Neurol. 12:741948, MRI n=55) — uśrednienie
+  //   populacyjne bez informacji o położeniu bańki wzdłuż pętli; zgodność obu źródeł 17.1°.
+  //   Kanon kierunkowy: Della Santina i wsp. (2005), JARO 6:191-206, doi:10.1007/s10162-005-0003-x.
+  // Ramka GŁOWY (x=prawo, y=góra, z=nos) — bez przeliczania osi. Magnitudy z |składowych|:
+  //   PION ∝ |x|(międzyuszna) · POZIOM ∝ |y|(czaszkowa) · SKRĘT ∝ |z|(nosowo-potyliczna).
+  // ZNAK normalnej NIE jest konwencją: wybrany tak, by przejście bańka→ujście wzdłuż zmierzonej osi
+  //   dawało DODATNI przyrost kąta (reguła prawej dłoni) — to on definiuje „rosnące φ = ampullofugalne".
+  // Kontrole: kanały wzajemnie prostopadłe (87.8/87.5/89.8° — kąty PŁASZCZYZN mod 180; między
+  //   znakowanymi normalnymi z pliku: 92.2/92.5/89.8, bo konwencja ampullofugalna odwraca część
+  //   wektorów), koplanarność RA∥LP i RP∥LA 16.0° (Della Santina podaje realne odchylenie tego rzędu
+  //   — idealna koplanarność jest idealizacją), L = lustro P (0.000° — KONWENCJA transkrypcji: wpisy L
+  //   są odbiciem wpisów P, nie niezależną rekonstrukcją; asymetria międzyuszna niemodelowana).
+  //   Nachylenie kanału bocznego od poziomu wychodzi 10.4°, nie kanoniczne ~30°:
+  //   kanon opisuje POSTAWĘ NATURALNĄ, atlas jest w ramce skanu. Sprawdzone (sonda 39), czy da się to
+  //   pogodzić jednym pochyleniem ramki — NIE: nachylenie ma MINIMUM przy +10° i rośnie dopiero przy
+  //   ujemnych, a każde pochylenie ≠0 psuje test Roll albo head-hang. Ramka atlasu zostaje bez obrotu;
+  //   różnica 10.4 vs 30° jest ODNOTOWANĄ ROZBIEŻNOŚCIĄ (patrz engine_doc R8), nie ukrytą poprawką.
   const CANAL_NORMALS = {
-    posterior: { P:[-0.651, 0.702, 0.287], L:[ 0.660, 0.702, 0.266] },
-    anterior:  { P:[ 0.749, 0.577, 0.324], L:[-0.739, 0.588, 0.329] },
-    horizontal:{ P:[-0.017,-0.299, 0.954], L:[ 0.025,-0.279, 0.960] }
+    posterior: { P:[ 0.622019, 0.161240, 0.766221], L:[ 0.622019,-0.161240,-0.766221] },
+    anterior:  { P:[-0.803765, 0.039133, 0.593659], L:[-0.803765,-0.039133,-0.593659] },
+    horizontal:{ P:[-0.030350, 0.983446,-0.178642], L:[-0.030350,-0.983446, 0.178642] }
   };
   // WALIDACJA WEJŚCIA — jasny błąd zamiast wyjątku „undefined" lub niemego złego wyniku (np. literówka w side
   // dawała cichy dryf ipsi=-1; literówka w canal udawała kanał pionowy w isExcitatory). Kanały: klucze CANAL_NORMALS. Strona: "L"|"P".
@@ -35,20 +54,24 @@ export const Vestibular = (()=>{
   // magnitudy {v,h,t} z normalnej, znormalizowane do max=1
   function nysMag(canal, ear){
     reqCanal(canal, ear, "nysMag");
-    const n=CANAL_NORMALS[canal][ear], v=Math.abs(n[0]), h=Math.abs(n[2]), t=Math.abs(n[1]);
+    const n=CANAL_NORMALS[canal][ear], v=Math.abs(n[0]), h=Math.abs(n[1]), t=Math.abs(n[2]);   // ramka głowy: x=międzyuszna, y=czaszkowa, z=nosowo-potyliczna
     const m=Math.max(v,h,t)||1; return {v:v/m, h:h/m, t:t/m};
   }
   // MASKA KLINICZNA — geometria daje magnitudy, ale konwencja kliniczna decyduje, KTÓRE składowe
   // wyrażamy. true = odsłoń realną składową geometryczną; false = utrzymaj konwencję kliniczną.
-  //   posterior.h: geom.≈0.41 (klin. pomijany) · anterior.t: geom.≈0.78 (override: czysty downbeat)
-  //   horizontal.t: geom.≈0.29 (klin. czysto poziomy)
+  //   posterior.h: geom.≈0.21 (klin. pomijany) · anterior.t: geom.≈0.74 (override: czysty downbeat)
+  //   horizontal.t: geom.≈0.18 (klin. czysto poziomy)   [liczby żywe IE-Map 2026-08-13; stare
+  //   0.41/0.78/0.29 pochodziły z wektorów Wu]. ZNAK posterior.h POPRAWIONY 2026-08-13 (ocena II, A4):
+  //   znakowana geometria (oś pobudzenia Ω=−n, Ewald III) daje składową poziomą KONTRA (−0.21), więc
+  //   quickPhase wiąże ją z −ipsi — flaga jest od teraz bezpieczna do odsłonięcia (dziś false → h=0,
+  //   zmiana martwa dla wyników).
   const NYS_SHOW = { posterior:{h:false,t:true}, anterior:{h:false,t:false}, horizontal:{t:false} };
   function quickPhase(canal, ear /* 'L'|'P' */){
     const ipsi = ear==="P" ? +1 : -1;                 // + = strona prawa
     const m = nysMag(canal, ear);                     // realne magnitudy z CANAL_NORMALS
     if(canal==="horizontal") return {h: ipsi*m.h, v:0, t: NYS_SHOW.horizontal.t ? ipsi*m.t : 0};       // poziomy ku pobudzonemu uchu
-    if(canal==="posterior")  return {h: NYS_SHOW.posterior.h ? ipsi*m.h : 0, v:+m.v, t: NYS_SHOW.posterior.t ? ipsi*m.t : 0}; // upbeat + skręt ku uchu; realne v:t≈0.93:1
-    if(canal==="anterior")   return {h: NYS_SHOW.anterior.h ? ipsi*m.h : 0, v:-m.v, t: NYS_SHOW.anterior.t ? ipsi*m.t : 0};   // downbeat; override klin. t:0 (geom. skręt ≈0.78)
+    if(canal==="posterior")  return {h: NYS_SHOW.posterior.h ? -ipsi*m.h : 0, v:+m.v, t: NYS_SHOW.posterior.t ? ipsi*m.t : 0}; // upbeat + skręt ku uchu; realne v:t≈0.81:1; h KONTRA (−ipsi, A4)
+    if(canal==="anterior")   return {h: NYS_SHOW.anterior.h ? ipsi*m.h : 0, v:-m.v, t: NYS_SHOW.anterior.t ? ipsi*m.t : 0};   // downbeat; override klin. t:0 (geom. skręt ≈0.74)
     return {h:0,v:0,t:0};
   }
   // Szybka faza dla zadanego, pobudzonego/hamowanego kanału
@@ -69,6 +92,7 @@ export const Vestibular = (()=>{
   const rotv=(q,v)=>{const r=qmul(qmul(q,[0,v[0],v[1],v[2]]),qconj(q));return [r[1],r[2],r[3]];};
   const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
   const nrm3=v=>{const n=Math.hypot(v[0],v[1],v[2])||1;return [v[0]/n,v[1]/n,v[2]/n];};
+  const cross3=(a,b)=>[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
   const nrm4=q=>{const n=Math.hypot(q[0],q[1],q[2],q[3])||1;return [q[0]/n,q[1]/n,q[2]/n,q[3]/n];};
   // walidacja + normalizacja kwaternionu na publicznych wejściach: rotv(q,·) skaluje wektor o |q|²,
   // więc q≠jednostkowy psuje normę grawitacji (rzut → mag → cała dynamika). Zwraca q znormalizowane.
@@ -83,32 +107,149 @@ export const Vestibular = (()=>{
   }
   // q obraca wektory głowy → świata; grawitacja świata = (0,-1,0)
   const gHead=q=>rotv(qconj(reqQuat(q,"gHead")),[0,-1,0]);
-  const Q_SUPINE=qaxis([1,0,0],-100);                   // supine head-hanging
-  const qSupineYaw=deg=>qmul(Q_SUPINE, qaxis([0,1,0],deg)); // skręt wokół osi czaszki
-  const qPitch=deg=>qaxis([1,0,0],deg);                  // +deg = skłon (bow), -deg = odchylenie (lean)
-  // osie pobudzenia kanałów pionowych (w płaszczyźnie kanału, kalibrowane do Dix–Hallpike)
-  const GEXC={ RP:nrm3([1,0,-1]), LP:nrm3([-1,0,-1]), RA:nrm3([-1,0,-1]), LA:nrm3([1,0,-1]) }; // oś pobudzenia = -e1 (ampullofugalna); przednie poprawione (był błędnie +e1)
-  // oś ampullopetalna kanału poziomego: międzyuszna (ku choremu uchu) + przednio-tylna (przód = ampullopetalny)
-  const uHC = side => side==="P" ? nrm3([0.87,0,0.5]) : nrm3([-0.87,0,0.5]);
-  const CK={posterior:{P:"RP",L:"LP"}, anterior:{P:"RA",L:"LA"}};
+  // (Q_SUPINE/qSupineYaw/qPitch USUNIĘTE 2026-08-05: kodowały starą konwencję pozy — stały zwis −100°
+  //  dla WSZYSTKICH póz leżących. Pozy pochodzą teraz z POSE_SPEC w pose/maneuvers.js, gdzie każdy kąt
+  //  ma źródło w zdaniu instrukcji. Zostawione dawałyby drugą, cichą drogę do tej samej rozbieżności.)
+  /* ---- GEOMETRIA KANAŁU: JEDNO ŹRÓDŁO, W CAŁOŚCI ZMIERZONE (2026-08-05) ----
+     Etap 1 (rano): silnik miał DWIE niezależne geometrie tego samego kanału — zmierzone normalne do
+       magnitud oczopląsu ORAZ ręczną idealizację 45° do dynamiki złogu, rozjechane o 15–20° na KAŻDYM
+       kanale. Płaszczyznę ujednolicono: CANAL_GEOM, GEXC i uHC są z niej WYPROWADZONE.
+     Etap 2 (ten): zniknęły trzy ostatnie wpisy ręczne. Kierunek bańki (AMPULLA_DIR) był ZAŁOŻENIEM
+       anatomicznym, zwrot obiegu (ARC_SPIN) — sześcioma bitami konwencji, a zakres łuku brano z innej
+       pracy niż normalne. Wszystkie trzy pochodzą teraz z jednej rekonstrukcji: normalna z PCA punktów
+       osi, bańka z (A−C), ujście z (O−C), zwrot z monotoniczności Q0→Q4.
+     Zostaje JEDNO wejście spoza pomiaru: reguły Ewalda II/III (która strona przepływu pobudza) —
+       to fizjologia, nie geometria. */
+  // KIERUNEK BAŃKI (φ=0) — ZMIERZONY (2026-08-05), już nie założony. Atlas IE-Map: dla każdego kanału
+  // środek okręgu C, środek bańki A, ujście O oraz UPORZĄDKOWANE punkty osi Q0=A → Q4=O. e1 = rzut (A−C)
+  // na płaszczyznę PCA kanału. Przeliczenie ze Slicer-RAS do ramki głowy: pozycje (X,Z,Y); normalna jest
+  // wektorem OSIOWYM, a odwzorowanie ma wyznacznik −1, więc jej znak się odwraca.
+  // Weryfikacja: kanały wzajemnie prostopadłe (87.8/87.5/89.8°), zgodność z KONTROLNĄ pracą Wu 17.1°
+  // (alternatywne przypisania osi dawały 80–85°), lewa strona = idealne lustro prawej (różnica 0.000°).
+  const AMPULLA_DIR = {
+    posterior: { P:[-0.5174,-0.6498,0.5568], L:[0.5174,-0.6498,0.5568] },
+    anterior:  { P:[0.4703,-0.5693,0.6743],  L:[-0.4703,-0.5693,0.6743] },
+    horizontal:{ P:[-0.1794,0.1705,0.9689],  L:[0.1794,0.1705,0.9689] } };
+  // ZWROT OBIEGU ŁUKU — też WYPROWADZONY: przyrosty kąta wzdłuż uporządkowanej osi Q0→Q4 są monotonicznie
+  // DODATNIE dla wszystkich trzech kanałów obu stron (tylny 11.4/130.6/132.9/43.9 · przedni 15.7/105.2/
+  // 113.4/46.7 · boczny 21.6/107.9/113.3/24.6), więc „rosnące φ = ampullofugalne" wynika z pomiaru.
+  // Znosi to dawną tabelę ARC_SPIN = 6 bitów konwencji wpisanych ręcznie.
+  function canalBasis(canal, ear){                      // baza łuku: e1 = bańka (φ=0), e2 = n × e1 (rosnące φ)
+    const n=nrm3(CANAL_NORMALS[canal][ear]), a=AMPULLA_DIR[canal][ear], k=dot3(a,n);
+    const e1=nrm3([a[0]-k*n[0], a[1]-k*n[1], a[2]-k*n[2]]);   // rzut kierunku bańki na zmierzoną płaszczyznę
+    return { e1, e2:nrm3(cross3(n,e1)) };
+  }
+  // geometria łuku kanału (płaszczyzna e1,e2); e1 = kierunek ampułki (φ=0); exc = znak pobudzenia
+  // exc=+1: kanały pionowe — pobudza przepływ ampullofugalny (+dφ/dt, Ewald III)
+  // exc=-1: kanał poziomy — pobudza przepływ ampullopetalny (Ewald II)
+  const CANAL_GEOM=(()=>{
+    const EXC={posterior:1, anterior:1, horizontal:-1}, out={};
+    for(const canal of ["posterior","horizontal","anterior"]){
+      out[canal]={};
+      for(const ear of ["P","L"]){ const b=canalBasis(canal,ear); out[canal][ear]={e1:b.e1, e2:b.e2, exc:EXC[canal]}; }
+    }
+    return out;
+  })();
+  // OŚ POBUDZENIA — nie tabela, tylko STYCZNA do łuku w miejscu, gdzie złóg naprawdę leży.
+  // Dawniej: GEXC (kanały pionowe) = −e1 i uHC (poziomy) = +e1, czyli styczna liczona w φ=90° —
+  // tej samej wpisanej stałej, którą usunął restPhi. Przy zmierzonym łuku złóg spoczywa w 48.8°/199.8°/3°,
+  // więc oś pobudzenia liczona w 90° opisywała inne miejsce kanału niż to, którym rusza symulacja:
+  // kierunek oczopląsu w karcie testu potrafił być PRZECIWNY do wyniku dynamiki tej samej pozy.
+  const tangAt=(G,phiDeg)=>{ const r=phiDeg*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
+    return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]]; };
+  // ZAKRES ŁUKU: od ŚRODKA BAŃKI (φ=0) do ujścia do przedsionka/łagiewki (φ=phiExit).
+  // ŹRÓDŁO: atlas IE-Map — to samo, z którego pochodzą CANAL_NORMALS i AMPULLA_DIR (patrz nagłówek
+  //   pliku). Kąt liczony między rzutami (A−C) i (O−C) na dopasowaną płaszczyznę PCA kanału.
+  //   Kontrola wewnętrzna: suma kątów po polilinii Q0→Q4 zgadza się z prostym kątem A→O co do 0.1°
+  //   (kanał dobrze opisany okręgiem; promienie |Qi−C| 2.3–3.9 mm bez odstających); L = lustro P (0.000°).
+  // KONTROLA ZEWNĘTRZNA (nie źródło — wartości NIE pochodzą z tych prac):
+  //   Cárdenas-Serna & Jeffery, 96 błędników kostnych (Zenodo doi:10.5281/zenodo.4818568, opis PMC8819049):
+  //     przedni 265.8°±7.1 · tylny 307.0°±5.3 · boczny 236.8°±10.1 — ten sam pomiar, ten sam rząd.
+  //   Bradshaw i wsp. 2010 (JARO doi:10.1007/s10162-009-0195-6), błędnik BŁONIASTY: θs 271.7/324.7/249.2° —
+  //     liczone między GRANICAMI przedsionkowymi, nie od środka bańki, więc systematycznie wyższe.
+  //   Cherchi 2026 (PMC12799655) zwraca uwagę, że klasyczne schematy używają łuku 180° albo błędnego
+  //     odcinka przednio-przyśrodkowego, podczas gdy realny kanał boczny ma odcinek tylno-przyśrodkowy
+  //     i łuk ~240° — kierunkowo zgodne z naszymi 267.3°.
+  // TO ZAMKNĘŁO R1: do 2026-08-05 model miał JEDEN globalny phiExit=178°, czyli ujście DOKŁADNIE naprzeciw
+  //   bańki. Anatomicznie oba końce przewodu uchodzą do łagiewki — leżą OBOK siebie — a pętla biegnie
+  //   między nimi długą drogą. Skutkiem było to, że minimum grawitacyjne w KAŻDEJ pozycji prowokującej
+  //   leżało POZA końcem łuku, więc złóg zawsze dobijał do odnogi — diagnostyka wykonywała pracę manewru.
+  const ARC_SPAN = { anterior:281.1, posterior:318.8, horizontal:267.3 };
+  const CUPULA_DEG=3;                                   // złóg nie przechodzi przez osklepek — kres łuku od strony bańki
+  /* SPOCZYNEK ZŁOGU — WYPROWADZONY, nie wpisany (2026-08-05).
+     Silnik startował KAŻDĄ symulację od φ=90°: stałej dobranej pod dawny łuk 178° (środek pętli).
+     Przy zmierzonym łuku 267–319° to punkt bez znaczenia anatomicznego, a dla kanału poziomego
+     wręcz taki, w którym styczna składowa grawitacji nie przekracza tarcia statycznego — Roll test
+     nie ruszał złogu w ogóle. Teraz start = MINIMUM GRAWITACYJNE w postawie pionowej (tam, gdzie
+     osad leży, zanim badanie się zacznie), a gdy to minimum wypada POZA łukiem — osklepek.
+     Wychodzi: tylny 48.8° (tuż za bańką — klasyczny opis), poziomy 199.8° (ramię niebańkowe),
+     przedni 3° (osklepek: minimum kanału przedniego leży w przedsionku, więc kanał NIE MA
+     stabilnego spoczynku w pionie — to samo, czym tłumaczy się rzadkość BPPV kanału przedniego). */
+  function restPhi(canal, side){
+    const G=CANAL_GEOM[canal][side], g=gHead([1,0,0,0]);
+    const a=Math.atan2(dot3(g,G.e2), dot3(g,G.e1))*180/Math.PI, eq=((a%360)+360)%360;
+    if(eq>CUPULA_DEG && eq<ARC_SPAN[canal]) return eq;
+    // KLAMRA PER KANAŁ (2026-08-13, ocena II A3/V7): minimum ZA UJŚCIEM ≠ minimum za osklepkiem.
+    //   POZIOMY (koniec nieampułkowy uchodzi WPROST do łagiewki): minimum za ujściem → spoczynek NA
+    //   UJŚCIU — pierwszy krok symulacji wyprowadza złóg (kanał opróżnia się), zamiast dawnej cichej
+    //   TELEPORTACJI o ~264° do osklepka (start w ramieniu bańkowym = fenotyp apogeotropowy z niczego).
+    //   Przy ramce 0° gałąź jest dla poziomego NIEOSIĄGALNA (eq=199.8) — zmiana bezkosztowa; uzbraja
+    //   się dopiero przy pochyleniu ramki ≥ +9.9° (granice przedziału wolności: R9/engine_doc).
+    //   PIONOWE celowo BEZ zmiany: minimum za ujściem → osklepek (zamierzone — tak model koduje brak
+    //   stabilnego spoczynku kanału przedniego w pionie i wyprowadza brak latencji AC-BPPV, R7).
+    if(canal==="horizontal" && eq>=ARC_SPAN.horizontal) return ARC_SPAN.horizontal;
+    return CUPULA_DEG;
+  }
+  /* NAPĘD W SPOCZYNKU — decyduje, czy złóg jest w ogóle PRZYKLEJONY. Gdy spoczynek jest prawdziwym
+     minimum (tylny, poziomy), styczna składowa = 0: złóg leży swobodnie i trzyma go adhezja, którą
+     prowokacja musi zerwać — stąd LATENCJA. Gdy minimum wypada poza łukiem (kanał przedni), złóg jest
+     DOCISKANY do osklepka stałą siłą 0.131 (przy progu fStat 0.04): nie trzyma go wiązanie, tylko
+     grawitacja, więc po odwróceniu głowy rusza BEZ zrywania adhezji. Model przewiduje z tego brak
+     latencji w kanale przednim — zgodnie z opisami BPPV kanału przedniego (latencja krótka/nieobecna).
+     Bez tego test deep head-hang nie dawał ŻADNEGO oczopląsu: 0.5 s przejścia nie starcza, by zużyć
+     wiązanie adh=0.2, a w manewrze Yacovino zużywał je dopiero 6-sekundowy krok „pacjent siedzi". */
+  // NAPĘD STYCZNY W DOWOLNYM PUNKCIE ŁUKU I DOWOLNEJ ORIENTACJI (ocena II, V3) — uogólnienie restDrive
+  // (ta sama arytmetyka; restDrive = driveAt w restPhi i pionie, tożsamościowo — zweryfikowane bitowo).
+  // EKSPORTOWANE: warstwa domenowa policzy z niego napęd presetów historii pozycyjnej (BLT_HISTORY, plan V5).
+  function driveAt(canal, side, phiDeg, q, tauP=6.5){
+    reqCanal(canal, side, "driveAt");
+    const G=CANAL_GEOM[canal][side];
+    return dot3(gHead(reqQuat(q,"driveAt")), tangAt(G, phiDeg))/tauP;
+  }
+  function restDrive(canal, side, tauP){
+    return driveAt(canal, side, restPhi(canal, side), [1,0,0,0], tauP);
+  }
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
     reqCanal(canal, side, "position");
     if(variant!=null && variant!=="cupulo" && variant!=="canalo") throw new TypeError('position: nieznany variant "'+variant+'" (dozwolone: "cupulo"|"canalo"|brak)');
     q=reqQuat(q, "position");            // waliduje (skończony, dł. 4) i normalizuje
-    const g=gHead(q); let proj, excited;
-    if(canal==="horizontal"){
-      proj=dot3(g, uHC(side));                           // międzyuszna + przednio-tylna
-      excited = variant==="cupulo" ? proj<0 : proj>0;    // Ewald II: geo/apo odwracają się
-    } else {
-      proj=dot3(g, GEXC[CK[canal][side]]);               // + = ampullofugalny = pobudzenie (Ewald III)
-      excited = proj>0;                                  // kanały pionowe: bez odwrócenia geo/apo
-    }
+    const g=gHead(q), G=CANAL_GEOM[canal][side];
+    // napęd styczny TAM, GDZIE ZŁÓG LEŻY — ta sama wielkość, którą całkuje simulateCanalith,
+    // więc karta testu i symulacja nie mogą już pokazać przeciwnych kierunków.
+    // KUPULOLITIAZA KANAŁU POZIOMEGO — CEL PRZY OSKLEPKU (2026-08-13, ocena II A1/V4). Złóg kupulolityczny
+    //   siedzi NA OSKLEPKU (φ≈0–3°), nie w restPhi wolnego złogu (199.8°): ciężki osklepek wychyla rzut
+    //   grawitacji na styczną PRZY BAŃCE, ze STANDARDOWĄ regułą Ewalda II (G.exc), bez gałęzi specjalnej.
+    //   Dawna inwersja proj<0 (liczona w restPhi) trzymała znak Rolla wyłącznie antypodycznym zbiegiem
+    //   (restPhi HC leży ~197° od bańki, cos=−0.957), ale: null point wypadał po ZŁEJ stronie (yaw −9°
+    //   ku zdrowemu; klinika: 10–30° ku CHOREMU), Bow&Lean apo przeczył regule Choung i tekstowi własnej
+    //   karty, pseudo-SN w siadzie był zerem z konstrukcji, a asymetria Rolla żyła tylko z rektyfikacji
+    //   wyświetlacza. Po poprawce (zmierzone): Roll apo zachowany z WEWNĘTRZNĄ asymetrią we właściwą
+    //   stronę (chore w dole 0.832 < zdrowe 0.885), null point yaw +8..9° ku CHOREMU, B&L apo wg reguły
+    //   (skłon→zdrowa 0.120, odchylenie→chora 0.130), pseudo-SN w siadzie 0.052 (słaby — jak klinicznie).
+    // KANAŁY PIONOWE świadomie ZOSTAJĄ na restPhi (wybór fenomenologiczny, nie fizyka): czysty cel przy
+    //   osklepku dawałby PC silny UPORCZYWY bodziec w siadzie (0.708) — sprzeczny z kliniką; w Dix oba
+    //   punkty dają ten sam znak (magnituda przy osklepku 2.35× mniejsza). AC: restPhi=3=CUPULA_DEG,
+    //   więc obie reguły są tożsame z konstrukcji.
+    const cupHC = (variant==="cupulo" && canal==="horizontal");
+    const drive=dot3(g, tangAt(G, cupHC ? CUPULA_DEG : restPhi(canal, side)));   // >0 = ampullofugalny (rosnące φ)
+    let proj=G.exc*drive;                                   // exc: +1 pionowe (Ewald III), −1 poziomy (Ewald II)
+    const excited = proj>0;                                 // JEDNA reguła Ewalda — inwersja cupulo-HC zbędna po przeniesieniu punktu oceny
     const q0=quickPhase(canal, side), s=excited?1:-1, mag=Math.abs(proj);
     return {excited, mag, h:q0.h*s, v:q0.v*s, t:q0.t*s};
   }
   /* ---- dynamika cząstki (etap 2) ----
-     Otolit jako cząstka na łuku kanału (φ=kąt łuku; ampułka φ=0, ujście/odnoga wspólna φ≈180).
+     Otolit jako cząstka na łuku kanału (φ=kąt łuku; ampułka φ=0, ujście = ARC_SPAN 267–319° per kanał).
      Ruch przetłumiony (opór Stokesa, bez bezwładności): dφ/dt ∝ styczna składowa grawitacji.
      Przepływ ampullofugalny (+dφ/dt) pobudza kanał pionowy (Ewald III) i odchyla osklepek ξ,
      który relaksuje z długą stałą czasową (latencja → narastanie → wygasanie). */
@@ -117,14 +258,7 @@ export const Vestibular = (()=>{
     if(d>0.9995){return nrm4([a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1]),a[2]+t*(b[2]-a[2]),a[3]+t*(b[3]-a[3])]);}
     const th=Math.acos(d),s=Math.sin(th),w0=Math.sin((1-t)*th)/s,w1=Math.sin(t*th)/s;
     return [w0*a[0]+w1*b[0],w0*a[1]+w1*b[1],w0*a[2]+w1*b[2],w0*a[3]+w1*b[3]];}
-  // geometria łuku kanału (płaszczyzna e1,e2); e1 = kierunek ampułki (φ=0); exc = znak pobudzenia
-  // exc=+1: kanały pionowe — pobudza przepływ ampullofugalny (+dφ/dt, Ewald III)
-  // exc=-1: kanał poziomy — pobudza przepływ ampullopetalny (Ewald II)
-  const CANAL_GEOM={
-    posterior: { P:{e1:nrm3([-1,0,1]), e2:[0,-1,0], exc:1},  L:{e1:nrm3([1,0,1]),  e2:[0,-1,0], exc:1} },
-    horizontal:{ P:{e1:nrm3([0.87,0,0.5]), e2:nrm3([0.5,0,-0.87]), exc:-1},
-                 L:{e1:nrm3([-0.87,0,0.5]), e2:nrm3([-0.5,0,-0.87]), exc:-1} },
-    anterior:  { P:{e1:nrm3([1,0,1]),  e2:[0,-1,0], exc:1},  L:{e1:nrm3([-1,0,1]), e2:[0,-1,0], exc:1} } };
+  // (CANAL_GEOM jest teraz WYPROWADZONE z CANAL_NORMALS — patrz „GEOMETRIA KANAŁU: JEDNO ŹRÓDŁO" wyżej)
   // ROZMIAR/GĘSTOŚĆ CZĄSTKI jako mnożnik promienia r (medium=1 = kalibracja bazowa, r=1 → wynik identyczny):
   //   tauP ∝ r⁻²  (prędkość osiadania Stokesa v ∝ r² → szybszy przepływ);
   //   gc   ∝ r³   (wyparta objętość/masa endolimfy → wychylenie osklepka);
@@ -141,6 +275,21 @@ export const Vestibular = (()=>{
     }
     return SIZE_R[size]!==undefined ? SIZE_R[size] : 1;   // preset (small/medium/big) lub domyślnie medium (r=1)
   };
+  /* RÓWNOWAŻNA ŚREDNICA KŁĘBKA [µm] — WYPROWADZONA, nie wpisana (2026-08-06).
+     tauP nie jest wolnym parametrem. Prędkość graniczna cząstki w kanale to v = R/tauP, a prawo Stokesa
+     v = (2/9)·Δρ·g·a²/μ wiąże ją z promieniem kłębka a. Dla tauP=6.5 s i średniego promienia łuku
+     trzech kanałów (3.17 mm) wychodzi a ≈ 10.6 µm, czyli równoważna średnica ≈ 21 µm — kłębek kilku
+     otoconiów (pojedyncze ludzkie otoconium 1–30 µm, PMC3226995; rozmiar realnego agregatu u żywego
+     chorego NIE jest znany). Skalowanie rozmiarem w silniku to tauP = tauP₀/r², czyli v ∝ r² — DOKŁADNIE
+     Stokes, więc mnożnik r przekłada się wprost na promień i skala jest spójna z fizyką, a nie dopisana.
+     Δρ = 1700 kg/m³ (otoconia 2.7 − endolimfa 1.0) · μ = 8.5e-4 Pa·s (endolimfa ≈ woda 37 °C).
+     ZASTRZEŻENIE: implikowany promień zależy od promienia łuku KONKRETNEGO kanału (9.7 µm boczny …
+     11.1 µm tylny, ±7% wokół średniej), bo tauP jest w silniku wspólny dla wszystkich trzech. Podajemy
+     wartość dla średniego kanału i ZAOKRĄGLONĄ — ma dawać rząd wielkości porównywalny z piśmiennictwem,
+     nie precyzję, której model nie ma. */
+  const R_ARC_MEAN=3.17e-3, TAUP0=6.5, D_RHO=1700, MU=8.5e-4, G_ACC=9.81;
+  const A_MED_M = Math.sqrt((R_ARC_MEAN/TAUP0)*9*MU/(2*D_RHO*G_ACC));   // promień kłębka dla size=medium [m]
+  const sizeUm = size => Math.round(2*A_MED_M*1e6*sizeR(size));         // równoważna ŚREDNICA [µm]
   // MĘCZLIWOŚĆ (fatigability) oczopląsu — kryterium RÓŻNICUJĄCE kanalolitiaza↔kupulolitiaza.
   //   Przy POWTÓRZENIACH prowokacji w tej samej sesji (seryjny Dix–Hallpike) zbity klaster otoconiów ROZPRASZA
   //   SIĘ na mniejsze, mniej spójne fragmenty → słabsze zbiorcze wychylenie osklepka → oczopląs SŁABNIE z każdym
@@ -166,7 +315,8 @@ export const Vestibular = (()=>{
   // symulacja kanalolitiazy: timeline = [{q, tTrans, tHold}, ...]
   // MODEL FENOMENOLOGICZNY/EDUKACYJNY (nie pełna hydrodynamika — brak ciśnienia transkupularnego, zmiennej
   //   średnicy przewodu, bezwładności płynu, wielu cząstek; pełny model: Squires/Hain/Stone). Szczegóły → engine_doc.txt.
-  // Stałe skalibrowane do literatury (kanał tylny): latencja ~1–3 s, szczyt ~7–9 s, trwanie ~25 s.
+  // Stałe skalibrowane do literatury (kanał tylny): latencja 2.25 s, szczyt 0.872 @10.15 s, trwanie
+  //   ~37 s (metryka |ξ|≷0.05; przemierzone 2026-08-13 — stare „~7–9 s / ~25 s" sprzed ARC_SPAN).
   //   tauP=6.5  — cząstka (opór); tauC=5 — osklepek (długa stała kanału ~4–6 s);
   //   gc=1.6 — wzmocnienie; phiExit=178 — koniec nieampułkowy = wyjście do ŁAGIEWKI (kan. pionowe: odnoga wspólna; poziomy: wprost);
   //   fStat/adh — adhezja otolitu (zrywana utrzymaną siłą styczną → latencja; silniejsza
@@ -174,41 +324,112 @@ export const Vestibular = (()=>{
   // KOMORA ODNOGI WSPÓLNEJ + ŁAGIEWKA (kanały PIONOWE: tylny+przedni; poziomy NIE ma odnogi → wyjście wprost).
   //   Anatomicznie „dotarcie do końca łuku" (φ=phiExit) ≠ „wpadnięcie do łagiewki" — to DWA zdarzenia. Złóg po
   //   dojściu do odnogi (φ≥phiExit−crusArc) WCHODZI DO KOMORY ODNOGI i PARKUJE: opuszcza czuły kanał, osklepek
-  //   relaksuje (brak oczopląsu), czeka na ekspulsję do łagiewki. Ekspulsja ma DWIE fizjologiczne drogi:
-  //     • GRAWITACYJNA (wolna): przy głowie pionowej (siad) łagiewka jest POD odnogą → złóg wpada. Warunek
-  //       −gHead_y > crusGrav (gHead·[0,−1,0]). To daje ekspulsję Epleya PRZY SIADZIE + oczopląs liberacyjny.
-  //     • BEZWŁADNOŚCIOWA (szybka): gwałtowny przerzut o duży kąt (Semont ~180°) wyrzuca złóg z odnogi siłami
-  //       bezwładności, niezależnie od grawitacji. Proxy: kąt przejścia segmentu > crusFling (przy ~jednolitym
-  //       czasie przejścia duży kąt = duża prędkość kątowa). To utrzymuje ekspulsję Semonta PRZY RZUCIE.
+  //   relaksuje (brak oczopląsu), czeka na ekspulsję do łagiewki. Warunek ekspulsji: −g[1] > crusGrav,
+  //   gdzie g to SIŁA WŁAŚCIWA (R7). KOREKTA 2026-08-13 (ocena II, C7): działa wyłącznie droga
+  //     GRAWITACYJNA — przy głowie pionowej (siad) łagiewka jest POD odnogą → złóg wpada; to daje
+  //     ekspulsję Epleya PRZY SIADANIU + oczopląs liberacyjny. Droga „BEZWŁADNOŚCIOWA" jest
+  //     strukturalnie MARTWA: człon dośrodkowy a=ω×(ω×d) przy d=[±EAR_X, L>0, 0] ma a[1]≤0, więc
+  //     inercja może −f[1] tylko OBNIŻAĆ (rzut Semonta 180°/0.8 s: +1.18 g KU CZUBKOWI — hamuje;
+  //     zmierzone maksimum wzrostu −f[1] po 7 manewrach × 2 strony: 0.00000). Usunięte 2026-08-05
+  //     proxy (kąt > crusFling ORAZ tempo > crusFlingRate) zastąpiła grawitacja w bez-timerowym
+  //     siadzie, NIE inercja — manewry czyszczą dalej 12/12, bo inercja robi swoje w napędzie
+  //     WZDŁUŻ kanału (Semont z pivot=neck nie dowozi złogu do odnogi).
   //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
-  function simulateCanalith({canal, side, timeline, q0=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=178, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6, crusFling=145}){
+  /* ---- SIŁA WŁAŚCIWA f = g − a (zasada równoważności) [R7, 2026-08-05] ----
+     Do tej daty złóg reagował na SAMĄ grawitację. To czyniło Semonta i Bascule nieodwzorowywalnymi
+     z powodu STRUKTURALNEGO, nie liczbowego: obrót ciała o 180° odwraca gHead DOKŁADNIE (Rz(180)
+     przeprowadza (0,−1,0) w (0,+1,0) niezależnie od ustawienia głowy względem tułowia), więc minimum
+     drugiego rzutu leży dokładnie 180° od pierwszego i złóg ląduje w punkcie NIESTABILNYM — styczna
+     składowa zero, żaden hold i żadne tauP tego nie ruszy. Dawne „działanie" Semonta pochodziło
+     z ręcznie dopisanego do LEAN_G wektora ku czubkowi głowy (+0.6), który łamał tę symetrię.
+     Ten wektor okazał się TĄ SAMĄ WIELKOŚCIĄ, tylko wpisaną: podczas rzutu błędnik jedzie po łuku
+     wokół osi obrotu, więc doznaje przyspieszenia dośrodkowego skierowanego KU osi, a siła właściwa
+     f = g − a zyskuje składową ku czubkowi o module ω²·L/g. Dla rzutu 180° w 0,8 s i L=0,75 m wychodzi
+     1,2 g — ten sam kierunek i ten sam rząd co wpisane 0,6 (0,6 g odpowiada rzutowi 180° w ~1,16 s).
+     ω bierzemy z TEJ SAMEJ interpolacji, która steruje pozą (slerp o stałym tempie): ω = Θ/tTrans wokół
+     osi obrotu względnego. Człon styczny (α×d) POMIJAMY — przy stałym tempie α=0 poza granicami
+     segmentów, a profil prędkości, który dałby α, nie istnieje w danych aplikacji. To zaniżenie,
+     nie zawyżenie: model bierze tylko tę część bezwładności, którą interpolacja naprawdę określa.
+     RAMIĘ (jedyne nowe wejście — antropometria, nie parametr dopasowywany):
+       body 0.75 m — oś w biodrach/kozetce; siad→leżenie, rzut boczny, przewrót ciała
+       neck 0.12 m — oś u podstawy szyi; sam skręt/pochylenie głowy przy nieruchomym tułowiu
+       earX 0.075 m — półrozstaw międzyuszny: błędnik NIE leży na osi czaszki, więc sam skręt szyi
+                      też daje (mały) człon dośrodkowy. Bez tego skręt głowy byłby zupełnie bezwładny. */
+  const G0=9.81, LEVER={body:0.75, neck:0.12}, EAR_X=0.075;
+  function angVel(qPrev, sq, tTrans){        // ω [rad/s] w RAMCE GŁOWY (oś obrotu względnego jest w niej stała)
+    if(!(tTrans>0)) return [0,0,0];
+    let r=qmul(qconj(qPrev), sq); if(r[0]<0) r=[-r[0],-r[1],-r[2],-r[3]];
+    const v=Math.hypot(r[1],r[2],r[3]); if(v<1e-9) return [0,0,0];
+    const w=2*Math.atan2(v, r[0])/tTrans;
+    return [w*r[1]/v, w*r[2]/v, w*r[3]/v];
+  }
+  function specForce(g, wv, side, pivot){    // f = g − a/g0, a = ω × (ω × d) [dośrodkowe]
+    if(!wv[0] && !wv[1] && !wv[2]) return g;
+    const d=[(side==="P"?EAR_X:-EAR_X), LEVER[pivot]||LEVER.body, 0];   // oś obrotu → błędnik, w ramce głowy
+    const c1=cross3(wv,d), a=cross3(wv,c1);
+    return [g[0]-a[0]/G0, g[1]-a[1]/G0, g[2]-a[2]/G0];
+  }
+  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
     reqCanal(canal, side, "simulateCanalith");
+    if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
+    if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCanalith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCanalith: dt musi być liczbą > 0 (podano "+dt+")");   // dt<=0 → nieskończona pętla
+    // WALIDACJE PARAMETRÓW DYNAMIKI (ocena II, A10/DYN-11) — wartości niefizyczne przechodziły po cichu:
+    // gc<0 ODWRACAŁO stronę oczopląsu (ucho chore!), tauC<0 rozbiegało ξ wykładniczo, tauC<dt/2 destabilizowało
+    // jawny schemat Eulera, tauP<0 pchało złóg POD grawitację, crusArc>phiExit dawało pcrus<0 (test martwy bez
+    // śladu), crusGrav<=0 ekspulsowało w dowolnej pozie. Wartości domyślne przechodzą wszystkie bramki.
+    if(!(tauP>0) || !isFinite(tauP)) throw new RangeError("simulateCanalith: tauP musi być liczbą > 0 (podano "+tauP+")");
+    if(!(tauC>dt/2) || !isFinite(tauC)) throw new RangeError("simulateCanalith: tauC musi być liczbą > dt/2 (stabilność Eulera; podano "+tauC+")");
+    if(!(gc>0) || !isFinite(gc)) throw new RangeError("simulateCanalith: gc musi być liczbą > 0 (podano "+gc+")");
+    if(!(fStat>=0) || !isFinite(fStat)) throw new RangeError("simulateCanalith: fStat musi być liczbą >= 0 (podano "+fStat+")");
+    if(!(adh>=0) || !isFinite(adh)) throw new RangeError("simulateCanalith: adh musi być liczbą >= 0 (podano "+adh+")");
+    if(!(crusArc>=0) || !(crusArc < phiExit-CUPULA_DEG)) throw new RangeError("simulateCanalith: crusArc musi spełniać 0 <= crusArc < phiExit-"+CUPULA_DEG+" (podano "+crusArc+")");
+    if(!(crusGrav>0) || !isFinite(crusGrav)) throw new RangeError("simulateCanalith: crusGrav musi być liczbą > 0 (podano "+crusGrav+")");
+    // WALIDACJA phi0 (ocena II, A9/V3) — do tej pory NaN dawał po cichu martwą symulację, start za pcrus
+    // był snapowany WSTECZ, a phi0>phiExit wskrzeszał złóg spoza kanału z pełnym transjentem liberacyjnym.
+    if(phi0!=null && (!isFinite(phi0) || phi0<CUPULA_DEG || phi0>phiExit))
+      throw new RangeError("simulateCanalith: phi0 musi być w ["+CUPULA_DEG+", phiExit="+phiExit+"] (podano "+phi0+")");
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D, pcrus=(phiExit-crusArc)*D;
     const crusGate=(canal==="posterior"||canal==="anterior");   // odnoga wspólna TYLKO dla kanałów pionowych; poziomy → wyjście wprost
     const EXPEL_DUR=1.2, expelRate=(pex-pcrus)/EXPEL_DUR;        // tempo ekspulsji odnoga→łagiewka (transjent liberacyjny)
-    const q4dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];  // do kąta przejścia (bezwładność)
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
     // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
     // 1. segment = pozycja startowa, a jego tTrans to czas W tej pozycji (NIE przejście z neutralnej). Wsteczna zgodność.
-    let phi=90*D, xi=0, t=0, exited=false, stuck=true, inCrus=false, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    // settled (ocena II, A2/V3): true (domyślne) = złóg OSIADŁY — bramka adhezji jak dotąd (napęd
+    // postojowy w restPhi i pionie; ścieżka bit-identyczna). false = złóg ŚWIEŻO PRZEMIESZCZONY
+    // (historia pozycyjna odłożyła go przed chwilą — wiązanie nie zdążyło się wytworzyć): start bez
+    // bramki. Uzasadnienie fizyczne = ten sam mechanizm, którym silnik tłumaczy brak latencji kanału
+    // przedniego (restDrive wyżej: „nie trzyma go wiązanie, tylko grawitacja"); model i tak nie ma
+    // re-adhezji (raz zerwane wiązanie nie wraca). Bez tego bramka — ewaluowana w CUDZYM punkcie
+    // (restPhi zamiast phi0) — wygasza do 0.000 nawet odpowiedzi o swobodnej amplitudzie |ξ|>1
+    // i robi z odpowiedzi funkcję schodkową phi0 z ~20% martwego łuku (klif 205°).
+    // Start w strefie odnogi (phi0>phiExit−crusArc, kanały pionowe): złóg STARTUJE W KOMORZE (inCrus)
+    // zamiast dawnego snapu WSTECZNEGO do pcrus — czeka na ekspulsję jak każdy zaparkowany złóg.
+    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=0, t=0, exited=false, stuck=settled && Math.abs(restDrive(canal,side,tauP))<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
-      const flingDeg = 2*Math.acos(Math.min(1,Math.abs(q4dot(qPrev,sq))))*180/Math.PI;   // kąt przejścia INTO tego segmentu (proxy prędkości kątowej → bezwładność)
+      const wv = angVel(qPrev, sq, seg.tTrans);          // prędkość kątowa przejścia (stała — slerp o stałym tempie)
+      const pivot = seg.pivot || "body";                  // oś obrotu kroku: "body" (biodra/kozetka) | "neck" (sama głowa)
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
-        const g=gHead(slerpQ(qPrev,sq,u));
+        const g0v=gHead(slerpQ(qPrev,sq,u));
+        const g = u<1 ? specForce(g0v, wv, side, pivot) : g0v;   // W TRAKCIE przejścia działa siła właściwa; w holdzie ω=0 → f=g
         let dphi=0, flow=0;
         if(!exited){
           if(crusGate && inCrus){
             // złóg w KOMORZE ODNOGI WSPÓLNEJ — poza czułym kanałem (osklepek relaksuje). Czeka na ekspulsję do łagiewki.
-            if(!expelling && (-g[1] > crusGrav || flingDeg > crusFling)) expelling=true;   // GRAWITACYJNA (siad: łagiewka pod odnogą) LUB BEZWŁADNOŚCIOWA (szybki przerzut, np. Semont)
+            // g to SIŁA WŁAŚCIWA (R7), ale warunek realnie spełnia wyłącznie GRAWITACJA (siad: łagiewka
+            // pod odnogą) — człon dośrodkowy ma a[1]≤0, więc −f[1] podnieść nie może (ocena II, C7).
+            // Dawne proxy crusFling/crusFlingRate — „kąt > 145° ORAZ tempo > 180°/s" — USUNIĘTE 2026-08-05:
+            // manewry czyszczą dalej 12/12, bo ekspulsję przejęła grawitacja w bez-timerowym siadzie
+            // (inercja utrzymuje DOJAZD złogu do odnogi — napęd wzdłuż kanału).
+            if(!expelling && -g[1] > crusGrav) expelling=true;
             if(expelling){                                     // transjent ekspulsji: φ pcrus→pex → oczopląs liberacyjny (ampullofugalny, TEN SAM znak co pierwotny)
               dphi=expelRate; let nphi=phi+dphi*dt;
               if(nphi>=pex){nphi=pex; exited=true; expelling=false;}   // wpadł do łagiewki (jednokierunkowo)
@@ -223,7 +444,7 @@ export const Vestibular = (()=>{
               dphi=drive; let nphi=phi+dphi*dt;
               if(crusGate){ if(nphi>=pcrus){ dphi=Math.max(0,pcrus-phi)/dt; nphi=pcrus; inCrus=true; } }   // dotarł do odnogi → PARKUJE (opuszcza czuły kanał); dphi = realny dojazd
               else if(nphi>=pex){ nphi=pex; exited=true; }     // POZIOMY: brak odnogi — wyjście wprost do łagiewki
-              if(nphi<3*D){nphi=3*D; dphi=0;}                  // nie przechodzi przez osklepek
+              if(nphi<CUPULA_DEG*D){nphi=CUPULA_DEG*D; dphi=0;} // nie przechodzi przez osklepek
               phi=nphi; flow=gc*G.exc*dphi;                    // ruch wsteczny → przepływ odwrócony → ξ<0
             }
           }
@@ -233,12 +454,18 @@ export const Vestibular = (()=>{
       }
       qPrev=sq;
     }
+    // STAN KOŃCOWY do łańcuchowania sesji (ocena II, V3 — fundament D1/R10): pre=simulateCanalith(historia);
+    // test=simulateCanalith({phi0:pre.final.phi, settled:false, ...}). Właściwość NA TABLICY — JSON.stringify
+    // tablic ją pomija (wyrocznie serializujące nie widzą zmiany), iteracja for-of/length/map bez zmian.
+    // UWAGA: bond jest w jednostkach WEWNĘTRZNYCH po skalowaniu rozmiarem (adh*r) — łańcuchowanie między
+    // przebiegami o różnym size przekłamie stan wiązania; przenoś size razem ze stanem.
+    out.final = { phi: phi/D, xi, bond, stuck, exited, inCrus };
     return out;
   }
   // ξ (odchylenie osklepka) → składowe oczopląsu (kierunek z etapu 0, znak z pobudzenia)
   function dynNystagmus(canal, side, xi){
     const q0=quickPhase(canal,side), exc=xi>0, s=exc?1:-1;
-    const m=Math.min(1, Math.abs(xi)*(exc?1:0.45));   // Ewald II: rektyfikacja — odpowiedź hamująca słabsza
+    const m=Math.min(1, Math.abs(xi)*(exc?1:EWALD_INHIB));   // Ewald II: rektyfikacja — odpowiedź hamująca słabsza
     return {excited:exc, intensity:m, h:q0.h*s, v:q0.v*s, t:q0.t*s};
   }
   // klasyfikacja fazy oczopląsu względem kierunku prowokującego (ξ>0 = pierwotny/liberatoryjny)
@@ -248,10 +475,19 @@ export const Vestibular = (()=>{
   //   napędza całą kolumnę endolimfy (efekt „tłoka"). Klinicznie: oczopląs kupulolityczny jest MNIEJ intensywny,
   //   lecz UPORCZYWY (bez wygasania) i NIEmęczliwy — uporczywość/niemęczliwość już modelujemy (tauCup, brak rep),
   //   ten współczynnik domyka RÓŻNICĘ SIŁY. Skaluje ξ (simulateCupulolith) i oczopląs diagnostyczny wariantu
-  //   „cupulo" (nysFromGeom) — JEDNO źródło prawdy. Wartość = wybór KALIBRACYJNY (model fenomenologiczny), spójny
-  //   z „mniej intensywny, bardziej uporczywy" i z zakresem SPV apogeotropowy ≈ 0.4–0.7× geotropowy (kan. poziomy);
-  //   NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik (uproszczenie: nie per-kanał/per-geometria).
-  const CUP_WEAK=0.6;
+  //   „cupulo" (nysFromGeom) — JEDNO źródło prawdy. Wartość = wybór KALIBRACYJNY (model fenomenologiczny):
+  //   KALIBROWANA DO WIELKOŚCI OBSERWOWANEJ (2026-08-13, ocena II B2/K4), nie do samej stałej — pasmo
+  //   piśmiennicze SPV apogeotropowy ≈ 0.4–0.7× geotropowy (kan. poziomy) porównuje się z EMERGENTNYM
+  //   stosunkiem szczytów ξ obu symulacji, a ten przy 0.6 wynosił 0.736 (tuż POZA pasmem: cel statyczny
+  //   kupulo przewyższa szczyt dynamiczny kanalo). 0.45 daje stosunek ~0.54 = środek pasma (z celem przy
+  //   osklepku po A1: 0.45·0.832/0.696). NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik
+  //   (uproszczenie: nie per-kanał/per-geometria; dla kanałów PIONOWYCH pasmo 0.4–0.7 jest ekstrapolacją
+  //   bez własnej normy piśmienniczej).
+  const CUP_WEAK=0.45;
+  // REKTYFIKACJA EWALDA II — o ile słabsza jest odpowiedź HAMUJĄCA niż pobudzająca. Jedno źródło: ta sama
+  // stała rządzi dynamiką (dynNystagmus) i kartą testu (nysFromGeom w pose/maneuvers.js), gdzie do
+  // 2026-08-05 stały DWA niezależne literalne 0.45.
+  const EWALD_INHIB=0.45;
   // symulacja KUPULOLITIAZY: otolity na osklepku → ciężki osklepek odchylany WPROST grawitacją.
   // Brak cząstki w świetle kanału → brak latencji i uporczywość (trzyma się, dopóki pozycja utrzymana).
   // ξ relaksuje do celu statycznego (rzut grawitacji, znak z reguły Ewalda) z krótką stałą tauCup.
@@ -259,6 +495,11 @@ export const Vestibular = (()=>{
     reqCanal(canal, side, "simulateCupulolith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCupulolith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCupulolith: dt musi być liczbą > 0 (podano "+dt+")");
+    // WALIDACJE (ocena II, A10/DYN-9): tauCup <= dt/2 ROZBIEGA jawny schemat Eulera (tauCup=0.024 → ξ~8e26),
+    // tauCup=0 dawało NaN bez wyjątku. gain ŚWIADOMIE bez ograniczenia znaku — gain<0 to przyszła light
+    // cupula (trwały GEOTROPOWY DCPN, ocena II D3); wymagana tylko skończoność.
+    if(!(tauCup>dt/2) || !isFinite(tauCup)) throw new RangeError("simulateCupulolith: tauCup musi być liczbą > dt/2 (stabilność Eulera; podano "+tauCup+")");
+    if(typeof gain!=="number" || !isFinite(gain)) throw new RangeError("simulateCupulolith: gain musi być liczbą skończoną (podano "+gain+")");
     gain=gain*Math.pow(sizeR(size),3);   // cięższy klaster otoconiów → silniejsze wychylenie osklepka (gain ∝ r³); latencji brak (tauCup bez zmian)
     // pozycja startowa: jak w simulateCanalith — jawne q0 lub domyślnie (null) pierwszy q (wsteczna zgodność).
     let xi=0, t=0, qPrev=q0!=null?reqQuat(q0,"simulateCupulolith q0"):reqSegment(timeline[0],0,"simulateCupulolith"); const out=[];
@@ -276,8 +517,8 @@ export const Vestibular = (()=>{
     }
     return out;
   }
-  return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
+  return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, position, sizeR, sizeUm,
           simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, GEXC, CANAL_NORMALS, CUP_WEAK};
+          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, driveAt, CUP_WEAK, EWALD_INHIB};
 })();
 
