@@ -186,7 +186,9 @@ function nysFromGeom(canal, side, variant, q, strengthMode){
   // 'flat' (Bow & Lean, Dix): lateralizacja przez kierunek
   // KUPULOLITIAZA słabsza od kanalolitiazy — ten sam współczynnik co w silniku (Vestibular.CUP_WEAK): oczopląs
   //   wariantu „cupulo" mniej intensywny, lecz uporczywy (persistent niżej niesie brak wygasania).
-  const cupWeak = variant==="cupulo" ? Vestibular.CUP_WEAK : 1;
+  //   „light" (D3/V12): waga LIGHT_W + persistent (trwały GEOTROPOWY) — pełna obsługa w tym samym kroku
+  //   co furtka w position(), żeby nie było pół-obsługi (waga 1/persistent:false po cichu).
+  const cupWeak = variant==="cupulo" ? Vestibular.CUP_WEAK : variant==="light" ? Vestibular.LIGHT_W : 1;
   const strength = (strengthMode==="asym" ? (r.excited?1:Vestibular.EWALD_INHIB) : 1) * cupWeak;
   // kierunek NA EKRANIE z KAMERY obserwatora (diagnostyka: 'frontal' — lustro):
   // poziomy beat biegnie wzdłuż osi międzyusznej → ekran-x = h·cam.right[0];
@@ -197,9 +199,10 @@ function nysFromGeom(canal, side, variant, q, strengthMode){
     dir:  canal==="horizontal" ? Math.sign((r.h||0)*camRx) : Math.sign((r.t||0)*camRx),
     vdir: Math.sign(r.v||0) || 1,   // kierunek pionowy z silnika (frontal nie odwraca pionu)
     strength,
-    persistent: variant==="cupulo",
+    persistent: variant==="cupulo" || variant==="light",
     canal, side, q,                 // do dynamiki ξ(t): diagnostyka używa realnej pozycji
-    anat: {h:r.h, v:r.v, t:r.t}     // anatomiczne składowe (±1) do animacji dialu (widok z tyłu)
+    anat: {h:r.h, v:r.v, t:r.t},    // anatomiczne składowe (±1) do animacji dialu (widok z tyłu)
+    mag: r.mag                      // surowa magnituda rzutu (D3: mini-karta null point liczy z niej cel)
   };
 }
 
@@ -664,6 +667,33 @@ function ldtPhases(side, scen){
   }
   _bltMemo.set(k,out); return out;
 }
+/* ============ Light cupula: skan płaszczyzny zerowej (ocena II, V12/D3) ============
+   Null point (zero rzutu grawitacji na oś osklepka) jest ŚLEPY na znak kontrastu gęstości — WSPÓLNY dla
+   ciężkiego (apo) i lekkiego (light) osklepka, ku uchu CHOREMU (+8.7° supineFlex / +6.9° supineFlat;
+   klinicznie „typowo ~20–30°, opisywany zakres 0–85°" — Lee & Kim 2025; model daje mniejszy kąt tej
+   geometrii). Mechanizm czyta się z KIERUNKU DCPN po bokach zera (pełne odwrócenie apo↔light) i z czasu
+   trwania — nie z położenia zera. Liczba nulla NIE jest wpisana — liczona (konwencja derivedHold). */
+function nullScan(side, yawDeg, body="supineFlex"){
+  const q=stepHeadQ(body, yawDeg, "up");
+  const mk=v=>{ const r=Vestibular.position({canal:"horizontal", side, variant:v, q});
+    const w = v==="light" ? Vestibular.LIGHT_W : Vestibular.CUP_WEAK;
+    const xi = w*r.mag*(r.excited?1:-1);                       // cel statyczny (ten sam wzór co simCupStatic)
+    return { xi, towardA: side==="P" ? r.h>0 : r.h<0,
+             intensity: Math.min(1, Math.abs(xi)*(r.excited?1:Vestibular.EWALD_INHIB)) };
+  };
+  return { heavy: mk("cupulo"), light: mk("light") };
+}
+function nullYawOf(side, body="supineFlex"){
+  const k="nullyaw#"+side+"#"+body; if(_bltMemo.has(k)) return _bltMemo.get(k);
+  let prev=null, out=null;
+  for(let y=-45; y<=45.001; y+=0.1){                            // zakres kliniczny skanu; zero jedno w paśmie
+    const xi=nullScan(side, y, body).heavy.xi;                  // zero wspólne (ślepe na znak) — heavy wystarczy
+    if(prev && Math.sign(xi)!==Math.sign(prev.xi)){ out = prev.y + 0.1*(0-prev.xi)/(xi-prev.xi); break; }
+    prev={y, xi};
+  }
+  out = out==null ? null : Math.round(out*10)/10;
+  _bltMemo.set(k,out); return out;
+}
 // Karty sterowane SCENARIUSZAMI historii — poza podglądem i aktami sesji (decyzja V10, symetrycznie;
 // integracja sesja↔karty scenariuszowe = odłożony kandydat). WSPÓLNY predykat zamiast literałów
 // „bowlean" w strażnikach: pominięcie jednego strażnika uruchamiałoby PO CICHU fallback aktu Dixa
@@ -761,7 +791,7 @@ const DIAG={
     get intro(){return t("Pacjent na plecach, głowa zgięta ~30°. Obróć głowę szybko w jedną, potem w drugą stronę.","Patient supine, head flexed ~30°. Turn the head quickly to one side, then to the other.");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? t(`Geotropowy: strona chora = SILNIEJSZA reakcja → ${sideN(A)}.`,`Geotropic: affected side = STRONGER response → ${sideN(A)}.`)
+      ? t(`Geotropowy: strona chora = SILNIEJSZA reakcja → ${sideN(A)}. Uwaga (D3): geotropowy DCPN UPORCZYWY (>1 min w pozycji), bez latencji i NIEmęczliwy to light cupula, nie kanalolitiaza — zbadaj płaszczyznę zerową (mini-karta niżej).`,`Geotropic: affected side = STRONGER response → ${sideN(A)}. Note (D3): a PERSISTENT geotropic DCPN (>1 min per position), without latency and NON-fatiguing is light cupula, not canalithiasis — examine the null plane (mini-card below).`)
       : t(`Apogeotropowy: strona chora = SŁABSZA reakcja przy uchu w dole → ${sideN(A)}.`,`Apogeotropic: affected side = WEAKER response with that ear down → ${sideN(A)}.`),
     phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
       const mk=down=>{ const up=otherSide(down);
@@ -862,7 +892,7 @@ const DIAG={
     get intro(){return t("Z siadu połóż pacjenta na wznak z głową lekko uniesioną (~30°, jak do testu Roll), bez obrotu. Obserwuj oczopląs po położeniu, następnie posadź i obserwuj ponownie.","From sitting, lay the patient supine with the head slightly raised (~30°, as for the Roll test), without turning. Watch for nystagmus after lying down, then sit the patient up and watch again.");},
     features:featsByVariant,
     latNote:(A,v)=> v==="canalo"
-      ? t("Kierunek i obecność oczopląsu położenia (LDN) zależą od miejsca złogu na starcie — wybierz scenariusz historii nad fazami. Wzorzec geotropowy (położenie → ku uchu ZDROWEMU, odampułkowo) WYNIKA z fizyki dla φ₀<190°. LDN to znak POMOCNICZY lateralizacji (obecny u ~38–68% chorych; nie jest kryterium Bárány) — rozstrzyga zwłaszcza przy symetrycznym teście Roll.","The direction and presence of the lying-down nystagmus (LDN) depend on where the debris starts — pick a history scenario above the phases. The geotropic pattern (lying down → toward the HEALTHY ear, ampullofugal) FOLLOWS from physics for φ₀<190°. LDN is a SECONDARY sign of lateralization (present in ~38–68% of patients; not a Bárány criterion) — it settles the side especially when the Roll test is symmetric.")
+      ? t("Kierunek i obecność oczopląsu położenia (LDN) zależą od miejsca złogu na starcie — wybierz scenariusz historii nad fazami. Wzorzec geotropowy (położenie → ku uchu ZDROWEMU, odampułkowo) WYNIKA z fizyki dla φ₀<190°. LDN to znak POMOCNICZY lateralizacji (obecny u ~38–68% chorych; nie jest kryterium Bárány) — rozstrzyga zwłaszcza przy symetrycznym teście Roll. Trwały geotropowy oczopląs >1 min → myśl o light cupula (mini-karta null point na karcie Roll).","The direction and presence of the lying-down nystagmus (LDN) depend on where the debris starts — pick a history scenario above the phases. The geotropic pattern (lying down → toward the HEALTHY ear, ampullofugal) FOLLOWS from physics for φ₀<190°. LDN is a SECONDARY sign of lateralization (present in ~38–68% of patients; not a Bárány criterion) — it settles the side especially when the Roll test is symmetric. A persistent geotropic nystagmus >1 min → think light cupula (null-point mini-card on the Roll test).")
       : t("Apogeotropowy (kupulolitiaza): położenie → oczopląs KU UCHU CHOREMU (ampulopetalne odchylenie ciężkiego osklepka), uporczywy; w siadzie słaby pseudo-spontaniczny oczopląs (PSN) ku chorej. Null point ~10–30° skrętu głowy ku uchu choremu (model: ~9°). Wynik nie zależy od historii pozycyjnej.","Apogeotropic (cupulolithiasis): lying down → nystagmus TOWARD THE AFFECTED ear (ampullopetal deflection of the heavy cupula), persistent; in sitting a weak pseudo-spontaneous nystagmus (PSN) toward the affected side. Null point at ~10–30° of head turn toward the affected ear (model: ~9°). The result does not depend on positional history."),
     phases:(A,v,scen)=>{ const S=scen||"textbook";
       const mkPose=(key)=> key==="lie"
@@ -964,14 +994,15 @@ function baranyClassify(canal, variant, side, antMode){
   // kanał poziomy (roll / bow-lean)
   return variant==="canalo"
     ? { ...est, subtype:t("BPPV kanału poziomego — kanalolitiaza (geotropowy)","Horizontal-canal BPPV — canalithiasis (geotropic)"),
-        crit:[[t("Latencja","Latency"),t("sekundy","seconds")],[t("Czas trwania","Duration"),"< 1 min"],[t("Męczliwość","Fatigability"),t("tak","yes")],[t("Kierunek","Direction"),t("geotropowy (ku uchu w dole)","geotropic (toward the lower ear)")],[t("Strona chora","Affected side"),`${S} — ${t("SILNIEJSZA reakcja","STRONGER response")}`]] }
+        crit:[[t("Latencja","Latency"),t("sekundy","seconds")],[t("Czas trwania","Duration"),"< 1 min"],[t("Męczliwość","Fatigability"),t("tak","yes")],[t("Kierunek","Direction"),t("geotropowy (ku uchu w dole)","geotropic (toward the lower ear)")],[t("Strona chora","Affected side"),`${S} — ${t("SILNIEJSZA reakcja","STRONGER response")}`]],
+        redflag:t("Geotropowy DCPN UPORCZYWY (>1 min), bez latencji, NIEmęczliwy → light cupula (poza klasyfikacją Bárány): manewry repozycyjne nieskuteczne (0% w seriach), ustępuje samoistnie w dniach–tygodniach; płaszczyzna zerowa ~10–30° skrętu ku uchu choremu potwierdza stronę (mini-karta na teście Roll). Ośrodkowo: co ~8. chory z trwałym geotropowym oczopląsem ma zmianę móżdżku (migdałek) — brak punktu zerowego lub punkt obustronny to flaga ośrodkowa.","A PERSISTENT geotropic DCPN (>1 min), without latency, NON-fatiguing → light cupula (outside the Bárány classification): repositioning maneuvers are ineffective (0% in series), resolves spontaneously in days–weeks; a null plane at ~10–30° of rotation toward the affected ear confirms the side (mini-card on the Roll test). Central caveat: ~1 in 8 patients with persistent geotropic nystagmus has a cerebellar (tonsil) lesion — an absent or bilateral null point is a central flag.") }
     : { ...est, subtype:t("BPPV kanału poziomego — kupulolitiaza (apogeotropowy)","Horizontal-canal BPPV — cupulolithiasis (apogeotropic)"),
         crit:[[t("Latencja","Latency"),t("brak / krótka","none / brief")],[t("Czas trwania","Duration"),t("uporczywy","persistent")],[t("Męczliwość","Fatigability"),t("nie","no")],[t("Kierunek","Direction"),t("apogeotropowy (ku uchu w górze)","apogeotropic (toward the upper ear)")],[t("Punkt zerowy (null point)","Null point"),t("zanik przy ~10–30° skrętu ku uchu choremu","abolished at ~10–30° rotation toward the affected ear")],[t("Strona chora","Affected side"),`${S} — ${t("SŁABSZA reakcja","WEAKER response")}`]],
         redflag:t("Uporczywy pozycyjny DCPN bez punktu zerowego, kierunek niemieszczący się w jednym kanale lub ataksja → rozważ przyczynę OŚRODKOWĄ (CPN — przełącz na widok „Ośrodkowy”). Trwały GEOTROPOWY oczopląs >1 min sugeruje light cupula, nie kanalolitiazę.","Persistent positional DCPN without a null point, a direction that fits no single canal, or ataxia → consider a CENTRAL cause (CPN — switch to the \"Central\" view). Persistent GEOTROPIC nystagmus >1 min suggests light cupula, not canalithiasis.") };
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, ldtPhases, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

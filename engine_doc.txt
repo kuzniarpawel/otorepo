@@ -89,11 +89,13 @@ gHead(q) -> [x, y, z]
 
 position({canal, side, variant, q}) -> {excited, mag, h, v, t}
    Statyczna stymulacja CHOREGO kanału w orientacji głowy q.
-   side: "L"|"P"; variant: "canalo" (geotropowy) | "cupulo" (apogeotropowy).
+   side: "L"|"P"; variant: "canalo" (geotropowy) | "cupulo" (apogeotropowy) | "light" (od V12:
+   light cupula, geotropowy TRWAŁY — TYLKO canal="horizontal", na pionowych TypeError; odwraca
+   znak proj przy TYM SAMYM punkcie oceny i zerze rzutu — null point wspólny z "cupulo").
    Mechanizm: składowa STYCZNA grawitacji w miejscu, GDZIE ZŁÓG LEŻY → przepływ → Ewald.
      drive = g · tangAt(G, φ_oceny);  proj = G.exc · drive;  excited = proj>0 (JEDNA reguła Ewalda)
      φ_oceny = restPhi(canal,side) dla WOLNEGO złogu (canalo; także kupulo kanałów PIONOWYCH — jawny
-       wybór fenomenologiczny, komentarz w kodzie) · CUPULA_DEG dla KUPULO KANAŁU POZIOMEGO.
+       wybór fenomenologiczny, komentarz w kodzie) · CUPULA_DEG dla KUPULO/LIGHT KANAŁU POZIOMEGO.
        [2026-08-13, ocena II A1/V4: złóg kupulolityczny siedzi NA OSKLEPKU, nie w spoczynku wolnego
         złogu (199.8°); dawna inwersja proj<0 trzymała znak Rolla wyłącznie antypodycznym zbiegiem
         (restPhi HC ~197° od bańki), a liczyła null point po ZŁEJ stronie i odwracała Bow&Lean apo
@@ -268,8 +270,13 @@ nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
 simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
    q0 — orientacja STARTOWA; semantyka jak w simulateCanalith (null = q pierwszego segmentu).
    WALIDACJE (od 2026-08-13, ocena II A10/DYN-9): tauCup>dt/2 (poniżej jawny Euler ROZBIEGA — 0.024
-   dawało ξ~8e26 bez błędu) · gain skończony, ŚWIADOMIE bez ograniczenia znaku (gain<0 = przyszła
-   light cupula: trwały GEOTROPOWY DCPN — ocena II, D3).
+   dawało ξ~8e26 bez błędu) · gain skończony ORAZ — od V12 — gain<0 ZABLOKOWANY RangeErrorem
+   z odesłaniem do simulateLightCupula (dawna furtka „gain<0 = przyszła light cupula" ZAMKNIĘTA:
+   znak gainu to przełącznik CHOROBY, nie pokrętło amplitudy — ujemna wartość z formuły cicho
+   odwracałaby fenotyp apo→geo na karcie kupulo; mechanizm wybiera się FASADĄ).
+   Wewnętrznie obie fasady (kupulo/light) wołają WSPÓLNĄ całkę statyczną (simCupStatic) — ten sam
+   mechanizm „cel statyczny + relaksacja tauCup", różny wyłącznie znak kontrastu gęstości (żyje
+   w position(variant)) i waga (CUP_WEAK / LIGHT_W).
    size skaluje gain ∝ r³ (cięższy klaster otoconiów → silniejsze wychylenie osklepka); latencji brak
    (tauCup bez zmian). SIZE_R jak w simulateCanalith. medium == r=1 → wynik identyczny.
    Symulacja KUPULOLITIAZY: otolity przyklejone do osklepka → ciężki osklepek odchylany
@@ -292,6 +299,30 @@ simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.
        - płynne odwrócenie przy zmianie pozycji
    Zwraca: t [s], xi (znak = pobudzenie/hamowanie), target (cel statyczny).
    Parametry strojeniowe: tauCup, gain — DO KALIBRACJI.
+
+simulateLightCupula({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
+   LIGHT CUPULA (ocena II, D3/V12) — trwały GEOTROPOWY DCPN kanału poziomego: fasada tej samej całki
+   statycznej co kupulolitiaza, ze znakiem wyporu odwróconym w position(variant:"light") (TYLKO
+   canal="horizontal" — na pionowych TypeError) i wagą LIGHT_W=0.45 (osobna gałka kalibracyjna;
+   start = CUP_WEAK, kotwica: stosunek szczytów light/canalo-geo w Rollu 0.375/0.696 = 0.538 — środek
+   pasma 0.4–0.7, brak osobnej normy piśmienniczej SPV light-vs-geo). gain>0 wymagany (RangeError);
+   caller NIGDY nie steruje znakiem. TOŻSAMOŚĆ (zmierzona): ξ_light(+g) ≡ −ξ_cupulo(+g) bit-w-bit.
+   Cechy emergentne: DCPN GEOTROPOWY trwały bez latencji (Roll: chora w dole +0.375 / zdrowa −0.398 —
+   chora SILNIEJSZA, 2.1× z rektyfikacji EWALD_INHIB); PŁASZCZYZNA ZEROWA WSPÓLNA z ciężkim osklepkiem
+   (zero rzutu ŚLEPE na znak gainu): +8.7° yaw ku uchu CHOREMU (supineFlex; +6.9° supineFlat) — model
+   tej geometrii daje kąt mniejszy niż klinika (typowo ~20–30°, opisywany zakres 0–85° — Lee & Kim 2025);
+   mechanizm czyta się z KIERUNKU DCPN wokół zera (pełne odwrócenie heavy↔light) i z CZASU, nie z
+   położenia zera; pseudo-SN siadu ODWRÓCONY względem apo (light −0.024 ku zdrowej / apo +0.024 ku
+   chorej — obie podprogowe); wokół zera pasmo ciszy ~±25° (rzuty przy linii środkowej małe + rektyfikacja
+   hamowania) — klinicznie null jest punktowy, rozjazd nazwany na karcie. STATUS KLINICZNY (uczciwość
+   karty): „light cupula" to nazwa WZORCA, nie potwierdzony mechanizm (5 hipotez: lżejszy osklepek /
+   cięższa endolimfa / lekkie cząstki [nigdy niezidentyfikowane, manewry 0% — Ban 2016] / dysfunkcja
+   łagiewki / gradient perilimfa-endolimfa); jednostka POZA klasyfikacją Bárány 2015; seria 2025
+   (J Neurol 272): większość przypadków epizodyczna, związek z migreną przedsionkową; Choi 2018
+   (Neurology): 12% trwałego geotropowego oczopląsu = zmiana móżdżku (migdałek) — brak/obustronność
+   punktu zerowego to flaga ośrodkowa. UI: mini-karta „znajdź płaszczyznę zerową" na karcie testu Roll
+   (suwak yaw ±90°, dwa rzędy oczu heavy/light z JEDNEGO kąta, napisy z tego samego celu co strzałki);
+   redflag w baranyClassify HC-geo; wariant stanu UI pozostaje binarny (rozdział fenotyp/mechanizm = D4).
 
 dynNystagmus(canal, side, xi) -> {excited, intensity, h, v, t}
    Konwersja chwilowego ξ (z simulateCanalith) na składowe oczopląsu.

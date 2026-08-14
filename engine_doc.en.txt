@@ -90,11 +90,13 @@ gHead(q) -> [x, y, z]
 
 position({canal, side, variant, q}) -> {excited, mag, h, v, t}
    Static stimulation of the AFFECTED canal in head orientation q.
-   side: "L"|"P"; variant: "canalo" (geotropic) | "cupulo" (apogeotropic).
+   side: "L"|"P"; variant: "canalo" (geotropic) | "cupulo" (apogeotropic) | "light" (since V12:
+   light cupula, PERSISTENT geotropic — ONLY canal="horizontal", TypeError on the vertical canals;
+   flips the sign of proj at the SAME evaluation point and projection zero — null point shared with "cupulo").
    Mechanism: projection of gravity onto the canal's excitation axis → flow → Ewald.
      drive = g · tangAt(G, φ_eval);  proj = G.exc · drive;  excited = proj>0 (ONE Ewald rule)
      φ_eval = restPhi(canal,side) for FREE debris (canalo; also cupulo of the VERTICAL canals — an
-       explicit phenomenological choice, see the code comment) · CUPULA_DEG for HORIZONTAL-CANAL CUPULO.
+       explicit phenomenological choice, see the code comment) · CUPULA_DEG for HORIZONTAL-CANAL CUPULO/LIGHT.
        [2026-08-13, assessment II A1/V4: cupulolithiasis debris sits ON THE CUPULA, not at the free-debris
         rest (199.8°); the old proj<0 inversion held the Roll sign only by an antipodal coincidence
         (restPhi HC ~197° from the ampulla), while computing the null point on the WRONG side and
@@ -275,8 +277,13 @@ nystagmusPhase(xi, thr=0.05) -> "primary" | "reversed" | "none"
 simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
    q0 — STARTING orientation; semantics as in simulateCanalith (null = the q of the first segment).
    VALIDATIONS (since 2026-08-13, assessment II A10/DYN-9): tauCup>dt/2 (below it the explicit Euler
-   scheme DIVERGES — 0.024 gave ξ~8e26 with no error) · gain finite, DELIBERATELY without a sign
-   constraint (gain<0 = future light cupula: persistent GEOTROPIC DCPN — assessment II, D3).
+   scheme DIVERGES — 0.024 gave ξ~8e26 with no error) · gain finite AND — since V12 — gain<0 BLOCKED
+   with a RangeError redirecting to simulateLightCupula (the old loophole "gain<0 = future light cupula"
+   is CLOSED: the sign of gain is a DISEASE switch, not an amplitude knob — a negative value coming from
+   a formula would silently flip the phenotype apo→geo on the cupulo card; the mechanism is chosen by FACADE).
+   Internally both facades (cupulo/light) call the SHARED static integrator (simCupStatic) — the same
+   "static target + tauCup relaxation" mechanism, differing solely in the sign of the density contrast
+   (it lives in position(variant)) and the weight (CUP_WEAK / LIGHT_W).
    size scales gain ∝ r³ (a heavier otoconia cluster → stronger cupular deflection); no latency
    (tauCup unchanged). SIZE_R as in simulateCanalith. medium == r=1 → identical result.
    Simulation of CUPULOLITHIASIS: otoliths attached to the cupula → a heavy cupula deflected
@@ -300,6 +307,34 @@ simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.
        - smooth reversal on position change
    Returns: t [s], xi (sign = excitation/inhibition), target (static target).
    Tuning parameters: tauCup, gain — TO BE CALIBRATED.
+
+simulateLightCupula({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}) -> [{t, xi, target}, ...]
+   LIGHT CUPULA (assessment II, D3/V12) — persistent GEOTROPIC DCPN of the horizontal canal: a facade
+   over the SAME static integrator as cupulolithiasis, with the buoyancy sign flipped in
+   position(variant:"light") (ONLY canal="horizontal" — TypeError on the vertical canals) and with the
+   weight LIGHT_W=0.45 (a separate calibration knob; start = CUP_WEAK, anchor: the light/canalo-geo
+   ratio of ξ peaks in the Roll 0.375/0.696 = 0.538 — the middle of the 0.4–0.7 band, no separate
+   literature norm for light-vs-geo SPV). gain>0 required (RangeError); the caller NEVER controls the
+   sign. IDENTITY (measured): ξ_light(+g) ≡ −ξ_cupulo(+g) bit-for-bit.
+   Emergent features: persistent GEOTROPIC DCPN with no latency (Roll: affected ear down +0.375 /
+   healthy −0.398 — the AFFECTED side STRONGER, 2.1× from the EWALD_INHIB rectification); NULL PLANE
+   SHARED with the heavy cupula (the projection zero is BLIND to the sign of gain): +8.7° yaw toward
+   the AFFECTED ear (supineFlex; +6.9° supineFlat) — the model of this geometry gives an angle smaller
+   than the clinic (typically ~20–30°, reported range 0–85° — Lee & Kim 2025); the mechanism is read
+   from the DIRECTION of the DCPN around the zero (full heavy↔light reversal) and from TIME, not from
+   the location of the zero; the sitting pseudo-SN is REVERSED relative to apo (light −0.024 toward the
+   healthy ear / apo +0.024 toward the affected one — both subthreshold); around the zero a silence
+   band of ~±25° (projections near the midline are small + the inhibition rectification) — clinically
+   the null is a point, the mismatch is named on the card. CLINICAL STATUS (honesty of the card):
+   "light cupula" is the name of a PATTERN, not a confirmed mechanism (5 hypotheses: a lighter cupula /
+   heavier endolymph / light particles [never identified, maneuvers 0% — Ban 2016] / utricular
+   dysfunction / perilymph-endolymph gradient); the entity sits OUTSIDE the Bárány 2015 classification;
+   the 2025 series (J Neurol 272): most cases episodic, linked to vestibular migraine; Choi 2018
+   (Neurology): 12% of persistent geotropic nystagmus = a cerebellar (tonsil) lesion — an
+   absent/bilateral null point is a central flag. UI: a "find the null plane" mini-card on the Roll
+   test card (yaw slider ±90°, two rows of eyes heavy/light from ONE angle, labels from the same
+   target as the arrows); a red flag in baranyClassify HC-geo; the UI state variant stays binary
+   (the phenotype/mechanism split = D4).
 
 dynNystagmus(canal, side, xi) -> {excited, intensity, h, v, t}
    Conversion of instantaneous ξ (from simulateCanalith) into nystagmus components.

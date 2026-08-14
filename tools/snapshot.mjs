@@ -173,6 +173,26 @@ function engineOracle(h) {
     out.sessionChain = chain;
   }
 
+  // LIGHT CUPULA (ocena II, V12/D3): pin nulla i celów statycznych per strona — null yaw z bisekcji
+  // (WSPÓLNY dla heavy/light), pełne odwrócenie kierunku wokół zera, oś Rolla fasady light.
+  if (h.nullScan && h.nullYawOf && h.Vestibular && h.Vestibular.simulateLightCupula) {
+    const r5 = x => x == null ? null : +(+x).toFixed(5);
+    const lc = {};
+    for (const side of ['P', 'L']) {
+      const twdA = side === 'P' ? 1 : -1;
+      const s0 = h.nullScan(side, 0), s20 = h.nullScan(side, 20 * twdA);
+      const tlA = [{ q: h.stepHeadQ('supineFlex', 90 * twdA, 'up'), tTrans: 0.8, tHold: 20 }];
+      const tlH = [{ q: h.stepHeadQ('supineFlex', -90 * twdA, 'up'), tTrans: 0.8, tHold: 20 }];
+      const a = h.Vestibular.simulateLightCupula({ canal: 'horizontal', side, q0: [1, 0, 0, 0], timeline: tlA });
+      const hh = h.Vestibular.simulateLightCupula({ canal: 'horizontal', side, q0: [1, 0, 0, 0], timeline: tlH });
+      lc[side] = { nullYaw: r5(h.nullYawOf(side)),
+        mid: { heavy: r5(s0.heavy.xi), light: r5(s0.light.xi) },
+        beyond20: { heavy: r5(s20.heavy.xi), light: r5(s20.light.xi) },
+        rollLight: { affDown: r5(a[a.length - 1].xi), healthyDown: r5(hh[hh.length - 1].xi) } };
+    }
+    out.lightcupula = lc;
+  }
+
   // LYING-DOWN (ocena II, V11/D2): pin liczb faz per scenariusz×strona — dom zaokrągla φ₀ i tnie ξ
   // progiem XI_CARD, więc dryf podprogowy byłby w dom niewidzialny (precedens sessionChain).
   if (h.ldtPhases) {
@@ -474,6 +494,7 @@ if (!CHECK) {
       diffKeys(snap.engine.neuro, gold.engine.neuro, 'engine.neuro/', diffs);
       diffKeys(snap.engine.sessionChain, gold.engine.sessionChain, 'engine.sessionChain/', diffs);   // V10/D1: bez tej linii pin byłby zapisywany, ale nigdy porównywany
       diffKeys(snap.engine.lyingdown, gold.engine.lyingdown, 'engine.lyingdown/', diffs);            // V11/D2: jw.
+      diffKeys(snap.engine.lightcupula, gold.engine.lightcupula, 'engine.lightcupula/', diffs);      // V12/D3: jw.
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

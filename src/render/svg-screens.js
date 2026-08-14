@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, ldtPhases, SCEN_DRIVEN, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -981,6 +981,44 @@ function diagClassifyCard(canal, v, side, antMode){
       <div class="obslabel" style="margin-bottom:8px">${t("Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe","Bárány classification (ICVD) and central differentiation")}</div>
       ${seg}${central?cpn:bppv}</div>`;
 }
+// ===== Mini-karta „znajdź płaszczyznę zerową" (ocena II, V12/D3) =====
+// Renderowana na karcie ROLL, NIEZALEŻNIE od state.variant: porównuje OBA mechanizmy trwałej kupulopatii
+// (heavy=apo vs light=geo) z JEDNEGO suwaka yaw — trzeci mechanizm jako oś porównania, nie trzeci stan
+// (flip-karta mechanizmu zostaje binarna; rozdział fenotyp/mechanizm = D4). Suwak żyje w DOM (bez pola
+// w state — re-render wraca do 0; zmiana strony i tak unieważnia znak yaw). Napisy generowane z TEGO
+// SAMEGO celu co strzałki (bltDirWord + nullScan) — konwencja V5, sprzeczność strukturalnie niemożliwa.
+function setNullYaw(v){
+  const A=state.side, yaw=Math.round(+v||0);
+  const val=$('[data-nullyawval]'); if(val) val.textContent=(yaw>0?"+":"")+yaw+"°";
+  const q=stepHeadQ("supineFlex", yaw, "up"), sc=nullScan(A, yaw);
+  for(const [tag, variant, r] of [["heavy","cupulo",sc.heavy],["light","light",sc.light]]){
+    const base=nysFromGeom("horizontal", A, variant, q, "flat");
+    const sub = r.intensity < XI_CARD;                    // wokół zera etykieta NIE miga słowem kierunkowym
+    const nys = sub ? {...base, dir:0, strength:0, anat:{h:0,v:0,t:0}, fatigue:1, init:null, unresolved:true}
+                    : {...base, strength:r.intensity, fatigue:1, init:null};
+    const c=$(`[data-nullnys-${tag}]`); if(c) startNys(c, nys, {env:()=>r.intensity, tEnd:Infinity});
+    const ar=$(`[data-nullarr-${tag}]`); if(ar) ar.textContent=arrowGlyph(nys);
+    const lb=$(`[data-nulllab-${tag}]`); if(lb) lb.textContent = sub
+      ? t("≈ płaszczyzna zerowa — oczopląs cichnie","≈ null plane — the nystagmus falls silent")
+      : bltDirWord(A, r.towardA) + t(" · uporczywy"," · persistent");
+  }
+}
+function nullPointCard(A){
+  const np=nullYawOf(A);
+  const row=(tag,name)=>`<div class="panelbox" style="margin-top:8px"><h4>${name}</h4>
+    <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-nullnys-${tag}>${eyesSVG()}</div><span class="emk">L</span></div>
+    <div class="nyslabel"><span class="arrow" data-nullarr-${tag}></span><span data-nulllab-${tag}></span></div></div>`;
+  return `<div class="card" style="margin-bottom:4px">
+    <div class="obslabel" style="margin-bottom:4px">${t("Znajdź płaszczyznę zerową — trwała kupulopatia: heavy (apo) vs light (geo)","Find the null plane — persistent cupulopathy: heavy (apo) vs light (geo)")}</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--muted)">${t("na wznak (pozycja Rolla), skręt głowy","supine (Roll position), head turn")}</span>
+      <input type="range" min="-90" max="90" step="1" value="0" aria-label="${t("Skręt głowy w osi pionowej (yaw)","Head turn in the vertical axis (yaw)")}" oninput="setNullYaw(this.value)" style="flex:1;min-width:160px">
+      <b class="mono" data-nullyawval>0°</b>
+    </div>
+    ${row("heavy", t("Ciężki osklepek — kupulolitiaza (DCPN apogeotropowy)","Heavy cupula — cupulolithiasis (apogeotropic DCPN)"))}
+    ${row("light", t("Light cupula (DCPN geotropowy TRWAŁY)","Light cupula (PERSISTENT geotropic DCPN)"))}
+    <div class="note">${t(`Płaszczyzna zerowa jest WSPÓLNA dla obu mechanizmów (model tej geometrii: ${np>0?"+":""}${np}° ku uchu choremu; klinicznie typowo ~20–30°, opisywany zakres 0–85°) — potwierdza STRONĘ. Mechanizm czyta się z KIERUNKU oczopląsu wokół zera (pełne odwrócenie heavy↔light: przemiataj ku ±90°) i z CZASU: oba trwałe i niemęczliwe, ale light jest geotropowy jak kanalolitiaza — różnicuje TRWAŁOŚĆ (>1 min) i null point, którego kanalolitiaza nie ma. Uwaga (model): wokół zera rozciąga się szerokie pasmo ciszy (~±25° — rzuty grawitacji przy linii środkowej są w tej geometrii małe, a odpowiedź hamująca dodatkowo słabnie przez rektyfikację); klinicznie oczopląs bywa widoczny bliżej linii środkowej, a null jest punktowy. „Light cupula" to nazwa WZORCA (mechanizm nieustalony — 5 hipotez); manewry repozycyjne: skuteczność 0%, leczeniem jest rozpoznanie, wyjaśnienie i obserwacja.`,`The null plane is COMMON to both mechanisms (this geometry's model: ${np>0?"+":""}${np}° toward the affected ear; clinically typically ~20–30°, reported range 0–85°) — it confirms the SIDE. The mechanism is read from the nystagmus DIRECTION around the null (full heavy↔light reversal: sweep toward ±90°) and from TIME: both are persistent and non-fatiguing, but light is geotropic like canalithiasis — what differentiates is PERSISTENCE (>1 min) and the null point, which canalithiasis does not have. Model note: a wide silence band (~±25°) surrounds the zero — gravity projections near the midline are small in this geometry, and inhibitory responses are further weakened by rectification; clinically the nystagmus is often visible closer to the midline, and the null is point-like. "Light cupula" names a PATTERN (mechanism unsettled — 5 hypotheses); repositioning maneuvers: 0% efficacy — the treatment is recognition, explanation and observation.`)}</div></div>`;
+}
 // ===== Selektor scenariuszy historii pozycyjnej (V5; od V11/D2 WSPÓLNY dla kart B&L i lying-down) =====
 // state.bltScenario jest CELOWO jednym polem obu kart HC: scenariusz = historia PACJENTA, nie testu —
 // „ta sama godzina życia pacjenta → dwa testy" (bltInit memo współdzielone). Ekstrakcja bajt-w-bajt
@@ -1200,7 +1238,7 @@ function renderDiag(){
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
       </div></div>` : ""}
-    ${sessionPanel}${bltPanel}${ldtPanel}${phaseHTML}${fatPanel}${bltExtras}${ldtExtras}
+    ${sessionPanel}${bltPanel}${ldtPanel}${phaseHTML}${fatPanel}${state.testKey==="roll"?nullPointCard(A):""}${bltExtras}${ldtExtras}
     ${(()=>{
       const interp = v0 => antMode
         ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)
@@ -1243,6 +1281,7 @@ function renderDiag(){
     // CPN: uporczywy downbeat Z SILNIKA (preset 'downbeat' — odhamowanie drog kanalow przednich), nie literal:
     // fizyka i animacja maja jedno zrodlo; petla CIAGLA (startNys z obwiednia xi wylaczylby sie, a CPN jest UPORCZYWY).
     const cpn=$('[data-cpnnys]'); if(cpn) startNeuroNys(cpn, NeuroVOR.observe(NeuroVOR.scenario('downbeat'), false), 0);
+    if(state.testKey==="roll") setNullYaw(0);   // V12/D3: montaż mini-karty null point (suwak startuje w 0)
     sizeFlip("mechflip"); sizeFlip("phaseflip");
   });
 }
@@ -1833,8 +1872,8 @@ function sideSel(current, fn, lbl){
   return `<div class="sidesel"><span class="lbl">${lbl}</span><div class="tabs">${opt('L')}${opt('P')}</div></div>`;
 }
 
-export { FLIP_ICO, SIZE_LABELS, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable };
+export { FLIP_ICO, SIZE_LABELS, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable, setNullYaw, nullPointCard };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel });
+Object.assign(window, { headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, setNullYaw });

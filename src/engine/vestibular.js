@@ -222,7 +222,10 @@ export const Vestibular = (()=>{
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
     reqCanal(canal, side, "position");
-    if(variant!=null && variant!=="cupulo" && variant!=="canalo") throw new TypeError('position: nieznany variant "'+variant+'" (dozwolone: "cupulo"|"canalo"|brak)');
+    if(variant!=null && variant!=="cupulo" && variant!=="canalo" && variant!=="light") throw new TypeError('position: nieznany variant "'+variant+'" (dozwolone: "cupulo"|"canalo"|"light"|brak)');
+    // variant="light" (ocena II, D3/V12): light cupula — WYŁĄCZNIE kanał poziomy (jednostka opisana
+    // dla HC; furtka wąska świadomie — TypeError zamiast cichej ekstrapolacji na kanały pionowe).
+    if(variant==="light" && canal!=="horizontal") throw new TypeError('position: variant "light" (light cupula) jest zdefiniowany tylko dla canal="horizontal" (podano "'+canal+'")');
     q=reqQuat(q, "position");            // waliduje (skończony, dł. 4) i normalizuje
     const g=gHead(q), G=CANAL_GEOM[canal][side];
     // napęd styczny TAM, GDZIE ZŁÓG LEŻY — ta sama wielkość, którą całkuje simulateCanalith,
@@ -241,9 +244,13 @@ export const Vestibular = (()=>{
     //   osklepku dawałby PC silny UPORCZYWY bodziec w siadzie (0.708) — sprzeczny z kliniką; w Dix oba
     //   punkty dają ten sam znak (magnituda przy osklepku 2.35× mniejsza). AC: restPhi=3=CUPULA_DEG,
     //   więc obie reguły są tożsame z konstrukcji.
-    const cupHC = (variant==="cupulo" && canal==="horizontal");
+    const cupHC = ((variant==="cupulo" || variant==="light") && canal==="horizontal");
     const drive=dot3(g, tangAt(G, cupHC ? CUPULA_DEG : restPhi(canal, side)));   // >0 = ampullofugalny (rosnące φ)
     let proj=G.exc*drive;                                   // exc: +1 pionowe (Ewald III), −1 poziomy (Ewald II)
+    // LIGHT CUPULA (ocena II, D3/V12): lekki osklepek = ODWRÓCONY znak wyporu — ten sam punkt oceny
+    // (przy osklepku), to samo zero rzutu (null point WSPÓLNY z apo, ku uchu CHOREMU: +8.7° supineFlex /
+    // +6.9° supineFlat), przeciwny kierunek DCPN po obu stronach zera (geotropowy trwały).
+    if(variant==="light") proj=-proj;
     const excited = proj>0;                                 // JEDNA reguła Ewalda — inwersja cupulo-HC zbędna po przeniesieniu punktu oceny
     const q0=quickPhase(canal, side), s=excited?1:-1, mag=Math.abs(proj);
     return {excited, mag, h:q0.h*s, v:q0.v*s, t:q0.t*s};
@@ -506,23 +513,33 @@ export const Vestibular = (()=>{
   //   (uproszczenie: nie per-kanał/per-geometria; dla kanałów PIONOWYCH pasmo 0.4–0.7 jest ekstrapolacją
   //   bez własnej normy piśmienniczej).
   const CUP_WEAK=0.45;
+  // LIGHT CUPULA — waga statyczna lekkiego osklepka (ocena II, D3/V12). Start = CUP_WEAK (0.45): osobna
+  // GAŁKA kalibracyjna (nie alias), kotwiczona jak CUP_WEAK do wielkości emergentnej — stosunek szczytów
+  // light/canalo-geo w Rollu 0.375/0.696 = 0.538 (środek tego samego pasma 0.4–0.7, którym skalibrowano
+  // CUP_WEAK; piśmiennictwo nie daje osobnej normy SPV light-vs-geo). „DCPN wyraźniejszy niż apo" wychodzi
+  // BEZ nowej stałej z samej rektyfikacji EWALD_INHIB (na tej samej fazie display 0.375 vs 0.169).
+  const LIGHT_W=0.45;
   // REKTYFIKACJA EWALDA II — o ile słabsza jest odpowiedź HAMUJĄCA niż pobudzająca. Jedno źródło: ta sama
   // stała rządzi dynamiką (dynNystagmus) i kartą testu (nysFromGeom w pose/maneuvers.js), gdzie do
   // 2026-08-05 stały DWA niezależne literalne 0.45.
   const EWALD_INHIB=0.45;
-  // symulacja KUPULOLITIAZY: otolity na osklepku → ciężki osklepek odchylany WPROST grawitacją.
-  // Brak cząstki w świetle kanału → brak latencji i uporczywość (trzyma się, dopóki pozycja utrzymana).
+  // WSPÓLNA CAŁKA STATYCZNA osklepka (ocena II, D3/V12): ciężki (kupulo) i lekki (light) osklepek to TEN SAM
+  // mechanizm „cel statyczny + relaksacja tauCup, bez latencji, uporczywy" — różnią się wyłącznie znakiem
+  // kontrastu gęstości (znak żyje w position(variant) — jedno źródło) i wagą (CUP_WEAK / LIGHT_W).
   // ξ relaksuje do celu statycznego (rzut grawitacji, znak z reguły Ewalda) z krótką stałą tauCup.
-  function simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}){
+  function simCupStatic({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium", variant="cupulo"}){
     reqCanal(canal, side, "simulateCupulolith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCupulolith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCupulolith: dt musi być liczbą > 0 (podano "+dt+")");
     // WALIDACJE (ocena II, A10/DYN-9): tauCup <= dt/2 ROZBIEGA jawny schemat Eulera (tauCup=0.024 → ξ~8e26),
-    // tauCup=0 dawało NaN bez wyjątku. gain ŚWIADOMIE bez ograniczenia znaku — gain<0 to przyszła light
-    // cupula (trwały GEOTROPOWY DCPN, ocena II D3); wymagana tylko skończoność.
+    // tauCup=0 dawało NaN bez wyjątku. Znak gainu pilnują FASADY (simulateCupulolith / simulateLightCupula) —
+    // dawna furtka „gain<0 = przyszła light cupula" ZAMKNIĘTA w D3/V12 (mechanizm wybiera się fasadą, nie znakiem).
     if(!(tauCup>dt/2) || !isFinite(tauCup)) throw new RangeError("simulateCupulolith: tauCup musi być liczbą > dt/2 (stabilność Eulera; podano "+tauCup+")");
     if(typeof gain!=="number" || !isFinite(gain)) throw new RangeError("simulateCupulolith: gain musi być liczbą skończoną (podano "+gain+")");
     gain=gain*Math.pow(sizeR(size),3);   // cięższy klaster otoconiów → silniejsze wychylenie osklepka (gain ∝ r³); latencji brak (tauCup bez zmian)
+    // UWAGA size dla LIGHT: „rozmiar złogu" nie ma tu interpretacji fizycznej (mechanizm gęstościowy osklepka,
+    // nie masa kłębka) — pass-through zostaje jako GENERYCZNY mnożnik amplitudy (udokumentowane).
+    const W = variant==="light" ? LIGHT_W : CUP_WEAK;
     // pozycja startowa: jak w simulateCanalith — jawne q0 lub domyślnie (null) pierwszy q (wsteczna zgodność).
     let xi=0, t=0, qPrev=q0!=null?reqQuat(q0,"simulateCupulolith q0"):reqSegment(timeline[0],0,"simulateCupulolith"); const out=[];
     for(const [si,seg] of timeline.entries()){
@@ -530,8 +547,8 @@ export const Vestibular = (()=>{
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
-        const p=position({canal, side, variant:"cupulo", q:slerpQ(qPrev,sq,u)});
-        const target=CUP_WEAK*gain*p.mag*(p.excited?1:-1);   // cel statyczny ważony grawitacją (ξ>0 = pobudzenie); CUP_WEAK: kupulo słabsza od kanalo [1]
+        const p=position({canal, side, variant, q:slerpQ(qPrev,sq,u)});
+        const target=W*gain*p.mag*(p.excited?1:-1);      // cel statyczny ważony grawitacją (ξ>0 = pobudzenie); waga: kupulo/light słabsze od kanalo [1]
         xi += dt*(target-xi)/tauCup;                   // szybka relaksacja: bez latencji, uporczywy
         t+=dt; out.push({t, xi, target});
       }
@@ -539,8 +556,24 @@ export const Vestibular = (()=>{
     }
     return out;
   }
+  // FASADA: kupulolitiaza (ciężki osklepek, DCPN apogeotropowy trwały). Gołe gain<0 ZABLOKOWANE — znak gainu
+  // to przełącznik CHOROBY, nie pokrętło amplitudy: ujemna wartość z formuły cicho odwracałaby fenotyp
+  // apo→geo na karcie kupulo (anty-wzorzec „drugiej cichej drogi"; filozofia walidacji V2/A10).
+  function simulateCupulolith(opts){
+    if(opts && typeof opts.gain==="number" && opts.gain<0)
+      throw new RangeError("simulateCupulolith: gain<0 to mechanizm LIGHT CUPULA — użyj simulateLightCupula (gain>0); furtka ujemnego gainu zamknięta (ocena II, D3/V12)");
+    return simCupStatic({...opts, variant:"cupulo"});
+  }
+  // FASADA: light cupula (lekki osklepek, DCPN GEOTROPOWY trwały; ocena II D3/V12). Znak wyporu odwraca
+  // position(variant:"light") — caller nigdy nie steruje znakiem; gain>0 = generyczna amplituda.
+  function simulateLightCupula(opts){
+    const gain = (opts && opts.gain!==undefined) ? opts.gain : 1.0;
+    if(typeof gain!=="number" || !(gain>0) || !isFinite(gain))
+      throw new RangeError("simulateLightCupula: gain musi być liczbą > 0 (podano "+gain+")");
+    return simCupStatic({...opts, gain, variant:"light"});
+  }
   return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, position, sizeR, sizeUm,
-          simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, driveAt, CUP_WEAK, EWALD_INHIB};
+          simulateCanalith, simulateCupulolith, simulateLightCupula, dynNystagmus, nystagmusPhase, fatigueFactor,
+          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, driveAt, CUP_WEAK, LIGHT_W, EWALD_INHIB};
 })();
 
