@@ -254,6 +254,12 @@ function engineXi(canal, side, persistent, q, init){
   // Okno PRZEDNIEGO 70 s (ocena II, A6/V8): napad AC trwa w silniku ~61 s (szczyt dopiero ~25 s) —
   // wspólne okno 40 s ucinało animację przy 36% szczytu, w pół napadu. Zmienia wyłącznie tEnd animacji
   // diagnostyki (manewrów nie zasila — tam manStepEnv).
+  // ZNANA ASYMETRIA tego rozwidlenia (świadomie tolerowana; werdykt sondy 2026-08-14): tEnd kanalo-AC
+  // 61,25 s > kupulo-AC 60,50 s (pełne okno) o 0,75 s — poniżej percepcji (tEnd steruje wyłącznie ruchem
+  // tęczówek, bez napisu z sekundami; warianty na przeciwnych stronach flip-karty; peak kupulo-AC 0,142).
+  // NIE „naprawiać" oknem kupulo 60→70 s: łamałoby kotwicę „60 s = próg 1 min Bárány" (wyżej), a chipy AC
+  // celowo uczą, że czas trwania NIE różnicuje dla przedniego („Przemijający ≈1 min"). Sam napad ~61 s to
+  // emergentna fizyka, zgodna z kliniką pDBN — werdykt i liczby: engine_doc „STAŁE SKALIBROWANE".
   const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:(canal==="anterior"?70:40), pivot:"body"}];
   // q0 = POZYCJA WYJŚCIOWA (siad): bez niej pierwszy segment interpolował „z samego siebie", czyli test
   // zaczynał się już W pozycji prowokującej — złóg nie dostawał przejścia, które go w ogóle rusza.

@@ -203,7 +203,15 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.
        (EXPLICIT metric: latency/duration by the |ξ|≷0.05 threshold; protocol q0=sitting, tTrans 0.5 s):
        posterior in Dix: latency 2.25 s, peak ξ 0.872 @ 10.15 s, duration ~37 s (3%-of-peak criterion: 42 s);
        horizontal in Roll: 2.4 s / 0.696 @ 10.1 s / ~38 s; anterior in head-hang: 0.5 s (= no latency, R7) /
-       0.94 @ 25.3 s / ~57 s (3%: 61 s — ABOVE the <60 s threshold; mismatch with the test card: assessment II, A6).
+       0.94 @ 25.3 s / ~57 s (3%: 61 s). VERDICT 2026-08-14 (3 lenses: clinics/physics-adversary/didactics):
+       the AC course is EMERGENT, not an artifact — start at the cupula (restPhi 3° = attractor: the sitting
+       potential minimum lies 23.6° BEYOND the exit), a 175° path to the stable 178° equilibrium in the hang,
+       and the closed-form overdamped pendulum dφ/dt=(A/τP)·sin(eq−φ) reproduces the engine to within 0.40°;
+       clinically consistent with peripheral pDBN (Cambi/Nuti 2013: duration 40.1±22 s; Califano 2014: AC
+       attacks of 1–4 min; the Bárány <1 min criterion is met for visibility |ξ|>0.05 ≈ 57 s — the "61 s" is
+       the 3%-of-peak criterion tail, below visual detection; the slow crescendo @25 s is the opposite of
+       central CPPN, Choi 2015: immediate peak, TC 3–8 s). The former "mismatch with the test card"
+       (assessment II, A6) was removed by the V8 chips ("Transient ≈1 min").
        tauC=5 s corresponds to a long cupular/canal time constant (~4–6 s).
    Returns: t [s], xi (sign = excitation/inhibition), phi [°], exited (bool).
    Tuning parameters: tauP, tauC, gc, phiExit, fStat, adh.

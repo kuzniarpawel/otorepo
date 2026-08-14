@@ -197,7 +197,14 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.
        (metryka JAWNA: latencja/trwanie progiem |ξ|≷0.05; protokół q0=siad, tTrans 0.5 s):
        tylny w Dix: latencja 2.25 s, szczyt ξ 0.872 @ 10.15 s, trwanie ~37 s (kryterium 3% szczytu: 42 s);
        poziomy w Roll: 2.4 s / 0.696 @ 10.1 s / ~38 s; przedni w head-hang: 0.5 s (= brak latencji, R7) /
-       0.94 @ 25.3 s / ~57 s (3%: 61 s — POWYŻEJ progu <60 s; rozjazd z kartą testu: ocena II, A6).
+       0.94 @ 25.3 s / ~57 s (3%: 61 s). WERDYKT 2026-08-14 (3 soczewki: klinika/fizyka-adwersarz/dydaktyka):
+       przebieg AC jest EMERGENTNY, nie artefakt — start przy osklepku (restPhi 3° = atraktor: minimum
+       potencjału siadu 23,6° ZA ujściem), droga 175° do stabilnej równowagi 178° w wiszeniu, zamknięta
+       analityka przetłumionego wahadła dφ/dt=(A/τP)·sin(eq−φ) odtwarza silnik do 0,40°; klinicznie zgodny
+       z obwodowym pDBN (Cambi/Nuti 2013: trwanie 40,1±22 s; Califano 2014: napady AC 1–4 min; Bárány <1 min
+       spełnione dla widoczności |ξ|>0.05 ≈ 57 s — „61 s" to ogon kryterium 3% szczytu, poniżej detekcji
+       wzrokowej; wolne crescendo @25 s = przeciwieństwo ośrodkowego CPPN Choi 2015: szczyt natychmiast,
+       TC 3–8 s). Dawny „rozjazd z kartą testu" (ocena II, A6) zniesiony chipami V8 („Przemijający ≈1 min").
        tauC=5 s odpowiada długiej stałej osklepka/kanału (~4–6 s).
    Zwraca: t [s], xi (znak = pobudzenie/hamowanie), phi [°], exited (bool).
    Parametry strojeniowe: tauP, tauC, gc, phiExit, fStat, adh.
