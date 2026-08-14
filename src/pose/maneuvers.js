@@ -470,16 +470,19 @@ function sizedSeconds(sec, size){ if(sec==null) return null; const v=sec*holdMul
    dochodził do φ 305,5 z 307 — nie wychodził o włos. Teraz hold jest LICZONY: najmniejsza wartość
    z HOLD_STEPS, przy której silnik wyprowadza złóg do łagiewki.
      • krok Z TIMEREM  → hold wyprowadzony (podłoga 30 s = minimum kliniczne CRP, Hain [2]; krok 15 s)
-     • krok BEZ TIMERA → UNTIMED_HOLD. UWAGA (ocena II, B5): dawne uzasadnienie „6 s daje 5× zapasu"
-       jest FAŁSZYWE dla Semonta — jego końcowy bez-timerowy siad musi pomieścić 38,4° wędrówki złogu
-       + parking + ekspulsję (5,35 s + 1,2 s = 6,55 z 6,8 s dostępnych): margines 0,25 s przy medium,
-       a wzrost tauP o ~8% wywala czyszczenie. derivedHold tego nie widzi (przeszukuje wyłącznie kroki
-       z timerem) — wyprowadzanie holdu kroku bez timera = plan V9 oceny II. Krok kuracyjny EPLEYA
-       (k5 „Powrót do siadu") też NIE MA timera, ale tam ekspulsja zachodzi na końcu przejścia.
+     • krok BEZ TIMERA → hold TAKŻE WYPROWADZANY (ocena II, B5/V9). Dawne sztywne 6 s („5× zapasu")
+       było FAŁSZYWE dla Semonta: jego końcowy bez-timerowy siad musi pomieścić 38,4° wędrówki złogu
+       + parking + ekspulsję (5,35 s + 1,2 s = 6,55 z 6,8 s dostępnych) — margines 0,25 s przy medium,
+       a wzrost tauP o ~8% wywalał czyszczenie PO CICHU, bo derivedHold przeszukiwał wyłącznie kroki
+       z timerem. Teraz derivedHold szuka pary (h, u): h z HOLD_STEPS (kroki z timerem, minimalne
+       PRZED u — bo h podnosi timer karty przez genPlan/A7), u z UNTIMED_STEPS (kroki bez timera,
+       w timerze NIEwidoczne — tylko oś czasu fizyki/animacji), z WBUDOWANYM strażnikiem: para musi
+       czyścić nominalnie ORAZ przy tauP×TAUP_GUARD (wolniejsza cząstka). Niezależnie pilnuje tego
+       WYROCZNIA WRAŻLIWOŚCI (tools/snapshot.mjs): manewry czyszczące muszą czyścić przy tauP±10%.
      • manewr, który NIE czyści przy ŻADNYM kandydacie → hold ZALECONY KLINICZNIE (st.seconds). Dotyczy
        dziś WYŁĄCZNIE Gufoniego apo (manewr KONWERSJI — z założenia nie czyści); Bascule i Yacovino
-       CZYSZCZĄ (derivedHold 45/30 s — przemierzone 2026-08-13; R1/R6 zamknięte). */
-const HOLD_STEPS=[30,45,60,75,90,105,120], UNTIMED_HOLD=6;
+       CZYSZCZĄ (przemierzone 2026-08-13; R1/R6 zamknięte). */
+const HOLD_STEPS=[30,45,60,75,90,105,120], UNTIMED_STEPS=[6,9,12,15,18], TAUP_GUARD=1.1;
 const holdKey=(plan,size)=>[plan.canal,plan.side,size,plan.steps.map(s=>`${s.body}|${s.yaw}|${s.face}|${s.seconds}`).join(";")].join("#");
 const _holdMemo=new Map();                                   // szukanie holdu = do 7 symulacji; pamiętamy per (kanał,strona,rozmiar,pozy)
 // STRAŻNIK (ocena II, KLIN-7): klucz memo musi rosnąć razem z sygnaturą wywołania simulateCanalith
@@ -494,28 +497,44 @@ function stepPivot(prev, st){
   const a=poseOf(prev.body, prev.face), b=poseOf(st.body, st.face);
   return (a.roll!==b.roll || a.trunk!==b.trunk) ? "body" : "neck";
 }
-function timelineWithHold(plan, h){
+function timelineWithHold(plan, h, u=UNTIMED_STEPS[0]){
   return plan.steps.map((st,i)=>({ q: stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8,
     pivot: stepPivot(plan.steps[i-1], st),
-    tHold: st.seconds!=null ? h : UNTIMED_HOLD }));
+    tHold: st.seconds!=null ? h : u }));
 }
-// najmniejszy hold z HOLD_STEPS, przy którym manewr wyprowadza złóg; null gdy żaden nie wystarcza
+// najmniejsza para {h, u}: h z HOLD_STEPS (kroki z timerem), u z UNTIMED_STEPS (kroki bez timera),
+// przy której manewr wyprowadza złóg NOMINALNIE ORAZ przy tauP×TAUP_GUARD (wolniejsza cząstka =
+// jedyne realne ryzyko kalibracyjne; ocena II B5/V9 — margines Semonta wynosił 0,25 s i +8% tauP
+// zabijało czyszczenie po cichu, bo sztywne 6 s kroku bez timera nie mieściło wędrówki+ekspulsji).
+// Wymóg ±10% jest tu WBUDOWANY, a wyrocznia wrażliwości (snapshot.mjs) pilnuje go niezależnie.
+// h minimalne PRZED u (h podnosi timer karty przez genPlan/A7; u jest w timerze niewidoczne).
+// Gdy żadna para nie przechodzi strażnika, wraca pierwsza czyszcząca nominalnie; null gdy żadna
+// (Gufoni apo — konwersja).
 function derivedHold(plan, size){
   const k=holdKey(plan,size); if(_holdMemo.has(k)) return _holdMemo.get(k);
-  let out=null;
+  const cleans=(h,u,tp)=>{ const sim=Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, size,
+      timeline:timelineWithHold(plan,h,u), ...(tp?{tauP:tp}:{})});
+    return sim.length && sim[sim.length-1].exited; };
+  let out=null, firstExit=null;
+  outer:
   for(const h of HOLD_STEPS){
-    const sim=Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, size, timeline:timelineWithHold(plan,h)});
-    if(sim.length && sim[sim.length-1].exited){ out=h; break; }
+    for(const u of UNTIMED_STEPS){
+      if(!cleans(h,u)) continue;
+      if(!firstExit) firstExit={h,u};
+      if(cleans(h,u,6.5*TAUP_GUARD)){ out={h,u}; break outer; }   // 6.5 = domyślne tauP silnika
+    }
   }
+  if(!out) out=firstExit;                                  // czyści nominalnie, bez strażnika — lepsze niż null
   _holdMemo.set(k,out); return out;
 }
 function maneuverTimeline(plan, size="medium"){
-  const h=derivedHold(plan,size);
+  const dh=derivedHold(plan,size);
   return plan.steps.map((st,i)=>({
     q: stepHeadQ(st.body, st.yaw, st.face),
     tTrans: 0.8,
     pivot: stepPivot(plan.steps[i-1], st),                                // oś obrotu → ramię bezwładności (R7)
-    tHold: st.seconds==null ? UNTIMED_HOLD : (h!=null ? h : st.seconds)   // fallback: hold zalecony klinicznie
+    tHold: st.seconds==null ? (dh ? dh.u : UNTIMED_STEPS[0])
+                            : (dh ? dh.h : st.seconds)                    // fallback: hold zalecony klinicznie
   }));
 }
 // pełna symulacja manewru → φ(t) cząstki w kanale (dynamika repozycji)

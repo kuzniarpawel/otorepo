@@ -219,8 +219,8 @@ function genPlan(key, side){
   // którego fizyka nie potwierdza (fałszywy sukces). max() podnosi WYŁĄCZNIE timery poniżej holdu
   // fizyki (dziś: tylko Bascule); zalecenia dłuższe (Semont 90 s) zostają. derivedHold null
   // (Gufoni apo — konwersja) → samo zalecenie.
-  const h=derivedHold(plan, state.size);
-  for(const st of plan.steps){ if(st.seconds!=null) st.seconds=Math.max(sizedSeconds(st.seconds, state.size), h||0); }
+  const dh=derivedHold(plan, state.size);                  // od V9: {h, u} (u = hold kroków bez timera, niewidoczny w timerze)
+  for(const st of plan.steps){ if(st.seconds!=null) st.seconds=Math.max(sizedSeconds(st.seconds, state.size), dh?dh.h:0); }
   return plan;
 }
 // Zmiana rozmiaru złogu: przebuduj plan (nowe holdy), unieważnij cache dynamiki, przelicz od bieżącego kroku.

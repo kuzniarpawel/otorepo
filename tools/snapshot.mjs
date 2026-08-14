@@ -128,6 +128,29 @@ function engineOracle(h) {
   }
   out.plans = plans;
 
+  // WYROCZNIA WRAŻLIWOŚCI (ocena II, V9/B5): manewry czyszczące muszą czyścić także przy tauP±10%.
+  // Margines Semonta wynosił 0.25 s i rekalibracja tauP o +8% zabijała czyszczenie PO CICHU —
+  // od V9 derivedHold wyprowadza też hold kroków bez timera z marginesem EXIT_MARGIN, a ten test
+  // pilnuje, żeby przyszła rekalibracja stałych nie ubiła żadnego manewru. TWARDY INWARIANT:
+  // niepowodzenie rzuca błąd (nie da się go zapiec do golden); wynik trafia też do snapshotu
+  // (engine.sensitivity), więc dryf wykryje również --check. Rozmiar medium = najcieńsze marginesy
+  // (small/big mają większe — patrz tabela minimalnych holdów w engine_doc).
+  if (h.Vestibular && h.maneuverTimeline) {
+    const sensFails = [];
+    for (const key of ['epley', 'semont', 'bascule', 'lempert', 'gufoniGeo', 'yacovino'])
+      for (const side of ['P', 'L'])
+        for (const mult of [0.9, 1.1]) {
+          try {
+            const plan = h.genPlan(key, side);
+            const tl = h.maneuverTimeline(plan, 'medium');
+            const sim = h.Vestibular.simulateCanalith({ canal: plan.canal, side, size: 'medium', timeline: tl, tauP: 6.5 * mult });
+            if (!(sim.length && sim[sim.length - 1].exited)) sensFails.push(`${key}/${side}@tauPx${mult}`);
+          } catch (e) { sensFails.push(`${key}/${side}@tauPx${mult}:ERR ${e.message}`); }
+        }
+    if (sensFails.length) throw new Error('WYROCZNIA WRAŻLIWOŚCI (tauP±10%) NIE PRZESZŁA: ' + sensFails.join(', '));
+    out.sensitivity = 'PASS(tauP±10%: 6 manewrów × 2 strony × 2 mnożniki = 24/24)';
+  }
+
   // NeuroVOR — czyste odczyty kliniczne dla zestawu pacjentów
   const NV = h.NeuroVOR;
   if (NV) {
