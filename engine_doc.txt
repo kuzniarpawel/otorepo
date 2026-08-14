@@ -128,7 +128,18 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
        tTrans — czas przejścia do q [s] (interpolacja slerp od poprzedniego q)
        tHold  — czas utrzymania w q [s]
        pivot  — oś obrotu kroku: "body" (biodra/kozetka, domyślne) | "neck" (sama głowa);
-                wybiera ramię członu bezwładnościowego R7 (LEVER.body 0.75 m / neck 0.12 m)
+                wybiera ramię członu bezwładnościowego R7 (LEVER.body 0.75 m / neck 0.12 m).
+                B8 (V14): segment przyjmuje też opcjonalne neckPitch/neckYaw [°] (kąt karku:
+                ν=pitch−trunk, Y=yaw+dyaw — liczone w maneuvers.stepNeck z tabeli pozy); przy
+                pivot="body" i ν≠0 ramię = Rx(ν)Ry(Y)⁻¹·[0, ARM_TRUNK, 0] + [±EAR_X, LEVER.neck, 0],
+                ARM_TRUNK = LEVER.body − LEVER.neck = 0.63 m (podział biodra→C7 / C7→błędnik;
+                antropometria 50c Drillis & Contini 1966; STATUS: założenie spoza kodu, „granica
+                źródła", ±10% — suma wraca do kalibracji R7 bitowo). Kark w linii → ramię DOKŁADNIE
+                stare (gałąź literalna). Zmierzone skutki: Yacovino 3→4 wkład bezwładności
+                0.295→0.222 g ku czubkowi + 0.175 g składowa nosowo-potyliczna (cele oceny II
+                trafione co do 0.001); Lempert nienaruszony (przejścia z karkiem po wyjściu złogu);
+                kark interpolowany TĄ SAMĄ u co slerp pozy. Diagnostyka świadomie NIEokablowana
+                (przesunęłaby STAŁE SKALIBROWANE: Dix 2.25→2.40 s itd.) — osobny kandydat.
    phi0 — jawny kąt startowy złogu [°]; null (domyślnie) = restPhi(canal,side): minimum grawitacyjne
        w postawie pionowej, a gdy leży poza łukiem — osklepek (tylny 48.8° · poziomy 199.8° · przedni 3°).
        WALIDOWANE od 2026-08-13 (ocena II, A9/V3): RangeError poza [CUPULA_DEG, phiExit] — koniec z cichą
@@ -186,23 +197,42 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
          otolit wchodzi do łagiewki JEDNOKIERUNKOWO (exited), z prędkością FIZYCZNĄ z grawitacji (~7–8 °/s).
        • KANAŁY PIONOWE (crusArc/crusGrav): po dojściu do odnogi (φ≥phiExit−crusArc) otolit WCHODZI
          DO KOMORY ODNOGI i PARKUJE — opuszcza czuły kanał, osklepek relaksuje (ξ→0, brak oczopląsu), czeka na
-         ekspulsję do łagiewki. Warunek: −f[1] > crusGrav, gdzie f to SIŁA WŁAŚCIWA f=g−a (R7); realizuje się
-         GRAWITACYJNIE — przy głowie pionowej (siad) łagiewka jest pod odnogą → złóg wpada. Daje ekspulsję
-         Epleya przy siadaniu + oczopląs LIBERACYJNY tam, gdzie klinicznie występuje.
-         >>> KOREKTA 2026-08-13 (ocena II, C7): droga „BEZWŁADNOŚCIOWA" ekspulsji jest w tym modelu
-         STRUKTURALNIE MARTWA. Człon dośrodkowy a=ω×(ω×d) z ramieniem d=[±EAR_X, L>0, 0] daje a[1]≤0,
-         więc inercja może −f[1] wyłącznie OBNIŻAĆ (zmierzone maksimum wzrostu po 7 manewrach × 2 strony:
-         0.00000; rzut Semonta 180°/0.8 s daje +1.18 g KU CZUBKOWI — ekspulsję hamuje, a w Epleyu k4→k5
-         wręcz ją OPÓŹNIA: −f[1]=0.62 przy −g[1]=0.99, o włos nad progiem 0.6). Wszystkie ekspulsje 12/12
-         są grawitacyjne — w holdach końcowego siadu (Semont/Yacovino/Bascule) lub na końcu przejścia
-         siadania (Epley). Usunięte proxy crusFling/crusFlingRate (2026-08-05) zastąpiła więc grawitacja
-         w bez-timerowym siadzie, NIE człon bezwładnościowy; rola inercji R7 jest realna wyłącznie
+         ekspulsję do łagiewki.
+         >>> B6-ROZWIĄZANIE (2026-08-14, V14c) — JEDNO PRAWO RUCHU: w komorze dφ/dt = max(0,
+         dot(f, tangAt(G,φ)) − crusGrav)/tauP. Teza „komora poza łukiem czynnym" UPADŁA po pomiarze:
+         strefa [pcrus, pex] to ZMIERZONY końcowy odcinek łuku atlasu IE-Map (ujście = wejście do
+         przedsionka), więc tangAt tam obowiązuje i JEST kierunkiem odnogi (PC przy ujściu: styczna
+         9.3° od osi „głowa-dół" — stare −f[1] było ślepym na kanał przybliżeniem tego rzutu).
+         crusGrav=0.6 zostaje bez rekalibracji, ale zmienia sens: PRÓG ZASTANIA szerokiej komory
+         (tarcie Coulomba złogu na ścianie — granica płynięcia Binghama; w wąskim świetle złóg płynie
+         jak tłok, próg 0, adhezję niesie fStat/adh: jedna fizyka, dwie geometrie). Prędkość ∝ nadwyżce
+         siły, /tauP — Stokes odzyskany (czasy ∝ r⁻²: T small/med 1.60–1.64 vs teoria 1.644).
+         EMERGENTNIE: PC ekspulsuje w siadzie jak dotąd (rzut 0.965–0.987 > 0.6, te same kroki co
+         w walidacji niżej), a AC wymaga BRODY NA KLATCE (czysty siad 0.401 < 0.6; broda 0.81–0.88)
+         — instrukcja kończąca Yacovino staje się fizycznie NOŚNA. Czasy ekspulsji (medium, nominal):
+         Epley 3.80 s · Semont/Bascule 3.85 s · Yacovino 5.50 s (small 6.1–9.0 s, big 2.2–3.1 s);
+         final.expelDur raportuje trwanie (null = ekspulsji nie było); dawna stała EXPEL_DUR=1.2 s
+         (10 °/s niezależnie od siły i rozmiaru) USUNIĘTA z ruchu — historyczna. Transjent liberacyjny
+         przestaje być ∝ crusArc (konwencja), zaczyna nieść SIŁĘ i ROZMIAR: medium Epley 0.25 <
+         Semont/Bascule 0.28 < Yacovino 0.32; small 0.10–0.16 (słaby, długi — spójne z „extremely
+         long-latency BPPV"), big 0.70–0.83 (krótki, mocny). Yacovino medium 0.545→0.317 przecina
+         próg wyświetlania 0.5 → karta kroku 4 mówi „oczopląs słaby/zanika" zamiast „najsilniejszy"
+         (jedyne 2 klucze rebaseline dom). Prędkości komory 1.33–5.58 °/s leżą WEWNĄTRZ fizycznego
+         pasma wyjść HC 1.27–14.61 °/s — dwa modele wyjścia ZLAŁY SIĘ w jedno prawo (komora odejmuje
+         jedynie próg zastania). Latch `expelling` usunięty (ruch podąża za siłą; ciągłość bez klifu);
+         „wieczne pełzanie tuż nad progiem" pilnowane TWARDĄ wyrocznią EXPEL_SANE=[0.5, 12] s
+         (snapshot.mjs, 72/72; obwiednia zmierzona 1.95–9.90 s). <<<
+         >>> KOREKTA 2026-08-13 (ocena II, C7) + AKTUALIZACJA V14: droga „BEZWŁADNOŚCIOWA" ekspulsji
+         pozostaje MARTWA. Człon dośrodkowy a=ω×(ω×d) ze STARYM ramieniem d=[±EAR_X, L>0, 0] dawał
+         a[1]≤0 algebraicznie; z ramieniem B8 (z≠0) twierdzenie staje się NUMERYCZNE — zmierzone
+         maksimum dodatniego wkładu po 7 manewrach × 2 strony: ≤0.0012 g przy progu 0.6 (rzut Semonta
+         180°/0.8 s daje +1.18 g KU CZUBKOWI — ekspulsję hamuje). Wszystkie ekspulsje są grawitacyjne
+         — w holdach końcowego siadu lub na końcu przejścia siadania; rola inercji R7 realna wyłącznie
          w napędzie WZDŁUŻ kanału (bez niej Semont nie dowozi złogu do odnogi: pivot=neck → exited=false).
          Prawdziwa droga bezwładnościowa wymagałaby członu stycznego α×d, którego dane pozy nie niosą. <<<
-         Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w ~EXPEL_DUR(1.2 s) → TRANSJENT oczopląsu ampullofugalny
+         Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit → TRANSJENT oczopląsu ampullofugalny
          (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. exited=true jednokierunkowo (blokuje fazę
-         odwróconą). UWAGA (ocena II, B6): transjent jest SYNTETYCZNY — stała prędkość (pex−pcrus)/EXPEL_DUR,
-         niezależna od siły napędowej i rozmiaru cząstki; amplituda ∝ crusArc (dwie stałe konwencji).
+         odwróconą; powrót do kanału / jam = poza zakresem, kandydat D10).
        Ruch wsteczny w świetle kanału (dφ/dt<0, przed odnogą) → ξ<0 → oczopląs ODWRÓCONY.
        WALIDACJA (przemierzone 2026-08-13, realne plany gen, obie strony): Epley ekspulsja/liberacyjny
        w KROKU 5 (powrót do siadu — koniec przejścia); Semont w KROKU 4 (powrót do siadu, hold);
@@ -451,6 +481,14 @@ liczone w restPhi, czyli w tym samym miejscu, którym rusza symulacja.
      stosunki 0.475 / 1 / 2.46 = r³). Manewry (plany gen, holdy wyprowadzane R4b):
        WSZYSTKIE rozmiary osiągają ujście ARC_SPAN (exited) w Epleyu, Semoncie, Bascule, Yacovino,
        Lempercie i Gufonim geotropowym — zero niepowodzeń (Gufoni apo z założenia nie czyści).
+     >>> AKTUALIZACJA V14 (B6+B8, 2026-08-14): czyszczenie ponownie przemierzone z siłozależną
+         ekspulsją i ramieniem karku — 108/108 (6 manewrów × 2 strony × 3 rozmiary × {nominal,
+         tauP×0.9, ×1.1}); Gufoni apo nadal konwersja. derivedHold: zmienione WYŁĄCZNIE u (kroki
+         bez timera, niewidoczne w timerze) + h Semonta small 60→75: epley small u 6→9 · semont
+         small {60,15}→{75,9} · bascule small u 6→9 · yacovino small u 9→18, medium u 6→9;
+         TIMERY UI bez zmian (sizedSeconds dominuje — Semont small: max(120,75)=120). Marginesy:
+         globalne minimum strażnika ROŚNIE 1.00 s (semont small, stare) → 1.70 s (yacovino medium
+         ×1.1); pasmo expelDur 1.95–9.90 s pod twardą wyrocznią EXPEL_SANE=[0.5,12] (72/72). <<<
      >>> SPROSTOWANIE [2026-08-05]. Do tego dnia stało tu: „small — Semont (φmax 157) i Yacovino (φmax 128)
          NIE czyszczą w skróconych holdach (emergentne, klinicznie spójne)". To było NIEPRAWDZIWE na dwa
          sposoby. (1) Liczby nie odtwarzały się już nawet przy starym capie — po wprowadzeniu komory odnogi

@@ -149,6 +149,32 @@ function engineOracle(h) {
         }
     if (sensFails.length) throw new Error('WYROCZNIA WRAŻLIWOŚCI (tauP±10%) NIE PRZESZŁA: ' + sensFails.join(', '));
     out.sensitivity = 'PASS(tauP±10%: 6 manewrów × 2 strony × 2 mnożniki = 24/24)';
+
+    // WYROCZNIA EKSPULSJI (ocena II, V14c/B6): trwanie ekspulsji z komory odnogi (final.expelDur) musi
+    // mieścić się w paśmie EXPEL_SANE — dolna granica łapie regresję typu „teleport" (powrót ukrytej
+    // stałej prędkości), górna „wieczne pełzanie tuż nad progiem" (Semont!), zanim zamaskuje je
+    // podnoszenie u przez derivedHold. Pasmo z DANYCH: obwiednia zmierzona 1.95 s (Epley big ×0.9)
+    // – 9.90 s (Yacovino small ×1.1) + margines. NIE w silniku (derivedHold celowo próbkuje pary,
+    // które nie czyszczą — assert runtime rzucałby w normalnym przeszukiwaniu). Kanały pionowe
+    // (komora); HC/gufoniApo mają expelDur=null — poza pasmem świadomie.
+    const EXPEL_SANE = [0.5, 12];
+    const expFails = [];
+    let expN = 0;
+    for (const key of ['epley', 'semont', 'bascule', 'yacovino'])
+      for (const side of ['P', 'L'])
+        for (const size of ['small', 'medium', 'big'])
+          for (const mult of [0.9, 1.0, 1.1]) {
+            try {
+              const plan = h.genPlan(key, side);
+              const sim = h.Vestibular.simulateCanalith({ canal: plan.canal, side, size, timeline: h.maneuverTimeline(plan, size), tauP: 6.5 * mult });
+              const d = sim.final && sim.final.expelDur;
+              expN++;
+              if (!(typeof d === 'number' && d >= EXPEL_SANE[0] && d <= EXPEL_SANE[1]))
+                expFails.push(`${key}/${side}/${size}@x${mult}: expelDur=${d}`);
+            } catch (e) { expFails.push(`${key}/${side}/${size}@x${mult}:ERR ${e.message}`); }
+          }
+    if (expFails.length) throw new Error('WYROCZNIA EKSPULSJI (EXPEL_SANE [0.5,12] s) NIE PRZESZŁA: ' + expFails.join(', '));
+    out.expulsion = `PASS(expelDur∈[0.5,12] s: 4 manewry × 2 strony × 3 rozmiary × 3 tauP = ${expN}/${expN})`;
   }
 
   // SESJA CIĄGŁA (ocena II, V10/D1): pin ŁAŃCUCHA STANU — czyste liczby final, nie DOM.

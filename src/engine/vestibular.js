@@ -339,11 +339,15 @@ export const Vestibular = (()=>{
   //     ekspulsję Epleya PRZY SIADANIU + oczopląs liberacyjny. Droga „BEZWŁADNOŚCIOWA" jest
   //     strukturalnie MARTWA: człon dośrodkowy a=ω×(ω×d) przy d=[±EAR_X, L>0, 0] ma a[1]≤0, więc
   //     inercja może −f[1] tylko OBNIŻAĆ (rzut Semonta 180°/0.8 s: +1.18 g KU CZUBKOWI — hamuje;
-  //     zmierzone maksimum wzrostu −f[1] po 7 manewrach × 2 strony: 0.00000). Usunięte 2026-08-05
+  //     KOREKTA V14: z ramieniem B8 (z≠0) twierdzenie z algebraicznego staje się numerycznym —
+  //     zmierzone maksimum dodatniego wkładu po 7 manewrach × 2 strony: ≤0.0012 g przy progu 0.6,
+  //     ekspulsja bezwładnościowa POZOSTAJE martwa). Usunięte 2026-08-05
   //     proxy (kąt > crusFling ORAZ tempo > crusFlingRate) zastąpiła grawitacja w bez-timerowym
   //     siadzie, NIE inercja — manewry czyszczą dalej 12/12, bo inercja robi swoje w napędzie
   //     WZDŁUŻ kanału (Semont z pivot=neck nie dowozi złogu do odnogi).
-  //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
+  //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie WYNIKAJĄCYM z siły i tauP (B6/V14c:
+  //   1.95–9.90 s w realnych manewrach; final.expelDur; dawna stała EXPEL_DUR=1.2 s usunięta z ruchu)
+  //   → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
   /* ---- SIŁA WŁAŚCIWA f = g − a (zasada równoważności) [R7, 2026-08-05] ----
@@ -432,7 +436,7 @@ export const Vestibular = (()=>{
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D, pcrus=(phiExit-crusArc)*D;
     const crusGate=(canal==="posterior"||canal==="anterior");   // odnoga wspólna TYLKO dla kanałów pionowych; poziomy → wyjście wprost
-    const EXPEL_DUR=1.2, expelRate=(pex-pcrus)/EXPEL_DUR;        // tempo ekspulsji odnoga→łagiewka (transjent liberacyjny)
+    let expT0=null, expT1=null;   // B6 (V14c): okno ekspulsji → final.expelDur (WYNIK, nie stała; EXPEL_DUR=1.2 s usunięte z ruchu — historyczne)
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
     // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
@@ -458,7 +462,7 @@ export const Vestibular = (()=>{
     const qStart=q0!=null?reqQuat(q0,"simulateCanalith q0"):null;
     const holdDrive = phi0!=null ? driveAt(canal, side, phi0, qStart!=null?qStart:[1,0,0,0], tauP)
                                  : restDrive(canal, side, tauP);
-    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=xi0, t=0, exited=false, stuck=settled && (bond0==null || bond0>0) && Math.abs(holdDrive)<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, expelling=false, bond=bond0!=null?bond0*adh:adh, qPrev=qStart!=null?qStart:reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=xi0, t=0, exited=false, stuck=settled && (bond0==null || bond0>0) && Math.abs(holdDrive)<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, bond=bond0!=null?bond0*adh:adh, qPrev=qStart!=null?qStart:reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
     let nPrev=null;   // B8 (V14a): kąt karku POPRZEDNIEGO segmentu [νP, Y] — jak qPrev; pierwszy segment = wartości własne (stałe ramię); q0 nie niesie rozkładu karku (granica udokumentowana)
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
@@ -480,11 +484,25 @@ export const Vestibular = (()=>{
             // Dawne proxy crusFling/crusFlingRate — „kąt > 145° ORAZ tempo > 180°/s" — USUNIĘTE 2026-08-05:
             // manewry czyszczą dalej 12/12, bo ekspulsję przejęła grawitacja w bez-timerowym siadzie
             // (inercja utrzymuje DOJAZD złogu do odnogi — napęd wzdłuż kanału).
-            if(!expelling && -g[1] > crusGrav) expelling=true;
-            if(expelling){                                     // transjent ekspulsji: φ pcrus→pex → oczopląs liberacyjny (ampullofugalny, TEN SAM znak co pierwotny)
-              dphi=expelRate; let nphi=phi+dphi*dt;
-              if(nphi>=pex){nphi=pex; exited=true; expelling=false;}   // wpadł do łagiewki (jednokierunkowo)
-              phi=nphi; flow=gc*G.exc*dphi;
+            // B6 (ocena II, V14c): JEDNO PRAWO RUCHU. Strefa [pcrus,pex] to ZMIERZONY końcowy odcinek
+            // łuku atlasu IE-Map (ujście = wejście do przedsionka) — tangAt tam OBOWIĄZUJE i jest
+            // kierunkiem odnogi (PC przy ujściu: 9.3° od osi „głowa-dół"; stare −g[1] było ślepym
+            // na kanał przybliżeniem tego rzutu). crusGrav zmienia sens: z binarnej bramki na PRÓG
+            // ZASTANIA szerokiej komory (tarcie Coulomba złogu na ścianie — granica płynięcia
+            // Binghama; w wąskim świetle złóg płynie jak tłok, tam progu nie ma — adhezję niesie
+            // fStat/adh: jedna fizyka, dwie geometrie). Prędkość ∝ nadwyżce siły, /tauP (Stokes:
+            // czasy ∝ r⁻²; stara stała 10°/s nie skalowała się wcale). EMERGENTNIE: PC ekspulsuje
+            // w siadzie jak dotąd (rzut 0.965>0.6), a AC wymaga BRODY NA KLATCE (czysty siad
+            // 0.401<0.6, broda 0.81–0.88) — instrukcja kończąca Yacovino staje się fizycznie nośna.
+            // Jednokierunkowość: max(0,·) + klamra pex (kieszeń komory; powrót/jam poza zakresem —
+            // D10). Latch `expelling` usunięty — ruch podąża za siłą, ciągłość bez klifu (v→0 przy
+            // nadwyżce→0); „wieczne pełzanie" pilnowane wyrocznią EXPEL_SANE (snapshot.mjs).
+            const excess = dot3(g,tang(phi)) - crusGrav;       // g = siła właściwa (R7); C7: inercja może rzut tylko obniżać (≤0.0012 g z ramieniem B8)
+            if(excess > 0){
+              dphi=excess/tauP; let nphi=phi+dphi*dt;
+              if(expT0==null) expT0=t;
+              if(nphi>=pex){ dphi=Math.max(0,pex-phi)/dt; nphi=pex; exited=true; expT1=t+dt; }   // wpadł do łagiewki; dphi = realny dojazd (flow bez przestrzału)
+              phi=nphi; flow=gc*G.exc*dphi;                    // transjent liberacyjny: amplituda ∝ SILE napędu (nie ∝ crusArc — koniec konwencji)
             }
           } else {
             const drive=dot3(g,tang(phi))/tauP;                // prędkość potencjalna (overdamped) — wędrówka w świetle kanału
@@ -512,7 +530,8 @@ export const Vestibular = (()=>{
     // bondFrac = wiązanie jako UŁAMEK [0..1] (clamp: bond kończy ujemnie po zerwaniu) — JEDYNA postać do
     // łańcuchowania; bond (jednostki WEWNĘTRZNE adh·r) zostaje dla zgodności — footgun między size udokumentowany.
     out.final = { phi: phi/D, xi, bond, stuck, exited, inCrus,
-                  bondFrac: adh>0 ? Math.min(1, Math.max(0, bond)/adh) : 0 };
+                  bondFrac: adh>0 ? Math.min(1, Math.max(0, bond)/adh) : 0,
+                  expelDur: (expT0!=null && expT1!=null) ? expT1-expT0 : null };   // B6: trwanie ekspulsji = WYNIK (null = ekspulsji nie było); pilnowane pasmem EXPEL_SANE w wyroczni
     return out;
   }
   // ξ (odchylenie osklepka) → składowe oczopląsu (kierunek z etapu 0, znak z pobudzenia)
