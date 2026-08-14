@@ -605,7 +605,9 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      czy wprowadzamy człon bezwładnościowy do dynamiki w świetle kanału. Ten sam człon rozwiązuje
      drugi przypadek graniczny: start kanału przedniego od osklepka (napęd 0.012 < próg 0.04).
 
- R8. TEST BOW & LEAN JEST W TYM MODELU PODPROGOWY [2026-08-05, OTWARTE — decyzja kliniczna].
+ R8. TEST BOW & LEAN JEST W TYM MODELU PODPROGOWY [2026-08-05].
+     >>> ROZWIĄZANE 2026-08-13 (ocena II, V4+V5) — decyzja podjęta i WDROŻONA; patrz R8-ROZWIĄZANIE
+         niżej. Zapis poniżej zostaje jako rozbiór problemu; jego korekty liczbowe też w R8-ROZWIĄZANIE. <<<
      Napęd styczny: skłon 0.026, odchylenie 0.022, przy progu zerwania adhezji fStat 0.04 i przy
      0.131 dla testu Roll — czyli 5× słabszy niż Roll i poniżej progu. Symulacja daje ξ = 0.000.
      Powód jest geometryczny i odporny na parametry: kanał poziomy leży prawie w płaszczyźnie ziemi,
@@ -707,6 +709,53 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      i mówi „model nie rozstrzyga"; (b) kierunek bierzemy z reguły klinicznej, jawnie, jako regułę
      a nie wynik fizyki; (c) zostaje jak jest. NIE wybieram sam, bo każda opcja zmienia treść kliniczną.
 
+ R8-ROZWIĄZANIE [2026-08-13, ocena II — DECYZJA PODJĘTA I WDROŻONA: V4 (`2152941`) + V5 (`a7044a4`)].
+     DECYZJA: HYBRYDA OPARTA NA (a). Odrzucone (c) — sprzeczność strzałka↔napis była potwierdzona
+     liczbowo w OBU wariantach na main i wydana w PWA. Czyste (b) odrzucone dla kanalolitiazy —
+     byłoby fabrykacją czegoś, co model umie policzyć; (b) zredukowane do JAWNIE etykietowanego
+     chipu „Reguła kliniczna (Choung 2006)" z badge'em zgodności model↔reguła.
+     REALIZACJA (przypadek podręcznikowy = ULEPSZONE (a) — scenariusz WARUNKÓW POCZĄTKOWYCH):
+       • BLT_HISTORY (maneuvers.js): historia pozycyjna jako timeline póz; φ₀ WYPROWADZANE symulacją
+         historii przez silnik (wzorzec derivedHold — liczba jest wynikiem, nie stałą). Zmierzone
+         przy protokołach V5: „noc na boku chorym" φ₀=146.2° → skłon +0.975 ku CHOREJ / odchylenie
+         −0.366 ku ZDROWEJ (pełna reguła Choung WYNIKA z fizyki); „po Dix" 173.0° → +1.034/−1.004;
+         „po Roll" 220.5° → skłon −0.753 ku zdrowej (MYLĄCY — złóg za wododziałem) Z EKSPULSJĄ
+         (test wykonuje pracę manewru, dalsze fazy nieme); „długi siad" (restPhi 199.8°, pełna
+         adhezja) → 0.000/0.000 — karta mówi „model nie rozstrzyga" i pokazuje DLACZEGO.
+       • settled=false (V3): preset historii = złóg świeżo przemieszczony, bez bramki adhezji.
+       • Test liczony jako JEDNA sekwencja skłon→siad→odchylenie (wykonany skłon przemieszcza złóg).
+       • NAPIS generowany z TEGO SAMEGO ξ co strzałka (bltDirWord) — sprzeczność strzałka↔napis
+         strukturalnie niemożliwa; kupulo: kierunek z fizyki od V4 (cel przy osklepku), scenariusz
+         jawnie bez wpływu (powtarzalność w kupulopatii = cecha różnicująca, poprawiona H5).
+       • MAPA WODODZIAŁU na karcie: strefy przemiatane z silnika (bltZones): pełna reguła 66% łuku /
+         wzorzec odwrócony 30% / pasma podprogowe wyblakłe; znaczniki bańka/ujście/wododział 190°/
+         spoczynek 199.8°/φ₀ scenariusza; podpis wiąże mapę z klinicznym 11.5–45% braku odpowiedzi.
+     KOREKTY LICZBOWE ZAPISU R8 (sondy oceny II — obowiązują zamiast starych zdań):
+       (1) „ξ=0.000" NIE jest geometrią — jest BRAMKĄ ADHEZJI: napęd skłonu 0.026 < fStat 0.04
+           (margines 1.55×). Bez adhezji skłon z 199.8° daje ξ=−0.832 Z EKSPULSJĄ. Zdanie „składowa
+           styczna zostaje mała przy każdym kącie" opisywało napęd POSTOJOWY, nie odpowiedź —
+           swobodna odpowiedź sięga |ξ|=1.04. KONSEKWENCJA KALIBRACYJNA: fStat=0.04 jest CZĘŚCIĄ
+           TREŚCI KLINICZNEJ trybu „nie rozstrzyga" — obniżenie poniżej ~0.026 zamieniłoby go
+           w słabą odpowiedź przeciwną regule.
+       (2) NIE MA JEDNEGO WODODZIAŁU: skłon i odchylenie mają osobne pary punktów krytycznych
+           (skłon 9.82°/189.94°, odchylenie 11.05°/191.17°). Strefy φ₀ (fStat:0): pełna reguła
+           Choung (11.05°,189.94°)=67.7% użytecznego łuku; pełne odwrócenie 31.4%; paski mieszane
+           ~0.9%; z obiema fazami ≥ progu karty 0.10: (21.26°,179.45°)=59.9% — ten sam rząd co
+           kliniczne odsetki poprawnych odpowiedzi. Zapis „~70% łuku" pomijał dolną granicę
+           (odwrócenie poniżej ~10°).
+       (3) Część kupulolityczna ODPADŁA w V4 (artefakt punktu oceny — patrz dopisek przy KIERUNEK).
+     NOWE FAKTY (z sond; nieznane w pierwotnym zapisie): martwe pasma adhezji ~20% łuku
+       (φ₀∈[174.7°,205.4°] i [3°,25.4°]; klif 205.35°: 205→0.000, 210→−0.807+ekspulsja) — usunięte
+       przez settled=false dla presetów; skłon USUWA złóg dla φ₀∈(191°,267°) — BLT bywa
+       nieoznakowanym manewrem leczniczym (rozszerzenie R10); odpowiedź lean w SEKWENCJI ~2×
+       silniejsza niż izolowana; model nie ma re-adhezji (raz zerwane wiązanie nie wraca).
+     GRANICE: wartości φ₀ presetów są FUNKCJĄ PROTOKOŁU historii (czasy/pozy w BLT_HISTORY — np.
+       tabela R10 z innymi protokołami dawała 132.3/164.9/267.3); STREFA jest na to odporna, liczby
+       nie — nie porównywać φ₀ między zapisami bez protokołu. Mapa i strefy = geometria JEDNEGO
+       atlasu (ramka Reida; margines 9.8° < zmienność międzyosobnicza).
+     FOLLOW-UP (świadomie odłożone): pełna bramka stuck(phi0,q0) i model re-adhezji = projekt sesji
+       ciągłej (ocena II, D1); „lying-down/sitting-up test" na tej samej maszynerii (D2).
+
  R11. SILNIK UTOŻSAMIA FENOTYP Z MECHANIZMEM: geo≡kanalolitiaza, apo≡kupulolitiaza [2026-08-06, OTWARTE].
      Wyszło z weryfikacji H5. variantLabels dla kanału poziomego twierdzi wprost
      „Kanalolitiaza (geotropowy)" i „Kupulolitiaza (apogeotropowy)", a gufoniApo ma w kodzie komentarz
@@ -752,6 +801,15 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
       WDROŻONE 2026-08-06: sizeUm → 16 / 21 / 29 µm, pokazywane na karcie manewru.)
      CO Z TYM ZROBIĆ: silnik już przyjmuje oś czasu — brakuje modelowania BADANIA JAKO CIĄGŁEJ SEKWENCJI,
      w której każdy test zaczyna się tam, gdzie skończył poprzedni. To zmiana projektowa, nie nowa fizyka.
+     [STATUS 2026-08-13 (ocena II): CZĘŚCIOWO DOSTARCZONE. Silnik ma już phi0 (walidowane) + settled
+      + out.final={phi,xi,bond,stuck,exited,inCrus} (V3) — stan DA SIĘ przenosić między przebiegami;
+      karta Bow & Lean używa tego przez BLT_HISTORY (V5): historia pozycyjna = timeline póz, φ₀
+      wyprowadzane symulacją (patrz R8-ROZWIĄZANIE). ROZSZERZENIE skutku ubocznego: nie tylko Roll —
+      także SKŁON usuwa złóg dla φ₀∈(191°,267°), więc BLT bywa nieoznakowanym manewrem leczniczym
+      (karta V5 mówi to wprost w scenariuszu „po Roll"). UWAGA do tabeli wyżej: jej φ₀ (132.3/164.9/
+      267.3) pochodzą z INNYCH protokołów historii niż presety BLT_HISTORY (146.2/173.0/220.5) —
+      φ₀ jest funkcją protokołu, odporna jest STREFA. OTWARTE pozostaje: sesja ciągła całego badania
+      (każdy test startuje ze stanu poprzedniego; wymaga re-adhezji bond(t)) = projekt D1.]
 
  R9. NACHYLENIE KANAŁU BOCZNEGO 10.4° ZAMIAST KANONICZNYCH ~30° [2026-08-05, OTWARTE].
      TO NIE JEST BŁĄD DANYCH — to niewiadoma RAMKI. Rozstrzygnięte rozdzieleniem wielkości względnych
@@ -779,6 +837,19 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      12/12, Dix ✓, head-hang ✓, Roll geotropowy z lateralizacją ✓. Pochylenie ramki jest więc dziś
      parametrem WOLNYM: model nie odróżnia 0° od −20°. Zostawiam 0°, bo to jedyna wartość, której nie
      trzeba zakładać — ale to WYBÓR, nie wynik, i tak należy go czytać.
+     [GRANICE PRZEDZIAŁU WOLNOŚCI — zmierzone 2026-08-13 (ocena II, B1/GEO-1/GEO-2; weryfikator
+      potwierdził bisekcją). „Wolny parametr" ma TWARDE końce: przedział to ok. (−28.2°, +9.9°),
+      nie półprosta. Przy pitch ≥ +9.9° spoczynek kanału POZIOMEGO degeneruje (eq przekracza
+      ARC_SPAN=267.3 i klamra restPhi TELEPORTUJE złóg o ~264° do osklepka — start w ramieniu
+      bańkowym = fenotyp apogeotropowy w wariancie canalo; |g|_pł spada 0.181→0.031); próg leży
+      na skraju pasma ±10°, które ten zapis sam nazywa nieusuwalną niepewnością postawy, a osobnik
+      o nachyleniu 0–3° przy średniej Della Santiny 20°±7 nie jest egzotyczny (rozdzielenie gałęzi
+      klamry per kanał = plan V7 oceny II). Przy pitch ≤ −28.2° kanał PRZEDNI zyskuje stabilny
+      spoczynek w łuku → wraca adhezja i latencja — cała wyprowadzona sygnatura „AC-BPPV bez
+      latencji" (R7/R3b) obowiązuje tylko dla pochyleń > ~−28°; przy −20° (wartość „nieodróżnialna")
+      margines za ujściem to już tylko 7.2° (z 23.6° przy 0°). Dotychczasowe sondy badały wyłącznie
+      pochylenia ujemne — zdanie R8 „margines maleje, ale nigdy nie zmienia znaku" było prawdziwe
+      tylko dla przebadanej połowy osi.]
      >>> ROZSTRZYGNIĘTE 2026-08-05 — PRACA ŹRÓDŁOWA ATLASU. <<<
      Ahmadi S-A i wsp. „IE-Map: a novel in-vivo atlas and template of the human inner ear",
      Sci Rep 2021;11:3293, doi:10.1038/s41598-021-82716-0 (PMID 33558581, PMC7870663, CC BY 4.0).

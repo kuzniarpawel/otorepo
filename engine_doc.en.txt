@@ -626,7 +626,10 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      dynamics. The same term resolves the other borderline case: the anterior canal's start at the
      cupula (drive 0.012 < threshold 0.04).
 
- R8. THE BOW & LEAN TEST IS SUB-THRESHOLD IN THIS MODEL [2026-08-05, OPEN — clinical decision].
+ R8. THE BOW & LEAN TEST IS SUB-THRESHOLD IN THIS MODEL [2026-08-05].
+     >>> RESOLVED 2026-08-13 (assessment II, V4+V5) — the decision was made and IMPLEMENTED; see
+         R8-RESOLUTION below. The write-up below remains as the problem analysis; its numeric
+         corrections are also in R8-RESOLUTION. <<<
      Tangential drive: bow 0.026, lean 0.022, against an adhesion-breaking threshold fStat of 0.04 and
      0.131 for the Roll test — 5× weaker than the Roll and below threshold. The simulation yields ξ=0.000.
      The reason is geometric and parameter-robust: the horizontal canal lies almost in the earth plane
@@ -737,6 +740,61 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      rule, explicitly, as a rule rather than a physics result; (c) leave as is. I am not choosing,
      because every option changes clinical content.
 
+ R8-RESOLUTION [2026-08-13, assessment II — DECISION MADE AND IMPLEMENTED: V4 (`2152941`) + V5 (`a7044a4`)].
+     THE DECISION: A HYBRID BUILT ON (a). Rejected (c) — the arrow↔text contradiction was confirmed
+     numerically in BOTH variants on main and had shipped in the PWA. Pure (b) rejected for
+     canalithiasis — it would be a fabrication of something the model can compute; (b) reduced to an
+     EXPLICITLY labelled "Clinical rule (Choung 2006)" chip with a model↔rule agreement badge.
+     THE REALIZATION (the textbook case = an IMPROVED (a) — a scenario of INITIAL CONDITIONS):
+       • BLT_HISTORY (maneuvers.js): the positional history as a timeline of poses; φ₀ DERIVED by
+         simulating the history through the engine (the derivedHold pattern — the number is a result,
+         not a constant). Measured with the V5 protocols: "a night on the affected side" φ₀=146.2° →
+         bow +0.975 toward the AFFECTED side / lean −0.366 toward the HEALTHY side (the full Choung
+         rule FOLLOWS from the physics); "after a Dix" 173.0° → +1.034/−1.004; "after a Roll" 220.5° →
+         bow −0.753 toward the healthy side (MISLEADING — debris past the watershed) WITH EXPULSION
+         (the test does the maneuver's work, the later phases are silent); "long sitting" (restPhi
+         199.8°, full adhesion) → 0.000/0.000 — the card says "the model does not resolve this" and
+         shows WHY.
+       • settled=false (V3): a history preset = freshly displaced debris, without the adhesion gate.
+       • The test computed as ONE bow→sit→lean sequence (a performed bow displaces the debris).
+       • THE TEXT is generated from THE SAME ξ as the arrow (bltDirWord) — an arrow↔text contradiction
+         is structurally impossible; cupulo: direction from the physics since V4 (target at the
+         cupula), the scenario explicitly without influence (reproducibility in cupulopathy = the
+         differentiating feature, the corrected H5).
+       • A WATERSHED MAP on the card: zones swept out of the engine (bltZones): full rule 66% of the
+         arc / inverted pattern 30% / sub-threshold bands faded; markers for ampulla/opening/watershed
+         190°/rest 199.8°/the scenario's φ₀; the caption ties the map to the clinical 11.5–45%
+         absence of response.
+     NUMERIC CORRECTIONS TO THE R8 WRITE-UP (assessment II probes — they replace the old sentences):
+       (1) "ξ=0.000" is NOT geometry — it is the ADHESION GATE: the bow's drive 0.026 < fStat 0.04
+           (a 1.55× margin). Without adhesion a bow from 199.8° gives ξ=−0.832 WITH EXPULSION. The
+           sentence "the tangential component stays small at every angle" described the PARKED drive,
+           not the response — the free response reaches |ξ|=1.04. CALIBRATION CONSEQUENCE: fStat=0.04
+           is PART OF THE CLINICAL CONTENT of the "does not resolve" mode — lowering it below ~0.026
+           would turn that mode into a weak response opposite to the rule.
+       (2) THERE IS NO SINGLE WATERSHED: bow and lean have separate pairs of critical points
+           (bow 9.82°/189.94°, lean 11.05°/191.17°). φ₀ zones (fStat:0): full Choung rule
+           (11.05°,189.94°)=67.7% of the useful arc; full inversion 31.4%; mixed strips ~0.9%; with
+           both phases ≥ the card's threshold 0.10: (21.26°,179.45°)=59.9% — the same order as the
+           clinical rates of correct responses. The "~70% of the arc" statement omitted the lower
+           bound (inversion below ~10°).
+       (3) The cupulolithic part FELL AWAY in V4 (an artefact of the evaluation point — see the note
+           at THE DIRECTION).
+     NEW FACTS (from the probes; unknown in the original write-up): adhesion dead bands ~20% of the
+       arc (φ₀∈[174.7°,205.4°] and [3°,25.4°]; a cliff at 205.35°: 205→0.000, 210→−0.807+expulsion) —
+       removed by settled=false for the presets; the bow REMOVES the debris for φ₀∈(191°,267°) — the
+       BLT can be an unlabelled therapeutic maneuver (an extension of R10); the lean response in the
+       SEQUENCE is ~2× stronger than in isolation; the model has no re-adhesion (a bond once broken
+       does not return).
+     LIMITS: the presets' φ₀ values are a FUNCTION OF THE HISTORY PROTOCOL (the times/poses in
+       BLT_HISTORY — e.g. the R10 table with other protocols gave 132.3/164.9/267.3); the ZONE is
+       robust to that, the numbers are not — do not compare φ₀ between write-ups without the
+       protocol. The map and the zones = the geometry of ONE atlas (Reid's frame; the 9.8° margin <
+       between-subject variability).
+     FOLLOW-UP (deliberately deferred): the full stuck(phi0,q0) gate and a re-adhesion model = the
+       continuous-session project (assessment II, D1); the "lying-down/sitting-up test" on the same
+       machinery (D2).
+
  R11. THE ENGINE EQUATES PHENOTYPE WITH MECHANISM: geo≡canalolithiasis, apo≡cupulolithiasis [2026-08-06, OPEN].
      Came out of verifying H5. For the horizontal canal variantLabels asserts outright "Canalithiasis
      (geotropic)" and "Cupulolithiasis (apogeotropic)", and gufoniApo carries the code comment
@@ -788,6 +846,16 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      WHAT TO DO: the engine already takes a timeline — what is missing is modelling THE EXAMINATION AS A
      CONTINUOUS SEQUENCE, where each test starts where the previous one left off. A design change, not
      new physics.
+     [STATUS 2026-08-13 (assessment II): PARTIALLY DELIVERED. The engine already has phi0
+      (validated) + settled + out.final={phi,xi,bond,stuck,exited,inCrus} (V3) — the state CAN be
+      carried between runs; the Bow & Lean card uses this through BLT_HISTORY (V5): the positional
+      history = a timeline of poses, φ₀ derived by simulation (see R8-RESOLUTION). EXTENSION of the
+      side effect: not only the Roll — the BOW too removes the debris for φ₀∈(191°,267°), so the BLT
+      can be an unlabelled therapeutic maneuver (the V5 card says so outright in the "after a Roll"
+      scenario). NOTE on the table above: its φ₀ values (132.3/164.9/267.3) come from OTHER history
+      protocols than the BLT_HISTORY presets (146.2/173.0/220.5) — φ₀ is a function of the protocol;
+      it is the ZONE that is robust. STILL OPEN: a continuous session of the whole examination
+      (each test starting from the previous state; requires re-adhesion bond(t)) = project D1.]
 
  R9. LATERAL-CANAL PITCH 10.4° INSTEAD OF THE CANONICAL ~30° [2026-08-05, OPEN].
      THIS IS NOT A DATA ERROR — it is a FRAME unknown. Settled by separating relative from absolute
@@ -816,6 +884,20 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      12/12, Dix ✓, head-hang ✓, geotropic Roll with lateralization ✓. The frame pitch is therefore a FREE
      parameter today: the model cannot tell 0° from −20°. I leave it at 0° because that is the only value
      that need not be assumed — but it is a CHOICE, not a result, and should be read as one.
+     [FREEDOM-INTERVAL BOUNDS — measured 2026-08-13 (assessment II, B1/GEO-1/GEO-2; the verifier
+      confirmed by bisection). The "free parameter" has HARD ends: the interval is roughly
+      (−28.2°, +9.9°), not a half-line. At pitch ≥ +9.9° the HORIZONTAL canal's rest degenerates
+      (eq exceeds ARC_SPAN=267.3 and the restPhi clamp TELEPORTS the debris by ~264° to the cupula —
+      a start in the ampullary arm = an apogeotropic phenotype in the canalo variant; |g|_plane
+      drops 0.181→0.031); the threshold lies at the edge of the ±10° band that this very write-up
+      calls an irremovable posture uncertainty, and an individual with a 0–3° pitch against Della
+      Santina's mean of 20°±7 is not exotic (splitting the clamp's branches per canal = plan V7 of
+      assessment II). At pitch ≤ −28.2° the ANTERIOR canal gains a stable rest inside the arc →
+      adhesion and latency return — the whole derived "AC-BPPV without latency" signature (R7/R3b)
+      holds only for pitches > ~−28°; at −20° (the "indistinguishable" value) the margin past the
+      opening is only 7.2° (down from 23.6° at 0°). The probes so far examined ONLY negative
+      pitches — R8's sentence "the margin shrinks but never changes sign" was true only for the
+      tested half of the axis.]
      >>> SETTLED 2026-08-05 — THE ATLAS'S SOURCE PAPER. <<<
      Ahmadi S-A et al. "IE-Map: a novel in-vivo atlas and template of the human inner ear",
      Sci Rep 2021;11:3293, doi:10.1038/s41598-021-82716-0 (PMID 33558581, PMC7870663, CC BY 4.0).
