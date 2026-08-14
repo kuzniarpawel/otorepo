@@ -269,29 +269,28 @@ function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POS
   return stepHeadQ("supineHang", side==="P"? 45 : -45, "up");                            // tylny (Dix-Hallpike)
 }
 /* OKNO SYMULACJI PRÓBY POZYCYJNEJ = CZAS KLINICZNY (decyzja użytkownika, 2026-08-01).
-   Te dwie liczby mają zupełnie inny status i mieszanie ich było źródłem błędu:
+   Okno NIE jest wygodą animacji: przez xiEnvelope→tEnd ustala, jak długo gra oczopląs, a ten czas
+   klinicysta czyta obok chipa „Przemijający / Uporczywy". Dwie liczby mają zupełnie inny status
+   i mieszanie ich było źródłem błędu:
 
-   PRZEMIJAJĄCE (kanalolitiaza) — czas trwania wyznacza FIZYKA, nie okno. Zmierzony naturalny
-   zanik (|ξ| < 3 % szczytu): tylny 29,75 s · poziomy 39,85 s · przedni 34,35 s, czyli wszystkie
-   poniżej progu Bárány „< 1 min”. Okno ma ten zanik POMIEŚCIĆ, a nie go wyznaczać — przy dotych-
-   czasowych 40 s kanał poziomy kończył się 0,65 s przed krawędzią, więc dowolna zmiana parametru
-   cząstki obcinałaby go po cichu i „czas trwania” zacząłby znaczyć „długość okna”. Stąd zapas.
+   PRZEMIJAJĄCE (kanalolitiaza) — czas trwania wyznacza FIZYKA, nie okno. Okno ma ten zanik
+   POMIEŚCIĆ, a nie go wyznaczać: przy dawnych 40 s kanał poziomy kończył się 0,65 s przed
+   krawędzią, więc dowolna zmiana parametru cząstki obcinałaby go po cichu i „czas trwania”
+   zacząłby znaczyć „długość okna”. Stąd zapas.
 
-   UPORCZYWE (kupulolitiaza) — ξ NIE WYGASA W OGÓLE (zmierzone: |ξ| = 1,000 szczytu jeszcze
-   po 300 s), więc tEnd JEST oknem i niczym więcej. Ta liczba jest zatem wprost twierdzeniem
-   klinicznym wypisanym obok na ekranie („Uporczywy > 60 s”) i musi ten próg przekraczać.
-   Dotychczasowe 18 s dawało obraz KRÓTSZY niż postać przemijająca — dokładnie odwrotnie
+   UPORCZYWE (kupulolitiaza) — ξ NIE WYGASA (zmierzone: |ξ| = 100 % szczytu jeszcze po 300 s dla
+   kanału tylnego i poziomego), więc tEnd JEST oknem i niczym więcej. Ta liczba jest zatem wprost
+   twierdzeniem klinicznym wypisanym obok na ekranie („Uporczywy > 60 s”) i musi ten próg
+   przekraczać. Dawne 18 s dawało obraz KRÓTSZY niż postać przemijająca — dokładnie odwrotnie
    niż kryteria, które aplikacja drukuje nad animacją.
-   Bramka: npm run barany:check. */
-const XI_OKNO_PRZEMIJAJACY = 55;   // > naturalny zanik (max 39,85 s) z zapasem — okno nie obcina
-const XI_OKNO_UPORCZYWY    = 75;   // > 60 s: tEnd = okno, więc liczba MUSI przekraczać próg Bárány
+
+   NAZWANYCH STAŁYCH XI_OKNO_* JUŻ NIE MA (usunięte 2026-08-14 przy synchronizacji dokumentacji).
+   Po ocenie II reguła jest TRÓJDZIELNA (55 s · 75 s · kanał przedni jak postać uporczywa), a stałe
+   zostały po scaleniu jako martwy kod z nieaktualnymi liczbami w komentarzu — czyli drugie, ciche
+   źródło prawdy obok `engineXi`. Aktualne wartości i ich pomiar: komentarz niżej („OKNA 55/75 s
+   ZAMIAST 40/60") oraz sam `engineXi`. Bramka: npm run barany:check. */
 // przebieg ξ(t) z silnika: kanalolitiaza = PRZEJŚCIOWY (wygasa, cząstka wychodzi, NIE wraca);
 // kupulolitiaza = uporczywy (trzyma się, dopóki pozycja utrzymana).
-// OKNO OBSERWACJI (tHold) — to ONO, przez xiEnvelope→tEnd, ustala jak długo gra animacja oczopląsu.
-//   Kupulolitiaza NIE wygasa, więc jej tEnd = całe okno; kanalolitiaza wygasa sama w ~30–40 s. Okno 18 s dla
-//   postaci uporczywej dawało tEnd 18,5 s przeciw 29,8–39,8 s dla przejściowej, czyli oczopląs „uporczywy"
-//   zatrzymywał się PIERWSZY — dokładne odwrócenie cechy różnicującej, której uczy ta sama karta
-//   („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno 60 s = próg kliniczny 1 min z kryteriów Bárány.
   /* OKNA 55/75 s ZAMIAST 40/60 — wartosci z galezi futureUI, przeniesione PRZEZ POMIAR, nie z sentymentu.
      Wyrocznia barany:check zmierzyla na oknach main (40/60): postac przemijajaca konczyla sie z 3,7-5,5 %
      szczytu JESZCZE NA EKRANIE (okno obcinalo zanik), przy zapasie 0,00 s — czyli kazda zmiana parametru

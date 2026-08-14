@@ -136,12 +136,16 @@ for (const k of ['epley', 'semont', 'yacovino']) {
 }
 
 /* ═══════════ D. „DO USTĄPIENIA OCZOPLĄSU + ZAPAS" — PODŁOGA, NIGDY SKRÓCENIE ═══════════ */
-/* To jest najważniejsza bramka tego bloku. ZMIERZONE: model daje dla Semonta 18,5 s przy
-   seconds=90 i instrukcji „Utrzymaj 1–3 min" (okno dynamiki jest zakorkowane capem 12 s, więc
-   liczba NIGDY nie przekroczy ~19 s). Tryb, który ustawiałby tę liczbę wprost, skróciłby rzut
-   Semonta o ~70 s poniżej dolnej granicy WŁASNEJ instrukcji aplikacji. */
-eq('CZ1/podloga-semont', czasUtrzymania(90, 18.5, {}), { sekundy: 90, zrodlo: 'protokol', powod: 'protokolDluzszy' });
-eq('CZ2/wydluza-gdy-dluzszy', czasUtrzymania(30, 39.8, {}), { sekundy: 55, zrodlo: 'oczoplas', powod: 'oczoplas' });
+/* To jest najważniejsza bramka tego bloku. PRZELICZONE PO OCENIE II SILNIKA (2026-08-14): zaszyty
+   cap 12 s zniknął (hold jest dziś WYPROWADZANY przez derivedHold), więc liczby urosły o rząd
+   wielkości — model daje dla Semonta 38,80 / 50,05 s przy seconds=90 i instrukcji „Utrzymaj
+   1–3 min", a na całej siatce sięga 74,60 s (Bascule, mały złóg, etap 3). Kierunek błędu przestał
+   być jednostronny: model bywa i krótszy, i dłuższy od protokołu. Reguła się przez to nie zmienia,
+   tylko wzmacnia — tryb, który ustawiałby tę liczbę wprost, wciąż skróciłby rzut Semonta o 25–35 s
+   poniżej dolnej granicy WŁASNEJ instrukcji aplikacji.
+   Fixture'y niżej niosą ZMIERZONE wartości nowego silnika, a nie liczby zamrożone przy Bloku 10. */
+eq('CZ1/podloga-semont', czasUtrzymania(90, 50.05, {}), { sekundy: 90, zrodlo: 'protokol', powod: 'protokolDluzszy' });
+eq('CZ2/wydluza-gdy-dluzszy', czasUtrzymania(30, 35.35, {}), { sekundy: 50, zrodlo: 'oczoplas', powod: 'oczoplas' });
 eq('CZ3/brak-sygnalu', czasUtrzymania(30, null, {}), { sekundy: 30, zrodlo: 'protokol', powod: 'brakSygnalu' });
 eq('CZ4/plynne-zostaje-plynne', czasUtrzymania(null, 34.4, {}), { sekundy: null, zrodlo: 'plynne', powod: null });
 eq('CZ5/zapas', ZAPAS_S, 15);

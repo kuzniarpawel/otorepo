@@ -284,12 +284,13 @@ const NERW_PELNY = _NV.nerveBranchLesion('P','superior',1);
     'ton 150 Hz (faza drazniena Meniere) zaczal psuc vHIT — popraw opis granicy przy toneL/toneR');
   T('H1c/granica-nazwana', gr('toneL') && gr('toneR'), 'ton musi niesc nazwana granice modelu');
 
-  // H2: pelne wypadniecie to w tym silniku gain 0,35, a nie 0.
+  // H2: pelne wypadniecie galezi nerwu to w tym silniku gain 0,100, a nie 0 (przed ocena II: 0,35).
   const pelne = D.pacjent(NERW_PELNY);
   eq('H2a/pelne-wypadniecie-010', Math.round(pelne.gainR * 100) / 100, 0.10);
   T('H2b/granica-nazwana', gr('gainL') && gr('gainR'), 'wzmocnienie musi niesc nazwana granice modelu');
 
-  // H3: odczyt VEMP jest ASYMETRIA — obustronna utrata jest w opisie badania NIEMA.
+  // H3: odczyt VEMP jest ASYMETRIA — ale obustronna utrata PRZESTALA byc niema (ocena II nazywa ja
+  //     wprost: „obustronnie zniesiony … brak asymetrii mimo ubytku"). Granica zostaje, milczenie nie.
   const zdaniaO = (r, wzor) => (r.findings || []).filter(z => wzor.test(z));
   const jednostronnie = D.obraz(D.pacjent({ sacculeR: 0 }));
   const obustronnie = D.obraz(D.pacjent({ sacculeR: 0, sacculeL: 0 }));
@@ -302,7 +303,8 @@ const NERW_PELNY = _NV.nerveBranchLesion('P','superior',1);
   T('H3c/granica-nazwana', gr('sacculeL') && gr('sacculeR') && gr('utricleL') && gr('utricleR'),
     'otolity musza niesc nazwana granice modelu');
 
-  // H4: izolowany ubytek kanalu PIONOWEGO — lokalizacja obwodowa i „objaw osrodkowy" naraz.
+  // H4: izolowany ubytek kanalu PIONOWEGO — ocena II usunela falszywy „objaw osrodkowy", wiec zostaje
+  //     SAMA lokalizacja obwodowa. Bramka pilnuje, ze sprzecznosc nie wroci (zmierzone: 4 obwodowe, 0 osrodkowych).
   const pionowy = D.obraz(D.pacjent({ tonePcR: 0, gainPcR: 0.35 }));
   /* ODWROCONE: izolowany ubytek kanalu pionowego dawal FALSZYWY objaw osrodkowy. Nowy silnik daje
      sama lokalizacje obwodowa (zmierzone: 4 obwodowe, 0 osrodkowych) — bramka pilnuje, ze falszywy
