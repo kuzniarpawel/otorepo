@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0 } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -481,12 +481,14 @@ function startDiagOtolith(container,variant,canal,side){
   if(!path||!particle||!cupula) return;
   canal=canal||"posterior"; side=side||"P";
   const len=path.getTotalLength(), start=performance.now();
-  if(variant==="canalo"){
+  if(variant==="canalo" || variant==="short"){
     cuptip.style.display="none";                 // złóg swobodny w świetle kanału
     cupula.setAttribute("transform","rotate(0 62 96)");
     // REALNE φ(t) z silnika (simulateCanalith): po latencji cząstka wędruje wg grawitacji
     // i zatrzymuje się (wyjście do ŁAGIEWKI / spoczynek). Bez sztucznej pętli.
-    const sim = engineXi(canal, side, false, provokeQ(canal, side));   // [{t,xi,phi,exited}], phi w stopniach
+    // D4/V16, "short": ta sama gałąź z init.arm — φ ujemne klamruje się do 0 na ścieżce SVG,
+    // więc cząstka siedzi przy bańce (uczciwy region ramienia bańkowego bez nowej geometrii rysunku).
+    const sim = engineXi(canal, side, false, provokeQ(canal, side), variant==="short"?{arm:"short", phi0:SHORT_PHI0, settled:false}:undefined);   // [{t,xi,phi,exited}], phi w stopniach
     const dt = sim.length>1?(sim[1].t-sim[0].t):0.05;
     const lastT = sim.length?sim[sim.length-1].t:0;
     const phiAt = ts=>{ const i=Math.max(0,Math.min(sim.length-1,Math.round(ts/dt))); return sim[i]?sim[i].phi:90; };
@@ -497,8 +499,10 @@ function startDiagOtolith(container,variant,canal,side){
       if(elapsed>lastT){ place(phiAt(lastT)); return false; }   // koniec — cząstka spoczywa, bez pętli
       place(phiAt(elapsed)); return true; });
   } else {
+    // cupulo | light: brak wolnej cząstki — bańka się odgina. Dla "light" ta sama animacja jest UCZCIWA:
+    // ziaren nie rysujemy (light = brak złogu), a obwiednia |ξ| light ≡ cupulo (lustro bit-w-bit, V12).
     particle.style.display="none";               // złóg na osklepku — bańka się odgina
-    // odgięcie osklepka wg ξ(t) z silnika (uporczywe — kupulolitiaza nie wygasa, dopóki pozycja trwa)
+    // odgięcie osklepka wg ξ(t) z silnika (uporczywe — kupulopatia nie wygasa, dopóki pozycja trwa)
     const {env, tEnd} = xiEnvelope(engineXi(canal, side, true, provokeQ(canal, side)));
     cupula.setAttribute("transform","rotate(0 62 96)");
     loopRAF((now)=>{ if(!document.body.contains(container)) return false;
@@ -945,9 +949,9 @@ function renderGuide(){
 // Karta klasyfikacji Bárány (ICVD) + różnicowanie OŚRODKOWE (CPN). Etykieta podtypu z baranyClassify();
 // przełącznik „obwodowy (BPPV) / ośrodkowy (CPN)" (state.diagCentral) ujawnia czerwone flagi + schemat
 // uporczywego downbeatu. Czysto widokowa — zero zmian fizyki; domyślnie „obwodowy" (golden deterministyczny).
-function diagClassifyCard(canal, v, side, antMode){
+function diagClassifyCard(canal, v, side, antMode, mech){
   const central=!!state.diagCentral;
-  const cls=baranyClassify(canal, v, side, antMode);
+  const cls=baranyClassify(canal, v, side, antMode, mech);
   const tierBg = cls.tier==="established" ? "rgba(127,227,196,.14)" : "rgba(255,207,143,.16)";
   const tierFg = cls.tier==="established" ? "#7fe3c4" : "#ffcf8f";
   const seg=`<div class="seg segobs" style="margin-bottom:10px">
@@ -1038,7 +1042,10 @@ function renderDiag(){
   const antMode = isDix && state.dixObs==="ant";          // zaobserwowano downbeat → kanał PRZEDNI
   const effCanal = antMode ? "anterior" : D.canal;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
-  const rawPhases = D.phases(A, v, state.bltScenario);      // 3. argument: scenariusz historii (karty SCEN_DRIVEN: bowlean, lyingdown; inne testy go ignorują)
+  // D4/V16: mechanizm w obrębie fenotypu (null → klasyczny; mechOf degraduje wartości HC poza kanałem
+  // poziomym). JEDYNY odczyt pary (variant, mechanism) w renderze — dalej płynie już tylko `mech`.
+  const mech = mechOf(v, state.mechanism, effCanal);
+  const rawPhases = D.phases(A, v, state.bltScenario, mech);   // 3. argument: scenariusz historii (karty SCEN_DRIVEN); 4.: mechanizm (D4 — karty HC)
   const bltMeta = rawPhases.blt || null;                    // metadane scenariusza (właściwość na tablicy — .map ją gubi, więc łapiemy tu)
   const ldtMeta = rawPhases.ldt || null;                    // analogicznie dla lying-down (V11/D2)
   const phases = rawPhases.map(ph => antMode
@@ -1051,14 +1058,14 @@ function renderDiag(){
   // W SESJI (V10/D1) mnożnik = 1: dyspersja (rep→gc) siedzi już w ξ symulacji sesji — mnożenie w renderze
   // liczyłoby ją DWA razy.
   const dixRep = (isDix && !antMode) ? (state.dixRep||0) : 0;
-  const fatFactor = (v==="cupulo" || state.session) ? 1 : Vestibular.fatigueFactor(dixRep);
+  const fatFactor = (persistentOf(mech) || state.session) ? 1 : Vestibular.fatigueFactor(dixRep);   // D4: trwałość przez persistentOf (light się NIE męczy, short TAK)
   phases.forEach(ph=>{ if(ph.nys) ph.nys.fatigue = fatFactor; });
   // ===== Sesja ciągła (ocena II, V10/D1): fazy karty liczone ze STANU sesji — jedna nić symulacji, a TEN SAM
   // init płynie do obwiedni animacji (szew V5: startNys/startDialNysIn → engineXi(nys.init)) — karta i animacja
   // z jednego stanu, sprzeczność strukturalnie niemożliwa. Bowlean poza nadpisaniem (karta B&L ma własne
   // scenariusze historii — integracja to kandydat V11); antMode poza (kanał efektywny ≠ kanał sesji).
   const S = state.session;
-  const sessDrive = S && v==="canalo" && !antMode && !SCEN_DRIVEN.has(state.testKey) && S.canal===effCanal && S.side===effSide;
+  const sessDrive = S && mech==="canalo" && !antMode && !SCEN_DRIVEN.has(state.testKey) && S.canal===effCanal && S.side===effSide;   // D4: sesja modeluje wyłącznie wolny złóg DŁUGIEGO ramienia
   if(sessDrive){
     const pv = sessionPreview(S, state.testKey);
     const sInit = sessionInit(S);
@@ -1090,10 +1097,8 @@ function renderDiag(){
     return o.spv>=NeuroVOR.VIS_THRESH ? { dir:o.dir||0, amp:6*Math.min(1,o.strength||0), spv:o.spv, ear:o.beatEar } : null; })() : null;
   if(ovVec) phases.forEach(ph=>{ if(ph.nys) ph.nys.ov = ovVec; });
   state._diagPhaseNys = phases.map(p=>p.nys);   // do restartu animacji przy odwracaniu kart pozycji
-  const vl=variantLabels(D.canal);
-  const mechNote = v==="canalo"
-    ? t("Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji.","Free-floating debris moves within the canal lumen under gravity.")
-    : t("Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.","Debris adheres to the cupula, which deflects — the cupula becomes gravity-sensitive.");
+  // (martwe lokalne vl/mechNote usunięte w D4-K1 pod bramką 0-diff: szablon liczy własne note/face,
+  //  etykiety wariantu niesie flip-karta; variantLabels zostaje w eksporcie — zgodność wsteczna futureUI)
   const can3d = true;                                    // Etap 4: 3D dla wszystkich testów pozycyjnych (dix/roll/bowlean/headhang)
   const phaseInner=(ph,i)=>{
     const phs=poseSpec(ph);                              // kanoniczna poza fazy testu (Etap 2)
@@ -1148,11 +1153,13 @@ function renderDiag(){
     const actChip = chipS(t("akty","acts"), `${S.acts.length} · ${Math.round(S.tSession)} s`);
     const mismatch = !(S.canal===effCanal && S.side===effSide);
     const bst="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center";
-    const btnProvoke = (!isDix && !SCEN_DRIVEN.has(state.testKey) && !mismatch && v==="canalo" && !S.exited)
+    const btnProvoke = (!isDix && !SCEN_DRIVEN.has(state.testKey) && !mismatch && mech==="canalo" && !S.exited)
       ? `<button class="opt" style="${bst}" onclick="sessionProvoke()">${t("▶ Wykonaj test w sesji","▶ Run the test in the session")}</button>` : "";
     const btnRest = `<button class="opt" style="${bst};opacity:.9" onclick="sessionRest()">${t("⏸ Przerwa 10 min (siad)","⏸ 10-min break (sitting)")}</button>`;
     const btnReset = `<button class="opt" style="${bst};opacity:.85" onclick="resetSession()">${t("Reset (nowy złóg)","Reset (new debris)")}</button>`;
-    const noteTxt = v==="cupulo"
+    const noteTxt = (mech==="light" || mech==="short")
+      ? t("Sesja śledzi złóg RAMIENIA DŁUGIEGO — wybrany mechanizm ma własną kartę poza łańcuchem sesji.","The session tracks LONG-ARM debris — the selected mechanism has its own card outside the session chain.")
+      : v==="cupulo"
       ? t("Kupulolitiaza: brak wolnej cząstki w świetle — wynik NIE zależy od historii (test powtarzalny); stan sesji dotyczy postaci kanalolitycznej.","Cupulolithiasis: no free particle in the lumen — the result does NOT depend on history (the test is repeatable); the session state applies to the canalithiasis form.")
       : SCEN_DRIVEN.has(state.testKey)
         ? t("Ta karta używa scenariuszy historii pozycyjnej — akty sesji aktualizują stan złogu, ale nie nadpisują karty.","This card uses positional-history scenarios — session acts update the debris state but do not override the card.")
@@ -1171,6 +1178,8 @@ function renderDiag(){
   const isBlt = state.testKey==="bowlean";
   const isLdt = state.testKey==="lyingdown";               // V11/D2 — panel/badge niżej, selektor WSPÓLNY (scenPanelHTML)
   const bltPanel = isBlt ? (()=>{
+    if(mech==="light") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Light cupula: mechanizm osklepkowy bez wolnej cząstki — wynik NIE zależy od historii pozycyjnej (scenariusze dotyczą postaci kanalolitycznych). Test powtarzalny; od kupulolitiazy różni go ODWRÓCONY kierunek (skłon→chora).","Light cupula: a cupular mechanism with no free particle — the result does NOT depend on positional history (the scenarios apply to the canalithiasis forms). The test is repeatable; the REVERSED direction (bow→affected) distinguishes it from cupulolithiasis.")}</div></div>`;
+    if(mech==="short") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Ramię bańkowe nie ma spoczynku — siad czyści je w ≤2 min, więc historia pozycyjna NIE ustala położenia startowego (scenariusze dotyczą ramienia długiego). Karta pokazuje ŚWIEŻY depozyt w środku ramienia (φ₀ ≈ −22°, wyprowadzone z geometrii segmentu).","The ampullar arm has no rest — sitting clears it within ≤2 min, so positional history does NOT set the starting position (the scenarios apply to the long arm). The card shows a FRESH deposit at the arm's midpoint (φ₀ ≈ −22°, derived from the segment geometry).")}</div></div>`;
     if(v==="cupulo") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Kupulolitiaza: ciężki osklepek reaguje na sam kierunek grawitacji — wynik NIE zależy od historii pozycyjnej (scenariusze dotyczą postaci kanalolitycznej). Test powtarzalny — to jego cecha różnicująca.","Cupulolithiasis: the heavy cupula responds to the direction of gravity itself — the result does NOT depend on positional history (the scenarios apply to the canalithiasis form). The test is repeatable — its differentiating feature.")}</div></div>`;
     const scen=state.bltScenario||"textbook";
     const ini=bltInit(A,scen);
@@ -1184,7 +1193,9 @@ function renderDiag(){
   const bltExtras = isBlt ? (()=>{
     const ruleTxt=t("Reguła kliniczna (Choung 2006): skłon → ucho chore, odchylenie → zdrowe; w postaci apogeotropowej odwrotnie.","Clinical rule (Choung 2006): bow → affected ear, lean → healthy; reversed in the apogeotropic form.");
     let badge, badgeCol="#3a8f6f";
-    if(v==="cupulo"){ badge=t("model ZGODNY z regułą apogeotropową — kierunek liczy fizyka (cel przy osklepku)","model AGREES with the apogeotropic rule — the direction is computed by physics (target at the cupula)"); }
+    if(mech==="light"){ badge=t("model ZGODNY z regułą geotropową Choung — ale przez mechanizm OSKLEPKOWY (odwrócony wypór), nie wolny złóg; odpowiedź trwała i powtarzalna","model AGREES with the geotropic Choung rule — but via a CUPULAR mechanism (inverted buoyancy), not free debris; the response is persistent and repeatable"); }
+    else if(mech==="short"){ badge=t("wzorzec apo PRZEMIJAJĄCY — wolny złóg w ramieniu bańkowym; odchylenie OPRÓŻNIA ramię (samooczyszczenie — test bywa terapeutyczny)","a TRANSIENT apo pattern — free debris in the ampullar arm; the lean EMPTIES the arm (self-clearing — the test can be therapeutic)"); badgeCol="#b0813f"; }
+    else if(v==="cupulo"){ badge=t("model ZGODNY z regułą apogeotropową — kierunek liczy fizyka (cel przy osklepku)","model AGREES with the apogeotropic rule — the direction is computed by physics (target at the cupula)"); }
     else if(bltMeta && bltMeta.exitedInBow && (bltMeta.bowXi||0)<-0.23){ badge=t("skłon MYLI (bije ku zdrowej — złóg za wododziałem) i usuwa złóg z kanału: test zadziałał jak manewr","the bow MISLEADS (beats toward healthy — debris beyond the watershed) and removes the debris: the test acted as a maneuver"); badgeCol="#b0813f"; }
     else if(bltMeta && (bltMeta.exitedInHistory || bltMeta.exitedInBow)){ badge=t("kanał opróżniony — reguły nie ma na czym testować (test zadziałał jak manewr)","canal emptied — nothing left to test the rule on (the test acted as a maneuver)"); badgeCol="#8a93a6"; }
     else if(bltMeta && bltMeta.bowXi>0 && bltMeta.leanXi<0 && Math.abs(bltMeta.bowXi)>0.1){ badge=t("model ZGODNY z regułą w tym scenariuszu — reguła Choung WYNIKA tu z fizyki","model AGREES with the rule in this scenario — the Choung rule FOLLOWS from physics here"); }
@@ -1192,7 +1203,7 @@ function renderDiag(){
     else { badge=t("model PRZECIWNY regule w tym scenariuszu — złóg za wododziałem","model OPPOSES the rule in this scenario — debris beyond the watershed"); badgeCol="#b0813f"; }
     const ruleCard=`<div class="card" style="margin-bottom:4px"><div class="obslabel" style="margin-bottom:4px">${ruleTxt}</div>
       <div style="display:inline-block;padding:4px 10px;border-radius:12px;background:${badgeCol}22;border:1px solid ${badgeCol};font-size:12.5px;color:#D4DEE8">${badge}</div></div>`;
-    const mapCard = v==="canalo" ? `<div class="card" style="margin-bottom:4px">
+    const mapCard = mech==="canalo" ? `<div class="card" style="margin-bottom:4px">
       <div class="obslabel" style="margin-bottom:6px">${t("Mapa wododziału — od czego zależy wynik BLT","Watershed map — what the BLT outcome depends on")}</div>
       ${bltWatershedSVG(A, bltMeta?bltMeta.phi0:null)}
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:6px">
@@ -1207,6 +1218,8 @@ function renderDiag(){
   })() : "";
   // ===== Lying-down (ocena II, V11/D2): selektor scenariuszy WSPÓLNY z B&L + badge zgodności =====
   const ldtPanel = isLdt ? (()=>{
+    if(mech==="light") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Light cupula: mechanizm osklepkowy bez wolnej cząstki — wynik NIE zależy od historii pozycyjnej. Trwały oczopląs położenia ku ZDROWEJ + pseudo-SN w siadzie ku zdrowej (lustro postaci apogeotropowej).","Light cupula: a cupular mechanism with no free particle — the result does NOT depend on positional history. A persistent lying-down nystagmus toward the HEALTHY side + a pseudo-SN in sitting toward healthy (the mirror of the apogeotropic form).")}</div></div>`;
+    if(mech==="short") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Ramię bańkowe nie ma spoczynku — historia pozycyjna NIE ustala położenia startowego (scenariusze dotyczą ramienia długiego). Karta pokazuje ŚWIEŻY depozyt w środku ramienia (φ₀ ≈ −22°).","The ampullar arm has no rest — positional history does NOT set the starting position (the scenarios apply to the long arm). The card shows a FRESH deposit at the arm's midpoint (φ₀ ≈ −22°).")}</div></div>`;
     if(v==="cupulo") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Kupulolitiaza: ciężki osklepek reaguje na sam kierunek grawitacji — wynik NIE zależy od historii pozycyjnej (scenariusze dotyczą postaci kanalolitycznej). Uporczywy oczopląs położenia + pseudo-SN w siadzie.","Cupulolithiasis: the heavy cupula responds to the direction of gravity itself — the result does NOT depend on positional history (the scenarios apply to the canalithiasis form). Persistent lying-down nystagmus + pseudo-SN in sitting.")}</div></div>`;
     const scen=state.bltScenario||"textbook";
     const ini=bltInit(A,scen);
@@ -1220,7 +1233,9 @@ function renderDiag(){
   const ldtExtras = isLdt ? (()=>{
     const ruleTxt=t("Reguła kliniczna: położenie → geo ku uchu ZDROWEMU / apo ku CHOREMU; siadanie odwraca kierunek (wyprowadzenie mechaniczne). LDN i PSN to znaki POMOCNICZE lateralizacji — nie kryterium Bárány.","Clinical rule: lying down → geo toward the HEALTHY ear / apo toward the AFFECTED one; sitting up reverses the direction (mechanical derivation). LDN and PSN are SECONDARY lateralization signs — not Bárány criteria.");
     let badge, badgeCol="#3a8f6f";
-    if(v==="cupulo"){ badge=t("model ZGODNY z regułą apogeotropową — położenie ku chorej (cel przy osklepku), pseudo-SN w siadzie ku chorej","model AGREES with the apogeotropic rule — lying down toward the affected side (target at the cupula), pseudo-SN in sitting toward the affected side"); }
+    if(mech==="light"){ badge=t("model: położenie ku ZDROWEJ (geotropowo, trwale) + pseudo-SN ku zdrowej — lustro postaci apogeotropowej","model: lying down toward the HEALTHY side (geotropic, persistent) + pseudo-SN toward healthy — the mirror of the apogeotropic form"); }
+    else if(mech==="short"){ badge=t("położenie ku CHOREJ (wzorzec apo), PRZEMIJAJĄCE — siadanie domyka samooczyszczenie ramienia","lying down toward the AFFECTED side (the apo pattern), TRANSIENT — sitting up completes the arm's self-clearing"); badgeCol="#b0813f"; }
+    else if(v==="cupulo"){ badge=t("model ZGODNY z regułą apogeotropową — położenie ku chorej (cel przy osklepku), pseudo-SN w siadzie ku chorej","model AGREES with the apogeotropic rule — lying down toward the affected side (target at the cupula), pseudo-SN in sitting toward the affected side"); }
     else if(ldtMeta && ldtMeta.exitedInHistory){ badge=t("kanał opróżniony — reguły nie ma na czym testować","canal emptied — nothing left to test the rule on"); badgeCol="#8a93a6"; }
     else if(ldtMeta && nysFromDyn("horizontal", A, ldtMeta.lieXi, false).strength < XI_CARD){ badge=t("model NIE ROZSTRZYGA — brak LDN (klinicznie 32–62% chorych; GT0 = 56,7% geo w serii Califano 2026)","the model DOES NOT RESOLVE it — no LDN (clinically 32–62% of patients; GT0 = 56.7% of geo in the Califano 2026 series)"); badgeCol="#8a93a6"; }
     else if(ldtMeta && ldtMeta.lieXi<0){ badge=t("model ZGODNY z wzorcem geotropowym w tym scenariuszu (położenie ku zdrowej — emergentnie); siadanie w modelu podprogowe","model AGREES with the geotropic pattern in this scenario (lying down toward the healthy side — emergently); sitting up is subthreshold in the model"); }
@@ -1228,6 +1243,15 @@ function renderDiag(){
     return `<div class="card" style="margin-bottom:4px"><div class="obslabel" style="margin-bottom:4px">${ruleTxt}</div>
       <div style="display:inline-block;padding:4px 10px;border-radius:12px;background:${badgeCol}22;border:1px solid ${badgeCol};font-size:12.5px;color:#D4DEE8">${badge}</div></div>`;
   })() : "";
+  // D4/V16: chipy mechanizmu POD flip-kartą — tylko HC (pionowe: mechanizm ≡ wariant → mechPanel="" i karta
+  // bajt-w-bajt); interpolacja INLINE za `})()}` flipa (wzorzec V10 — osobna linia szablonu psułaby klucze pionowe).
+  const mechPanel = (()=>{ const mechs=MECHS_BY_PHENO(effCanal, v); if(mechs.length<2) return "";
+    const ML=mechLabels(effCanal, v);
+    const btns=mechs.map(mk=>`<button class="opt" aria-pressed="${mech===mk}" onclick="setMechanism(${mk===v?"null":`'${mk}'`})"><b>${ML[mk].lab}</b><small>${ML[mk].sub}</small></button>`).join("");
+    return `<div class="obsrow" style="margin-top:10px"><div class="obslabel">${t("Mechanizm w obrębie tego fenotypu:","Mechanism within this phenotype:")}</div>
+        <div class="seg segobs">${btns}</div>
+        <div class="note" style="margin-top:8px">${t("Fenotyp (kierunek DCPN) ≠ mechanizm: geotropowy daje ramię długie LUB light cupulę; apogeotropowy — kupulolitiazę LUB ramię bańkowe. Mechanizm czyta się z CZASU trwania i męczliwości, nie z kierunku.","Phenotype (DCPN direction) ≠ mechanism: geotropic comes from the long arm OR light cupula; apogeotropic — cupulolithiasis OR the ampullar arm. The mechanism is read from DURATION and fatigability, not from direction.")}</div></div>`;
+  })();
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
@@ -1240,29 +1264,39 @@ function renderDiag(){
       </div></div>` : ""}
     ${sessionPanel}${bltPanel}${ldtPanel}${phaseHTML}${fatPanel}${state.testKey==="roll"?nullPointCard(A):""}${bltExtras}${ldtExtras}
     ${(()=>{
-      const interp = v0 => antMode
+      const interp = (v0,m0) => antMode
         ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)
-        : D.latNote(A, v0);
-      const note = v0 => v0==="canalo"
+        : D.latNote(A, v0, m0);
+      // D4/V16: twarz flipa = FENOTYP, treść twarzy = MECHANIZM efektywny (na twarzy bieżącego fenotypu
+      // gra wybrany mech; twarz przeciwna pokazuje swój mechanizm klasyczny).
+      const note = m0 => m0==="canalo"
         ? t("Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji.","Free-floating debris moves within the canal lumen under gravity.")
+        : m0==="light"
+        ? t("Osklepek LŻEJSZY od endolimfy (odwrócony kontrast gęstości) — odgina się przeciwnie niż ciężki; „light cupula” nazywa WZORZEC, mechanizm nieustalony (5 hipotez).","The cupula is LIGHTER than the endolymph (inverted density contrast) — it deflects opposite to the heavy one; \"light cupula\" names a PATTERN, the mechanism is unsettled (5 hypotheses).")
+        : m0==="short"
+        ? t("Wolny złóg w RAMIENIU BAŃKOWYM (krótkim), po łagiewkowej stronie osklepka — grawitacja napędza go przeciwnie niż złóg ramienia długiego, stąd fenotyp apogeotropowy przy dynamice kanalolitiazy.","Free debris in the SHORT (ampullar) arm, on the utricular side of the cupula — gravity drives it opposite to long-arm debris, hence an apogeotropic phenotype with canalithiasis dynamics.")
         : t("Złogi przylegają do osklepka (cupula), który się odgina — bańka staje się wrażliwa na grawitację.","Debris adheres to the cupula, which deflects — the cupula becomes gravity-sensitive.");
-      const face = v0 => `<h4>${t("Mechanizm","Mechanism")} — ${CANALS[effCanal].label} · ${v0==="canalo"?t("kanalolitiaza","canalithiasis"):t("kupulolitiaza","cupulolithiasis")}</h4>
-        <div data-diagcanal="${v0}">${diagCanalSVG(effCanal)}</div>
-        <div class="features">${D.features(v0, effCanal).map(f=>`<span>${f}</span>`).join("")}</div>
-        <div class="note">${note(v0)}</div>
-        <div class="note" style="color:var(--text)"><b>${t("Interpretacja:","Interpretation:")}</b> ${interp(v0)}</div>`;
+      const mechName = m0 => m0==="canalo"?t("kanalolitiaza","canalithiasis"):m0==="light"?"light cupula":m0==="short"?t("ramię bańkowe (short arm)","short (ampullar) arm"):t("kupulolitiaza","cupulolithiasis");
+      const face = v0 => { const m0 = v0===v ? mech : v0; return `<h4>${t("Mechanizm","Mechanism")} — ${CANALS[effCanal].label} · ${mechName(m0)}</h4>
+        <div data-diagcanal="${m0}">${diagCanalSVG(effCanal)}</div>
+        <div class="features">${D.features(v0, effCanal, m0).map(f=>`<span>${f}</span>`).join("")}</div>
+        <div class="note">${note(m0)}</div>
+        <div class="note" style="color:var(--text)"><b>${t("Interpretacja:","Interpretation:")}</b> ${interp(v0,m0)}</div>`; };
       return `<div class="flipwrap" style="margin-top:12px"><div class="flip ${v==='cupulo'?'flipped':''}" id="mechflip" role="button" tabindex="0" aria-label="${t('Odwróć kartę mechanizmu: kanalolitiaza albo kupulolitiaza','Flip the mechanism card: canalithiasis or cupulolithiasis')}" onclick="flipDiagMech()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipDiagMech();}">
         <div class="face front panelbox">${face("canalo")}<div class="fliphint">${FLIP_ICO} ${t("kupulolitiaza","cupulolithiasis")}</div></div>
         <div class="face back panelbox">${face("cupulo")}<div class="fliphint">${FLIP_ICO} ${t("kanalolitiaza","canalithiasis")}</div></div>
       </div></div>`;
-    })()}
-    ${diagClassifyCard(effCanal, v, effSide, antMode)}
+    })()}${mechPanel}
+    ${diagClassifyCard(effCanal, v, effSide, antMode, mech)}
     ${antMode ? `<div class="redflag">${t('<b>⚠ Czerwona flaga — wyklucz przyczynę OŚRODKOWĄ.</b> Downbeat, który jest <b>uporczywy, bez latencji i nie wyczerpuje się</b> przy powtórzeniach, występuje także w pozycji neutralnej (na wznak, głowa prosto), albo towarzyszą mu objawy neurologiczne (dyzartria, ataksja, zaburzenia spojrzenia, dwojenie) — przemawia za przyczyną OŚRODKOWĄ (móżdżek, pogranicze czaszkowo‑szyjne: malformacja Arnolda‑Chiariego, SM, zmiany naczyniowe). Wymaga oceny neurologicznej i MRI, nie manewru. Repozycję rozważ dopiero po wykluczeniu przyczyny ośrodkowej.','<b>⚠ Red flag — rule out a CENTRAL cause.</b> A downbeat that is <b>persistent, without latency and non-fatiguing</b> on repetition, is also present in the neutral position (supine, head straight), or is accompanied by neurological signs (dysarthria, ataxia, gaze disturbances, diplopia) — argues for a CENTRAL cause (cerebellum, craniocervical junction: Arnold-Chiari malformation, MS, vascular lesions). Requires neurological evaluation and MRI, not a maneuver. Consider repositioning only after ruling out a central cause.')}</div>` : ""}
     ${(()=>{ if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--ant)">${t('<b>Repozycja niewskazana.</b> Przy podejrzeniu ośrodkowego oczoplasu pozycyjnego (CPN) nie wykonuj manewrów repozycyjnych — najpierw ocena neurologiczna i MRI tylnego dołu. Wróć do widoku „Obwodowy — BPPV", jeśli obraz jednak spełnia kryteria BPPV.','<b>Repositioning is not indicated.</b> When central positional nystagmus (CPN) is suspected, do not perform repositioning maneuvers — first a neurological evaluation and MRI of the posterior fossa. Return to the "Peripheral — BPPV" view if the picture does meet BPPV criteria.')}</div></div>`;
       const rec = antMode
         ? {primary:"yacovino", alts:[], note:t(`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`,`Downbeat in the Dix-Hallpike → ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}), LARP/RALP plane. Treatment: Yacovino (deep head-hang → quick chin-to-chest movement). Lateralization by nystagmus uncertain.`)}
-        : recommend(state.testKey,v);
+        : recommend(state.testKey,v,mech);
+      // D4/V16: primary==null (light cupula — manewrów nie ma) → sama nota, bez przycisków i bez „Potwierdź stronę…"
+      if(rec.primary==null) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
+        <div class="note" style="color:var(--text)">${rec.note}</div></div>`;
       const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}')">${idx===0?t('Rozpocznij: ','Start: '):t('Alternatywa: ','Alternative: ')}${MANEUVERS[k].label} — ${MANEUVERS[k].desc}</button>`).join("");
       return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--text)">${rec.note}</div>
@@ -1278,6 +1312,8 @@ function renderDiag(){
     });
     const dcA=$('[data-diagcanal="canalo"]'); if(dcA) startDiagOtolith(dcA,"canalo",effCanal,effSide);
     const dcB=$('[data-diagcanal="cupulo"]'); if(dcB) startDiagOtolith(dcB,"cupulo",effCanal,effSide);
+    const dcL=$('[data-diagcanal="light"]');  if(dcL) startDiagOtolith(dcL,"light",effCanal,effSide);    // D4: light = odgięcie osklepka bez ziaren
+    const dcS=$('[data-diagcanal="short"]');  if(dcS) startDiagOtolith(dcS,"short",effCanal,effSide);    // D4: short = cząstka przy bańce (init.arm)
     // CPN: uporczywy downbeat Z SILNIKA (preset 'downbeat' — odhamowanie drog kanalow przednich), nie literal:
     // fizyka i animacja maja jedno zrodlo; petla CIAGLA (startNys z obwiednia xi wylaczylby sie, a CPN jest UPORCZYWY).
     const cpn=$('[data-cpnnys]'); if(cpn) startNeuroNys(cpn, NeuroVOR.observe(NeuroVOR.scenario('downbeat'), false), 0);
@@ -1852,7 +1888,7 @@ function flipDiagMech(){
   const c=$("#mechflip"); if(c) c.classList.toggle("flipped");
   state._mechTO=setTimeout(()=>{ state._mechTO=null;
     if(state.screen!=="diag") return;                      // użytkownik opuścił diagnostykę (Wróć / zmiana ekranu) → nie wymuszaj zmiany wariantu ani re-renderu
-    state.variant = state.variant==="canalo"?"cupulo":"canalo"; render(); }, 500);
+    state.variant = state.variant==="canalo"?"cupulo":"canalo"; state.mechanism=null; render(); }, 500);   // flip = wybór FENOTYPU → mechanizm klasyczny (D4; w callbacku timera — desync przy szybkim klikaniu niemożliwy)
 }
 // Diagnostyka: para pozycji (Roll: ucho L/P w dole; Bow-Lean: skłon/odchylenie) jako flip — czysto wizualny
 // (obie pozycje stale w DOM, animacje per-indeks działają niezależnie).

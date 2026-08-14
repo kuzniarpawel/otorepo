@@ -473,6 +473,29 @@ function domOracle(h, win) {
     }
   }
   if (h.setBltScenario) h.setBltScenario('textbook'); else if (h.state) h.state.bltScenario = 'textbook';   // higiena
+  // D4/V16: mechanizmy alternatywne fenotypów HC (light w obrębie geo, short w obrębie apo) — bez tego
+  // pokrycia regresje kart mech-* byłyby niewidzialne (wzorzec sekcji kupulo wyżej). setVariant PRZED
+  // setMechanism (setVariant zeruje mechanizm — higiena flipa); higiena po pętli przywraca default.
+  for (const key of ['roll', 'bowlean', 'lyingdown']) {
+    for (const side of ['P', 'L']) {
+      grab(`diag/${key}/${side}/mech-light`, () => {
+        if (h.openTest) h.openTest(key); else Object.assign(h.state, { testKey: key, screen: 'diag' });
+        if (h.setDiagSide) h.setDiagSide(side); else h.state.side = side;
+        if (h.setVariant) h.setVariant('canalo'); else h.state.variant = 'canalo';
+        if (h.setMechanism) h.setMechanism('light'); else h.state.mechanism = 'light';
+        h.render();
+      });
+      grab(`diag/${key}/${side}/mech-short`, () => {
+        if (h.openTest) h.openTest(key); else Object.assign(h.state, { testKey: key, screen: 'diag' });
+        if (h.setDiagSide) h.setDiagSide(side); else h.state.side = side;
+        if (h.setVariant) h.setVariant('cupulo'); else h.state.variant = 'cupulo';
+        if (h.setMechanism) h.setMechanism('short'); else h.state.mechanism = 'short';
+        h.render();
+      });
+    }
+  }
+  if (h.setMechanism) h.setMechanism(null); else if (h.state) h.state.mechanism = null;    // higiena mechanizmu
+  if (h.setVariant) h.setVariant('canalo'); else if (h.state) h.state.variant = 'canalo';  // higiena wariantu
 
   // HINTS — presety
   for (const p of Object.keys(h.HINTS_PRESETS || {})) {

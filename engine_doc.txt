@@ -901,6 +901,43 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
      KIERUNEK NAPRAWY: rozdzielić FENOTYP (geotropowy / apogeotropowy — to, co się widzi) od MECHANIZMU
      (wolny złóg / cupulopatia — to, co się wnioskuje z czasu trwania i powtarzalnej płaszczyzny zerowej).
      To zmiana treści klinicznej, więc do decyzji użytkownika, nie moja.
+     [R11-ROZWIĄZANIE 2026-08-14 (ocena II, V16/D4): WDROŻONE — OŚ ADDYTYWNA FENOTYP/MECHANIZM.
+      Model: state.variant ZOSTAJE osią zgodności (na HC znaczy FENOTYP: canalo-strona≡geo,
+      cupulo-strona≡apo; na kanałach pionowych wprost mechanizm — geo/apo nie istnieje na osi pionowej),
+      obok state.mechanism (null = mechanizm klasyczny fenotypu ⇒ każda dawna ścieżka bit-w-bit).
+      Mapa (maneuvers.js): MECHS_BY_PHENO — HC geo={canalo, light}, HC apo={cupulo, short}; pionowe
+      singleton (UI nie renderuje chipów). mechOf(variant, mechanism, canal) = JEDYNY czytelnik pary,
+      para niedozwolona (np. light wiszące po zmianie kanału) DEGRADUJE do klasyka, nigdy wyjątek.
+      DWIE projekcje wsteczne, świadomie OSOBNE (light jest trwały jak cupulo, ale geo jak canalo;
+      short odwrotnie): variantOfMech (gałąź karty geo/apo) i persistentOf (trwałość/męczliwość:
+      cupulo+light tak, canalo+short nie) — zamiast rozsianych v==="cupulo".
+      SHORT BEZ STATYKI — WERDYKT SONDY: position() nie zna "short" I NIE MOŻE (siad i leżenie
+      opróżniają ramię bańkowe z KAŻDEGO φ₀ w ≤120 s — segment NIE MA spoczynku; statyczny „spoczynek
+      testowy" byłby fałszem konstrukcyjnym). Karta short = DYNAMIKA per faza: rollShortPhases (dwie
+      IZOLOWANE nici simulateShortArm, rama porównania Ewalda jak karta statyczna; sekwencyjność
+      chore→centrum→zdrowe zostaje w sesji — R10) oraz bltPhases/ldtPhases z fasadą short; wszystkie
+      z φ₀ = SHORT_PHI0 = (SA_MIN+3°)/2 ≈ −21.7° — WYPROWADZONE z geometrii segmentu (wzorzec
+      derivedHold), fenotyp nieczuły na głębokość startu (sonda: −40°/−10° te same znaki). Historia
+      pozycyjna NIE ustala φ₀ short (brak spoczynku) — selektor scenariuszy ukryty z jawnym banerem.
+      Light = istniejąca statyka position(variant:"light") we wszystkich trzech kartach HC (lustro
+      kupulo bit-w-bit); lateralizacja Rolla zmierzona: chore-w-dole SILNIEJSZE (0.450 vs 0.203) —
+      ta sama reguła Ewalda co geo-canalo, strona z null point.
+      UI: twarz flipa = FENOTYP, treść twarzy = MECHANIZM efektywny; chipy mechanizmu POD flipem
+      (tylko HC, interpolacja inline — klucze pionowe bit-w-bit z konstrukcji); featsByVariant/
+      latNote/recommend/baranyClassify z opcjonalnym ogonowym mech (brak = stare bajty);
+      recommend(light) = primary:null (manewry 0%, leczeniem rozpoznanie+obserwacja, bez supresantów)
+      ze strażnikiem renderu (bez przycisków); recommend(short) = gufoniApo+lempert + zdanie
+      rozbrajające pomyłkę z JAM (predykcja Epley-nie/Yacovino-tak dotyczy czopu, nie ramienia);
+      baranyClassify: dwa wpisy tier emerging POZA katalogiem ICVD 2015 (light: null wspólny,
+      raportuj jako uporczywy geotropowy DCPN; short: null jednostronny, konwersja po Rollu).
+      Animacja mechanizmu UCZCIWA: light = odgięcie osklepka BEZ ziaren (light to brak złogu;
+      obwiednia |ξ| light ≡ cupulo — lustro V12), short = cząstka przy bańce (init.arm przez
+      engineXi, φ<0 klamruje się do bańki na ścieżce SVG). JAM POZA osią mechanizmu (stan
+      obturacyjny pozycjo-niezależny z własnymi parametrami — kierunek zadaje jam.xi, nie fenotyp;
+      przyszła osobna karta). Wyrocznie: dom 126→138 — DOKŁADNIE 24 klucze HC zmienione (dowód:
+      24/24 = czysta wstawka panelu chipów, zero usunięć) + 12 addytywnych mech-{light,short}
+      × {roll,bowlean,lyingdown} × {P,L}; engine/pose bit-w-bit (fizyka NIETKNIĘTA — zero edycji
+      vestibular.js); sesja zawężona jawnie do mech==="canalo" (śledzi złóg ramienia długiego).]
 
  R10. SILNIK NIE MA PAMIĘCI POZYCJI — punkt startowy złogu jest ZAŁOŻENIEM, nie stanem [2026-08-05, OTWARTE].
      Wyszło z rozbioru R8. restPhi liczy spoczynek dla postawy PIONOWEJ, jakby to była własność anatomii.
@@ -961,7 +998,8 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
       nie literaturowa). Sekwencyjny Roll (chore→centrum→zdrowe) przemieszcza złóg między fazami —
       amplitudy faz sesji nie są czystym porównaniem Ewalda (R10/Bhandari; karta mówi to wprost).]
      [D10-STATUS 2026-08-14 (ocena II, V15): DOSTARCZONE-CZĘŚCIOWO — SHORT-ARM + CANALITH JAM (silnik
-      + piny + noty; trzeci wariant UI/scenariusze/sesja czekają na D4 — wzorzec V12). SEGMENT BAŃKOWY:
+      + piny + noty; UI trzeciego wariantu DOSTARCZONE tego samego dnia w V16/D4 — patrz
+      R11-ROZWIĄZANIE; sesja świadomie zawężona do mechanizmu canalo). SEGMENT BAŃKOWY:
       arm="short", φ∈[SA_MIN, 3°) — styczna = tangAt PRZEDŁUŻONE na ten sam okrąg PCA (ciągłość w 3°:
       0.000°); SA_MIN = −(360−ARC_SPAN)/2 = środek luki przedsionkowej {PC −20.6° · AC −39.45° ·
       HC −46.35°} (≈1.1/2.2/2.6 mm) — wyprowadzone z ARC_SPAN, PODZIAŁ luki = granica źródła (atlas

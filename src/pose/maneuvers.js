@@ -252,7 +252,7 @@ function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POS
 //   postaci uporczywej dawało tEnd 18,5 s przeciw 29,8–39,8 s dla przejściowej, czyli oczopląs „uporczywy"
 //   zatrzymywał się PIERWSZY — dokładne odwrócenie cechy różnicującej, której uczy ta sama karta
 //   („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno 60 s = próg kliniczny 1 min z kryteriów Bárány.
-function engineXi(canal, side, persistent, q, init){
+function engineXi(canal, side, persistent, q, init, mech){
   // pivot:"body" — badany jest KŁADZIONY z siadu (rusza całe ciało), a nie sam obraca głowę.
   // Okno PRZEDNIEGO 70 s (ocena II, A6/V8): napad AC trwa w silniku ~61 s (szczyt dopiero ~25 s) —
   // wspólne okno 40 s ucinało animację przy 36% szczytu, w pół napadu. Zmienia wyłącznie tEnd animacji
@@ -270,12 +270,17 @@ function engineXi(canal, side, persistent, q, init){
   // init {phi0, settled} (ocena II, V5): warunki początkowe scenariusza historii pozycyjnej (Bow & Lean) —
   // obwiednia animacji liczy się z TEGO SAMEGO stanu, z którego karta wzięła kierunek. Kupulolitiaza bez
   // wpływu (brak cząstki). Brak init = dokładnie dotychczasowa ścieżka.
+  // mech (D4/V16, opcjonalny ogonowy): "light" → fasada lekkiego osklepka (ten sam tor persistent);
+  // "short" płynie przez init.arm niżej. Brak parametru = dokładnie dotychczasowa ścieżka (bit-w-bit).
   return persistent
-    ? Vestibular.simulateCupulolith({canal, side, timeline, q0})
+    ? (mech==="light" ? Vestibular.simulateLightCupula({canal, side, timeline, q0})
+                      : Vestibular.simulateCupulolith({canal, side, timeline, q0}))
     // spread WARUNKOWY per pole (D1/V10): BLT (V5) podaje tylko {phi0,settled} → wywołanie bit-identyczne;
     // sesja dodaje bond0/xi0/rep tym samym szwem — obwiednia animacji liczy się z TEGO SAMEGO stanu co karta.
+    // D4/V16: init.arm ("short") tym samym szwem — pole nieobecne = stare wywołanie bit-w-bit.
     : Vestibular.simulateCanalith({canal, side, timeline, q0, ...(init ? {phi0:init.phi0, settled:init.settled,
-        ...(init.bond0!=null?{bond0:init.bond0}:{}), ...(init.xi0!=null?{xi0:init.xi0}:{}), ...(init.rep!=null?{rep:init.rep}:{})} : {})});
+        ...(init.bond0!=null?{bond0:init.bond0}:{}), ...(init.xi0!=null?{xi0:init.xi0}:{}), ...(init.rep!=null?{rep:init.rep}:{}),
+        ...(init.arm?{arm:init.arm}:{})} : {})});
 }
 // znormalizowana obwiednia czasowa z ξ(t): env(sekundy)∈[0,1] oraz tEnd (gdy |ξ|<3% szczytu po szczycie)
 function xiEnvelope(sim){
@@ -565,11 +570,17 @@ function maneuverSim(plan, size="medium"){
 // CHIPY PER KANAŁ (ocena II, A6/V8): kanał PRZEDNI ma w silniku WYPROWADZONY brak latencji (R7: złóg
 // startuje dociśnięty do osklepka, 0.5 s = sam czas przejścia) i napad ~61 s — wspólne chipy
 // „Latencja 1–5 s"/„<60 s" przeczyły własnej fizyce (i klinice AC-BPPV: latencja krótka/nieobecna).
-const featsByVariant = (v, canal) => v==="canalo"
+const featsByVariant = (v, canal, mech) => {
+  // D4/V16: opcjonalny ogonowy mech — brak parametru albo mechanizm klasyczny = dokładnie dawne wiersze.
+  const m = mech==null ? v : mech;
+  if(m==="light") return [t("Bez latencji","No latency"),t("Geotropowy TRWAŁY (>1 min)","PERSISTENT geotropic (>1 min)"),t("Nie wyczerpuje się","Does not fatigue"),t("Null point ku uchu choremu","Null point toward the affected ear")];
+  if(m==="short") return [t("Latencja krótka","Short latency"),t("Apogeotropowy PRZEMIJAJĄCY","TRANSIENT apogeotropic"),t("Wyczerpuje się","Fatigues"),t("Roll może oczyścić ramię","The Roll may clear the arm")];
+  return v==="canalo"
   ? (canal==="anterior"
       ? [t("Latencja krótka/nieobecna","Short/absent latency"),t("Przemijający (≈1 min)","Transient (≈1 min)"),t("Wyczerpuje się","Fatigues")]
       : [t("Latencja 1–5 s","Latency 1–5 s"),t("Przemijający (<60 s)","Transient (<60 s)"),t("Wyczerpuje się","Fatigues")])
   : [t("Bez latencji","No latency"),t("Uporczywy (>60 s)","Persistent (>60 s)"),t("Nie wyczerpuje się","Does not fatigue")];
+};
 
 /* ============ Bow & Lean: scenariusze historii pozycyjnej (ocena II, V5 — rozdział E) ============
    WODODZIAŁ (R8/R10): w kanalolitiazie HC obecność, kierunek i amplituda odpowiedzi BLT zależą od
@@ -604,14 +615,19 @@ function bltInit(side, scen){
 }
 // TEST jako JEDNA oś czasu (skłon→siad→odchylenie) — tak test jest wykonywany, a wykonany skłon
 // masywnie przemieszcza złóg (w sekwencji odpowiedź lean bywa 2× silniejsza niż w izolacji).
-function bltPhases(side, scen){
-  const k="ph#"+side+"#"+scen; if(_bltMemo.has(k)) return _bltMemo.get(k);
-  const init=bltInit(side, scen);
+function bltPhases(side, scen, mech){
+  // D4/V16, mech="short": ramię bańkowe NIE MA spoczynku (siad je czyści ≤2 min — sonda D4), więc
+  // historia pozycyjna nie ustala φ₀ — sekwencja gra ZAWSZE świeży depozyt (SHORT_PHI0), scenariusz
+  // ignorowany świadomie (selektor ukryty w UI z jawnym banerem). Ta sama oś czasu co canalo.
+  const k="ph#"+side+"#"+(mech==="short"?"short":scen); if(_bltMemo.has(k)) return _bltMemo.get(k);
+  const init = mech==="short" ? {phi0:SHORT_PHI0, settled:false, exitedInHistory:false} : bltInit(side, scen);
   const out={init, bow:{xi:0, exited:false}, lean:{xi:0}, exited:init.exitedInHistory};
   if(!init.exitedInHistory){
     const qSit=[1,0,0,0], qBow=stepHeadQ("sit",0,"down"), qLean=stepHeadQ("sit",0,"up");
     const segs=[{q:qBow,tTrans:0.8,tHold:30,pivot:"neck"},{q:qSit,tTrans:0.8,tHold:5,pivot:"neck"},{q:qLean,tTrans:0.8,tHold:30,pivot:"neck"}];
-    const sim=Vestibular.simulateCanalith({canal:"horizontal", side, q0:qSit, phi0:init.phi0, settled:init.settled, timeline:segs});
+    const sim = mech==="short"
+      ? Vestibular.simulateShortArm({canal:"horizontal", side, q0:qSit, phi0:SHORT_PHI0, settled:false, timeline:segs})
+      : Vestibular.simulateCanalith({canal:"horizontal", side, q0:qSit, phi0:init.phi0, settled:init.settled, timeline:segs});
     const t1=30.8, t2=36.6;                      // granice faz (tTrans+tHold narastająco)
     for(const s of sim){
       if(s.t<=t1){ if(Math.abs(s.xi)>Math.abs(out.bow.xi)) out.bow.xi=s.xi; if(s.exited) out.bow.exited=true; }
@@ -658,14 +674,17 @@ function bltZones(side){
    KUPULO (V4, cel przy osklepku): leżenie +0.059 ku CHOREJ (uporczywy; null point yaw ~8.6° ku chorej
    — klinicznie 10–30°), pseudo-SN w siadzie +0.024 ku chorej (Asprella 2008: apo→ipsilezjonalnie);
    model NIE odtwarza odwrócenia przy siadaniu (null pitch +23.6° zgięcia ≈ kliniczny HPT ~30°). */
-function ldtPhases(side, scen){
-  const k="ldt#"+side+"#"+(scen||"textbook"); if(_bltMemo.has(k)) return _bltMemo.get(k);
-  const init=bltInit(side, scen||"textbook");
+function ldtPhases(side, scen, mech){
+  // D4/V16, mech="short": jak w bltPhases — świeży depozyt (SHORT_PHI0), scenariusz ignorowany (brak spoczynku).
+  const k="ldt#"+side+"#"+(mech==="short"?"short":(scen||"textbook")); if(_bltMemo.has(k)) return _bltMemo.get(k);
+  const init = mech==="short" ? {phi0:SHORT_PHI0, settled:false, exitedInHistory:false} : bltInit(side, scen||"textbook");
   const out={init, lie:{xi:0}, sit:{xi:0}, phiAfterLie:null, exited:init.exitedInHistory};
   if(!init.exitedInHistory){
     const qSit=[1,0,0,0], qLie=stepHeadQ("supineFlex",0,"up");
     const segs=[{q:qLie,tTrans:0.8,tHold:30,pivot:"body"},{q:qSit,tTrans:0.8,tHold:30,pivot:"body"}];
-    const sim=Vestibular.simulateCanalith({canal:"horizontal", side, q0:qSit, phi0:init.phi0, settled:init.settled, timeline:segs});
+    const sim = mech==="short"
+      ? Vestibular.simulateShortArm({canal:"horizontal", side, q0:qSit, phi0:SHORT_PHI0, settled:false, timeline:segs})
+      : Vestibular.simulateCanalith({canal:"horizontal", side, q0:qSit, phi0:init.phi0, settled:init.settled, timeline:segs});
     const t1=30.8;                                       // granica faz: przejście+hold położenia (ogon ξ przy t1 ≈ 0 — fazy nieskontaminowane)
     for(const s of sim){
       if(s.t<=t1){ if(Math.abs(s.xi)>Math.abs(out.lie.xi)) out.lie.xi=s.xi; out.phiAfterLie=s.phi; }
@@ -798,17 +817,45 @@ const DIAG={
   roll:{ get name(){return t("Test pozycyjny (Roll / Pagnini–McClure)","Positional test (Roll / Pagnini–McClure)");}, get tests(){return t("kanał poziomy","horizontal canal");}, canal:"horizontal",
     get intro(){return t("Pacjent na plecach, głowa zgięta ~30°. Obróć głowę szybko w jedną, potem w drugą stronę.","Patient supine, head flexed ~30°. Turn the head quickly to one side, then to the other.");},
     features:featsByVariant,
-    latNote:(A,v)=> v==="canalo"
+    latNote:(A,v,mech)=>{
+      if(mech==="light") return t(`Light cupula: DCPN geotropowy TRWAŁY (>1 min w pozycji), bez latencji, NIEmęczliwy — kierunek jak w kanalolitiazie, czas jak w kupulopatii. Reakcja silniejsza przy uchu chorym w dole (${sideN(A)}), ale stronę ROZSTRZYGA płaszczyzna zerowa ~10–30° skrętu ku uchu choremu (model: ~9°; mini-karta niżej) — kanalolitiaza jej nie ma. Manewry repozycyjne nieskuteczne — patrz zalecenie.`,`Light cupula: a PERSISTENT geotropic DCPN (>1 min per position), no latency, NON-fatiguing — direction as in canalithiasis, time course as in cupulopathy. The response is stronger with the affected ear (${sideN(A)}) down, but the side is SETTLED by the null plane at ~10–30° of turn toward the affected ear (model: ~9°; mini-card below) — canalithiasis has none. Repositioning maneuvers are ineffective — see the recommendation.`);
+      if(mech==="short") return t(`Ramię bańkowe (short arm): DCPN apogeotropowy PRZEMIJAJĄCY i męczliwy — kierunek jak w kupulolitiazie, dynamika jak w kanalolitiazie. Strona chora = SŁABSZA reakcja przy uchu w dole → ${sideN(A)}. Faza „zdrowe ucho w dole” wyprowadza złóg do łagiewki — test bywa SAMOLECZĄCY (dlatego apo z ramienia bańkowego rzadko jest uporczywe). Null point jednostronny, nie wspólny — różnicuje od kupulopatii.`,`Short (ampullar) arm: a TRANSIENT, fatiguing apogeotropic DCPN — direction as in cupulolithiasis, dynamics as in canalithiasis. Affected side = WEAKER response with that ear down → ${sideN(A)}. The healthy-ear-down phase carries the debris into the utricle — the test can be SELF-TREATING (which is why short-arm apo is rarely persistent). The null point is one-sided, not common — differentiating it from cupulopathy.`);
+      return v==="canalo"
       ? t(`Geotropowy: strona chora = SILNIEJSZA reakcja → ${sideN(A)}. Uwaga (D3): geotropowy DCPN UPORCZYWY (>1 min w pozycji), bez latencji i NIEmęczliwy to light cupula, nie kanalolitiaza — zbadaj płaszczyznę zerową (mini-karta niżej).`,`Geotropic: affected side = STRONGER response → ${sideN(A)}. Note (D3): a PERSISTENT geotropic DCPN (>1 min per position), without latency and NON-fatiguing is light cupula, not canalithiasis — examine the null plane (mini-card below).`)
-      : t(`Apogeotropowy: strona chora = SŁABSZA reakcja przy uchu w dole → ${sideN(A)}. Uwaga (D10): apogeotropia ≠ zawsze kupulolitiaza — PRZEMIJAJĄCY, męczliwy DCPN apo daje wolny złóg w RAMIENIU BAŃKOWYM (mechanizm różnicuje czas trwania i powtarzalność).`,`Apogeotropic: affected side = WEAKER response with that ear down → ${sideN(A)}. Note (D10): apogeotropy ≠ always cupulolithiasis — a TRANSIENT, fatiguing apo DCPN comes from free debris in the SHORT (ampullar) ARM (mechanism differentiated by duration and repeatability).`),
-    phases:(A,v)=>{ const H=otherSide(A), geo=(v==="canalo");
+      : t(`Apogeotropowy: strona chora = SŁABSZA reakcja przy uchu w dole → ${sideN(A)}. Uwaga (D10): apogeotropia ≠ zawsze kupulolitiaza — PRZEMIJAJĄCY, męczliwy DCPN apo daje wolny złóg w RAMIENIU BAŃKOWYM (mechanizm różnicuje czas trwania i powtarzalność).`,`Apogeotropic: affected side = WEAKER response with that ear down → ${sideN(A)}. Note (D10): apogeotropy ≠ always cupulolithiasis — a TRANSIENT, fatiguing apo DCPN comes from free debris in the SHORT (ampullar) ARM (mechanism differentiated by duration and repeatability).`);
+    },
+    phases:(A,v,scen,mech)=>{ const H=otherSide(A), geo=(v==="canalo");
+      const pose=down=>({ptitle:t(`Ucho ${down==="L"?"lewe":"prawe"} w dole`,`${down==="L"?"Left":"Right"} ear down`), ppos:t(`Głowa obrócona 90° ku stronie ${sideN(down)}`,`Head turned 90° toward the ${sideN(down)} side`),
+          body:"supineFlex", yaw: down==="P"?90:-90, face:"up"});
+      // D4/V16, mech="short": DYNAMIKA per faza (rollShortPhases) — strzałka+napis z JEDNEGO ξ (wzorzec V5);
+      // segment nie ma statyki, bo nie ma spoczynku (sonda D4).
+      if(mech==="short"){
+        const R=rollShortPhases(A);
+        const mk=down=>{ const up=otherSide(down), ph=(down===A)?R.aff:R.heal;
+          const N=nysFromDyn("horizontal", A, ph.xi, false);
+          const towardUp = (up==="P") ? N.anat.h>0 : N.anat.h<0;
+          const nys={kind:N.kind, dir:N.dir, vdir:N.vdir, strength:N.strength, excited:N.excited,
+                     persistent:false, canal:"horizontal", side:A, q:stepHeadQ("supineFlex", down==="P"?90:-90, "up"),
+                     anat:N.anat, init:{arm:"short", phi0:SHORT_PHI0, settled:false}};
+          return {...pose(down), nys,
+            label: towardUp ? t(`apogeotropowy — ku uchu w górze (${sideN(up)})`,`apogeotropic — toward the upper ear (${sideN(up)})`)
+                            : t(`geotropowy — ku uchu w dole (${sideN(down)})`,`geotropic — toward the lower ear (${sideN(down)})`),
+            note: down===A
+              ? t("Złóg zsuwa się w ramieniu ku osklepkowi i zostaje DOCIŚNIĘTY (kontakt): oczopląs nie wygasa, póki pozycja trwa (pseudo-trwały), ale PRZEMIJA po zmianie pozycji i męczy się przy powtórzeniach — to różni go od kupulolitiazy. Reakcja słabsza (Ewald: hamowanie).","The debris slides down the arm toward the cupula and gets PRESSED against it (contact): the nystagmus does not fade while the position lasts (pseudo-persistent), but it PASSES on position change and fatigues on repetition — unlike cupulolithiasis. Weaker response (Ewald: inhibition).")
+              : t("Złóg wypada z ramienia do ŁAGIEWKI (samooczyszczenie): oczopląs przemijający, a test wykonuje pracę manewru — po tej fazie kolejne prowokacje słabną albo milkną.","The debris falls out of the arm into the UTRICLE (self-clearing): the nystagmus is transient and the test does the maneuver's job — after this phase further provocations weaken or fall silent.")};
+        };
+        return [mk(A), mk(H)];
+      }
+      const mkVar = mech==="light" ? "light" : v;   // light: ta sama statyka co cupulo, znak odwraca position(variant)
       const mk=down=>{ const up=otherSide(down);
-        const strong = geo ? (down===A) : (down===H);
-        return {ptitle:t(`Ucho ${down==="L"?"lewe":"prawe"} w dole`,`${down==="L"?"Left":"Right"} ear down`), ppos:t(`Głowa obrócona 90° ku stronie ${sideN(down)}`,`Head turned 90° toward the ${sideN(down)} side`),
-          body:"supineFlex", yaw: down==="P"?90:-90, face:"up",
-          nys: nysFromGeom("horizontal", A, v, stepHeadQ("supineFlex", down==="P"?90:-90, "up"), "asym"),
-          label: geo ? t(`geotropowy — ku uchu w dole (${sideN(down)})`,`geotropic — toward the lower ear (${sideN(down)})`) : t(`apogeotropowy — ku uchu w górze (${sideN(up)})`,`apogeotropic — toward the upper ear (${sideN(up)})`),
-          note: strong ? t("Reakcja silniejsza w tej pozycji.","Stronger response in this position.") : t("Reakcja słabsza w tej pozycji.","Weaker response in this position.")};
+        const strong = (geo || mech==="light") ? (down===A) : (down===H);
+        return {...pose(down),
+          nys: nysFromGeom("horizontal", A, mkVar, stepHeadQ("supineFlex", down==="P"?90:-90, "up"), "asym"),
+          label: mech==="light" ? t(`geotropowy TRWAŁY — ku uchu w dole (${sideN(down)})`,`PERSISTENT geotropic — toward the lower ear (${sideN(down)})`)
+               : geo ? t(`geotropowy — ku uchu w dole (${sideN(down)})`,`geotropic — toward the lower ear (${sideN(down)})`) : t(`apogeotropowy — ku uchu w górze (${sideN(up)})`,`apogeotropic — toward the upper ear (${sideN(up)})`),
+          note: (mech==="light" && strong) ? t("Reakcja silniejsza w tej pozycji; bez latencji, nie wygasa i nie męczy się.","Stronger response in this position; no latency, does not fade and does not fatigue.")
+              : (mech==="light") ? t("Reakcja słabsza w tej pozycji; uporczywa, niemęczliwa.","Weaker response in this position; persistent, non-fatiguing.")
+              : strong ? t("Reakcja silniejsza w tej pozycji.","Stronger response in this position.") : t("Reakcja słabsza w tej pozycji.","Weaker response in this position.")};
       };
       return [mk(A), mk(H)];
     }
@@ -816,13 +863,53 @@ const DIAG={
   bowlean:{ get name(){return t("Test Bow & Lean (skłon i odchylenie)","Bow & Lean test (bow and lean)");}, get tests(){return t("kanał poziomy — lateralizacja","horizontal canal — lateralization");}, canal:"horizontal",
     get intro(){return t("W siadzie wykonaj skłon głowy w przód (bow), następnie odchylenie do tyłu (lean).","While sitting, bend the head forward (bow), then tilt it back (lean).");},
     features:featsByVariant,
-    latNote:(A,v)=> v==="canalo"
+    latNote:(A,v,mech)=>{
+      if(mech==="light") return t("Light cupula: lekki osklepek odgina się PRZECIWNIE do ciężkiego — skłon bije ku uchu CHOREMU, odchylenie ku ZDROWEMU (wzorzec jak reguła Choung, ale UPORCZYWY, bez latencji i niemęczliwy). Wynik nie zależy od historii pozycyjnej (brak wolnej cząstki w świetle) — test powtarzalny.","Light cupula: the light cupula deflects OPPOSITE to the heavy one — the bow beats toward the AFFECTED ear, the lean toward the HEALTHY one (the pattern matches the Choung rule, but is PERSISTENT, latency-free and non-fatiguing). The result does not depend on positional history (no free particle in the lumen) — the test is repeatable.");
+      if(mech==="short") return t("Ramię bańkowe (short arm): wzorzec apo — skłon ku ZDROWEJ, odchylenie ku CHOREJ (odwrócenie reguły Choung, jak w kupulolitiazie) — ale PRZEMIJAJĄCY i męczliwy, a odchylenie OPRÓŻNIA ramię do łagiewki (test bywa samoleczący). Historia pozycyjna nie ustala tu położenia startowego: ramię nie ma spoczynku — siad je czyści.","Short (ampullar) arm: the apo pattern — bow toward the HEALTHY side, lean toward the AFFECTED one (the Choung rule reversed, as in cupulolithiasis) — but TRANSIENT and fatiguing, and the lean EMPTIES the arm into the utricle (the test can be self-treating). Positional history does not set the start here: the arm has no rest — sitting clears it.");
+      return v==="canalo"
       ? t("Kierunek i obecność odpowiedzi zależą od położenia złogu na starcie, a to ustala HISTORIA POZYCYJNA — wybierz scenariusz nad fazami. Reguła Choung (skłon→chora, odchylenie→zdrowa) WYNIKA z fizyki, gdy złóg leży przed wododziałem skłonu (φ₀<190°).","The direction and presence of the response depend on where the debris starts, which is set by the POSITIONAL HISTORY — pick a scenario above the phases. The Choung rule (bow→affected, lean→healthy) FOLLOWS from physics whenever the debris lies before the bow watershed (φ₀<190°).")
-      : t("Apogeotropowy (kupulolitiaza): skłon bije ku stronie zdrowej, odchylenie ku chorej. Wynik NIE zależy od historii pozycyjnej (brak wolnej cząstki) — test powtarzalny w trwałej kupulopatii. Wolny złóg w ramieniu bańkowym (D10) daje apo PRZEMIJAJĄCE i męczliwe — powtarzalność ma tylko prawdziwa kupulopatia.","Apogeotropic (cupulolithiasis): the bow beats toward the healthy side, the lean toward the affected one. The result does NOT depend on positional history (no free particle) — the test is repeatable in persistent cupulopathy. Free debris in the short (ampullar) arm (D10) gives a TRANSIENT, fatiguing apo — only true cupulopathy is repeatable."),
-    phases:(A,v,scen)=>{ const S=scen||"textbook";
+      : t("Apogeotropowy (kupulolitiaza): skłon bije ku stronie zdrowej, odchylenie ku chorej. Wynik NIE zależy od historii pozycyjnej (brak wolnej cząstki) — test powtarzalny w trwałej kupulopatii. Wolny złóg w ramieniu bańkowym (D10) daje apo PRZEMIJAJĄCE i męczliwe — powtarzalność ma tylko prawdziwa kupulopatia.","Apogeotropic (cupulolithiasis): the bow beats toward the healthy side, the lean toward the affected one. The result does NOT depend on positional history (no free particle) — the test is repeatable in persistent cupulopathy. Free debris in the short (ampullar) arm (D10) gives a TRANSIENT, fatiguing apo — only true cupulopathy is repeatable.");
+    },
+    phases:(A,v,scen,mech)=>{ const S=scen||"textbook";
       const mkPose=(key)=> key==="bow"
         ? {ptitle:t("Skłon w przód (bow)","Forward bend (bow)"), ppos:t("Siad, skłon tułowia w przód ~45°, nos ku podłodze","Sitting, trunk bent forward ~45°, nose toward the floor"), body:"sit", yaw:0, face:"down"}
         : {ptitle:t("Odchylenie do tyłu (lean)","Backward tilt (lean)"), ppos:t("Siad, głowa odchylona do tyłu","Sitting, head tilted back"), body:"sit", yaw:0, face:"up"};
+      // D4/V16, mech="light": ta sama statyka co kupulo (znak odwraca position(variant:"light")) —
+      // napis z TEJ SAMEJ odpowiedzi (anat.h); wzorzec Choung-podobny, ale TRWAŁY i powtarzalny.
+      if(mech==="light"){
+        const mk=(key)=>{ const p=mkPose(key);
+          const nys=nysFromGeom("horizontal", A, "light", stepHeadQ("sit", 0, key==="bow"?"down":"up"), "flat");
+          const towardA = A==="P" ? nys.anat.h>0 : nys.anat.h<0;
+          return {...p, nys, label: bltDirWord(A, towardA),
+            note: key==="bow"
+              ? t("Lekki osklepek odgina się PRZECIWNIE do ciężkiego — bez latencji, uporczywie, niezależnie od położenia złogu i historii (test powtarzalny).","The light cupula deflects OPPOSITE to the heavy one — no latency, persistently, regardless of debris position and history (repeatable test).")
+              : t("Odchylenie odwraca rzut grawitacji na osklepek → kierunek przeciwny niż w skłonie.","Leaning back reverses the gravity projection on the cupula → direction opposite to the bow.")};
+        };
+        const arr=[mk("bow"), mk("lean")];
+        arr.blt={scen:null, light:true}; return arr;
+      }
+      // D4/V16, mech="short": DYNAMIKA sekwencji (bltPhases z fasadą short) — świeży depozyt SHORT_PHI0,
+      // scenariusze ignorowane (ramię nie ma spoczynku). Strzałka+napis z JEDNEGO ξ (V5).
+      if(mech==="short"){
+        const P=bltPhases(A, S, "short");
+        const mk=(key)=>{ const p=mkPose(key), xi=P[key].xi;
+          const N=nysFromDyn("horizontal", A, xi, false);
+          const resolved = N.strength>=XI_CARD;
+          const nys={kind:N.kind, dir:resolved?N.dir:0, vdir:N.vdir, strength:resolved?N.strength:0,
+                     excited:N.excited, persistent:false, canal:"horizontal", side:A,
+                     q:stepHeadQ("sit",0,key==="bow"?"down":"up"), anat:resolved?N.anat:{h:0,v:0,t:0},
+                     init:{arm:"short", phi0:SHORT_PHI0, settled:false}, unresolved:!resolved};
+          const label = resolved ? bltDirWord(A, xi>0) + (key==="lean" && P.exited ? t(" — i złóg opuszcza ramię"," — and the debris leaves the arm") : "")
+                                 : t("odpowiedź podprogowa","subthreshold response");
+          const note = key==="bow"
+            ? t("Skłon zsuwa złóg w ramieniu ODampułkowo (hamowanie) → bije ku ZDROWEJ — odwrócenie reguły Choung, jak w kupulolitiazie, ale odpowiedź jest PRZEMIJAJĄCA.","The bow slides the debris in the arm ampullofugally (inhibition) → beats toward the HEALTHY side — the Choung rule reversed, as in cupulolithiasis, but the response is TRANSIENT.")
+            : t("Odchylenie prowadzi złóg z powrotem ku łagiewce — bije ku CHOREJ i OPRÓŻNIA ramię (samooczyszczenie w trakcie diagnostyki).","The lean carries the debris back toward the utricle — beats toward the AFFECTED side and EMPTIES the arm (self-clearing during diagnostics).");
+          return {...p, nys, label, note};
+        };
+        const arr=[mk("bow"), mk("lean")];
+        arr.blt={scen:null, short:true, bowXi:P.bow.xi, leanXi:P.lean.xi, exitedInBow:P.bow.exited, exitedInHistory:false, exitedTotal:P.exited};
+        return arr;
+      }
       if(v==="cupulo"){
         // KUPULO: kierunek z FIZYKI (position, cel przy osklepku — V4); napis GENEROWANY z tej samej
         // odpowiedzi (anat.h), więc nie może przeczyć strzałce. Scenariusz historii bez wpływu.
@@ -899,13 +986,53 @@ const DIAG={
   lyingdown:{ get name(){return t("Test położenia i siadania (lying-down)","Lying-down / sitting-up test");}, get tests(){return t("kanał poziomy — lateralizacja","horizontal canal — lateralization");}, canal:"horizontal",
     get intro(){return t("Z siadu połóż pacjenta na wznak z głową lekko uniesioną (~30°, jak do testu Roll), bez obrotu. Obserwuj oczopląs po położeniu, następnie posadź i obserwuj ponownie.","From sitting, lay the patient supine with the head slightly raised (~30°, as for the Roll test), without turning. Watch for nystagmus after lying down, then sit the patient up and watch again.");},
     features:featsByVariant,
-    latNote:(A,v)=> v==="canalo"
+    latNote:(A,v,mech)=>{
+      if(mech==="light") return t("Light cupula: położenie → oczopląs ku uchu ZDROWEMU (lustro kupulolitiazy — lekki osklepek odgina się przeciwnie), TRWAŁY; w siadzie słaby pseudo-SN ku ZDROWEJ (odwrócony względem apo — to różnicuje mechanizmy przy tym samym null point). Wynik nie zależy od historii pozycyjnej.","Light cupula: lying down → nystagmus toward the HEALTHY ear (the mirror of cupulolithiasis — the light cupula deflects the opposite way), PERSISTENT; in sitting a weak pseudo-SN toward the HEALTHY side (reversed vs apo — this differentiates the mechanisms at the same null point). The result does not depend on positional history.");
+      if(mech==="short") return t("Ramię bańkowe (short arm): położenie → oczopląs ku uchu CHOREMU (wzorzec apo — złóg zsuwa się w ramieniu DOampułkowo), ale PRZEMIJAJĄCY; siadanie podprogowe i domyka SAMOOCZYSZCZENIE (złóg wypada do łagiewki). Historia pozycyjna nie ustala położenia startowego — ramię nie ma spoczynku.","Short (ampullar) arm: lying down → nystagmus toward the AFFECTED ear (the apo pattern — the debris slides ampullopetally in the arm), but TRANSIENT; sitting up is subthreshold and completes the SELF-CLEARING (the debris falls into the utricle). Positional history does not set the start — the arm has no rest.");
+      return v==="canalo"
       ? t("Kierunek i obecność oczopląsu położenia (LDN) zależą od miejsca złogu na starcie — wybierz scenariusz historii nad fazami. Wzorzec geotropowy (położenie → ku uchu ZDROWEMU, odampułkowo) WYNIKA z fizyki dla φ₀<190°. LDN to znak POMOCNICZY lateralizacji (obecny u ~38–68% chorych; nie jest kryterium Bárány) — rozstrzyga zwłaszcza przy symetrycznym teście Roll. Trwały geotropowy oczopląs >1 min → myśl o light cupula (mini-karta null point na karcie Roll).","The direction and presence of the lying-down nystagmus (LDN) depend on where the debris starts — pick a history scenario above the phases. The geotropic pattern (lying down → toward the HEALTHY ear, ampullofugal) FOLLOWS from physics for φ₀<190°. LDN is a SECONDARY sign of lateralization (present in ~38–68% of patients; not a Bárány criterion) — it settles the side especially when the Roll test is symmetric. A persistent geotropic nystagmus >1 min → think light cupula (null-point mini-card on the Roll test).")
-      : t("Apogeotropowy (kupulolitiaza): położenie → oczopląs KU UCHU CHOREMU (ampulopetalne odchylenie ciężkiego osklepka), uporczywy; w siadzie słaby pseudo-spontaniczny oczopląs (PSN) ku chorej. Null point ~10–30° skrętu głowy ku uchu choremu (model: ~9°). Wynik nie zależy od historii pozycyjnej.","Apogeotropic (cupulolithiasis): lying down → nystagmus TOWARD THE AFFECTED ear (ampullopetal deflection of the heavy cupula), persistent; in sitting a weak pseudo-spontaneous nystagmus (PSN) toward the affected side. Null point at ~10–30° of head turn toward the affected ear (model: ~9°). The result does not depend on positional history."),
-    phases:(A,v,scen)=>{ const S=scen||"textbook";
+      : t("Apogeotropowy (kupulolitiaza): położenie → oczopląs KU UCHU CHOREMU (ampulopetalne odchylenie ciężkiego osklepka), uporczywy; w siadzie słaby pseudo-spontaniczny oczopląs (PSN) ku chorej. Null point ~10–30° skrętu głowy ku uchu choremu (model: ~9°). Wynik nie zależy od historii pozycyjnej.","Apogeotropic (cupulolithiasis): lying down → nystagmus TOWARD THE AFFECTED ear (ampullopetal deflection of the heavy cupula), persistent; in sitting a weak pseudo-spontaneous nystagmus (PSN) toward the affected side. Null point at ~10–30° of head turn toward the affected ear (model: ~9°). The result does not depend on positional history.");
+    },
+    phases:(A,v,scen,mech)=>{ const S=scen||"textbook";
       const mkPose=(key)=> key==="lie"
         ? {ptitle:t("Położenie (lying-down)","Lying down"), ppos:t("Na wznak, głowa uniesiona ~30° (pozycja testu Roll), bez obrotu","Supine, head raised ~30° (Roll-test position), no turning"), body:"supineFlex", yaw:0, face:"up"}
         : {ptitle:t("Siadanie (sitting-up)","Sitting up"), ppos:t("Powrót do siadu, głowa prosto","Back to sitting, head straight"), body:"sit", yaw:0, face:"fwd"};
+      // D4/V16, mech="light": statyka jak kupulo, znak odwraca position(variant:"light") — lustro apo.
+      if(mech==="light"){
+        const mk=(key)=>{ const p=mkPose(key);
+          const q = key==="lie" ? stepHeadQ("supineFlex",0,"up") : stepHeadQ("sit",0,"fwd");
+          const nys=nysFromGeom("horizontal", A, "light", q, "flat");
+          const towardA = A==="P" ? nys.anat.h>0 : nys.anat.h<0;
+          return {...p, nys, label: bltDirWord(A, towardA) + (key==="lie" ? "" : t(" (pseudo-SN, słaby)"," (pseudo-SN, weak)")),
+            note: key==="lie"
+              ? t("Lekki osklepek odchyla się ODampułkowo (lustro kupulolitiazy) — trwale, bez latencji, ku uchu ZDROWEMU. Null point wspólny z postacią heavy, ku uchu choremu (mini-karta na teście Roll).","The light cupula deflects ampullofugally (the mirror of cupulolithiasis) — persistently, without latency, toward the HEALTHY ear. The null point is common with the heavy form, toward the affected ear (mini-card on the Roll test).")
+              : t("Pseudo-spontaniczny oczopląs w siadzie — słaby, ku ZDROWEJ: ODWROTNIE niż w kupulolitiazie (apo → ku chorej). Ten sam null point, przeciwne kierunki wokół niego — tak różnicuje się mechanizm.","Pseudo-spontaneous nystagmus in sitting — weak, toward the HEALTHY side: the OPPOSITE of cupulolithiasis (apo → toward the affected side). Same null point, opposite directions around it — this is how the mechanism is differentiated.")};
+        };
+        const arr=[mk("lie"), mk("sit")];
+        arr.ldt={scen:null, light:true}; return arr;
+      }
+      // D4/V16, mech="short": dynamika sekwencji (ldtPhases z fasadą short) — świeży depozyt, bez scenariuszy.
+      if(mech==="short"){
+        const P=ldtPhases(A, S, "short");
+        const mk=(key)=>{ const p=mkPose(key), xi=P[key==="lie"?"lie":"sit"].xi;
+          const N=nysFromDyn("horizontal", A, xi, false);
+          const resolved = N.strength>=XI_CARD;
+          const q = key==="lie" ? stepHeadQ("supineFlex",0,"up") : stepHeadQ("sit",0,"fwd");
+          const nys={kind:N.kind, dir:resolved?N.dir:0, vdir:N.vdir, strength:resolved?N.strength:0,
+                     excited:N.excited, persistent:false, canal:"horizontal", side:A,
+                     q, anat:resolved?N.anat:{h:0,v:0,t:0}, init:{arm:"short", phi0:SHORT_PHI0, settled:false}, unresolved:!resolved};
+          const label = resolved ? bltDirWord(A, xi>0) : t("napęd podprogowy","subthreshold drive");
+          const note = key==="lie"
+            ? t("Położenie zsuwa złóg w ramieniu DOampułkowo → pobudzenie → oczopląs ku uchu CHOREMU (wzorzec apo LDT), ale PRZEMIJAJĄCY — to wolny złóg, nie kupulopatia.","Lying down slides the debris in the arm ampullopetally → excitation → nystagmus toward the AFFECTED ear (the apo LDT pattern), but TRANSIENT — free debris, not cupulopathy.")
+            : (P.exited
+                ? t("Siadanie domyka SAMOOCZYSZCZENIE: złóg wypada z ramienia do łagiewki (wyjście przez próg łagiewkowy) — kolejne testy będą nieme.","Sitting up completes the SELF-CLEARING: the debris falls out of the arm into the utricle (exit through the utricular threshold) — further tests will be mute.")
+                : t("Siadanie: odpowiedź podprogowa (złóg blisko progu łagiewkowego).","Sitting up: subthreshold response (debris near the utricular threshold)."));
+          return {...p, nys, label, note};
+        };
+        const arr=[mk("lie"), mk("sit")];
+        arr.ldt={scen:null, short:true, lieXi:P.lie.xi, sitXi:P.sit.xi, exitedTotal:P.exited};
+        return arr;
+      }
       if(v==="cupulo"){
         // KUPULO: kierunek z FIZYKI (cel przy osklepku — V4); napis z TEJ SAMEJ odpowiedzi (anat.h).
         const mk=(key)=>{ const p=mkPose(key);
@@ -962,8 +1089,60 @@ function variantLabels(canal){
     ? {canalo:t("Kanalolitiaza (geotropowy)","Canalithiasis (geotropic)"), cupulo:t("Kupulolitiaza (apogeotropowy)","Cupulolithiasis (apogeotropic)")}
     : {canalo:t("Kanalolitiaza","Canalithiasis"), cupulo:t("Kupulolitiaza (rzadko)","Cupulolithiasis (rare)")};
 }
-// dobór manewru leczniczego na podstawie testu + wariantu
-function recommend(testKey,variant){
+/* ============ D4 (ocena II, V16 — wdrożenie R11): rozdział FENOTYP / MECHANIZM ============
+   Oś ADDYTYWNA: state.variant zostaje osią zgodności (na kanale poziomym znaczy FENOTYP geo/apo,
+   na pionowych — wprost mechanizm; geo/apo nie istnieje tam, gdzie oś kanału jest pionowa — R11),
+   a state.mechanism (null = mechanizm klasyczny fenotypu ⇒ każda istniejąca ścieżka bit-w-bit
+   identyczna) wybiera MECHANIZM w obrębie fenotypu:
+     HC geo = {canalo (długie ramię), light (lekki osklepek)} · HC apo = {cupulo, short (ramię bańkowe)}.
+   JAM świadomie POZA osią mechanizmu: stan obturacyjny pozycjo-NIEzależny z własnymi parametrami
+   {phi, xi, thrG} (kierunek zadaje jam.xi, nie fenotyp; DCPN nie zmienia się z pozycją, więc geo/apo
+   traci sens) — kandydat na osobną kartę po D4. Silnik NIE zna wartości "short" w position() i nie
+   może jej znać (sonda D4: siad i leżenie opróżniają ramię bańkowe z KAŻDEGO φ₀ w ≤120 s — segment
+   nie ma spoczynku, statyka byłaby fałszem konstrukcyjnym); kartę short liczy DYNAMIKA per faza
+   (rollShortPhases, wzorzec SCEN_DRIVEN) z wyprowadzonym φ₀ świeżego depozytu. */
+const MECHS_BY_PHENO=(canal,v)=> canal==="horizontal" ? (v==="canalo"?["canalo","light"]:["cupulo","short"]) : [v];
+// JEDYNY czytelnik pary (variant, mechanism): para niedozwolona (np. "light" wiszące w stanie po
+// przejściu na kanał tylny) DEGRADUJE do mechanizmu klasycznego — nigdy wyjątek w renderze.
+const mechOf=(variant,mechanism,canal)=> (mechanism!=null && MECHS_BY_PHENO(canal,variant).includes(mechanism)) ? mechanism : variant;
+// mapowanie WSTECZNE mech→oś zgodności (gałąź karty geo/apo); "light" żyje na stronie geo, "short" na apo
+const variantOfMech=mech=> mech==="light" ? "canalo" : mech==="short" ? "cupulo" : mech;
+// TRWAŁOŚĆ (uporczywy/niemęczliwy) — jedna funkcja zamiast rozsianych v==="cupulo" tam, gdzie chodzi
+// o trwałość: light się NIE męczy (jak cupulo), short SIĘ męczy i samooczyszcza (jak canalo).
+const persistentOf=mech=> mech==="cupulo" || mech==="light";
+// φ₀ świeżego depozytu w ramieniu bańkowym = geometryczny ŚRODEK segmentu [SA_MIN, 3°); 3 = CUPULA_DEG
+// silnika (stała wewnętrzna). WYPROWADZONY z eksportowanego SA_MIN (wzorzec derivedHold: liczba jest
+// wynikiem geometrii, nie stałą). Sonda D4: znaki fenotypu NIECZUŁE na głębokość startu (−40°/−10°
+// dają te same kierunki, zdrowe-w-dole zawsze czyści) — środek jest bezpieczny fenotypowo.
+const SHORT_PHI0=(Vestibular.SA_MIN.horizontal+3)/2;   // ≈ −21,7°
+// Karta Roll dla mech="short": dwie IZOLOWANE nici simulateShortArm z siadu (fazy = rama dydaktyczna
+// karty statycznej, jak bltZones; sekwencyjność chore→centrum→zdrowe niesie sesja — R10). Szczyt ξ
+// per faza → strzałka+napis+obwiednia z JEDNEGO ξ (konwencja V5). Bramka adhezji bez znaczenia
+// (napęd w siadzie ≫ fStat — sonda D4), więc settled:false wystarcza bez maszynerii scenariuszy.
+function rollShortPhases(side){
+  const k="rollshort#"+side; if(_bltMemo.has(k)) return _bltMemo.get(k);
+  const mk=yaw=>{
+    const sim=Vestibular.simulateShortArm({canal:"horizontal", side, q0:[1,0,0,0], phi0:SHORT_PHI0, settled:false,
+      timeline:[{q:stepHeadQ("supineFlex", yaw, "up"), tTrans:0.8, tHold:60, pivot:"body"}]});
+    let pk=0; for(const s of sim) if(Math.abs(s.xi)>Math.abs(pk)) pk=s.xi;
+    return {xi:pk, exited:sim.final.exited, pressed:!!sim.final.pressed, xiEnd:sim.length?sim[sim.length-1].xi:0};
+  };
+  const out={aff:mk(side==="P"?90:-90), heal:mk(side==="P"?-90:90)};   // aff = ucho CHORE w dole
+  _bltMemo.set(k,out); return out;
+}
+// Etykiety chipów mechanizmu (D4/V16) — chipy renderują się tylko, gdy fenotyp ma >1 mechanizm (HC).
+function mechLabels(canal, v){
+  if(canal!=="horizontal") return null;
+  return v==="canalo"
+    ? {canalo:{lab:t("Kanalolitiaza — ramię długie","Canalithiasis — long arm"), sub:t("klasyczna · przemijający, męczliwy","classic · transient, fatiguing")},
+       light: {lab:t("Light cupula","Light cupula"), sub:t("trwały geo (>1 min) · null point","persistent geo (>1 min) · null point")}}
+    : {cupulo:{lab:t("Kupulolitiaza","Cupulolithiasis"), sub:t("klasyczna · uporczywy, niemęczliwy","classic · persistent, non-fatiguing")},
+       short: {lab:t("Ramię bańkowe (short arm)","Short (ampullar) arm"), sub:t("przemijający apo · męczliwy","transient apo · fatiguing")}};
+}
+// dobór manewru leczniczego na podstawie testu + wariantu (+ opcjonalny mechanizm D4/V16;
+// brak parametru albo mechanizm klasyczny = dokładnie dawny wynik). UWAGA: primary może być null
+// (light cupula — manewrów nie ma) — render MUSI to strażnikować, zanim sięgnie do MANEUVERS[k].
+function recommend(testKey,variant,mech){
   if(testKey==="dix"){
     return variant==="canalo"
       ? {primary:"epley",alts:["semont"],note:t("Kanalolitiaza kanału tylnego — preferowany manewr Epleya; alternatywnie Semont.","Posterior-canal canalithiasis — the Epley maneuver is preferred; Semont as an alternative.")}
@@ -974,7 +1153,11 @@ function recommend(testKey,variant){
       ? {primary:"yacovino",alts:[],note:t("Kanalolitiaza kanału przedniego — manewr Yacovino (deep head-hang → szybki ruch brody do klatki). Kanał przedni jest rzadki; oczopląs to czysty downbeat — strony nie ustalisz oczopląsem, różnicuj kontekstem i reakcją na manewr.","Anterior-canal canalithiasis — the Yacovino maneuver (deep head-hang → quick chin-to-chest movement). The anterior canal is rare; the nystagmus is a pure downbeat — you cannot establish the side by nystagmus, differentiate by context and response to the maneuver.")}
       : {primary:"yacovino",alts:[],note:t("Kupulolitiaza kanału przedniego (bardzo rzadka) — postępowanie jak w kanalolitiazie; rozważ ponowną ocenę i wykluczenie przyczyny ośrodkowej (izolowany downbeat).","Anterior-canal cupulolithiasis (very rare) — manage as for canalithiasis; consider re-evaluation and ruling out a central cause (isolated downbeat).")};
   }
-  // roll / bowlean → kanał poziomy
+  // roll / bowlean / lyingdown → kanał poziomy; mechanizmy alternatywne (D4/V16) tylko tu —
+  // mechOf degraduje "light"/"short" poza HC, więc gałęzie dix/headhang wyżej ich nie widzą.
+  const m = mech==null ? variant : mech;
+  if(m==="light") return {primary:null, alts:[], note:t("Light cupula — manewry repozycyjne NIESKUTECZNE (0% w opisanych seriach): nie ma wolnego złogu do repozycji. Postać ustępuje SAMOISTNIE w dniach–tygodniach. Leczeniem jest rozpoznanie (null point!), wyjaśnienie i obserwacja; unikaj supresantów przedsionkowych. Uporczywy DCPN bez punktu zerowego lub objawy ośrodkowe → diagnostyka ośrodkowa.","Light cupula — repositioning maneuvers are INEFFECTIVE (0% in reported series): there is no free debris to reposition. The form resolves SPONTANEOUSLY within days–weeks. The treatment is recognition (the null point!), explanation and observation; avoid vestibular suppressants. A persistent DCPN without a null point or central signs → central work-up.")};
+  if(m==="short") return {primary:"gufoniApo", alts:["lempert"], note:t("Wolny złóg w RAMIENIU BAŃKOWYM (apo przemijający): postać często czyści się SAMA diagnostyką i siadem — faza „zdrowe ucho w dole” testu Roll wyprowadza złóg do łagiewki (fizyka silnika). Jeśli oczopląs się utrzymuje, postępuj jak w postaci apogeotropowej (Gufoni apo → ponowny test); ustalonego manewru swoistego dla ramienia bańkowego piśmiennictwo nie ma. UWAGA — nie mylić z canalith jam: predykcja „Epley nieskuteczny / Yacovino skuteczny” dotyczy zaklinowanego złogu (jam), nie ramienia bańkowego.","Free debris in the SHORT (ampullar) ARM (transient apo): the form often clears ITSELF through diagnostics and sitting — the Roll test's healthy-ear-down phase carries the debris into the utricle (engine physics). If the nystagmus persists, manage as the apogeotropic form (apogeotropic Gufoni → re-test); the literature has no established short-arm-specific maneuver. CAUTION — do not confuse with canalith jam: the \"Epley ineffective / Yacovino effective\" prediction concerns an impacted plug (jam), not the short arm.")};
   return variant==="canalo"
     ? {primary:"lempert",alts:["gufoniGeo"],note:t("Geotropowy (kanalolitiaza) kanału poziomego — rolka Lemperta ku stronie zdrowej lub manewr Gufoniego (geotropowy).","Geotropic (canalithiasis) of the horizontal canal — Lempert roll toward the healthy side or the Gufoni maneuver (geotropic).")}
     : {primary:"gufoniApo",alts:["lempert"],note:t("Apogeotropowy (kupulolitiaza) — manewr Gufoniego (apogeotropowy) przekształca postać w geotropową; następnie ponowny test i leczenie postaci geotropowej.","Apogeotropic (cupulolithiasis) — the Gufoni maneuver (apogeotropic) converts the form into a geotropic one; then re-test and treat the geotropic form.")};
@@ -984,10 +1167,28 @@ function recommend(testKey,variant){
 // strona chora). Czysta funkcja kliniczna — jak recommend(); zasila kartę „Klasyfikacja" w diagnostyce. NIE zmienia
 // fizyki — synteza z konwencji już zakodowanych w DIAG (latNote/features). [Kryteria źródłowe: Bárány/ICVD 2015 —
 // von Brevern i wsp.; ocena II C: dawny odnośnik „engine_doc: KRYTERIA BARANY" wskazywał sekcję, której nie ma.]
-function baranyClassify(canal, variant, side, antMode){
+function baranyClassify(canal, variant, side, antMode, mech){
   const S=sideN(side);
   const est={ tier:"established", tierLabel:t("zespół ustalony","established syndrome") };
   const emg={ tier:"emerging",    tierLabel:t("zespół wyłaniający się / atypowy","emerging / atypical syndrome") };
+  // D4/V16: mechanizmy alternatywne HC — oba POZA klasyfikacją Bárány/ICVD (uczciwie: tier emerging).
+  // mechOf degraduje je poza kanałem poziomym, więc gałęzie anterior/posterior ich nie widzą.
+  const m = mech==null ? variant : mech;
+  if(canal==="horizontal" && !antMode && m==="light")
+    return { ...emg, subtype:t("Zespół BPPV-podobny — light cupula (poza klasyfikacją ICVD)","BPPV-like syndrome — light cupula (outside the ICVD classification)"),
+      crit:[[t("Latencja","Latency"),t("brak","none")],[t("Czas trwania","Duration"),t("uporczywy (>1 min)","persistent (>1 min)")],[t("Męczliwość","Fatigability"),t("nie","no")],
+            [t("Kierunek","Direction"),t("geotropowy (ku uchu w dole) — jak kanalolitiaza, ale TRWAŁY","geotropic (toward the lower ear) — like canalithiasis, but PERSISTENT")],
+            [t("Punkt zerowy (null point)","Null point"),t("wspólny z postacią heavy: ~10–30° ku uchu choremu (model: ~9°)","common with the heavy form: ~10–30° toward the affected ear (model: ~9°)")],
+            [t("Strona chora","Affected side"),`${S} — ${t("SILNIEJSZA reakcja + null point","STRONGER response + null point")}`]],
+      redflag:t("Trwały geotropowy DCPN BEZ punktu zerowego albo z punktem obustronnym → flaga OŚRODKOWA (co ~8. chory z trwałym geotropowym oczopląsem ma zmianę móżdżku). Manewry repozycyjne nieskuteczne (0% w seriach) — ustępuje samoistnie w dni–tygodnie; „light cupula” to nazwa wzorca, mechanizm nieustalony (5 hipotez) — formalnie raportuj jako uporczywy geotropowy DCPN (poza katalogiem ICVD 2015).","A persistent geotropic DCPN WITHOUT a null point or with a bilateral one → a CENTRAL flag (~1 in 8 patients with persistent geotropic nystagmus has a cerebellar lesion). Repositioning maneuvers are ineffective (0% in series) — resolves spontaneously within days–weeks; \"light cupula\" names a pattern, the mechanism is unsettled (5 hypotheses) — formally report as a persistent geotropic DCPN (outside the ICVD 2015 catalogue).") };
+  if(canal==="horizontal" && !antMode && m==="short")
+    return { ...emg, subtype:t("BPPV kanału poziomego — kanalolitiaza ramienia bańkowego (short arm)","Horizontal-canal BPPV — short-arm canalithiasis"),
+      crit:[[t("Latencja","Latency"),t("krótka","brief")],[t("Czas trwania","Duration"),t("przemijający (przy uchu chorym w dole może trwać — złóg dociśnięty do osklepka)","transient (may last with the affected ear down — debris pressed against the cupula)")],
+            [t("Męczliwość","Fatigability"),t("tak — ramię się samooczyszcza","yes — the arm self-clears")],
+            [t("Kierunek","Direction"),t("apogeotropowy (ku uchu w górze) — jak kupulolitiaza, ale PRZEMIJAJĄCY","apogeotropic (toward the upper ear) — like cupulolithiasis, but TRANSIENT")],
+            [t("Punkt zerowy (null point)","Null point"),t("jednostronny, nie wspólny — różnicuje od kupulopatii","one-sided, not common — differentiates from cupulopathy")],
+            [t("Strona chora","Affected side"),`${S} — ${t("SŁABSZA reakcja","WEAKER response")}`]],
+      redflag:t("R11: apogeotropia ≠ kupulolitiaza — apo PRZEMIJAJĄCY i męczliwy to wolny złóg w ramieniu bańkowym; uporczywy i powtarzalny — prawdziwa kupulopatia. Faza „zdrowe ucho w dole” testu Roll często czyści ramię (test bywa samoleczący).","R11: apogeotropy ≠ cupulolithiasis — a TRANSIENT, fatiguing apo is free debris in the short (ampullar) arm; persistent and repeatable — true cupulopathy. The Roll test's healthy-ear-down phase often clears the arm (the test can be self-treating).") };
   if(antMode || canal==="anterior")
     return { ...emg, subtype:t("BPPV kanału przedniego","Anterior-canal BPPV"),
       crit:[[t("Latencja","Latency"), variant==="cupulo"?t("brak","none"):t("po latencji","after a latency")],[t("Czas trwania","Duration"), variant==="cupulo"?t("uporczywy","persistent"):"< 1 min"],
@@ -1010,7 +1211,7 @@ function baranyClassify(canal, variant, side, antMode){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

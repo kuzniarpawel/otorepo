@@ -955,6 +955,48 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
      DIRECTION OF THE FIX: separate the PHENOTYPE (geotropic / apogeotropic — what is seen) from the
      MECHANISM (free debris / cupulopathy — what is inferred from duration and a reproducible null plane).
      That is a change of clinical content, so it is the user's decision, not mine.
+     [R11-RESOLUTION 2026-08-14 (assessment II, V16/D4): DELIVERED — ADDITIVE PHENOTYPE/MECHANISM AXIS.
+      Model: state.variant STAYS the compatibility axis (on the HC it means the PHENOTYPE:
+      canalo-side≡geo, cupulo-side≡apo; on the vertical canals it is the mechanism outright — geo/apo
+      does not exist on the vertical axis), alongside state.mechanism (null = the phenotype's classic
+      mechanism ⇒ every old path bit-for-bit).
+      Map (maneuvers.js): MECHS_BY_PHENO — HC geo={canalo, light}, HC apo={cupulo, short}; the vertical
+      canals a singleton (the UI renders no chips). mechOf(variant, mechanism, canal) = the ONLY reader
+      of the pair; a disallowed pair (e.g. light left hanging after a canal switch) DEGRADES to the
+      classic, never an exception.
+      TWO backward projections, deliberately SEPARATE (light is persistent like cupulo but geo like
+      canalo; short the other way round): variantOfMech (the card's geo/apo branch) and persistentOf
+      (persistence/fatigability: cupulo+light yes, canalo+short no) — instead of scattered v==="cupulo".
+      SHORT WITHOUT STATICS — THE PROBE'S VERDICT: position() does not know "short" AND MUST NOT
+      (sitting and lying empty the ampullar arm from EVERY φ₀ within ≤120 s — the segment HAS NO rest;
+      a static "test rest" would be a constructional falsehood). The short card = DYNAMICS per phase:
+      rollShortPhases (two ISOLATED simulateShortArm threads, the Ewald comparison frame as on the
+      static card; the affected→centre→healthy sequentiality stays in the session — R10) plus
+      bltPhases/ldtPhases with a short facade; all with φ₀ = SHORT_PHI0 = (SA_MIN+3°)/2 ≈ −21.7° —
+      DERIVED from the segment's geometry (the derivedHold pattern), the phenotype insensitive to the
+      starting depth (probe: −40°/−10° give the same signs). Positional history does NOT set the
+      short φ₀ (no rest) — the scenario selector is hidden with an explicit banner.
+      Light = the existing statics position(variant:"light") on all three HC cards (a bit-for-bit
+      mirror of cupulo); the Roll's lateralization measured: affected-ear-down STRONGER (0.450 vs
+      0.203) — the same Ewald rule as geo-canalo, the side with the null point.
+      UI: the flip's face = the PHENOTYPE, the face's content = the effective MECHANISM; the mechanism
+      chips UNDER the flip (HC only, inline interpolation — the vertical keys bit-for-bit by
+      construction); featsByVariant/latNote/recommend/baranyClassify with an optional trailing mech
+      (absent = the old bytes); recommend(light) = primary:null (maneuvers 0%, the treatment is
+      diagnosis+observation, no suppressants) with a render guard (no buttons); recommend(short) =
+      gufoniApo+lempert + a sentence defusing the confusion with the JAM (the Epley-no/Yacovino-yes
+      prediction concerns the plug, not the arm); baranyClassify: two emerging-tier entries OUTSIDE
+      the ICVD 2015 catalogue (light: a shared null point, report as persistent geotropic DCPN;
+      short: a one-sided null point, conversion after the Roll).
+      The mechanism animation is HONEST: light = a cupula deflection WITHOUT grains (light means no
+      debris; the light |ξ| envelope ≡ cupulo — the V12 mirror), short = a particle at the ampulla
+      (init.arm through engineXi, φ<0 clamps to the ampulla on the SVG path). The JAM stays OUTSIDE
+      the mechanism axis (a position-independent obstructive state with parameters of its own — the
+      direction is set by jam.xi, not the phenotype; a separate future card). Oracles: dom 126→138 —
+      EXACTLY 24 HC keys changed (proof: 24/24 = a pure chip-panel insertion, zero removals) + 12
+      additive mech-{light,short} × {roll,bowlean,lyingdown} × {P,L}; engine/pose bit-for-bit (the
+      physics UNTOUCHED — zero edits to vestibular.js); the session explicitly narrowed to
+      mech==="canalo" (it tracks the long-arm debris).]
 
  R10. THE ENGINE HAS NO POSITION MEMORY — the debris start is an ASSUMPTION, not a state [2026-08-05, OPEN].
      Came out of taking R8 apart. restPhi computes the resting point for the UPRIGHT posture as if that
@@ -1023,7 +1065,8 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
       the debris between phases — the session's phase amplitudes are not a pure Ewald comparison
       (R10/Bhandari; the card says so outright).]
      [D10 STATUS 2026-08-14 (assessment II, V15): DELIVERED-PARTIALLY — SHORT ARM + CANALITH JAM
-      (engine + pins + notes; the third UI variant/scenarios/session wait for D4 — the V12 pattern).
+      (engine + pins + notes; the third-variant UI DELIVERED the same day in V16/D4 — see
+      R11-RESOLUTION; the session deliberately narrowed to the canalo mechanism).
       AMPULLAR SEGMENT: arm="short", φ∈[SA_MIN, 3°) — the tangent = tangAt EXTENDED onto the same
       PCA circle (continuity at 3°: 0.000°); SA_MIN = −(360−ARC_SPAN)/2 = the midpoint of the
       vestibular gap {PC −20.6° · AC −39.45° · HC −46.35°} (≈1.1/2.2/2.6 mm) — derived from
