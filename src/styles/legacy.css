@@ -165,6 +165,23 @@
   .reco h4{margin:0 0 6px;font-family:var(--display);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--primary);font-weight:700}
   .obsrow{margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px}
   .obslabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px}
+/* PASEK OBJAWOWY (ocena II V17/D5). UKŁAD mieszka tutaj, bo to nowa struktura, a nie przemalowanie
+   istniejącej — arkusz sceny klinicznej nadpisuje MATERIAŁ, nigdy układu.
+   KOLOR NIE JEST JEDYNYM NOŚNIKIEM: obok każdego paska stoi liczba, więc wartość czyta się bez
+   rozróżniania barw. Paski nie są kontrolkami — nie mają fokusu ani roli, bo niczego nie ustawiają. */
+  .symrow{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; margin-top:8px}
+  .symlab{font-size:12.5px; color:var(--muted); min-width:64px}
+  .symval{font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--muted); min-width:44px; text-align:right}
+  .symbar{height:8px; border-radius:999px; background:rgba(122,147,168,.22); overflow:hidden}
+  .symfill{height:100%; border-radius:999px; transition:width .18s linear}
+  .symfill--dizz{background:var(--horiz)}
+  .symfill--naus{background:var(--ant)}
+  /* Karta zawrotow resztkowych — UKLAD (material bierze rest-scene.css). Obrys przerywany, bo to
+     nie jest akcja ani wynik, tylko TLO KLINICZNE: ta sama konwencja co odmowa/brak wyniku. */
+  .furd{margin-top:12px; padding:12px 14px; border:1px dashed rgba(122,147,168,.42); border-radius:12px}
+  .furd .eyebrow{display:block; margin-bottom:8px}
+  .furd ul{margin:0; padding-left:18px; display:grid; gap:6px; font-size:13px; line-height:1.45}
+  .furd .note{margin-top:10px}
   .segobs{grid-template-columns:1fr 1fr}
   .segobs .opt{display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-height:auto;padding:10px 12px;font-size:13.5px}
   .segobs .opt small{font-weight:450;color:var(--muted);font-size:11px;line-height:1.25}

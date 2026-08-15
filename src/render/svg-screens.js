@@ -4,7 +4,7 @@ import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { SIDE, sideN, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, CANAL_OF, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
          computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds,
-         DIAG, variantLabels, recommend, baranyClassify, BLT_HISTORY, SCEN_DRIVEN } from '../pose/maneuvers.js';
+         DIAG, variantLabels, recommend, baranyClassify, BLT_HISTORY, SCEN_DRIVEN, nullScan, nullYawOf } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
          POWODY_NIEWIARYGODNOSCI,
@@ -524,6 +524,29 @@ function currentManSim(){
 }
 // Klucz TOŻSAMOŚCI odliczanej pozycji. Póki się nie zmieni, ponowny render NIE jest nowym krokiem.
 let _timerKey=null;
+/* ═══ WARSTWA OBJAWOWA (ocena II V17/D5) ═══
+   Dwie liczby z TEJ SAMEJ fizyki, która napędza oczopląs — nie z osobnego modelu objawów:
+     zawrót   ~ bieżące |ξ| (odchylenie osklepka),
+     nudności ~ saturacja skumulowanej DAWKI: 100·(1−exp(−Σ|ξ|·Δt / NAUS_I0)), NAUS_I0 = 25 ξ·s.
+   Wykładnicza saturacja, a nie suma obcięta do 100 — dawka ma fizjologiczny plafon, a nie „railuje"
+   się na sztywnej granicy. Próg widoczności zawrotu = 0,03, ta sama konwencja co odcięcie 3 % szczytu
+   w xiEnvelope, żeby pasek nie drgał tam, gdzie animacja już nic nie rysuje.
+   `man.cum` NIE ISTNIEJE w tej gałęzi (computeManSim zwraca sim/dt/segs/exited — sprawdzone), więc
+   dawkę liczymy Z `man.sim` i pamiętamy przy obiekcie symulacji. Świadomie NIE dokładam pola do
+   computeManSim: ten plik jest wspólny z main i trzymam go bit-w-bit, a suma skumulowana jest
+   wielkością PREZENTACJI, nie stanem fizyki.
+   TO NIE JEST POMIAR KLINICZNY — karta mówi to wprost. */
+const SYM_FLOOR = 0.03, NAUS_I0 = 25;
+function symAt(man, tAbs){
+  if(!man || !man.sim || !man.sim.length) return {dizz:0, naus:0};
+  if(!man._cum){                                    // budowane RAZ na obiekt symulacji (cache klucza man)
+    const c = new Array(man.sim.length); let acc = 0;
+    for(let i=0;i<man.sim.length;i++){ acc += Math.abs(man.sim[i].xi) * man.dt; c[i] = acc; }
+    man._cum = c;
+  }
+  const i = Math.min(man.sim.length-1, Math.max(0, Math.round(tAbs/man.dt)));
+  return { dizz: Math.abs(man.sim[i].xi), naus: 100*(1-Math.exp(-(man._cum[i]||0)/NAUS_I0)) };
+}
 function setupGuideAnim(){
   const st=state.plan.steps[state.step], total=st.seconds||0;
   // Licznik zerował się BEZWARUNKOWO przy każdym renderze ekranu manewru, a render woła m.in.
@@ -1601,6 +1624,24 @@ function renderFollowup(){
       ${alty}
       ${kroki.zakaz.length?`<div class="fuzakaz"><span class="eyebrow">${t("Czego ten ekran celowo nie proponuje","What this screen deliberately does not offer")}</span>
         <ul>${kroki.zakaz.map(z=>`<li><b>${t(AKCJE[z.akcja].pl, AKCJE[z.akcja].en)}</b> — ${t(z.pl, z.en)}</li>`).join("")}</ul></div>`:""}
+      ${/* ZAWROTY RESZTKOWE (ocena II V17/D5, źródło [H28] Özgirgin 2024). Karta wchodzi WYŁĄCZNIE
+            przy tym jednym wyniku, bo tylko tam ma desygnat, i mówi trzy rzeczy, których model
+            kontroli sam z siebie nie powie:
+              — SKUTECZNY manewr ≠ zdrowy pacjent: RD dotyczy 31–61 % chorych PO ustąpieniu oczopląsu;
+              — zjawisko jest samoograniczające (dni–tygodnie), więc brak poprawy dziś nie jest porażką;
+              — supresanty przedsionkowe SZKODZĄ, bo opóźniają kompensację ośrodkową.
+            Ostatnie zdanie jest tu najważniejsze klinicznie: to jedyne miejsce w aplikacji, gdzie
+            odradzamy LECZENIE, a nie manewr. Zakaz repozycji niesie już `kroki.zakaz` wyżej — ta
+            karta go nie powtarza, tylko wyjaśnia, co robić ZAMIAST. */""}
+      ${wybrany==="residual" ? `<div class="furd">
+        <span class="eyebrow">${t("Zawroty resztkowe — co o nich wiadomo","Residual dizziness — what is known")}</span>
+        <ul>
+          <li>${t("Skuteczna repozycja nie kończy choroby: zawroty resztkowe opisano u <b>31–61 %</b> chorych po ustąpieniu oczopląsu pozycyjnego.","Successful repositioning does not end the illness: residual dizziness is reported in <b>31–61 %</b> of patients after the positional nystagmus resolves.")}</li>
+          <li>${t("Zjawisko jest zwykle <b>samoograniczające</b> (dni–tygodnie). Samo poradnictwo obniża jego częstość do ok. 13 %.","The phenomenon is usually <b>self-limiting</b> (days to weeks). Counselling alone lowers its frequency to about 13 %.")}</li>
+          <li>${t("Leki tłumiące układ przedsionkowy <b>szkodzą</b> — opóźniają kompensację ośrodkową, czyli dokładnie ten proces, który znosi objaw.","Vestibular suppressants are <b>harmful</b> — they delay central compensation, the very process that resolves the symptom.")}</li>
+        </ul>
+        <div class="note">${t("Źródło: Özgirgin i wsp., Front Neurol 2024 [H28]. Aplikacja nie stawia rozpoznania i nie zleca leczenia — to tło do rozmowy z pacjentem.","Source: Özgirgin et al., Front Neurol 2024 [H28]. The app makes no diagnosis and prescribes no treatment — this is background for the conversation with the patient.")}</div>
+      </div>` : ""}
     </div>`;
   };
 
@@ -2272,6 +2313,13 @@ function renderGuide(){
             <div class="fliphint">${FLIP_ICO} ${t("widok frontalny","frontal view")}</div></div>
         </div></div>`
       : `<div class="panelbox" style="margin-bottom:12px"><h4>${t("Wędrówka otolitów","Otolith migration")} — ${CANALS[p.canal].label}</h4>${labyrinth(p.canal, {cupula:cupuloMech})}${gufoniNote}${basculeNote}</div>`}
+    ${(()=>{ const sv = symAt(_man, (_man && _man.segs && _man.segs[state.step] ? _man.segs[state.step].t0 : 0));
+        const d = sv.dizz < SYM_FLOOR ? 0 : Math.min(100, Math.round(sv.dizz*100)), np = Math.round(sv.naus);
+        return `<div class="panelbox" style="margin-bottom:12px"><h4>${t("Objawy pacjenta","Patient symptoms")}</h4>
+          <div class="symrow"><span class="symlab">${t("Zawrót","Vertigo")}</span><div class="symbar"><div class="symfill symfill--dizz" style="width:${d}%"></div></div><span class="symval">${sv.dizz < SYM_FLOOR ? "0.00" : sv.dizz.toFixed(2)}</span></div>
+          <div class="symrow"><span class="symlab">${t("Nudności","Nausea")}</span><div class="symbar"><div class="symfill symfill--naus" style="width:${np}%"></div></div><span class="symval">${np}%</span></div>
+          <div class="note" style="margin-top:8px">${t("Poglądowo, z tej samej fizyki, która napędza oczopląs: zawrót ~ bieżące odchylenie osklepka, nudności ~ skumulowana dawka od początku manewru. To NIE jest pomiar kliniczny.","Illustrative, from the same physics that drives the nystagmus: vertigo ~ the current cupular deflection, nausea ~ the cumulative dose since the maneuver began. This is NOT a clinical measurement.")}</div>
+        </div>`; })()}
     </div><div class="col col--ctl">
     <div class="card stepcard">
       <div class="stephead">
@@ -2569,6 +2617,26 @@ function renderDiag(){
       <div class="seg">${Object.keys(BLT_HISTORY).map(k=>`<button class="opt" aria-pressed="${(state.bltScenario||"textbook")===k}" onclick="setBltScenario('${k}')">${BLT_HISTORY[k].label}</button>`).join("")}</div>
       <div class="note" style="margin-top:10px">${t("To cecha PACJENTA, nie ustawienie testu: w kanalolitiazie kanału poziomego kierunek odpowiedzi zależy od położenia złogu na starcie. Bez znanej historii model nie rozstrzyga strony — i mówi to wprost, zamiast zgadywać.","This is a property of the PATIENT, not a test setting: in horizontal-canal canalithiasis the direction of the response depends on where the debris starts. Without a known history the model does not settle the side — and says so, instead of guessing.")}</div>
     </div>` : ""}
+    ${/* PŁASZCZYZNA ZEROWA (null point) — ocena II V12/D3. Kąt skrętu głowy, przy którym odpowiedź
+          ZNIKA, bo osklepek stoi prostopadle do grawitacji. Karta pokazywana WYŁĄCZNIE przy Rollu
+          i mechanizmie osklepkowym, bo tylko tam ma desygnat: w kanalolitiazie złóg wędruje i zera
+          nie ma. ZMIERZONE: kąt jest WSPÓLNY dla ciężkiego i lekkiego osklepka (±8,7°), a różni je
+          KIERUNEK po obu stronach zera — czyli sam null point lateralizuje, ale NIE odróżnia light
+          cupula od kupulolitiazy. Karta mówi obie rzeczy naraz, bo pokazanie tylko kąta uczyłoby,
+          że wystarczy go znaleźć. */""}
+    ${(state.testKey==="roll" && v==="cupulo") ? (()=>{
+      const yaw = nullYawOf(A); if (yaw == null) return "";
+      const przed = nullScan(A, yaw - 15), za = nullScan(A, yaw + 15);
+      const kier = (r)=> r.heavy.towardA ? t("ku uchu choremu","toward the affected ear") : t("ku uchu zdrowemu","toward the healthy ear");
+      return `<div class="card" style="margin-bottom:4px;${TON}">
+      <div class="label"><span class="eyebrow">${t("Płaszczyzna zerowa (null point)","Null plane (null point)")}</span><span class="hint">${t("kąt, przy którym odpowiedź znika","the angle at which the response vanishes")}</span></div>
+      <div class="fupods"><dl>
+        <dt>${t("Skręt głowy","Head rotation")}</dt><dd><b>${yaw > 0 ? "+" : ""}${yaw.toFixed(1)}°</b> ${t("od położenia na wznak","from supine")}</dd>
+        <dt>${t("Przed zerem","Before the null")}</dt><dd>${kier(przed)}</dd>
+        <dt>${t("Za zerem","Past the null")}</dt><dd>${kier(za)}</dd>
+      </dl></div>
+      <div class="note" style="margin-top:10px">${t("Zero jest WSPÓLNE dla ciężkiego i lekkiego osklepka — sam kąt lateralizuje, ale NIE odróżnia light cupula od kupulolitiazy. Rozdziela je dopiero to, w którą stronę bije oczopląs po obu stronach zera: przy light cupula kierunki są odwrócone względem kupulolitiazy.","The null is SHARED by the heavy and the light cupula — the angle alone lateralizes but does NOT distinguish light cupula from cupulolithiasis. What separates them is the direction of the nystagmus on either side of the null: with a light cupula the directions are reversed relative to cupulolithiasis.")}</div>
+    </div>`; })() : ""}
     ${/* WEJŚCIE DO OPISU OBSERWACJI — takie samo dla WSZYSTKICH czterech prób (Blok 8).
           Zastępuje dwustanowy przełącznik, który istniał wyłącznie przy Dix-Hallpike i pytał
           wprost o WNIOSEK („kanał tylny" / „kanał przedni"), a nie o to, co widać. Przy roll,
