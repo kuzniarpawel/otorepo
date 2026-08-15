@@ -2549,7 +2549,18 @@ function renderDiag(){
   // MĘCZLIWOŚĆ: przy powtórzeniach prowokacji Dix-Hallpike kanalolitiaza SŁABNIE, kupulolitiaza NIE (różnicowanie).
   // fatigue = ortogonalny mnożnik amplitudy (startNys/startDialNysIn); kupulo = 1 (nie wyczerpuje się).
   const dixRep = (isDix && !antMode) ? (state.dixRep||0) : 0;
-  const fatFactor = v==="cupulo" ? 1 : Vestibular.fatigueFactor(dixRep);
+  /* MECZLIWOSC LICZONA RAZ, NIGDY DWA RAZY (sesja ciagla D1/V10, opt-in — 2026-08-15).
+     `fatigueFactor(rep)` jest MNOZNIKIEM amplitudy dokladanym w renderze. Sesja ciagla liczy to samo
+     zjawisko EMERGENTNIE: zlog zostaje po prowokacji przesuniety (zmierzone: phi 173,0 po Dix), wiec
+     kolejna prowokacja zastaje go dalej od banki i odpowiedz slabnie SAMA.
+     ZMIERZONE, ze to DWA OPISY TEGO SAMEGO: sesja daje 0,621 / 0,400 / 0,266 dla powtorzen 1-3,
+     mnoznik 0,630 / 0,406 / 0,270 — zgodnosc ponizej 1,5 %. Zastosowanie OBU naraz podnosi
+     meczliwosc DO KWADRATU (0,391 zamiast 0,621 przy pierwszym powtorzeniu), czyli oczoplas gasnie
+     dwa razy szybciej niz mowi ktorykolwiek z modeli.
+     Dlatego mnoznik obowiazuje WYLACZNIE przy sesji WYLACZONEJ. Bramka MC1-MC3 w man:dom pilnuje
+     tego w obie strony — to nie komentarz do zapamietania, tylko warunek sprawdzalny. */
+  const sesjaOn = !!state.session;
+  const fatFactor = (v==="cupulo" || sesjaOn) ? 1 : Vestibular.fatigueFactor(dixRep);
   phases.forEach(ph=>{ if(ph.nys) ph.nys.fatigue = fatFactor; });
   state._diagPhaseNys = phases.map(p=>p.nys);   // do restartu animacji przy odwracaniu kart pozycji
   const vl=variantLabels(D.canal);
@@ -2578,7 +2589,7 @@ function renderDiag(){
   // Panel MĘCZLIWOŚCI (tylko Dix-Hallpike, tryb kanału tylnego): powtarzaj prowokację → kanalolitiaza słabnie,
   // kupulolitiaza nie (różnicowanie wprost). Amplituda z Vestibular.fatigueFactor(rep).
   const fatPanel = (isDix && !antMode) ? (()=>{
-    const rep=state.dixRep||0, cupulo=(v==="cupulo"), pct=Math.round((cupulo?1:Vestibular.fatigueFactor(rep))*100);
+    const rep=state.dixRep||0, cupulo=(v==="cupulo"), pct=Math.round(((cupulo||state.session)?1:Vestibular.fatigueFactor(rep))*100);   // przy sesji meczliwosc niesie FIZYKA, nie mnoznik
     const barCol = cupulo ? "#3a8f6f" : (pct<40 ? "var(--ant)" : "var(--primary)");
     const note = cupulo
       ? t("Kupulolitiaza: oczopląs NIE wyczerpuje się przy powtórzeniach — złóg przylega do osklepka.","Cupulolithiasis: the nystagmus does NOT fatigue on repetition — the debris adheres to the cupula.")
@@ -2602,7 +2613,19 @@ function renderDiag(){
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
-    <div class="card clininstr" style="margin-bottom:4px;${TON}" data-flow-anchor="test" tabindex="-1"><div class="instr">${D.intro}</div></div>
+    <div class="card clininstr" style="margin-bottom:4px;${TON}" data-flow-anchor="test" tabindex="-1" data-fatfactor="${fatFactor.toFixed(3)}"><div class="instr">${D.intro}</div></div>${/* data-fatfactor: EFEKTYWNY mnoznik meczliwosci wystawiony do DOM, zeby niezmiennik „meczliwosc liczona raz" byl MIERZALNY, a nie tylko opisany w komentarzu. Pierwsza wersja bramki MC2 czytala procent z karty meczliwosci — i przechodzila TAKZE po zepsuciu kodu, bo tamta karta ma wlasny warunek. Dowod failing-first to wykryl; bramka bez obserwowalnej wielkosci nie pilnuje niczego. */""}
+    ${/* SESJA CIAGLA (D1/V10) — przelacznik stoi TU, obok historii pozycyjnej, bo obie karty mowia
+          o tym samym: gdzie zlog byl PRZED ta proba. Roznica jest w tym, KTO to wie. Przy sesji
+          wylaczonej pyta aplikacja; przy wlaczonej — pamieta sama, bo przewleka stan zlogu miedzy
+          badaniami. Napis mowi wprost, ktora meczliwosc obowiazuje, bo to jedyna rzecz, ktora
+          klinicysta zobaczy inaczej od razu. */""}
+    <div class="obsrow" style="${TON}">
+      <div class="obslabel">${t("Sesja ciągła","Continuous session")}</div>
+      <button class="toggle" aria-pressed="${!!state.session}" onclick="przelaczSesje()">${state.session ? t("włączona","on") : t("wyłączona","off")}</button>
+      <div class="note" style="margin-top:8px">${state.session
+        ? t("Aplikacja pamięta, gdzie złóg został po poprzednim badaniu — kolejna prowokacja zastaje go tam, gdzie go zostawiła. Męczliwość wychodzi wtedy z FIZYKI, a nie z mnożnika.","The app remembers where the debris was left by the previous test — the next provocation finds it there. Fatigability then follows from the PHYSICS, not from a multiplier.")
+        : t("Każde badanie zaczyna się od spoczynku, a męczliwość powtórzeń niesie mnożnik. Włącz, żeby złóg pamiętał poprzednie próby tej wizyty.","Each test starts from rest and the fatigability of repeats comes from a multiplier. Turn on to let the debris remember the earlier tests of this visit.")}</div>
+    </div>
     ${/* HISTORIA POZYCYJNA PACJENTA (BLT_HISTORY, ocena II V5 — wododział R8). Pokazywana WYŁĄCZNIE
           przy próbach, dla których silnik naprawdę liczy z warunków początkowych (SCEN_DRIVEN);
           przy pozostałych przełącznik niczego by nie zmieniał i uczyłby, że fizyka jest losowa.

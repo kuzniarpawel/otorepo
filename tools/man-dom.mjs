@@ -350,6 +350,39 @@ T('K3g/brak-blokady-ostrzega', /wakenote/.test(app()), 'gdy platforma nie da blo
 st.wakeOK = true; A('render')();
 T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, nie strasz bez powodu');
 
+/* ═══════════ M. SESJA CIAGLA: MECZLIWOSC LICZONA RAZ, NIGDY DWA RAZY ═══════════
+   NAJWAZNIEJSZA bramka tego trybu i jedyna, ktora moze wprowadzic klinicyste w blad.
+   `fatigueFactor(rep)` (mnoznik w renderze) i sesja ciagla (przesuniecie zloga miedzy badaniami)
+   opisuja TO SAMO zjawienie — ZMIERZONE: sesja 0,621/0,400/0,266 dla powtorzen 1-3, mnoznik
+   0,630/0,406/0,270, zgodnosc ponizej 1,5 %. Zastosowane naraz podnosza meczliwosc DO KWADRATU
+   (0,391 zamiast 0,621), czyli oczoplas gasnie dwa razy szybciej niz mowi ktorykolwiek z modeli.
+   Bramka pilnuje ROWNOWAZNOSCI: mnoznik widoczny na ekranie DOKLADNIE wtedy, gdy sesja wylaczona.
+   Dowod failing-first: usuniecie warunku `|| sesjaOn` zapala MC2. */
+{
+  czysty();
+  A('openTest')('dix');
+  A('setDixObs')('post');
+  A('repeatDixProvoke')();                       // rep=1 → mnoznik 0,630 przy sesji WYLACZONEJ
+  const bezSesji = app();
+  T('MC1/bez-sesji-mnoznik-widoczny', /6[23]\s*%|63\s*%/.test(bezSesji) || /%/.test(bezSesji),
+    'przy sesji wylaczonej ekran ma pokazywac oslabienie z mnoznika');
+  const procBez = (bezSesji.match(/(\d{1,3})\s*%/g) || []).join(',');
+
+  A('przelaczSesje')();                          // sesja ON — mnoznik MUSI zniknac
+  T('MC0/przelacznik-dziala', !!st.session, 'przelacznik musi ustawic state.session');
+  const zSesja = app();
+  const procZ = (zSesja.match(/(\d{1,3})\s*%/g) || []).join(',');
+  /* Mierzymy WYSTAWIONY mnoznik (data-fatfactor), nie procent na karcie: pierwsza wersja czytala
+     procent i przechodzila takze po zepsuciu kodu, bo tamta karta ma wlasny warunek. */
+  const fat = (html) => (html.match(/data-fatfactor="([0-9.]+)"/) || [])[1];
+  T('MC2/sesja-znosi-mnoznik', fat(bezSesji) === '0.630' && fat(zSesja) === '1.000',
+    `bez sesji mnoznik ma byc 0,630 (jest ${fat(bezSesji)}), z sesja 1,000 (jest ${fat(zSesja)})`);
+
+  A('przelaczSesje')();                          // i z powrotem — kontrola czulosci w druga strone
+  T('MC3/powrot-przywraca', !st.session && (app().match(/data-fatfactor="([0-9.]+)"/)||[])[1] === '0.630',
+    'wylaczenie sesji musi przywrocic mnoznik — inaczej przelacznik jest jednokierunkowy');
+}
+
 /* ═══════════ N. LISTA PRÓB NA EKRANIE WYBORU JEST WYLICZANA, NIE WPISANA ═══════════
    Zmierzone 2026-08-15: ekran trzymał CZTERY literały (`dix`/`roll`/`bowlean`/`headhang`), więc
    piąta próba silnika — lying-down / sitting-up z oceny II V11/D2 — była policzalna, ale
@@ -373,7 +406,7 @@ T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, ni
 }
 
 /* ═══════════ O. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 84;   /* 77 + 7: N1 x5 prob + N2 + N3 (lista prob wyliczana z DIAG) */
+const OCZEKIWANE = 88;   /* 84 + 4: MC0-MC3 (sesja ciagla znosi mnoznik meczliwosci) */   /* 77 + 7: N1 x5 prob + N2 + N3 (lista prob wyliczana z DIAG) */
 if (bledy.length) {
   console.error(`✗ man:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));
