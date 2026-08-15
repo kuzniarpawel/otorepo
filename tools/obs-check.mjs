@@ -85,7 +85,7 @@ for (const proba of OBS_PROBY) {
       eq(`POK1/${proba}/${wyst}/bez-duplikatow`, new Set(klucze).size, klucze.length);
     }
   }
-  eq('POK2/suma-55', sumaInst, 55);
+  eq('POK2/suma-70', sumaInst, 70);
 }
 // POK3 — tablica stosowalności, wyczerpująco.
 for (const proba of OBS_PROBY) {

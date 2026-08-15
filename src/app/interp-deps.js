@@ -19,7 +19,13 @@ import { OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI, fazaDIAG, wartoscInstancji, spojn
 /* Predykcja modelu dla JEDNEJ kandydatury w JEDNEJ fazie, w konwencji `Vestibular.quickPhase`
    (+1 = ku PRAWEMU uchu pacjenta). `s` to siła — niesie stronę przy rollu, gdzie kierunek jej
    nie niesie. */
-export function fazaKandydatury(proba, fazaId, kand) {
+/* `scen` = SCENARIUSZ HISTORII POZYCYJNEJ (BLT_HISTORY, ocena II V5). Domyślnie `undefined`, co
+   w silniku znaczy „textbook" — czyli ścieżka bez scenariusza jest dokładnie dotychczasowa.
+   PO CO TO TU: od chwili, gdy ekran pozwala scenariusz PRZEŁĄCZYĆ, predykcja interpretacji musi
+   iść z tego samego stanu, co strzałka i napis na karcie. Inaczej wododział R8 rozjeżdża wnioski
+   z obrazem: karta rysuje kierunek dla „po nocy na boku chorym", a interpretacja eliminuje
+   kandydatury wg „textbook" — i żadna z dwóch stron ekranu nie wie, że kłamie ta druga. */
+export function fazaKandydatury(proba, fazaId, kand, scen) {
   const { side, variant } = kand;
   try {
     /* KANDYDATURA KANAŁU PRZEDNIEGO PRZY DIX-HALLPIKE'U NIE JEST W `DIAG.dix.phases` — aplikacja
@@ -33,7 +39,7 @@ export function fazaKandydatury(proba, fazaId, kand) {
       const n = nysFromGeom('anterior', side, variant, stepHeadQ('supineHang', badana === 'P' ? 45 : -45, 'up'));
       return { h: n.anat.h, v: n.anat.v, t: n.anat.t, s: n.strength == null ? 1 : n.strength };
     }
-    const f = DIAG[proba].phases(side, variant)[fazaDIAG(proba, fazaId, side)];
+    const f = DIAG[proba].phases(side, variant, scen)[fazaDIAG(proba, fazaId, side)];
     if (!f || !f.nys || !f.nys.anat) return null;
     return { h: f.nys.anat.h, v: f.nys.anat.v, t: f.nys.anat.t, s: f.nys.strength == null ? 1 : f.nys.strength };
   } catch (e) { return null; }
@@ -42,7 +48,12 @@ export function fazaKandydatury(proba, fazaId, kand) {
 export function interpDeps(stan) {
   return {
     fazyProby: (p) => OBS_FAZY[p],
-    faza: fazaKandydatury,
+    /* Scenariusz wchodzi DOMKNIĘCIEM, a nie kolejnym argumentem u wołających: `faza` jest wołana
+       w kilkunastu miejscach modelu, a wiedza o historii pacjenta należy do wstrzykiwacza — to on
+       jest jedynym miejscem, w którym stan aplikacji styka się z czystym modelem interpretacji.
+       Wstrzykiwacz bez stanu (wyrocznie, tor nauki) daje `undefined` → silnik bierze „textbook",
+       czyli ścieżka bez scenariusza zostaje bit-identyczna. */
+    faza: (proba, fazaId, kand) => fazaKandydatury(proba, fazaId, kand, stan && stan.bltScenario),
     wzorzec: (variant) => WZORCE_DYNAMIKI.find(z => z.id === (variant === 'cupulo' ? 'B' : 'A')),
     czytaj: (rek, klucz, ufaj) => wartoscInstancji(rek, klucz, { ufajNiewiarygodnym: !!ufaj }),
     spojnosc, flagi,

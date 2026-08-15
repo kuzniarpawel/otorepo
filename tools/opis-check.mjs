@@ -535,7 +535,7 @@ const TXT = (s) => tekst(raport(s, D(s)));
 }
 
 /* ═══════════ WYNIK ═══════════ */
-const OCZEKIWANE = 353;
+const OCZEKIWANE = 355;   // +2: dwie fazy proby lying-down (polozenie/siad) weszly do enumeracji opisu
 if (ok !== OCZEKIWANE) bledy.push(`LICZBA PRZYPADKÓW: ${ok}, oczekiwano ${OCZEKIWANE} — dopisz albo popraw zakres, ale nie po cichu`);
 if (bledy.length) { console.error(`✗ opis:check — ${bledy.length} błędów (${ok} przeszło)`); for (const b of bledy) console.error('  ' + b); process.exit(1); }
 console.log(`✓ opis:check — ${ok} przypadków`);

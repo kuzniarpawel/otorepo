@@ -1429,7 +1429,15 @@ function baranyClassify(canal, variant, side, antMode, mech){
       redflag:t("R11: apogeotropia ≠ kupulolitiaza — apo PRZEMIJAJĄCY i męczliwy to wolny złóg w ramieniu bańkowym; uporczywy i powtarzalny — prawdziwa kupulopatia. Faza „zdrowe ucho w dole” testu Roll często czyści ramię (test bywa samoleczący).","R11: apogeotropy ≠ cupulolithiasis — a TRANSIENT, fatiguing apo is free debris in the short (ampullar) arm; persistent and repeatable — true cupulopathy. The Roll test's healthy-ear-down phase often clears the arm (the test can be self-treating).") };
   if(antMode || canal==="anterior")
     return { ...emg, subtype:t("BPPV kanału przedniego","Anterior-canal BPPV"),
-      crit:[[t("Latencja","Latency"), variant==="cupulo"?t("brak","none"):t("po latencji","after a latency")],[t("Czas trwania","Duration"), variant==="cupulo"?t("uporczywy","persistent"):"< 1 min"],
+      /* DWA TWIERDZENIA O TYM SAMYM — ZESPOJONE 2026-08-15. Karta Bárány mówiła dla kanału
+         PRZEDNIEGO „< 1 min" i „po latencji", podczas gdy chip tej samej próby mówi (od V8/A6)
+         „Przemijający ≈1 min" i „Latencja krótka/nieobecna", a silnik mierzy napad 61,25 s —
+         czyli WIĘCEJ niż minuta. Trzy miejsca, dwie wersje prawdy; klinicysta widzi obie na
+         jednym ekranie. Bierzemy więc oba pola WPROST z `featsByVariant`, tego samego źródła,
+         które zasila chipy — i sprzeczność przestaje być możliwa strukturalnie, a nie przez
+         czujność. (Na main ta rozbieżność nadal jest — poprawka jest po stronie futureUI.) */
+      crit:[[t("Latencja","Latency"), variant==="cupulo"?t("brak","none"):featsByVariant("canalo","anterior")[0]],
+            [t("Czas trwania","Duration"), variant==="cupulo"?t("uporczywy","persistent"):featsByVariant("canalo","anterior")[1]],
             [t("Męczliwość","Fatigability"), variant==="cupulo"?t("nie","no"):t("tak","yes")],[t("Kierunek","Direction"),t("czysty downbeat (± śladowa torsja)","pure downbeat (± trace torsion)")],[t("Strona chora","Affected side"),t("niepewna z oczoplasu","uncertain from nystagmus")]],
       redflag:t("Izolowany downbeat pozycyjny — WYKLUCZ przyczynę ośrodkową (móżdżek, pogranicze czaszkowo-szyjne) przed leczeniem.","Isolated positional downbeat — RULE OUT a central cause (cerebellum, craniocervical junction) before treatment.") };
   if(canal==="posterior")

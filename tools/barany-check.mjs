@@ -15,7 +15,7 @@
  *
  * Uruchomienie: npm run barany:check
  */
-import { engineXi, xiEnvelope, provokeQ, featsByVariant, DIAG } from '../src/pose/maneuvers.js';
+import { engineXi, xiEnvelope, provokeQ, featsByVariant, DIAG, baranyClassify } from '../src/pose/maneuvers.js';
 import { Vestibular } from '../src/engine/vestibular.js';
 
 let ok = 0; const bledy = [];
@@ -135,6 +135,30 @@ for (const canal of KANALY) {
 }
 
 /* ============ Wynik ============ */
+/* ============ 5. JEDNO TWIERDZENIE O CZASIE, NIE DWA ============
+   Chip proby i karta klasyfikacji Barany mowia klinicyscie o TYM SAMYM — czasie trwania i latencji —
+   ale do 2026-08-15 mialy OSOBNE literaly. Dla kanalu PRZEDNIEGO rozjechaly sie naprawde: chip
+   (poprawiony w V8) mowil „≈1 min", karta nadal „< 1 min", a silnik mierzy 61,25 s, czyli WIECEJ niz
+   minute. Obie liczby staly na jednym ekranie. Karta bierze teraz oba pola z `featsByVariant`;
+   ta bramka pilnuje, ze nikt nie wpisze ich z powrotem recznie. */
+{
+  const wiersz = (cls, nazwa) => (cls.crit || []).find(x => new RegExp(nazwa, 'i').test(x[0]));
+  for (const canal of KANALY) {
+    const cls = baranyClassify(canal, 'canalo', 'P', canal === 'anterior');
+    const cz = wiersz(cls, 'Czas trwania|Duration'), lat = wiersz(cls, 'Latencja|Latency');
+    if (canal === 'anterior') {
+      T(`JT1/${canal}/czas-z-chipa`, cz && cz[1] === featsByVariant('canalo', canal)[1],
+        `karta Barany mowi „${cz && cz[1]}", a chip „${featsByVariant('canalo', canal)[1]}" — dwa zrodla jednego twierdzenia`);
+      T(`JT2/${canal}/latencja-z-chipa`, lat && lat[1] === featsByVariant('canalo', canal)[0],
+        `karta Barany mowi „${lat && lat[1]}", a chip „${featsByVariant('canalo', canal)[0]}"`);
+    }
+    // KONTROLA CZULOSCI w druga strone: karta NIE MOZE obiecywac „< 1 min" tam, gdzie pomiar to przekracza.
+    const m = zmierz(canal, 'P', false);
+    T(`JT3/${canal}/karta-nie-klamie`, !(m.tEnd > PROG && /<\s*1\s*min|<\s*60/.test(String(cz && cz[1]))),
+      `napad trwa ${m.tEnd.toFixed(2)} s, a karta Barany obiecuje „${cz && cz[1]}"`);
+  }
+}
+
 const razem = ok + bledy.length;
 console.log(`\nOTOREPO — czas trwania oczopląsu wobec kryteriów Bárány`);
 console.log(`przypadki     : ${razem}`);
@@ -148,7 +172,8 @@ if (bledy.length) {
   for (const b of bledy) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 44;   /* 41 + PM0 x3: chip czasu musi byc rozpoznany, nie przepuszczony */
+
+const OCZEKIWANE = 49;   /* 44 + 5: JT1/JT2 (przedni) + JT3 x3 kanaly — jedno zrodlo twierdzenia o czasie */
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

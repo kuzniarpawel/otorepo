@@ -350,8 +350,30 @@ T('K3g/brak-blokady-ostrzega', /wakenote/.test(app()), 'gdy platforma nie da blo
 st.wakeOK = true; A('render')();
 T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, nie strasz bez powodu');
 
+/* ═══════════ N. LISTA PRÓB NA EKRANIE WYBORU JEST WYLICZANA, NIE WPISANA ═══════════
+   Zmierzone 2026-08-15: ekran trzymał CZTERY literały (`dix`/`roll`/`bowlean`/`headhang`), więc
+   piąta próba silnika — lying-down / sitting-up z oceny II V11/D2 — była policzalna, ale
+   NIEOSIĄGALNA: model umiał ją rozstrzygnąć, a klinicysta nie miał jak do niej wejść. To ta sama
+   klasa usterki, której NIE ma po stronie manewrów, bo tam lista czyta CANALS[kanal].maneuvers —
+   i dlatego `zuma` oraz `kim` pojawiły się same. Bramka pilnuje RÓWNOWAŻNOŚCI w obie strony:
+   każda próba z DIAG ma przycisk, i nie ma przycisku bez próby w DIAG. Dowód failing-first:
+   przywrócenie literałów gubi `lyingdown` i zapala N1. */
+{
+  const { DIAG } = await import('../src/pose/maneuvers.js');
+  czysty();
+  A('setMode')('diag');
+  const html = app();
+  const wProbie = (k) => html.includes(`openTest('${k}')`);
+  const klucze = Object.keys(DIAG);
+  for (const k of klucze) T(`N1/${k}/ma-przycisk`, wProbie(k), `próba ${k} jest w DIAG, ale nie ma jej na ekranie wyboru`);
+  const ile = (html.match(/openTest\('/g) || []).length;
+  eq('N2/bez-nadmiaru', ile, klucze.length);
+  T('N3/lyingdown-osiagalny', wProbie('lyingdown'),
+    'lying-down/sitting-up musi być osiągalny — to on rozdziela stronę kanału poziomego przy kupulolitiazie');
+}
+
 /* ═══════════ O. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 77;
+const OCZEKIWANE = 84;   /* 77 + 7: N1 x5 prob + N2 + N3 (lista prob wyliczana z DIAG) */
 if (bledy.length) {
   console.error(`✗ man:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

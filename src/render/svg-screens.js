@@ -4,7 +4,7 @@ import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { SIDE, sideN, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, CANAL_OF, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
          computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds,
-         DIAG, variantLabels, recommend, baranyClassify } from '../pose/maneuvers.js';
+         DIAG, variantLabels, recommend, baranyClassify, BLT_HISTORY, SCEN_DRIVEN } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
          POWODY_NIEWIARYGODNOSCI,
@@ -1221,7 +1221,7 @@ function obsPorownanieHTML(rek, proba){
   const deps = {
     anat: (pr, fazaId)=>{
       try{
-        const fazy = DIAG[pr].phases(A, state.variant);
+        const fazy = DIAG[pr].phases(A, state.variant, state.bltScenario);   // scenariusz historii (V5) — ten sam, z którego liczy interpretacja
         const f = fazy[fazaDIAG(pr, fazaId, A)];
         return f && f.nys && f.nys.anat ? f.nys.anat : null;
       }catch(e){ return null; }
@@ -2124,8 +2124,14 @@ function renderSetup(){
       <div class="note" style="margin-top:14px">${t('Model „od pierwszych zasad": zmieniasz fizjologię (spoczynkowa aktywność błędników, wzmocnienie kanałów, kłaczek, integrator, otolity), a oczopląs samoistny, HIT i skew wynikają <b>same</b>. Wybierz scenariusz (przy neuronitis stronę ucha ustawisz przełącznikiem na karcie HINTS) albo tryb „Własny", by sterować każdym parametrem.','First-principles model: you change the physiology (resting labyrinth activity, canal gain, flocculus, integrator, otoliths), and spontaneous nystagmus, HIT and skew follow <b>on their own</b>. Choose a scenario (for neuritis, set the affected ear with the toggle on the HINTS card) or the Custom mode to control every parameter.')}</div>`;
   } else {
     const testOpt=k=>`<button class="opt" aria-pressed="${state.testKey===k}" onclick="openTest('${k}')">${DIAG[k].name}<small>${DIAG[k].tests}</small></button>`;
+    /* LISTA PRÓB JEST WYLICZANA Z DIAG, NIE WPISANA (2026-08-15). Do oceny II stały tu cztery
+       literały; silnik dostał w V11/D2 piątą próbę (lying-down / sitting-up) i ekran po prostu
+       o niej nie wiedział — model umiał ją policzyć, a klinicysta nie miał jak do niej wejść.
+       Ta sama zasada, dzięki której manewry `zuma` i `kim` weszły SAME: lista manewrów już czyta
+       CANALS[kanal].maneuvers. Dopisanie próby do DIAG wystarcza teraz, żeby pojawiła się na
+       ekranie; bramka niżej pilnuje, żeby literały nie wróciły. */
     body=`<div class="group"><div class="label"><span class="eyebrow">${t("Test diagnostyczny","Diagnostic test")}</span><span class="hint">${t("stronę ustalisz na karcie testu","set the side on the test card")}</span></div>
-        <div class="seg">${testOpt("dix")}${testOpt("roll")}${testOpt("bowlean")}${testOpt("headhang")}</div></div>`;
+        <div class="seg">${Object.keys(DIAG).map(testOpt).join("")}</div></div>`;
   }
   $("#app").innerHTML=`
     <div class="topbar">
@@ -2487,7 +2493,7 @@ function renderDiag(){
   const [tonVar, tonInk] = TON_KANALU[effCanal] || ["--primary","#03242E"];
   const TON = `--tone:var(${tonVar});--tone-ink:${tonInk}`;
   const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
-  const phases = D.phases(A,v).map(ph => antMode
+  const phases = D.phases(A,v,state.bltScenario).map(ph => antMode
     ? { ...ph, nys: nysFromGeom("anterior", effSide, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),   // TA SAMA poza co reszta aplikacji (było własne qSupineYaw z silnika)
         label: t("ku dołowi — czysty downbeat (kanał przedni)","downward — pure downbeat (anterior canal)"),
         note: t(`To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.`,`This is NOT the posterior canal. Downbeat in the Dix-Hallpike indicates the ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}) — the same plane as the posterior canal of the lower ear (LARP/RALP). Head positioning unchanged; only the observed nystagmus differs.`) }
@@ -2549,6 +2555,20 @@ function renderDiag(){
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
     <div class="card clininstr" style="margin-bottom:4px;${TON}" data-flow-anchor="test" tabindex="-1"><div class="instr">${D.intro}</div></div>
+    ${/* HISTORIA POZYCYJNA PACJENTA (BLT_HISTORY, ocena II V5 — wododział R8). Pokazywana WYŁĄCZNIE
+          przy próbach, dla których silnik naprawdę liczy z warunków początkowych (SCEN_DRIVEN);
+          przy pozostałych przełącznik niczego by nie zmieniał i uczyłby, że fizyka jest losowa.
+          Pytanie jest o PACJENTA, nie o test — dlatego stoi nad opisem obserwacji, a nie w karcie
+          fazy, i dlatego wszystkie karty kanału poziomego dzielą JEDNO pole stanu.
+          Kierunek Bow & Lean w kanalolitiazie HC zależy od tego, gdzie złóg był PRZED próbą; bez tej
+          odpowiedzi model UCZCIWIE nie rozstrzyga strony (zmierzone: żaden z 9 opisów kierunku jej
+          nie wyprowadza). Ten sam scenariusz zasila predykcję interpretacji (interp-deps), więc
+          strzałka, napis i wniosek nie mają jak się rozjechać. */""}
+    ${SCEN_DRIVEN.has(state.testKey) ? `<div class="card" style="margin-bottom:4px;${TON}">
+      <div class="label"><span class="eyebrow">${t("Historia pozycyjna","Positional history")}</span><span class="hint">${t("gdzie złóg był PRZED próbą","where the debris was BEFORE the test")}</span></div>
+      <div class="seg">${Object.keys(BLT_HISTORY).map(k=>`<button class="opt" aria-pressed="${(state.bltScenario||"textbook")===k}" onclick="setBltScenario('${k}')">${BLT_HISTORY[k].label}</button>`).join("")}</div>
+      <div class="note" style="margin-top:10px">${t("To cecha PACJENTA, nie ustawienie testu: w kanalolitiazie kanału poziomego kierunek odpowiedzi zależy od położenia złogu na starcie. Bez znanej historii model nie rozstrzyga strony — i mówi to wprost, zamiast zgadywać.","This is a property of the PATIENT, not a test setting: in horizontal-canal canalithiasis the direction of the response depends on where the debris starts. Without a known history the model does not settle the side — and says so, instead of guessing.")}</div>
+    </div>` : ""}
     ${/* WEJŚCIE DO OPISU OBSERWACJI — takie samo dla WSZYSTKICH czterech prób (Blok 8).
           Zastępuje dwustanowy przełącznik, który istniał wyłącznie przy Dix-Hallpike i pytał
           wprost o WNIOSEK („kanał tylny" / „kanał przedni"), a nie o to, co widać. Przy roll,

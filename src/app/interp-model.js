@@ -29,6 +29,7 @@ export const KANDYDATURY_PROBY = {
   roll: { kanaly: ['horizontal'] },
   bowlean: { kanaly: ['horizontal'] },
   headhang: { kanaly: ['anterior'] },
+  lyingdown: { kanaly: ['horizontal'] },   // ocena II V11/D2 — ta sama czwórka co roll/bowlean (kanał poziomy × strona × mechanizm)
 };
 
 export function kandydatury(proba) {

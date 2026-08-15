@@ -93,7 +93,7 @@ for (const v of ['p1', 'm1', 'zero']) {
     }
   }
   T('WYK1/rownowaznosc', zle === 0, `${zle} rozbieżności na ${sprawdzone} parach (cecha, kandydatura)`);
-  eq('WYK1/rozmiar', sprawdzone, 252);   // 4 proby x fazy x 3 cechy x 3 wartosci x kandydatury
+  eq('WYK1/rozmiar', sprawdzone, 324);   // +72: lying-down (2 fazy x 3 pola x 3 wartosci x 4 kandydatury), ocena II V11/D2   // 4 proby x fazy x 3 cechy x 3 wartosci x kandydatury
 }
 // WYK2 — pole `niewiarygodne` NIE wyklucza (kwarantanna wycisza WNIOSEK).
 {
@@ -225,7 +225,11 @@ for (const v of ['p1', 'm1', 'zero']) {
    klinicystę do badania, które nic nie wniesie. */
 {
   const bl = interpretuj(rek('bowlean', { 'poziom#bow': 'p1', 'poziom#lean': 'm1' }), 'bowlean', DEPS);
-  eq('SUG1/bowlean-rozdziela-roll', sugerowaneProby(bl.pozostale, 'bowlean', DEPS), ['roll']);
+  /* Po dopisaniu lying-down (V11/D2) dwuznacznosc Bow & Lean rozdziela JUZ NIE TYLKO roll.
+     To nie jest osłabienie bramki, tylko ZMIERZONY przyrost mozliwosci: lying-down jest —
+     jak Bow & Lean — proba lateralizacyjna kanalu poziomego, wiec ma prawo rozdzielac te same
+     kandydatury. Bramka nadal wymaga, zeby sugestia BYLA i zeby naprawde rozdzielala (SUG5). */
+  eq('SUG1/bowlean-rozdziela-roll', sugerowaneProby(bl.pozostale, 'bowlean', DEPS), ['roll', 'lyingdown']);
 
   // Head-hang: strony nie ustala ŻADNA próba w tym modelu (kanał przedni to wszędzie czysty
   // downbeat). Pusta lista jest tu TWIERDZENIEM, nie luką — i musi taka zostać.

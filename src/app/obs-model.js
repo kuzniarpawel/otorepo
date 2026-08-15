@@ -32,7 +32,6 @@
  * z flow-model.js). Bramka: npm run obs:check.
  */
 
-export const OBS_PROBY = ['dix', 'roll', 'bowlean', 'headhang'];
 
 /* FAZY BEZWZGLĘDNE — nigdy „chore/zdrowe".
    PUŁAPKA ZMIERZONA W SILNIKU: `DIAG.roll.phases(A,v)` kończy się `return [mk(A), mk(H)]`
@@ -45,7 +44,21 @@ export const OBS_FAZY = {
   headhang: ['jedyna'],
   roll: ['prawoWDole', 'lewoWDole'],
   bowlean: ['bow', 'lean'],
+  /* LYING-DOWN / SITTING-UP (ocena II V11/D2, dopisane 2026-08-15). Fazy są NIEZALEŻNE OD STRONY —
+     jak przy Bow & Lean, a inaczej niż przy Rollu, gdzie „prawe ucho w dole" znaczy inny indeks
+     modelu zależnie od tego, które ucho jest chore. Tu obie pozycje są te same dla obu stron,
+     rozdziela je wyłącznie KIERUNEK odpowiedzi. */
+  lyingdown: ['polozenie', 'siad'],
 };
+
+/* LISTA PRÓB JEST WYPROWADZANA Z `OBS_FAZY`, NIE WPISANA (poprawione 2026-08-15).
+   Do tej daty stały tu cztery literały, a `OBS_FAZY` niżej miało własne cztery — dwa źródła tej
+   samej prawdy, które rozjechały się przy pierwszej okazji: silnik dostał w ocenie II V11/D2 piątą
+   próbę (lying-down / sitting-up), ekran ją rysował, a formularz obserwacji i interpretacja o niej
+   nie wiedziały. Objaw był mylący: cztery scenariusze historii pozycyjnej dawały dla tej próby
+   IDENTYCZNE odciski predykcji — nie dlatego, że historia nie ma znaczenia, tylko dlatego, że
+   porównywane listy były PUSTE. Teraz dopisanie próby do OBS_FAZY wystarcza. */
+export const OBS_PROBY = Object.keys(OBS_FAZY);
 
 export const OBS_FAZY_OPIS = {
   jedyna: { pl: 'w pozycji prowokacyjnej', en: 'in the provoking position' },
@@ -53,6 +66,8 @@ export const OBS_FAZY_OPIS = {
   lewoWDole: { pl: 'lewe ucho pacjenta w dole', en: "patient's left ear down" },
   bow: { pl: 'skłon głowy w przód (bow)', en: 'head bent forward (bow)' },
   lean: { pl: 'odchylenie głowy w tył (lean)', en: 'head leaned back (lean)' },
+  polozenie: { pl: 'po położeniu się na plecach', en: 'after lying down' },
+  siad: { pl: 'po posadzeniu z leżenia', en: 'after sitting up' },
 };
 
 /* Znaczniki wiarygodności per POLE (dokument użytkownika: „możliwość oznaczenia obserwacji
@@ -397,6 +412,8 @@ export function zmiennoscKierunku(rekord) {
 export function fazaDIAG(proba, fazaId, side) {
   if (proba === 'dix' || proba === 'headhang') return 0;
   if (proba === 'bowlean') return fazaId === 'bow' ? 0 : 1;
+  // lying-down: pozycje te same dla obu stron, więc indeks NIE zależy od `side` (jak bowlean, nie jak roll)
+  if (proba === 'lyingdown') return fazaId === 'polozenie' ? 0 : 1;
   if (proba === 'roll') {
     if (fazaId === 'prawoWDole') return side === 'P' ? 0 : 1;
     if (fazaId === 'lewoWDole') return side === 'P' ? 1 : 0;
