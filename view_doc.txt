@@ -7,7 +7,11 @@
  Zasada: jedno źródło prawdy 3D wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
          Ścieżka SVG jest w pełni offline (bez three.js); ścieżka 3D dokłada three.js jako
          leniwie ładowany chunk (Etap 3–5) — DOMYŚLNA gdy WebGL dostępny, SVG = fallback.
- Ostatnia aktualizacja: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN;
+ Ostatnia aktualizacja: 2026-08-14 (przeglad po ocenie II silnikow: twierdzenia ILOSCIOWE przeliczone
+        na nowym silniku — cap 12 s zniknal na rzecz derivedHold, luk kanalu jest ARC_SPAN per kanal
+        zamiast wspolnego 178°, CUP_WEAK 0,6 -> 0,45, chipy Barany per kanal; nazwane dwie rzeczy,
+        ktore wymiana silnika po cichu zmienila: sufit 24 s wedrowki otolitu i martwy prog phiToFrac)
+ Poprzednio: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN;
         panel otolitowy SVV & VEMP w HINTS)
 ==========================================================================
 
@@ -22,7 +26,10 @@ Karta w renderDiag (svg-screens.js), pod kartą mechanizmu, nad zaleceniem lecze
 segmentem „Obwodowy (BPPV) ↔ Ośrodkowy (CPN)" (state.diagCentral, handler toggleDiagCentral; render pełny).
  - OBWODOWY (domyślny): etykieta podtypu z pose/maneuvers.js:baranyClassify(kanał,wariant,strona,antMode) —
    subtype + „zespół ustalony / wyłaniający się" (established/emerging) + chipy cech (Latencja / Czas trwania /
-   Męczliwość / Kierunek / Strona chora). Czysta funkcja kliniczna (jak recommend/variantLabels) — SYNTEZA konwencji
+   Męczliwość / Kierunek / Strona chora). CHIPY SĄ PER KANAŁ (ocena II): kanał PRZEDNI ma własne teksty
+   „Latencja krótka/nieobecna" i „Przemijający (≈1 min)" zamiast wspólnych „1–5 s"/„< 60 s", bo w silniku
+   jego złóg startuje dociśnięty do osklepka, a napad trwa 61,25 s — czyli PONAD próg Bárány. Wspólny chip
+   kłamałby o własnej fizyce; bramka barany:check porównuje pomiar z treścią chipa, a nie z jedną liczbą. Czysta funkcja kliniczna (jak recommend/variantLabels) — SYNTEZA konwencji
    już zakodowanych w DIAG (latNote/features), ZERO wpływu na fizykę. Golden łapie ten widok (deterministyczny).
  - OŚRODKOWY (po kliknięciu): blok .redflag z czerwonymi flagami CPN (bez latencji / uporczywy / niemęczliwy /
    czysto pionowy — zwł. downbeat — lub czysto skrętny / kierunek spoza kanału / pozycja neutralna / objawy neuro),
@@ -54,15 +61,32 @@ Silnik przyjmuje `size` ("small"|"medium"|"big"; medium=r1=baza) skalujący dyna
  - HOLDY ZALEŻNE OD ROZMIARU (małe = wolno osiadające → dłuższe utrzymanie pozycji):
      • klinicznie zalecany hold kroku: sizedSeconds() mnoży `st.seconds` (small ×1.6, siatka 15 s;
        medium/big bez zmian) w genPlan() — stąd suwak/licznik startują z dłuższą wartością dla small.
-     • hold DYNAMIKI (maneuverTimeline): cap holdu 12 s → dla small round(12/r²)≈20 s, by wolny złóg
-       zdążył osiągnąć φ=178° (wyjście). Zweryfikowane: small z dłuższymi holdami CZYŚCI Epley/Semont/
-       Yacovino/Lempert (bez nich Semont/Yacovino utykały na φ≈157°/128°). medium/big: cap 12 s (regresja).
+     • hold DYNAMIKI (maneuverTimeline): PO OCENIE II cap 12 s NIE ISTNIEJE — hold jest WYPROWADZANY
+       (`derivedHold`: najmniejsza para {h, u} z HOLD_STEPS/UNTIMED_STEPS, przy której silnik wyprowadza
+       złóg do łagiewki, ze strażnikiem tauP × 1,1). Rozmiar nadal działa, ale przez fizykę, nie przez
+       wzór na cap. ZMIERZONE tHold per krok (strona P): Semont small 15/60/60/15 · medium 6/45/45/6 ·
+       big 6/30/30/6; Yacovino small 9/45/45/9 · medium i big 6/30/30/6; Bascule small 6/75/75/75/6 ·
+       big 6/30/30/30/6. Epley i Lempert wychodzą tym samym holdem we wszystkich rozmiarach.
+       Dawne obcięcie do 12 s było głębokie i NIERÓWNE (semont 20 % zaleconego holdu, gufoniGeo 30 %,
+       lempert 44 %, epley 53 %, yacovino 77 %), więc „czy manewr czyści" mierzyło częściowo
+       agresywność obcięcia, a nie geometrię kanału.
      • NOTA w UI (tylko small): „wydłużono zalecany czas utrzymania pozycji" z cytatem literaturowym.
- - ANIMACJA OTOLITU wg rozmiaru (setupGuideAnim): DUR przejścia ∝ 1/r² (prędkość osiadania Stokesa ∝ r²)
-   → small ~2630 ms (wolniej), medium 1600 ms (bez zmian), big ~878 ms (szybciej); clamp [800,3000].
+ - ANIMACJA OTOLITU (setupGuideAnim): DUR bierze się dziś Z OKNA OCZOPLĄSU, nie ze wzoru na rozmiar —
+   `guideNysSeconds` × 1000, widełki [1200, 24000] ms. Zamysł: wędrówka złogu i oczopląs mają kończyć się
+   RAZEM, bo na flipkarcie widać obie strony. Wzór 1/r² (small ~2630 ms · medium 1600 ms · big ~878 ms,
+   widełki [800,3000]) został WYŁĄCZNIE jako awaryjna ścieżka dla kroków BEZ oczopląsu. Bascule krok 1
+   ma stałe 3600 ms (przyleganie → odklejanie → start wędrówki jako jedno ciągłe okno).
+   ZMIERZONE PO OCENIE II (2026-08-14) — obietnica „obie strony kończą się razem" NIE jest dotrzymana:
+   tEnd przekracza sufit 24 s w 122 ze 156 kroków z oczopląsem (78 %), a najdłuższy krok ma 74,60 s.
+   Dawniej hold dynamiki był obcięty capem 12 s, więc tEnd nigdy nie sięgał widełek i sufit był tylko
+   zabezpieczeniem skrajności; dziś jest regułą. W tych krokach wędrówka kończy się PIERWSZA, a oczopląs
+   gra dalej. Podniesienie sufitu to decyzja o UI (animacja do ~75 s), więc liczba czeka na rozstrzygnięcie
+   kliniczne — dokument mówi, jak jest, a nie jak było.
    Intensywność/latencja oczopląsu (startNys/startDialNys, obwiednia manStepEnv) wynikają wprost z
    ξ(t) skalowanego rozmiarem — bez osobnego kodu.
- - Uwaga spójności: sizeRadius() w warstwie UI musi pozostać ZGODNE z SIZE_R w module Vestibular.
+ - Uwaga spójności — ZAŁATWIONA: sizeRadius() nie jest już kopią, tylko delegacją
+   (`const sizeRadius = s => Vestibular.sizeR(s)`), więc dwie tabele nie mają jak się rozjechać.
+   Zmierzone: small 0,78 · medium 1 · big 1,35 po obu stronach.
  CYTAT (uzasadnienie dłuższych holdów dla drobnych/wolno osiadających złogów):
    Hain TC, Squires TM, Stone HA (2005). „Clinical implications of a mathematical model of BPPV."
    Ann N Y Acad Sci 1039:384-394. (uzasadnienie utrzymania pozycji ~30 s w CRP; wolne osiadanie otoconiów).
@@ -137,6 +161,15 @@ hintsHIT, refreshHints*). Wejście domyślne: łagodny neuronitis górny P (nerv
    śladowy skew łagiewkowy (<SKEW_CENTRAL, nerw górny) pokazywany jako OBWODOWY, nie „ośrodek".
 Fizyka i literatura: engine_doc „ETAP 7 / NEUROANATOMIA" [H15]-[H21].
 
+--- CO SILNIK JUŻ UMIE, A TEGO EKRANU NIE DOTYKA (stan po ocenie II NeuroVOR, 2026-08-14) ---
+Ocena II (N1-N7) rozszerzyła NeuroVOR do 50 kluczy; warstwa UI woła 20. Różnica NIE jest luką
+w dokumentacji, tylko FAKTEM o zakresie ekranu — i lepiej ją nazwać, niż zostawić czytelnikowi
+wrażenie, że symulator pokazuje wszystko, co model liczy. NIEPODPIĘTE do UI są m.in.:
+  hsn (oczopląs po potrząsaniu głową) · shimp (odwrócona reguła sakady: BRAK sakady = ubytek) ·
+  smoothPursuit · dva (ostrość dynamiczna) · posture · compensatePair · timeline (oś dni) ·
+  alexanderGrade (stopnie I-III) · vhitPlane · caloricBattery · directionChanging.
+Wpięcie któregokolwiek z nich to osobna decyzja projektowa — ten dokument opisuje ekran, jaki jest.
+
 --------------------------------------------------------------------------
  Scene3D  (etap A)
 --------------------------------------------------------------------------
@@ -205,7 +238,9 @@ screenAngleCW(p) -> stopnie
      kamera-obserwator sylwetki. KIERUNKI OCZOPLĄSU BEZ ZMIAN (q-literały testów nietknięte; regresja czysta).
  [x] Mechanizm diagnostyczny (otolit w kanale) napędzony REALNYM φ(t) z silnika (simulateCanalith):
      cząstka po latencji wędruje wg grawitacji i zatrzymuje się (Dix/Yacovino→wyjście; Roll→ku bańce),
-     bez sztucznej pętli. Kupulolitiaza: osklepek odgina się wg ξ(t) (uporczywie). φ→ułamek ścieżki = φ/360.
+     bez sztucznej pętli. Kupulolitiaza: osklepek odgina się wg ξ(t) (uporczywie). φ→ułamek ścieżki liczy
+     się dziś Z ŁUKU KANAŁU (ARC_SPAN, zmierzony z IE-Map: poziomy 267,3° · przedni 281,1° · tylny 318,8°),
+     a nie ze wspólnego 360°/178°.
  [ ] Labirynt REPOZYCYJNY (Wędrówka otolitów) wciąż na interpolacji 'progress' — wierne φ(t) dla CAŁEGO
      manewru wymaga KWATERNIONOWEJ OSI CZASU MANEWRU (orientacja głowy per krok = orientacja ciała ∘ skręt).
      Próba offline: szybki model orientacji NIE wyprowadza cząstki (Epley krok 'na bok, nos w dół' cofa φ)
@@ -219,7 +254,11 @@ screenAngleCW(p) -> stopnie
      Surowe φ jest front-loaded i dla kanału poziomego idzie ku bańce → schemat zamiast surowego φ/krok.
      Gufoni-apo (brak wyjścia): ruch ku bańce wg silnika + notka 'konwersja'.
      Ścieżki CANAL_PATHS: start = BAŃKA (φ≈0), koniec = WYJŚCIE (pionowe → odnoga wspólna→łagiewka; poziomy
-     → wprost do łagiewki), φ≈180≈1.0. Schemat anatomiczny: bańki z grzebieniami+kopuły, odnoga wspólna
+     → wprost do łagiewki). Wyjście leży dziś na ARC_SPAN kanału (267,3–318,8°), nie na φ≈180 — `phiToFrac`
+     dostał argument `canal` (poprawka 2026-08-14). Gałąź, która go używa (manewr BEZ ekspulsji, mechanizm
+     inny niż kupulo), jest przy obecnym silniku NIEOSIĄGALNA — zmierzone 0 z 54 przypadków manewr × strona
+     × rozmiar — więc była to mina, a nie widoczna usterka: gdyby któryś manewr przestał czyścić kanał,
+     schemat pokazywałby złóg „w łagiewce" już na 56–67 % łuku. Schemat anatomiczny: bańki z grzebieniami+kopuły, odnoga wspólna
      (widełki kan. pionowych → pień do łagiewki), komora łagiewki. viewBox PRZYCIĘTY do treści (38 35 205 164,
      bez pustych marginesów) + SVG skalowany do 80% (inline style width:80%, wyśrodkowany); stałe LAB_* w svg-screens.js.
      Gufoni-apo (brak wyjścia) → notka 'manewr konwersji' w panelu labiryntu (renderGuide).
@@ -689,7 +728,7 @@ CO SPRAWDZONO I POTWIERDZONO:
    ampullofugal pobudza) — POPRAWNE. Znak ξ (flow=gc·G.exc·dφ) koduje pobudzenie/hamowanie spójnie.
 4. Asymetria Ewalda II (hamowanie ×0.45): wpięta w manStepEnv (magnituda oczopląsu manewru) ORAZ w diagnostyce
    (nysFromGeom tryb "asym"). dynNystagmus odwraca też KIERUNEK przy ξ<0 (reguła Ewalda — hamowanie odwraca).
-5. KUPULOLITIAZA słabsza od kanalolitiazy (Vestibular.CUP_WEAK=0.6): nysFromGeom mnoży `strength` wariantu "cupulo"
+5. KUPULOLITIAZA słabsza od kanalolitiazy (Vestibular.CUP_WEAK=0.45; do oceny II 0.6): nysFromGeom mnoży `strength` wariantu "cupulo"
    przez CUP_WEAK → oczy/dial na karcie mechanizmu (tył flipa #mechflip) biją z mniejszą amplitudą niż "canalo",
    ale z flagą `persistent` (uporczywy). TEN SAM współczynnik skaluje ξ w simulateCupulolith (silnik). Golden
    NIETKNIĘTY: diagnostyka snapszotowana przy variant=canalo (domyślny), więc ścieżka "cupulo" poza wzorcem.
@@ -830,6 +869,17 @@ POPRAWKA (tylko poza/czas Yacovino — NIE tknięto geometrii kanału / nystagmu
 WERYFIKACJA: φ→178 exited dla P/L × small/medium/big; pozostałe manewry bez zmian (gufoniApo φ=69 exited=false
   = poprawne, to konwersja bez ewakuacji); bridge/view/golden zielone; wizualnie 4 kroki zgodne z markerami.
 INWARIANT audyt #1 zachowany: gHead(headQ)==gravity == 2.5e-16 dla wszystkich kroków.
+KOREKTA PO OCENIE II SILNIKA (2026-08-14 — raport wyżej zostaje jako zapis tamtej sesji):
+  • `dynHold=22` NIE ISTNIEJE. Zniknął razem z capem 12 s (2026-08-05), bo hold jest teraz WYPROWADZANY
+    (`derivedHold`). Yacovino dostaje dziś tHold 9/45/45/9 s dla małego złogu i 6/30/30/6 s dla średniego
+    i dużego — bez żadnego ręcznego override'u.
+  • φ=178 NIE JEST progiem wyjścia. Łuk jest ZMIERZONY per kanał (ARC_SPAN, IE-Map): kanał przedni 281,1°.
+    Yacovino wyprowadza złóg do φ=281,1 (exited) dla obu stron i wszystkich trzech rozmiarów.
+  • Liczby φ 173 / 145→118→82 / 157 / 128 z raportu opisują STARY, wspólny łuk 178° i mają dziś wartość
+    wyłącznie historyczną — pokazują, JAK znaleziono błąd, a nie gdzie leży złóg.
+  • Sam wniosek kliniczny raportu OSTAŁ SIĘ i jest dziś wyprowadzany, a nie założony: ekspulsja z kanału
+    przedniego wymaga brody na klatce (patrz engine_doc, B6+B8 — jedno prawo komory), czyli manewr
+    Yacovino jest w tym modelu fizycznie nośny.
 
 ===== Etap 5: 3D DOMYŚLNY renderer + SVG fallback (finał migracji) =====
 webglAvailable() [svg-screens.js, cache _webglOK]: tworzy canvas, próbuje getContext('webgl'/'experimental-webgl'),

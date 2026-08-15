@@ -106,6 +106,7 @@ export const POZYCJE_CIALA = {
   sit:            { pl: 'siad',                              en: 'sitting' },
   sitFront:       { pl: 'siad twarzą do badającego',         en: 'sitting, facing the examiner' },
   supineFlat:     { pl: 'na plecach',                        en: 'supine' },
+  supineFlex:     { pl: 'na plecach, głowa przygięta ~30°',  en: 'supine, head flexed ~30°' },   // Roll, Zuma e Maia, Kim — dodane przy V10-V18
   supineHang:     { pl: 'na plecach, głowa poza krawędzią',  en: 'supine, head beyond the edge' },
   supineDeepHang: { pl: 'na plecach, głowa głęboko odchylona', en: 'supine, head hanging deeply' },
   supineChin:     { pl: 'na plecach, broda do klatki',       en: 'supine, chin to chest' },

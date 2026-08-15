@@ -7,6 +7,7 @@ import { HINTS_PRESETS } from './actions.js';
 const state={
   mode:"treat", screen:"start",   // Blok 4: wejsciem jest ekran oparty na CELU, nie wybor modulu. Golden bez zmian: domOracle ustawia screen jawnie dla kazdego scenariusza (snapshot.mjs:305).
   side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:null, dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
+  mechanism:null,   // D4/V16: mechanizm w obrębie fenotypu (null = klasyczny: geo→canalo, apo→cupulo; HC także "light"/"short"); jam celowo POZA (stan obturacyjny, nie mechanizm)
   /* Bow & Lean: scenariusz HISTORII POZYCYJNEJ (klucz BLT_HISTORY, ocena II V5). Kierunek próby
      zależy od tego, gdzie złóg był PRZED nią — `bltPhases` bierze stąd warunki początkowe.
      Bez tego pola silnik leci na wewnętrznym fallbacku „textbook" i wododział jest nieosiągalny.
@@ -14,8 +15,11 @@ const state={
      które futureUI przepisał) — pole jest gotowe, ekran do niego dojdzie osobno. */
   bltScenario:"textbook",
   diagCentral:false,   // przełącznik karty klasyfikacji: false=obwodowy (BPPV, klasyfikacja Bárány) · true=ośrodkowy (CPN)
+  neuroOverlay:null,   // N7/D6: pacjent NeuroVOR nalozony TONICZNIE na ekrany diagnostyki pozycyjnej (null=wyl) — demonstracja AVS vs t-EVS (GRACE-3)
   diagPhaseFace:0,     // odsłonięta faza karty pozycji (Bow&Lean/Roll): 0=przód/bow · 1=tył/lean. W STANIE, by przetrwać re-render (np. przełącznik 3D nie przewraca karty)
   size:"medium",                                   // rozmiar/gęstość złogu otoconiów (small|medium|big) → dynamika + holdy + animacja
+  session:null,   // D1/V10: sesja ciągła — null=OFF (ścieżka bit-identyczna); ON: stan JEDNEGO złogu
+                  // {canal,side,size, phi(null=spoczynek naturalny/wyczyszczony),xi,bondFrac,stuck,exited,inCrus, rep, acts:[{kind,t}], tSession}
   plan:null, step:0,
   total:0, elapsedMs:0, running:false,
   _manKey:null, _manSim:null,

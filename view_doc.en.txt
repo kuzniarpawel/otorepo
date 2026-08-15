@@ -8,7 +8,11 @@
  Principle: a single 3D source of truth shared with the engine (head frame x=right, y=up, z=nose).
          The SVG path is fully offline (no three.js); the 3D path adds three.js as a
          lazy-loaded chunk (Stage 3–5) — DEFAULT when WebGL is available, SVG = fallback.
- Last update: 2026-07-15 (Bárány/ICVD classification card + central differentiation CPN;
+ Last update: 2026-08-14 (review after the engine assessments II: QUANTITATIVE claims re-measured against
+        the new engine — the 12 s cap gave way to derivedHold, the canal arc is ARC_SPAN per canal instead
+        of a shared 178°, CUP_WEAK 0.6 -> 0.45, Bárány chips per canal; two things the engine swap changed
+        silently are now named: the 24 s ceiling of the otolith journey and the dead phiToFrac threshold)
+ Previously: 2026-07-15 (Bárány/ICVD classification card + central differentiation CPN;
         otolithic SVV & VEMP panel in HINTS)
 ==========================================================================
 
@@ -23,7 +27,11 @@ Card in renderDiag (svg-screens.js), below the mechanism card, above the treatme
 segment "Peripheral (BPPV) ↔ Central (CPN)" (state.diagCentral, handler toggleDiagCentral; full render).
  - PERIPHERAL (default): subtype label from pose/maneuvers.js:baranyClassify(canal,variant,side,antMode) —
    subtype + "established / emerging syndrome" (established/emerging) + feature chips (Latency / Duration /
-   Fatigability / Direction / Affected side). Pure clinical function (like recommend/variantLabels) — a SYNTHESIS of conventions
+   Fatigability / Direction / Affected side). THE CHIPS ARE PER CANAL (assessment II): the ANTERIOR canal has
+   its own texts "Short/absent latency" and "Transient (≈1 min)" instead of the shared "1-5 s"/"< 60 s",
+   because in the engine its debris starts pressed against the cupula and the attack lasts 61.25 s — i.e.
+   ABOVE the Bárány threshold. A shared chip would contradict the engine's own physics; the barany:check gate
+   compares the measurement with the chip's wording, not with one number for all canals. Pure clinical function (like recommend/variantLabels) — a SYNTHESIS of conventions
    already encoded in DIAG (latNote/features), ZERO effect on physics. Golden captures this view (deterministic).
  - CENTRAL (after click): a .redflag block with the CPN red flags (no latency / persistent / non-fatigable /
    purely vertical — especially downbeat — or purely torsional / direction outside any canal / neutral position / neuro symptoms),
@@ -55,15 +63,32 @@ The engine accepts `size` ("small"|"medium"|"big"; medium=r1=baseline) scaling t
  - SIZE-DEPENDENT HOLDS (small = slow settling → longer position hold):
      • clinically recommended step hold: sizedSeconds() multiplies `st.seconds` (small ×1.6, 15 s grid;
        medium/big unchanged) in genPlan() — hence the slider/counter start from a longer value for small.
-     • DYNAMICS hold (maneuverTimeline): hold cap 12 s → for small round(12/r²)≈20 s, so the slow debris
-       has time to reach φ=178° (exit). Verified: small with longer holds CLEARS Epley/Semont/
-       Yacovino/Lempert (without them Semont/Yacovino stalled at φ≈157°/128°). medium/big: cap 12 s (regression).
+     • DYNAMICS hold (maneuverTimeline): AFTER ASSESSMENT II the 12 s cap DOES NOT EXIST — the hold is
+       DERIVED (`derivedHold`: the smallest pair {h, u} from HOLD_STEPS/UNTIMED_STEPS at which the engine
+       carries the debris out to the utricle, with a tauP x 1.1 guard). Size still matters, but through the
+       physics rather than a cap formula. MEASURED tHold per step (side R): Semont small 15/60/60/15 ·
+       medium 6/45/45/6 · big 6/30/30/6; Yacovino small 9/45/45/9 · medium and big 6/30/30/6; Bascule small
+       6/75/75/75/6 · big 6/30/30/30/6. Epley and Lempert clear with the same hold at every size.
+       The old 12 s truncation was deep and UNEVEN (semont 20 % of the recommended hold, gufoniGeo 30 %,
+       lempert 44 %, epley 53 %, yacovino 77 %), so "does the maneuver clear the canal" partly measured the
+       aggressiveness of the truncation rather than canal geometry.
      • NOTE in the UI (small only): "the recommended position-hold time was extended" with a literature citation.
- - OTOLITH ANIMATION by size (setupGuideAnim): transition DUR ∝ 1/r² (Stokes settling velocity ∝ r²)
-   → small ~2630 ms (slower), medium 1600 ms (unchanged), big ~878 ms (faster); clamp [800,3000].
+ - OTOLITH ANIMATION (setupGuideAnim): DUR now comes FROM THE NYSTAGMUS WINDOW, not from a size formula —
+   `guideNysSeconds` × 1000, clamped to [1200, 24000] ms. The intent: the debris journey and the nystagmus
+   should end TOGETHER, because the flip card shows both sides. The 1/r² formula (small ~2630 ms · medium
+   1600 ms · big ~878 ms, clamp [800,3000]) survives ONLY as the fallback path for steps WITHOUT nystagmus.
+   Bascule step 1 has a fixed 3600 ms (adhesion → detachment → start of the journey as one continuous window).
+   MEASURED AFTER ASSESSMENT II (2026-08-14) — the promise "both sides end together" is NOT kept: tEnd
+   exceeds the 24 s ceiling in 122 of 156 steps with nystagmus (78 %), and the longest step is 74.60 s.
+   Previously the dynamics hold was truncated by the 12 s cap, so tEnd never reached the clamp and the ceiling
+   was only a guard against extremes; today it is the rule. In those steps the journey finishes FIRST while
+   the nystagmus keeps playing. Raising the ceiling is a UI decision (an animation up to ~75 s), so the number
+   awaits a clinical call — this document states how it IS, not how it was.
    Nystagmus intensity/latency (startNys/startDialNys, manStepEnv envelope) follow directly from
    ξ(t) scaled by size — with no separate code.
- - Consistency note: sizeRadius() in the UI layer must stay CONSISTENT with SIZE_R in the Vestibular module.
+ - Consistency note — SETTLED: sizeRadius() is no longer a copy but a delegation
+   (`const sizeRadius = s => Vestibular.sizeR(s)`), so the two tables have no way to drift apart.
+   Measured: small 0.78 · medium 1 · big 1.35 on both sides.
  CITATION (rationale for longer holds for fine/slow-settling debris):
    Hain TC, Squires TM, Stone HA (2005). "Clinical implications of a mathematical model of BPPV."
    Ann N Y Acad Sci 1039:384-394. (rationale for holding the position ~30 s in CRP; slow settling of otoconia).
@@ -138,6 +163,15 @@ hintsHIT, refreshHints*). Default entry: mild superior neuritis R (nerveBranchLe
    a trace utricular skew (<SKEW_CENTRAL, superior nerve) shown as PERIPHERAL, not "central".
 Physics and literature: engine_doc "STAGE 7 / NEUROANATOMY" [H15]-[H21].
 
+--- WHAT THE ENGINE ALREADY DOES THAT THIS SCREEN NEVER TOUCHES (state after NeuroVOR assessment II, 2026-08-14) ---
+Assessment II (N1-N7) grew NeuroVOR to 50 keys; the UI layer calls 20. The difference is NOT a documentation
+gap but a FACT about the screen's scope — and it is better named than left to suggest that the simulator shows
+everything the model computes. Not wired to the UI, among others:
+  hsn (head-shaking nystagmus) · shimp (the inverted saccade rule: ABSENCE of a saccade = deficit) ·
+  smoothPursuit · dva (dynamic visual acuity) · posture · compensatePair · timeline (a day axis) ·
+  alexanderGrade (grades I-III) · vhitPlane · caloricBattery · directionChanging.
+Wiring any of these up is a separate design decision — this document describes the screen as it is.
+
 --------------------------------------------------------------------------
  Scene3D  (stage A)
 --------------------------------------------------------------------------
@@ -206,7 +240,9 @@ screenAngleCW(p) -> degrees
      silhouette camera-observer. NYSTAGMUS DIRECTIONS UNCHANGED (the test q-literals untouched; a clean regression).
  [x] Diagnostic mechanism (otolith in the canal) driven by the REAL φ(t) from the engine (simulateCanalith):
      the particle, after the latency, travels by gravity and stops (Dix/Yacovino→exit; Roll→toward the cupula),
-     without an artificial loop. Cupulolithiasis: the cupula deflects per ξ(t) (persistently). φ→fraction of the path = φ/360.
+     without an artificial loop. Cupulolithiasis: the cupula deflects per ξ(t) (persistently). φ→fraction of the
+     path is now computed FROM THE CANAL'S ARC (ARC_SPAN, measured from IE-Map: horizontal 267.3° · anterior
+     281.1° · posterior 318.8°), not from a shared 360°/178°.
  [ ] The REPOSITIONING labyrinth (Otolith journey) is still on 'progress' interpolation — a faithful φ(t) for the WHOLE
      maneuver requires a QUATERNION MANEUVER TIMELINE (head orientation per step = body orientation ∘ neck twist).
      Offline attempt: a fast orientation model does NOT expel the particle (Epley step 'to the side, nose down' reverses φ)
@@ -220,7 +256,11 @@ screenAngleCW(p) -> degrees
      The raw φ is front-loaded and for the horizontal canal goes toward the cupula → a schematic instead of raw φ/step.
      Gufoni-apo (no exit): movement toward the cupula per the engine + a 'conversion' note.
      CANAL_PATHS paths: start = CUPULA (φ≈0), end = EXIT (vertical → common crus→utricle; horizontal
-     → straight to the utricle), φ≈180≈1.0. Anatomical schematic: ampullae with cristae+cupulae, common crus
+     → straight to the utricle). The exit now sits at the canal's ARC_SPAN (267.3-318.8°), not at φ≈180 —
+     `phiToFrac` gained a `canal` argument (fix of 2026-08-14). The branch that uses it (a maneuver WITHOUT
+     expulsion, mechanism other than cupulo) is UNREACHABLE with the current engine — measured 0 of 54 cases
+     across maneuver × side × size — so this was a landmine rather than a visible defect: if some maneuver
+     stopped clearing the canal, the schematic would show the debris "in the utricle" at 56-67 % of the arc. Anatomical schematic: ampullae with cristae+cupulae, common crus
      (the fork of the vertical canals → a trunk to the utricle), utricle chamber. viewBox CROPPED to the content (38 35 205 164,
      no empty margins) + SVG scaled to 80% (inline style width:80%, centered); the LAB_* constants in svg-screens.js.
      Gufoni-apo (no exit) → a 'conversion maneuver' note in the labyrinth panel (renderGuide).
@@ -694,7 +734,7 @@ WHAT WAS CHECKED AND CONFIRMED:
    ampullofugal excites) — CORRECT. The sign of ξ (flow=gc·G.exc·dφ) encodes excitation/inhibition consistently.
 4. Ewald II asymmetry (inhibition ×0.45): wired into manStepEnv (maneuver nystagmus magnitude) AND into diagnostics
    (nysFromGeom "asym" mode). dynNystagmus also reverses the DIRECTION when ξ<0 (Ewald's rule — inhibition reverses).
-5. CUPULOLITHIASIS weaker than canalithiasis (Vestibular.CUP_WEAK=0.6): nysFromGeom multiplies the "cupulo" variant's `strength`
+5. CUPULOLITHIASIS weaker than canalithiasis (Vestibular.CUP_WEAK=0.45; 0.6 before assessment II): nysFromGeom multiplies the "cupulo" variant's `strength`
    by CUP_WEAK → the eyes/dial on the mechanism card (the back of the #mechflip flip) beat with a smaller amplitude than "canalo",
    but with a `persistent` flag. THE SAME coefficient scales ξ in simulateCupulolith (engine). Golden
    UNTOUCHED: diagnostics is snapshotted at variant=canalo (default), so the "cupulo" path is outside the pattern.
@@ -835,6 +875,17 @@ CORRECTION (only the Yacovino pose/time — the canal geometry / nystagmus / HIN
 VERIFICATION: φ→178 exited for R/L × small/medium/big; the other maneuvers unchanged (gufoniApo φ=69 exited=false
   = correct, it is a conversion without evacuation); bridge/view/golden green; visually the 4 steps consistent with the markers.
 INVARIANT audit #1 preserved: gHead(headQ)==gravity == 2.5e-16 for all steps.
+CORRECTION AFTER ENGINE ASSESSMENT II (2026-08-14 — the report above stays as the record of that session):
+  • `dynHold=22` DOES NOT EXIST. It went away together with the 12 s cap (2026-08-05), because the hold is
+    now DERIVED (`derivedHold`). Yacovino today gets tHold 9/45/45/9 s for small debris and 6/30/30/6 s for
+    medium and big — with no manual override at all.
+  • φ=178 IS NOT THE EXIT THRESHOLD. The arc is MEASURED per canal (ARC_SPAN, IE-Map): anterior canal 281.1°.
+    Yacovino carries the debris out to φ=281.1 (exited) for both sides and all three sizes.
+  • The φ numbers 173 / 145→118→82 / 157 / 128 in the report describe the OLD shared 178° arc and today have
+    only historical value — they show HOW the bug was found, not where the debris sits.
+  • The report's clinical conclusion SURVIVED and is now derived rather than assumed: expelling debris from
+    the anterior canal requires chin-to-chest (see engine_doc, B6+B8 — one chamber law), i.e. the Yacovino
+    maneuver is physically sound in this model.
 
 ===== Stage 5: 3D DEFAULT renderer + SVG fallback (migration finale) =====
 webglAvailable() [svg-screens.js, cache _webglOK]: creates a canvas, tries getContext('webgl'/'experimental-webgl'),

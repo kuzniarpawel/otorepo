@@ -380,7 +380,7 @@ eq('CE7/cel-glownego-w-wyniku', nastepneKroki('konwersja', stanPo('epley', { tes
 
 /* ═══════════ N. LICZNOŚĆ ═══════════
    Zapadka na cichy ubytek przypadków — ta sama, która w torze VOG złapała spadek 253→228. */
-const OCZEKIWANE = 177;
+const OCZEKIWANE = 191;   // 191 = 177 + 14: enumeracje chodza po manewrach kanalu poziomego, ktory dostal zuma i kim (ocena II V18)
 if (bledy.length) {
   console.error(`✗ fu:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

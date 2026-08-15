@@ -444,7 +444,7 @@ const KLUCZE = new Map(BIBLIOTEKA.map(p => [p.id, kluczPrzypadku(p, D(p))]));
    uporczywy downbeat przestal miec bronioną odpowiedz obwodowa (kanal przedni) i zamiast niej
    podnosi flage — czyli model przestal tlumaczyc klasyczna ceche osrodkowa przez BPPV.
    To zmiana POZADANA, nie utrata zakresu. */
-const OCZEKIWANE = 575;
+const OCZEKIWANE = 600;   // 600 = 575 + 25: klucz lekcji liczy sie z modelu, wiec nowe manewry i proba lyingdown weszly do enumeracji
 if (bledy.length) {
   console.error(`✗ nauka:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

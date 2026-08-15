@@ -246,7 +246,7 @@ eq('K1a/tylny-kanalo', zalecany(), 'Epley');
 A('setVariant')('cupulo');
 eq('K1b/mechanizm-zmienia-manewr', zalecany(), 'Semont');
 A('pickCanal')('horizontal');
-eq('K1c/kanal-zmienia-manewr', zalecany(), 'Gufoni (apogeotropowy)');
+eq('K1c/kanal-zmienia-manewr', zalecany(), 'Gufoni (Appiani, apogeotropowy)');   // V18 dopisal atrybucje
 A('setVariant')('canalo');
 eq('K1d/z-powrotem-geotropowy', zalecany(), 'Lempert (BBQ)');
 A('pickSide')('L');

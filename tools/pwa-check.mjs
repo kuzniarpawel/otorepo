@@ -370,7 +370,7 @@ const CZEKA = (nad = {}) => ({ ...CZYSTY(), aktualizacja: 'czeka', ...nad });
 }
 
 /* ═══════════ WYNIK ═══════════ */
-const OCZEKIWANE = 235;   /* 234 + bramka F2b (ogonki w napisie o offline) */   // +1: bramka F6 biegnie RAZ NA PLIK w src/, a doszedl src/app/flow-deps.js (scena ekranu startowego)
+const OCZEKIWANE = 236;   /* 236 = 235 + 1: skan zrodla objal nowy modul silnika spv-bridge.js (ocena II V13/D6) */   // +1: bramka F6 biegnie RAZ NA PLIK w src/, a doszedl src/app/flow-deps.js (scena ekranu startowego)
 if (ok !== OCZEKIWANE) bledy.push(`LICZBA PRZYPADKÓW: ${ok}, oczekiwano ${OCZEKIWANE} — dopisz albo popraw zakres, ale nie po cichu`);
 if (bledy.length) { console.error(`✗ pwa:check — ${bledy.length} błędów (${ok} przeszło)`); for (const b of bledy) console.error('  ' + b); process.exit(1); }
 console.log(`✓ pwa:check — ${ok} przypadków`);

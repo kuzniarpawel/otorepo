@@ -222,7 +222,10 @@ export const Vestibular = (()=>{
   // stymulacja chorego kanału w danej orientacji głowy
   function position({canal, side, variant, q}){
     reqCanal(canal, side, "position");
-    if(variant!=null && variant!=="cupulo" && variant!=="canalo") throw new TypeError('position: nieznany variant "'+variant+'" (dozwolone: "cupulo"|"canalo"|brak)');
+    if(variant!=null && variant!=="cupulo" && variant!=="canalo" && variant!=="light") throw new TypeError('position: nieznany variant "'+variant+'" (dozwolone: "cupulo"|"canalo"|"light"|brak)');
+    // variant="light" (ocena II, D3/V12): light cupula — WYŁĄCZNIE kanał poziomy (jednostka opisana
+    // dla HC; furtka wąska świadomie — TypeError zamiast cichej ekstrapolacji na kanały pionowe).
+    if(variant==="light" && canal!=="horizontal") throw new TypeError('position: variant "light" (light cupula) jest zdefiniowany tylko dla canal="horizontal" (podano "'+canal+'")');
     q=reqQuat(q, "position");            // waliduje (skończony, dł. 4) i normalizuje
     const g=gHead(q), G=CANAL_GEOM[canal][side];
     // napęd styczny TAM, GDZIE ZŁÓG LEŻY — ta sama wielkość, którą całkuje simulateCanalith,
@@ -241,9 +244,13 @@ export const Vestibular = (()=>{
     //   osklepku dawałby PC silny UPORCZYWY bodziec w siadzie (0.708) — sprzeczny z kliniką; w Dix oba
     //   punkty dają ten sam znak (magnituda przy osklepku 2.35× mniejsza). AC: restPhi=3=CUPULA_DEG,
     //   więc obie reguły są tożsame z konstrukcji.
-    const cupHC = (variant==="cupulo" && canal==="horizontal");
+    const cupHC = ((variant==="cupulo" || variant==="light") && canal==="horizontal");
     const drive=dot3(g, tangAt(G, cupHC ? CUPULA_DEG : restPhi(canal, side)));   // >0 = ampullofugalny (rosnące φ)
     let proj=G.exc*drive;                                   // exc: +1 pionowe (Ewald III), −1 poziomy (Ewald II)
+    // LIGHT CUPULA (ocena II, D3/V12): lekki osklepek = ODWRÓCONY znak wyporu — ten sam punkt oceny
+    // (przy osklepku), to samo zero rzutu (null point WSPÓLNY z apo, ku uchu CHOREMU: +8.7° supineFlex /
+    // +6.9° supineFlat), przeciwny kierunek DCPN po obu stronach zera (geotropowy trwały).
+    if(variant==="light") proj=-proj;
     const excited = proj>0;                                 // JEDNA reguła Ewalda — inwersja cupulo-HC zbędna po przeniesieniu punktu oceny
     const q0=quickPhase(canal, side), s=excited?1:-1, mag=Math.abs(proj);
     return {excited, mag, h:q0.h*s, v:q0.v*s, t:q0.t*s};
@@ -310,6 +317,8 @@ export const Vestibular = (()=>{
     if(!seg || typeof seg!=="object") throw new TypeError(where+": timeline["+i+"] musi być obiektem {q, tTrans, tHold}");
     for(const k of ["tTrans","tHold"])
       if(seg[k]!=null && (!(seg[k]>=0) || !isFinite(seg[k]))) throw new RangeError(where+": timeline["+i+"]."+k+" musi być liczbą ≥ 0 (podano "+seg[k]+")");
+    for(const k of ["neckPitch","neckYaw"])   // B8 (V14a): kąt karku segmentu [°] — opcjonalny, skończony
+      if(seg[k]!=null && !Number.isFinite(seg[k])) throw new RangeError(where+": timeline["+i+"]."+k+" musi być liczbą skończoną (podano "+seg[k]+")");
     return reqQuat(seg.q, where+" timeline["+i+"]");
   }
   // symulacja kanalolitiazy: timeline = [{q, tTrans, tHold}, ...]
@@ -330,11 +339,15 @@ export const Vestibular = (()=>{
   //     ekspulsję Epleya PRZY SIADANIU + oczopląs liberacyjny. Droga „BEZWŁADNOŚCIOWA" jest
   //     strukturalnie MARTWA: człon dośrodkowy a=ω×(ω×d) przy d=[±EAR_X, L>0, 0] ma a[1]≤0, więc
   //     inercja może −f[1] tylko OBNIŻAĆ (rzut Semonta 180°/0.8 s: +1.18 g KU CZUBKOWI — hamuje;
-  //     zmierzone maksimum wzrostu −f[1] po 7 manewrach × 2 strony: 0.00000). Usunięte 2026-08-05
+  //     KOREKTA V14: z ramieniem B8 (z≠0) twierdzenie z algebraicznego staje się numerycznym —
+  //     zmierzone maksimum dodatniego wkładu po 7 manewrach × 2 strony: ≤0.0012 g przy progu 0.6,
+  //     ekspulsja bezwładnościowa POZOSTAJE martwa). Usunięte 2026-08-05
   //     proxy (kąt > crusFling ORAZ tempo > crusFlingRate) zastąpiła grawitacja w bez-timerowym
   //     siadzie, NIE inercja — manewry czyszczą dalej 12/12, bo inercja robi swoje w napędzie
   //     WZDŁUŻ kanału (Semont z pivot=neck nie dowozi złogu do odnogi).
-  //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie ~EXPEL_DUR → TRANSJENT oczopląsu w kierunku
+  //   Ekspulsja przesuwa φ: (phiExit−crusArc)→phiExit w czasie WYNIKAJĄCYM z siły i tauP (B6/V14c:
+  //   1.95–9.90 s w realnych manewrach; final.expelDur; dawna stała EXPEL_DUR=1.2 s usunięta z ruchu)
+  //   → TRANSJENT oczopląsu w kierunku
   //   ampullofugalnym (TEN SAM znak co pierwotny) = liberacyjny/potwierdzający. Uzasadnienie liczbowe i
   //   walidacja per manewr → engine_doc.txt. Kanał poziomy: bez komory (koniec nieampułkowy uchodzi wprost).
   /* ---- SIŁA WŁAŚCIWA f = g − a (zasada równoważności) [R7, 2026-08-05] ----
@@ -358,6 +371,25 @@ export const Vestibular = (()=>{
        earX 0.075 m — półrozstaw międzyuszny: błędnik NIE leży na osi czaszki, więc sam skręt szyi
                       też daje (mały) człon dośrodkowy. Bez tego skręt głowy byłby zupełnie bezwładny. */
   const G0=9.81, LEVER={body:0.75, neck:0.12}, EAR_X=0.075;
+  // B8 (ocena II, V14a): RAMIĘ Z POZY. Podział skalibrowanego LEVER.body=0.75 (kotwica R7) na człon
+  // TUŁOWIOWY biodra→C7 i SZYJNY C7→błędnik — celowo RÓŻNICĄ, nie literałem: suma wraca do kalibracji
+  // bitowo (ARM_TRUNK+LEVER.neck===LEVER.body). Antropometria 50c (Drillis & Contini 1966): krętarz
+  // ≈0.53H, C7 ≈0.86H, tragion ≈0.93H → człon szyjny ≈0.12 m (trafia w LEVER.neck), suma anatomiczna
+  // ≈0.70 vs modelowe 0.75 (ramię EFEKTYWNE — oś przejścia body to kozetka, poniżej krętarza). STATUS
+  // podziału: założenie SPOZA kodu, „granica źródła" jak ramka IE-Map; zmienność osobnicza ±10%.
+  const ARM_TRUNK = LEVER.body - LEVER.neck;   // 0.63 m biodra→C7
+  // ramię oś-obrotu→błędnik w RAMCE GŁOWY, zależne od kąta KARKU (neckP=pitch−trunk, neckY=yaw+dyaw [°]).
+  // pivot="neck": ramię kark→błędnik jest wektorem SZTYWNYM głowy — poprawne dla każdego kąta, bez zmian.
+  // pivot="body" i kark w linii (neckP=0): DOKŁADNIE stary wektor (literalna gałąź — bit-tożsamość
+  // strukturalna). Kark zgięty: człon tułowiowy obraca się WZGLĘDEM głowy odwrotnością rotacji karku
+  // Rx(ν)∘Ry(Y) — dokładnie rozkład POSE_SPEC (headQ = torso ∘ kark; tożsamość zweryfikowana 2.2e-16).
+  function armVec(side, pivot, neckP, neckY){
+    const ex = side==="P" ? EAR_X : -EAR_X;
+    if(pivot!=="body" || !neckP) return [ex, LEVER[pivot]||LEVER.body, 0];
+    const qn = qmul(qaxis([1,0,0], neckP), qaxis([0,1,0], neckY||0));
+    const tr = rotv(qconj(qn), [0, ARM_TRUNK, 0]);
+    return [ex+tr[0], LEVER.neck+tr[1], tr[2]];
+  }
   function angVel(qPrev, sq, tTrans){        // ω [rad/s] w RAMCE GŁOWY (oś obrotu względnego jest w niej stała)
     if(!(tTrans>0)) return [0,0,0];
     let r=qmul(qconj(qPrev), sq); if(r[0]<0) r=[-r[0],-r[1],-r[2],-r[3]];
@@ -365,13 +397,27 @@ export const Vestibular = (()=>{
     const w=2*Math.atan2(v, r[0])/tTrans;
     return [w*r[1]/v, w*r[2]/v, w*r[3]/v];
   }
-  function specForce(g, wv, side, pivot){    // f = g − a/g0, a = ω × (ω × d) [dośrodkowe]
+  function specForce(g, wv, side, pivot, neckP, neckY){   // f = g − a/g0, a = ω × (ω × d) [dośrodkowe]
     if(!wv[0] && !wv[1] && !wv[2]) return g;
-    const d=[(side==="P"?EAR_X:-EAR_X), LEVER[pivot]||LEVER.body, 0];   // oś obrotu → błędnik, w ramce głowy
+    const d=armVec(side, pivot, neckP, neckY);              // oś obrotu → błędnik, w ramce głowy (B8: z kąta karku)
     const c1=cross3(wv,d), a=cross3(wv,c1);
     return [g[0]-a[0]/G0, g[1]-a[1]/G0, g[2]-a[2]/G0];
   }
-  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
+  // D10/V15: SEGMENT BAŃKOWY (short arm) — ramię po łagiewkowej stronie osklepka, φ∈[SA_MIN, 3°).
+  // Styczna = tangAt PRZEDŁUŻONE na φ<3° (ten sam okrąg PCA tej samej rekonstrukcji IE-Map; ciągłość
+  // w 3° zmierzona: 0.000°). SA_MIN = −(360−ARC_SPAN)/2 = ŚRODEK luki przedsionkowej (punkt
+  // równoodległy od obu ujść; dalej „przewód" leżałby bliżej ujścia niebańkowego = już w łagiewce).
+  // STATUS: wyprowadzone z ARC_SPAN (ta sama rekonstrukcja), ale PODZIAŁ luki to założenie spoza
+  // pomiaru — granica źródła jak ARM_TRUNK/B8 (atlas Q0..Q4 STARTUJE w bańce, punktów za osklepkiem
+  // nie niesie — kierunek z ekstrapolacji okręgu, nie z surowych punktów). Wnioski fenotypowe są na
+  // głębokość startu NIEczułe (sonda: te same znaki dla φ₀ −10/−20/−32).
+  const SA_MIN={posterior:-20.6, anterior:-39.45, horizontal:-46.35};
+  // Kontakt złogu DOCIŚNIĘTEGO do osklepka (φ=3°, napęd ku bańce): cel statyczny ξ*=CUP_WEAK·exc·drv
+  // — TA SAMA formuła co kupulo-HC w position() (jedno źródło prawdy, zero nowych stałych). TYLKO HC:
+  // dla pionowych docisk = CISZA (ten sam wybór fenomenologiczny co „pionowe zostają na restPhi" —
+  // kontaktowy cel PC dawałby trwały upbeat 0.319 w siadzie, sprzeczny z kliniką).
+  const SA_CONTACT={posterior:false, anterior:false, horizontal:true};
+  function simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0, bond0=null, arm="long", jam=null, dt=0.05, tauP=6.5, tauC=5, gc=1.6, phiExit=null, fStat=0.04, adh=0.2, size="medium", rep=0, fatTau=2.0, fatFloor=0.06, crusArc=12, crusGrav=0.6}){
     reqCanal(canal, side, "simulateCanalith");
     if(phiExit==null) phiExit=ARC_SPAN[canal];   // domyślnie ZMIERZONY zakres łuku per kanał (było: globalne 178°)
     if(!(phiExit>0) || !isFinite(phiExit)) throw new RangeError("simulateCanalith: phiExit musi być liczbą > 0 (podano "+phiExit+")");
@@ -390,12 +436,37 @@ export const Vestibular = (()=>{
     if(!(crusGrav>0) || !isFinite(crusGrav)) throw new RangeError("simulateCanalith: crusGrav musi być liczbą > 0 (podano "+crusGrav+")");
     // WALIDACJA phi0 (ocena II, A9/V3) — do tej pory NaN dawał po cichu martwą symulację, start za pcrus
     // był snapowany WSTECZ, a phi0>phiExit wskrzeszał złóg spoza kanału z pełnym transjentem liberacyjnym.
-    if(phi0!=null && (!isFinite(phi0) || phi0<CUPULA_DEG || phi0>phiExit))
+    // WALIDACJE arm/jam (ocena II, D10/V15). arm="short" wybiera się JAWNIE (ujemne phi0 przy "long"
+    // dalej rzuca — cicha literówka nie staje się chorobą); walidacja "long" zostaje BAJT-W-BAJT.
+    if(arm!=="long" && arm!=="short") throw new RangeError('simulateCanalith: arm musi być "long"|"short" (podano '+arm+')');
+    if(arm==="short"){
+      if(phi0==null) throw new RangeError('simulateCanalith: arm="short" wymaga jawnego phi0 w ['+SA_MIN[canal]+', '+CUPULA_DEG+') — segment bańkowy nie ma kanonicznego spoczynku (restPhi jest łukiem długim)');
+      if(!isFinite(phi0) || phi0<SA_MIN[canal] || phi0>=CUPULA_DEG)
+        throw new RangeError('simulateCanalith: arm="short": phi0 musi być w ['+SA_MIN[canal]+', '+CUPULA_DEG+') (podano '+phi0+')');
+      if(jam!=null) throw new RangeError('simulateCanalith: jam w ramieniu bańkowym poza modelem (brak zwężenia po stronie bańkowej) — jam wymaga arm="long"');
+    } else if(phi0!=null && (!isFinite(phi0) || phi0<CUPULA_DEG || phi0>phiExit))
       throw new RangeError("simulateCanalith: phi0 musi być w ["+CUPULA_DEG+", phiExit="+phiExit+"] (podano "+phi0+")");
+    if(jam!=null){
+      if(typeof jam!=="object") throw new TypeError("simulateCanalith: jam musi być obiektem {phi, xi, thrG?, dir?}");
+      if(!isFinite(jam.phi) || jam.phi<CUPULA_DEG || jam.phi>phiExit) throw new RangeError("simulateCanalith: jam.phi musi być w ["+CUPULA_DEG+", "+phiExit+"] (podano "+jam.phi+")");
+      if(typeof jam.xi!=="number" || !isFinite(jam.xi) || jam.xi===0) throw new RangeError("simulateCanalith: jam.xi musi być NIEZEROWĄ liczbą skończoną (znak = kierunek oczopląsu sprzed zaklinowania; podano "+jam.xi+")");
+      if(jam.thrG!=null && (!(jam.thrG>0)||!isFinite(jam.thrG))) throw new RangeError("simulateCanalith: jam.thrG musi być liczbą > 0 (podano "+jam.thrG+")");
+      if(jam.dir!=null && jam.dir!==1 && jam.dir!==-1) throw new RangeError("simulateCanalith: jam.dir musi być 1 lub -1 (podano "+jam.dir+")");
+      if(jam.bond!=null && (!(jam.bond>0)||!isFinite(jam.bond))) throw new RangeError("simulateCanalith: jam.bond musi być liczbą > 0 (podano "+jam.bond+")");
+    }
+    // WALIDACJA bond0/xi0 (ocena II, D1/V10) — parametry ŁAŃCUCHOWANIA SESJI. bond0 = UŁAMEK pełnej
+    // adhezji [0..1] — jednostka NIEZALEŻNA od size (final.bond jest w adh·r: łańcuchowanie surowego
+    // bond między przebiegami o różnym size przekłamywało stan wiązania — bondFrac przenosi się czysto).
+    // xi0 = wychylenie osklepka na starcie (przenosi ogon ξ poprzedniego przebiegu: łańcuch ≡ jedna
+    // timeline BIT-W-BIT — na tej tożsamości stoi rozstrzygnięcie B7).
+    if(bond0!=null && (!(bond0>=0 && bond0<=1) || !isFinite(bond0)))
+      throw new RangeError("simulateCanalith: bond0 musi być ułamkiem pełnej adhezji w [0, 1] (podano "+bond0+")");
+    if(typeof xi0!=="number" || !isFinite(xi0))
+      throw new RangeError("simulateCanalith: xi0 musi być liczbą skończoną (podano "+xi0+")");
     const r=sizeR(size); tauP=tauP/(r*r); gc=gc*r*r*r*fatigueFactor(rep,{fatTau,fatFloor}); adh=adh*r;   // skalowanie rozmiarem cząstki (SIZE_R) × męczliwość (dyspersja przy powtórzeniach, rep)
     const G=CANAL_GEOM[canal][side], D=Math.PI/180, pex=phiExit*D, pcrus=(phiExit-crusArc)*D;
     const crusGate=(canal==="posterior"||canal==="anterior");   // odnoga wspólna TYLKO dla kanałów pionowych; poziomy → wyjście wprost
-    const EXPEL_DUR=1.2, expelRate=(pex-pcrus)/EXPEL_DUR;        // tempo ekspulsji odnoga→łagiewka (transjent liberacyjny)
+    let expT0=null, expT1=null;   // B6 (V14c): okno ekspulsji → final.expelDur (WYNIK, nie stała; EXPEL_DUR=1.2 s usunięte z ruchu — historyczne)
     const tang=phi=>{const c=Math.cos(phi),s=Math.sin(phi);
       return [-s*G.e1[0]+c*G.e2[0], -s*G.e1[1]+c*G.e2[1], -s*G.e1[2]+c*G.e2[2]];};
     // pozycja startowa: jawne q0 (1. segment interpoluje Z NIEGO) lub — domyślnie (null) — pierwszy q, czyli
@@ -404,36 +475,103 @@ export const Vestibular = (()=>{
     // postojowy w restPhi i pionie; ścieżka bit-identyczna). false = złóg ŚWIEŻO PRZEMIESZCZONY
     // (historia pozycyjna odłożyła go przed chwilą — wiązanie nie zdążyło się wytworzyć): start bez
     // bramki. Uzasadnienie fizyczne = ten sam mechanizm, którym silnik tłumaczy brak latencji kanału
-    // przedniego (restDrive wyżej: „nie trzyma go wiązanie, tylko grawitacja"); model i tak nie ma
-    // re-adhezji (raz zerwane wiązanie nie wraca). Bez tego bramka — ewaluowana w CUDZYM punkcie
-    // (restPhi zamiast phi0) — wygasza do 0.000 nawet odpowiedzi o swobodnej amplitudzie |ξ|>1
-    // i robi z odpowiedzi funkcję schodkową phi0 z ~20% martwego łuku (klif 205°).
+    // przedniego (restDrive wyżej: „nie trzyma go wiązanie, tylko grawitacja"); w PĘTLI re-adhezji nie ma
+    // (raz zerwane wiązanie nie odrasta W BIEGU — bramkowany odrost przy |drive|≤fStat re-engażowałby
+    // stuck przez 56 s żywego ogona napadu AC i zabiłby go w całości; sonda 2026-08-14). Odrost MIĘDZY
+    // badaniami → readhesion() w warstwie domenowej (maneuvers.js, D1/B7). Bez `settled` bramka —
+    // ewaluowana w CUDZYM punkcie (restPhi zamiast phi0) — wygasza do 0.000 nawet odpowiedzi o swobodnej
+    // amplitudzie |ξ|>1 i robi z odpowiedzi funkcję schodkową phi0 z ~20% martwego łuku (klif 205°).
     // Start w strefie odnogi (phi0>phiExit−crusArc, kanały pionowe): złóg STARTUJE W KOMORZE (inCrus)
     // zamiast dawnego snapu WSTECZNEGO do pcrus — czeka na ekspulsję jak każdy zaparkowany złóg.
-    let phi=(phi0!=null?phi0:restPhi(canal,side))*D, xi=0, t=0, exited=false, stuck=settled && Math.abs(restDrive(canal,side,tauP))<=fStat, inCrus=crusGate && phi0!=null && phi0 > phiExit-crusArc, expelling=false, bond=adh, qPrev=q0!=null?reqQuat(q0,"simulateCanalith q0"):reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    // BRAMKA W PUNKCIE STARTU (ocena II, D1/V10 — domknięcie artefaktu A2): dla phi0!=null napęd
+    // postojowy liczony TAM, GDZIE ZŁÓG LEŻY, i w orientacji STARTOWEJ (q0 = poza spoczynkowa przed
+    // badaniem; bez q0 — pion). Stara bramka mroziła złóg zaparkowany po Dixie (φ₀=159.5°, siad:
+    // |driveAt|=0.142>fStat, a |restDrive(restPhi)|≈0 → STUCK) na 2.05 s zużywania wiązania w cudzym
+    // punkcie. phi0=null → DOSŁOWNIE stary restDrive (te same bity — ścieżka domyślna nietknięta).
+    // Człon (bond0==null || bond0>0): bond0=0 ≡ settled:false (ciągłość w zerze, bez klifu 0→0⁺).
+    const qStart=q0!=null?reqQuat(q0,"simulateCanalith q0"):null;
+    const holdDrive = phi0!=null ? driveAt(canal, side, phi0, qStart!=null?qStart:[1,0,0,0], tauP)
+                                 : restDrive(canal, side, tauP);
+    let phi=(jam!=null?jam.phi:(phi0!=null?phi0:restPhi(canal,side)))*D, xi=xi0, t=0, exited=false, stuck=jam==null && settled && (bond0==null || bond0>0) && Math.abs(holdDrive)<=fStat, inCrus=arm==="long" && crusGate && phi0!=null && phi0 > phiExit-crusArc, bond=bond0!=null?bond0*adh:adh, qPrev=qStart!=null?qStart:reqSegment(timeline[0],0,"simulateCanalith"); const out=[];
+    let jamState=jam!=null, pressed=false, tRelease=null;   // D10/V15: stan jamu i docisku do osklepka
+    let jamB=jam!=null ? (jam.bond!=null?jam.bond:0.3) : 0; // zapas zaklinowania [g·s] — kryterium UTRZYMANEJ nadwyżki (lustro bramki adhezji): iglica bezwładności przejścia NIE uwalnia, utrzymana poza tak (0.3 = wybór kalibracyjny)
+    let nPrev=null;   // B8 (V14a): kąt karku POPRZEDNIEGO segmentu [νP, Y] — jak qPrev; pierwszy segment = wartości własne (stałe ramię); q0 nie niesie rozkładu karku (granica udokumentowana)
     for(const [si,seg] of timeline.entries()){
       const sq=reqSegment(seg,si,"simulateCanalith");    // waliduje segment (obiekt, q, tTrans/tHold≥0) + normalizuje q (slerpQ zakłada q jednostkowe)
       const wv = angVel(qPrev, sq, seg.tTrans);          // prędkość kątowa przejścia (stała — slerp o stałym tempie)
       const pivot = seg.pivot || "body";                  // oś obrotu kroku: "body" (biodra/kozetka) | "neck" (sama głowa)
+      const nP=seg.neckPitch||0, nY=seg.neckYaw||0;       // B8: kark segmentu (brak pól = 0 = stara ścieżka armVec literalnie)
+      const pP=nPrev?nPrev[0]:nP, pY=nPrev?nPrev[1]:nY;
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
         const g0v=gHead(slerpQ(qPrev,sq,u));
-        const g = u<1 ? specForce(g0v, wv, side, pivot) : g0v;   // W TRAKCIE przejścia działa siła właściwa; w holdzie ω=0 → f=g
+        const g = u<1 ? specForce(g0v, wv, side, pivot, pP+u*(nP-pP), pY+u*(nY-pY)) : g0v;   // W TRAKCIE przejścia siła właściwa; kark z TEJ SAMEJ interpolacji co poza (rozszerzenie zasady R7); w holdzie ω=0 → f=g
         let dphi=0, flow=0;
         if(!exited){
-          if(crusGate && inCrus){
+          if(jamState){
+            // CANALITH JAM (D10/V15): czop blokuje przewód — osklepek TRZYMANY na jam.xi (zamrożony
+            // niezerowy cel jak simCupStatic; stan ustalony dokładnie jam.xi) → oczopląs POZYCJO-
+            // -NIEZALEŻNY („wygląda ośrodkowo"). Wejście w jam WYŁĄCZNIE JAWNE (parametrem) —
+            // emergencja wymagałaby średnic przewodu, których żadne źródło repo nie niesie (granica
+            // źródła). UWOLNIENIE: styczna składowa siły właściwej PRZECIWNA kierunkowi zaklinowania
+            // przekracza próg płynięcia (rodzina Coulomba/Binghama jak crusGrav V14; thrG = wybór
+            // kalibracyjny). Zmierzona mapa uwolnień (PC, czop przy pcrus): deep head-hang 0.702 =
+            // JEDYNA standardowa poza > 0.6 → przewidywanie testowalne: Epley czopu NIE uwalnia,
+            // uwalnia Yacovino. Po uwolnieniu: silny transjent ODWRÓCONY, potem zwykła kanalolitiaza.
+            flow=jam.xi/tauC;
+            const rel = -(jam.dir!=null?jam.dir:1) * dot3(g,tang(phi));
+            if(rel > (jam.thrG!=null?jam.thrG:crusGrav)){                 // nadwyżka UTRZYMANA zużywa zapas (jak zrywanie adhezji)
+              jamB -= (rel-(jam.thrG!=null?jam.thrG:crusGrav))*dt;
+              if(jamB<=0){ jamState=false; stuck=false; tRelease=t; }
+            }
+          } else if(arm==="short"){
+            // SEGMENT BAŃKOWY (D10/V15): TA SAMA fizyka Stokesa, inne krańce. Bariera osklepka JAWNA
+            // z realnym dojazdem (transjent dojścia uczciwie w flow; reżim przetłumiony — cząstka
+            // STAJE, bez odbicia); osklepek jest barierą dla CZĄSTKI, nie dla ciśnienia — flow bez
+            // gałęzi znaku (fenotyp APO wolnego złogu w ramieniu bańkowym wychodzi EMERGENTNIE
+            // z geometrii: reguła Choung apo, jednostronny null point, samooczyszczenie w siadzie).
+            // Wyjście przez SA_MIN = do łagiewki (samowyleczenie). Docisk (φ=3°, napęd ku bańce):
+            // człon kontaktowy TYLKO HC (SA_CONTACT) — cel jak kupulo-HC, flow=ξ*/tauC.
+            const drive=dot3(g,tang(phi))/tauP;
+            if(stuck && Math.abs(drive)>fStat){ bond-=(Math.abs(drive)-fStat)*dt; if(bond<=0) stuck=false; }
+            if(!stuck){
+              dphi=drive; let nphi=phi+dphi*dt;
+              if(nphi>=CUPULA_DEG*D){ dphi=Math.max(0,CUPULA_DEG*D-phi)/dt; nphi=CUPULA_DEG*D; pressed=true; } else pressed=false;
+              if(nphi<=SA_MIN[canal]*D){ dphi=Math.min(0,SA_MIN[canal]*D-phi)/dt; nphi=SA_MIN[canal]*D; exited=true; pressed=false; }
+              phi=nphi; flow=gc*G.exc*dphi;
+              if(pressed && SA_CONTACT[canal]){
+                const drv=dot3(g,tang(CUPULA_DEG*D));
+                if(drv>0) flow += CUP_WEAK*G.exc*drv/tauC;     // ξ_ss=CUP_WEAK·exc·drv — cel identyczny z kupulo-HC w position()
+                else pressed=false;
+              }
+            }
+          } else if(crusGate && inCrus){
             // złóg w KOMORZE ODNOGI WSPÓLNEJ — poza czułym kanałem (osklepek relaksuje). Czeka na ekspulsję do łagiewki.
             // g to SIŁA WŁAŚCIWA (R7), ale warunek realnie spełnia wyłącznie GRAWITACJA (siad: łagiewka
             // pod odnogą) — człon dośrodkowy ma a[1]≤0, więc −f[1] podnieść nie może (ocena II, C7).
             // Dawne proxy crusFling/crusFlingRate — „kąt > 145° ORAZ tempo > 180°/s" — USUNIĘTE 2026-08-05:
             // manewry czyszczą dalej 12/12, bo ekspulsję przejęła grawitacja w bez-timerowym siadzie
             // (inercja utrzymuje DOJAZD złogu do odnogi — napęd wzdłuż kanału).
-            if(!expelling && -g[1] > crusGrav) expelling=true;
-            if(expelling){                                     // transjent ekspulsji: φ pcrus→pex → oczopląs liberacyjny (ampullofugalny, TEN SAM znak co pierwotny)
-              dphi=expelRate; let nphi=phi+dphi*dt;
-              if(nphi>=pex){nphi=pex; exited=true; expelling=false;}   // wpadł do łagiewki (jednokierunkowo)
-              phi=nphi; flow=gc*G.exc*dphi;
+            // B6 (ocena II, V14c): JEDNO PRAWO RUCHU. Strefa [pcrus,pex] to ZMIERZONY końcowy odcinek
+            // łuku atlasu IE-Map (ujście = wejście do przedsionka) — tangAt tam OBOWIĄZUJE i jest
+            // kierunkiem odnogi (PC przy ujściu: 9.3° od osi „głowa-dół"; stare −g[1] było ślepym
+            // na kanał przybliżeniem tego rzutu). crusGrav zmienia sens: z binarnej bramki na PRÓG
+            // ZASTANIA szerokiej komory (tarcie Coulomba złogu na ścianie — granica płynięcia
+            // Binghama; w wąskim świetle złóg płynie jak tłok, tam progu nie ma — adhezję niesie
+            // fStat/adh: jedna fizyka, dwie geometrie). Prędkość ∝ nadwyżce siły, /tauP (Stokes:
+            // czasy ∝ r⁻²; stara stała 10°/s nie skalowała się wcale). EMERGENTNIE: PC ekspulsuje
+            // w siadzie jak dotąd (rzut 0.965>0.6), a AC wymaga BRODY NA KLATCE (czysty siad
+            // 0.401<0.6, broda 0.81–0.88) — instrukcja kończąca Yacovino staje się fizycznie nośna.
+            // Jednokierunkowość: max(0,·) + klamra pex (kieszeń komory; powrót/jam poza zakresem —
+            // D10). Latch `expelling` usunięty — ruch podąża za siłą, ciągłość bez klifu (v→0 przy
+            // nadwyżce→0); „wieczne pełzanie" pilnowane wyrocznią EXPEL_SANE (snapshot.mjs).
+            const excess = dot3(g,tang(phi)) - crusGrav;       // g = siła właściwa (R7); C7: inercja może rzut tylko obniżać (≤0.0012 g z ramieniem B8)
+            if(excess > 0){
+              dphi=excess/tauP; let nphi=phi+dphi*dt;
+              if(expT0==null) expT0=t;
+              if(nphi>=pex){ dphi=Math.max(0,pex-phi)/dt; nphi=pex; exited=true; expT1=t+dt; }   // wpadł do łagiewki; dphi = realny dojazd (flow bez przestrzału)
+              phi=nphi; flow=gc*G.exc*dphi;                    // transjent liberacyjny: amplituda ∝ SILE napędu (nie ∝ crusArc — koniec konwencji)
             }
           } else {
             const drive=dot3(g,tang(phi))/tauP;                // prędkość potencjalna (overdamped) — wędrówka w świetle kanału
@@ -452,14 +590,18 @@ export const Vestibular = (()=>{
         xi+=dt*(-xi/tauC + flow); t+=dt;
         out.push({t, xi, phi:phi/D, exited});
       }
-      qPrev=sq;
+      qPrev=sq; nPrev=[nP,nY];
     }
-    // STAN KOŃCOWY do łańcuchowania sesji (ocena II, V3 — fundament D1/R10): pre=simulateCanalith(historia);
-    // test=simulateCanalith({phi0:pre.final.phi, settled:false, ...}). Właściwość NA TABLICY — JSON.stringify
-    // tablic ją pomija (wyrocznie serializujące nie widzą zmiany), iteracja for-of/length/map bez zmian.
-    // UWAGA: bond jest w jednostkach WEWNĘTRZNYCH po skalowaniu rozmiarem (adh*r) — łańcuchowanie między
-    // przebiegami o różnym size przekłamie stan wiązania; przenoś size razem ze stanem.
-    out.final = { phi: phi/D, xi, bond, stuck, exited, inCrus };
+    // STAN KOŃCOWY do łańcuchowania sesji (ocena II, V3+V10 — fundament D1/R10): pre=simulateCanalith(historia);
+    // test=simulateCanalith({phi0:pre.final.phi, xi0:pre.final.xi, bond0:pre.final.bondFrac, settled:true, ...})
+    // — łańcuch tak zbudowany jest BIT-W-BIT tożsamy z jedną timeline (rozstrzygnięcie B7). Właściwość NA
+    // TABLICY — JSON.stringify tablic ją pomija (wyrocznie serializujące nie widzą zmiany), iteracja bez zmian.
+    // bondFrac = wiązanie jako UŁAMEK [0..1] (clamp: bond kończy ujemnie po zerwaniu) — JEDYNA postać do
+    // łańcuchowania; bond (jednostki WEWNĘTRZNE adh·r) zostaje dla zgodności — footgun między size udokumentowany.
+    out.final = { phi: phi/D, xi, bond, stuck, exited, inCrus,
+                  bondFrac: adh>0 ? Math.min(1, Math.max(0, bond)/adh) : 0,
+                  expelDur: (expT0!=null && expT1!=null) ? expT1-expT0 : null,     // B6: trwanie ekspulsji = WYNIK (null = ekspulsji nie było); pilnowane pasmem EXPEL_SANE w wyroczni
+                  arm, pressed, jammed: jamState, tRelease };                       // D10/V15: segment, docisk do osklepka, stan jamu, moment uwolnienia
     return out;
   }
   // ξ (odchylenie osklepka) → składowe oczopląsu (kierunek z etapu 0, znak z pobudzenia)
@@ -484,23 +626,33 @@ export const Vestibular = (()=>{
   //   (uproszczenie: nie per-kanał/per-geometria; dla kanałów PIONOWYCH pasmo 0.4–0.7 jest ekstrapolacją
   //   bez własnej normy piśmienniczej).
   const CUP_WEAK=0.45;
+  // LIGHT CUPULA — waga statyczna lekkiego osklepka (ocena II, D3/V12). Start = CUP_WEAK (0.45): osobna
+  // GAŁKA kalibracyjna (nie alias), kotwiczona jak CUP_WEAK do wielkości emergentnej — stosunek szczytów
+  // light/canalo-geo w Rollu 0.375/0.696 = 0.538 (środek tego samego pasma 0.4–0.7, którym skalibrowano
+  // CUP_WEAK; piśmiennictwo nie daje osobnej normy SPV light-vs-geo). „DCPN wyraźniejszy niż apo" wychodzi
+  // BEZ nowej stałej z samej rektyfikacji EWALD_INHIB (na tej samej fazie display 0.375 vs 0.169).
+  const LIGHT_W=0.45;
   // REKTYFIKACJA EWALDA II — o ile słabsza jest odpowiedź HAMUJĄCA niż pobudzająca. Jedno źródło: ta sama
   // stała rządzi dynamiką (dynNystagmus) i kartą testu (nysFromGeom w pose/maneuvers.js), gdzie do
   // 2026-08-05 stały DWA niezależne literalne 0.45.
   const EWALD_INHIB=0.45;
-  // symulacja KUPULOLITIAZY: otolity na osklepku → ciężki osklepek odchylany WPROST grawitacją.
-  // Brak cząstki w świetle kanału → brak latencji i uporczywość (trzyma się, dopóki pozycja utrzymana).
+  // WSPÓLNA CAŁKA STATYCZNA osklepka (ocena II, D3/V12): ciężki (kupulo) i lekki (light) osklepek to TEN SAM
+  // mechanizm „cel statyczny + relaksacja tauCup, bez latencji, uporczywy" — różnią się wyłącznie znakiem
+  // kontrastu gęstości (znak żyje w position(variant) — jedno źródło) i wagą (CUP_WEAK / LIGHT_W).
   // ξ relaksuje do celu statycznego (rzut grawitacji, znak z reguły Ewalda) z krótką stałą tauCup.
-  function simulateCupulolith({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium"}){
+  function simCupStatic({canal, side, timeline, q0=null, dt=0.05, tauCup=0.8, gain=1.0, size="medium", variant="cupulo"}){
     reqCanal(canal, side, "simulateCupulolith");
     if(!Array.isArray(timeline) || !timeline.length) throw new TypeError("simulateCupulolith: timeline musi być NIEPUSTĄ tablicą {q,tTrans,tHold}");
     if(!(dt>0) || !isFinite(dt)) throw new RangeError("simulateCupulolith: dt musi być liczbą > 0 (podano "+dt+")");
     // WALIDACJE (ocena II, A10/DYN-9): tauCup <= dt/2 ROZBIEGA jawny schemat Eulera (tauCup=0.024 → ξ~8e26),
-    // tauCup=0 dawało NaN bez wyjątku. gain ŚWIADOMIE bez ograniczenia znaku — gain<0 to przyszła light
-    // cupula (trwały GEOTROPOWY DCPN, ocena II D3); wymagana tylko skończoność.
+    // tauCup=0 dawało NaN bez wyjątku. Znak gainu pilnują FASADY (simulateCupulolith / simulateLightCupula) —
+    // dawna furtka „gain<0 = przyszła light cupula" ZAMKNIĘTA w D3/V12 (mechanizm wybiera się fasadą, nie znakiem).
     if(!(tauCup>dt/2) || !isFinite(tauCup)) throw new RangeError("simulateCupulolith: tauCup musi być liczbą > dt/2 (stabilność Eulera; podano "+tauCup+")");
     if(typeof gain!=="number" || !isFinite(gain)) throw new RangeError("simulateCupulolith: gain musi być liczbą skończoną (podano "+gain+")");
     gain=gain*Math.pow(sizeR(size),3);   // cięższy klaster otoconiów → silniejsze wychylenie osklepka (gain ∝ r³); latencji brak (tauCup bez zmian)
+    // UWAGA size dla LIGHT: „rozmiar złogu" nie ma tu interpretacji fizycznej (mechanizm gęstościowy osklepka,
+    // nie masa kłębka) — pass-through zostaje jako GENERYCZNY mnożnik amplitudy (udokumentowane).
+    const W = variant==="light" ? LIGHT_W : CUP_WEAK;
     // pozycja startowa: jak w simulateCanalith — jawne q0 lub domyślnie (null) pierwszy q (wsteczna zgodność).
     let xi=0, t=0, qPrev=q0!=null?reqQuat(q0,"simulateCupulolith q0"):reqSegment(timeline[0],0,"simulateCupulolith"); const out=[];
     for(const [si,seg] of timeline.entries()){
@@ -508,8 +660,8 @@ export const Vestibular = (()=>{
       const total=(seg.tTrans||0)+(seg.tHold||0), steps=Math.round(total/dt);
       for(let i=0;i<steps;i++){
         const u=seg.tTrans>0?Math.min(1,(i*dt)/seg.tTrans):1;
-        const p=position({canal, side, variant:"cupulo", q:slerpQ(qPrev,sq,u)});
-        const target=CUP_WEAK*gain*p.mag*(p.excited?1:-1);   // cel statyczny ważony grawitacją (ξ>0 = pobudzenie); CUP_WEAK: kupulo słabsza od kanalo [1]
+        const p=position({canal, side, variant, q:slerpQ(qPrev,sq,u)});
+        const target=W*gain*p.mag*(p.excited?1:-1);      // cel statyczny ważony grawitacją (ξ>0 = pobudzenie); waga: kupulo/light słabsze od kanalo [1]
         xi += dt*(target-xi)/tauCup;                   // szybka relaksacja: bez latencji, uporczywy
         t+=dt; out.push({t, xi, target});
       }
@@ -517,8 +669,30 @@ export const Vestibular = (()=>{
     }
     return out;
   }
+  // FASADA: kupulolitiaza (ciężki osklepek, DCPN apogeotropowy trwały). Gołe gain<0 ZABLOKOWANE — znak gainu
+  // to przełącznik CHOROBY, nie pokrętło amplitudy: ujemna wartość z formuły cicho odwracałaby fenotyp
+  // apo→geo na karcie kupulo (anty-wzorzec „drugiej cichej drogi"; filozofia walidacji V2/A10).
+  function simulateCupulolith(opts){
+    if(opts && typeof opts.gain==="number" && opts.gain<0)
+      throw new RangeError("simulateCupulolith: gain<0 to mechanizm LIGHT CUPULA — użyj simulateLightCupula (gain>0); furtka ujemnego gainu zamknięta (ocena II, D3/V12)");
+    return simCupStatic({...opts, variant:"cupulo"});
+  }
+  // FASADA: light cupula (lekki osklepek, DCPN GEOTROPOWY trwały; ocena II D3/V12). Znak wyporu odwraca
+  // position(variant:"light") — caller nigdy nie steruje znakiem; gain>0 = generyczna amplituda.
+  function simulateLightCupula(opts){
+    const gain = (opts && opts.gain!==undefined) ? opts.gain : 1.0;
+    if(typeof gain!=="number" || !(gain>0) || !isFinite(gain))
+      throw new RangeError("simulateLightCupula: gain musi być liczbą > 0 (podano "+gain+")");
+    return simCupStatic({...opts, gain, variant:"light"});
+  }
+  // FASADY D10/V15 (wzorzec V12): jawne wejścia w short-arm i jam — mechanizm wybiera się fasadą/parametrem.
+  function simulateShortArm(opts){ return simulateCanalith({...opts, arm:"short"}); }
+  function simulateCanalithJam(opts){
+    if(!opts || !opts.jam) throw new TypeError("simulateCanalithJam: wymagane jam:{phi, xi, thrG?, dir?}");
+    return simulateCanalith(opts);
+  }
   return {isExcitatory, quickPhase, nysMag, nystagmus, gHead, position, sizeR, sizeUm,
-          simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
-          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, restPhi, driveAt, CUP_WEAK, EWALD_INHIB};
+          simulateCanalith, simulateCupulolith, simulateLightCupula, simulateShortArm, simulateCanalithJam, dynNystagmus, nystagmusPhase, fatigueFactor,
+          qmul, qconj, qaxis, rotate:rotv, CANAL_NORMALS, CANAL_GEOM, ARC_SPAN, SA_MIN, restPhi, driveAt, CUP_WEAK, LIGHT_W, EWALD_INHIB};
 })();
 

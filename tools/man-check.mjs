@@ -37,7 +37,7 @@ const plan = (k, s) => { const p = MANEUVERS[k].gen(s); p.key = k; return p; };
 
 /* ═══════════ A. KANAŁ → PRÓBA (most trybu eksperckiego) ═══════════ */
 eq('KP1/posterior', probyKanalu('posterior', D), ['dix']);
-eq('KP2/horizontal', probyKanalu('horizontal', D), ['roll', 'bowlean']);
+eq('KP2/horizontal', probyKanalu('horizontal', D), ['roll', 'bowlean', 'lyingdown']);   // +lyingdown: ocena II V11/D2
 eq('KP3/anterior', probyKanalu('anterior', D), ['headhang']);
 // Kanał nieznany NIE MOŻE dać próby: recommend() ma cichy wynik domyślny (wszystko poza
 // 'dix'/'headhang' spada do kanału poziomego), więc null jest tu jedyną uczciwą odpowiedzią.
@@ -64,7 +64,9 @@ eq('DE7/nieznany-kanal', doborEkspercki('bzdura', 'canalo', D), null);
   T('DE8/czulosc-poza', doborEkspercki('horizontal', 'canalo', zly).poza.length === 1,
     'manewr spoza listy kanału musi trafić do `poza`');
   const rozne = { ...D, recommend: (p) => ({ primary: p === 'roll' ? 'lempert' : 'gufoniGeo', alts: [] }) };
-  T('DE9/czulosc-rozbiezne', doborEkspercki('horizontal', 'canalo', rozne).rozbiezneProby.length === 1,
+  // Liczba rozbieznych = proby kanalu MINUS ta, ktora zgadza sie z pierwszym rzutem. Kanal poziomy ma
+  // po V11/D2 trzy proby (roll, bowlean, lyingdown), wiec podstawiony recommend rozjezdza sie na dwoch.
+  T('DE9/czulosc-rozbiezne', doborEkspercki('horizontal', 'canalo', rozne).rozbiezneProby.length === 2,
     'rozjazd zaleceń między próbami tego samego kanału musi być widoczny');
 }
 
@@ -393,7 +395,7 @@ T('WY7/czulosc', (0 === 5 - 1) === false && (4 === 5 - 1) === true, 'kontrola: r
 /* ═══════════ K. LICZNOŚĆ ═══════════
    Zapadka na cichy ubytek przypadków: skasowanie sekcji przy refaktorze zostawiłoby wyrocznię
    zieloną i pustą. Ta sama bramka złapała w torze VOG spadek 253→228. */
-const OCZEKIWANE = 187;
+const OCZEKIWANE = 205;   // 205 = 187 + 18: cztery bramki ET1-ET4 x 2 strony x 2 nowe manewry (zuma, kim) = 16, plus ET5 x 2 = 2
 if (bledy.length) {
   console.error(`✗ man:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));

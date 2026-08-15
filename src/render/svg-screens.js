@@ -554,9 +554,15 @@ function setupGuideAnim(){
   state.autostart=false; syncWake();
 
   _otoStart=null; let last=performance.now(), lastSec=-1;
-  // CZAS WĘDRÓWKI OTOLITU = CZAS OCZOPLĄSU (widok frontalny): oba grają przez to samo okno tEnd z silnika,
-  // więc na flipkarcie obie strony kończą się razem. Zależność od rozmiaru cząstki niesie już samo tEnd
-  // (mniejsza cząstka → wolniejsze osiadanie → dłuższe ξ(t) → dłuższa wędrówka). Widełki chronią skrajności.
+  // CZAS WĘDRÓWKI OTOLITU = CZAS OCZOPLĄSU (widok frontalny): oba mają grać przez to samo okno tEnd
+  // z silnika, żeby na flipkarcie obie strony kończyły się razem. Zależność od rozmiaru cząstki niesie
+  // już samo tEnd (mniejsza cząstka → wolniejsze osiadanie → dłuższe ξ(t) → dłuższa wędrówka).
+  // UWAGA PO OCENIE II (zmierzone 2026-08-14): sufit 24 s przestał być zabezpieczeniem skrajności
+  // i stał się regułą — tEnd przekracza go w 122 ze 156 kroków z oczopląsem (78 %), najdłuższy 74,60 s.
+  // Dawniej hold dynamiki był obcięty capem 12 s, więc tEnd nigdy nie sięgał widełek. Skutek: w tych
+  // krokach wędrówka KOŃCZY SIĘ PIERWSZA, a oczopląs gra dalej — czyli obietnica „obie strony kończą
+  // się razem" NIE jest dziś dotrzymana. Podniesienie sufitu to decyzja o UI (animacja do ~75 s),
+  // więc liczba zostaje do rozstrzygnięcia klinicznego; komentarz mówi, jak jest, a nie jak było.
   const nysSec=guideNysSeconds(state.plan, man, state.step, state.size);
   const rSize=sizeRadius(state.size);
   const DUR = cupuloAdh ? 3600                                              // Bascule krok 1: przyleganie → odklejanie → start wędrówki (jedno ciągłe okno)
