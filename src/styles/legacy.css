@@ -182,6 +182,10 @@
   .furd .eyebrow{display:block; margin-bottom:8px}
   .furd ul{margin:0; padding-left:18px; display:grid; gap:6px; font-size:13px; line-height:1.45}
   .furd .note{margin-top:10px}
+  /* Przelacznik sesji: pastylka `.toggle` ma STALE 46x27 px i wlasny suwak, wiec napis musi stac
+     OBOK niej, nie w srodku. Rzad, zeby oba elementy trzymaly wspolna linie bazowa. */
+  .sesjaprzeł{display:flex; align-items:center; gap:10px}
+  .sesjaprzeł__s{font-size:13px; color:var(--muted)}
   .segobs{grid-template-columns:1fr 1fr}
   .segobs .opt{display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-height:auto;padding:10px 12px;font-size:13.5px}
   .segobs .opt small{font-weight:450;color:var(--muted);font-size:11px;line-height:1.25}

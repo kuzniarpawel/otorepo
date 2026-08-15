@@ -4,7 +4,7 @@ import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { SIDE, sideN, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, CANAL_OF, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
          computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds,
-         DIAG, variantLabels, recommend, baranyClassify, BLT_HISTORY, SCEN_DRIVEN, nullScan, nullYawOf } from '../pose/maneuvers.js';
+         DIAG, variantLabels, recommend, baranyClassify, BLT_HISTORY, SCEN_DRIVEN, nullScan, nullYawOf, bltInit } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
          POWODY_NIEWIARYGODNOSCI,
@@ -2621,7 +2621,13 @@ function renderDiag(){
           klinicysta zobaczy inaczej od razu. */""}
     <div class="obsrow" style="${TON}">
       <div class="obslabel">${t("Sesja ciągła","Continuous session")}</div>
-      <button class="toggle" aria-pressed="${!!state.session}" onclick="przelaczSesje()">${state.session ? t("włączona","on") : t("wyłączona","off")}</button>
+      ${/* `.toggle` jest PASTYLKA 46x27 px z suwakiem (::after) — napis w srodku wystawal spod niej.
+            Stan „wlaczony" CSS czyta z `aria-checked`, nie `aria-pressed`, wiec dotad kolor nawet nie
+            dzialal. Napis stoi obok, przelacznik ma role="switch" i dostepna nazwe. */""}
+      <div class="sesjaprzeł">
+        <button class="toggle" role="switch" aria-checked="${!!state.session}" aria-label="${t("Sesja ciągła","Continuous session")}" onclick="przelaczSesje()"></button>
+        <span class="sesjaprzeł__s">${state.session ? t("włączona","on") : t("wyłączona","off")}</span>
+      </div>
       <div class="note" style="margin-top:8px">${state.session
         ? t("Aplikacja pamięta, gdzie złóg został po poprzednim badaniu — kolejna prowokacja zastaje go tam, gdzie go zostawiła. Męczliwość wychodzi wtedy z FIZYKI, a nie z mnożnika.","The app remembers where the debris was left by the previous test — the next provocation finds it there. Fatigability then follows from the PHYSICS, not from a multiplier.")
         : t("Każde badanie zaczyna się od spoczynku, a męczliwość powtórzeń niesie mnożnik. Włącz, żeby złóg pamiętał poprzednie próby tej wizyty.","Each test starts from rest and the fatigability of repeats comes from a multiplier. Turn on to let the debris remember the earlier tests of this visit.")}</div>
@@ -2636,9 +2642,21 @@ function renderDiag(){
           nie wyprowadza). Ten sam scenariusz zasila predykcję interpretacji (interp-deps), więc
           strzałka, napis i wniosek nie mają jak się rozjechać. */""}
     ${SCEN_DRIVEN.has(state.testKey) ? `<div class="card" style="margin-bottom:4px;${TON}">
-      <div class="label"><span class="eyebrow">${t("Historia pozycyjna","Positional history")}</span><span class="hint">${t("gdzie złóg był PRZED próbą","where the debris was BEFORE the test")}</span></div>
-      <div class="seg">${Object.keys(BLT_HISTORY).map(k=>`<button class="opt" aria-pressed="${(state.bltScenario||"textbook")===k}" onclick="setBltScenario('${k}')">${BLT_HISTORY[k].label}</button>`).join("")}</div>
-      <div class="note" style="margin-top:10px">${t("To cecha PACJENTA, nie ustawienie testu: w kanalolitiazie kanału poziomego kierunek odpowiedzi zależy od położenia złogu na starcie. Bez znanej historii model nie rozstrzyga strony — i mówi to wprost, zamiast zgadywać.","This is a property of the PATIENT, not a test setting: in horizontal-canal canalithiasis the direction of the response depends on where the debris starts. Without a known history the model does not settle the side — and says so, instead of guessing.")}</div>
+      ${/* Naglowek JEDNA LINIA: `eyebrow` + `hint` w jednym wierszu nachodzily na siebie na wezszych
+            ekranach. Kazda karta niesie phi0 POLICZONE przez silnik (`bltInit` symuluje historie),
+            a nie wpisane — dlatego liczba stoi przy nazwie, a nie w nocie: to WYNIK, nie etykieta.
+            Wzorzec `.opt` + <small> jest ten sam, co lista prob — zero nowego ukladu. */""}
+      <div class="label"><span class="eyebrow">${t("Historia pozycyjna przed testem (ustala położenie złogu)","Positional history before the test (sets where the debris is)")}</span></div>
+      <div class="seg">${Object.keys(BLT_HISTORY).map(k=>{
+        const ini = bltInit(A, k);
+        const phi = ini && ini.phi0 != null ? `φ₀ ≈ ${Math.round(ini.phi0)}°`
+                  : `φ₀ ≈ ${Math.round(Vestibular.restPhi("horizontal", A))}° ${t("(spoczynek)","(at rest)")}`;
+        return `<button class="opt" aria-pressed="${(state.bltScenario||"textbook")===k}" onclick="setBltScenario('${k}')">${BLT_HISTORY[k].label}<small>${phi}</small></button>`;
+      }).join("")}</div>
+      <div class="note" style="margin-top:10px">${(()=>{ const ini=bltInit(A, state.bltScenario||"textbook");
+        const phi = ini && ini.phi0!=null ? Math.round(ini.phi0) : Math.round(Vestibular.restPhi("horizontal", A));
+        return t(`Scenariusz ustala położenie złogu: φ₀ ≈ ${phi}° — POLICZONE symulacją historii przez silnik, nie wpisane. Strzałki i napisy poniżej to WYNIK symulacji dla tego położenia, nie reguła. To cecha PACJENTA, nie ustawienie testu; bez znanej historii model nie rozstrzyga strony i mówi to wprost, zamiast zgadywać.`,
+                 `The scenario sets where the debris is: φ₀ ≈ ${phi}° — COMPUTED by simulating the history in the engine, not written in. The arrows and labels below are the RESULT of that simulation for this position, not a rule. This is a property of the PATIENT, not a test setting; without a known history the model does not settle the side and says so, instead of guessing.`); })()}</div>
     </div>` : ""}
     ${/* PŁASZCZYZNA ZEROWA (null point) — ocena II V12/D3. Kąt skrętu głowy, przy którym odpowiedź
           ZNIKA, bo osklepek stoi prostopadle do grawitacji. Karta pokazywana WYŁĄCZNIE przy Rollu
