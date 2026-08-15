@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0 } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0 } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -1096,12 +1096,18 @@ function nullPointCard(A){
 // state.bltScenario jest CELOWO jednym polem obu kart HC: scenariusz = historia PACJENTA, nie testu —
 // „ta sama godzina życia pacjenta → dwa testy" (bltInit memo współdzielone). Ekstrakcja bajt-w-bajt
 // z bltPanel (dowód: --check 0 diff po samej ekstrakcji, przed featurą V11).
-function scenPanelHTML(A, scen, banner){
+function scenPanelHTML(A, scen, banner, seedMode){
+  // V19, seedMode: selektor zmienia funkcję na ZASIEW — klik = akt otwierający (seedSessionFromScenario
+  // RESTARTUJE sesję z historią jako startem); przyciski bez aria-pressed (akcja, nie stan).
   const btn=k=>{ const ini=bltInit(A,k);
     const small = ini.exitedInHistory ? t("kanał opróżniony","canal emptied")
       : ini.phi0!=null ? `φ₀ ≈ ${Math.round(ini.phi0)}°` : t("φ₀ ≈ 200° (spoczynek)","φ₀ ≈ 200° (rest)");
+    if(seedMode) return `<button class="opt" onclick="seedSessionFromScenario('${k}')" aria-label="${t(`Ustaw historię jako akt otwierający sesji`,`Set this history as the session's opening act`)}"><b>${BLT_HISTORY[k].label}</b><small>${small} · ${t("ustaw start","set start")}</small></button>`;
     return `<button class="opt" aria-pressed="${scen===k}" onclick="setBltScenario('${k}')"><b>${BLT_HISTORY[k].label}</b><small>${small}</small></button>`; };
-  return `<div class="obsrow"><div class="obslabel">${t("Historia pozycyjna przed testem (ustala położenie złogu):","Positional history before the test (pins the debris position):")}</div>
+  const head = seedMode
+    ? t("Historia pozycyjna — ustaw jako START sesji (akt otwierający):","Positional history — set as the session START (opening act):")
+    : t("Historia pozycyjna przed testem (ustala położenie złogu):","Positional history before the test (pins the debris position):");
+  return `<div class="obsrow"><div class="obslabel">${head}</div>
       <div class="seg" style="flex-wrap:wrap">${Object.keys(BLT_HISTORY).map(btn).join("")}</div>
       <div class="note" style="margin-top:8px">${banner}</div></div>`;
 }
@@ -1131,11 +1137,12 @@ function renderDiag(){
   phases.forEach(ph=>{ if(ph.nys) ph.nys.fatigue = fatFactor; });
   // ===== Sesja ciągła (ocena II, V10/D1): fazy karty liczone ze STANU sesji — jedna nić symulacji, a TEN SAM
   // init płynie do obwiedni animacji (szew V5: startNys/startDialNysIn → engineXi(nys.init)) — karta i animacja
-  // z jednego stanu, sprzeczność strukturalnie niemożliwa. Bowlean poza nadpisaniem (karta B&L ma własne
-  // scenariusze historii — integracja to kandydat V11); antMode poza (kanał efektywny ≠ kanał sesji).
+  // z jednego stanu, sprzeczność strukturalnie niemożliwa. antMode poza (kanał efektywny ≠ kanał sesji).
+  // V19: karty SCEN_DRIVEN (bowlean/lyingdown) TEŻ czytają sesję — osobna gałąź niżej (konwencja V5:
+  // strzałka+napis z jednego ξ przez bltDirWord; obsługa ekspulsji per faza — R10 na żywo).
   const S = state.session;
-  const sessDrive = S && mech==="canalo" && !antMode && !SCEN_DRIVEN.has(state.testKey) && S.canal===effCanal && S.side===effSide;   // D4: sesja modeluje wyłącznie wolny złóg DŁUGIEGO ramienia
-  if(sessDrive){
+  const sessDrive = S && mech==="canalo" && !antMode && S.canal===effCanal && S.side===effSide;   // D4: sesja modeluje wyłącznie wolny złóg DŁUGIEGO ramienia
+  if(sessDrive && !SCEN_DRIVEN.has(state.testKey)){
     const pv = sessionPreview(S, state.testKey);
     const sInit = sessionInit(S);
     phases.forEach((ph,i)=>{
@@ -1156,6 +1163,41 @@ function renderDiag(){
         ph.label = N.label;
         if(state.testKey==="roll") ph.note = t("Sesja liczy Roll jako SEKWENCJĘ (chore→centrum→zdrowe): pierwsza faza PRZEMIESZCZA złóg, więc amplitudy faz nie są już czystym porównaniem Ewalda z karty statycznej (fazy izolowane) — kolejność wykonania zmienia wynik (R10, Bhandari 2022).","The session computes the Roll as a SEQUENCE (affected→center→healthy): the first phase DISPLACES the debris, so the phase amplitudes are no longer the static card's clean Ewald comparison (isolated phases) — the order of execution changes the result (R10, Bhandari 2022).");
         else if(S.acts.length>0) ph.note = t(`Stan sesji (po ${S.acts.length} ${S.acts.length===1?"akcie":"aktach"}): amplituda i latencja WYNIKAJĄ z położenia złogu i wiązania po poprzednich aktach — męczliwość to głównie pozycja, nie „zużycie" (panel sesji niżej).`,`Session state (after ${S.acts.length} act${S.acts.length===1?"":"s"}): amplitude and latency FOLLOW from the debris position and bond after the previous acts — fatigability is mostly position, not "wear" (session panel below).`);
+      }
+    });
+  }
+  else if(sessDrive){
+    // V19: karty scenariuszowe pod SESJĄ — fazy = podgląd NASTĘPNEGO wykonania testu z bieżącego stanu
+    // złogu (sessionPreview = ta sama nić co commit aktu). Napis z TEGO SAMEGO ξ co strzałka (bltDirWord,
+    // konwencja V5). Ekspulsja per faza (pv.exitStep/phases[i].exited): faza wyjścia dostaje dopisek
+    // liberacyjny, fazy PO wyjściu milkną — skłon potrafi opróżnić kanał (R10 na żywo).
+    const pv = sessionPreview(S, state.testKey);
+    const sInit = sessionInit(S);
+    const stepMap = PHASE_OF[state.testKey] || phases.map((_,j)=>j);
+    phases.forEach((ph,i)=>{
+      if(!ph.nys) return;
+      const stepIdx = stepMap[i], pvp = pv.phases[i]||{xi:0, exited:false};
+      const N = nysFromDyn(effCanal, effSide, (pv.exited && pv.exitStep==null) ? 0 : pvp.xi, false);
+      const mute=(lbl,note)=>{ Object.assign(ph.nys,{dir:0,vdir:1,strength:0,anat:{h:0,v:0,t:0},unresolved:true,init:null,fatigue:1}); ph.label=lbl; ph.note=note; };
+      if(pv.exited && pv.exitStep==null){                     // kanał opróżniony PRZED aktem — niemy test kontrolny
+        mute(t("kanał wyczyszczony — brak odpowiedzi","canal cleared — no response"),
+             t("Złóg opuścił kanał w tej sesji — prowokacja niema. Tak wygląda kontrolny test zaraz po skutecznej repozycji. Uwaga kliniczna: ujemny test NATYCHMIAST po manewrze nie dowodzi wyleczenia (NPV ~72% — nakłada się męczliwość); wiarygodna kontrola śródsesyjna po ≥30 min siadu, formalna ocena wg AAO-HNS w ciągu miesiąca.","The debris left the canal in this session — the provocation is mute. This is what a control test right after successful repositioning looks like. Clinical caveat: a negative test IMMEDIATELY after the maneuver does not prove cure (NPV ~72% — fatigability overlaps); a reliable within-session check needs ≥30 min upright, formal reassessment per AAO-HNS within a month."));
+      } else if(pv.exitStep!=null && stepIdx>pv.exitStep){    // faza PO ekspulsji we wcześniejszym kroku aktu
+        mute(t("kanał opróżniony we wcześniejszej fazie","the canal was emptied in an earlier phase"),
+             t("Wcześniejsza faza aktu wyprowadziła złóg do łagiewki — dalsze fazy nieme: diagnostyka wykonała pracę manewru (R10).","An earlier phase of the act carried the debris into the utricle — the remaining phases are mute: the diagnostic did the maneuver's job (R10)."));
+      } else if(pvp.exited && N.strength < XI_CARD){          // ciche samowyleczenie (złóg przy ujściu)
+        mute(t("złóg opuszcza kanał — bez wyraźnego oczopląsu","the debris leaves the canal — no distinct nystagmus"),
+             t("Złóg leżał przy ujściu: faza dopycha go do łagiewki niemal bez wychylenia osklepka — CICHE SAMOWYLECZENIE. Kolejne fazy i testy będą nieme.","The debris lay near the exit: the phase pushes it into the utricle with barely any cupular deflection — SILENT SELF-CLEARING. Subsequent phases and tests will be mute."));
+      } else if(N.strength < XI_CARD){
+        mute(t("odpowiedź podprogowa (złóg blisko równowagi lub związany)","subthreshold response (debris near equilibrium or bound)"),
+             t("Stan sesji: napęd nie zrywa wiązania albo złóg leży przy równowadze tej pozycji. Użyj historii pozycyjnej powyżej jako aktu otwierającego, by zobaczyć, kiedy reguła działa.","Session state: the drive does not break the bond or the debris lies near this position's equilibrium. Use the positional history above as an opening act to see when the rule works."));
+      } else {
+        Object.assign(ph.nys, {dir:N.dir, vdir:N.vdir, strength:N.strength, anat:N.anat, excited:N.excited,
+          reversed:N.reversed, unresolved:false, fatigue:1, init:sInit});
+        ph.label = bltDirWord(A, pvp.xi>0) + (pvp.exited ? t(" — i złóg opuszcza kanał"," — and the debris leaves the canal") : (N.strength<0.25 ? t(" (słaby)"," (weak)") : ""));
+        ph.note = pvp.exited
+          ? t("Złóg za wododziałem (bieżące φ sesji): ta faza wyprowadza złóg do łagiewki — test wykonuje pracę manewru; kolejne fazy i testy będą nieme (R10). „▶ Wykonaj test w sesji” zapisuje ten akt.","Debris beyond the watershed (the session's current φ): this phase carries the debris into the utricle — the test does the maneuver's job; subsequent phases and tests will be mute (R10). \"▶ Run the test in the session\" commits this act.")
+          : t(`Fazy = podgląd wykonania testu z BIEŻĄCEGO stanu złogu sesji${S.acts.length?` (po ${S.acts.length} ${S.acts.length===1?"akcie":"aktach"})`:""} — amplituda i kierunek wynikają z położenia i wiązania, nie ze scenariusza.`,`Phases = a preview of running the test from the session's CURRENT debris state${S.acts.length?` (after ${S.acts.length} act${S.acts.length===1?"":"s"})`:""} — amplitude and direction follow from position and bond, not from a scenario.`);
       }
     });
   }
@@ -1222,7 +1264,7 @@ function renderDiag(){
     const actChip = chipS(t("akty","acts"), `${S.acts.length} · ${Math.round(S.tSession)} s`);
     const mismatch = !(S.canal===effCanal && S.side===effSide);
     const bst="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center";
-    const btnProvoke = (!isDix && !SCEN_DRIVEN.has(state.testKey) && !mismatch && mech==="canalo" && !S.exited)
+    const btnProvoke = (!isDix && !mismatch && mech==="canalo" && !S.exited)   // V19: karty scenariuszowe też prowokują (akt bowlean/lyingdown istnieje)
       ? `<button class="opt" style="${bst}" onclick="sessionProvoke()">${t("▶ Wykonaj test w sesji","▶ Run the test in the session")}</button>` : "";
     const btnRest = `<button class="opt" style="${bst};opacity:.9" onclick="sessionRest()">${t("⏸ Przerwa 10 min (siad)","⏸ 10-min break (sitting)")}</button>`;
     const btnReset = `<button class="opt" style="${bst};opacity:.85" onclick="resetSession()">${t("Reset (nowy złóg)","Reset (new debris)")}</button>`;
@@ -1230,10 +1272,10 @@ function renderDiag(){
       ? t("Sesja śledzi złóg RAMIENIA DŁUGIEGO — wybrany mechanizm ma własną kartę poza łańcuchem sesji.","The session tracks LONG-ARM debris — the selected mechanism has its own card outside the session chain.")
       : v==="cupulo"
       ? t("Kupulolitiaza: brak wolnej cząstki w świetle — wynik NIE zależy od historii (test powtarzalny); stan sesji dotyczy postaci kanalolitycznej.","Cupulolithiasis: no free particle in the lumen — the result does NOT depend on history (the test is repeatable); the session state applies to the canalithiasis form.")
-      : SCEN_DRIVEN.has(state.testKey)
-        ? t("Ta karta używa scenariuszy historii pozycyjnej — akty sesji aktualizują stan złogu, ale nie nadpisują karty.","This card uses positional-history scenarios — session acts update the debris state but do not override the card.")
-        : mismatch
-          ? t("Podgląd sesji nieaktywny: kanał/strona tej karty ≠ tożsamość złogu sesji.","Session preview inactive: this card's canal/side ≠ the session debris identity.")
+      : mismatch
+        ? t("Podgląd sesji nieaktywny: kanał/strona tej karty ≠ tożsamość złogu sesji.","Session preview inactive: this card's canal/side ≠ the session debris identity.")
+        : SCEN_DRIVEN.has(state.testKey)
+          ? t("Ta karta czyta stan złogu Z SESJI (fazy = podgląd aktu z bieżącego φ). Scenariusz historii działa jako AKT OTWIERAJĄCY — klik restartuje sesję z tą historią jako startem.","This card reads the debris state FROM THE SESSION (phases = an act preview from the current φ). A history scenario acts as the OPENING act — clicking restarts the session with that history as the start.")
           : (isDix
               ? t(`„↻ Powtórz prowokację" wykonuje AKT sesji: łańcuch fizyki (pozycja+wiązanie+ogon ξ) × dyspersja (rep). Akt = prowokacja + powrót do siadu + ${SESSION_REST} s spoczynku — transport złogu liczy silnik.`,`"↻ Repeat provocation" performs a session ACT: physics chain (position+bond+ξ tail) × dispersion (rep). An act = provocation + return to sitting + ${SESSION_REST} s of rest — the engine computes the debris transport.`)
               : t(`Akt = prowokacja + powrót do siadu + ${SESSION_REST} s spoczynku (jedna nić symulacji).`,`An act = provocation + return to sitting + ${SESSION_REST} s of rest (a single simulation thread).`));
@@ -1251,6 +1293,11 @@ function renderDiag(){
     if(mech==="short") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Ramię bańkowe nie ma spoczynku — siad czyści je w ≤2 min, więc historia pozycyjna NIE ustala położenia startowego (scenariusze dotyczą ramienia długiego). Karta pokazuje ŚWIEŻY depozyt w środku ramienia (φ₀ ≈ −22°, wyprowadzone z geometrii segmentu).","The ampullar arm has no rest — sitting clears it within ≤2 min, so positional history does NOT set the starting position (the scenarios apply to the long arm). The card shows a FRESH deposit at the arm's midpoint (φ₀ ≈ −22°, derived from the segment geometry).")}</div></div>`;
     if(v==="cupulo") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Kupulolitiaza: ciężki osklepek reaguje na sam kierunek grawitacji — wynik NIE zależy od historii pozycyjnej (scenariusze dotyczą postaci kanalolitycznej). Test powtarzalny — to jego cecha różnicująca.","Cupulolithiasis: the heavy cupula responds to the direction of gravity itself — the result does NOT depend on positional history (the scenarios apply to the canalithiasis form). The test is repeatable — its differentiating feature.")}</div></div>`;
     const scen=state.bltScenario||"textbook";
+    if(sessDrive){                                           // V19: karta sterowana SESJĄ — baner źródła + selektor w trybie ZASIEWU
+      const phiTxt = S.exited ? t("kanał czysty","canal clear") : S.phi==null ? t("spoczynek ≈200°","rest ≈200°") : `φ ≈ ${Math.round(S.phi)}°`;
+      const banner = t(`Karta sterowana SESJĄ — fazy liczone z BIEŻĄCEGO stanu złogu (${phiTxt}) z łańcucha aktów, nie ze scenariusza. Fazy niżej to podgląd NASTĘPNEGO wykonania; „▶ Wykonaj test w sesji” (panel sesji) zapisuje akt. Klik historii powyżej RESTARTUJE sesję z tą historią jako aktem otwierającym.`,`Card driven by the SESSION — phases are computed from the debris' CURRENT state (${phiTxt}) of the act chain, not from a scenario. The phases below preview the NEXT run; "▶ Run the test in the session" (session panel) commits the act. Clicking a history above RESTARTS the session with that history as the opening act.`);
+      return scenPanelHTML(A, scen, banner, true);
+    }
     const ini=bltInit(A,scen);
     const banner = ini.exitedInHistory
       ? t("Historia pozycyjna OPRÓŻNIŁA kanał (złóg wpadł do łagiewki, zanim test się zaczął) — obie fazy będą nieme.","The positional history EMPTIED the canal (the debris fell into the utricle before the test began) — both phases will be mute.")
@@ -1262,7 +1309,22 @@ function renderDiag(){
   const bltExtras = isBlt ? (()=>{
     const ruleTxt=t("Reguła kliniczna (Choung 2006): skłon → ucho chore, odchylenie → zdrowe; w postaci apogeotropowej odwrotnie.","Clinical rule (Choung 2006): bow → affected ear, lean → healthy; reversed in the apogeotropic form.");
     let badge, badgeCol="#3a8f6f";
-    if(mech==="light"){ badge=t("model ZGODNY z regułą geotropową Choung — ale przez mechanizm OSKLEPKOWY (odwrócony wypór), nie wolny złóg; odpowiedź trwała i powtarzalna","model AGREES with the geotropic Choung rule — but via a CUPULAR mechanism (inverted buoyancy), not free debris; the response is persistent and repeatable"); }
+    // V19: pod SESJĄ badge liczy się z TEGO SAMEGO podglądu co strzałki (pv) — gałęzie scenariuszowe
+    // źle klasyfikują stany mid-chain (sonda: po akcie z textbook bow +0,51/lean +0,096 wpadałby
+    // w „model PRZECIWNY regule" — fałsz; to złóg blisko równowagi po poprzednim akcie).
+    if(sessDrive){
+      const pv=sessionPreview(S, state.testKey);
+      const bx=(pv.phases[0]||{}).xi||0, lx=(pv.phases[1]||{}).xi||0;
+      const iB=nysFromDyn("horizontal",A,bx,false).strength, iL=nysFromDyn("horizontal",A,lx,false).strength;
+      if(pv.exited && pv.exitStep==null){ badge=t("kanał opróżniony w tej sesji — karta pokazuje niemy test kontrolny","the canal was emptied in this session — the card shows a mute control test"); badgeCol="#8a93a6"; }
+      else if(pv.exitStep!=null && bx<0 && iB>=XI_CARD){ badge=t("skłon MYLI (bije ku zdrowej — złóg za wododziałem) i OPRÓŻNIA kanał: test zadziała jak manewr","the bow MISLEADS (beats toward healthy — debris beyond the watershed) and EMPTIES the canal: the test will act as a maneuver"); badgeCol="#b0813f"; }
+      else if(pv.exitStep!=null){ badge=t("ciche samowyleczenie — złóg przy ujściu (wyjście niemal bez oczopląsu)","silent self-clearing — debris near the exit (leaves with barely any nystagmus)"); badgeCol="#8a93a6"; }
+      else if(bx>0 && iB>=XI_CARD && lx<0 && iL>=XI_CARD){ badge=t("pełna reguła Choung — z BIEŻĄCEGO stanu sesji","the full Choung rule — from the session's CURRENT state"); }
+      else if(bx>0 && iB>=XI_CARD && iL<XI_CARD){ badge=t("skłon zgodny z regułą, odchylenie podprogowe — złóg blisko równowagi po poprzednich aktach (męczliwość = pozycja, R10)","bow consistent with the rule, lean subthreshold — debris near equilibrium after the previous acts (fatigability = position, R10)"); }
+      else if(iB<XI_CARD && iL<XI_CARD){ badge=t("test niemy z tego stanu — wiązanie/równowaga; użyj historii jako aktu otwierającego","the test is mute from this state — bond/equilibrium; use a history as the opening act"); badgeCol="#8a93a6"; }
+      else { badge=t("wzorzec odwrócony względem reguły — złóg za wododziałem (bieżące φ sesji)","pattern reversed vs the rule — debris beyond the watershed (the session's current φ)"); badgeCol="#b0813f"; }
+    }
+    else if(mech==="light"){ badge=t("model ZGODNY z regułą geotropową Choung — ale przez mechanizm OSKLEPKOWY (odwrócony wypór), nie wolny złóg; odpowiedź trwała i powtarzalna","model AGREES with the geotropic Choung rule — but via a CUPULAR mechanism (inverted buoyancy), not free debris; the response is persistent and repeatable"); }
     else if(mech==="short"){ badge=t("wzorzec apo PRZEMIJAJĄCY — wolny złóg w ramieniu bańkowym; odchylenie OPRÓŻNIA ramię (samooczyszczenie — test bywa terapeutyczny)","a TRANSIENT apo pattern — free debris in the ampullar arm; the lean EMPTIES the arm (self-clearing — the test can be therapeutic)"); badgeCol="#b0813f"; }
     else if(v==="cupulo"){ badge=t("model ZGODNY z regułą apogeotropową — kierunek liczy fizyka (cel przy osklepku)","model AGREES with the apogeotropic rule — the direction is computed by physics (target at the cupula)"); }
     else if(bltMeta && bltMeta.exitedInBow && (bltMeta.bowXi||0)<-0.23){ badge=t("skłon MYLI (bije ku zdrowej — złóg za wododziałem) i usuwa złóg z kanału: test zadziałał jak manewr","the bow MISLEADS (beats toward healthy — debris beyond the watershed) and removes the debris: the test acted as a maneuver"); badgeCol="#b0813f"; }
@@ -1274,7 +1336,7 @@ function renderDiag(){
       <div style="display:inline-block;padding:4px 10px;border-radius:12px;background:${badgeCol}22;border:1px solid ${badgeCol};font-size:12.5px;color:#D4DEE8">${badge}</div></div>`;
     const mapCard = mech==="canalo" ? `<div class="card" style="margin-bottom:4px">
       <div class="obslabel" style="margin-bottom:6px">${t("Mapa wododziału — od czego zależy wynik BLT","Watershed map — what the BLT outcome depends on")}</div>
-      ${bltWatershedSVG(A, bltMeta?bltMeta.phi0:null)}
+      ${bltWatershedSVG(A, sessDrive ? (S.exited?null:(S.phi??Vestibular.restPhi("horizontal",A))) : (bltMeta?bltMeta.phi0:null))}${sessDrive?`<div class="note" style="margin-top:4px">${t("Znacznik pokazuje BIEŻĄCE φ złogu sesji (po aktach), nie φ₀ scenariusza; po opróżnieniu kanału znika.","The marker shows the session debris' CURRENT φ (after the acts), not a scenario's φ₀; it disappears once the canal is emptied.")}</div>`:""}
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:6px">
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3a8f6f"></span> ${t("pełna reguła Choung","full Choung rule")}</span>
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b0813f"></span> ${t("wzorzec odwrócony","reversed pattern")}</span>
@@ -1291,6 +1353,11 @@ function renderDiag(){
     if(mech==="short") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Ramię bańkowe nie ma spoczynku — historia pozycyjna NIE ustala położenia startowego (scenariusze dotyczą ramienia długiego). Karta pokazuje ŚWIEŻY depozyt w środku ramienia (φ₀ ≈ −22°).","The ampullar arm has no rest — positional history does NOT set the starting position (the scenarios apply to the long arm). The card shows a FRESH deposit at the arm's midpoint (φ₀ ≈ −22°).")}</div></div>`;
     if(v==="cupulo") return `<div class="card" style="margin-bottom:4px"><div class="note" style="margin:0">${t("Kupulolitiaza: ciężki osklepek reaguje na sam kierunek grawitacji — wynik NIE zależy od historii pozycyjnej (scenariusze dotyczą postaci kanalolitycznej). Uporczywy oczopląs położenia + pseudo-SN w siadzie.","Cupulolithiasis: the heavy cupula responds to the direction of gravity itself — the result does NOT depend on positional history (the scenarios apply to the canalithiasis form). Persistent lying-down nystagmus + pseudo-SN in sitting.")}</div></div>`;
     const scen=state.bltScenario||"textbook";
+    if(sessDrive){                                           // V19: jak w bltPanel — źródłem karty jest SESJA
+      const phiTxt = S.exited ? t("kanał czysty","canal clear") : S.phi==null ? t("spoczynek ≈200°","rest ≈200°") : `φ ≈ ${Math.round(S.phi)}°`;
+      const banner = t(`Karta sterowana SESJĄ — fazy liczone z BIEŻĄCEGO stanu złogu (${phiTxt}) z łańcucha aktów, nie ze scenariusza. Fazy niżej to podgląd NASTĘPNEGO wykonania; „▶ Wykonaj test w sesji” (panel sesji) zapisuje akt. Klik historii powyżej RESTARTUJE sesję z tą historią jako aktem otwierającym.`,`Card driven by the SESSION — phases are computed from the debris' CURRENT state (${phiTxt}) of the act chain, not from a scenario. The phases below preview the NEXT run; "▶ Run the test in the session" (session panel) commits the act. Clicking a history above RESTARTS the session with that history as the opening act.`);
+      return scenPanelHTML(A, scen, banner, true);
+    }
     const ini=bltInit(A,scen);
     const banner = ini.exitedInHistory
       ? t("Historia pozycyjna OPRÓŻNIŁA kanał (złóg wpadł do łagiewki, zanim test się zaczął) — obie fazy będą nieme.","The positional history EMPTIED the canal (the debris fell into the utricle before the test began) — both phases will be mute.")
@@ -1302,7 +1369,17 @@ function renderDiag(){
   const ldtExtras = isLdt ? (()=>{
     const ruleTxt=t("Reguła kliniczna: położenie → geo ku uchu ZDROWEMU / apo ku CHOREMU; siadanie odwraca kierunek (wyprowadzenie mechaniczne). LDN i PSN to znaki POMOCNICZE lateralizacji — nie kryterium Bárány.","Clinical rule: lying down → geo toward the HEALTHY ear / apo toward the AFFECTED one; sitting up reverses the direction (mechanical derivation). LDN and PSN are SECONDARY lateralization signs — not Bárány criteria.");
     let badge, badgeCol="#3a8f6f";
-    if(mech==="light"){ badge=t("model: położenie ku ZDROWEJ (geotropowo, trwale) + pseudo-SN ku zdrowej — lustro postaci apogeotropowej","model: lying down toward the HEALTHY side (geotropic, persistent) + pseudo-SN toward healthy — the mirror of the apogeotropic form"); }
+    // V19: pod SESJĄ badge z podglądu pv (jak w B&L); kategorii ekspulsji NIE ma — LDT nigdy nie usuwa złogu (D2).
+    if(sessDrive){
+      const pv=sessionPreview(S, state.testKey);
+      const lieX=(pv.phases[0]||{}).xi||0;
+      const iLie=nysFromDyn("horizontal",A,lieX,false).strength;
+      if(pv.exited && pv.exitStep==null){ badge=t("kanał opróżniony w tej sesji — karta pokazuje niemy test kontrolny","the canal was emptied in this session — the card shows a mute control test"); badgeCol="#8a93a6"; }
+      else if(iLie<XI_CARD){ badge=t("brak LDN z tego stanu — wiązanie/równowaga (klinicznie 32–62% chorych); użyj historii jako aktu otwierającego","no LDN from this state — bond/equilibrium (clinically 32–62% of patients); use a history as the opening act"); badgeCol="#8a93a6"; }
+      else if(lieX<0){ badge=t("położenie ku ZDROWEJ (geotropowo — emergentnie) z BIEŻĄCEGO stanu sesji; siadanie w modelu podprogowe","lying down toward the HEALTHY side (geotropic — emergently) from the session's CURRENT state; sitting up subthreshold in the model"); }
+      else { badge=t("położenie ku CHOREJ — wzorzec GT− (złóg za równowagą leżenia; bieżące φ sesji): odczyt położenia, nie błąd reguły","lying down toward the AFFECTED side — the GT− pattern (debris beyond the lying equilibrium; the session's current φ): a position readout, not a failure of the rule"); badgeCol="#b0813f"; }
+    }
+    else if(mech==="light"){ badge=t("model: położenie ku ZDROWEJ (geotropowo, trwale) + pseudo-SN ku zdrowej — lustro postaci apogeotropowej","model: lying down toward the HEALTHY side (geotropic, persistent) + pseudo-SN toward healthy — the mirror of the apogeotropic form"); }
     else if(mech==="short"){ badge=t("położenie ku CHOREJ (wzorzec apo), PRZEMIJAJĄCE — siadanie domyka samooczyszczenie ramienia","lying down toward the AFFECTED side (the apo pattern), TRANSIENT — sitting up completes the arm's self-clearing"); badgeCol="#b0813f"; }
     else if(v==="cupulo"){ badge=t("model ZGODNY z regułą apogeotropową — położenie ku chorej (cel przy osklepku), pseudo-SN w siadzie ku chorej","model AGREES with the apogeotropic rule — lying down toward the affected side (target at the cupula), pseudo-SN in sitting toward the affected side"); }
     else if(ldtMeta && ldtMeta.exitedInHistory){ badge=t("kanał opróżniony — reguły nie ma na czym testować","canal emptied — nothing left to test the rule on"); badgeCol="#8a93a6"; }

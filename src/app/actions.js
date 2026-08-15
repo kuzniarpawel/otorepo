@@ -1,6 +1,6 @@
 // Akcje UI (onclick=… przez window): nawigacja, wybory, HINTS, zapis/odczyt pacjenta.
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF, DIAG, actTimeline, sessionSim, SIT_SEG, SESSION_REST, readhesion, maneuverTimeline, SCEN_DRIVEN } from '../pose/maneuvers.js';
+import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF, DIAG, actTimeline, sessionSim, SIT_SEG, SESSION_REST, readhesion, maneuverTimeline, SCEN_DRIVEN, ACT_STEPS, mechOf, bltInit, BLT_HISTORY } from '../pose/maneuvers.js';
 import { state } from './state.js';
 import { $, releaseWake, beep } from '../runtime/registry.js';
 import { render, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
@@ -254,13 +254,36 @@ function commitAct(kind, timeline, restSecs){
   S.acts.push({kind, t:Math.round(dur)}); S.tSession+=dur;   // render() u WYWOŁUJĄCEGO — sessionProvoke inkrementuje rep PO commicie, render musi widzieć stan końcowy
 }
 // prowokacja bieżącego testu jako akt; rep++ PO symulacji (pierwsza prowokacja = pełna odpowiedź).
-// Karty scenariuszowe (SCEN_DRIVEN: bowlean, lyingdown) poza aktami sesji — mają własne scenariusze
-// historii (V5/V11); integracja = odłożony kandydat.
+// V19: strażnik !ACT_STEPS[testKey] jest MOCNIEJSZY niż dawny SCEN_DRIVEN — karta bez własnego wpisu
+// aktu nie odpali po cichu fallbacku dixowego (bowlean/lyingdown mają już wpisy i wchodzą do aktów).
 function sessionProvoke(){
-  const S=state.session; if(!S || !state.testKey || SCEN_DRIVEN.has(state.testKey)) return;
+  const S=state.session; if(!S || !state.testKey || !ACT_STEPS[state.testKey]) return;
   commitAct(state.testKey, actTimeline(state.testKey, S.side), SESSION_REST);
   S.rep=(S.rep||0)+1; if(state.testKey==="dix") state.dixRep=S.rep;
   render();
+}
+// V19: ZASIEW — scenariusz historii pozycyjnej jako AKT OTWIERAJĄCY łańcucha sesji. RESTARTUJE sesję
+// (nadpisanie φ przy zachowaniu starych aktów łamałoby inwariant B7: łańcuch ≡ jedna timeline — stare
+// akty dotyczyłyby złogu, którego położenie właśnie skasowano). Mapowanie bltInit→stan: bondFrac =
+// settled?1:0 (bond0=0 ≡ settled:false w silniku; bond=0 dla neutral dawałby FAŁSZYWY LDN 0,077 —
+// sonda projektu), xi=0 świadomie (kontrakt karty — bltPhases nie przenosi ogona historii; przeniesienie
+// łamałoby bit-równość karta≡sesja), bez readhesion za siad historii (lustro konwencji settled:false —
+// NIE „poprawiać" na readhesion(0,30)). tSession += czas SYMULOWANY historii (uczciwy zegar aktowy;
+// textbook ~332 s). neutral = czysty freshSession (start nieoznaczony ≡ Reset). rep=0 (historia to nie
+// seria prowokacji — B7: rep solo = dyspersja między wizytami).
+function seedSessionFromScenario(k){
+  const S=state.session; if(!S || !state.testKey || !SCEN_DRIVEN.has(state.testKey)) return;
+  if(mechOf(state.variant, state.mechanism, DIAG[state.testKey].canal)!=="canalo") return;
+  state.bltScenario=k;                                     // sesja OFF wróci do ostatnio zasianej historii
+  const fresh=freshSession(S.canal, S.side, S.size);
+  const ini=bltInit(S.side, k);
+  if(BLT_HISTORY[k] && BLT_HISTORY[k].steps){
+    const dur=BLT_HISTORY[k].steps(S.side).reduce((a,st)=>a+0.8+st.hold,0);
+    Object.assign(fresh, {phi: ini.exitedInHistory?null:ini.phi0, xi:0,
+      bondFrac: ini.settled?1:0, stuck: !!ini.settled, exited: ini.exitedInHistory, inCrus:false,
+      acts:[{kind:"seed:"+k, t:Math.round(dur)}], tSession:dur});
+  }
+  state.session=fresh; render();
 }
 // manewr zaliczony do sesji JAWNYM przyciskiem (render nie może commitować) + końcowy siad.
 function sessionManeuver(){
@@ -332,8 +355,8 @@ function syncLangBar(){
 function setLangUI(lang){ setLang(lang); if(state.plan && state.screen==="guide"){ state.plan=genPlan(state.maneuverKey, state.side); } syncLangBar(); syncSessionBar(); render(); }   // regeneruj plan → instrukcje kroków w nowym jezyku (wzorzec jak pickSize); etykieta sesji też przez t()
 
 
-export { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setMechanism, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, freshSession, toggleSessionMode, resetSession, sessionProvoke, sessionManeuver, sessionRest, syncSessionBar };
+export { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setMechanism, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, freshSession, toggleSessionMode, resetSession, sessionProvoke, seedSessionFromScenario, sessionManeuver, sessionRest, syncSessionBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setMechanism, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, toggleSessionMode, resetSession, sessionProvoke, sessionManeuver, sessionRest, syncSessionBar });
+Object.assign(window, { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setMechanism, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, toggleSessionMode, resetSession, sessionProvoke, seedSessionFromScenario, sessionManeuver, sessionRest, syncSessionBar });

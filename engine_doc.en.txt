@@ -1064,6 +1064,33 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
       a calibration constant, not a literature one). A sequential Roll (affected→centre→healthy) moves
       the debris between phases — the session's phase amplitudes are not a pure Ewald comparison
       (R10/Bhandari; the card says so outright).]
+     [V19-STATUS 2026-08-15: DELIVERED — SESSION↔SCENARIO-CARD INTEGRATION (closing the candidate
+      deferred from V10). Bowlean and lyingdown joined the ACTS: ACT_STEPS.bowlean (bow 30 s /
+      sit-centre 5 s / lean 30 s, pivot "neck" per step — actTimeline got st.pivot||"body",
+      because since B8 the pivot has physical effects) and ACT_STEPS.lyingdown [lying 30 /
+      sitting 30]; PHASE_OF {bowlean:[0,2], lyingdown:[0,1]}. PROOF BY CONSTRUCTION (a B7
+      analogue): an act from a seeded scenario reproduces the scenario card BIT-FOR-BIT (textbook
+      bow +0.975294 / lean −0.366342, delta 0.0e+0; LDT lie −0.381640 idem) — one thread, one
+      physics. SEEDING = the history scenario as the OPENING ACT (seedSessionFromScenario): the
+      click RESTARTS the chain (overwriting φ while keeping the old acts would break the B7
+      invariant) and maps bltInit→state: {phi:φ₀, xi:0 (the card's contract), bondFrac:
+      settled?1:0 — bond=0 for neutral would give a FALSE LDN of 0.077 (probe); no readhesion
+      for the history's sitting (a mirror of the settled:false convention — do NOT "improve"
+      it)}; tSession += the history's SIMULATED time (textbook ~332 s); neutral = a clean
+      freshSession. Cards under the session: the phases = a preview of the NEXT execution
+      (sessionPreview with a per-phase exitStep; the ξ accumulation deliberately untouched —
+      cutting at the exit sample would lose the peak, −0.749 vs −0.753), arrow+text from ONE ξ
+      (bltDirWord, V5), the badge and the watershed-map marker from THE SAME pv/state (the
+      marker = the session's current φ; it vanishes once the canal empties). THE R10 REWARD,
+      LIVE: seeding afterRoll (φ≈220°>190°) → the preview "beats toward the healthy side — AND
+      THE DEBRIS LEAVES THE CANAL" (exit t≈7.55 s) → the act → a silent control test (NPV ~72%).
+      The provocation guard hardened: !ACT_STEPS[testKey] instead of SCEN_DRIVEN (a card with no
+      act entry will not fire the Dix fallback); the sessKey memo extended with S.exited (the
+      fresh↔exited collision confirmed by a probe). Session OFF = bit-for-bit (a hard gate:
+      golden 0-diff after the whole feature); oracles: +10 additive dom session-* keys
+      (6 bowlean + 4 lyingdown, dom 164→174), a clean descent: bowlean session-off ≡
+      scen-afterRoll and lyingdown session-off ≡ the base card BIT-FOR-BIT. Engine physics
+      UNTOUCHED (zero edits to vestibular.js).]
      [D10 STATUS 2026-08-14 (assessment II, V15): DELIVERED-PARTIALLY — SHORT ARM + CANALITH JAM
       (engine + pins + notes; the third-variant UI DELIVERED the same day in V16/D4 — see
       R11-RESOLUTION; the session deliberately narrowed to the canalo mechanism).

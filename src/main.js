@@ -6,7 +6,7 @@ import { MANEUVERS, CANALS, stepGravity, stepHeadQ, composeHead, TORSO_Q, bodyJo
 import { spvTrace, XI_VIS } from './engine/spv-bridge.js';
 import { state } from './app/state.js';
 import { render, webglAvailable } from './render/svg-screens.js';
-import { openHints, setHintsFix, setHintsGaze, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, loadHintsFromHash, openTest, setDixObs, setVariant, setMechanism, setBltScenario, genPlan, setGuideSide, setDiagSide, startManeuver, syncLangBar, syncSessionBar, toggleSessionMode, resetSession, sessionProvoke, sessionManeuver, sessionRest } from './app/actions.js';
+import { openHints, setHintsFix, setHintsGaze, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, loadHintsFromHash, openTest, setDixObs, setVariant, setMechanism, setBltScenario, genPlan, setGuideSide, setDiagSide, startManeuver, syncLangBar, syncSessionBar, toggleSessionMode, resetSession, sessionProvoke, seedSessionFromScenario, sessionManeuver, sessionRest } from './app/actions.js';
 import { initLang } from './i18n.js';
 
 // Etap 5: 3D jest DOMYŚLNYM rendererem karty „Ułożenie" tam, gdzie WebGL działa.
@@ -22,4 +22,4 @@ render();
 
 
 
-window.__OTOREPO_TEST__ = { Vestibular, NeuroVOR, Scene3D, composeHead, stepHeadQ, stepGravity, bodyJoints, poseSpec, gravArrowFor, genPlan, MANEUVERS, CANALS, DIAG, CANAL_OF, HINTS_PRESETS, TORSO_Q, state, render, startManeuver, setGuideSide, openTest, setDiagSide, setDixObs, setVariant, setMechanism, setBltScenario, maneuverTimeline, actTimeline, sessionSim, readhesion, SESSION_REST, SIT_SEG, ldtPhases, nullScan, nullYawOf, engineXi, provokeQ, spvTrace, XI_VIS, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, toggleSessionMode, resetSession, sessionProvoke, sessionManeuver, sessionRest, openHints, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsFix, setHintsGaze, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev };
+window.__OTOREPO_TEST__ = { Vestibular, NeuroVOR, Scene3D, composeHead, stepHeadQ, stepGravity, bodyJoints, poseSpec, gravArrowFor, genPlan, MANEUVERS, CANALS, DIAG, CANAL_OF, HINTS_PRESETS, TORSO_Q, state, render, startManeuver, setGuideSide, openTest, setDiagSide, setDixObs, setVariant, setMechanism, setBltScenario, maneuverTimeline, actTimeline, sessionSim, readhesion, SESSION_REST, SIT_SEG, ldtPhases, nullScan, nullYawOf, engineXi, provokeQ, spvTrace, XI_VIS, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, toggleSessionMode, resetSession, sessionProvoke, seedSessionFromScenario, sessionManeuver, sessionRest, openHints, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsFix, setHintsGaze, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev };

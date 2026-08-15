@@ -997,6 +997,29 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
       niesie wyłącznie LATENCJĘ (krzywej powrotu latencji nikt nie zmierzył — stała kalibracyjna,
       nie literaturowa). Sekwencyjny Roll (chore→centrum→zdrowe) przemieszcza złóg między fazami —
       amplitudy faz sesji nie są czystym porównaniem Ewalda (R10/Bhandari; karta mówi to wprost).]
+     [V19-STATUS 2026-08-15: DOSTARCZONE — INTEGRACJA SESJA↔KARTY SCENARIUSZOWE (domknięcie odłożonego
+      kandydata z V10). Bowlean i lyingdown weszły do AKTÓW: ACT_STEPS.bowlean (skłon 30 s / siad-
+      centrum 5 s / odchylenie 30 s, pivot "neck" per krok — actTimeline dostał st.pivot||"body",
+      bo od B8 pivot ma skutki fizyczne) i ACT_STEPS.lyingdown [leżenie 30 / siad 30]; PHASE_OF
+      {bowlean:[0,2], lyingdown:[0,1]}. DOWÓD KONSTRUKCYJNY (analog B7): akt z zasianego scenariusza
+      odtwarza kartę scenariuszową BIT-W-BIT (textbook bow +0.975294 / lean −0.366342, delta 0.0e+0;
+      LDT lie −0.381640 idem) — jedna nić, jedna fizyka. ZASIEW = scenariusz historii jako AKT
+      OTWIERAJĄCY (seedSessionFromScenario): klik RESTARTUJE łańcuch (nadpisanie φ przy zachowaniu
+      starych aktów łamałoby inwariant B7) i mapuje bltInit→stan: {phi:φ₀, xi:0 (kontrakt karty),
+      bondFrac: settled?1:0 — bond=0 dla neutral dawałby FAŁSZYWY LDN 0.077 (sonda); bez readhesion
+      za siad historii (lustro konwencji settled:false — NIE „poprawiać")}; tSession += czas
+      SYMULOWANY historii (textbook ~332 s); neutral = czysty freshSession. Karty pod sesją: fazy =
+      podgląd NASTĘPNEGO wykonania (sessionPreview z per-fazowym exitStep; akumulacja ξ świadomie
+      nietknięta — cięcie w próbce wyjścia gubiłoby szczyt −0.749 vs −0.753), strzałka+napis z JEDNEGO
+      ξ (bltDirWord, V5), badge i znacznik mapy wododziału z TEGO SAMEGO pv/stanu (znacznik = bieżące
+      φ sesji, znika po opróżnieniu). NAGRODA R10 NA ŻYWO: zasiew afterRoll (φ≈220°>190°) → podgląd
+      „bije ku zdrowej — I ZŁÓG OPUSZCZA KANAŁ" (exit t≈7.55 s) → akt → niemy test kontrolny (NPV
+      ~72%). Strażnik prowokacji wzmocniony: !ACT_STEPS[testKey] zamiast SCEN_DRIVEN (karta bez
+      wpisu aktu nie odpali fallbacku dixowego); sessKey memo rozszerzony o S.exited (kolizja
+      fresh↔exited potwierdzona sondą). Sesja OFF = bit-w-bit (bramka twarda: golden 0-diff po całym
+      feature); wyrocznie +10 addytywnych kluczy dom session-* (6 bowlean + 4 lyingdown, dom 164→174),
+      zejście czyste: bowlean session-off ≡ scen-afterRoll i lyingdown session-off ≡ karta bazowa
+      BIT-W-BIT. Fizyka silnika NIETKNIĘTA (zero edycji vestibular.js).]
      [D10-STATUS 2026-08-14 (ocena II, V15): DOSTARCZONE-CZĘŚCIOWO — SHORT-ARM + CANALITH JAM (silnik
       + piny + noty; UI trzeciego wariantu DOSTARCZONE tego samego dnia w V16/D4 — patrz
       R11-ROZWIĄZANIE; sesja świadomie zawężona do mechanizmu canalo). SEGMENT BAŃKOWY:

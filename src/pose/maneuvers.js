@@ -774,10 +774,12 @@ function nullYawOf(side, body="supineFlex"){
   out = out==null ? null : Math.round(out*10)/10;
   _bltMemo.set(k,out); return out;
 }
-// Karty sterowane SCENARIUSZAMI historii — poza podglądem i aktami sesji (decyzja V10, symetrycznie;
-// integracja sesja↔karty scenariuszowe = odłożony kandydat). WSPÓLNY predykat zamiast literałów
-// „bowlean" w strażnikach: pominięcie jednego strażnika uruchamiałoby PO CICHU fallback aktu Dixa
-// (ACT_STEPS[testKey]||ACT_STEPS.dix — poza kanału TYLNEGO!) pod testem poziomym.
+// Karty z SELEKTOREM SCENARIUSZY historii pozycyjnej (V5/V11). Od V19 predykat NIE wyklucza już
+// z sesji: przy WŁĄCZONEJ sesji (i zgodności kanał/strona/mech==canalo) karty te czytają stan złogu
+// Z SESJI (sessDrive), a selektor zmienia funkcję na ZASIEW — scenariusz staje się AKTEM OTWIERAJĄCYM
+// łańcucha (seedSessionFromScenario w actions.js). Czytelnicy predykatu: tryb selektora + nota panelu
+// sesji. Strażnik prowokacji przeszedł na MOCNIEJSZY warunek !ACT_STEPS[testKey] (żadna przyszła karta
+// bez wpisu aktu nie odpali po cichu fallbacku dixowego).
 const SCEN_DRIVEN=new Set(["bowlean","lyingdown"]);
 
 /* ============ Sesja ciągła (ocena II, V10/D1 — domknięcie R10, rozstrzygnięcie B7) ============
@@ -819,12 +821,19 @@ const ACT_STEPS={                     // pozy aktu per test W KOLEJNOŚCI WYKONA
   roll:     A=>[{body:"supineFlex", yaw:A==="P"?90:-90, face:"up", hold:20},
                 {body:"supineFlex", yaw:0,              face:"up", hold:5},    // POWRÓT DO CENTRUM (Pagnini–McClure) — bez niego druga strona dostaje przemach 180° zamiast 90°
                 {body:"supineFlex", yaw:A==="P"?-90:90, face:"up", hold:20}],
-  lyingdown:A=>[{body:"supineFlex", yaw:0, face:"up", hold:30}],               // V11/D2: bezpiecznik fallbacku ||ACT_STEPS.dix (test i tak POZA aktami — SCEN_DRIVEN) + zaczep przyszłej integracji
+  // V19: bowlean/lyingdown W AKTACH — pozy, holdy i PIVOT dokładnie jak nici kart (bltPhases 30/5/30
+  // pivot "neck"; ldtPhases 30/30 pivot "body") → akt z zasianego scenariusza odtwarza kartę BIT-W-BIT
+  // (sonda projektu: textbook bow +0.975294/lean −0.366342, delta 0.0e+0; LDT lie −0.381640 idem).
+  bowlean:  A=>[{body:"sit", yaw:0, face:"down", hold:30, pivot:"neck"},
+                {body:"sit", yaw:0, face:"fwd",  hold:5,  pivot:"neck"},       // siad-centrum (bez fazy karty)
+                {body:"sit", yaw:0, face:"up",   hold:30, pivot:"neck"}],
+  lyingdown:A=>[{body:"supineFlex", yaw:0, face:"up",  hold:30},
+                {body:"sit",        yaw:0, face:"fwd", hold:30}],              // sit = FAZA karty LDT (siadanie); SESSION_REST dolicza się osobno w SIT_SEG
 };
-const PHASE_OF={ roll:[0,2] };        // mapowanie kroków aktu → fazy karty (centrum nie ma karty); reszta: tożsamość
+const PHASE_OF={ roll:[0,2], bowlean:[0,2], lyingdown:[0,1] };   // mapowanie kroków aktu → fazy karty (centrum bowlean bez karty); reszta: tożsamość
 function actTimeline(testKey, side){
   return [...(ACT_STEPS[testKey]||ACT_STEPS.dix)(side)
-    .map(st=>({q:stepHeadQ(st.body,st.yaw,st.face), tTrans:0.8, tHold:st.hold, pivot:"body"})), SIT_SEG];
+    .map(st=>({q:stepHeadQ(st.body,st.yaw,st.face), tTrans:0.8, tHold:st.hold, pivot:st.pivot||"body"})), SIT_SEG];   // V19: pivot per krok (skłon/odchylenie = KARK — od B8 pivot ma skutki fizyczne); wpisy bez pola → "body" bit-w-bit
 }
 // stan sesji → parametry startowe silnika. settled:true ZAWSZE — o zatrzymaniu decyduje UCZCIWA bramka
 // w (phi0, q0) + bond0 (bond0=0 ≡ settled:false); phi=null = spoczynek naturalny (restPhi, jak dotąd).
@@ -833,19 +842,24 @@ const sessionInit=S=>({ ...(S.phi!=null?{phi0:S.phi}:{}), settled:true,
 const sessionSim=(S,timeline)=>Vestibular.simulateCanalith({canal:S.canal, side:S.side, size:S.size,
   q0:[1,0,0,0], timeline, ...sessionInit(S)});
 // podgląd karty diag bez commitu: szczyt ξ per faza z JEDNEJ nici (okna czasowe jak w bltPhases).
-// Memo kluczem PEŁNEJ sygnatury stanu (strażnik KLIN-7). Bowlean POZA sesyjnym podglądem — karta B&L
-// ma własne scenariusze historii (V5); głębsza integracja = kandydat V11.
+// Memo kluczem PEŁNEJ sygnatury stanu (strażnik KLIN-7; od V19 także S.exited — kolizja fresh↔exited
+// przy bondFrac 1 potwierdzona sondą). Od V19 podgląd obsługuje też karty SCEN_DRIVEN (bowlean/
+// lyingdown): out.exitStep = indeks KROKU aktu z pierwszą próbką exited (null = brak; ekspulsja
+// w SIT_SEG → steps.length), phases[pi].exited = flaga fazy zawierającej ten krok. Akumulacja ξ
+// ŚWIADOMIE nietknięta (ogon po ekspulsji zostaje w pv — jest podprogowy, a render i tak wycisza
+// fazy PO fazie wyjścia); cięcie akumulacji gubiłoby szczyt fazy wyjścia (−0,749 vs −0,753 zmierzone).
 const _sessMemo=new Map();
-const sessKey=S=>[S.canal,S.side,S.size,S.phi==null?"-":S.phi.toFixed(3),S.bondFrac.toFixed(4),(S.xi||0).toFixed(4),S.rep||0].join("#");
+const sessKey=S=>[S.canal,S.side,S.size,S.phi==null?"-":S.phi.toFixed(3),S.bondFrac.toFixed(4),(S.xi||0).toFixed(4),S.rep||0,S.exited?1:0].join("#");
 function sessionPreview(S, testKey){
   const k="pv#"+testKey+"#"+sessKey(S); if(_sessMemo.has(k)) return _sessMemo.get(k);
   const steps=(ACT_STEPS[testKey]||ACT_STEPS.dix)(S.side), map=PHASE_OF[testKey]||steps.map((_,i)=>i);
-  const out={phases:map.map(()=>({xi:0})), exited:!!S.exited};
+  const out={phases:map.map(()=>({xi:0, exited:false})), exited:!!S.exited, exitStep:null};
   if(!S.exited){
     const sim=sessionSim(S, actTimeline(testKey, S.side));
     const bounds=[]; let t0=0; for(const st of steps){ t0+=0.8+st.hold; bounds.push(t0); }
     for(const s of sim){ const i=bounds.findIndex(b=>s.t<=b), pi=map.indexOf(i);
-      if(pi>=0 && Math.abs(s.xi)>Math.abs(out.phases[pi].xi)) out.phases[pi].xi=s.xi; }
+      if(pi>=0 && Math.abs(s.xi)>Math.abs(out.phases[pi].xi)) out.phases[pi].xi=s.xi;
+      if(s.exited && out.exitStep==null){ out.exitStep = i>=0 ? i : steps.length; if(pi>=0) out.phases[pi].exited=true; } }
     out.exited=sim.final.exited;
   }
   _sessMemo.set(k,out); return out;
@@ -1275,7 +1289,7 @@ function baranyClassify(canal, variant, side, antMode, mech){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior",zuma:"horizontal",kim:"horizontal"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

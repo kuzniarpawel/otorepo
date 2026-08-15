@@ -536,6 +536,24 @@ function domOracle(h, win) {
     grab('diag/dix/P/session-control', () => { if (h.openTest) h.openTest('dix'); h.render(); });
     grab('diag/dix/P/session-off', () => { h.toggleSessionMode(false); h.render(); });
   }
+  // V19: SESJA na kartach SCENARIUSZOWYCH (bowlean/lyingdown) — zasiew historii jako akt otwierający
+  // + akty B&L/LDT + niemy test kontrolny po opróżnieniu skłonem (nagroda R10). Łańcuch stanu MIĘDZY
+  // grabami zamierzony (jak wyżej); strażnik h.seedSessionFromScenario — stary build bez handlera
+  // pomija sekcję cicho (wzorzec fallbacków h.*). Higiena: setBltScenario('textbook') po łańcuchu
+  // (zasiew synchronizuje state.bltScenario — bez resetu przeciekłby na klucze poza sekcją).
+  if (h.toggleSessionMode && h.sessionProvoke && h.seedSessionFromScenario) {
+    grab('diag/bowlean/P/session-on',   () => { if (h.openTest) h.openTest('bowlean'); if (h.setDiagSide) h.setDiagSide('P'); h.toggleSessionMode(true); h.render(); });
+    grab('diag/bowlean/P/session-seed', () => { h.seedSessionFromScenario('textbook'); h.render(); });     // φ≈146°, bond 0 → pełna reguła Choung (BIT-EQ ze scenariuszem)
+    grab('diag/bowlean/P/session-act1', () => { h.sessionProvoke(); h.render(); });                        // złóg ≈74°: bow słabszy, lean podprogowy (męczliwość = pozycja, R10)
+    grab('diag/bowlean/P/session-seed2',() => { h.seedSessionFromScenario('afterRoll'); h.render(); });    // φ≈220° ZA wododziałem → podgląd: bije ku zdrowej I OPRÓŻNIA kanał
+    grab('diag/bowlean/P/session-act2', () => { h.sessionProvoke(); h.render(); });                        // akt wykonany → S.exited: niemy test kontrolny, chip „kanał czysty"
+    grab('diag/bowlean/P/session-off',  () => { h.toggleSessionMode(false); h.render(); });                // zejście do karty scenariuszowej (bltScenario='afterRoll' po zasiewie)
+    grab('diag/lyingdown/P/session-on',   () => { if (h.openTest) h.openTest('lyingdown'); if (h.setDiagSide) h.setDiagSide('P'); h.toggleSessionMode(true); h.render(); });
+    grab('diag/lyingdown/P/session-seed', () => { h.seedSessionFromScenario('textbook'); h.render(); });   // lie ku zdrowej (geo emergentnie), sit podprogowy — BIT-EQ ze scenariuszem
+    grab('diag/lyingdown/P/session-act1', () => { h.sessionProvoke(); h.render(); });                      // złóg w strefie podprogowej ~195° (D2) — druga próba niema (R10)
+    grab('diag/lyingdown/P/session-off',  () => { h.toggleSessionMode(false); h.render(); });
+    if (h.setBltScenario) h.setBltScenario('textbook'); else if (h.state) h.state.bltScenario = 'textbook';   // higiena po zasiewach
+  }
 
   return out;
 }
