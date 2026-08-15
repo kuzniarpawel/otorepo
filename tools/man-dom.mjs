@@ -56,7 +56,7 @@ function czysty() {
   st.variant = 'canalo'; st.variantZrodlo = null; st.dixObs = null; st.dixRep = 0;
   st.diagCentral = false; st.size = 'medium'; st.plan = null; st.step = 0;
   st.running = false; st.elapsedMs = 0; st.total = 0; st.autoAdvance = false;
-  st.trybCzasu = 'staly'; st.sideZrodlo = null;   // KAZDE nowe pole stanu MUSI tu trafic — inaczej przypadki przechodza przez kolejnosc blokow, a nie przez kod aplikacji (TC3 przeszlo wlasnie na tym przeoczeniu)
+  st.trybCzasu = 'staly'; st.sideZrodlo = null; st.session = null; st.bltScenario = 'textbook';   // KAZDE nowe pole stanu MUSI tu trafic — inaczej przypadki przechodza przez kolejnosc blokow, a nie przez kod aplikacji (TC3 przeszlo wlasnie na tym przeoczeniu)
   st.obs = {}; st.obsOdciski = {}; st.decisionSeq = 0;
   st.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
   A('render')();
@@ -350,6 +350,47 @@ T('K3g/brak-blokady-ostrzega', /wakenote/.test(app()), 'gdy platforma nie da blo
 st.wakeOK = true; A('render')();
 T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, nie strasz bez powodu');
 
+/* ═══════════ AK. GRANICA AKTU: PRZEJSCIE DO INTERPRETACJI PRZESUWA ZLOG ═══════════
+   Decyzja kliniczna uzytkownika (2026-08-15): akt konczy sie PRZY PRZEJSCIU DO INTERPRETACJI,
+   a nie po opisaniu obserwacji — opis mozna redagowac, wiec dopoki trwa, proba TRWA.
+   Cztery niezmienniki, bo kazdy da sie zlamac osobno:
+     AK1 sesja WYLACZONA — przejscie NIE MOZE ruszyc niczego (sciezka domyslna bit-identyczna)
+     AK2 sesja WLACZONA — przejscie przesuwa zlog (phi ze spoczynku na wyliczona pozycje)
+     AK3 IDEMPOTENCJA — ponowne wejscie w interpretacje NIE przesuwa drugi raz; inaczej sama
+         nawigacja leczylaby pacjenta (kazde tam-i-z-powrotem wyprowadzalo by zlog blizej wyjscia)
+     AK4 PROBA BEZ AKTU (bowlean) — `actTimeline` ma CICHY fallback na Dix-Hallpike'a, wiec bez
+         straznika zapisalibysmy cudze przesuniecie jako wynik tej proby. Ma byc POMINIECIE
+         z powodem, nie zmyslony akt. */
+{
+  czysty();
+  A('openTest')('dix'); A('setDixObs')('post');
+  A('goInterpret')();
+  T('AK1/bez-sesji-nic-sie-nie-rusza', !st.session, 'przy wylaczonej sesji przejscie nie ma czego ruszac');
+
+  czysty();
+  A('openTest')('dix'); A('setDixObs')('post');
+  A('przelaczSesje')();
+  const phiPrzed = st.session.phi;
+  A('goInterpret')();
+  const phiPo = st.session.phi;
+  T('AK2/przejscie-przesuwa-zlog', phiPrzed == null && typeof phiPo === 'number',
+    `phi ma przejsc ze spoczynku (null) na wyliczona pozycje — jest ${phiPrzed} -> ${phiPo}`);
+  eq('AK2b/akt-zapisany', (st.session.acts || []).length, 1);
+  eq('AK2c/licznik-powtorzen', st.session.rep, 1);
+
+  A('goObs')(); A('goInterpret')();               // TAM I Z POWROTEM — nie wolno przesunac drugi raz
+  T('AK3/idempotencja', st.session.phi === phiPo && (st.session.acts || []).length === 1,
+    `ponowne wejscie w interpretacje przesunelo zlog drugi raz (${phiPo} -> ${st.session.phi}, aktow ${(st.session.acts || []).length})`);
+
+  czysty();
+  A('openTest')('bowlean');
+  A('przelaczSesje')();
+  A('goInterpret')();
+  const ost = (st.session.acts || [])[0] || {};
+  T('AK4/bowlean-pominiety-z-powodem', ost.pominiety === 'brakAktu' && st.session.phi == null,
+    `Bow & Lean nie ma aktu w silniku — ma byc pominiecie z powodem, a nie zasymulowany Dix (akt: ${JSON.stringify(ost)})`);
+}
+
 /* ═══════════ M. SESJA CIAGLA: MECZLIWOSC LICZONA RAZ, NIGDY DWA RAZY ═══════════
    NAJWAZNIEJSZA bramka tego trybu i jedyna, ktora moze wprowadzic klinicyste w blad.
    `fatigueFactor(rep)` (mnoznik w renderze) i sesja ciagla (przesuniecie zloga miedzy badaniami)
@@ -406,7 +447,7 @@ T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, ni
 }
 
 /* ═══════════ O. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 88;   /* 84 + 4: MC0-MC3 (sesja ciagla znosi mnoznik meczliwosci) */   /* 77 + 7: N1 x5 prob + N2 + N3 (lista prob wyliczana z DIAG) */
+const OCZEKIWANE = 94;   /* 88 + 6: AK1-AK4 (granica aktu: przejscie do interpretacji przesuwa zlog) */   /* 84 + 4: MC0-MC3 (sesja ciagla znosi mnoznik meczliwosci) */   /* 77 + 7: N1 x5 prob + N2 + N3 (lista prob wyliczana z DIAG) */
 if (bledy.length) {
   console.error(`✗ man:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));
