@@ -1372,6 +1372,31 @@ POZOSTAŁE (do decyzji):
            na źródłach WTÓRNYCH (przeglądy, StatPearls, materiały dydaktyczne), zgodnych co do treści;
            pracy Bárány'ego z 1906 nie czytano. Do czasu domknięcia (a)+(h) zdanie „30° pochodzi
            z konwencji kalorycznej" ma status DOBRZE UDOKUMENTOWANEJ HIPOTEZY, nie faktu z pierwszej ręki.
+     KWERENDA II (2026-08-16, po wdrożeniu V25; 24 agentów, 58 znalezisk, 20 sprawdzonych U ŹRÓDŁA
+       przez osobnych weryfikatorów, 0 błędów). CO SIĘ ZMIENIA W PUNKTACH (a) i (h):
+       • ORYGINAŁY DOSIĘGNIĘTE — CZĘŚCIOWO. McClure 1985 (PMID 4068089): w ABSTRAKCIE NIE MA ŻADNEGO
+         kąta uniesienia głowy — są tylko „pozycje boczne" i ruch do/z nich; pełny tekst
+         (J Otolaryngol 14(1):30–35) NIE jest wolno dostępny. Pagnini/Nuti/Vannucchi 1989
+         (PMID 2734007, DOI 10.1159/000276052): abstrakt też BEZ kąta — tylko „szybkie przetoczenie
+         na bok w pozycji leżącej"; pełny tekst za paywallem Kargera (45 USD), więc nie można
+         wykluczyć kąta w Metodach. WNIOSEK: punkt (a) („liczba nie jest ustalona") staje się
+         MOCNIEJSZY — żaden z dwóch abstraktów źródłowych kąta nie niesie.
+       • LUKA POTWIERDZONA PRZEZ SAMYCH BADACZY: Hentze i wsp. 2025 [H37] piszą WPROST, że nikt
+         dotąd nie zbadał wpływu uzyskanych kątów głowy na wynik diagnostyczny. To jawne
+         potwierdzenie zdania z punktu (f) — nie znaleziono ANI JEDNEJ takiej pracy, bo jej nie ma.
+       • PIERWSZY EMPIRYCZNY SYGNAŁ CO DO KIERUNKU [H36]: w randomizowanym badaniu krzyżowym
+         z pomiarem IMU przypadki prawdziwie dodatnie miały głowę uniesioną MNIEJ (−69.0°) niż
+         fałszywie ujemne (−63.5°), a autorzy zalecają przekroczenie celu −60° w stronę −75°.
+         W naszej konwencji: −60° = zgięcie 30°, −69° = 21°, −75° = 15°. KIERUNEK ZGODNY z V25.
+         ALE: różnica NIEISTOTNA (p=0.128 / 0.661), n=15 rozpoznań kanału bocznego. To sygnał,
+         nie dowód, i tak wolno go cytować.
+       • SKALA SPORU W PERSPEKTYWIE [H37]: realnie osiągane kąty to −64.4°±9.3 / −63.4°±8.7 przy
+         celu −60°, a zmienność wszystkich kątów głowy ±8.7–11.0°. Rozrzut wykonania jest więc
+         WIĘKSZY niż cała różnica 30° → 10.30°, o którą toczy się ten spór. Wniosek praktyczny:
+         wybór kąta ma znaczenie DLA MODELU (bo model wykonuje go dokładnie), a u łóżka chorego
+         ginie w rozrzucie ręki badającego. Zapisać i nie przeceniać.
+       • RODOWÓD KALORYCZNY: NIE ZMIENIA STATUSU. Nadal opiera się na źródłach wtórnych, pracy
+         Bárány'ego z 1906 nie czytano. Status „dobrze udokumentowana hipoteza" ZOSTAJE.
      WDROŻENIE (V25, 2026-08-16, decyzja użytkownika): wniosek (f) wszedł do silnika — poza testu
        Roll bierze zgięcie z NACHYLENIA kanału bocznego tego atlasu (HC_TILT_DEG = 10.4398°),
        a nie z podręcznika, i ta sama stała zasila wszystkie teksty kliniczne mówiące o kącie.
@@ -2717,6 +2742,105 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         anatomii 30°, przy 20° (ta praca) wystarcza ~20°, a przy 10.4° (nasz atlas) ~10°.
       → CZEGO NIE ZWERYFIKOWANO: abstrakt NIE zawiera jawnego porównania z kanonem 30° (zdanie z R9
         o „wprost odnotowanej różnicy" wymaga pełnego tekstu).
+
+[H30] Porwal P, Adarsh VR, Pawar V, Dorasala S, Bijlani A, Nair P, Nayar R (2021). „Clinical and VNG
+      Features in Anterior Canal BPPV — An Analysis of 13 Cases." Front Neurol 12:618269.
+      doi:10.3389/fneur.2021.618269. PMID 33776883. PMC7988206 (CC BY, pełny tekst czytany).
+      → Retrospektywna seria 13 chorych z AC-BPPV wyłowionych z 1350 zawrotowych w 4 ośrodkach przez
+        3 lata; rozpoznanie potwierdzane USTĄPIENIEM objawów po manewrze Yacovino.
+      → KLUCZOWE DLA NAS — TEST ROLL (autorzy nazywają go McClure–Pagnini, MCP) BYWA DODATNI W AC-BPPV.
+        Tabela 2, per pacjent (odtworzona niezależnie z PMC i z Frontiers, identycznie): MCP wykonano
+        u 9 z 13; dodatni u 6/9 — DOWNBEAT u 4 (przyp. 1, 3, 4, 5; CZYSTY downbeat u 1 i 3, downbeat
+        + składowa pozioma u 4 i 5), czysto SKRĘTNY u 2 (przyp. 8, 10); ujemny obustronnie u 3.
+      → JEDNOSTRONNOŚĆ: „MCP lateral position on one side is sensitive to only one side AC BPPV" —
+        pozycja boczna czuła TYLKO na jedną stronę. Zgadza się z pomiarem silnika (0.1185 przy uchu
+        chorym w dole vs 0.0003 przy zdrowym — praktycznie jednostronny).
+      → SAMI AUTORZY: „The role of the MCP test in AC BPPV has not been clarified" — piśmiennictwo
+        w tym punkcie jest ubogie, więc zgodność silnika z tą serią to zgodność z CIENKĄ podstawą.
+      → GRANICA ŹRÓDŁA (istotna): praca NIE podaje geometrii MCP — tylko nazwę testu, bez kąta
+        uniesienia głowy. Kąta z niej wyciągnąć się NIE DA. Mianownik 9 (nie 13) — MCP pominięto
+        u 4 chorych bez podania przyczyny; n=13 na 1350, żadnych odsetków populacyjnych.
+[H31] Castellucci A, Malara P, Martellucci S i wsp. (2020). „Feasibility of Using the Video-Head Impulse
+      Test to Detect the Involved Canal in Benign Paroxysmal Positional Vertigo Presenting With
+      Positional Downbeat Nystagmus." Front Neurol 11:578588. doi:10.3389/fneur.2020.578588.
+      PMID 33178119. PMC7593380 (pełny tekst).
+      → 59 przypadków pozycyjnego downbeat przypisanych BPPV kanałów PIONOWYCH (46 apo-PC, 7 AC,
+        6 nieokreślonych): oczopląs CZYSTO PIONOWY, bez żadnej torsji, u 42.4%; wśród potwierdzonych
+        AC-BPPV brak torsji u 57.1%; kanału ani strony nie dało się ustalić w 10.1%.
+      → ZNACZENIE DLA MODELU: uzasadnia MASKĘ KLINICZNĄ NYS_SHOW.anterior.t=false („czysty downbeat").
+        Zerowa torsja AC w silniku nie jest uproszczeniem wbrew klinice — u większości chorych
+        z potwierdzonym AC-BPPV torsji faktycznie nie widać. Geometria atlasu daje t=0.739, więc
+        maska jest ŚWIADOMYM wyborem konwencji, a nie brakiem geometrii.
+[H32] Garaycochea O, Pérez-Fernández N, Manrique-Huarte R (2022). „A novel maneuver for diagnosis and
+      treatment of torsional-vertical down beating positioning nystagmus: anterior canal and
+      apogeotropic posterior canal BPPV." Braz J Otorhinolaryngol 88(5):708–716. PMC9483926.
+      → Kohorta prospektywna 157 chorych z BPPV; 20 (12.7%) z torsyjno-pionowym downbeat, strona
+        jednoznaczna tylko u 10 (6.35%). W AC-BPPV górny biegun oka skręca ku uchu CHOREMU, torsja
+        SŁABSZA niż składowa pionowa; w apogeotropowym wariancie kanału TYLNEGO torsja bije ku uchu
+        ZDROWEMU — stąd prawostronne apo-PC wygląda IDENTYCZNIE jak lewostronne AC.
+[H33] Bertholon P, Bronstein AM, Davies RA, Rudge P, Thilo KV (2002). „Positional down beating nystagmus
+      in 50 patients: cerebellar disorders and possible anterior semicircular canalithiasis."
+      J Neurol Neurosurg Psychiatry 72(3):366–372. PMID 11861698. PMC1737794 (czytany ABSTRAKT).
+      → 50 kolejnych chorych z pozycyjnym downbeat (downbeat był KRYTERIUM WŁĄCZENIA, więc praca nie
+        może dowodzić, że AC-BPPV daje downbeat — pokazuje, jak taki downbeat wygląda); w grupie
+        idiopatycznej (12) składowa torsyjna u 6, słaba, klinicznie często niewidoczna; prowokacja
+        często OBUSTRONNA w Dix–Hallpike (9/12) albo wyłącznie w zwisie prostym (2/12).
+[H34] Imai T, Uno A, Yamato A, Takimoto Y, Sato G, Matsuda K i wsp. (2014). „Comparison of the efficacy
+      of the Epley maneuver and repeated Dix-Hallpike tests for eliminating positional nystagmus."
+      PMID 24720888 (Auris Nasus Larynx / Class II, wieloośrodkowe randomizowane non-inferiority).
+      → 180 chorych z kanalolitiazą kanału TYLNEGO: 90 Epley vs 90 POWTARZANY TEST DIX–HALLPIKE
+        (maks. 3 powtórzenia, BEZ manewru repozycyjnego). Sam test diagnostyczny zniósł oczopląs
+        pozycyjny TEGO SAMEGO DNIA u 90/90 (100%; 80 chorych wymagało 1 powtórzenia, 10 chorych 2),
+        a po tygodniu był NIE-GORSZY od Epleya (47.8% vs 50.0% wyleczeń).
+      → ZNACZENIE: to najmocniejszy dowód, że BADANIE DIAGNOSTYCZNE BYWA ZABIEGIEM. Dotyczy WYŁĄCZNIE
+        kanału tylnego i testu Dix–Hallpike — przeniesienie na kanał poziomy i test Roll jest
+        rozumowaniem przez analogię, nie cytatem. Uzasadnia werdykt użytkownika z 2026-08-16:
+        „to, że Roll potrafi wyleczyć, nie jest błędem — ma zostać odnotowane".
+[H35] Imai T, Okumura T, Nishiike S, Takeda N, Ohta Y, Osaki Y, Sato T, Inohara H (2018). „Recovery of
+      positional nystagmus after benign paroxysmal positional vertigo fatigue." PMID 30324405
+      (czytany ABSTRAKT).
+      → KONTRAPUNKT DO [H34]: u 20 chorych z kanalolitiazą kanału tylnego oczopląs przy NATYCHMIAST
+        powtórzonym Dix–Hallpike'u spada niemal do zera (śr. maks. SPEV 48.0 → 4.8 °/s), ale po
+        30 minutach WRACA do wartości nieodróżnialnej od wyjściowej.
+      → ZNACZENIE: ujemny test kontrolny BEZPOŚREDNIO po prowokacji NIE dowodzi repozycji — może być
+        męczliwością, nie wyleczeniem. To zdanie jest w uwadze do manewru (poseNote) i w karcie sesji.
+[H36] Hentze M, Hougaard DD, Kingma H (2025). „Impact of head orientation and head movement in
+      traditional manual diagnostics of benign paroxysmal positional vertigo: a randomized controlled
+      crossover study." Front Neurol 16:1654404. doi:10.3389/fneur.2025.1654404. PMC12531064
+      (pełny tekst, open access).
+      → JEDYNA znaleziona praca wiążąca ZMIERZONY (czujnik 6DOF IMU) kąt pochylenia głowy w teście
+        supine roll z wykryciem oczopląsu: 198 włączonych, 192 analizowanych dla SRT, ale tylko
+        15 rozpoznań BPPV kanału bocznego. Przypadki PRAWDZIWIE DODATNIE miały głowę uniesioną
+        MNIEJ (ŚREDNIA −69.0°, 95% CI −73.8..−64.2; prawy SRT) niż FAŁSZYWIE UJEMNE (−63.5°),
+        a autorzy zalecają przekroczenie celu −60° W STRONĘ −75°.
+      → RÓŻNICA NIEISTOTNA STATYSTYCZNIE (p=0.128 prawy, p=0.661 lewy) i n=15 — to sygnał, nie dowód.
+      → ZNACZENIE DLA V25: w naszej konwencji −60° = zgięcie 30°, −69° = 21°, −75° = 15°. Jedyny
+        empiryczny pomiar tego kąta wskazuje więc KIERUNEK ZGODNY ze zmianą V25 (mniej zgięcia =
+        lepsza wykrywalność), choć nie sięga 10° i nie jest istotny. NIE cytować jako potwierdzenia
+        liczby 10.30° — cytować jako zgodność kierunku przy jawnym braku istotności.
+[H37] Hentze M, Hougaard DD, Kingma H i wsp. (2025). „The Intra-Examiner Variability in and Accuracy of
+      Traditional Manual Diagnostics of Benign Paroxysmal Positional Vertigo: A Prospective
+      Observational Cohort Study." J Clin Med 14(2):434. doi:10.3390/jcm14020434 (pełny tekst).
+      → Ile badający REALNIE osiąga w teście roll przy celu −60°: −64.4° (SD 9.3) po stronie prawej
+        i −63.4° (SD 8.7) po lewej; zmienność bezwzględna wszystkich kątów głowy ±8.7 do ±11.0°.
+        Wszystkie 198 badań wykonał JEDEN badający (badanie INTRA-examiner).
+      → AUTORZY WPROST DEKLARUJĄ LUKĘ: nikt dotąd nie zbadał wpływu uzyskanych kątów głowy na wynik
+        diagnostyczny. To jest jawne potwierdzenie punktu (f) wpisu R3-PRZEMIERZENIE 30° — „nie
+        znaleziono ANI JEDNEJ pracy porównującej kąty uniesienia pod względem czułości testu Roll".
+      → PRAKTYCZNIE: rozrzut ±9° jest WIĘKSZY niż cała różnica 30° → 10.30°, o którą tu spieramy.
+[H38] Bhandari A, Bhandari R, Kingma H, Strupp M (2021). „Diagnostic and Therapeutic Maneuvers for
+      Anterior Canal BPPV Canalithiasis: Three-Dimensional Simulations." Front Neurol 12:740599.
+      doi:10.3389/fneur.2021.740599. PMID 34630309. PMC8497794 (pełny tekst).
+      → Symulacje 3D ruchu złogu w kanale przednim (BEZ chorych). Zdanie o słabej i niestałej torsji
+        AC oraz o trudności ustalenia strony w Dix–Hallpike'u jest w tej pracy CYTOWANIEM POŚREDNIM
+        (akapit wstępny z przypisami), nie jej własnym wynikiem — tak je cytować.
+[H39] Bhandari R, Bhandari A, Zee DS, Nuti D, Kingma H, van de Berg R (2025). „Proposal of a standardized
+      testing protocol for BPPV: Using 3D simulations for insights into movement of otoliths during
+      positional tests." Eur Arch Otorhinolaryngol 282 (czytany ABSTRAKT).
+      → Manewry DIAGNOSTYCZNE przesuwają złóg w nowe położenia, więc zmieniają wynik kolejnych testów
+        („efekt kolejności"); stąd zalecenie, by zaczynać od testu supine roll. Dix–Hallpike może
+        przemieścić złóg JUŻ ZNAJDUJĄCY SIĘ w kanale poziomym; test roll nie rusza złogu w kanałach
+        pionowych. To niezależne, symulacyjne potwierdzenie R10 i zjawiska nr 1 wpisu V25.
 
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE

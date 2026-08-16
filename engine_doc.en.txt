@@ -1469,6 +1469,31 @@ REMAINING (pending decision):
            sources (reviews, StatPearls, teaching materials) that agree in content; Bárány's 1906 paper was
            not read. Until (a)+(h) are closed, the sentence "30° comes from the caloric convention" has the
            status of A WELL-DOCUMENTED HYPOTHESIS, not a first-hand fact.
+     QUERY II (2026-08-16, after V25 shipped; 24 agents, 58 findings, 20 checked AT SOURCE by separate
+       verifiers, 0 errors). WHAT CHANGES IN POINTS (a) AND (h):
+       * THE ORIGINALS WERE REACHED - PARTLY. McClure 1985 (PMID 4068089): the ABSTRACT carries NO
+         head-elevation angle at all - only "lateral positions" and the movement into and out of them;
+         the full text (J Otolaryngol 14(1):30-35) is not freely available. Pagnini/Nuti/Vannucchi 1989
+         (PMID 2734007, DOI 10.1159/000276052): the abstract also has NO angle - only "rapid rolling onto
+         the side while supine"; the full text sits behind a Karger paywall (USD 45), so an angle in the
+         Methods cannot be excluded. CONCLUSION: point (a) ("the number is not fixed") becomes STRONGER -
+         neither source abstract carries an angle.
+       * THE GAP IS CONFIRMED BY THE RESEARCHERS THEMSELVES: Hentze et al. 2025 [H37] state OUTRIGHT that
+         nobody has yet studied the influence of the achieved head angles on the diagnostic outcome. That
+         openly confirms the sentence in point (f) - not a single such paper was found because none exists.
+       * THE FIRST EMPIRICAL SIGNAL ABOUT DIRECTION [H36]: in a randomised crossover study with IMU
+         measurement, true positives had the head raised LESS (-69.0 deg) than false negatives (-63.5 deg),
+         and the authors recommend exceeding the -60 deg target toward -75 deg. In our convention:
+         -60 deg = 30 deg of flexion, -69 deg = 21 deg, -75 deg = 15 deg. THE DIRECTION AGREES with V25.
+         BUT: the difference is NOT significant (p=0.128 / 0.661) and n=15 lateral-canal diagnoses. It is
+         a signal, not proof, and may only be cited as such.
+       * THE SCALE OF THE DISPUTE IN PERSPECTIVE [H37]: the angles actually achieved are -64.4+/-9.3 and
+         -63.4+/-8.7 against a -60 target, and the variability of all head angles is +/-8.7-11.0 deg. The
+         execution spread is therefore LARGER than the whole 30 -> 10.30 difference this dispute is about.
+         Practical conclusion: the choice of angle matters FOR THE MODEL (which executes it exactly), while
+         at the bedside it disappears into the examiner's hand tremor. Record it and do not overrate it.
+       * THE CALORIC PEDIGREE: STATUS UNCHANGED. It still rests on secondary sources; Barany's 1906 paper
+         was not read. The status "a well-documented hypothesis" STANDS.
      IMPLEMENTATION (V25, 2026-08-16, the user's decision): conclusion (f) entered the engine — the
        Roll-test pose takes its flexion from the LATERAL CANAL INCLINATION of this atlas
        (HC_TILT_DEG = 10.4398 degrees) rather than from a textbook, and the same constant feeds every
@@ -2886,6 +2911,112 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         vertical" EXACTLY for a 30° anatomy, at 20° (this paper) ~20° suffices, and at 10.4° (our atlas) ~10°.
       → WHAT WAS NOT VERIFIED: the abstract does NOT contain an explicit comparison with the 30° canon (the
         sentence in R9 about "an explicitly noted difference" requires the full text).
+
+[H30] Porwal P, Adarsh VR, Pawar V, Dorasala S, Bijlani A, Nair P, Nayar R (2021). "Clinical and VNG
+      Features in Anterior Canal BPPV - An Analysis of 13 Cases." Front Neurol 12:618269.
+      doi:10.3389/fneur.2021.618269. PMID 33776883. PMC7988206 (CC BY, full text read).
+      -> A retrospective series of 13 AC-BPPV patients drawn from 1350 dizzy patients across 4 centres
+        over 3 years; the diagnosis was confirmed by RESOLUTION of symptoms after the Yacovino maneuver.
+      -> KEY FOR US - THE ROLL TEST (the authors call it McClure-Pagnini, MCP) CAN BE POSITIVE IN AC-BPPV.
+        Table 2, per patient (reproduced independently from PMC and from Frontiers, identically): the MCP
+        was performed in 9 of 13; positive in 6/9 - DOWNBEAT in 4 (cases 1, 3, 4, 5; PURE downbeat in 1
+        and 3, downbeat plus a horizontal component in 4 and 5), purely TORSIONAL in 2 (cases 8, 10);
+        negative on both sides in 3.
+      -> ONE-SIDEDNESS: "MCP lateral position on one side is sensitive to only one side AC BPPV" - the
+        lateral position is sensitive to one side only. This matches the engine's measurement (0.1185
+        with the affected ear down vs 0.0003 with the healthy one - practically unilateral).
+      -> THE AUTHORS THEMSELVES: "The role of the MCP test in AC BPPV has not been clarified" - the
+        literature is thin here, so the engine's agreement with this series is agreement with a THIN base.
+      -> SOURCE LIMIT (important): the paper does NOT give the MCP geometry - only the test's name, with
+        no head-elevation angle. No angle can be extracted from it. The denominator is 9 (not 13) - the
+        MCP was omitted in 4 patients without a stated reason; n=13 out of 1350, so no population rates.
+[H31] Castellucci A, Malara P, Martellucci S et al. (2020). "Feasibility of Using the Video-Head Impulse
+      Test to Detect the Involved Canal in Benign Paroxysmal Positional Vertigo Presenting With
+      Positional Downbeat Nystagmus." Front Neurol 11:578588. doi:10.3389/fneur.2020.578588.
+      PMID 33178119. PMC7593380 (full text).
+      -> 59 cases of positional downbeat attributed to VERTICAL-canal BPPV (46 apo-PC, 7 AC, 6
+        undetermined): the nystagmus was PURELY VERTICAL, with no torsion at all, in 42.4%; among
+        confirmed AC-BPPV the torsion was absent in 57.1%; neither canal nor side could be determined
+        in 10.1%.
+      -> MEANING FOR THE MODEL: this justifies the CLINICAL MASK NYS_SHOW.anterior.t=false ("pure
+        downbeat"). The engine's zero AC torsion is not a simplification against the clinic - in most
+        patients with confirmed AC-BPPV no torsion is in fact seen. The atlas geometry gives t=0.739,
+        so the mask is a DELIBERATE convention, not missing geometry.
+[H32] Garaycochea O, Perez-Fernandez N, Manrique-Huarte R (2022). "A novel maneuver for diagnosis and
+      treatment of torsional-vertical down beating positioning nystagmus: anterior canal and
+      apogeotropic posterior canal BPPV." Braz J Otorhinolaryngol 88(5):708-716. PMC9483926.
+      -> A prospective cohort of 157 BPPV patients; 20 (12.7%) with torsional-vertical downbeat, the side
+        unambiguous in only 10 (6.35%). In AC-BPPV the upper pole of the eye beats toward the AFFECTED
+        ear and the torsion is WEAKER than the vertical component; in the apogeotropic variant of the
+        POSTERIOR canal the torsion beats toward the HEALTHY ear - hence a right-sided apo-PC looks
+        IDENTICAL to a left-sided AC.
+[H33] Bertholon P, Bronstein AM, Davies RA, Rudge P, Thilo KV (2002). "Positional down beating nystagmus
+      in 50 patients: cerebellar disorders and possible anterior semicircular canalithiasis."
+      J Neurol Neurosurg Psychiatry 72(3):366-372. PMID 11861698. PMC1737794 (ABSTRACT read).
+      -> 50 consecutive patients with positional downbeat (downbeat was the INCLUSION CRITERION, so the
+        paper cannot prove that AC-BPPV produces downbeat - it shows what such a downbeat looks like);
+        in the idiopathic group (12) a torsional component in 6, weak and often clinically invisible;
+        provocation frequently BILATERAL on Dix-Hallpike (9/12) or only in the straight head-hang (2/12).
+[H34] Imai T, Uno A, Yamato A, Takimoto Y, Sato G, Matsuda K et al. (2014). "Comparison of the efficacy
+      of the Epley maneuver and repeated Dix-Hallpike tests for eliminating positional nystagmus."
+      PMID 24720888 (Auris Nasus Larynx / Class II, multicentre randomised non-inferiority trial).
+      -> 180 patients with posterior-canal canalithiasis: 90 Epley vs 90 REPEATED DIX-HALLPIKE TESTS
+        (up to 3 repetitions, WITHOUT any repositioning maneuver). The diagnostic test alone abolished
+        the positional nystagmus THE SAME DAY in 90/90 (100%; 80 patients needed 1 repetition, 10
+        patients 2), and at one week it was NON-INFERIOR to Epley (47.8% vs 50.0% cured).
+      -> MEANING: this is the strongest evidence that A DIAGNOSTIC TEST CAN ACT AS A TREATMENT. It
+        concerns the POSTERIOR canal and the Dix-Hallpike test ONLY - carrying it over to the horizontal
+        canal and the Roll test is reasoning by analogy, not a citation. It supports the user's ruling of
+        2026-08-16: "the fact that the Roll test can cure is not an error - it is to be noted".
+[H35] Imai T, Okumura T, Nishiike S, Takeda N, Ohta Y, Osaki Y, Sato T, Inohara H (2018). "Recovery of
+      positional nystagmus after benign paroxysmal positional vertigo fatigue." PMID 30324405
+      (ABSTRACT read).
+      -> THE COUNTERPOINT TO [H34]: in 20 patients with posterior-canal canalithiasis the nystagmus on an
+        IMMEDIATELY repeated Dix-Hallpike falls almost to zero (mean max SPEV 48.0 -> 4.8 deg/s), but
+        after 30 minutes it RETURNS to a value indistinguishable from baseline.
+      -> MEANING: a negative control test IMMEDIATELY after the provocation does NOT prove repositioning -
+        it may be fatigue, not cure. This sentence is in the maneuver note (poseNote) and in the session card.
+[H36] Hentze M, Hougaard DD, Kingma H (2025). "Impact of head orientation and head movement in
+      traditional manual diagnostics of benign paroxysmal positional vertigo: a randomized controlled
+      crossover study." Front Neurol 16:1654404. doi:10.3389/fneur.2025.1654404. PMC12531064
+      (full text, open access).
+      -> The ONLY paper found that links a MEASURED (6DOF IMU) head-pitch angle in the supine roll test
+        with detection of the nystagmus: 198 enrolled, 192 analysed for the SRT, but only 15 diagnoses of
+        lateral-canal BPPV. TRUE POSITIVES had the head raised LESS (MEAN -69.0 deg, 95% CI -73.8..-64.2;
+        right SRT) than FALSE NEGATIVES (-63.5 deg), and the authors recommend exceeding the -60 deg
+        target TOWARD -75 deg.
+      -> THE DIFFERENCE IS NOT STATISTICALLY SIGNIFICANT (p=0.128 right, p=0.661 left) and n=15 - a
+        signal, not proof.
+      -> MEANING FOR V25: in our convention -60 deg = 30 deg of flexion, -69 deg = 21 deg, -75 deg = 15 deg.
+        The only empirical measurement of this angle therefore points in the SAME DIRECTION as the V25
+        change (less flexion = better detection), though it does not reach 10 deg and is not significant.
+        Do NOT cite it as confirming the figure 10.30 - cite it as directional agreement with the lack of
+        significance stated openly.
+[H37] Hentze M, Hougaard DD, Kingma H et al. (2025). "The Intra-Examiner Variability in and Accuracy of
+      Traditional Manual Diagnostics of Benign Paroxysmal Positional Vertigo: A Prospective
+      Observational Cohort Study." J Clin Med 14(2):434. doi:10.3390/jcm14020434 (full text).
+      -> What examiners ACTUALLY achieve in the roll test against a -60 deg target: -64.4 deg (SD 9.3) on
+        the right and -63.4 deg (SD 8.7) on the left; the absolute variability of all head angles is
+        +/-8.7 to +/-11.0 deg. All 198 examinations were performed by ONE examiner (an INTRA-examiner study).
+      -> THE AUTHORS DECLARE THE GAP OUTRIGHT: nobody has yet examined the influence of the achieved head
+        angles on the diagnostic outcome. This openly confirms point (f) of the R3-MEASURED entry - "not
+        a SINGLE paper was found comparing elevation angles for the Roll test's sensitivity".
+      -> PRACTICALLY: a spread of +/-9 deg is LARGER than the whole 30 -> 10.30 difference at stake here.
+[H38] Bhandari A, Bhandari R, Kingma H, Strupp M (2021). "Diagnostic and Therapeutic Maneuvers for
+      Anterior Canal BPPV Canalithiasis: Three-Dimensional Simulations." Front Neurol 12:740599.
+      doi:10.3389/fneur.2021.740599. PMID 34630309. PMC8497794 (full text).
+      -> 3D simulations of debris movement in the anterior canal (WITHOUT patients). The statement about
+        the weak and inconstant AC torsion and about the difficulty of establishing the side on
+        Dix-Hallpike is a RELAY CITATION in this paper (an introductory paragraph with references), not
+        its own result - cite it that way.
+[H39] Bhandari R, Bhandari A, Zee DS, Nuti D, Kingma H, van de Berg R (2025). "Proposal of a standardized
+      testing protocol for BPPV: Using 3D simulations for insights into movement of otoliths during
+      positional tests." Eur Arch Otorhinolaryngol 282 (ABSTRACT read).
+      -> DIAGNOSTIC maneuvers move the debris into new positions and therefore change the result of the
+        following tests (an "order effect"); hence the recommendation to begin with the supine roll test.
+        The Dix-Hallpike can displace debris ALREADY PRESENT in the horizontal canal; the roll test does
+        not move debris in the vertical canals. This is independent, simulation-based confirmation of R10
+        and of phenomenon No. 1 in the V25 entry.
 
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals
