@@ -1640,6 +1640,73 @@ substance of partial repositioning).
    particle, M× cost; a control test after a partial repositioning with a response ∝ the retained
    mass) — deliberately outside V20.
 
+=== "EXAMINE THE PATIENT" EXAM — random patient weighted by epidemiology (D7/V21, 2026-08-16) ===
+ WHAT IT IS: an examination mode (the third button of the #sessionbar shell, state.exam, default
+   null = the bit-identical path). The patient = a LIST of lesions [{canal, side, variant, mech}]
+   drawn from the explicit PRIORS table (maneuvers.js, next to CANALS); the diagnosis stays HIDDEN
+   until the reveal; the diagnostic cards compute the nystagmus from the PATIENT (cross-test), not
+   from the card's assumptions (variant/mechanism NORMALIZED in examStart — the exam card is a pure
+   function of the patient, not of the leftovers of the previous lesson).
+ PRIORS (VALUES SET BY CLINICAL DECISION — a source boundary; the epidemiology is ASSUMED, not
+   measured): pcCanalo 0.73 · pcCupulo 0.05 · hcGeo 0.07 · hcApo 0.035 · acCanalo 0.02 ·
+   multiPcHc 0.075 · bilatPc 0.02 (sum = 1, a HARD throw in the oracle — deliberately NOT at
+   import: a typo should fail CI, not kill the PWA boot). The marginals agree with the app's
+   labels: PC-any 0.875 (~85%), HC mono 0.105 (~10%), AC 0.02 (~1–2%), multi 7.5% (spec 5–10%),
+   bilat 2% (spec 1–2%). Side 50/50 (the literature: a right-side preponderance of ~1.4:1,
+   von Brevern 2007 — open to decision). OUTSIDE the pool (model boundaries, not epidemiology):
+   the healthy patient (a negative test does not rule out BPPV — a false reflex), light/short
+   (the null point and self-clearing per phase — an extension candidate), jam (off the axis),
+   AC-cupulo (a static target of ~0.05 — an undecidable screen), contralateral pairs and
+   persistent+transient mixtures. RNG: mulberry32 (the only randomness; clock entropy EXCLUSIVELY
+   in the examStart UI branch — the hintsRandomPatient precedent; the oracle path always with an
+   explicit seed literal). THE DRAW ORDER = A GOLDEN CONTRACT: r1=row (weighted by p) → r2=side.
+ CROSS-TEST (the crux): examPhaseNys(lesions, q, rep) — ONE DYNAMIC path for every mechanism
+   (canalo→simulateCanalith, cupulo→simulateCupulolith via engineXi; the static nysFromGeom is
+   position-INdependent — in the cross-test it would be a fabrication: cupulo would show strength
+   0.45 while sitting, where the dynamics says 0.024=silence). A POINTWISE sum of the nystagmus
+   vectors over a shared time axis (the simulation dt; the directional patterns from dynNystagmus
+   — the only source of the Ewald II rectification — normalized to an ∞-norm of 1 so that mono
+   reads like the cards), the readout at argmax ‖V‖∞ — a sum of isolated peaks would overstate
+   the amplitude (the components peak at different moments). An assessment II probe: the
+   additivity of SIMULTANEOUS vectors confirmed (no couplings). The kind of the sum = the
+   DOMINANT one (startNys is binary — a new "mixed" kind would freeze the eyes); the mixture is
+   carried by a label GENERATED from the same vector + the dial's full anat. The override in
+   renderDiag rewrites the FULL nys identity {canal, side, persistent, q, init} of the DOMINANT
+   lesion (the animation envelope and the persistence suffix play from the correct physics); a
+   multi-lesion patient gets the explicit envelopes _envI (the eyes: env carries the intensity —
+   the envOv contract of startNys) and _env01 (the dial: shape 0..1). Fatigability: rep flows
+   into the ENGINE (init.rep→fatigueFactor in ξ), the render gets fatigue=1 (no double counting
+   — the V10 session pattern). Phases = provocations ISOLATED from sitting (an explicit note on
+   the cards; sequentiality and self-clearing → the continuous session). Measured cross anchors
+   (medium): PC/P in the ipsi Dix 0.872 · HC-geo/P in Dix 0.478 (the classic hint "perform the
+   Roll" — forced silence would be a fabrication) · PC/P in the Roll 0.404 · AC/P in head-hang
+   0.942 · multi PC+HC in Dix: MIXED (h 0.54 / v 0.81 / t 1.0) · bilat PC in the lean: pure
+   upbeat 0.609 (the torsions CANCEL out — emergent). SOURCE BOUNDARY (AC): the model puts the
+   maximum AC response in the IPSILATERAL Dix (AC-P: dixP 0.475 vs dixL 0.017), while the classic
+   antMode card rule teaches the OPPOSITE ear — the answer key does NOT grade the AC side from
+   the nystagmus (consistent with baranyClassify "uncertain from the nystagmus"); a note on the
+   key card. The verdict of the external verification of the antMode arrow = a separate task
+   (in progress).
+ UI: an exam banner (the hintsQuizBanner pattern) + HIDDEN until the reveal: latNote, the
+   classification card, the recommendations, the B&L/LDT scenario panels + the watershed map, the
+   null point, the mechanism chips, the mechanism flip, the dixObs toggle (the AC downbeat
+   emerges from the PHYSICS of the cross-test, not from the student's declaration); the dix
+   ptitle/ppos NEUTRALIZED ("examined ear", not "affected"). fatPanel stays — persistence reads
+   from the patient's DOMINANT lesion. The reveal = an answer key built EXCLUSIVELY from
+   baranyClassify+recommend per lesion (a single source of truth, zero second implementation) + a
+   PRIORS row with the p of the draw + a sequential-treatment note when there are 2 lesions. Mode
+   exclusions (two-sided): the session / the cloud / the AVS overlay extinguish the exam and vice
+   versa (three mechanisms override ph.nys — coexistence would poison the observables).
+ ORACLES: engine.exam (priors + dist300 + patients s1..12 = the draw-order contract + a cross
+   matrix of 7 patients × 9 poses + fatigue rep0/rep2/cupRep2 + answers s2/s4/s30; a diffKeys
+   line in --check) + HARD THROWS: the PRIORS sum ±1e-9 · the shape of the 300 patients ·
+   double-run randomPatient determinism · EXAM_SANE (mono signs/kind ≡ the canonical card on its
+   home test — an AMPLITUDE identity is impossible by construction: the statics takes strength
+   from convention, the exam from |ξ|) · the LEAK GUARD (the dom exam keys BEFORE the reveal must
+   not contain lateralizing words). Dom: 6 exam-* keys (on ×3 with a test-change chain, reveal,
+   multi, off ≡ diag/dix/P BIT-FOR-BIT = the eternal pin "OFF means zero bytes"; dom 177→183).
+   The double collect is byte-identical.
+
 ==========================================================================
  NeuroVOR MODULE — THE TONIC/CENTRAL LAYER (VOR · fixation · vHIT · HINTS)
  File: src/engine/neuro-vor.js  |  Module: export const NeuroVOR = (()=>{ ... })()

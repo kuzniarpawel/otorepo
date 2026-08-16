@@ -1531,6 +1531,66 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    zero bajtów"; dom 174→177). Kandydat następcy: sesja chmury (łańcuch per cząstka, koszt M×;
    kontrolny test po częściowej repozycji z odpowiedzią ∝ zatrzymanej masie) — świadomie poza V20.
 
+=== EGZAMIN „ZBADAJ PACJENTA" — losowy pacjent ważony epidemiologią (D7/V21, 2026-08-16) ===
+ CO TO JEST: tryb egzaminacyjny (trzeci przycisk powłoki #sessionbar, state.exam, default null =
+   ścieżka bit-identyczna). Pacjent = LISTA zmian [{canal, side, variant, mech}] losowana z jawnej
+   tabeli PRIORS (maneuvers.js, przy CANALS); rozpoznanie UKRYTE do odsłony; karty diagnostyczne
+   liczą oczopląs z PACJENTA (cross-test), nie z założeń karty (variant/mechanism NORMALIZOWANE
+   w examStart — karta egzaminu jest czystą funkcją pacjenta, nie resztek poprzedniej lekcji).
+ PRIORS (WARTOŚCI DO DECYZJI KLINICZNEJ — granica źródła; epidemiologia PRZYJĘTA, nie zmierzona):
+   pcCanalo 0,73 · pcCupulo 0,05 · hcGeo 0,07 · hcApo 0,035 · acCanalo 0,02 · multiPcHc 0,075 ·
+   bilatPc 0,02 (suma = 1, TWARDY throw w wyroczni — świadomie NIE przy imporcie: literówka ma
+   oblać CI, nie ubić boot PWA). Marginesy zgodne z etykietami aplikacji: PC-jakikolwiek 0,875
+   (~85%), HC mono 0,105 (~10%), AC 0,02 (~1–2%), multi 7,5% (spec 5–10%), bilat 2% (spec 1–2%).
+   Strona 50/50 (piśmiennictwo: przewaga prawego ~1,4:1, von Brevern 2007 — do decyzji). POZA pulą
+   (granice modelu, nie epidemiologia): zdrowy (ujemny test nie wyklucza BPPV — fałszywy odruch),
+   light/short (null point i samoleczenie per faza — kandydat rozszerzenia), jam (poza osią),
+   AC-cupulo (cel statyczny ~0,05 — ekran nierozstrzygalny), pary kontralateralne i mieszanki
+   persistent+transient. RNG: mulberry32 (jedyna losowość; entropia zegara WYŁĄCZNIE w gałęzi UI
+   examStart — precedens hintsRandomPatient; tor wyroczni zawsze z jawnym literałem ziarna).
+   KOLEJNOŚĆ LOSOWAŃ = KONTRAKT GOLDEN: r1=wiersz (ważony p) → r2=strona.
+ CROSS-TEST (sedno): examPhaseNys(lesions, q, rep) — JEDNA ścieżka DYNAMICZNA dla każdego
+   mechanizmu (canalo→simulateCanalith, cupulo→simulateCupulolith przez engineXi; statyka
+   nysFromGeom jest pozycjo-NIEzależna — w cross-teście byłaby fabrykacją: kupulo pokazywałoby
+   siłę 0,45 w siadzie, gdzie dynamika mówi 0,024=cisza). Suma PUNKTOWA wektorów oczopląsu po
+   wspólnej osi czasu (dt symulacji; wzorce kierunkowe z dynNystagmus — jedyne źródło rektyfikacji
+   Ewalda II — znormalizowane do ∞-normy 1, żeby mono czytał się jak karty), odczyt w argmax ‖V‖∞
+   — suma szczytów izolowanych zawyżałaby amplitudę (składniki szczytują w różnych chwilach).
+   Sonda oceny II: addytywność wektorów RÓWNOCZESNYCH potwierdzona (brak sprzężeń). Kind sumy =
+   DOMINANTA (startNys jest binarny — nowy kind „mixed" zamroziłby oczy); mieszaninę niesie
+   etykieta GENEROWANA z tego samego wektora + pełny anat dialu. Override w renderDiag przepisuje
+   PEŁNĄ tożsamość nys {canal, side, persistent, q, init} zmiany DOMINUJĄCEJ (obwiednia animacji
+   i sufiks trwałości grają z właściwej fizyki); pacjent wielozmianowy dostaje jawne obwiednie
+   _envI (oczy: env niesie intensywność — kontrakt envOv startNys) i _env01 (dial: kształt 0..1).
+   Męczliwość: rep płynie do SILNIKA (init.rep→fatigueFactor w ξ), render fatigue=1 (bez
+   podwójnego liczenia — wzorzec sesji V10). Fazy = prowokacje IZOLOWANE z siadu (jawna nota na
+   kartach; sekwencyjność i samooczyszczanie → sesja ciągła). Zmierzone kotwice cross (medium):
+   PC/P w Dix ipsi 0,872 · HC-geo/P w Dix 0,478 (klasyczna wskazówka „wykonaj Roll" — wymuszona
+   cisza byłaby fabrykacją) · PC/P w Rollu 0,404 · AC/P w head-hang 0,942 · multi PC+HC w Dix:
+   MIESZANY (h 0,54 / v 0,81 / t 1,0) · bilat PC w odchyleniu: czysty upbeat 0,609 (torsje się
+   ZNOSZĄ — emergent). GRANICA ŹRÓDŁA (AC): model daje maksimum odpowiedzi AC w Dix
+   IPSILATERALNYM (AC-P: dixP 0,475 vs dixL 0,017), a klasyczna reguła karty antMode uczy ucha
+   PRZECIWNEGO — klucz odpowiedzi NIE ocenia strony AC z oczopląsu (spójnie z baranyClassify
+   „niepewna z oczopląsu"); nota na karcie klucza. Werdykt zewnętrznej weryfikacji strzałki
+   antMode = osobne zadanie (w toku).
+ UI: banner egzaminu (wzorzec hintsQuizBanner) + UKRYCIA do odsłony: latNote, karta klasyfikacji,
+   zalecenia, panele scenariuszy B&L/LDT + mapa wododziału, null point, chipy mechanizmu, flip
+   mechanizmu, przełącznik dixObs (downbeat AC wyłania się z FIZYKI cross-testu, nie z deklaracji
+   ucznia); dix ptitle/ppos NEUTRALIZOWANE („ucho badane", nie „chora"). fatPanel zostaje —
+   trwałość czyta z DOMINUJĄCEJ zmiany pacjenta. Odsłona = klucz odpowiedzi WYŁĄCZNIE z
+   baranyClassify+recommend per zmiana (jedno źródło prawdy, zero drugiej implementacji) + wiersz
+   PRIORS z p losowania + nota sekwencyjnego leczenia przy 2 zmianach. Wykluczenia trybów
+   (dwustronne): sesja / chmura / nakładka AVS gaszą egzamin i odwrotnie (trzy mechanizmy
+   nadpisują ph.nys — współistnienie zatruwałoby obserwable).
+ WYROCZNIE: engine.exam (priors + dist300 + pacjenci s1..12 = kontrakt kolejności losowań +
+   macierz cross 7 pacjentów × 9 póz + fatigue rep0/rep2/cupRep2 + answers s2/s4/s30; linia
+   diffKeys w --check) + TWARDE THROWY: suma PRIORS ±1e-9 · kształt 300 pacjentów · determinizm
+   double-run randomPatient · EXAM_SANE (znaki/kind mono ≡ karta kanoniczna na teście macierzystym
+   — tożsamość AMPLITUD z konstrukcji niemożliwa: statyka ma strength z konwencji, egzamin z |ξ|)
+   · STRAŻNIK PRZECIEKU (klucze dom exam PRZED odsłoną nie mogą zawierać słów lateralizujących).
+   Dom: 6 kluczy exam-* (on ×3 z łańcuchem zmiany testu, reveal, multi, off ≡ diag/dix/P BIT-W-BIT
+   = wieczny pin „OFF to zero bajtów"; dom 177→183). Podwójny collect bajtowo identyczny.
+
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)
  Plik: src/engine/neuro-vor.js  |  Moduł: export const NeuroVOR = (()=>{ ... })()

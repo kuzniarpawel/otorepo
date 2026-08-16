@@ -327,6 +327,85 @@ function engineOracle(h) {
     out.lyingdown = ldt;
   }
 
+  // EGZAMIN (ocena II, V21/D7): losowy pacjent ważony epidemiologią + cross-test.
+  // TWARDE THROWY (nie piny — wzorzec sensitivity/CLOUD): (1) suma PRIORS = 1±1e-9 (ŚWIADOMIE tu,
+  // nie przy imporcie — literówka w tabeli ma oblać CI, nie ubić boot PWA); (2) walidacja KSZTAŁTU
+  // 300 pacjentów (multi = PC+HC ta sama strona; bilat = PC-P + PC-L; mech=null w puli V21);
+  // (3) determinizm double-run (łapie przemyt Math.random/Date.now); (4) EXAM_SANE — zgodność
+  // ZNAKÓW/kind mono-pacjenta z kanoniczną kartą statyczną na teście macierzystym (tożsamość
+  // AMPLITUD jest z konstrukcji niemożliwa: karta statyczna ma strength z konwencji, egzamin
+  // z dynamiki |ξ| — porównujemy to, co porównywalne). Piny: tabela PRIORS, pacjenci seeds 1..12,
+  // rozkład na 300 ziarnach, macierz cross 7 pacjentów × 9 póz, klucz odpowiedzi 3 ziaren,
+  // męczliwość rep=2.
+  if (h.PRIORS && h.mulberry32 && h.randomPatient && h.examPhaseNys && h.examAnswerKey && h.nysFromGeom && h.stepHeadQ) {
+    const r5 = x => x == null ? null : +(+x).toFixed(5);
+    const ex = {};
+    const sum = h.PRIORS.reduce((a, w) => a + w.p, 0);
+    if (Math.abs(sum - 1) > 1e-9) throw new Error(`WYROCZNIA EGZAMINU: suma PRIORS = ${sum} ≠ 1`);
+    ex.priors = h.PRIORS.map(w => ({ key: w.key, p: r5(w.p) }));
+    const shapeFails = [], dist = {};
+    for (let s = 1; s <= 300; s++) {
+      const p = h.randomPatient(h.mulberry32(s));
+      dist[p.row] = (dist[p.row] || 0) + 1;
+      const L = p.lesions;
+      const bad =
+        !(L.length >= 1 && L.length <= 2) ? 'len' :
+        L.some(l => !['posterior', 'horizontal', 'anterior'].includes(l.canal) || !['P', 'L'].includes(l.side) || !['canalo', 'cupulo'].includes(l.variant) || l.mech !== null) ? 'pola' :
+        (p.row === 'multiPcHc' && !(L.length === 2 && L[0].canal === 'posterior' && L[1].canal === 'horizontal' && L[0].side === L[1].side)) ? 'multi' :
+        (p.row === 'bilatPc' && !(L.length === 2 && L[0].canal === 'posterior' && L[1].canal === 'posterior' && L[0].side === 'P' && L[1].side === 'L')) ? 'bilat' : null;
+      if (bad) shapeFails.push(`s${s}:${bad}`);
+    }
+    if (shapeFails.length) throw new Error('WYROCZNIA EGZAMINU (kształt pacjenta): ' + shapeFails.join(', '));
+    ex.dist300 = dist;
+    const d1 = JSON.stringify(h.randomPatient(h.mulberry32(7))), d2 = JSON.stringify(h.randomPatient(h.mulberry32(7)));
+    if (d1 !== d2) throw new Error('WYROCZNIA EGZAMINU (determinizm): randomPatient(mulberry32(7)) niestabilny');
+    ex.patients = {};
+    for (let s = 1; s <= 12; s++) ex.patients[`s${s}`] = h.randomPatient(h.mulberry32(s));
+    const Q = { dixP: h.stepHeadQ('supineHang', 45, 'up'), dixL: h.stepHeadQ('supineHang', -45, 'up'),
+      rollP: h.stepHeadQ('supineFlex', 90, 'up'), rollL: h.stepHeadQ('supineFlex', -90, 'up'),
+      bow: h.stepHeadQ('sit', 0, 'down'), lean: h.stepHeadQ('sit', 0, 'up'),
+      lie: h.stepHeadQ('supineFlex', 0, 'up'), sit: h.stepHeadQ('sit', 0, 'fwd'), hh: h.stepHeadQ('supineDeepHang', 0, 'up') };
+    const LES = { pcP: [{ canal: 'posterior', side: 'P', variant: 'canalo', mech: null }],
+      pcCupP: [{ canal: 'posterior', side: 'P', variant: 'cupulo', mech: null }],
+      hcGeoP: [{ canal: 'horizontal', side: 'P', variant: 'canalo', mech: null }],
+      hcApoP: [{ canal: 'horizontal', side: 'P', variant: 'cupulo', mech: null }],
+      acP: [{ canal: 'anterior', side: 'P', variant: 'canalo', mech: null }],
+      multiP: [{ canal: 'posterior', side: 'P', variant: 'canalo', mech: null }, { canal: 'horizontal', side: 'P', variant: 'canalo', mech: null }],
+      bilat: [{ canal: 'posterior', side: 'P', variant: 'canalo', mech: null }, { canal: 'posterior', side: 'L', variant: 'canalo', mech: null }] };
+    const cross = {};
+    for (const [lk, les] of Object.entries(LES))
+      for (const [qk, q] of Object.entries(Q)) {
+        const N = h.examPhaseNys(les, q, 0);
+        cross[`${lk}/${qk}`] = { k: N.kind === 'horizontal' ? 'h' : 'u', dir: N.dir, vdir: N.vdir, s: r5(N.strength) };
+      }
+    ex.cross = cross;
+    const saneFails = [];
+    const sane = [
+      ['pcP/dixP', LES.pcP, Q.dixP, h.nysFromGeom('posterior', 'P', 'canalo', Q.dixP)],
+      ['pcCupP/dixP', LES.pcCupP, Q.dixP, h.nysFromGeom('posterior', 'P', 'cupulo', Q.dixP)],
+      ['hcGeoP/rollP', LES.hcGeoP, Q.rollP, h.nysFromGeom('horizontal', 'P', 'canalo', Q.rollP, 'asym')],
+      ['hcGeoP/rollL', LES.hcGeoP, Q.rollL, h.nysFromGeom('horizontal', 'P', 'canalo', Q.rollL, 'asym')],
+      ['hcApoP/rollP', LES.hcApoP, Q.rollP, h.nysFromGeom('horizontal', 'P', 'cupulo', Q.rollP, 'asym')],
+      ['hcApoP/rollL', LES.hcApoP, Q.rollL, h.nysFromGeom('horizontal', 'P', 'cupulo', Q.rollL, 'asym')],
+      ['acP/hh', LES.acP, Q.hh, h.nysFromGeom('anterior', 'P', 'canalo', Q.hh)],
+    ];
+    for (const [name, les, q, C] of sane) {
+      const N = h.examPhaseNys(les, q, 0);
+      if (N.kind !== C.kind || (N.dir !== C.dir && N.dir !== 0) || N.vdir !== C.vdir)
+        saneFails.push(`${name}: exam ${N.kind}/${N.dir}/${N.vdir} vs kanon ${C.kind}/${C.dir}/${C.vdir}`);
+    }
+    if (saneFails.length) throw new Error('WYROCZNIA EGZAMINU (EXAM_SANE — znaki mono vs karta kanoniczna): ' + saneFails.join(' · '));
+    // (determinizm examPhaseNys niesie podwójny collect — wywołanie 2× tutaj byłoby tautologią przez memo)
+    ex.fatigue = { rep0: r5(h.examPhaseNys(LES.pcP, Q.dixP, 0).strength), rep2: r5(h.examPhaseNys(LES.pcP, Q.dixP, 2).strength),
+      cupRep2: r5(h.examPhaseNys(LES.pcCupP, Q.dixP, 2).strength) };
+    ex.answers = {};
+    for (const s of [2, 4, 30]) {
+      const p = h.randomPatient(h.mulberry32(s));
+      ex.answers[`s${s}`] = h.examAnswerKey(p.lesions).map(a => ({ tier: a.classify.tier, primary: a.rec.primary, alts: a.rec.alts }));
+    }
+    out.exam = ex;
+  }
+
   // NeuroVOR — czyste odczyty kliniczne dla zestawu pacjentów
   const NV = h.NeuroVOR;
   if (NV) {
@@ -589,6 +668,26 @@ function domOracle(h, win) {
     grab('guide/gufoniApo/P/ensemble-on', () => { h.startManeuver('gufoniApo'); if (h.state && h.state.plan) h.state.step = h.state.plan.steps.length - 1; h.render(); });
     grab('guide/epley/P/ensemble-off', () => { h.startManeuver('epley'); if (h.state && h.state.plan) h.state.step = h.state.plan.steps.length - 1; h.toggleEnsembleMode(false); h.render(); });
   }
+  // V21/D7: EGZAMIN — pacjent z JAWNEGO ziarna (gałąź entropii examStart nigdy nie działa pod
+  // wyrocznią). SEED 44 = hcGeo/P badany na dix (cross-test w DOM: poziomy beat na karcie Dix),
+  // SEED 4 = multi PC+HC/P (suma wektorów: etykieta MIESZANY). Łańcuch stanu między grabami
+  // zamierzony (egzamin przeżywa zmianę testu — to sedno trybu). STRAŻNIK PRZECIEKU (twardy throw):
+  // klucze exam PRZED odsłoną nie mogą zawierać słów lateralizujących — klucz odpowiedzi nie może
+  // wyciec do DOM. Higiena: examEnd w ostatnim grabie (exam-off = wieczny pin „OFF ≡ karta bazowa").
+  if (h.examStart && h.examReveal && h.examEnd && h.openTest) {
+    const LEAK = /stronie chorej|stronę chorą|strona chora|ucho chore|uchu chorym|uchu choremu|stronie zdrowej|ku zdrowej|ku chorej|affected side|affected ear|healthy side/i;
+    const leakGuard = key => { const html = out[key]; if (typeof html === 'string' && !html.startsWith('ERR:') && LEAK.test(html)) throw new Error(`WYROCZNIA EGZAMINU (przeciek klucza): ${key} zawiera słowa lateralizujące przed odsłoną`); };
+    grab('diag/dix/P/exam-on', () => { h.openTest('dix'); if (h.setDiagSide) h.setDiagSide('P'); h.examStart(44); });   // hcGeo/P na Dix = cross-test
+    leakGuard('diag/dix/P/exam-on');
+    grab('diag/roll/P/exam-on', () => { h.openTest('roll'); h.render(); });                                             // egzamin przeżywa zmianę testu
+    leakGuard('diag/roll/P/exam-on');
+    grab('diag/bowlean/P/exam-on', () => { h.openTest('bowlean'); h.render(); });                                       // panele scenariuszy ukryte
+    leakGuard('diag/bowlean/P/exam-on');
+    grab('diag/dix/P/exam-reveal', () => { h.openTest('dix'); h.examReveal(); });                                       // klucz odpowiedzi (hcGeo/P)
+    grab('diag/dix/P/exam-multi', () => { h.examStart(4); });                                                           // multi PC+HC: etykieta MIESZANY
+    leakGuard('diag/dix/P/exam-multi');
+    grab('diag/dix/P/exam-off', () => { h.examEnd(); });                                                                // wieczny pin: OFF ≡ diag/dix/P
+  }
 
   return out;
 }
@@ -668,6 +767,7 @@ if (!CHECK) {
       diffKeys(snap.engine.shortarm, gold.engine.shortarm, 'engine.shortarm/', diffs);               // V15/D10: jw.
       diffKeys(snap.engine.jam, gold.engine.jam, 'engine.jam/', diffs);                              // V15/D10: jw.
       diffKeys(snap.engine.ensemble, gold.engine.ensemble, 'engine.ensemble/', diffs);               // V20/D9: jw.
+      diffKeys(snap.engine.exam, gold.engine.exam, 'engine.exam/', diffs);                           // V21/D7: jw.
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

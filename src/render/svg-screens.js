@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0 } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -80,14 +80,16 @@ function headDial(spec,headCamera,nys){               // spec: PoseSpec (schemat
 }
 // Animator dialu per-faza (diagnostyka): te same tęczówki .dial-iris, ale w zakresie kontenera.
 // Widok z tyłu (topDownBehind); kierunek z anatomicznych składowych silnika, obwiednia ξ(t).
-function startDialNysIn(container, nys){
+function startDialNysIn(container, nys, envOv){
   const irises=[...container.querySelectorAll(".dial-iris")]; if(!irises.length) return;
   const token=(container.__dialTok=(container.__dialTok||0)+1);   // restart: starsza pętla się zakończy
   const cam=Scene3D.CAMERAS.topDownBehind, flip=cam.up[2]<0?-1:1;
   const a=nys.anat||{h:0,v:0,t:0}, amp=(nys.strength||1)*(nys.fatigue==null?1:nys.fatigue);   // fatigue: męczliwość przy powtórzeniach (Dix-Hallpike)
   const hx=a.h*flip*2.2*amp, upY=a.v*2*amp, rot=a.t*flip*12*amp;   // poziom (odbity) / pion / skręt (odbity)
   const fast=0.17, T=720, start=performance.now();
-  const {env, tEnd} = xiEnvelope(engineXi(nys.canal, nys.side, nys.persistent, nys.q, nys.init));
+  // D7/V21: envOv = jawny KSZTAŁT obwiedni 0..1 (suma punktowa pacjenta wielozmianowego — amplitudę
+  // niesie strength jak dotąd); brak parametru = dokładnie dotychczasowa ścieżka (własna symulacja).
+  const {env, tEnd} = envOv || xiEnvelope(engineXi(nys.canal, nys.side, nys.persistent, nys.q, nys.init));
   loopRAF((now)=>{
     if(container.__dialTok!==token || !document.body.contains(container)) return false;
     const elapsed=(now-start)/1000;
@@ -1139,6 +1141,37 @@ function scenPanelHTML(A, scen, banner, seedMode){
       <div class="seg" style="flex-wrap:wrap">${Object.keys(BLT_HISTORY).map(btn).join("")}</div>
       <div class="note" style="margin-top:8px">${banner}</div></div>`;
 }
+// ===== D7/V21: banner egzaminu + karta klucza odpowiedzi (po odsłonie) =====
+// Klucz odpowiedzi WYŁĄCZNIE z baranyClassify+recommend (jedno źródło prawdy — examAnswerKey);
+// wiersz PRIORS pokazuje, z jakim p pacjent został wylosowany (jawna epidemiologia tabeli).
+function examBanner(){
+  const E=state.exam; if(!E) return "";
+  const btn=(fn,txt,extra)=>`<button class="opt" style="min-height:auto;padding:9px 12px;font-size:13px;flex:0 0 auto;text-align:center${extra||""}" onclick="${fn}">${txt}</button>`;
+  const head=`<div class="obslabel" style="margin-bottom:4px">${t("Egzamin — zbadaj pacjenta","Exam — examine the patient")} <span class="mono" style="color:var(--muted)">#${E.seed}</span></div>`;
+  const btns=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${E.revealed?"":btn("examReveal()", t("Odsłoń rozpoznanie","Reveal the diagnosis"))}${btn("newExamPatient()", t("🎲 Nowy pacjent","🎲 New patient"))}${btn("examEnd()", t("Zakończ egzamin","End the exam"),";opacity:.85")}</div>`;
+  if(!E.revealed){
+    return `<div class="card" style="margin-bottom:4px">${head}
+      <div class="note" style="margin-top:0">${t("Pacjent wylosowany z tabeli PRIORS (epidemiologia jawna w kodzie) — rozpoznanie UKRYTE. Wybieraj testy i strony badane (przełącznik „strona” to strona BADANA, nie chora), obserwuj oczopląs per pozycja, powtarzaj prowokacje (męczliwość). Postaw rozpoznanie: kanał(y), strona, wariant — potem „Odsłoń”. Fazy to prowokacje IZOLOWANE z siadu.","A patient drawn from the PRIORS table (epidemiology explicit in the code) — the diagnosis is HIDDEN. Choose tests and tested sides (the „side” switch is the side being TESTED, not the affected one), watch the nystagmus per position, repeat provocations (fatigability). Make your diagnosis: canal(s), side, variant — then „Reveal”. Phases are ISOLATED provocations from sitting.")}</div>${btns}</div>`;
+  }
+  const rowLab=(PRIORS.find(w=>w.key===E.row)||{label:E.row}).label;
+  const chip=([k,val])=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${val}</b></span>`;
+  const parts=examAnswerKey(E.lesions).map(a=>{
+    const sideTxt = a.canal==="anterior"
+      ? t(`${SIDE[a.side]} (w modelu) — lateralizacja AC z oczopląsu NIEWIARYGODNA (czysty downbeat); model daje maksimum w Dix IPSILATERALNYM, klasyczna reguła uczy ucha przeciwnego — granica źródła`,`${a.side==="L"?"left":"right"} (in the model) — AC lateralization by nystagmus is UNRELIABLE (pure downbeat); the model peaks in the IPSILATERAL Dix, the classical rule teaches the opposite ear — a source boundary`)
+      : SIDE[a.side];
+    const recBtns = a.rec.primary ? `<div class="recobtns" style="margin-top:6px"><button class="recoprimary" onclick="startManeuver('${a.rec.primary}')">${t("Rozpocznij: ","Start: ")}${MANEUVERS[a.rec.primary].label} — ${MANEUVERS[a.rec.primary].desc}</button></div>` : "";
+    return `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line)">
+      <div><b>${a.classify.subtype}</b> <span style="color:var(--muted)">(${a.classify.tierLabel})</span></div>
+      <div class="note" style="margin-top:4px">${t("Strona chora:","Affected side:")} <b>${sideTxt}</b></div>
+      <div>${a.classify.crit.map(chip).join("")}</div>
+      <div class="note">${a.rec.note}</div>${recBtns}</div>`;
+  }).join("");
+  const multiNote = E.lesions.length>1 ? `<div class="note">${t("Dwie zmiany: lecz SEKWENCYJNIE — zacznij od zmiany bardziej objawowej i wykonaj kontrolę przed leczeniem kolejnej (jedna repozycja na posiedzenie ułatwia interpretację kontroli).","Two lesions: treat SEQUENTIALLY — start with the more symptomatic lesion and re-check before treating the next (one repositioning per sitting keeps the follow-up interpretable).")}</div>` : "";
+  return `<div class="card" style="margin-bottom:4px">${head}
+    <div style="display:inline-block;padding:4px 10px;border-radius:12px;background:#3a8f6f22;border:1px solid #3a8f6f;font-size:12.5px;color:#D4DEE8">${t("Klucz odpowiedzi","Answer key")} · ${rowLab} · ${t("wylosowano z","drawn with")} p=${(E.p*100).toFixed(1)}%</div>
+    ${parts}${multiNote}
+    <div class="note">${t("Klucz zbudowany z tych samych funkcji, które zasilają karty (baranyClassify + recommend) — zero drugiej implementacji. Fazy egzaminu to prowokacje izolowane; sekwencyjność i samooczyszczanie → sesja ciągła.","The key is built from the same functions that power the cards (baranyClassify + recommend) — no second implementation. Exam phases are isolated provocations; sequencing and self-clearing → the continuous session.")}</div>${btns}</div>`;
+}
 function renderDiag(){
   const D=DIAG[state.testKey], A=state.side, v=state.variant;   // D = obiekt testu (NIE koliduj z importem t = tlumaczenie)
   const isDix = state.testKey==="dix";
@@ -1229,6 +1262,39 @@ function renderDiag(){
       }
     });
   }
+  // ===== D7/V21: EGZAMIN — fazy liczone z UKRYTEGO pacjenta (lista zmian), nie z założeń karty =====
+  // Gałąź ZA sessDrive (sesja wykluczona w examStart) i PRZED nakładką AVS (też wykluczona) — kolejność
+  // jawna. Override przepisuje PEŁNĄ tożsamość nys (canal/side/persistent/q/init zmiany DOMINUJĄCEJ):
+  // obwiednia animacji (startNys/startDialNysIn → engineXi) i sufiks trwałości muszą grać z tej samej
+  // fizyki co strzałka; pacjentowi wielozmianowemu obwiednię niesie jawnie _envI/_env01 (suma punktowa —
+  // silnik pojedynczej zmiany jej nie zna). Etykieta OBSERWACYJNA z tego samego wektora co strzałka
+  // (zero słów „chora/zdrowa" przed odsłoną — strażnik przecieku w wyroczni dom).
+  const exam = state.exam;
+  if(exam && !antMode){
+    const repX = isDix ? (state.dixRep||0) : 0;
+    phases.forEach(ph=>{
+      if(!ph.nys) return;
+      if(isDix){   // neutralizacja tekstów zdradzających stronę (jedyny test z „chorą" w ptitle/ppos)
+        ph.ptitle = t(`Ucho ${A==="L"?"lewe":"prawe"} w dole`,`${A==="L"?"Left":"Right"} ear down`);
+        ph.ppos = t(`Na plecach, głowa 45° ku stronie badanej (${SIDE[A]}), ~20° poniżej poziomu`,`Supine, head 45° toward the tested side, ~20° below horizontal`);
+      }
+      const q = ph.nys.q || stepHeadQ(ph.body, ph.yaw, ph.face);
+      const N = examPhaseNys(exam.lesions, q, repX);
+      if(N.strength < XI_CARD){
+        Object.assign(ph.nys, {kind:"horizontal", dir:0, vdir:1, strength:0, anat:{h:0,v:0,t:0},
+          persistent:false, unresolved:true, init:null, fatigue:1, _envI:null, _env01:null});
+        ph.label = t("bez wyraźnego oczopląsu w tej pozycji","no distinct nystagmus in this position");
+        ph.note = t("Odpowiedź na tę pozycję jest podprogowa (fizyka silnika). Pozycja niema NIE wyklucza BPPV — badaj dalej (inne testy, obie strony).","The response to this position is subthreshold (engine physics). A mute position does NOT rule out BPPV — keep examining (other tests, both sides).");
+      } else {
+        Object.assign(ph.nys, {kind:N.kind, dir:N.dir, vdir:N.vdir, strength:N.strength, anat:N.anat,
+          canal:N.dom.canal, side:N.dom.side, persistent:N.dom.persistent, q,
+          init:(!N.dom.persistent && repX>0)?{rep:repX}:null, unresolved:false, fatigue:1,
+          _envI:N.multi?N.envI:null, _env01:N.multi?N.env01:null});
+        ph.label = N.label;
+        ph.note = t("Obserwuj kierunek, latencję, czas trwania i męczliwość (powtórzenia). Fazy liczone jako prowokacje IZOLOWANE z siadu — sekwencyjność i samooczyszczanie modeluje sesja ciągła.","Observe the direction, latency, duration and fatigability (repetitions). Phases are computed as ISOLATED provocations from sitting — sequencing and self-clearing are modeled by the continuous session.");
+      }
+    });
+  }
   // N7 (D6): NAKLADKA AVS — toniczny oczoplas NeuroVOR (skladowa POZIOMA) obecny w KAZDEJ pozycji testu
   // i NIEwyczerpujacy sie: fundament taksonomii GRACE-3 (AVS vs t-EVS) wreszcie demonstrowalny obok
   // przejsciowego, meczliwego oczoplasu BPPV. Default OFF -> zadna wyrocznia dom nie rusza sie bez wlaczenia.
@@ -1259,7 +1325,9 @@ function renderDiag(){
   // Panel MĘCZLIWOŚCI (tylko Dix-Hallpike, tryb kanału tylnego): powtarzaj prowokację → kanalolitiaza słabnie,
   // kupulolitiaza nie (różnicowanie wprost). Amplituda z Vestibular.fatigueFactor(rep).
   const fatPanel = (isDix && !antMode) ? (()=>{
-    const rep=state.dixRep||0, cupulo=(v==="cupulo"), pct=Math.round((cupulo?1:Vestibular.fatigueFactor(rep))*100);
+    // D7/V21: w egzaminie trwałość panelu czyta się z PACJENTA (zmiana dominująca fazy prowokacji),
+    // nie ze stanu karty (state.variant jest znormalizowany do "canalo" i nie niesie prawdy pacjenta).
+    const rep=state.dixRep||0, cupulo=(exam ? !!(phases[0]&&phases[0].nys&&phases[0].nys.persistent) : (v==="cupulo")), pct=Math.round((cupulo?1:Vestibular.fatigueFactor(rep))*100);
     const barCol = cupulo ? "#3a8f6f" : (pct<40 ? "var(--ant)" : "var(--primary)");
     const note = cupulo
       ? t("Kupulolitiaza: oczopląs NIE wyczerpuje się przy powtórzeniach — złóg przylega do osklepka.","Cupulolithiasis: the nystagmus does NOT fatigue on repetition — the debris adheres to the cupula.")
@@ -1431,13 +1499,13 @@ function renderDiag(){
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
     <div class="card" style="margin-bottom:4px"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
-    ${isDix ? `<div class="obsrow"><div class="obslabel">${t("Zaobserwowany oczopląs w Dix-Hallpike:","Observed nystagmus in the Dix-Hallpike:")}</div>
+    ${isDix && !exam ? `<div class="obsrow"><div class="obslabel">${t("Zaobserwowany oczopląs w Dix-Hallpike:","Observed nystagmus in the Dix-Hallpike:")}</div>
       <div class="seg segobs">
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
         <button class="opt" aria-pressed="${antMode}" onclick="setDixObs('ant')"><b>↓ downbeat</b><small>${t("kanał przedni (rzadki, ucho przeciwne)","anterior canal (rare, opposite ear)")}</small></button>
       </div></div>` : ""}
-    ${sessionPanel}${bltPanel}${ldtPanel}${phaseHTML}${fatPanel}${state.testKey==="roll"?nullPointCard(A):""}${bltExtras}${ldtExtras}
-    ${(()=>{
+    ${exam?examBanner():""}${sessionPanel}${exam?"":bltPanel}${exam?"":ldtPanel}${phaseHTML}${fatPanel}${state.testKey==="roll"&&!exam?nullPointCard(A):""}${exam?"":bltExtras}${exam?"":ldtExtras}
+    ${exam?"":(()=>{
       const interp = (v0,m0) => antMode
         ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)
         : D.latNote(A, v0, m0);
@@ -1460,10 +1528,10 @@ function renderDiag(){
         <div class="face front panelbox">${face("canalo")}<div class="fliphint">${FLIP_ICO} ${t("kupulolitiaza","cupulolithiasis")}</div></div>
         <div class="face back panelbox">${face("cupulo")}<div class="fliphint">${FLIP_ICO} ${t("kanalolitiaza","canalithiasis")}</div></div>
       </div></div>`;
-    })()}${mechPanel}
-    ${diagClassifyCard(effCanal, v, effSide, antMode, mech)}
+    })()}${exam?"":mechPanel}
+    ${exam?"":diagClassifyCard(effCanal, v, effSide, antMode, mech)}
     ${antMode ? `<div class="redflag">${t('<b>⚠ Czerwona flaga — wyklucz przyczynę OŚRODKOWĄ.</b> Downbeat, który jest <b>uporczywy, bez latencji i nie wyczerpuje się</b> przy powtórzeniach, występuje także w pozycji neutralnej (na wznak, głowa prosto), albo towarzyszą mu objawy neurologiczne (dyzartria, ataksja, zaburzenia spojrzenia, dwojenie) — przemawia za przyczyną OŚRODKOWĄ (móżdżek, pogranicze czaszkowo‑szyjne: malformacja Arnolda‑Chiariego, SM, zmiany naczyniowe). Wymaga oceny neurologicznej i MRI, nie manewru. Repozycję rozważ dopiero po wykluczeniu przyczyny ośrodkowej.','<b>⚠ Red flag — rule out a CENTRAL cause.</b> A downbeat that is <b>persistent, without latency and non-fatiguing</b> on repetition, is also present in the neutral position (supine, head straight), or is accompanied by neurological signs (dysarthria, ataxia, gaze disturbances, diplopia) — argues for a CENTRAL cause (cerebellum, craniocervical junction: Arnold-Chiari malformation, MS, vascular lesions). Requires neurological evaluation and MRI, not a maneuver. Consider repositioning only after ruling out a central cause.')}</div>` : ""}
-    ${(()=>{ if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
+    ${exam?"":(()=>{ if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--ant)">${t('<b>Repozycja niewskazana.</b> Przy podejrzeniu ośrodkowego oczoplasu pozycyjnego (CPN) nie wykonuj manewrów repozycyjnych — najpierw ocena neurologiczna i MRI tylnego dołu. Wróć do widoku „Obwodowy — BPPV", jeśli obraz jednak spełnia kryteria BPPV.','<b>Repositioning is not indicated.</b> When central positional nystagmus (CPN) is suspected, do not perform repositioning maneuvers — first a neurological evaluation and MRI of the posterior fossa. Return to the "Peripheral — BPPV" view if the picture does meet BPPV criteria.')}</div></div>`;
       const rec = antMode
         ? {primary:"yacovino", alts:[], note:t(`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`,`Downbeat in the Dix-Hallpike → ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}), LARP/RALP plane. Treatment: Yacovino (deep head-hang → quick chin-to-chest movement). Lateralization by nystagmus uncertain.`)}
@@ -1481,8 +1549,8 @@ function renderDiag(){
   if(can3d && state.view3d) phases.forEach((ph,i)=>mount3D("diag"+i, poseSpec(ph), A));
   requestAnimationFrame(()=>{
     phases.forEach((ph,i)=>{
-      const c=$(`[data-nys="${i}"]`); if(c) startNys(c,ph.nys);
-      const dh=$(`[data-dialnys="${i}"]`); if(dh) startDialNysIn(dh,ph.nys);   // animacja dialu (widok z tyłu)
+      const c=$(`[data-nys="${i}"]`); if(c) startNys(c,ph.nys,ph.nys._envI);      // D7/V21: _envI (suma multi) — poza egzaminem undefined ⇒ ścieżka bez zmian
+      const dh=$(`[data-dialnys="${i}"]`); if(dh) startDialNysIn(dh,ph.nys,ph.nys._env01);   // animacja dialu (widok z tyłu); _env01 = kształt sumy 0..1
     });
     const dcA=$('[data-diagcanal="canalo"]'); if(dcA) startDiagOtolith(dcA,"canalo",effCanal,effSide);
     const dcB=$('[data-diagcanal="cupulo"]'); if(dcB) startDiagOtolith(dcB,"cupulo",effCanal,effSide);
@@ -2073,8 +2141,8 @@ function flipPhases(){
   const i = state.diagPhaseFace;                              // odsłonięta pozycja (front=0 / back=1)
   const nys=(state._diagPhaseNys||[])[i]; if(!nys) return;
   // odwrócenie karty = zmiana pozycji pacjenta → odtwórz oczopląs od początku (latencja → narost → wygasanie)
-  const fr=$(`[data-nys="${i}"]`); if(fr) startNys(fr, nys);
-  const dl=$(`[data-dialnys="${i}"]`); if(dl) startDialNysIn(dl, nys);
+  const fr=$(`[data-nys="${i}"]`); if(fr) startNys(fr, nys, nys._envI);          // D7/V21: obwiednia sumy multi (poza egzaminem undefined)
+  const dl=$(`[data-dialnys="${i}"]`); if(dl) startDialNysIn(dl, nys, nys._env01);
 }
 // Przełącznik strony na karcie manewru/testu (segment L/P)
 function sideSel(current, fn, lbl){

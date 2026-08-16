@@ -225,6 +225,51 @@ const CANALS={
   anterior:{get label(){return t("Kanał przedni","Anterior canal");}, get note(){return t("rzadki (~1–2%)","rare (~1–2%)");}, color:"var(--ant)",maneuvers:["yacovino"]},
 };
 
+/* ============ D7/V21: EGZAMIN — losowy pacjent ważony epidemiologią ============
+   PRIORS formalizuje etykiety, które CANALS nosi jako napisy („~85%” / „~10%” / „~1–2%”).
+   WARTOŚCI DO DECYZJI KLINICZNEJ (granica źródła): epidemiologia PRZYJĘTA, nie zmierzona przez model —
+   łączne p wierszy dobrane tak, by marginesy zgadzały się z etykietami aplikacji i pasmami spec D7
+   [AAO-HNS 2017 (H27): PC 85–95% przypadków; HC 5–15% (geo:apo ~2:1 w seriach); AC 1–3%;
+   wielokanałowe 5–20% (spec D7 pinuje 5–10%); obustronne 1–8% (spec 1–2%, asocjacja z urazem głowy)].
+   Marginesy tej tabeli: PC-jakikolwiek 0,875 ✓ · HC mono 0,105 ✓ · AC 0,02 ✓ · multi 0,075 ✓ · bilat 0,02 ✓.
+   POZA pulą V21 (granice modelu, nie epidemiologia): pacjent zdrowy (ujemny test nie wyklucza BPPV —
+   fałszywy odruch), light/short (null point i samoleczenie per faza — kandydat na rozszerzenie),
+   jam (poza osią mechanizmu), AC-cupulo (cel statyczny ~0,05 — ekran nierozstrzygalny), pary
+   kontralateralne i mieszanki persistent+transient (język karty rósłby nieproporcjonalnie do p).
+   Strona 50/50 (piśmiennictwo raportuje przewagę prawego ucha ~1,4:1 — von Brevern 2007; do decyzji).
+   Suma p = 1,000 — pilnowana TWARDYM throwem w wyroczni (engine.exam), ŚWIADOMIE nie przy imporcie
+   (literówka w tabeli ubijałaby boot PWA zamiast oblać CI). */
+const PRIORS=[
+  {key:"pcCanalo",  p:0.73,  get label(){return t("BPPV kanału tylnego — kanalolitiaza","Posterior-canal BPPV — canalithiasis");},
+    mk:s=>[{canal:"posterior", side:s, variant:"canalo", mech:null}]},
+  {key:"pcCupulo",  p:0.05,  get label(){return t("BPPV kanału tylnego — kupulolitiaza","Posterior-canal BPPV — cupulolithiasis");},
+    mk:s=>[{canal:"posterior", side:s, variant:"cupulo", mech:null}]},
+  {key:"hcGeo",     p:0.07,  get label(){return t("BPPV kanału poziomego — geotropowy (kanalolitiaza)","Horizontal-canal BPPV — geotropic (canalithiasis)");},
+    mk:s=>[{canal:"horizontal", side:s, variant:"canalo", mech:null}]},
+  {key:"hcApo",     p:0.035, get label(){return t("BPPV kanału poziomego — apogeotropowy (kupulolitiaza)","Horizontal-canal BPPV — apogeotropic (cupulolithiasis)");},
+    mk:s=>[{canal:"horizontal", side:s, variant:"cupulo", mech:null}]},
+  {key:"acCanalo",  p:0.02,  get label(){return t("BPPV kanału przedniego — kanalolitiaza","Anterior-canal BPPV — canalithiasis");},
+    mk:s=>[{canal:"anterior", side:s, variant:"canalo", mech:null}]},
+  {key:"multiPcHc", p:0.075, get label(){return t("BPPV wielokanałowe — PC+HC ipsilateralne (oba kanalolitiaza)","Multicanal BPPV — ipsilateral PC+HC (both canalithiasis)");},
+    mk:s=>[{canal:"posterior", side:s, variant:"canalo", mech:null},{canal:"horizontal", side:s, variant:"canalo", mech:null}]},
+  {key:"bilatPc",   p:0.02,  get label(){return t("BPPV obustronne — kanał tylny P + L (kanalolitiaza)","Bilateral BPPV — posterior canal R + L (canalithiasis)");},
+    mk:()=>[{canal:"posterior", side:"P", variant:"canalo", mech:null},{canal:"posterior", side:"L", variant:"canalo", mech:null}]},
+];
+// mulberry32 — deterministyczny PRNG (4 linie, bez zależności). JEDYNE źródło losowości egzaminu;
+// Math.random/Date.now ZAKAZANE w tym module (wyrocznia z jawnym ziarnem — entropia wolno żyć tylko
+// w gałęzi UI actions.js, precedens hintsRandomPatient).
+function mulberry32(seed){ let a=seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; let z=a;
+  z=Math.imul(z^(z>>>15), z|1); z^=z+Math.imul(z^(z>>>7), z|61); return ((z^(z>>>14))>>>0)/4294967296; }; }
+// KOLEJNOŚĆ LOSOWAŃ = KONTRAKT GOLDEN (piny engine.exam pacjentów zamrażają wynik per ziarno):
+// r1 = wiersz PRIORS (ważony p) → r2 = strona (50/50; wiersz bilatPc strony nie czyta — ma obie).
+function randomPatient(rng){
+  const r1=rng(), r2=rng();
+  let acc=0, row=PRIORS[PRIORS.length-1];
+  for(const w of PRIORS){ acc+=w.p; if(r1<acc){ row=w; break; } }
+  const side = r2<0.5 ? "P" : "L";
+  return { row: row.key, p: row.p, lesions: row.mk(side) };
+}
+
 /* ============ Testy diagnostyczne ============ */
 // PRÓG WIDOCZNOŚCI KARTY OCZOPLĄSU (ocena II, C3) — jedno źródło zamiast trzech literałów 0.10
 // rozsianych po svg-screens.js (bezpiecznik manStepEnv, guideNysSeconds, karta kroku renderGuide).
@@ -1323,9 +1368,97 @@ function baranyClassify(canal, variant, side, antMode, mech){
         crit:[[t("Latencja","Latency"),t("brak / krótka","none / brief")],[t("Czas trwania","Duration"),t("uporczywy","persistent")],[t("Męczliwość","Fatigability"),t("nie","no")],[t("Kierunek","Direction"),t("apogeotropowy (ku uchu w górze)","apogeotropic (toward the upper ear)")],[t("Punkt zerowy (null point)","Null point"),t("zanik przy ~10–30° skrętu ku uchu choremu","abolished at ~10–30° rotation toward the affected ear")],[t("Strona chora","Affected side"),`${S} — ${t("SŁABSZA reakcja","WEAKER response")}`]],
         redflag:t("Uporczywy pozycyjny DCPN bez punktu zerowego, kierunek niemieszczący się w jednym kanale lub ataksja → rozważ przyczynę OŚRODKOWĄ (CPN — przełącz na widok „Ośrodkowy”). Trwały GEOTROPOWY oczopląs >1 min sugeruje light cupula, nie kanalolitiazę; apo PRZEMIJAJĄCY i męczliwy → wolny złóg w ramieniu bańkowym (D10), nie kupulopatia.","Persistent positional DCPN without a null point, a direction that fits no single canal, or ataxia → consider a CENTRAL cause (CPN — switch to the \"Central\" view). Persistent GEOTROPIC nystagmus >1 min suggests light cupula, not canalithiasis; a TRANSIENT, fatiguing apo → free debris in the short (ampullar) arm (D10), not cupulopathy.") };
 }
+/* ============ D7/V21: rdzeń egzaminu — odpowiedź pacjenta na pozę fazy DOWOLNEGO testu ============
+   JEDNA ścieżka DYNAMICZNA dla każdego mechanizmu (statyka nysFromGeom jest pozycjo-niezależna —
+   w cross-teście byłaby fabrykacją): canalo→simulateCanalith, cupulo→simulateCupulolith (przez
+   engineXi; light fasadą). Suma PUNKTOWA po wspólnej osi czasu (dt symulacji) — sonda oceny II
+   potwierdziła addytywność wektorów {h,v,t} RÓWNOCZESNYCH (brak sprzężeń między kanałami); suma
+   szczytów izolowanych zawyżałaby amplitudę (składniki szczytują w różnych chwilach). Odczyt karty
+   w argmax ‖V‖∞. Wzorce kierunkowe per zmiana z dynNystagmus (JEDYNE źródło rektyfikacji Ewalda II),
+   znormalizowane do ∞-normy 1, żeby mono-przypadek czytał się jak karty kanoniczne (strength =
+   intensity). Kind sumy = DOMINANTA (bez nowego kindu „mixed” — konsument startNys jest binarny);
+   mieszaninę niesie etykieta GENEROWANA z tego samego wektora co strzałka i pełny anat dialu. */
+const TEST_OF_CANAL={posterior:"dix", horizontal:"roll", anterior:"headhang"};   // klucz odpowiedzi: test macierzysty kanału (odwrócenie DIAG[k].canal — jawny 3-wpisowy słownik)
+const _examMemo=new Map();
+function examPhaseNys(lesions, q, rep){
+  rep=rep||0;
+  const key=JSON.stringify(lesions)+"|"+(q||[]).map(x=>(+x).toFixed(6)).join(",")+"|"+rep;
+  if(_examMemo.has(key)) return _examMemo.get(key);
+  if(_examMemo.size>400) _examMemo.clear();               // klucz niesie pełne zmiany+pozę+rep (brak kolizji) — czapka tylko na rozmiar
+  const parts=lesions.map(l=>{
+    const eff = l.mech || l.variant;                      // mechanizm efektywny zmiany (null → klasyczny wariantu)
+    const persistent = persistentOf(eff);
+    // rep tylko dla zmian PRZEJŚCIOWYCH i przez SILNIK (init.rep → fatigueFactor w ξ) — render
+    // ustawia fatigue=1, żeby męczliwości nie liczyć dwa razy (wzorzec sesji V10).
+    const sim = engineXi(l.canal, l.side, persistent, q, (!persistent && rep>0)?{rep}:null, eff==="light"?"light":undefined);
+    const pat = Vestibular.dynNystagmus(l.canal, l.side, 1);
+    const nrm = Math.max(Math.abs(pat.h||0), Math.abs(pat.v||0), Math.abs(pat.t||0)) || 1;
+    let pk=0; for(const s of sim) if(Math.abs(s.xi)>Math.abs(pk)) pk=s.xi;
+    return {l, eff, persistent, sim, nrm, xiPk:pk};
+  });
+  const dt=0.05, nmax=Math.max(...parts.map(p=>p.sim.length));
+  const mag=new Array(nmax);
+  let best={k:0, m:0, V:{h:0,v:0,t:0}};
+  for(let k=0;k<nmax;k++){
+    let H=0,Vv=0,T=0;
+    for(const p of parts){
+      const s=p.sim[Math.min(k, p.sim.length-1)]; if(!s) continue;
+      const N=Vestibular.dynNystagmus(p.l.canal, p.l.side, s.xi);
+      H+=N.intensity*N.h/p.nrm; Vv+=N.intensity*N.v/p.nrm; T+=N.intensity*N.t/p.nrm;
+    }
+    const m=Math.max(Math.abs(H),Math.abs(Vv),Math.abs(T));
+    mag[k]=Math.min(1,m);
+    if(m>best.m) best={k, m, V:{h:H,v:Vv,t:T}};
+  }
+  // zmiana DOMINUJĄCA w chwili odczytu — jej pełna tożsamość (canal/side/persistent) płynie do nys,
+  // żeby obwiednia animacji i sufiks trwałości grały z właściwej fizyki (mono: dokładnie ta zmiana).
+  let dom=parts[0], domI=-1;
+  for(const p of parts){
+    const s=p.sim[Math.min(best.k, p.sim.length-1)];
+    const c=s ? Vestibular.dynNystagmus(p.l.canal, p.l.side, s.xi).intensity : 0;
+    if(c>domI){ domI=c; dom=p; }
+  }
+  const V=best.V, m=best.m||1e-9, camRx=Scene3D.CAMERAS.frontal.right[0];
+  const horiz = Math.abs(V.h) >= Math.max(Math.abs(V.v), Math.abs(V.t));
+  const hasH = Math.abs(V.h) >= XI_CARD, hasVT = Math.max(Math.abs(V.v), Math.abs(V.t)) >= XI_CARD;
+  const strength = Math.min(1, best.m);
+  // etykieta OBSERWACYJNA z TEGO SAMEGO wektora co strzałka (żadnych słów „chora/zdrowa” — egzamin);
+  // mieszanina obu składowych ≥ progu = obraz więcej niż jednego kanału (to JEST obserwowalne).
+  const vtTxt = V.v<0 ? t("oczopląs ↓ (downbeat)","nystagmus ↓ (downbeat)") : t("oczopląs ↑ + skrętny","nystagmus ↑ + torsional");
+  const label = (hasH && hasVT)
+    ? t("oczopląs MIESZANY: poziomy + pionowo-skrętny — obraz więcej niż jednego kanału","MIXED nystagmus: horizontal + vertical-torsional — the picture of more than one canal")
+    : hasH ? t("oczopląs poziomy","horizontal nystagmus")
+    : hasVT ? vtTxt
+    : t("bez wyraźnego oczopląsu","no distinct nystagmus");
+  // obwiednie sumy (tylko pacjent wielozmianowy — mono gra własną fizyką przez pełną tożsamość nys):
+  // _envI (oczy: env NIESIE intensywność — kontrakt envOv startNys) · _env01 (dial: kształt 0..1, amplitudę niesie strength)
+  let tEnd=(nmax-1)*dt;
+  if(!dom.persistent){ for(let k=nmax-1;k>=0;k--){ if(mag[k]>=0.03*best.m){ tEnd=k*dt; break; } } }
+  const envAt=ts=>{ if(ts<=0) return 0; const i=Math.min(nmax-1, Math.max(0, Math.round(ts/dt))); return mag[i]||0; };
+  const envI={env:envAt, tEnd}, env01={env:ts=>best.m>0?envAt(ts)/Math.min(1,best.m):0, tEnd};
+  const out={
+    kind: horiz ? "horizontal" : "upbeatTorsional",
+    dir:  horiz ? Math.sign(V.h*camRx) : Math.sign(V.t*camRx),
+    vdir: Math.sign(V.v) || 1,
+    strength, anat:{h:V.h/m, v:V.v/m, t:V.t/m},
+    label: label + (strength>=XI_CARD && strength<0.25 ? t(" (słaby)"," (weak)") : ""),
+    dom:{canal:dom.l.canal, side:dom.l.side, persistent:dom.persistent, eff:dom.eff},
+    multi: parts.length>1, envI, env01,
+    parts: parts.map(p=>({canal:p.l.canal, side:p.l.side, variant:p.l.variant, mech:p.l.mech, xiPk:p.xiPk, persistent:p.persistent})),
+  };
+  _examMemo.set(key,out); return out;
+}
+// Klucz odpowiedzi egzaminu — WYŁĄCZNIE z istniejących funkcji klinicznych (jedno źródło prawdy,
+// zero drugiej implementacji): per zmiana baranyClassify + recommend(test macierzysty kanału).
+function examAnswerKey(lesions){
+  return lesions.map(l=>({ canal:l.canal, side:l.side, variant:l.variant, mech:l.mech,
+    classify: baranyClassify(l.canal, l.variant, l.side, false, l.mech||undefined),
+    rec: recommend(TEST_OF_CANAL[l.canal], l.variant, l.mech||undefined) }));
+}
+
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior",zuma:"horizontal",kim:"horizontal"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF, PRIORS, mulberry32, randomPatient, TEST_OF_CANAL, examPhaseNys, examAnswerKey };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

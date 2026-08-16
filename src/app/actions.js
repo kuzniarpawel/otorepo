@@ -1,6 +1,6 @@
 // Akcje UI (onclick=… przez window): nawigacja, wybory, HINTS, zapis/odczyt pacjenta.
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF, DIAG, actTimeline, sessionSim, SIT_SEG, SESSION_REST, readhesion, maneuverTimeline, SCEN_DRIVEN, ACT_STEPS, mechOf, bltInit, BLT_HISTORY } from '../pose/maneuvers.js';
+import { MANEUVERS, CANALS, sizedSeconds, derivedHold, CANAL_OF, DIAG, actTimeline, sessionSim, SIT_SEG, SESSION_REST, readhesion, maneuverTimeline, SCEN_DRIVEN, ACT_STEPS, mechOf, bltInit, BLT_HISTORY, mulberry32, randomPatient } from '../pose/maneuvers.js';
 import { state } from './state.js';
 import { $, releaseWake, beep } from '../runtime/registry.js';
 import { render, hintsNysLabel, hintsCompPatient, refreshHintsComp, startNeuroNys, startHIT, hitLabel, nerveLesionSummary, refreshHintsCustom, scdsRestNote, scdsLabel } from '../render/svg-screens.js';
@@ -39,7 +39,8 @@ function setHintsRecovery(v){ state.hintsRecovery=!!v; render(); }
 // N7 (D6): nakladka AVS — AKTYWNY pacjent HINTS zostaje tonicznym tlem ekranow diagnostyki pozycyjnej.
 // Fundament taksonomii GRACE-3: oczoplas obecny PRZED manewrem i w kazdej pozycji (AVS) vs
 // latencja+paroksyzm+wyczerpywanie (t-EVS/BPPV) — teraz demonstrowalny, bo silniki sie spotykaja.
-function toggleNeuroOverlay(){ state.neuroOverlay = state.neuroOverlay ? null : hintsActivePatient(); render(); }
+function toggleNeuroOverlay(){ if(!state.neuroOverlay && state.exam){ state.exam=null; syncExamBar(); }   // D7/V21: nakładka AVS zatruwałaby obserwable egzaminu (ph.nys.ov)
+  state.neuroOverlay = state.neuroOverlay ? null : hintsActivePatient(); render(); }
 
 /* ============ „Matematyczny pacjent" — tryb własnych parametrów (etap 7 / UI) ============ */
 // Pacjent aktywny: własne parametry (pełny obiekt makePatient) LUB scenariusz+kompensacja.
@@ -234,6 +235,7 @@ function freshSession(canal, side, size){
           rep:0, acts:[], tSession:0};
 }
 function toggleSessionMode(on){
+  if(on && state.exam){ state.exam=null; syncExamBar(); }   // D7/V21: sesja modeluje JEDEN złóg o znanej tożsamości — sprzeczne z ukrytym pacjentem egzaminu
   const c = state.testKey ? DIAG[state.testKey].canal : (CANAL_OF[state.maneuverKey]||"posterior");
   state.session = on ? freshSession(c, state.side, state.size) : null;
   syncSessionBar(); render();
@@ -306,12 +308,44 @@ function syncSessionBar(){
   syncEnsembleBar();
 }
 // D9/V20: chmura złogu — tryb WIDOKU (default OFF); przycisk w powłoce poza #app (golden nietknięty z konstrukcji)
-function toggleEnsembleMode(on){ state.ensemble=!!on; syncEnsembleBar(); render(); }
+function toggleEnsembleMode(on){ if(on && state.exam){ state.exam=null; syncExamBar(); }   // D7/V21: tryby nadpisujące ph.nys wzajemnie rozłączne
+  state.ensemble=!!on; syncEnsembleBar(); render(); }
 function syncEnsembleBar(){
   const bar=$("#sessionbar"); if(!bar) return;
   const b=bar.querySelector("button[data-ensemble]"); if(!b) return;
   b.setAttribute("aria-pressed", String(!!state.ensemble));
   b.textContent=t("Chmura złogu","Debris cloud");
+  syncExamBar();
+}
+/* ============ D7/V21: EGZAMIN „zbadaj pacjenta" (losowy pacjent ważony epidemiologią) ============
+   state.exam=null ⇒ OFF (ścieżka bit-identyczna). examStart NORMALIZUJE stan dydaktyczny kart
+   (variant/mechanism/dixObs/dixRep/bltScenario/diagCentral) — karta egzaminu ma być czystą funkcją
+   PACJENTA, nie resztek poprzedniej lekcji — i WYKLUCZA sesję/chmurę/nakładkę AVS (trzy mechanizmy
+   nadpisują ph.nys; współistnienie zatruwałoby obserwable). Ziarno: jawne (tor wyroczni —
+   deterministyczny, zero zegara) albo entropia w TEJ gałęzi UI (precedens hintsRandomPatient —
+   wyrocznie zawsze podają literał); „Nowy pacjent" = LCG z bieżącego ziarna (łańcuch odtwarzalny
+   od seeda pokazywanego na bannerze). */
+function examStart(seed){
+  seed = seed==null ? ((Date.now() ^ (Math.random()*0x100000000)) >>> 0) : (seed>>>0);
+  const p = randomPatient(mulberry32(seed));
+  state.exam = { seed, row:p.row, p:p.p, lesions:p.lesions, revealed:false };
+  state.session=null; state.ensemble=false; state.neuroOverlay=null;
+  state.variant="canalo"; state.mechanism=null; state.dixObs="post"; state.dixRep=0;
+  state.bltScenario="textbook"; state.diagCentral=false; state.diagPhaseFace=0;
+  state.mode="diag";
+  if(!state.testKey || !DIAG[state.testKey]) state.testKey="dix";
+  state.screen="diag";
+  syncSessionBar(); render();
+}
+function newExamPatient(){ const S=state.exam; if(!S) return; examStart(((Math.imul(S.seed,1664525)+1013904223)>>>0)); }
+function examReveal(){ if(state.exam){ state.exam.revealed=true; render(); } }
+function examEnd(){ if(!state.exam) return; state.exam=null; state.dixRep=0; syncSessionBar(); render(); }
+function toggleExamMode(on){ if(on) examStart(); else examEnd(); }
+function syncExamBar(){
+  const bar=$("#sessionbar"); if(!bar) return;
+  const b=bar.querySelector("button[data-exam]"); if(!b) return;
+  b.setAttribute("aria-pressed", String(!!state.exam));
+  b.textContent=t("Egzamin — losowy pacjent","Exam — random patient");
 }
 // Generuje plan manewru i nakłada holdy zależne od rozmiaru złogu (małe = dłuższe utrzymanie pozycji).
 function genPlan(key, side){
@@ -364,8 +398,8 @@ function syncLangBar(){
 function setLangUI(lang){ setLang(lang); if(state.plan && state.screen==="guide"){ state.plan=genPlan(state.maneuverKey, state.side); } syncLangBar(); syncSessionBar(); render(); }   // regeneruj plan → instrukcje kroków w nowym jezyku (wzorzec jak pickSize); etykieta sesji też przez t()
 
 
-export { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setMechanism, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, freshSession, toggleSessionMode, resetSession, sessionProvoke, seedSessionFromScenario, sessionManeuver, sessionRest, syncSessionBar, toggleEnsembleMode, syncEnsembleBar };
+export { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, HINTS_CANAL_KEYS, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setMechanism, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, freshSession, toggleSessionMode, resetSession, sessionProvoke, seedSessionFromScenario, sessionManeuver, sessionRest, syncSessionBar, toggleEnsembleMode, syncEnsembleBar, examStart, newExamPatient, examReveal, examEnd, toggleExamMode, syncExamBar };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setMechanism, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, toggleSessionMode, resetSession, sessionProvoke, seedSessionFromScenario, sessionManeuver, sessionRest, syncSessionBar, toggleEnsembleMode, syncEnsembleBar });
+Object.assign(window, { toggleNeuroOverlay, setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, findParamSpec, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, hintsCustomDiff, hintsEncode, hintsDecode, saveShareHints, loadHintsFromHash, loadHintsFromStore, pickSide, pickCanal, pickMan, pickTest, openMan, openTest, setDixObs, toggleDiagCentral, setVariant, setMechanism, setBltScenario, repeatDixProvoke, resetDixProvoke, genPlan, pickSize, setGuideSide, setDiagSide, startPlan, startManeuver, startDiag, backToSetup, goStep, toggleAuto, toggleSound, setView3d, setLangUI, syncLangBar, toggleSessionMode, resetSession, sessionProvoke, seedSessionFromScenario, sessionManeuver, sessionRest, syncSessionBar, toggleEnsembleMode, syncEnsembleBar, examStart, newExamPatient, examReveal, examEnd, toggleExamMode, syncExamBar });
