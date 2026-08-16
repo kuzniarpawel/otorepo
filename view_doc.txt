@@ -984,3 +984,29 @@ futureUI: [H26] Özgirgin · [H27] Bhattacharyya · [H28] Newman-Toker · [H29] 
 scaleniu V20b). main ma pod [H28] Cochrane. Karta RD i karta chmury cytowały numery Z PODSUMOWANIA
 MAIN, czyli kierowały do złych prac. Przy każdym przenoszeniu treści z main numery źródeł trzeba
 sprawdzić w bibliografii TEJ gałęzi, a nie przepisać.
+
+KONWENCJA CYTOWANIA I BRAMKA ŹRÓDEŁ (npm run zrodla:check)
+Reguła wynika z pomiaru, nie z gustu: ze 130 cytowań w `src` aż 83 to SAME `[Hnn]` bez nazwiska —
+w komentarzach silnika numer JEST odnośnikiem i wymuszanie nazwiska rozdęłoby je bez korzyści.
+Konwencja brzmi więc: NUMER MOŻE STAĆ SAM, ale jeśli towarzyszy mu oznaczenie źródła, oznaczenie idzie
+BEZPOŚREDNIO PO numerze i niesie ROK. Dzięki temu bramka NIE POTRZEBUJE słownika nazwisk — oznaczeniem
+jest po prostu to, co następuje po numerze, a rok odróżnia cytat od prozy: nowe źródło z nowym
+nazwiskiem działa bez dopisywania czegokolwiek.
+Bramka obejmuje `src` ORAZ cztery dokumenty (engine_doc i view_doc, PL i EN) i pilnuje pięciu rzeczy:
+  • każdy cytowany numer ma definicję, a żaden wpis bibliografii nie jest martwy;
+  • oznaczenie stojące po numerze zgadza się z definicją — to ta reguła, która złapałaby oba błędne
+    cytowania z kart;
+  • NAWIAS ZAMYKA SIĘ NA NUMERZE. Zmierzone przy wdrożeniu: SZEŚĆ cytowań postaci `[Hnn Autor ROK]`
+    i `[Hnn; Inny 1984; Trzeci 2008]`. Wzorzec `[Hnn]` ich nie widział, więc były poza KAŻDYM
+    pomiarem — nie liczyły się nawet jako cytowania. Cichy brak jest gorszy od błędu;
+  • LICZBA ZNAMIENNA należy do jednej pracy. To jedyna reguła, która złapałaby błąd z rozdziału
+    CHMURA ZŁOGU: liczby (56% vs 21%, OR 4,42) są własnością [H29], a stały przy numerze pracy
+    o udarze — numer stał tam SAM, więc porównanie numer↔nazwisko nie miało czego porównać.
+    Właściciel jest WYPROWADZANY z bibliografii, nie wpisany. Tokenem jest wyłącznie liczba o WŁASNEJ
+    STRUKTURZE (iloraz szans, zakres procentowy, „x% vs y%"): pomiar z gołymi wartościami dał fałszywy
+    alarm — „15°/s" z opisu oczopląsu poszarpaniowego trafiało w niezwiązane zdanie „spvV 15°/s";
+  • lustro PL i EN cytuje te same numery tyle samo razy.
+CZEGO BRAMKA NIE ROBI: nie ocenia, czy praca mówi to, co przy niej napisano. To zostaje czytelnikowi —
+i dlatego 95 odsyłaczy w rozdziałach przejrzano ręcznie (2026-08-16). Poprawione trzy atrybucje:
+liczby Cochrane'a [H28]→[H29]; dysocjacja kaloryka↔vHIT [H20]→[H20][H21], bo kryteria Ménière'a są
+objawowe i o vHIT nie mówią; oś słuchowa [H24]→[H28], bo GRACE-3 „plus" omawia, ale go nie wprowadza.

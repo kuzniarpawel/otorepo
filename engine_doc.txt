@@ -1197,7 +1197,7 @@ DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09)
   Tullio z PEŁNEJ geometrii (nysMag: przedni v1.00 : t0.74), OMIJAJĄC maskę — LOKALNIE, tylko dla SCDS.
   Maska NYS_SHOW pozostaje globalnie w mocy (BPPV bez zmian). Skręt kanału przedniego jest więc
   „ukryty" dla renderowania BPPV, ale DOSTĘPNY przez surową geometrię dla ścieżki ciśnieniowej.
-  → patrz MODUŁ NeuroVOR / ETAP 7 · pressureStimulus() (Minor 2000, [H18]).
+  → patrz MODUŁ NeuroVOR / ETAP 7 · pressureStimulus() ([H18] Minor 2000).
 
 
 ==========================================================================
@@ -1297,7 +1297,8 @@ API PUBLICZNE (zwracane z modułu)
    rate−tone. Dawniej wysoki ton spoczynkowy sam zjadał zapas do sufitu: ton ≥167 Hz przy gain=1.0 dawał
    vHIT PATOLOGICZNY bez żadnego ubytku wzmocnienia — a ton do 200 Hz jest osiągalny suwakiem w
    Laboratorium. Przeczyło to własnej tezie modułu: w fazie DRAŻNIENIA Ménière'a gain jest zachowany,
-   więc vHIT pozostaje PRAWIDŁOWY, i to jest cecha RÓŻNICUJĄCA tę jednostkę [H20]. Nasycenie nadal
+   więc vHIT pozostaje PRAWIDŁOWY, i to jest cecha RÓŻNICUJĄCA tę jednostkę [H20] (samą dysocjację
+    kaloryka↔vHIT niesie [H21] — kryteria Ménière'a są objawowe i o vHIT nie mówią). Nasycenie nadal
    działa tam, gdzie ma fizjologiczny sens — przy bardzo dużej prędkości głowy (Ω>387°/s dla gain 1.0 — poza protokołem vHIT; po N3, było 262).
    ETAP 7 (E2): drugi argument POLIMORFICZNY — 'P'/'L' (poziomy, jw., liczbowo bez zmian) LUB {canal,ear}
    (dowolny z 6 kanałów; płaszczyzny HC/RALP/LARP). Zwraca też canal/ear/plane/coplanar/saccade{h,v,t}. Zob. vhitPlane.
@@ -1580,7 +1581,7 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      #3 svv() ignorowało tor OŚRODKOWY (skewTone) → pacjent z jawnym OTR miał SVV 0.0° = „prawidłowe";
         dodatkowo KAŻDY przechył SVV trafiał do peripheralSigns, choć SVV nie jest swoista dla obwodu.
      #4 ton spoczynkowy zjadał zapas do R_SAT → vHIT patologiczny przy gain=1.0 (ton ≥167 Hz, osiągalny
-        suwakiem) — wprost przeciw tezie o zachowanym vHIT w drażnieniu Ménière'a. [H20]
+        suwakiem) — wprost przeciw tezie o zachowanym vHIT w drażnieniu Ménière'a. [H20][H21]
      #5 spontaneous() mieszało jednostkowy ZNAK poziomu z MAGNITUDĄ pionu: `kind` klasyfikowany przez
         |v| vs |h| (h zawsze ±1), a t=tH+tV sumowało 0.5 z pełną wagą — śladowy poziom odwracał tdir.
      #6 obustronnie zniesione VEMP (BVH) były NIEWIDOCZNE w odczycie (AR%≈0), a UI pisało wprost
@@ -1644,7 +1645,7 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      0.583→0.687, semantyka headroom bez zmian). Sonda n3.mjs (34 asercje). Wyrocznie: engine.neuro (wartości)
      + dom 12 ekranów (amplitudy/fusion; stroke NIEtknięty — jawne fixationGain:0).
  [x] WDROŻENIE OCENY II — ETAP N4 (nowe testy przyłóżkowe, czysto ADDYTYWNE):
-     • hsn(p,{peakVel=150,cycles=20}) [H25 Hain 1987] — oczopląs poszarpaniowy: ładunek velocity storage
+     • hsn(p,{peakVel=150,cycles=20}) [H25] Hain 1987 — oczopląs poszarpaniowy: ładunek velocity storage
        z ASYMETRII POBUDZENIOWEJ (modEx obu stron; strona hamowana obcięta — Ewald II), HSN_K=20, ładowanie
        1−exp(−cykle/6), zanik τ z postRotational (kompensacja SKRACA emergentnie: 15→4.95 s). Emergenty
        zweryfikowane: ostry UVH 9.3°/s ku zdrowemu; SKOMPENSOWANY UVH — ten sam HSN przy sponcie 0
@@ -1666,7 +1667,8 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      engine.neuro pinuje nowe klucze (hsn, shimpHC_P/L, pursuit, dva) dla wszystkich pacjentów. Sonda
      n4.mjs (27 asercji). dom: tylko 4 ekrany (bvh/stroke/nerve-superior — nowe findings).
  [x] WDROŻENIE OCENY II — ETAP N5 (nowe osie):
-     • OŚ SŁUCHOWA (D3, HINTS-plus [H24]): hearingL/R (0..1; <0.65 = niedosłuch w teście pocierania palców)
+     • OŚ SŁUCHOWA (D3): sam „plus" pochodzi z [H28] Newman-Toker 2013, ramę ED daje [H24] GRACE-3 2023.
+        hearingL/R (0..1; <0.65 = niedosłuch w teście pocierania palców)
        + grupa PARAM_SPEC. NIE zmienia werdyktu triady (słuch to „plus"); clinicalReadout raportuje +
        ambiguity „AVS + ostry niedosłuch: labyrinthitis vs AICA — patologiczny HIT NIE wyklucza udaru".
        Fluktuacja LF (Ménière) i ABG (SCDS) poza zakresem → OGRANICZENIA.
@@ -1698,7 +1700,7 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
        tor obwodowy SVV ·(1−SVV_COMP_FRAC·c)); bramka |skewTone|<SKEW_CENTRAL chroni skew OŚRODKOWY
        (preset udaru −3° nie gaśnie). SVV_COMP_FRAC=0.6 (nie 0.75 z oceny — kompromis: pełny UVH przy c=1
        zostawia ~4°, a profil REZYDUALNY trzyma 2.4°≥progu). Preset residual: utricleR 0.35 (rekalibracja
-       po B2+C3). Normalizacja skew/OTR/SVV z kompensacją = marker kompensacji statycznej [H10; Vibert 2000].
+       po B2+C3). Normalizacja skew/OTR/SVV z kompensacją = marker kompensacji statycznej [H10] Curthoys & Halmagyi 1995; ponadto Vibert 2000.
      • D8 — timeline(scenariusz|overrides, tDays, {recovery}): mapa dni→parametry NAD niezmienioną fizyką:
        comp=1−exp(−t/6d); recovery: ton wraca (τ=30d, do 0.94·R0) + ładunek pacemakera 0.15·(R0−acute)·
        (1−exp(−t/14d)) — ŁADUNEK WYŁĄCZNIE w recovery (korekta weryfikatora L5-2: poza nim dublowałby
@@ -1712,7 +1714,7 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
        W_IN=1/3 (pobudzenie:hamowanie ~3:1 — Ewald II; kalibracja: pchnięcie ku uchu ZDROWEMU przy pełnym
        UVH mierzy 0.85, kontralezjonalne 0.8–0.9 wg [H5]; bez wagi wychodziło 0.66 = fałszywa patologia
        strony zdrowej i ZŁA strona hiSide — wykryte sondą N7). Emergenty: ipsilezjonalny gain MALEJE
-       z prędkością (0.33@50 → 0.24@200 → 0.20@300, Weber 2008); martwy błędnik ma gain REZYDUALNY
+       z prędkością (0.33@50 → 0.24@200 → 0.20@300, [H5] Weber 2008); martwy błędnik ma gain REZYDUALNY
        (0.16–0.25) z ucha zdrowego zamiast wpisanego ręcznie; CZŁON POŚCIGOWY (P_MAX=40°/s ·fixationGain):
        przy 50°/s sakada 2.3° < progu jawności → „minimalna skuteczna prędkość HIT ~120–150°/s" WYNIKA
        z modelu. Rekalibracja SKOORDYNOWANA: presety gain wejściowy 0.35→0.1, slope nerveBranchLesion
@@ -1748,6 +1750,11 @@ ZALEŻNOŚCI: NeuroVOR używa Scene3D.CAMERAS.frontal.right[0] (odbicie) oraz ko
 --------------------------------------------------------------------------
 Warstwa jest ZREDUKOWANĄ, fenomenologiczną implementacją uznanych modeli neurofizjologii
 odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hipotez naukowych.
+
+KONWENCJA CYTOWANIA (ujednolicona 2026-08-16, pilnowana przez npm run zrodla:check): numer może
+stać sam, ale jeśli towarzyszy mu oznaczenie źródła, oznaczenie idzie BEZPOŚREDNIO PO numerze
+i niesie ROK. Nawias zamyka się na numerze — źródła bez numeru dopisuje się PO nim, po średniku.
+Bramka obejmuje src oraz engine_doc i view_doc w obu językach; szczegóły i granice → view_doc.
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -1942,7 +1949,7 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    karta TYLKO na finalnym kroku guide, POZA sesją (bramka !state.session: sesja opowiada JEDEN
    złóg z historią). Wiersz kliniczny DOSTARCZONY 2026-08-16 po weryfikacji źródeł (decyzja
    użytkownika): „~80% po pojedynczej sesji + wzrost przy powtórzeniach" [H27]; kontekst RCT
-   (56% vs 21%, OR 4,42) z [H28]; pierwotne „80–93%" ODRZUCONE — górne wartości pochodzą z
+   (56% vs 21%, OR 4,42) z [H29]; pierwotne „80–93%" ODRZUCONE — górne wartości pochodzą z
    POWTÓRZEŃ, nie z pojedynczej sesji. Wyrocznie: engine.ensemble (siatka +
    9 manewrów × 2 strony: frakcje/szczyt/tExit per cząstka; linia diffKeys w --check) + TWARDA
    WYROCZNIA CHMURY (throw: środek ≡ kanoniczna bit-w-bit — karta nie może rozjechać się z oczami)
@@ -1981,7 +1988,7 @@ UPROSZCZENIA / ZASTRZEŻENIA:
     poziomym potrząsaniu ŚWIADOMIE niemodelowany: prosta flaga z verticalBeat odpalałaby fałszywie dla
     obwodowego neuronitis górnego, a poprawny model wymaga krzyżowego sprzężenia velocity storage);
   - HINTS jako model DYDAKTYCZNY — NIE zastępuje badania; ważny w AVS z utrzymującym się oczopląsem,
-    interpretować z HINTS „plus" (słuch) i kontekstem (Tarnutzer 2011 [H9]). UWAGA: skompensowany ubytek
+    interpretować z HINTS „plus" (słuch) i kontekstem ([H9] Tarnutzer 2011). UWAGA: skompensowany ubytek
     obwodowy może mieć bedside HIT „prawidłowy" (sakady ukryte) — pułapka, gdy nie ma już oczopląsu AVS.
 
 ================================================================================

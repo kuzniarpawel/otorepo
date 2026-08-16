@@ -1427,7 +1427,7 @@ function mechLabels(canal, v){
 // wysyłać do domu z ćwiczeniami przed wykluczeniem CPN) i przy HC apo (domowej alternatywy nie ma).
 function recommend(testKey,variant,mech){
   // Brandt-Daroff: WSPÓLNA treść dla obu wariantów kanału tylnego (habituacja/dyspersja niezależna
-  // od mechanizmu); 31–61% = zakres RD z Özgirgin 2024 — spójnie z kartą RD przewodnika (D5/V17).
+  // od mechanizmu); 31–61% = zakres RD z [H26] Özgirgin 2024 — spójnie z kartą RD przewodnika (D5/V17).
   const BD=t("Ćwiczenia Brandta-Daroff (dom): z siadu szybko połóż się na bok, odczekaj do ustąpienia zawrotu (co najmniej 30 s), usiądź, powtórz na drugi bok; 5 powtórzeń w serii, 2–3 serie dziennie. Mechanizm habituacyjno-dyspersyjny — skuteczność niższa niż repozycji, ale nie wymaga badającego. Rola: uzupełnienie PO manewrze (m.in. przy zawrotach rezydualnych, które po skutecznej repozycji dotyczą 31–61% chorych) albo postępowanie tymczasowe, gdy manewr repozycyjny jest niedostępny lub źle tolerowany.","Brandt-Daroff exercises (home): from sitting, lie down quickly onto one side, wait until the vertigo subsides (at least 30 s), sit up, repeat to the other side; 5 repetitions per set, 2–3 sets daily. A habituation-dispersion mechanism — less effective than repositioning, but requires no examiner. Role: an adjunct AFTER the maneuver (e.g. for residual dizziness, which follows successful repositioning in 31–61% of patients) or an interim measure when a repositioning maneuver is unavailable or poorly tolerated.");
   if(testKey==="dix"){
     return variant==="canalo"

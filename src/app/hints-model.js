@@ -37,7 +37,7 @@
  *
  * Źródła: [H8] Kattah 2009 (HINTS, INFARCT) · [H9] Tarnutzer 2011 (HINTS a kontekst) ·
  *         [H24] GRACE-3 2023 (ataksja chodu = ośrodek; HINTS niedokładny bez przeszkolenia) ·
- *         [H26] Newman-Toker 2013 (HINTS „plus” — nowy jednostronny niedosłuch).
+ *         [H28] Newman-Toker 2013 (HINTS „plus” — nowy jednostronny niedosłuch).   // [H26] to Ozgirgin; numer poprawiony przez zrodla:check
  */
 
 /* ════════════════════════════════════════════════════════════════════════════════════════════

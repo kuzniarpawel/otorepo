@@ -974,3 +974,31 @@ SOURCE NUMBERING DRIFTED BETWEEN BRANCHES — and it caught two wrong citations 
 futureUI: [H26] Özgirgin · [H27] Bhattacharyya · [H28] Newman-Toker · [H29] Cochrane. main has
 Cochrane under [H28]. When porting content from main, source numbers must be checked against THIS
 branch's bibliography, not copied.
+
+CITATION CONVENTION AND THE SOURCE GATE (npm run zrodla:check)
+The rule follows a measurement, not taste: of the 130 citations in `src`, 83 are BARE `[Hnn]` with no
+name — in the engine's comments the number IS the reference, and forcing a name would bloat them for
+nothing. Hence the convention: A NUMBER MAY STAND ALONE, but if a source designation accompanies it,
+the designation goes DIRECTLY AFTER the number and carries a YEAR. This is why the gate NEEDS NO
+dictionary of names — the designation is simply whatever follows the number, and the year tells a
+citation from prose: a new source with a new name works with nothing added anywhere.
+The gate covers `src` AND the four documents (engine_doc and view_doc, PL and EN), and guards five things:
+  • every cited number has a definition, and no bibliography entry is dead;
+  • the designation standing after a number matches the definition — this is the rule that would have
+    caught both wrong citations in the cards;
+  • THE BRACKET CLOSES ON THE NUMBER. Measured at rollout: SIX citations of the form `[Hnn Author YEAR]`
+    and `[Hnn; Other 1984; Third 2008]`. The `[Hnn]` pattern could not see them, so they sat outside
+    EVERY measurement — they did not even count as citations. A silent absence is worse than an error;
+  • A SIGNATURE FIGURE belongs to one work. This is the only rule that would have caught the bug in the
+    DEBRIS CLOUD chapter: the figures (56% vs 21%, OR 4.42) are the property of [H29], yet stood beside
+    the number of a paper about stroke — the number stood ALONE there, so the number↔name comparison had
+    nothing to compare. The owner is DERIVED from the bibliography, not written down. Only a figure with
+    ITS OWN STRUCTURE counts as a token (an odds ratio, a percentage range, "x% vs y%"): the measurement
+    with bare values produced a false alarm — "15°/s" from the head-shaking entry hit the unrelated
+    sentence "spvV 15°/s";
+  • the PL and EN mirrors cite the same numbers the same number of times.
+WHAT THE GATE DOES NOT DO: it does not judge whether a work says what is written next to it. That stays
+with the reader — which is why the 95 in-chapter references were reviewed by hand (2026-08-16). Three
+attributions were corrected: the Cochrane figures [H28]→[H29]; the caloric↔vHIT dissociation
+[H20]→[H20][H21], because the Ménière criteria are symptom-based and say nothing about the vHIT; and the
+auditory axis [H24]→[H28], because GRACE-3 discusses the "plus" but does not introduce it.
