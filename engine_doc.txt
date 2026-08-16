@@ -246,20 +246,26 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
        prowokująca): złóg NIE dochodzi do odnogi — minimum grawitacyjne pozycji leży w świetle łuku
        (Dix: φ(120 s)=159.5, exited=false) — oczopląs crescendo→decrescendo (wygasa), złóg zostaje w kanale.
    STAŁE SKALIBROWANE DO LITERATURY (kanał tylny, kanalolitiaza) — LICZBY OBOWIĄZUJĄCE 2026-08-16
-       (V24, tor diagnostyczny Z KARKIEM; metryka JAWNA: latencja progiem |ξ|≥0.05, trwanie do 3%
+       (V24 kark + V25 poza z nachylenia kanału; metryka JAWNA: latencja progiem |ξ|≥0.05, trwanie do 3%
        szczytu; protokół: dt=0.05, q0=siad, PREFIKS interpolacyjny + segment prowokacji tTrans 0.5 s
        z neckPitch/neckYaw z PROVOKE_POSE; tHold POMIAROWY 60/60/90 s — dłuższy niż produkcyjne okna
        40/40/70, bo ogony 3% nie mieszczą się w oknie produkcyjnym; konwencja INTERP: kark 0→ν tą
        samą u co slerp — liczby NIE są reprodukowalne bez tych trzech deklaracji):
        tylny w Dix: latencja 2.35 s, szczyt ξ 0.872 @ 10.25 s, trwanie (3%) 39.75 s;
-       poziomy w Roll: 2.30 s / 0.696 @ 9.95 s / 42.75 s; przedni w head-hang: 0.45 s (= brak
-       latencji, R7) / 0.942 @ 24.95 s / 60.5 s. SZCZYTY AMPLITUD bez zmian względem 2026-08-13
-       (0.87158/0.69591 bitowo; AC 0.94188→0.94191 — jedyna zmiana 5. miejsca: AC bez latencji,
-       trajektoria do szczytu przechodzi przez przejście z karkiem). Tabela rozmiarów (PC/Dix,
+       poziomy w Roll: 2.00 s / 0.784 @ 9.25 s / 39.35 s [V25 — poza z NACHYLENIA kanału,
+       10.44° zamiast 30°; zapis V24 „2.30 / 0.696 @ 9.95 / 42.75" = tor przy zgięciu 30°];
+       przedni w head-hang: 0.45 s (= brak latencji, R7) / 0.942 @ 24.95 s / 60.5 s.
+       SZCZYTY AMPLITUD: kanał TYLNY i PRZEDNI bez zmian od 2026-08-13 (0.87158 bitowo;
+       AC 0.94188→0.94191 przy okablowaniu karku — jedyna zmiana 5. miejsca: AC bez latencji,
+       trajektoria do szczytu przechodzi przez przejście z karkiem). Kanał POZIOMY zmieniony
+       w V25: 0.69591 → 0.78360 (zapis „0.69591 bitowo" obowiązywał do V24 włącznie). Tabela rozmiarów (PC/Dix,
        protokół jw.): small lat 4.35 / 0.292 @ 14.40 · medium 2.35 / 0.872 @ 10.25 · big 1.40 /
-       3.042 @ 6.95. Kolejność latencji HC (2.30) < PC (2.35) po okablowaniu — margines 1 krok
-       siatki dt; wniosek dla R3 ŚWIADOMIE nieogłaszany (R1–R3 na liście „nie zmieniam bez zgody";
-       decyzja użytkownika). Zapisy sprzed V24 (2.25/2.4/0.5, 10.15/10.1/25.3) = HISTORYCZNE
+       3.042 @ 6.95. Kolejność latencji HC < PC: po okablowaniu karku (V24) 2.30 vs 2.35 —
+       margines 1 krok siatki dt; po wyprowadzeniu zgięcia pozy z anatomii (V25) 2.00 vs 2.35 —
+       margines 7 kroków, a różnica szczytów spadła z −20.2% do −10.1%. Wniosek jest więc już
+       ODPORNY na siatkę, nie jednokrokowy — patrz R3-STARE (część zarzutu była artefaktem pozy).
+       Ogłoszenie kliniczne pozostaje decyzją użytkownika (R1–R3 na liście „nie zmieniam bez zgody").
+       Zapisy sprzed V24 (2.25/2.4/0.5, 10.15/10.1/25.3) = HISTORYCZNE
        (tor bez karku, tHold produkcyjne). WERDYKT 2026-08-14 (3 soczewki: klinika/fizyka-adwersarz/dydaktyka):
        przebieg AC jest EMERGENTNY, nie artefakt — start przy osklepku (restPhi 3° = atraktor: minimum
        potencjału siadu 23,6° ZA ujściem), droga 175° do stabilnej równowagi 178° w wiszeniu, zamknięta
@@ -1202,6 +1208,14 @@ POZOSTAŁE (do decyzji):
           rampę 0.15→1.0, nie realne φ.)
        c) 30-sekundowy test roll z uchem ZDROWYM w dole OPRÓŻNIA kanał poziomy (exited=true) — test
           diagnostyczny leczy pacjenta.
+          [ODSŁONIĘTE 2026-08-16 w V25 — punkt (c) przestał być teoretyczny. Dopóki poza testu
+           miała wpisane 30° zgięcia, akt Roll z holdem 20 s NIE opróżniał kanału; próg leżał
+           przy holdzie 25 s. Po wyprowadzeniu zgięcia z nachylenia kanału (10.44°) próg spadł
+           do 20 s, czyli DOKŁADNIE na wartość ACT_STEPS.roll — akt opróżnia kanał w 4/4
+           scenariuszach, wyjście w fazie „ucho zdrowe w dole" przy t=46.5–47.0 s wobec końca
+           fazy 47.4 s (margines 0.4–0.9 s), a kontrolny test milknie. Kanon 30° MASKOWAŁ ten
+           defekt: kupował 3.5–4.2 s zapasu na wyidealizowanym łuku. Dwa błędy znosiły się
+           nawzajem. To NIE jest argument za powrotem do 30° — to argument za naprawą łuku.]
      (Punkt „d) asymetria roll" figurował tu do 2026-08-05 — BŁĘDNIE PRZYPISANY. Przeniesiony do R3:
       przeżywa wydłużenie łuku bez najmniejszej zmiany, więc nie jest skutkiem R1. Nie odkładaj go
       za tę rekalibrację.)
@@ -1358,6 +1372,13 @@ POZOSTAŁE (do decyzji):
            na źródłach WTÓRNYCH (przeglądy, StatPearls, materiały dydaktyczne), zgodnych co do treści;
            pracy Bárány'ego z 1906 nie czytano. Do czasu domknięcia (a)+(h) zdanie „30° pochodzi
            z konwencji kalorycznej" ma status DOBRZE UDOKUMENTOWANEJ HIPOTEZY, nie faktu z pierwszej ręki.
+     WDROŻENIE (V25, 2026-08-16, decyzja użytkownika): wniosek (f) wszedł do silnika — poza testu
+       Roll bierze zgięcie z NACHYLENIA kanału bocznego tego atlasu (HC_TILT_DEG = 10.4398°),
+       a nie z podręcznika, i ta sama stała zasila wszystkie teksty kliniczne mówiące o kącie.
+       Pełny protokół, kontrola wyprowadzenia, skutki i NAZWANY KOSZT (odsłonięcie R1(c)) —
+       w sekcji „ZGIĘCIE POZY TESTU ROLL WYPROWADZONE Z ANATOMII (V25)". Pomiar (e) niniejszego
+       wpisu został przy tym POTWIERDZONY niezależnie w kodzie produkcyjnym: |g|_pł 0.999997
+       przy zgięciu równym nachyleniu, 0.9415 przy 30°.
      RZETELNOŚĆ POMIARU: warstwa adwersaryjna PADŁA (3 z 5 agentów warsztatu, w tym OBAJ krytycy,
        zakończone błędami API). Rdzeń zweryfikowany niezależnym kodem głównej pętli: wyrocznie póz
        bit-w-bit, tożsamość aktu z actTimeline, lustro P/L, 4 scenariusze × {0°,30°} × {opróżnienie,
@@ -1366,7 +1387,14 @@ POZOSTAŁE (do decyzji):
        (wynik z rektyfikacją jest w „znalezisku pobocznym"). Pomiar NIE ma niezależnej kontroli
        adwersaryjnej — przy sporze o którąkolwiek liczbę należy ją przemierzyć od nowa.
 
- R3-STARE. STAŁE SKALIBROWANO WYŁĄCZNIE DLA KANAŁU TYLNEGO; kanały poziomy i przedni dziedziczą je bez własnej
+ R3-STARE. [CZĘŚCIOWO ODPOWIEDZIANE 2026-08-16 w V25 — NIE strojeniem stałych, tylko POZĄ:
+     kanał poziomy był badany przy zgięciu 30°, które odbierało mu 5.9% grawitacji w płaszczyźnie
+     kanału w pozie wyjściowej i 14.5% w pozie testowej. Po wyprowadzeniu zgięcia z nachylenia
+     kanału latencja HC spadła 2.30→2.00 s (rozstęp wobec PC z 1 na 7 kroków siatki), a szczyt
+     urósł 0.696→0.784 (odstęp od PC z −20.2% na −10.1%). Zarzut „liczby rodzą się w punkcie
+     startu φ=90" ZOSTAJE w mocy — pozostała różnica nadal jest geometryczna. Kalibracja stałych
+     per kanał pozostaje ODRADZANA. Liczby poniżej to zapis SPRZED okablowania karku i zmiany pozy.]
+     STAŁE SKALIBROWANO WYŁĄCZNIE DLA KANAŁU TYLNEGO; kanały poziomy i przedni dziedziczą je bez własnej
      walidacji i wychodzą klinicznie na odwrót:
         latencja:   tylny 1.95 s · POZIOMY 2.30 s · przedni 3.15 s
         szczyt ξ:   tylny 0.810 · POZIOMY 0.518 · przedni 0.668
@@ -1803,7 +1831,9 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    fantomowo pre-zgięty kark) — bo ZACHOWUJE inwariant B7: sklejone akty ≡ łańcuch BIT-W-BIT
    (sonda P3: 0.0e+0 na 1432 próbkach; const łamałby B7 przez nPrev z SIT_SEG). Koszt nazwany:
    rozstęp latencji HC<PC = 1 krok siatki dt (wniosek R3 NIEogłaszany — lista „nie zmieniam bez
-   zgody", decyzja użytkownika).
+   zgody", decyzja użytkownika). [AKTUALIZACJA V25: koszt zniknął — po wyprowadzeniu zgięcia pozy
+   z nachylenia kanału rozstęp to 7 kroków siatki (2.00 vs 2.35). Wąskość marginesu była
+   własnością POZY 30°, nie konwencji INTERP.]
  GRANICE (kandydaci V25, jawnie BEZ karku): egzamin V21 (examPhaseNys — prowokacje izolowane,
    spójne wewnętrznie: wartości i obwiednie z tej samej ścieżki bez karku; piny exam BIT-0),
    fallback guideNysSeconds (przypięty jawnym q — tor manewrowy bit-w-bit), obwiednie bow/lean
@@ -1826,6 +1856,138 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    okablowanego demo). BIT-0 dowiedzione: plans, sensitivity, expulsion, shortarm, jam,
    lightcupula, ensemble, EXAM (cały), neuro, guide/* (94), pose. bridge/view = kontrole
    NEGATYWNE (konsumują pozy — ślepe na kark). Podwójny collect bajtowo identyczny.
+
+=== ZGIĘCIE POZY TESTU ROLL WYPROWADZONE Z ANATOMII (V25, 2026-08-16) ===
+ CO: kąt przygięcia karku w pozie testu Roll (POSE_SPEC "supineFlex|up") przestał być liczbą
+   przepisaną z podręcznika. Poza: pitch = −90 + HC_FLEX_DEG (było −60, tj. wpisane „~30°").
+   DWIE stałe, wyprowadzone z tej samej normalnej atlasu IE-Map, świadomie ROZDZIELONE (pierwsza
+   wersja tej zmiany je myliła — złapał to krytyk geometrii):
+     HC_TILT_DEG = acos(|n_y|/|n|) = 10.4398° — PEŁNE (dwuścienne) nachylenie płaszczyzny kanału.
+       Wielkość PORÓWNYWALNA Z PIŚMIENNICTWEM: Della Santina [H29] mierzy dokładnie ją (kąt normalnej
+       do osi Z Reida) = 19.9°, Wu 2021 = 17.4°. Wyłącznie do porównań w tekstach.
+     HC_FLEX_DEG = atan2(|n_z|,|n_y|) = 10.2955° — ZGIĘCIE STRZAŁKOWE, przy którym grawitacja
+       naprawdę kładzie się w płaszczyźnie kanału. USTAWIA POZĘ. Zgięcie karku obraca głowę wokół osi
+       MIĘDZYUSZNEJ, więc rusza tylko składowe (y,z) normalnej; składowa x (−0.0304 = lekkie pochylenie
+       płaszczyzny kanału w płaszczyźnie CZOŁOWEJ) jest dla niego NIEOSIĄGALNA — stąd 0.14° różnicy.
+   Przy HC_FLEX_DEG |g| w płaszczyźnie kanału = 1.000000 DOKŁADNIE (przy nachyleniu 10.4398° byłoby
+   0.999997, przy 30° — 0.9415). Żadna z liczb nie jest wynikiem optymalizatora — w kodzie go nie ma.
+   HC_TILT_TXT („10") zasila WSZYSTKIE instrukcje kliniczne mówiące o tym kącie, więc rozjazd
+   tekst↔fizyka jest strukturalnie niemożliwy (ta sama zasada co POSE_SPEC w 2026-08-05).
+ DLACZEGO: wpis R3-PRZEMIERZENIE 30° (punkty b–f) ustalił, że kanoniczne „20–30°" NIE jest pomiarem
+   wydajności testu, tylko liczbą przeniesioną z konwencji kalorycznej — a jej deklarowany cel
+   („uniesienie ustawia kanał boczny pionowo") jest spełniony DOKŁADNIE przy zgięciu HC_FLEX_DEG.
+   Kanon zakłada nachylenie 30°; POMIARY dają 19.9° / 17.4° / 10.4°. Skoro silnik liczy na geometrii
+   IE-Map, jedyny kąt spójny z jego własną anatomią to ~10°. Decyzja użytkownika, 2026-08-16.
+ KONTROLA WYPROWADZENIA: strony P i L dają 10.2955° obie (sprawdzone osobno, nie założone z lustra);
+   lustro P/L całego toru diagnostycznego po zmianie 0.0e+0 (3 kanały); wyrocznia AKTU ROLL wymusza
+   lustro P/L bit-w-bit dla trzech rozmiarów.
+ GRANICA TEGO UZASADNIENIA (nazwana, bo osłabia własny wynik): optimum |g|_pł ZALEŻY OD POZY.
+   W pozycji testowej (głowa obrócona 90°, ucho w dole) maksimum przesuwa się na −1.77°, więc TAM
+   każde zgięcie kosztuje: przy 10.30° zostaje 0.978, przy 30° — 0.855. Uzasadnienie kliniczne
+   optymalizuje pozę WYJŚCIOWĄ (tę, o której mówi instrukcja: „połóż, zegnij, potem obróć"), a nie
+   pozę, w której test się odczytuje. Gdyby kryterium była siła odpowiedzi w pozycji badania, właściwym
+   zgięciem byłoby ~0°. Wybrano kąt ANATOMICZNY, bo to on realizuje zdanie, którym klinika uzasadnia
+   liczbę — nie dlatego, że maksymalizuje wynik. Uwaga do manewru mówi to wprost.
+ SKUTKI ZMIERZONE (protokół STAŁYCH SKALIBROWANYCH: latencja |ξ|≥0.05, trwanie = t(3% szczytu)
+   − latencja, dt=0.05, prefiks INTERP, tHold pomiarowy 60/60/90 s — ten sam, który odtwarza stare
+   liczby co do cyfry, więc porównanie jest uczciwe):
+   a) KANAŁ POZIOMY, prowokacja diagnostyczna: latencja 2.30 → 2.00 s, szczyt ξ 0.69591 → 0.78402
+      @ 9.95 → 9.25 s, trwanie 42.75 → 39.35 s. Kanały tylny i przedni BITOWO nietknięte
+      (0.87158 @10.25 i 0.94191 @24.95) — zmiana dotyka wyłącznie pozy kanału poziomego.
+   b) R3-STARE CZĘŚCIOWO ODPOWIEDZIANE — nie strojeniem, tylko pozą: rozstęp latencji HC<PC urósł
+      z 1 kroku siatki dt (2.30 vs 2.35) do 7 kroków (2.00 vs 2.35), a różnica szczytów spadła
+      z −20.2% do −10.1%. Część zarzutu „stałe skalibrowano wyłącznie dla kanału tylnego" była
+      artefaktem 30° przegięcia. Kalibracja stałych per kanał pozostaje ODRADZANA (R3-STARE).
+   c) NULL POINT: 8.7° → 7.5° ku uchu choremu; liczba LICZONA w czterech tekstach (nullTxt = skan
+      nullYawOf), nie wpisana. Cel kupulo w leżeniu +0.059 → +0.057. Asymetria Roll apo (surowe mag)
+      0.832/0.885 → 0.966/0.985. Kotwice kalibracyjne CUP_WEAK i LIGHT_W przeliczone (0.45·0.966/0.784
+      = 0.554; light/geo 0.435/0.784 = 0.554; display light 0.435 vs apo 0.196) — POZYCJA W PAŚMIE
+      0.4–0.7 BEZ ZMIAN, więc uzasadnienie obu stałych stoi, tylko liczby są nowe.
+   d) RÓWNOWAGA LEŻENIA 190.97° → 190.35°; napęd w spoczynku przy leżeniu 0.0223 → 0.0254 (nadal poniżej
+      fStat 0.04, więc karta „model nie rozstrzyga" bez zmian; przy okazji poprawiono cztery teksty,
+      które podawały tu 0.026 = wartość SKŁONU, nie leżenia). φ₀ scenariusza afterRoll 221.40 → 220.15.
+      phiAfterLie scenariusza textbook 190.399 → 189.924, czyli PRZEKROCZYŁO wododział 190 — SPRAWDZONE,
+      że nie zmienia żadnego werdyktu (kierunek karty LDT bierze się z φ₀=146.19, a skłon doczepiony
+      po LDT startuje z 195.6/195.8 i w obu wariantach bije KU ZDROWEJ).
+   e) FENOTYP short-arm: rollAff plateau −0.375 → −0.519, heal 0.459 → 0.466 — znaki i logika bez zmian.
+      Most SPV: szczyt Rolla geo 0.696→~21 °/s zastąpiony 0.784→~23.5 °/s, asymetria Rolla 20.9/8.0
+      → 23.5/8.9 (kanał tylny nietknięty). Karta jam, wiersz „na wznak": −0.26294 → +0.07458 (zmiana
+      ZNAKU), werdykt bez zmian — obie wartości daleko od progu crusGrav 0.6, wyrocznia JAM_PRED przeszła.
+   f) MANEWRY BEZ ZMIAN, wszystkie: epley, semont, bascule, lempert, gufoniGeo, gufoniApo, zuma, kim —
+      φ końcowe i szczyty identyczne. Lempert nie używa tej pozy (złóg wychodzi w t=71.55 s, poza jest
+      później); zuma używa jej w kroku 4., ale po wyjściu złogu — zmienia się wyłącznie TEKST instrukcji.
+ KOSZT NR 1 — TEST STAJE SIĘ ZABIEGIEM. TO NIE ZGIĘCIE O TYM DECYDUJE (korekta po krytyce; pierwsza
+   wersja tego wpisu przypisywała efekt zgięciu i była MYLĄCA). Zmierzona macierz rozmiar × hold
+   (scenariusz neutral, akt chore→centrum→zdrowe, koniec fazy 3 = 27.4 + hold):
+     MAŁY złóg: nie opróżnia kanału przy ŻADNYM zgięciu ani holdzie (20 i 30 s, 10.30° i 30°).
+     ŚREDNI:  hold 20 s → opróżnia przy 10.30° (t=46.55, margines 0.85 s), NIE przy 30°;
+              hold 30 s → opróżnia przy OBU (10.30°: t=57.05; 30°: t=61.65).
+     DUŻY:    opróżnia ZAWSZE, także przy 30° i holdzie 20 s (t=38.95, margines 8.45 s).
+   Wniosek: decyduje DŁUGOŚĆ HOLDU i ROZMIAR złogu; zgięcie przesuwa próg o ~5 s holdu i tylko dla
+   rozmiaru ŚREDNIEGO. Zdanie „podręcznikowe 30° tego nie robiło" jest prawdziwe WYŁĄCZNIE dla
+   medium@20 s — dla dużego złogu fałszywe zawsze, dla małego bezprzedmiotowe. ACT_STEPS.roll koduje
+   hold 20 s, czyli wartość KRÓTSZĄ niż piśmiennictwo (typowo ≥30 s) — to on, a nie kąt, stawia akt
+   na progu. Zjawisko pozostaje ODSŁONIĘTYM defektem R1(c) (wyidealizowany łuk), ale przypisanie mu
+   ochronnej roli 30° było nadinterpretacją i zostało wycofane.
+   Skutek dla karty: kontrolny test po akcie milknie (medium/big). DIAGNOSTYKA NIETKNIĘTA — obie fazy
+   niosą pełną odpowiedź, lateralizacja poprawna w 3/4 scenariuszy jak przed zmianą.
+ KOSZT NR 2 — UTRATA SELEKTYWNOŚCI KANAŁOWEJ (znalezisko krytyka wyroczni, ZWERYFIKOWANE i NAJMOCNIEJSZE
+   przeciw tej zmianie): w macierzy cross egzaminu pacjent z kanałem PRZEDNIM daje w pozycji Roll
+   odpowiedź 0.0127 przy zgięciu 30° (niema) i 0.1185 przy 10.30° (WIDOCZNA — próg XI_CARD 0.10).
+   Przejście progu leży między 15° a 10.30° (15° → 0.0701). Czyli w geometrii TEGO modelu 30° JEDNAK
+   coś kupuje i jest to wielkość mierzalna: trzyma test Roll ślepym na złóg kanału przedniego.
+   To nie unieważnia rodowodu kalorycznego liczby (30° nadal nie zostało dobrane po pomiarze czułości),
+   ale UNIEWAŻNIA mocne zdanie „30° nie kupuje nic" — i tak trzeba je czytać. Przeciek międzykanałowy
+   sam w sobie NIE jest nowy (HC w Dix 0.478, PC w Rollu 0.530 — pinowane od V21); nowa jest wyłącznie
+   ta jedna komórka przechodząca próg widoczności. DECYZJA KLINICZNA (użytkownika): czy uczyć, że test
+   Roll przy anatomicznym zgięciu bywa dodatni w AC-BPPV, czy uznać to za argument za pasmem 15–20°.
+ SPRZECZNOŚĆ WEWNĘTRZNA DO ROZSTRZYGNIĘCIA (krytyk geometrii): dwie ścieżki modelują TO SAMO badanie
+   i mówią różnie — preset historii BLT_HISTORY.afterRoll („po teście Roll, oba boki") zostawia złóg
+   w kanale (φ₀ 220.15, exitedInHistory=false), a akt sesji ACT_STEPS.roll ten sam test OPRÓŻNIA
+   (exitStep 2). Przed V25 obie mówiły „zostaje". Różnica bierze się z holdów (BLT_HISTORY ma własne)
+   — kandydat V26: wyprowadzić historię afterRoll z actTimeline zamiast z osobnej listy kroków.
+ UWAGA DO MANEWRU (DIAG.roll.poseNote — decyzja użytkownika: „odnotować w uwagach do manewru"):
+   jedyne miejsce w aplikacji, gdzie kąt pozy jest UZASADNIONY, a nie podany. Po krytyce przepisana:
+   podaje skąd liczba, nazywa GRANICĘ (liczby dotyczą pozy wyjściowej; w pozycji odczytu optimum jest
+   przy ~0°), a koszt kwalifikuje ROZMIAREM i HOLDEM zamiast podawać bezwarunkowo, i kończy zdaniem,
+   że to własność łuku modelu, NIE wiedza kliniczna (u chorego powtórzony Roll zwykle nadal daje DCPN).
+   Ukryta w trybie egzaminu.
+ WYROCZNIE — NOWE (zarzut blokujący krytyka wyroczni: główny skutek zmiany nie był pilnowany NICZYM):
+   • engine.rollact (6 kluczy: 2 strony × 3 rozmiary) — piny exited/exitStep/tExit/fazy + CZTERY
+     twarde throwy: (1) ŚWIEŻY chory nie może mieć fazy oznaczonej „gone", (2) faza „ucho chore
+     w dole" musi nieść odpowiedź, (3) ekspulsja tylko w ostatnim kroku pozycyjnym (inaczej ginie
+     faza porównawcza i lateralizacja), (4) lustro P/L bit-w-bit.
+   • dom diag/roll/P/session-{on,act1,off} — sesja miała w złotym wzorcu dix/bowlean/lyingdown, ale
+     NIE Roll, a to właśnie tam akt opróżnia kanał. Ta luka pozwoliła karcie zacząć kłamać bez jednego
+     bajtu różnicy (patrz NAPRAWA PONIŻEJ). dom 186 → 189.
+ NAPRAWA W PRZELOCIE (zarzut blokujący krytyka kliniki): karta sesji brała `pv.exited` — stan KOŃCA
+   aktu — i rzutowała go wstecz na WSZYSTKIE fazy. Póki akt Rolla nigdy nie opróżniał kanału, było to
+   nieszkodliwe; po V25 pierwszy test u NIELECZONEGO chorego pokazywał OBIE fazy jako „kanał
+   wyczyszczony — brak odpowiedzi" z podpisem „Tak wygląda kontrolny test zaraz po skutecznej
+   repozycji", czyli aplikacja uczyła, że świeży HC-BPPV ma ujemny obustronny test Roll. sessionPreview
+   dostał pole `gone` (złóg poza kanałem JUŻ NA POCZĄTKU tej fazy — osobne od `exited` i od
+   `phases[].exited`), render przeszedł na nie, a faza, W KTÓREJ złóg wychodzi, dostała własną notę:
+   odpowiedź pełna, ale to OSTATNIA prowokacja tego złogu. Ta sama semantyka co gałąź SCEN_DRIVEN.
+ WYROCZNIE/ZAKRES REBASELINE: 98 scenariuszy zmienionych / +9 dodanych (6 engine.rollact + 3 dom) /
+   0 usuniętych (sprawdzone na ZBIORACH KLUCZY wobec HEAD: 0 zniknęło, 27 liści doszło = 24 rollact
+   + 3 dom; surowy licznik --check pokazuje 107, bo grupę nową liczy jako różnicę). Liczniki plans 18,
+   neuro 19, pose 360, dom 186 → 189. Rozbicie zmienionych: pose 30 (WYŁĄCZNIE supineFlex: 6 wariantów
+   twarzy [up/down/front/left/right/null] × 5 yawów — zarzut o arytmetykę słuszny, poprzedni rozpis
+   „3 × 5 × 2" zgadzał się tylko sumą), dom 47, engine.spv 6,
+   engine.lyingdown 6, engine.shortarm 2, engine.lightcupula 2, engine.plans 2 (zuma — sam tekst),
+   engine.jam 2 (relMap.supine), engine.exam 1. BIT-0: neuro (cały), sensitivity, expulsion,
+   ensemble/chmura, GRACE/tevs, guide/*, plans poza zumą, dom kart Dix/head-hang. Pułapka złapana:
+   pierwsza wersja wstawki poseNote zmieniała 22 ekrany SAMYM WCIĘCIEM (ta sama pułapka białych znaków
+   co przy kartach GRACE/jam) — poprawiona na wstawkę bez własnego białego znaku. bridge:check PASS
+   (6.231e−16), view:check PASS (12.77° przy progu 25°), podwójny collect bajtowo identyczny.
+ RZETELNOŚĆ: zmiana przeszła warsztat adwersaryjny (4 soczewki × krytyk + weryfikator próbujący OBALIĆ
+   każdy zarzut; 37 agentów, 33 zarzuty, 7 obalonych, 26 potwierdzonych, 1 agent padł na błędzie API).
+   Z potwierdzonych: 3 blokujące (sprzeczność liczb w bloku stałych, karta sesji ucząca nieprawdy, brak
+   wyroczni) — WSZYSTKIE naprawione; korekta wzoru HC_TILT→HC_FLEX i wycofanie tezy o ochronnej roli
+   30° pochodzą wprost z tej krytyki. NIE odtworzono jednego zarzutu („~±25° pasmo ciszy na mini-karcie
+   null pointa") — takiego napisu nie ma w kodzie, karta liczy pasmo ze skanu. NIE naprawiono świadomie:
+   legacy otorepo.html („~30°" w monolicie; skrypt snapshot:mono i tak nie startuje — defekt sprzed
+   V25, kandydat osobny) oraz view_doc.txt/view_doc.en.txt (definicja wariantu supineFlex „~30° (Roll)").
 
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)

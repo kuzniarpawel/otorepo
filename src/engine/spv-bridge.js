@@ -21,13 +21,15 @@
 // SKALA I ASYMETRIA (rozstrzygnięcia D6 z sondami):
 //   xiEff = ξ≥0 ? ξ : ξ·EWALD_INHIB — asymetria Ewalda II ZOSTAJE (to fizjologia TRANSDUKCJI —
 //     wyciszanie aferentu przy hamowaniu, ten sam mechanizm co afferent() z podłogą 0 Hz w NeuroVOR;
-//     kamera ją WIDZI: odwrócenie po Dixie 11.6 °/s, nie fałszywe 25.7; asymetria Rolla 20.9/8.0;
+//     kamera ją WIDZI: odwrócenie po Dixie 11.6 °/s, nie fałszywe 25.7; asymetria Rolla 23.5/8.9
+//     [V25 — poza Rolla z nachylenia kanału; do V24 20.9/8.0, kanał tylny bez zmian];
 //     „chore w dole słabsze" kupulo istnieje tylko z nią). ZNAK zostaje — to nie rektyfikacja percepcyjna.
 //   min(1,·) NIE wchodzi (klamra renderowa, nie fizyka): ξ>1 jest osiągalne (Semont/Bascule 1.05;
 //     size big ×2.46) → ślad >30 °/s WYSTĄPI i jest zamierzony; ślad i animacja celowo rozjeżdżają
 //     się powyżej ξ=1 — nie „naprawiać" jednego względem drugiego.
 //   ξ=1 ≡ SPV_MAX to WYBÓR KALIBRACYJNY (awans konwencji renderowej; ξ nie ma warstwy Hz), zapisany
-//     jak CUP_WEAK: sanity — szczyt Rolla geo 0.696→~21 °/s (pasmo publikowane 20–70), Dix 0.872→~26.
+//     jak CUP_WEAK: sanity — szczyt Rolla geo 0.784→~23.5 °/s [V25; do V24 0.696→~21] (pasmo
+//     publikowane 20–70), Dix 0.872→~26 (kanał tylny nietknięty przez V25).
 //   Oś pionowa: wspólne są JEDNOSTKI, nie sufity — NeuroVOR tłumi pion wagą VERT_W=0.5 (imbalans
 //     toniczny pary, sufit ~15 °/s), BPPV liczy z wychylenia osklepka (do ~24 °/s przy ξ=1);
 //     VERT_W świadomie NIE wchodzi do BPPV (inny mechanizm).

@@ -238,7 +238,8 @@ export const Vestibular = (()=>{
     //   ku zdrowemu; klinika: 10–30° ku CHOREMU), Bow&Lean apo przeczył regule Choung i tekstowi własnej
     //   karty, pseudo-SN w siadzie był zerem z konstrukcji, a asymetria Rolla żyła tylko z rektyfikacji
     //   wyświetlacza. Po poprawce (zmierzone): Roll apo zachowany z WEWNĘTRZNĄ asymetrią we właściwą
-    //   stronę (chore w dole 0.832 < zdrowe 0.885), null point yaw +8..9° ku CHOREMU, B&L apo wg reguły
+    //   stronę (chore w dole 0.966 < zdrowe 0.985 — liczby V25, przy zgięciu pozy 10.30°; do V24
+    //   0.832 < 0.885 przy 30°), null point yaw +7.5° ku CHOREMU, B&L apo wg reguły
     //   (skłon→zdrowa 0.120, odchylenie→chora 0.130), pseudo-SN w siadzie 0.052 (słaby — jak klinicznie).
     // KANAŁY PIONOWE świadomie ZOSTAJĄ na restPhi (wybór fenomenologiczny, nie fizyka): czysty cel przy
     //   osklepku dawałby PC silny UPORCZYWY bodziec w siadzie (0.708) — sprzeczny z kliniką; w Dix oba
@@ -248,7 +249,7 @@ export const Vestibular = (()=>{
     const drive=dot3(g, tangAt(G, cupHC ? CUPULA_DEG : restPhi(canal, side)));   // >0 = ampullofugalny (rosnące φ)
     let proj=G.exc*drive;                                   // exc: +1 pionowe (Ewald III), −1 poziomy (Ewald II)
     // LIGHT CUPULA (ocena II, D3/V12): lekki osklepek = ODWRÓCONY znak wyporu — ten sam punkt oceny
-    // (przy osklepku), to samo zero rzutu (null point WSPÓLNY z apo, ku uchu CHOREMU: +8.7° supineFlex /
+    // (przy osklepku), to samo zero rzutu (null point WSPÓLNY z apo, ku uchu CHOREMU: +7.5° supineFlex /
     // +6.9° supineFlat), przeciwny kierunek DCPN po obu stronach zera (geotropowy trwały).
     if(variant==="light") proj=-proj;
     const excited = proj>0;                                 // JEDNA reguła Ewalda — inwersja cupulo-HC zbędna po przeniesieniu punktu oceny
@@ -622,15 +623,16 @@ export const Vestibular = (()=>{
   //   piśmiennicze SPV apogeotropowy ≈ 0.4–0.7× geotropowy (kan. poziomy) porównuje się z EMERGENTNYM
   //   stosunkiem szczytów ξ obu symulacji, a ten przy 0.6 wynosił 0.736 (tuż POZA pasmem: cel statyczny
   //   kupulo przewyższa szczyt dynamiczny kanalo). 0.45 daje stosunek ~0.54 = środek pasma (z celem przy
-  //   osklepku po A1: 0.45·0.832/0.696). NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik
+  //   osklepku po A1: 0.45·0.966/0.784 = 0.554 — liczby V25; do V24 0.45·0.832/0.696 = 0.538, ta sama
+  //   pozycja w paśmie). NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik
   //   (uproszczenie: nie per-kanał/per-geometria; dla kanałów PIONOWYCH pasmo 0.4–0.7 jest ekstrapolacją
   //   bez własnej normy piśmienniczej).
   const CUP_WEAK=0.45;
   // LIGHT CUPULA — waga statyczna lekkiego osklepka (ocena II, D3/V12). Start = CUP_WEAK (0.45): osobna
   // GAŁKA kalibracyjna (nie alias), kotwiczona jak CUP_WEAK do wielkości emergentnej — stosunek szczytów
-  // light/canalo-geo w Rollu 0.375/0.696 = 0.538 (środek tego samego pasma 0.4–0.7, którym skalibrowano
+  // light/canalo-geo w Rollu 0.435/0.784 = 0.554 [V25; do V24 0.375/0.696 = 0.538] (środek tego samego pasma 0.4–0.7, którym skalibrowano
   // CUP_WEAK; piśmiennictwo nie daje osobnej normy SPV light-vs-geo). „DCPN wyraźniejszy niż apo" wychodzi
-  // BEZ nowej stałej z samej rektyfikacji EWALD_INHIB (na tej samej fazie display 0.375 vs 0.169).
+  // BEZ nowej stałej z samej rektyfikacji EWALD_INHIB (na tej samej fazie display 0.435 vs 0.196).
   const LIGHT_W=0.45;
   // REKTYFIKACJA EWALDA II — o ile słabsza jest odpowiedź HAMUJĄCA niż pobudzająca. Jedno źródło: ta sama
   // stała rządzi dynamiką (dynNystagmus) i kartą testu (nysFromGeom w pose/maneuvers.js), gdzie do

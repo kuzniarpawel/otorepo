@@ -257,21 +257,28 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
        arc lumen (Dix: φ(120 s)=159.5, exited=false) — nystagmus crescendo→decrescendo (extinguishes), the
        debris stays in the canal.
    CONSTANTS CALIBRATED TO THE LITERATURE (posterior canal, canalithiasis) — NUMBERS IN FORCE 2026-08-16
-       (V24, the diagnostic path WITH THE NECK; EXPLICIT metric: latency by the |ξ|≥0.05 threshold,
+       (V24 neck + V25 pose from the canal inclination; EXPLICIT metric: latency by the |ξ|≥0.05 threshold,
        duration to 3% of peak; protocol: dt=0.05, q0=sitting, the interpolation PREFIX + a provocation
        segment of tTrans 0.5 s with neckPitch/neckYaw from PROVOKE_POSE; MEASUREMENT tHold 60/60/90 s —
        longer than the production windows 40/40/70, because the 3% tails do not fit in the production
        window; the INTERP convention: neck 0→ν with the same u as the slerp — the numbers are NOT
        reproducible without these three declarations):
        posterior in Dix: latency 2.35 s, peak ξ 0.872 @ 10.25 s, duration (3%) 39.75 s;
-       horizontal in Roll: 2.30 s / 0.696 @ 9.95 s / 42.75 s; anterior in head-hang: 0.45 s (= no
-       latency, R7) / 0.942 @ 24.95 s / 60.5 s. AMPLITUDE PEAKS unchanged vs 2026-08-13
-       (0.87158/0.69591 bitwise; AC 0.94188→0.94191 — the only 5th-decimal change: the AC has no
-       latency, its trajectory to the peak passes through a transition with the neck). Size table
+       horizontal in Roll: 2.00 s / 0.784 @ 9.25 s / 39.35 s [V25 — the pose takes its flexion from
+       the CANAL INCLINATION, 10.44 degrees instead of 30; the V24 record "2.30 / 0.696 @ 9.95 /
+       42.75" = the path at a 30-degree flexion]; anterior in head-hang: 0.45 s (= no latency, R7) / 0.942 @ 24.95 s / 60.5 s.
+       AMPLITUDE PEAKS: the POSTERIOR and ANTERIOR canals unchanged since 2026-08-13 (0.87158
+       bitwise; AC 0.94188→0.94191 at the neck wiring — the only 5th-decimal change: the AC has no
+       latency, its trajectory to the peak passes through a transition with the neck). The
+       HORIZONTAL canal changed in V25: 0.69591 -> 0.78360 (the record "0.69591 bitwise" held
+       through V24 inclusive). Size table
        (PC/Dix, protocol as above): small lat 4.35 / 0.292 @ 14.40 · medium 2.35 / 0.872 @ 10.25 ·
-       big 1.40 / 3.042 @ 6.95. The latency order HC (2.30) < PC (2.35) after the wiring — a margin
-       of 1 grid step dt; the conclusion for R3 DELIBERATELY not announced (R1–R3 are on the "I do
-       not change without consent" list; the user's decision). The pre-V24 records (2.25/2.4/0.5,
+       big 1.40 / 3.042 @ 6.95. The latency order HC < PC: after the neck wiring (V24) 2.30 vs 2.35 — a margin
+       of 1 grid step dt; after deriving the pose flexion from anatomy (V25) 2.00 vs 2.35 — a margin
+       of 7 steps, with the peak difference down from -20.2% to -10.1%. The conclusion is therefore
+       already ROBUST against the grid, not a single-step artefact — see R3-OLD (part of the
+       complaint was an artefact of the pose). Announcing it clinically remains the user's decision
+       (R1–R3 are on the "I do not change without consent" list). The pre-V24 records (2.25/2.4/0.5,
        10.15/10.1/25.3) = HISTORICAL (the path without the neck, production tHold).
        VERDICT 2026-08-14 (3 lenses: clinics/physics-adversary/didactics):
        the AC course is EMERGENT, not an artifact — start at the cupula (restPhi 3° = attractor: the sitting
@@ -1288,6 +1295,15 @@ REMAINING (pending decision):
           a synthetic 0.15->1.0 ramp, not the real phi.)
        c) A 30-second roll test with the HEALTHY ear down EMPTIES the horizontal canal (exited=true) - the
           diagnostic test cures the patient.
+          [UNMASKED 2026-08-16 in V25 — item (c) stopped being theoretical. As long as the test pose
+           carried a hard-coded 30-degree flexion, the Roll act with a 20 s hold did NOT empty the
+           canal; the threshold sat at a 25 s hold. Once the flexion was derived from the canal
+           inclination (10.44 degrees) the threshold dropped to 20 s, i.e. EXACTLY the ACT_STEPS.roll
+           value — the act empties the canal in 4/4 scenarios, exiting in the "healthy ear down"
+           phase at t=46.5-47.0 s against a phase end of 47.4 s (margin 0.4-0.9 s), and the control
+           test falls mute. The 30-degree canon MASKED this defect: it bought 3.5-4.2 s of margin on
+           the idealised arc. Two errors were cancelling each other. This is NOT an argument for
+           going back to 30 degrees — it is an argument for fixing the arc.]
      (Item "d) roll asymmetry" was listed here until 2026-08-05 - MISATTRIBUTED. Moved to R3: it survives
       the arc extension without the slightest change, so it is not a consequence of R1. Do not defer it
       behind this recalibration.)
@@ -1453,6 +1469,14 @@ REMAINING (pending decision):
            sources (reviews, StatPearls, teaching materials) that agree in content; Bárány's 1906 paper was
            not read. Until (a)+(h) are closed, the sentence "30° comes from the caloric convention" has the
            status of A WELL-DOCUMENTED HYPOTHESIS, not a first-hand fact.
+     IMPLEMENTATION (V25, 2026-08-16, the user's decision): conclusion (f) entered the engine — the
+       Roll-test pose takes its flexion from the LATERAL CANAL INCLINATION of this atlas
+       (HC_TILT_DEG = 10.4398 degrees) rather than from a textbook, and the same constant feeds every
+       clinical text that mentions the angle. The full protocol, the control of the derivation, the
+       consequences and the NAMED COST (unmasking R1(c)) are in the section "THE ROLL-TEST POSE
+       FLEXION DERIVED FROM ANATOMY (V25)". Measurement (e) of this entry was thereby CONFIRMED
+       independently in production code: |g|_plane 0.999997 at a flexion equal to the inclination,
+       0.9415 at 30 degrees.
      THE MEASUREMENT'S INTEGRITY: the adversarial layer FELL (3 of the 5 workshop agents, including BOTH
        critics, ended in API errors). The core was verified by independent code driving the main loop: the
        pose oracles bit-for-bit, the act's identity with actTimeline, the P/L mirror, 4 scenarios ×
@@ -1462,7 +1486,15 @@ REMAINING (pending decision):
        measurement has NO independent adversarial control — in a dispute over any single number it must be
        re-measured from scratch.
 
- R3-OLD. THE CONSTANTS WERE CALIBRATED FOR THE POSTERIOR CANAL ONLY; the horizontal and anterior canals inherit
+ R3-OLD. [PARTLY ANSWERED 2026-08-16 in V25 — NOT by tuning the constants but by the POSE: the
+     horizontal canal was being tested at a 30-degree flexion that took 5.9% of the in-plane gravity
+     away from it in the setup pose and 14.5% in the test pose. Once the flexion was derived from the
+     canal inclination the HC latency fell 2.30->2.00 s (the gap against the PC going from 1 to 7 grid
+     steps) and the peak rose 0.696->0.784 (the distance from the PC going from -20.2% to -10.1%). The
+     complaint "the numbers are born at the start point phi=90" STANDS — the remaining difference is
+     still geometric. Per-canal constant tuning remains DISCOURAGED. The numbers below are the record
+     from BEFORE the neck wiring and the pose change.]
+     THE CONSTANTS WERE CALIBRATED FOR THE POSTERIOR CANAL ONLY; the horizontal and anterior canals inherit
      them without their own validation and come out clinically backwards:
         latency:  posterior 1.95 s . HORIZONTAL 2.30 s . anterior 3.15 s
         peak xi:  posterior 0.810 . HORIZONTAL 0.518 . anterior 0.668
@@ -1944,6 +1976,9 @@ substance of partial repositioning).
    acts ≡ the chain BIT-FOR-BIT (probe P3: 0.0e+0 over 1432 samples; const would break B7 through
    the nPrev from SIT_SEG). The cost named: the HC<PC latency gap = 1 grid step dt (the R3
    conclusion NOT announced — the "I do not change without consent" list, the user's decision).
+   [V25 UPDATE: the cost is gone — once the pose flexion was derived from the canal inclination the
+   gap became 7 grid steps (2.00 vs 2.35). The narrowness of the margin was a property of the
+   30-DEGREE POSE, not of the INTERP convention.]
  BOUNDARIES (V25 candidates, explicitly WITHOUT the neck): the V21 exam (examPhaseNys — isolated
    provocations, internally consistent: values and envelopes from the same neck-less path; the
    exam pins BIT-0), the guideNysSeconds fallback (pinned by an explicit q — the maneuver path
@@ -1968,6 +2003,148 @@ substance of partial repositioning).
    demo). BIT-0 proven: plans, sensitivity, expulsion, shortarm, jam, lightcupula, ensemble,
    EXAM (whole), neuro, guide/* (94), pose. bridge/view = NEGATIVE controls (they consume poses —
    blind to the neck). The double collect byte-identical.
+
+=== THE ROLL-TEST POSE FLEXION DERIVED FROM ANATOMY (V25, 2026-08-16) ===
+ WHAT: the neck-flexion angle of the Roll-test pose (POSE_SPEC "supineFlex|up") is no longer a number
+   copied from a textbook. The pose: pitch = -90 + HC_FLEX_DEG (it was -60, i.e. a hard-coded "~30").
+   TWO constants, both derived from the same atlas normal, deliberately SEPARATED (the first version of
+   this change confused them — caught by the geometry critic):
+     HC_TILT_DEG = acos(|n_y|/|n|) = 10.4398 deg — the FULL (dihedral) inclination of the canal plane.
+       This is the quantity COMPARABLE WITH THE LITERATURE: Della Santina [H29] measures exactly it
+       (the angle of the normal to Reid's Z axis) = 19.9, Wu 2021 = 17.4. Used for text comparisons only.
+     HC_FLEX_DEG = atan2(|n_z|,|n_y|) = 10.2955 deg — the SAGITTAL FLEXION at which gravity actually
+       comes to lie in the canal plane. IT SETS THE POSE. Neck flexion rotates the head about the
+       INTERAURAL axis, so it only moves the (y,z) components of the normal; the x component (-0.0304 =
+       a slight tilt of the canal plane in the FRONTAL plane) is UNREACHABLE for it — hence the 0.14 deg
+       difference.
+   At HC_FLEX_DEG the in-plane |g| is 1.000000 EXACTLY (at the 10.4398 inclination it would be 0.999997,
+   at 30 it is 0.9415). Neither number is an optimiser result — there is no optimiser in the code.
+   HC_TILT_TXT ("10") feeds EVERY clinical instruction mentioning this angle, so a text-vs-physics drift
+   is structurally impossible (the same principle as POSE_SPEC on 2026-08-05).
+ WHY: the entry R3-MEASURED, THE 30 DEGREE QUESTION (points b-f) established that the canonical "20-30"
+   is NOT a measurement of the test's performance but a number carried over from the caloric convention —
+   and that its declared goal ("raising the head puts the lateral canal vertical") is met EXACTLY at a
+   flexion of HC_FLEX_DEG. The canon assumes a 30-degree inclination; the MEASUREMENTS give 19.9 / 17.4 /
+   10.4. Since the engine computes on IE-Map geometry, the only angle consistent with its own anatomy is
+   ~10 degrees. The user's decision, 2026-08-16.
+ CONTROL OF THE DERIVATION: sides P and L both give 10.2955 (checked separately, not assumed from the
+   mirror); the P/L mirror of the whole diagnostic path after the change is 0.0e+0 across three canals;
+   the ROLL ACT oracle enforces a bit-for-bit P/L mirror for all three debris sizes.
+ THE LIMIT OF THIS RATIONALE (named, because it weakens our own result): the |g|-in-plane optimum DEPENDS
+   ON THE POSE. In the test pose (head turned 90, ear down) the maximum shifts to -1.77, so THERE every
+   flexion costs: at 10.30 it leaves 0.978, at 30 it leaves 0.855. The clinical rationale optimises the
+   SETUP pose (the one the instruction talks about: "lay the patient down, flex, then turn"), not the
+   pose in which the test is read. Had the criterion been response strength in the testing position, the
+   right flexion would be ~0. The ANATOMICAL angle was chosen because it realises the sentence with which
+   the clinic justifies the number — not because it maximises the output. The maneuver note says so plainly.
+ MEASURED CONSEQUENCES (protocol of the CALIBRATED CONSTANTS: latency at |xi| >= 0.05, duration =
+   t(3% of peak) - latency, dt=0.05, INTERP prefix, measurement tHold 60/60/90 s — the very protocol that
+   reproduces the old numbers digit for digit, so the comparison is honest):
+   a) HORIZONTAL CANAL, diagnostic provocation: latency 2.30 -> 2.00 s, peak xi 0.69591 -> 0.78402
+      @ 9.95 -> 9.25 s, duration 42.75 -> 39.35 s. The posterior and anterior canals are BITWISE
+      untouched (0.87158 @10.25 and 0.94191 @24.95) — the change touches only the horizontal pose.
+   b) R3-OLD PARTLY ANSWERED — not by tuning, but by the pose: the HC<PC latency gap grew from 1 grid
+      step dt (2.30 vs 2.35) to 7 steps (2.00 vs 2.35), and the peak difference shrank from -20.2% to
+      -10.1%. Part of the complaint "the constants were calibrated for the posterior canal only" was an
+      artefact of the 30-degree over-flexion. Per-canal constant tuning remains DISCOURAGED (R3-OLD).
+   c) NULL POINT: 8.7 -> 7.5 degrees toward the affected ear; the number is COMPUTED in four texts
+      (nullTxt = the nullYawOf scan), not written in. The cupulo target when lying down +0.059 -> +0.057.
+      The Roll apo asymmetry (raw mag) 0.832/0.885 -> 0.966/0.985. The CUP_WEAK and LIGHT_W calibration
+      anchors were recomputed (0.45*0.966/0.784 = 0.554; light/geo 0.435/0.784 = 0.554; display light
+      0.435 vs apo 0.196) — the POSITION IN THE 0.4-0.7 BAND IS UNCHANGED, so the justification of both
+      constants still stands; only the numbers are new.
+   d) LYING EQUILIBRIUM 190.97 -> 190.35; the resting drive when lying down 0.0223 -> 0.0254 (still below
+      fStat 0.04, so the "the model does not resolve it" card is unchanged; four texts that quoted 0.026
+      here — the BOW value, not the lying one — were corrected in passing). The afterRoll scenario's phi0
+      221.40 -> 220.15. The textbook scenario's phiAfterLie 190.399 -> 189.924, i.e. it CROSSED the 190
+      watershed — VERIFIED not to change any verdict (the LDT card's direction comes from phi0 = 146.19,
+      and a bow chained after the LDT starts from 195.6/195.8 and beats TOWARD THE HEALTHY side either way).
+   e) SHORT-ARM PHENOTYPE: rollAff plateau -0.375 -> -0.519, heal 0.459 -> 0.466 — signs and logic
+      unchanged. SPV bridge: the Roll geo peak anchor 0.696->~21 deg/s was replaced by 0.784->~23.5, and
+      the Roll asymmetry 20.9/8.0 -> 23.5/8.9 (the posterior canal untouched). The jam card's "supine"
+      row: -0.26294 -> +0.07458 (a SIGN change), the verdict unchanged — both values are far from the
+      crusGrav threshold 0.6, and the JAM_PRED oracle passed.
+   f) MANEUVERS ALL UNCHANGED: epley, semont, bascule, lempert, gufoniGeo, gufoniApo, zuma, kim —
+      identical final phi and peaks. Lempert does not use this pose (the debris exits at t=71.55 s, the
+      pose comes later); zuma uses it in step 4, but after the exit — only the instruction TEXT changes.
+ COST No. 1 — THE TEST BECOMES A TREATMENT. THE FLEXION IS NOT WHAT DECIDES THAT (a correction after the
+   review; the first version of this entry attributed the effect to the flexion and was MISLEADING).
+   The measured size x hold matrix (neutral scenario, act affected->centre->healthy, end of phase 3 =
+   27.4 + hold):
+     SMALL debris: does not empty the canal at ANY flexion or hold (20 and 30 s, 10.30 and 30).
+     MEDIUM:  hold 20 s -> empties at 10.30 (t=46.55, margin 0.85 s), NOT at 30;
+              hold 30 s -> empties at BOTH (10.30: t=57.05; 30: t=61.65).
+     LARGE:   ALWAYS empties, including at 30 with a 20 s hold (t=38.95, margin 8.45 s).
+   Conclusion: the HOLD LENGTH and the debris SIZE decide; the flexion shifts the threshold by ~5 s of
+   hold and only for the MEDIUM size. The sentence "the textbook 30 did not do that" is true ONLY for
+   medium@20 s — for large debris it is always false, for small it is moot. ACT_STEPS.roll encodes a 20 s
+   hold, i.e. SHORTER than the literature (typically >=30 s) — so it, not the angle, puts the act on the
+   threshold. The phenomenon remains an UNMASKED R1(c) defect (the idealised arc), but ascribing a
+   protective role to 30 degrees was an overreach and has been withdrawn.
+   Effect on the card: the control test after the act falls mute (medium/large). DIAGNOSIS UNTOUCHED —
+   both phases carry a full response, lateralisation correct in 3/4 scenarios as before the change.
+ COST No. 2 — LOSS OF CANAL SELECTIVITY (the oracle critic's finding, VERIFIED, and the STRONGEST point
+   against this change): in the exam cross matrix a patient with ANTERIOR-canal debris produces, in the
+   Roll position, a response of 0.0127 at a 30-degree flexion (mute) and 0.1185 at 10.30 (VISIBLE — the
+   XI_CARD threshold is 0.10). The crossing lies between 15 and 10.30 (15 -> 0.0701). So in THIS model's
+   geometry 30 degrees does buy something, and it is measurable: it keeps the Roll test blind to
+   anterior-canal debris. This does not invalidate the caloric pedigree of the number (30 was still not
+   chosen after a sensitivity measurement), but it DOES invalidate the strong claim "30 buys nothing" —
+   and that is how it must be read. Cross-canal leakage is not new in itself (HC in Dix 0.478, PC in Roll
+   0.530 — pinned since V21); what is new is this single cell crossing the visibility threshold. A
+   CLINICAL DECISION (the user's): whether to teach that the Roll test at the anatomical flexion can be
+   positive in AC-BPPV, or to treat this as an argument for a 15-20 degree band.
+ AN INTERNAL CONTRADICTION TO BE RESOLVED (geometry critic): two paths model the SAME examination and say
+   different things — the history preset BLT_HISTORY.afterRoll ("after the Roll test, both sides") leaves
+   the debris in the canal (phi0 220.15, exitedInHistory=false), while the session act ACT_STEPS.roll
+   EMPTIES it (exitStep 2). Before V25 both said "it stays". The difference comes from the holds
+   (BLT_HISTORY has its own) — a V26 candidate: derive the afterRoll history from actTimeline instead of
+   from a separate step list.
+ THE MANEUVER NOTE (DIAG.roll.poseNote — the user's decision: "note it in the maneuver's notes"): the only
+   place in the application where a pose angle is JUSTIFIED rather than merely stated. Rewritten after the
+   review: it says where the number comes from, names the LIMIT (the figures belong to the setup pose; in
+   the reading position the optimum is near 0), qualifies the cost by SIZE and HOLD instead of stating it
+   unconditionally, and closes by saying this is a property of the model's arc, NOT clinical knowledge (in
+   a real patient a repeated Roll usually still shows DCPN). Hidden in exam mode.
+ ORACLES — NEW (the oracle critic's blocking finding: nothing whatsoever guarded the change's main effect):
+   * engine.rollact (6 keys: 2 sides x 3 sizes) — pins for exited/exitStep/tExit/phases plus FOUR hard
+     throws: (1) a FRESH patient may never have a phase marked "gone", (2) the "affected ear down" phase
+     must carry a response, (3) expulsion only in the last positional step (otherwise the comparison
+     phase, and with it lateralisation, is lost), (4) a bit-for-bit P/L mirror.
+   * dom diag/roll/P/session-{on,act1,off} — the golden had session coverage for dix/bowlean/lyingdown but
+     NOT for Roll, which is exactly where the act empties the canal. That gap let the card start lying
+     without a single byte of difference (see THE IN-PASSING FIX). dom 186 -> 189.
+ THE IN-PASSING FIX (the clinic critic's blocking finding): the session card took `pv.exited` — the state
+   at the END of the act — and projected it back onto ALL phases. While the Roll act never emptied the
+   canal this was harmless; after V25 the first test on an UNTREATED patient showed BOTH phases as "canal
+   cleared — no response" captioned "This is what a control test right after successful repositioning
+   looks like", i.e. the application taught that fresh HC-BPPV has a negative bilateral Roll test.
+   sessionPreview gained a `gone` field (the debris was outside the canal ALREADY AT THE START of that
+   phase — distinct from `exited` and from `phases[].exited`), the render switched to it, and the phase in
+   WHICH the debris leaves got its own note: the response is full, but it is the LAST provocation of this
+   debris. The same semantics as the SCEN_DRIVEN branch.
+ ORACLES / REBASELINE SCOPE: 98 scenarios changed / +9 added (6 engine.rollact + 3 dom) / 0 removed
+   (verified on KEY SETS against HEAD: 0 disappeared, 27 leaves added = 24 rollact + 3 dom; the raw
+   --check counter reports 107 because it counts a brand-new group as a difference);
+   counts plans 18, neuro 19, pose 360, dom 186 -> 189. Breakdown of the changed: pose 30 (supineFlex
+   ONLY: 6 face variants [up/down/front/left/right/null] x 5 yaws — the arithmetic complaint was right,
+   the earlier "3 x 5 x 2" breakdown only matched by its total), dom 47, engine.spv 6, engine.lyingdown 6,
+   engine.shortarm 2, engine.lightcupula 2, engine.plans 2 (zuma — the text alone), engine.jam 2
+   (relMap.supine), engine.exam 1. BIT-0: neuro (all of it), sensitivity, expulsion, ensemble/cloud,
+   GRACE/tevs, guide/*, plans other than zuma, the Dix and head-hang card DOMs. A trap caught: the first
+   version of the poseNote insertion changed 22 screens BY INDENTATION ALONE (the same whitespace trap as
+   the GRACE and jam cards) — corrected to an insertion carrying no whitespace of its own. bridge:check
+   PASS (6.231e-16), view:check PASS (12.77 deg against a 25-degree threshold), the double collect
+   byte-identical.
+ INTEGRITY: the change went through an adversarial workshop (4 lenses x critic + a verifier trying to
+   REFUTE each finding; 37 agents, 33 findings raised, 7 refuted, 26 confirmed, 1 agent died on an API
+   error). Of the confirmed: 3 blocking (a numeric contradiction inside the constants block, a session
+   card teaching a falsehood, no oracle at all) — ALL fixed; the HC_TILT -> HC_FLEX formula correction and
+   the withdrawal of the "30 degrees protects the test" claim come directly from that critique. One
+   finding was NOT reproduced ("a ~+/-25 degree silence band on the null-point mini-card") — no such text
+   exists in the code; the card computes the band from the scan. Deliberately NOT fixed: the legacy
+   otorepo.html ("~30" in the monolith; the snapshot:mono script does not start anyway — a pre-V25 defect,
+   a separate candidate) and view_doc.txt / view_doc.en.txt (the supineFlex variant defined as "~30 (Roll)").
 
 ==========================================================================
  NeuroVOR MODULE — THE TONIC/CENTRAL LAYER (VOR · fixation · vHIT · HINTS)

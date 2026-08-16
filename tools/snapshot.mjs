@@ -309,6 +309,43 @@ function engineOracle(h) {
     if (jamPredFails.length) throw new Error('WYROCZNIA JAM_PRED (Epley trzyma / Yacovino uwalnia) NIE PRZESZŁA: ' + jamPredFails.join(' · '));
     out.jam = jamRes;
   }
+  // ===== V25: AKT ROLL — czy test diagnostyczny opróżnia kanał (jedyna wyrocznia tej własności) =====
+  // Zmiana zgięcia pozy (HC_FLEX_DEG) przesunęła próg opróżnienia z holdu 25 s na 20 s = dokładnie
+  // wartość ACT_STEPS.roll, więc akt Roll wyprowadza teraz złóg do łagiewki. To NAJWAŻNIEJSZY nowy
+  // skutek zmiany, a przed V25 nie pilnowała go ŻADNA wyrocznia (zarzut blokujący krytyka wyroczni):
+  // regres wróciłby z zielonym snapshotem. Liczby = PINY (kontyngentne od holdów i rozmiaru);
+  // TWARDY throw wyłącznie na NIEZBYWALNEJ semantyce karty.
+  if (h.sessionPreview && h.actTimeline && h.Vestibular) {
+    const r5 = x => x == null ? null : +(+x).toFixed(5);
+    const fresh = (side, size) => ({ canal: 'horizontal', side, size, phi: null, xi: 0, bondFrac: 1,
+      stuck: true, exited: false, inCrus: false, rep: 0, acts: [], tSession: 0 });
+    const ra = {};
+    for (const side of ['P', 'L']) for (const size of ['small', 'medium', 'big']) {
+      const pv = h.sessionPreview(fresh(side, size), 'roll');
+      const sim = h.Vestibular.simulateCanalith({ canal: 'horizontal', side, size, q0: [1, 0, 0, 0],
+        timeline: h.actTimeline('roll', side) });
+      const ex = sim.find(s => s.exited);
+      ra[side + '/' + size] = {
+        exited: pv.exited, exitStep: pv.exitStep, tExit: ex ? r5(ex.t) : null,
+        phases: pv.phases.map(x => ({ xi: r5(x.xi), exited: !!x.exited, gone: !!x.gone })) };
+      // (1) ŚWIEŻY chory NIGDY nie może mieć fazy oznaczonej „gone" (= złóg poza kanałem PRZED tą
+      //     fazą). Naruszenie = karta uczy, że nieleczony HC-BPPV ma niemy test obustronny.
+      if (pv.phases.some(x => x.gone))
+        throw new Error(`WYROCZNIA AKTU ROLL (V25): świeży chory HC/${side}/${size} ma fazę oznaczoną "gone" — karta pokaże niemy test u NIELECZONEGO`);
+      // (2) Faza pierwsza (ucho chore w dole) musi nieść odpowiedź: to ona lateralizuje.
+      if (!(Math.abs(pv.phases[0].xi) > 0))
+        throw new Error(`WYROCZNIA AKTU ROLL (V25): faza "ucho chore w dole" HC/${side}/${size} bez odpowiedzi`);
+      // (3) Ekspulsja, jeśli zachodzi, może zdarzyć się TYLKO w ostatnim kroku pozycyjnym — nigdy
+      //     w pierwszej fazie (inaczej test traci fazę porównawczą, a lateralizacja przestaje istnieć).
+      if (pv.exitStep != null && pv.exitStep < 2)
+        throw new Error(`WYROCZNIA AKTU ROLL (V25): HC/${side}/${size} opróżnia kanał w kroku ${pv.exitStep} (< 2) — utrata fazy porównawczej`);
+    }
+    // (4) Lustro P/L bit-w-bit — poza jest symetryczna, więc rozjazd = błąd, nie fizjologia.
+    for (const size of ['small', 'medium', 'big'])
+      if (JSON.stringify(ra['P/' + size]) !== JSON.stringify(ra['L/' + size]))
+        throw new Error(`WYROCZNIA AKTU ROLL (V25): lustro P/L rozjechane dla ${size}`);
+    out.rollact = ra;
+  }
 
   // ENSEMBLE (ocena II, V20/D9): chmura N=9 cząstek na JEDNEJ kanonicznej timeline — pin tabeli
   // frakcji częściowej repozycji (sedno D9) + siatki (cicha zmiana siatki = FAIL) dla 9 manewrów × 2
@@ -728,6 +765,14 @@ function domOracle(h, win) {
     grab('diag/lyingdown/P/session-seed', () => { h.seedSessionFromScenario('textbook'); h.render(); });   // lie ku zdrowej (geo emergentnie), sit podprogowy — BIT-EQ ze scenariuszem
     grab('diag/lyingdown/P/session-act1', () => { h.sessionProvoke(); h.render(); });                      // złóg w strefie podprogowej ~195° (D2) — druga próba niema (R10)
     grab('diag/lyingdown/P/session-off',  () => { h.toggleSessionMode(false); h.render(); });
+    // V25: KARTA ROLL POD SESJĄ — luka pokrycia ujawniona przez zarzut blokujący krytyka kliniki.
+    // Sesja miała w złotym wzorcu dix/bowlean/lyingdown, ale NIE Roll — a to właśnie na Rollu akt
+    // opróżnia kanał, więc dokładnie ten ekran mógł zacząć kłamać („niemy test u NIELECZONEGO")
+    // bez jednego bajtu różnicy w snapshotcie. Pierwszy graby = ŚWIEŻY chory: karta MUSI pokazywać
+    // obie fazy z odpowiedzią, a fazę wyjścia opisać jako ostatnią prowokację, nie jako kontrolę.
+    grab('diag/roll/P/session-on',   () => { if (h.openTest) h.openTest('roll'); if (h.setDiagSide) h.setDiagSide('P'); h.toggleSessionMode(true); h.render(); });
+    grab('diag/roll/P/session-act1', () => { h.sessionProvoke(); h.render(); });      // akt wyprowadza złóg w fazie 3 → kontrolny NIEMY (R10)
+    grab('diag/roll/P/session-off',  () => { h.toggleSessionMode(false); h.render(); });
     if (h.setBltScenario) h.setBltScenario('textbook'); else if (h.state) h.state.bltScenario = 'textbook';   // higiena po zasiewach
   }
   // V20/D9: CHMURA ZŁOGU na finalnym kroku guide — karta częściowej repozycji (Epley 8/9), gałąź
@@ -846,6 +891,7 @@ if (!CHECK) {
       diffKeys(snap.engine.ensemble, gold.engine.ensemble, 'engine.ensemble/', diffs);               // V20/D9: jw.
       diffKeys(snap.engine.exam, gold.engine.exam, 'engine.exam/', diffs);                           // V21/D7: jw.
       diffKeys(snap.engine.grace, gold.engine.grace, 'engine.grace/', diffs);                        // V22/D8: jw.
+      diffKeys(snap.engine.rollact, gold.engine.rollact, 'engine.rollact/', diffs);            // V25: jw.
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

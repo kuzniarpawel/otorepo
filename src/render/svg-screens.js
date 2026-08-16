@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo, poseNeck } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo, poseNeck, HC_TILT_TXT } from '../pose/maneuvers.js';
 import { spvTrace } from '../engine/spv-bridge.js';   // D8/V22: pierwsza konsumpcja UI mostu SPV (V13)
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
@@ -303,7 +303,7 @@ function posture(spec,viewSide){                       // spec: PoseSpec (jedno 
     couch=`<rect x="14" y="118" width="172" height="10" rx="3" fill="${P}"/>
       <rect x="14" y="128" width="8" height="20" fill="#1c2935"/><rect x="178" y="128" width="8" height="20" fill="#1c2935"/>`;
   }
-  const label={supineHang:t("Na plecach, głowa w dół ~20°","Supine, head down ~20°"),supineDeepHang:t("Na plecach, głowa głęboko w dół ~30°","Supine, head deep down ~30°"),supineFlex:t("Na plecach, głowa przygięta ~30°","Supine, head flexed ~30°"),supineFlat:t("Na plecach, głowa płasko","Supine, head flat"),supineChin:t("Na plecach, broda do klatki","Supine, chin to chest"),prone:t("Na brzuchu","Prone"),sideL:t("Na boku lewym","On the left side"),sideR:t("Na boku prawym","On the right side")}[body]||"";
+  const label={supineHang:t("Na plecach, głowa w dół ~20°","Supine, head down ~20°"),supineDeepHang:t("Na plecach, głowa głęboko w dół ~30°","Supine, head deep down ~30°"),supineFlex:t(`Na plecach, głowa przygięta ~${HC_TILT_TXT}°`,`Supine, head flexed ~${HC_TILT_TXT}°`),supineFlat:t("Na plecach, głowa płasko","Supine, head flat"),supineChin:t("Na plecach, broda do klatki","Supine, chin to chest"),prone:t("Na brzuchu","Prone"),sideL:t("Na boku lewym","On the left side"),sideR:t("Na boku prawym","On the right side")}[body]||"";
   return `<svg viewBox="0 0 200 160" role="img" aria-label="${t("Ułożenie","Position")}: ${label}, ${viewLbl}">
     <text x="100" y="12" text-anchor="middle" fill="var(--faint)" font-size="9">${viewLbl}</text>
     ${couch}${fig}
@@ -1077,7 +1077,7 @@ function jamCard(side){
     ${mrow("Bascule", J.bascule.jammed?holdTxt:"—")}
     ${mrow("Yacovino", t(`UWALNIA czop ~${f2(J.yac.relDelta)} s po wejściu w deep head-hang; potem transjent ODWRÓCONY do ξ=${f2(J.yac.minXi)} (krok „broda do klatki”) i zwykła kanalolitiaza`,`RELEASES the plug ~${f2(J.yac.relDelta)} s after entering the deep head-hang; then a REVERSED transient down to ξ=${f2(J.yac.minXi)} (the chin-to-chest step) and ordinary canalithiasis`), true)}
     <div class="note">${t("DLACZEGO: uwolnienie wymaga UTRZYMANEJ siły stycznej ponad progiem (iglica przejścia nie uwalnia). Napęd uwolnienia w pozach standardowych (próg 0,60):","WHY: release requires a SUSTAINED tangential force above the threshold (a transition spike does not release). Release drive in the standard positions (threshold 0.60):")}</div>
-    <div>${relChip(t("siad","sitting"), J.relMap.sit)}${relChip(t("Dix chory","Dix affected"), J.relMap.dixAff)}${relChip(t("Dix zdrowy","Dix healthy"), J.relMap.dixHeal)}${relChip(t("na wznak (głowa ~30°)","supine (head ~30°)"), J.relMap.supine)}${relChip("deep head-hang", J.relMap.deepHang, true)}${relChip(t("broda do klatki","chin to chest"), J.relMap.chin)}</div>
+    <div>${relChip(t("siad","sitting"), J.relMap.sit)}${relChip(t("Dix chory","Dix affected"), J.relMap.dixAff)}${relChip(t("Dix zdrowy","Dix healthy"), J.relMap.dixHeal)}${relChip(t(`na wznak (głowa ~${HC_TILT_TXT}°)`,`supine (head ~${HC_TILT_TXT}°)`), J.relMap.supine)}${relChip("deep head-hang", J.relMap.deepHang, true)}${relChip(t("broda do klatki","chin to chest"), J.relMap.chin)}</div>
     <div class="note">${t("★ deep head-hang to JEDYNA standardowa poza nad progiem — siad wręcz DOCISKA czop (czas nie leczy). Uwolnienie ≠ wyleczenie: koniec pełnego Yacovino zostawia złóg W KANALE (φ≈","★ the deep head-hang is the ONLY standard position above the threshold — sitting actually PRESSES the plug in (time does not cure). Release ≠ cure: the end of the full Yacovino leaves the debris IN THE CANAL (φ≈")}${Math.round(J.yac.finalPhi)}°${t(") — to już zwykła kanalolitiaza. Epley wykonany BEZPOŚREDNIO po uwolnieniu czyści kanał (ekspulsja ","); — now ordinary canalithiasis. An Epley performed IMMEDIATELY after the release clears the canal (expulsion ")}${f2(J.postEpley.expelDur)}${t(" s). Sekwencja kliniczna: Yacovino (uwolnij) → kontrolny Dix (typowy przemijający oczopląs potwierdza uwolnienie) → Epley (repozycja)."," s). Clinical sequence: Yacovino (release) → a control Dix (a typical transient nystagmus confirms the release) → Epley (repositioning).")}</div>
     <div class="note" style="color:var(--ant)">${t("DYSCYPLINA: jam to rozpoznanie z WYKLUCZENIA — domyślna ścieżka pozycjo-niezależnego oczopląsu pozostaje OŚRODKOWA (najpierw flagi i MRI powyżej). O jamie myśl dopiero, gdy: kierunek pasuje do JEDNEGO kanału + wywiad BPPV/świeżego manewru + ZERO objawów neurologicznych. Nie mylić z ramieniem bańkowym (short arm): predykcja „Epley-nie/Yacovino-tak” dotyczy zaklinowanego CZOPU, nie wolnego złogu w ramieniu.","DISCIPLINE: jam is a diagnosis of EXCLUSION — the default path for position-independent nystagmus remains CENTRAL (flags and MRI above come first). Think of jam only when: the direction fits a SINGLE canal + a history of BPPV/a recent maneuver + ZERO neurological signs. Do not confuse it with the short (ampullar) arm: the „Epley-no/Yacovino-yes” prediction concerns an impacted PLUG, not free debris in the arm.")}</div></div>`;
 }
@@ -1241,21 +1241,28 @@ function renderDiag(){
     const sInit = sessionInit(S);
     phases.forEach((ph,i)=>{
       if(!ph.nys) return;
-      const xi = pv.exited ? 0 : (pv.phases[i]||{xi:0}).xi;
+      // V25: „gone" = złóg był poza kanałem JUŻ NA POCZĄTKU tej fazy (S.exited przed aktem albo
+      // ekspulsja we WCZEŚNIEJSZYM kroku). Dawne `pv.exited` (stan KOŃCA aktu) rzutowało wstecz na
+      // wszystkie fazy — od V25, gdy akt Roll opróżnia kanał w fazie 3, dawało to kartę mówiącą,
+      // że ŚWIEŻY chory ma niemy test obustronny. Ta sama semantyka co gałąź SCEN_DRIVEN niżej.
+      const pvp = pv.phases[i]||{xi:0};
+      const gone = !!S.exited || pvp.gone===true;
+      const xi = gone ? 0 : pvp.xi;
       const N = nysFromDyn(effCanal, effSide, xi, false);
-      if(pv.exited || N.strength < XI_CARD){
+      if(gone || N.strength < XI_CARD){
         Object.assign(ph.nys, {dir:0, vdir:1, strength:0, anat:{h:0,v:0,t:0}, unresolved:true, init:null, fatigue:1});
-        ph.label = pv.exited
+        ph.label = gone
           ? t("kanał wyczyszczony — brak odpowiedzi","canal cleared — no response")
           : t("odpowiedź podprogowa (złóg blisko równowagi lub związany)","subthreshold response (debris near equilibrium or bound)");
-        ph.note = pv.exited
+        ph.note = gone
           ? t("Złóg opuścił kanał w tej sesji — prowokacja niema. Tak wygląda kontrolny test zaraz po skutecznej repozycji. Uwaga kliniczna: ujemny test NATYCHMIAST po manewrze nie dowodzi wyleczenia (NPV ~72% — nakłada się męczliwość); wiarygodna kontrola śródsesyjna po ≥30 min siadu, formalna ocena wg AAO-HNS w ciągu miesiąca.","The debris left the canal in this session — the provocation is mute. This is what a control test right after successful repositioning looks like. Clinical caveat: a negative test IMMEDIATELY after the maneuver does not prove cure (NPV ~72% — fatigability overlaps); a reliable within-session check needs ≥30 min upright, formal reassessment per AAO-HNS within a month.")
           : t("Stan sesji: złóg leży blisko równowagi tej pozycji albo trzyma go wiązanie — napęd podprogowy.","Session state: the debris lies near this position's equilibrium or is held by its bond — subthreshold drive.");
       } else {
         Object.assign(ph.nys, {dir:N.dir, vdir:N.vdir, strength:N.strength, anat:N.anat, excited:N.excited,
           reversed:N.reversed, unresolved:false, fatigue:1, init:sInit});
         ph.label = N.label;
-        if(state.testKey==="roll") ph.note = t("Sesja liczy Roll jako SEKWENCJĘ (chore→centrum→zdrowe): pierwsza faza PRZEMIESZCZA złóg, więc amplitudy faz nie są już czystym porównaniem Ewalda z karty statycznej (fazy izolowane) — kolejność wykonania zmienia wynik (R10, Bhandari 2022).","The session computes the Roll as a SEQUENCE (affected→center→healthy): the first phase DISPLACES the debris, so the phase amplitudes are no longer the static card's clean Ewald comparison (isolated phases) — the order of execution changes the result (R10, Bhandari 2022).");
+        if(pvp.exited) ph.note = t("W TEJ pozycji złóg dochodzi do ujścia i opuszcza kanał — odpowiedź jest pełna, ale to OSTATNIA prowokacja tego złogu: kolejny (kontrolny) test będzie niemy. Test wykonuje pracę manewru (R10, Bhandari 2022) — ujemna kontrola NIE dowodzi tu wyleczenia sprzed badania.","In THIS position the debris reaches the outlet and leaves the canal — the response is full, but it is the LAST provocation of this debris: the next (control) test will be mute. The test does the maneuver's job (R10, Bhandari 2022) — a negative control here does NOT prove the patient was already cured.");
+        else if(state.testKey==="roll") ph.note = t("Sesja liczy Roll jako SEKWENCJĘ (chore→centrum→zdrowe): pierwsza faza PRZEMIESZCZA złóg, więc amplitudy faz nie są już czystym porównaniem Ewalda z karty statycznej (fazy izolowane) — kolejność wykonania zmienia wynik (R10, Bhandari 2022).","The session computes the Roll as a SEQUENCE (affected→center→healthy): the first phase DISPLACES the debris, so the phase amplitudes are no longer the static card's clean Ewald comparison (isolated phases) — the order of execution changes the result (R10, Bhandari 2022).");
         else if(S.acts.length>0) ph.note = t(`Stan sesji (po ${S.acts.length} ${S.acts.length===1?"akcie":"aktach"}): amplituda i latencja WYNIKAJĄ z położenia złogu i wiązania po poprzednich aktach — męczliwość to głównie pozycja, nie „zużycie" (panel sesji niżej).`,`Session state (after ${S.acts.length} act${S.acts.length===1?"":"s"}): amplitude and latency FOLLOW from the debris position and bond after the previous acts — fatigability is mostly position, not "wear" (session panel below).`);
       }
     });
@@ -1537,7 +1544,7 @@ function renderDiag(){
     <div class="ghead"><button class="iconbtn" onclick="backToSetup()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ttl"><b>${D.name}</b><span>${D.tests}</span></div>
       <div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${A==='L'}" onclick="setDiagSide('L')">L</button><button data-s="P" aria-pressed="${A==='P'}" onclick="setDiagSide('P')">${t("P","R")}</button></div></div></div>
-    <div class="card" style="margin-bottom:4px"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>
+    <div class="card" style="margin-bottom:4px"><div class="instr" style="font-size:14px;color:#D4DEE8">${D.intro}</div></div>${(D.poseNote && !exam) ? `\n    <div class="card" style="margin-bottom:4px"><div class="note">${D.poseNote}</div></div>` : ""}
     ${isDix && !exam ? `<div class="obsrow"><div class="obslabel">${t("Zaobserwowany oczopląs w Dix-Hallpike:","Observed nystagmus in the Dix-Hallpike:")}</div>
       <div class="seg segobs">
         <button class="opt" aria-pressed="${!antMode}" onclick="setDixObs('post')"><b>↑ + ${t("skrętny","torsional")}</b><small>${t("kanał tylny (ucho dolne) — typowy","posterior canal (lower ear) — typical")}</small></button>
