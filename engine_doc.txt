@@ -138,8 +138,13 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
                 stare (gałąź literalna). Zmierzone skutki: Yacovino 3→4 wkład bezwładności
                 0.295→0.222 g ku czubkowi + 0.175 g składowa nosowo-potyliczna (cele oceny II
                 trafione co do 0.001); Lempert nienaruszony (przejścia z karkiem po wyjściu złogu);
-                kark interpolowany TĄ SAMĄ u co slerp pozy. Diagnostyka świadomie NIEokablowana
-                (przesunęłaby STAŁE SKALIBROWANE: Dix 2.25→2.40 s itd.) — osobny kandydat.
+                kark interpolowany TĄ SAMĄ u co slerp pozy. Diagnostyka OKABLOWANA w V24
+                (2026-08-16): engineXi (tor q=null), bltInit, ldtPhases, actTimeline (kroki
+                pivot:"body"), rollShortPhases — z PREFIKSEM INTERPOLACYJNYM (segment 0 s
+                ustawiający nPrev [0,0] → pierwszy realny segment interpoluje kark 0→ν; konwencja
+                wybrana zamiast const, bo ZACHOWUJE inwariant B7 — sklejone akty ≡ łańcuch,
+                dowód sondą P3: 0.0e+0 na 1432 próbkach). Nowe STAŁE SKALIBROWANE niżej;
+                dawna prognoza „2.40" była NIEZMIERZONA (zapis historyczny).
    phi0 — jawny kąt startowy złogu [°]; null (domyślnie) = restPhi(canal,side): minimum grawitacyjne
        w postawie pionowej, a gdy leży poza łukiem — osklepek (tylny 48.8° · poziomy 199.8° · przedni 3°).
        WALIDOWANE od 2026-08-13 (ocena II, A9/V3): RangeError poza [CUPULA_DEG, phiExit] — koniec z cichą
@@ -240,16 +245,27 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
        wychodzi wprost; Gufoni apo nie czyści (konwersja — poprawnie). Diagnostyka (pojedyncza pozycja
        prowokująca): złóg NIE dochodzi do odnogi — minimum grawitacyjne pozycji leży w świetle łuku
        (Dix: φ(120 s)=159.5, exited=false) — oczopląs crescendo→decrescendo (wygasa), złóg zostaje w kanale.
-   STAŁE SKALIBROWANE DO LITERATURY (kanał tylny, kanalolitiaza) — LICZBY OBOWIĄZUJĄCE 2026-08-13
-       (metryka JAWNA: latencja/trwanie progiem |ξ|≷0.05; protokół q0=siad, tTrans 0.5 s):
-       tylny w Dix: latencja 2.25 s, szczyt ξ 0.872 @ 10.15 s, trwanie ~37 s (kryterium 3% szczytu: 42 s);
-       poziomy w Roll: 2.4 s / 0.696 @ 10.1 s / ~38 s; przedni w head-hang: 0.5 s (= brak latencji, R7) /
-       0.94 @ 25.3 s / ~57 s (3%: 61 s). WERDYKT 2026-08-14 (3 soczewki: klinika/fizyka-adwersarz/dydaktyka):
+   STAŁE SKALIBROWANE DO LITERATURY (kanał tylny, kanalolitiaza) — LICZBY OBOWIĄZUJĄCE 2026-08-16
+       (V24, tor diagnostyczny Z KARKIEM; metryka JAWNA: latencja progiem |ξ|≥0.05, trwanie do 3%
+       szczytu; protokół: dt=0.05, q0=siad, PREFIKS interpolacyjny + segment prowokacji tTrans 0.5 s
+       z neckPitch/neckYaw z PROVOKE_POSE; tHold POMIAROWY 60/60/90 s — dłuższy niż produkcyjne okna
+       40/40/70, bo ogony 3% nie mieszczą się w oknie produkcyjnym; konwencja INTERP: kark 0→ν tą
+       samą u co slerp — liczby NIE są reprodukowalne bez tych trzech deklaracji):
+       tylny w Dix: latencja 2.35 s, szczyt ξ 0.872 @ 10.25 s, trwanie (3%) 39.75 s;
+       poziomy w Roll: 2.30 s / 0.696 @ 9.95 s / 42.75 s; przedni w head-hang: 0.45 s (= brak
+       latencji, R7) / 0.942 @ 24.95 s / 60.5 s. SZCZYTY AMPLITUD bez zmian względem 2026-08-13
+       (0.87158/0.69591 bitowo; AC 0.94188→0.94191 — jedyna zmiana 5. miejsca: AC bez latencji,
+       trajektoria do szczytu przechodzi przez przejście z karkiem). Tabela rozmiarów (PC/Dix,
+       protokół jw.): small lat 4.35 / 0.292 @ 14.40 · medium 2.35 / 0.872 @ 10.25 · big 1.40 /
+       3.042 @ 6.95. Kolejność latencji HC (2.30) < PC (2.35) po okablowaniu — margines 1 krok
+       siatki dt; wniosek dla R3 ŚWIADOMIE nieogłaszany (R1–R3 na liście „nie zmieniam bez zgody";
+       decyzja użytkownika). Zapisy sprzed V24 (2.25/2.4/0.5, 10.15/10.1/25.3) = HISTORYCZNE
+       (tor bez karku, tHold produkcyjne). WERDYKT 2026-08-14 (3 soczewki: klinika/fizyka-adwersarz/dydaktyka):
        przebieg AC jest EMERGENTNY, nie artefakt — start przy osklepku (restPhi 3° = atraktor: minimum
        potencjału siadu 23,6° ZA ujściem), droga 175° do stabilnej równowagi 178° w wiszeniu, zamknięta
        analityka przetłumionego wahadła dφ/dt=(A/τP)·sin(eq−φ) odtwarza silnik do 0,40°; klinicznie zgodny
        z obwodowym pDBN (Cambi/Nuti 2013: trwanie 40,1±22 s; Califano 2014: napady AC 1–4 min; Bárány <1 min
-       spełnione dla widoczności |ξ|>0.05 ≈ 57 s — „61 s" to ogon kryterium 3% szczytu, poniżej detekcji
+       spełnione dla widoczności |ξ|>0.05 ≈ 57–60 s — ogon kryterium 3% szczytu (V24: 60.5 s) poniżej detekcji
        wzrokowej; wolne crescendo @25 s = przeciwieństwo ośrodkowego CPPN Choi 2015: szczyt natychmiast,
        TC 3–8 s). Dawny „rozjazd z kartą testu" (ocena II, A6) zniesiony chipami V8 („Przemijający ≈1 min").
        tauC=5 s odpowiada długiej stałej osklepka/kanału (~4–6 s).
@@ -454,8 +470,8 @@ liczone w restPhi, czyli w tym samym miejscu, którym rusza symulacja.
    194.0→207.1, czyli dla przedniego nawet dalej od końca łuku).
    [AKTUALIZACJA 2026-08-13 — ocena II, C1/DYN-10] Liczby „SKUTKÓW ZMIANY" wyżej opisują stan z DNIA
    uzgodnienia geometrii (przed R7/R4b) i NIE odtwarzają się na bieżącym silniku. Obowiązująca
-   kalibracja tylnego: latencja 2.25 s, szczyt 0.872 @10.15 s, trwanie ~37 s (|ξ|≷0.05) — patrz
-   STAŁE SKALIBROWANE. Zdanie „gufoniApo i bascule nadal nie [czyszczą]" było prawdziwe przed R7 —
+   kalibracja tylnego (od V24, tor z karkiem): latencja 2.35 s, szczyt 0.872 @10.25 s — patrz
+   STAŁE SKALIBROWANE (tam pełny protokół; 2.25/10.15 = zapis historyczny toru bez karku). Zdanie „gufoniApo i bascule nadal nie [czyszczą]" było prawdziwe przed R7 —
    od R7 Bascule CZYŚCI; jedynym niesprzątającym pozostaje Gufoni apo (manewr konwersji).
 
 --------------------------------------------------------------------------
@@ -476,6 +492,9 @@ liczone w restPhi, czyli w tym samym miejscu, którym rusza symulacja.
        small : lat 4.2 s,  szczyt 0.29 @14.25 s (16 µm) — dłuższa latencja, słabszy/wolniejszy.
        medium: lat 2.25 s, szczyt 0.87 @10.15 s (21 µm).
        big   : lat 1.3 s,  szczyt 3.04 @6.85 s (nasyca intensity→1; 29 µm) — krótka latencja, florydny.
+     [V24 2026-08-16, tor z karkiem — liczby obowiązujące: small 4.35/0.292@14.40 · medium
+      2.35/0.872@10.25 · big 1.40/3.042@6.95; monotoniczność i symetria stron zachowane;
+      wiersze wyżej = zapis historyczny.]
      Monotoniczność lat↓/ξ↑/szczyt↓ wraz z r zachowana; obie strony symetryczne.
      Cupulolith: gain ∝ r³ dokładnie (Roll chore-w-dole: small −0.24 / medium −0.51 / big −1.26;
      stosunki 0.475 / 1 / 2.46 = r³). Manewry (plany gen, holdy wyprowadzane R4b):
@@ -1612,7 +1631,7 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    stałej + linia kontrastu AVS z observe(neuritisR)=28,3 °/s — garb przejściowy vs linia stała
    to cała taksonomia na jednym obrazku) i OCZY (xiEnvelope odcinka prowokacji, t rebazowane
    o TEVS_REST; start WYŁĄCZNIE z przycisku „Prowokacja" — spec: oś oczopląsu żyje tylko podczas
-   prowokacji; zero autostartu w rAF). Chipy metryk LICZONE ZE ŚLADU (latencja 2,30 s do progu
+   prowokacji; zero autostartu w rAF). Chipy metryk LICZONE ZE ŚLADU (po V24 z karkiem: latencja 2,40 s do progu
    2 °/s, szczyt 26,1 °/s @ 10,15 s prowokacji, nadprogowo 33,1 s < 60 s — nie są zapieczonymi
    twierdzeniami). Werdykt silnika czytany ŻYWCEM: hints(makePatient({})) = normal/applicable=false/
    nota null/pattern none (lekcja: HINTS niestosowalny → wykonaj Dix) — bramka #A7.
@@ -1670,6 +1689,41 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    rebaseline (komentarz przy pinie). Dom: +2 addytywne diag/dix/{P,L}/central (dom 184→186);
    seam += toggleDiagCentral/JAM_DEMO/jamDemo (bez toggleDiagCentral graby central zapiekłyby
    deterministyczny 'ERR:'-string przechodzący --check — pułapka makeHandle nazwana).
+
+=== OKABLOWANIE KARKU B8 W DIAGNOSTYCE (V24, 2026-08-16) ===
+ CO: ramię bezwładności z kąta karku (armVec/B8, dotąd tylko manewry) wchodzi na tor diagnostyczny:
+   PROVOKE_POSE (jedna prawda pozy prowokacji: kwaternion I kark z tego samego wiersza; refaktor
+   provokeQ bit-tożsamy) + poseNeck/provokeNeck + NECK_PREFIX (segment 0 s ustawiający nPrev [0,0])
+   → okablowane: engineXi (tor q=null), bltInit (historie pozycyjne), ldtPhases, actTimeline
+   (kroki pivot:"body"), rollShortPhases, tevsDemoSim (throw translacyjny GRACE wymusił spójność),
+   obwiednie animacji kart (nys.neck z poseNeck — M3: karta Dix nie może animować 2,25 przy doc 2,35).
+ KONWENCJA INTERP (decyzja): prefiks interpolacyjny zamiast const (wartości własne przez tTrans =
+   fantomowo pre-zgięty kark) — bo ZACHOWUJE inwariant B7: sklejone akty ≡ łańcuch BIT-W-BIT
+   (sonda P3: 0.0e+0 na 1432 próbkach; const łamałby B7 przez nPrev z SIT_SEG). Koszt nazwany:
+   rozstęp latencji HC<PC = 1 krok siatki dt (wniosek R3 NIEogłaszany — lista „nie zmieniam bez
+   zgody", decyzja użytkownika).
+ GRANICE (kandydaci V25, jawnie BEZ karku): egzamin V21 (examPhaseNys — prowokacje izolowane,
+   spójne wewnętrznie: wartości i obwiednie z tej samej ścieżki bez karku; piny exam BIT-0),
+   fallback guideNysSeconds (przypięty jawnym q — tor manewrowy bit-w-bit), obwiednie bow/lean
+   (nić karty pivot:"neck" vs engineXi pivot:"body" — kark wstrzykiwałby bezwładność tułowia
+   w ruch czysto szyjny), pivot SIT_SEG/aktów ze stepPivot (pomiar krytyka: handoff pól przez
+   nPrev na krokach pivot-neck to artefakt zadeklarowanego pivotu, nie fizyka — dlatego kroki
+   pivot:"neck" bez pól), timeline'y INLINE snapshotu shortarm/jam (pin semantyki SILNIKA,
+   dwuźródłowość celowa z komentarzem).
+ SKUTKI (przemierzone, protokół w STAŁYCH SKALIBROWANYCH): latencje Dix 2.25→2.35 / Roll
+   2.45→2.30 / AC 0.50→0.45; SZCZYTY amplitud bez zmian (0.87158/0.69591 bitowo; AC 5. miejsce
+   0.94188→0.94191); φ₀ historii: textbook 146.19 (NIEczułe), afterDix 172.95 (round-niezmienne
+   173), afterRoll 220.45→221.40 (nośnik diffów selektora scenariuszy — Math.round 220→221 na
+   KAŻDEJ karcie canalo B&L/LDT, w tym textbook i neutral). Tożsamości V19 ponownie DOWIEDZIONE:
+   akt ≡ karta 0.0e+0 (bowlean i lyingdown). Naprawiony w przelocie: bounds jamDemo (prefiks
+   dodał granicę t=0 — chip czytałby ξ=0,00 z granicy prefiksu; filtr te>0, jam/central bit-0).
+ WYROCZNIE/ZAKRES: 42 klucze zmienione / 0 dodanych / 0 usuniętych — klasyfikacja PRZEWIDZIANE-
+   -vs-ZMIERZONE: 41 klasa A (sessionChain afterDix1+dix2 — afterRest/afterEpley BIT-0;
+   lyingdown 6 z 8 — neutral bez symulacji bit-0; spv 6/10 — statyka cupulo/light bit-0;
+   grace/tevsDemo; dom 26: selektorowe B&L/LDT + session-*) + hints/preset/tevs (skutek
+   okablowanego demo). BIT-0 dowiedzione: plans, sensitivity, expulsion, shortarm, jam,
+   lightcupula, ensemble, EXAM (cały), neuro, guide/* (94), pose. bridge/view = kontrole
+   NEGATYWNE (konsumują pozy — ślepe na kark). Podwójny collect bajtowo identyczny.
 
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)

@@ -141,8 +141,14 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
                 effects: Yacovino 3→4 inertial contribution 0.295→0.222 g toward the vertex + a
                 0.175 g naso-occipital component (assessment II targets hit to 0.001); Lempert
                 untouched (the neck transitions occur after the debris has exited); the neck is
-                interpolated with the SAME u as the pose slerp. Diagnostics deliberately NOT wired
-                (that would shift the CALIBRATED CONSTANTS: Dix 2.25→2.40 s etc.) — a separate candidate.
+                interpolated with the SAME u as the pose slerp. Diagnostics WIRED in V24
+                (2026-08-16): engineXi (the q=null path), bltInit, ldtPhases, actTimeline
+                (pivot:"body" steps), rollShortPhases — with an INTERPOLATION PREFIX (a 0 s
+                segment setting nPrev [0,0] → the first real segment interpolates the neck 0→ν;
+                the convention chosen over const because it PRESERVES the B7 invariant — glued
+                acts ≡ the chain, proof by probe P3: 0.0e+0 over 1432 samples). The new
+                CALIBRATED CONSTANTS are below; the old "2.40" forecast was NEVER MEASURED
+                (a historical record).
    phi0 — explicit starting arc angle of the debris [°]; null (default) = restPhi(canal,side): the
        gravitational minimum in the upright posture, or the cupula when that minimum lies outside the arc
        (posterior 48.8° · horizontal 199.8° · anterior 3°).
@@ -250,18 +256,31 @@ simulateCanalith({canal, side, timeline, q0=null, phi0=null, settled=true, xi0=0
        position): the debris does NOT reach the crus — the position's gravitational minimum lies within the
        arc lumen (Dix: φ(120 s)=159.5, exited=false) — nystagmus crescendo→decrescendo (extinguishes), the
        debris stays in the canal.
-   CONSTANTS CALIBRATED TO THE LITERATURE (posterior canal, canalithiasis) — NUMBERS IN FORCE 2026-08-13
-       (EXPLICIT metric: latency/duration by the |ξ|≷0.05 threshold; protocol q0=sitting, tTrans 0.5 s):
-       posterior in Dix: latency 2.25 s, peak ξ 0.872 @ 10.15 s, duration ~37 s (3%-of-peak criterion: 42 s);
-       horizontal in Roll: 2.4 s / 0.696 @ 10.1 s / ~38 s; anterior in head-hang: 0.5 s (= no latency, R7) /
-       0.94 @ 25.3 s / ~57 s (3%: 61 s). VERDICT 2026-08-14 (3 lenses: clinics/physics-adversary/didactics):
+   CONSTANTS CALIBRATED TO THE LITERATURE (posterior canal, canalithiasis) — NUMBERS IN FORCE 2026-08-16
+       (V24, the diagnostic path WITH THE NECK; EXPLICIT metric: latency by the |ξ|≥0.05 threshold,
+       duration to 3% of peak; protocol: dt=0.05, q0=sitting, the interpolation PREFIX + a provocation
+       segment of tTrans 0.5 s with neckPitch/neckYaw from PROVOKE_POSE; MEASUREMENT tHold 60/60/90 s —
+       longer than the production windows 40/40/70, because the 3% tails do not fit in the production
+       window; the INTERP convention: neck 0→ν with the same u as the slerp — the numbers are NOT
+       reproducible without these three declarations):
+       posterior in Dix: latency 2.35 s, peak ξ 0.872 @ 10.25 s, duration (3%) 39.75 s;
+       horizontal in Roll: 2.30 s / 0.696 @ 9.95 s / 42.75 s; anterior in head-hang: 0.45 s (= no
+       latency, R7) / 0.942 @ 24.95 s / 60.5 s. AMPLITUDE PEAKS unchanged vs 2026-08-13
+       (0.87158/0.69591 bitwise; AC 0.94188→0.94191 — the only 5th-decimal change: the AC has no
+       latency, its trajectory to the peak passes through a transition with the neck). Size table
+       (PC/Dix, protocol as above): small lat 4.35 / 0.292 @ 14.40 · medium 2.35 / 0.872 @ 10.25 ·
+       big 1.40 / 3.042 @ 6.95. The latency order HC (2.30) < PC (2.35) after the wiring — a margin
+       of 1 grid step dt; the conclusion for R3 DELIBERATELY not announced (R1–R3 are on the "I do
+       not change without consent" list; the user's decision). The pre-V24 records (2.25/2.4/0.5,
+       10.15/10.1/25.3) = HISTORICAL (the path without the neck, production tHold).
+       VERDICT 2026-08-14 (3 lenses: clinics/physics-adversary/didactics):
        the AC course is EMERGENT, not an artifact — start at the cupula (restPhi 3° = attractor: the sitting
        potential minimum lies 23.6° BEYOND the exit), a 175° path to the stable 178° equilibrium in the hang,
        and the closed-form overdamped pendulum dφ/dt=(A/τP)·sin(eq−φ) reproduces the engine to within 0.40°;
        clinically consistent with peripheral pDBN (Cambi/Nuti 2013: duration 40.1±22 s; Califano 2014: AC
-       attacks of 1–4 min; the Bárány <1 min criterion is met for visibility |ξ|>0.05 ≈ 57 s — the "61 s" is
-       the 3%-of-peak criterion tail, below visual detection; the slow crescendo @25 s is the opposite of
-       central CPPN, Choi 2015: immediate peak, TC 3–8 s). The former "mismatch with the test card"
+       attacks of 1–4 min; the Bárány <1 min criterion is met for visibility |ξ|>0.05 ≈ 57–60 s — the
+       3%-of-peak criterion tail (V24: 60.5 s) lies below visual detection; the slow crescendo @25 s is
+       the opposite of central CPPN, Choi 2015: immediate peak, TC 3–8 s). The former "mismatch with the test card"
        (assessment II, A6) was removed by the V8 chips ("Transient ≈1 min").
        tauC=5 s corresponds to a long cupular/canal time constant (~4–6 s).
    Returns: t [s], xi (sign = excitation/inhibition), phi [°], exited (bool).
@@ -476,8 +495,9 @@ uHC(side) — DERIVED as +e1 of the horizontal canal (gravity TOWARD the ampulla
    190.0→189.6, anterior 194.0→207.1, i.e. for the anterior canal even further past the arc end).
    [UPDATE 2026-08-13 — assessment II, C1/DYN-10] The "EFFECTS" numbers above describe the state on the
    DAY the geometry was unified (before R7/R4b) and do NOT reproduce on the current engine. The
-   calibration in force for the posterior canal: latency 2.25 s, peak 0.872 @10.15 s, duration ~37 s
-   (|ξ|≷0.05) — see CONSTANTS CALIBRATED. The sentence "gufoniApo and bascule still do not [clear]" was
+   calibration in force for the posterior canal (since V24, the path with the neck): latency 2.35 s,
+   peak 0.872 @10.25 s — see CONSTANTS CALIBRATED (full protocol there; 2.25/10.15 = the historical
+   record of the neck-less path). The sentence "gufoniApo and bascule still do not [clear]" was
    true before R7 — since R7 Bascule DOES CLEAR; the only non-clearing maneuver remains Gufoni apo (a
    conversion maneuver).
 
@@ -499,6 +519,9 @@ uHC(side) — DERIVED as +e1 of the horizontal canal (gravity TOWARD the ampulla
        small : lat 4.2 s,  peak 0.29 @14.25 s (16 µm) — longer latency, weaker/slower.
        medium: lat 2.25 s, peak 0.87 @10.15 s (21 µm).
        big   : lat 1.3 s,  peak 3.04 @6.85 s (saturates intensity→1; 29 µm) — short latency, florid.
+     [V24 2026-08-16, the path with the neck — numbers in force: small 4.35/0.292@14.40 · medium
+      2.35/0.872@10.25 · big 1.40/3.042@6.95; monotonicity and side symmetry preserved; the rows
+      above = a historical record.]
      Monotonicity lat↓/ξ↑/peak↓ with r preserved; both sides symmetric.
      Cupulolith: gain ∝ r³ exactly (Roll affected-ear-down: small −0.24 / medium −0.51 / big −1.26;
      ratios 0.475 / 1 / 2.46 = r³). Maneuvers (generated plans, R4b-derived holds):
@@ -1732,8 +1755,9 @@ substance of partial repositioning).
    constant line is the whole taxonomy in one picture) and the EYES (the xiEnvelope of the
    provocation segment, t rebased by TEVS_REST; started EXCLUSIVELY from the "Provocation" button
    — the spec: the nystagmus axis lives only during a provocation; zero autostart in rAF). The
-   metric chips are COMPUTED FROM THE TRACE (latency 2.30 s to the 2 °/s threshold, peak 26.1 °/s
-   @ 10.15 s of the provocation, above threshold 33.1 s < 60 s — they are not baked-in claims).
+   metric chips are COMPUTED FROM THE TRACE (after V24 with the neck: a latency of 2.40 s to the
+   2 °/s threshold, peak 26.1 °/s @ 10.15 s of the provocation, above threshold 33.1 s < 60 s —
+   they are not baked-in claims).
    The engine verdict is read LIVE: hints(makePatient({})) = normal/applicable=false/note null/
    pattern none (the lesson: HINTS not applicable → perform the Dix) — gate #A7.
  MODULE CYCLE (fixed in this step): importing the bridge through svg-screens closed the cycle
@@ -1798,6 +1822,44 @@ substance of partial repositioning).
    Dom: +2 additive diag/dix/{P,L}/central (dom 184→186); seam += toggleDiagCentral/JAM_DEMO/
    jamDemo (without toggleDiagCentral the central grabs would bake in a deterministic
    'ERR:'-string that passes --check — the makeHandle trap named).
+
+=== WIRING THE B8 NECK INTO DIAGNOSTICS (V24, 2026-08-16) ===
+ WHAT: the inertial arm from the neck angle (armVec/B8, until now maneuvers only) enters the
+   diagnostic path: PROVOKE_POSE (a single truth of the provocation pose: the quaternion AND the
+   neck from the same row; the provokeQ refactor bit-identical) + poseNeck/provokeNeck +
+   NECK_PREFIX (a 0 s segment setting nPrev [0,0]) → wired: engineXi (the q=null path), bltInit
+   (positional histories), ldtPhases, actTimeline (pivot:"body" steps), rollShortPhases,
+   tevsDemoSim (the GRACE translational throw forced consistency), the cards' animation envelopes
+   (nys.neck from poseNeck — M3: the Dix card must not animate 2.25 while the doc says 2.35).
+ INTERP CONVENTION (the decision): an interpolation prefix instead of const (its own values
+   through tTrans = a phantom pre-bent neck) — because it PRESERVES the B7 invariant: glued
+   acts ≡ the chain BIT-FOR-BIT (probe P3: 0.0e+0 over 1432 samples; const would break B7 through
+   the nPrev from SIT_SEG). The cost named: the HC<PC latency gap = 1 grid step dt (the R3
+   conclusion NOT announced — the "I do not change without consent" list, the user's decision).
+ BOUNDARIES (V25 candidates, explicitly WITHOUT the neck): the V21 exam (examPhaseNys — isolated
+   provocations, internally consistent: values and envelopes from the same neck-less path; the
+   exam pins BIT-0), the guideNysSeconds fallback (pinned by an explicit q — the maneuver path
+   bit-for-bit), the bow/lean envelopes (the card's thread pivot:"neck" vs engineXi pivot:"body"
+   — the neck would inject trunk inertia into a purely cervical movement), the SIT_SEG/act pivot
+   from stepPivot (the critic's measurement: the handoff of the fields through nPrev on
+   pivot-neck steps is an artifact of the declared pivot, not physics — hence pivot:"neck" steps
+   carry no fields), the INLINE timelines of the shortarm/jam snapshot (a pin of the ENGINE's
+   semantics; the dual sourcing deliberate, with a comment).
+ EFFECTS (measured; protocol in CONSTANTS CALIBRATED): latencies Dix 2.25→2.35 / Roll 2.45→2.30 /
+   AC 0.50→0.45; the amplitude PEAKS unchanged (0.87158/0.69591 bitwise; AC 5th decimal
+   0.94188→0.94191); the histories' φ₀: textbook 146.19 (NOT sensitive), afterDix 172.95
+   (round-invariant 173), afterRoll 220.45→221.40 (the carrier of the scenario-selector diffs —
+   Math.round 220→221 on EVERY canalo B&L/LDT card, textbook and neutral included). The V19
+   identities PROVEN anew: act ≡ card 0.0e+0 (bowlean and lyingdown). Fixed in passing: the
+   jamDemo bounds (the prefix added a t=0 boundary — the chip would have read ξ=0.00 from the
+   prefix boundary; a te>0 filter, jam/central bit-0).
+ ORACLES/SCOPE: 42 keys changed / 0 added / 0 removed — the PREDICTED-vs-MEASURED classification:
+   41 in class A (sessionChain afterDix1+dix2 — afterRest/afterEpley BIT-0; lyingdown 6 of 8 —
+   neutral without a simulation bit-0; spv 6/10 — the cupulo/light statics bit-0; grace/tevsDemo;
+   dom 26: the B&L/LDT selector keys + session-*) + hints/preset/tevs (an effect of the wired
+   demo). BIT-0 proven: plans, sensitivity, expulsion, shortarm, jam, lightcupula, ensemble,
+   EXAM (whole), neuro, guide/* (94), pose. bridge/view = NEGATIVE controls (they consume poses —
+   blind to the neck). The double collect byte-identical.
 
 ==========================================================================
  NeuroVOR MODULE — THE TONIC/CENTRAL LAYER (VOR · fixation · vHIT · HINTS)

@@ -247,6 +247,9 @@ function engineOracle(h) {
     out.spv = spv;
   }
 
+  // V24: timeline'y INLINE tego bloku (short-arm i jam) są ŚWIADOMIE BEZ KARKU — pin SEMANTYKI
+  // SILNIKA, NIE lustro rollShortPhases/aktów aplikacji (te od V24 niosą kark i prefiks).
+  // Dwuźródłowość celowa: nie wyrównywać bez osobnej decyzji.
   // SHORT-ARM + JAM (ocena II, V15/D10): piny segmentu bańkowego i czopu. TWARDY INWARIANT (throw,
   // nie pin — fenotypu nie wolno zapiec do golden): znak szczytu short-arm HC/Roll PRZECIWNY do
   // long-arm w tej samej pozie (wolny złóg w ramieniu bańkowym = fenotyp APO, domknięcie R11).

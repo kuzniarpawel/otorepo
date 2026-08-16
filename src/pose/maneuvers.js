@@ -338,11 +338,27 @@ function nysFromDyn(canal, side, xiPeak, apo){
 // RÓWNOWAŻNOŚĆ ZMIERZONA (ocena II, KLIN-4): skok siad→pozycja Roll daje identyczne ξ i kierunek jak
 // protokół dwuetapowy (najpierw płasko, potem skręt), bo etap leżenia płasko nie rusza złogu
 // (φ zostaje w restPhi 199.8°) — karta Roll niczego nie traci na jednosegmentowym skoku.
-function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POSE_SPEC co ekran testu (było: własne qSupineYaw,
-  if(canal==="horizontal") return stepHeadQ("supineFlex", side==="P"? 90 : -90, "up");   // które ignorowało pochylenie z opisu — Roll liczony
-  if(canal==="anterior")  return stepHeadQ("supineDeepHang", 0, "up");                   // przy 10° WYPROSTU zamiast opisanych 30° ZGIĘCIA)
-  return stepHeadQ("supineHang", side==="P"? 45 : -45, "up");                            // tylny (Dix-Hallpike)
-}
+/* V24: JEDNA prawda pozy prowokacji — kanał → {body, face, yaw(strona)}: kwaternion ORAZ kark
+   czytane z tego samego wiersza (dawny provokeQ czytał te same pozy literalnie — refaktor
+   bit-tożsamy; było: własne qSupineYaw ignorujące pochylenie z opisu — Roll liczony przy 10°
+   WYPROSTU zamiast opisanych 30° ZGIĘCIA). */
+const PROVOKE_POSE={
+  horizontal:{body:"supineFlex",     face:"up", yaw:s=>s==="P"? 90:-90},
+  anterior:  {body:"supineDeepHang", face:"up", yaw:()=>0},
+  posterior: {body:"supineHang",     face:"up", yaw:s=>s==="P"? 45:-45},   // tylny (Dix-Hallpike)
+};
+function provokeQ(canal, side){ const P=PROVOKE_POSE[canal]||PROVOKE_POSE.posterior; return stepHeadQ(P.body, P.yaw(side), P.face); }
+// V24 (okablowanie B8 w diagnostyce): kąt karku pozy (ν=pitch−trunk, y=yaw+dyaw) — ten sam wzór
+// co stepNeck toru manewrowego; nośnik ramienia bezwładności armVec dla segmentów pivot:"body".
+function poseNeck(body, yaw, face){ const s=poseOf(body, face); return { p: s.pitch - s.trunk, y: yaw + s.dyaw }; }
+function provokeNeck(canal, side){ const P=PROVOKE_POSE[canal]||PROVOKE_POSE.posterior; return poseNeck(P.body, P.yaw(side), P.face); }
+// V24: PREFIKS INTERPOLACYJNY — segment 0-sekundowy (0 próbek) ustawiający qPrev/nPrev na siad
+// [0,0], żeby PIERWSZY realny segment interpolował kark 0→ν TĄ SAMĄ u co slerp pozy (rozszerzenie
+// zasady R7, którą silnik realizuje między segmentami). Konwencja WYBRANA zamiast const (wartości
+// własne przez całe tTrans = fantomowo pre-zgięty kark) bo ZACHOWUJE inwariant B7: sklejenie aktów
+// w jedną timeline ≡ łańcuch bit-w-bit (prefiks resetuje nPrev w obu układach identycznie —
+// dowód sondą P3; const łamałby B7 przez nPrev z SIT_SEG). Prefiks bez pól karku = bit-0.
+const NECK_PREFIX=Object.freeze({q:[1,0,0,0], tTrans:0, tHold:0, pivot:"body"});
 // przebieg ξ(t) z silnika: kanalolitiaza = PRZEJŚCIOWY (wygasa, cząstka wychodzi, NIE wraca);
 // kupulolitiaza = uporczywy (trzyma się, dopóki pozycja utrzymana).
 // OKNO OBSERWACJI (tHold) — to ONO, przez xiEnvelope→tEnd, ustala jak długo gra animacja oczopląsu.
@@ -350,18 +366,24 @@ function provokeQ(canal, side){        // POZA prowokująca = ta sama tabela POS
 //   postaci uporczywej dawało tEnd 18,5 s przeciw 29,8–39,8 s dla przejściowej, czyli oczopląs „uporczywy"
 //   zatrzymywał się PIERWSZY — dokładne odwrócenie cechy różnicującej, której uczy ta sama karta
 //   („Uporczywy > 60 s" vs „Przemijający < 60 s"). Okno 60 s = próg kliniczny 1 min z kryteriów Bárány.
-function engineXi(canal, side, persistent, q, init, mech){
+function engineXi(canal, side, persistent, q, init, mech, neck){
   // pivot:"body" — badany jest KŁADZIONY z siadu (rusza całe ciało), a nie sam obraca głowę.
   // Okno PRZEDNIEGO 70 s (ocena II, A6/V8): napad AC trwa w silniku ~61 s (szczyt dopiero ~25 s) —
   // wspólne okno 40 s ucinało animację przy 36% szczytu, w pół napadu. Zmienia wyłącznie tEnd animacji
   // diagnostyki (manewrów nie zasila — tam manStepEnv).
   // ZNANA ASYMETRIA tego rozwidlenia (świadomie tolerowana; werdykt sondy 2026-08-14): tEnd kanalo-AC
-  // 61,25 s > kupulo-AC 60,50 s (pełne okno) o 0,75 s — poniżej percepcji (tEnd steruje wyłącznie ruchem
+  // 60,95 s (V24, z karkiem) > kupulo-AC 60,50 s (pełne okno) o 0,45 s — poniżej percepcji (tEnd steruje wyłącznie ruchem
   // tęczówek, bez napisu z sekundami; warianty na przeciwnych stronach flip-karty; peak kupulo-AC 0,142).
   // NIE „naprawiać" oknem kupulo 60→70 s: łamałoby kotwicę „60 s = próg 1 min Bárány" (wyżej), a chipy AC
   // celowo uczą, że czas trwania NIE różnicuje dla przedniego („Przemijający ≈1 min"). Sam napad ~61 s to
   // emergentna fizyka, zgodna z kliniką pDBN — werdykt i liczby: engine_doc „STAŁE SKALIBROWANE".
-  const timeline=[{q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:(canal==="anterior"?70:40), pivot:"body"}];
+  // V24: kark toru diagnostycznego — q==null (kanoniczna prowokacja) dostaje kark z PROVOKE_POSE;
+  // jawne q dostaje kark TYLKO gdy wołający go poda (parametr neck) — egzamin V21 i fallback guide
+  // ŚWIADOMIE bez karku (granice nazwane w doc; kandydat V25). Kupulo/light: simCupStatic bez
+  // specForce = na kark ODPORNE z konstrukcji — stara timeline bez zmian.
+  const nv = q==null ? provokeNeck(canal, side) : (neck||null);
+  const seg={q: q||provokeQ(canal,side), tTrans:0.5, tHold: persistent?60:(canal==="anterior"?70:40), pivot:"body"};
+  const timeline = (!persistent && nv) ? [NECK_PREFIX, {...seg, neckPitch:nv.p, neckYaw:nv.y}] : [seg];
   // q0 = POZYCJA WYJŚCIOWA (siad): bez niej pierwszy segment interpolował „z samego siebie", czyli test
   // zaczynał się już W pozycji prowokującej — złóg nie dostawał przejścia, które go w ogóle rusza.
   const q0=[1,0,0,0];
@@ -403,9 +425,13 @@ function xiEnvelope(sim){
 const TEVS_REST = 8;   // s spoczynku przed prowokacją (nazwany wybór demonstracyjny, pasmo sensowne 5–10 s)
 let _tevsSim = null;
 function tevsDemoSim(){
-  if(!_tevsSim) _tevsSim = Vestibular.simulateCanalith({canal:"posterior", side:"P", q0:[1,0,0,0],
-    timeline:[{q:[1,0,0,0], tTrans:0, tHold:TEVS_REST, pivot:"body"},
-              {q:provokeQ("posterior","P"), tTrans:0.5, tHold:40, pivot:"body"}, SIT_SEG]});
+  // V24: prowokacja demo OKABLOWANA identycznie z kanoniczną (kark z PROVOKE_POSE) — inaczej throw
+  // translacyjny wyroczni GRACE słusznie pęka (demo grałoby latencję 2,25 przy kanonicznej 2,35).
+  // Segment spoczynku niesie jawne neck 0 (ustawia nPrev [0,0] → interp 0→ν jak NECK_PREFIX).
+  if(!_tevsSim){ const nv=provokeNeck("posterior","P");
+    _tevsSim = Vestibular.simulateCanalith({canal:"posterior", side:"P", q0:[1,0,0,0],
+      timeline:[{q:[1,0,0,0], tTrans:0, tHold:TEVS_REST, pivot:"body", neckPitch:0, neckYaw:0},
+                {q:provokeQ("posterior","P"), tTrans:0.5, tHold:40, pivot:"body", neckPitch:nv.p, neckYaw:nv.y}, SIT_SEG]}); }
   return _tevsSim;
 }
 
@@ -633,8 +659,8 @@ function stepPivot(prev, st){
 }
 // B8 (ocena II, V14b): kąt KARKU kroku z TEJ SAMEJ tabeli pozy co stepPivot (jedno źródło rozkładu
 // headQ = torso ∘ kark) — ν = pitch − trunk (jak bodyJoints), Y = yaw + dyaw. Zasila ramię
-// bezwładności armVec w silniku (segment.neckPitch/neckYaw). Diagnostyka (engineXi/BLT/LDT/sesja)
-// świadomie NIEokablowana — przesunęłaby zakotwiczone latencje STAŁYCH SKALIBROWANYCH (osobny kandydat).
+// bezwładności armVec w silniku (segment.neckPitch/neckYaw). Diagnostyka OKABLOWANA w V24 (poseNeck
+// + NECK_PREFIX na segmentach pivot:"body"; STAŁE SKALIBROWANE przemierzone — Dix 2.35, Roll 2.30, AC 0.45 s).
 function stepNeck(st){ const s=poseOf(st.body, st.face); return { p: s.pitch - s.trunk, y: st.yaw + s.dyaw }; }
 function timelineWithHold(plan, h, u=UNTIMED_STEPS[0]){
   return plan.steps.map((st,i)=>{ const n=stepNeck(st);
@@ -721,7 +747,7 @@ function ensembleSim(plan, size="medium"){
 }
 // v: "canalo" (kanalolitiaza / geotropowy) | "cupulo" (kupulolitiaza / apogeotropowy)
 // CHIPY PER KANAŁ (ocena II, A6/V8): kanał PRZEDNI ma w silniku WYPROWADZONY brak latencji (R7: złóg
-// startuje dociśnięty do osklepka, 0.5 s = sam czas przejścia) i napad ~61 s — wspólne chipy
+// startuje dociśnięty do osklepka, 0.45–0.5 s = sam czas przejścia) i napad ~61 s — wspólne chipy
 // „Latencja 1–5 s"/„<60 s" przeczyły własnej fizyce (i klinice AC-BPPV: latencja krótka/nieobecna).
 const featsByVariant = (v, canal, mech) => {
   // D4/V16: opcjonalny ogonowy mech — brak parametru albo mechanizm klasyczny = dokładnie dawne wiersze.
@@ -761,7 +787,8 @@ function bltInit(side, scen){
   const sc=BLT_HISTORY[scen]||BLT_HISTORY.neutral;
   if(!sc.steps) return {phi0:null, settled:true, exitedInHistory:false};
   const k="init#"+side+"#"+scen; if(_bltMemo.has(k)) return _bltMemo.get(k);
-  const timeline=sc.steps(side).map(st=>({q:stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8, tHold:st.hold, pivot:"body"}));
+  const timeline=[NECK_PREFIX, ...sc.steps(side).map(st=>{ const n=poseNeck(st.body, st.yaw, st.face);   // V24: kark historii pozycyjnej (pivot body)
+    return {q:stepHeadQ(st.body, st.yaw, st.face), tTrans:0.8, tHold:st.hold, pivot:"body", neckPitch:n.p, neckYaw:n.y}; })];
   const sim=Vestibular.simulateCanalith({canal:"horizontal", side, q0:[1,0,0,0], timeline});
   const out={phi0: sim.final.exited?null:sim.final.phi, settled:sc.settled, exitedInHistory:sim.final.exited};
   _bltMemo.set(k,out); return out;
@@ -777,6 +804,10 @@ function bltPhases(side, scen, mech){
   const out={init, bow:{xi:0, exited:false}, lean:{xi:0}, exited:init.exitedInHistory};
   if(!init.exitedInHistory){
     const qSit=[1,0,0,0], qBow=stepHeadQ("sit",0,"down"), qLean=stepHeadQ("sit",0,"up");
+    // V24/T3: segmenty pivot:"neck" ŚWIADOMIE BEZ pól karku — armVec dla pivotu karkowego wraca
+    // wcześnie (ramię kark→błędnik sztywne), a pola żywiłyby jedynie nPrev NASTĘPNEGO segmentu
+    // body; pomiar krytyka: taki handoff to artefakt zadeklarowanego pivotu (przy pivot-poprawnym
+    // "neck" pola są bez znaczenia) — kandydat V25: pivot ze stepPivot, jedna spójna decyzja.
     const segs=[{q:qBow,tTrans:0.8,tHold:30,pivot:"neck"},{q:qSit,tTrans:0.8,tHold:5,pivot:"neck"},{q:qLean,tTrans:0.8,tHold:30,pivot:"neck"}];
     const sim = mech==="short"
       ? Vestibular.simulateShortArm({canal:"horizontal", side, q0:qSit, phi0:SHORT_PHI0, settled:false, timeline:segs})
@@ -834,7 +865,9 @@ function ldtPhases(side, scen, mech){
   const out={init, lie:{xi:0}, sit:{xi:0}, phiAfterLie:null, exited:init.exitedInHistory};
   if(!init.exitedInHistory){
     const qSit=[1,0,0,0], qLie=stepHeadQ("supineFlex",0,"up");
-    const segs=[{q:qLie,tTrans:0.8,tHold:30,pivot:"body"},{q:qSit,tTrans:0.8,tHold:30,pivot:"body"}];
+    const nLie=poseNeck("supineFlex",0,"up");                    // V24: kark toru diagnostycznego (pivot body, ν=+30)
+    const segs=[NECK_PREFIX, {q:qLie,tTrans:0.8,tHold:30,pivot:"body",neckPitch:nLie.p,neckYaw:nLie.y},
+                {q:qSit,tTrans:0.8,tHold:30,pivot:"body",neckPitch:0,neckYaw:0}];
     const sim = mech==="short"
       ? Vestibular.simulateShortArm({canal:"horizontal", side, q0:qSit, phi0:SHORT_PHI0, settled:false, timeline:segs})
       : Vestibular.simulateCanalith({canal:"horizontal", side, q0:qSit, phi0:init.phi0, settled:init.settled, timeline:segs});
@@ -898,7 +931,7 @@ const SCEN_DRIVEN=new Set(["bowlean","lyingdown"]);
 // TAU_BOND=1800 s to stała kalibracyjna klasy tauP/tauC, NIE wartość literaturowa (krzywej powrotu
 // latencji nikt nie zmierzył — luka; Imai mierzy AMPLITUDĘ, którą u nas niesie transport+rep).
 // Kotwica dwustronna: przerwy sesyjne 30–120 s → 1.7–6.4% wiązania (latencja ≈ brak — seryjny Dix
-// nie odzyskuje latencji), doba → 100% (pierwsza prowokacja wizyty ma znów pełną latencję 2.25 s).
+// nie odzyskuje latencji), doba → 100% (pierwsza prowokacja wizyty ma znów pełną latencję 2.35 s — V24).
 // τB ≫ timeline (70 s) ⇒ odrost w biegu <3.9% — pominięcie uczciwe; bramkowany odrost w pętli
 // zabiłby cały napad AC (|drive|<fStat od t=0.5 s przy żywym ξ przez 56 s — sonda 2026-08-14).
 const TAU_BOND=1800;
@@ -932,8 +965,15 @@ const ACT_STEPS={                     // pozy aktu per test W KOLEJNOŚCI WYKONA
 };
 const PHASE_OF={ roll:[0,2], bowlean:[0,2], lyingdown:[0,1] };   // mapowanie kroków aktu → fazy karty (centrum bowlean bez karty); reszta: tożsamość
 function actTimeline(testKey, side){
-  return [...(ACT_STEPS[testKey]||ACT_STEPS.dix)(side)
-    .map(st=>({q:stepHeadQ(st.body,st.yaw,st.face), tTrans:0.8, tHold:st.hold, pivot:st.pivot||"body"})), SIT_SEG];   // V19: pivot per krok (skłon/odchylenie = KARK — od B8 pivot ma skutki fizyczne); wpisy bez pola → "body" bit-w-bit
+  // V24: prefiks interpolacyjny (B7: sklejone akty ≡ łańcuch — prefiks resetuje nPrev identycznie
+  // w obu układach) + kark na krokach pivot:"body"; kroki pivot:"neck" (bowlean) ŚWIADOMIE bez pól
+  // (T3 — pomiar krytyka: handoff pól przez nPrev to artefakt zadeklarowanego pivotu SIT_SEG,
+  // nie fizyka; kandydat V25: pivot SIT_SEG/aktów ze stepPivot). SIT_SEG bez pól = ν=0 bit-w-bit.
+  return [NECK_PREFIX, ...(ACT_STEPS[testKey]||ACT_STEPS.dix)(side)
+    .map(st=>{ const piv=st.pivot||"body";
+      if(piv!=="body") return {q:stepHeadQ(st.body,st.yaw,st.face), tTrans:0.8, tHold:st.hold, pivot:piv};
+      const n=poseNeck(st.body,st.yaw,st.face);
+      return {q:stepHeadQ(st.body,st.yaw,st.face), tTrans:0.8, tHold:st.hold, pivot:piv, neckPitch:n.p, neckYaw:n.y}; }), SIT_SEG];
 }
 // stan sesji → parametry startowe silnika. settled:true ZAWSZE — o zatrzymaniu decyduje UCZCIWA bramka
 // w (phi0, q0) + bond0 (bond0=0 ≡ settled:false); phi=null = spoczynek naturalny (restPhi, jak dotąd).
@@ -1289,8 +1329,9 @@ const SHORT_PHI0=(Vestibular.SA_MIN.horizontal+3)/2;   // ≈ −21,7°
 function rollShortPhases(side){
   const k="rollshort#"+side; if(_bltMemo.has(k)) return _bltMemo.get(k);
   const mk=yaw=>{
+    const nS=poseNeck("supineFlex", yaw, "up");                  // V24: kark (pivot body)
     const sim=Vestibular.simulateShortArm({canal:"horizontal", side, q0:[1,0,0,0], phi0:SHORT_PHI0, settled:false,
-      timeline:[{q:stepHeadQ("supineFlex", yaw, "up"), tTrans:0.8, tHold:60, pivot:"body"}]});
+      timeline:[NECK_PREFIX, {q:stepHeadQ("supineFlex", yaw, "up"), tTrans:0.8, tHold:60, pivot:"body", neckPitch:nS.p, neckYaw:nS.y}]});
     let pk=0; for(const s of sim) if(Math.abs(s.xi)>Math.abs(pk)) pk=s.xi;
     return {xi:pk, exited:sim.final.exited, pressed:!!sim.final.pressed, xiEnd:sim.length?sim[sim.length-1].xi:0};
   };
@@ -1321,7 +1362,7 @@ function jamDemo(side){
   // pozycjo-niezależność: prowokacja Dix + powrót do siadu (istniejący akt) pod jamem — KOŃCE segmentów
   const dixTl=actTimeline("dix", side);
   const dix=Vestibular.simulateCanalithJam({canal:"posterior", side, q0:[1,0,0,0], jam:{...JAM_DEMO}, timeline:dixTl});
-  const endXi=bounds(dixTl).map(te=>xiAt(dix,te));
+  const endXi=bounds(dixTl).filter(te=>te>0).map(te=>xiAt(dix,te));   // V24: NECK_PREFIX daje granicę t=0 — odfiltrowana (chip czytałby ξ z granicy prefiksu, nie stan ustalony)
   // mapa napędu uwolnienia: rel = −dir·dot(g,tang(φ)) = −dir·driveAt(…,tauP=1) w pozach standardowych;
   // UWAGA churn: pozy diagnostyczne czekają na okablowanie karku B8 — dryf tych liczb przy B8 to
   // oczekiwany rebaseline, nie regresja.
@@ -1520,7 +1561,7 @@ function examAnswerKey(lesions){
 
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior",zuma:"horizontal",kim:"horizontal"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF, PRIORS, mulberry32, randomPatient, TEST_OF_CANAL, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF, PRIORS, mulberry32, randomPatient, TEST_OF_CANAL, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo, PROVOKE_POSE, poseNeck, provokeNeck, NECK_PREFIX };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

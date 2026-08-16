@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo, poseNeck } from '../pose/maneuvers.js';
 import { spvTrace } from '../engine/spv-bridge.js';   // D8/V22: pierwsza konsumpcja UI mostu SPV (V13)
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
@@ -90,7 +90,7 @@ function startDialNysIn(container, nys, envOv){
   const fast=0.17, T=720, start=performance.now();
   // D7/V21: envOv = jawny KSZTAŁT obwiedni 0..1 (suma punktowa pacjenta wielozmianowego — amplitudę
   // niesie strength jak dotąd); brak parametru = dokładnie dotychczasowa ścieżka (własna symulacja).
-  const {env, tEnd} = envOv || xiEnvelope(engineXi(nys.canal, nys.side, nys.persistent, nys.q, nys.init));
+  const {env, tEnd} = envOv || xiEnvelope(engineXi(nys.canal, nys.side, nys.persistent, nys.q, nys.init, undefined, nys.neck));   // V24: kark obwiedni (jak startNys)
   loopRAF((now)=>{
     if(container.__dialTok!==token || !document.body.contains(container)) return false;
     const elapsed=(now-start)/1000;
@@ -399,7 +399,7 @@ function startNys(container,nys,envOv){
   // kupulolitiaza → uporczywa. Animacja gra RAZ i się zatrzymuje (koniec pętli).
   const canal=nys.canal||"posterior", side=nys.side||"P";
   const ov = (nys.ov && nys.ov.amp>0) ? nys.ov : null;   // N7/D6: toniczna nakladka AVS — bez obwiedni xi, nie wygasa
-  const {env, tEnd} = envOv || xiEnvelope(engineXi(canal, side, nys.persistent, nys.q, nys.init));
+  const {env, tEnd} = envOv || xiEnvelope(engineXi(canal, side, nys.persistent, nys.q, nys.init, undefined, nys.neck));   // V24: kark obwiedni (nys.neck — brak pola = stara ścieżka)
   loopRAF((now)=>{
     if(container.__nysTok!==token || !document.body.contains(container)) return false;
     const elapsed=(now-start)/1000;                      // sekundy
@@ -657,7 +657,9 @@ function manFractions(man, plan){
 function guideNysSeconds(plan, man, step, size){
   const _gn = nysFromDyn(plan.canal, plan.side, stepXiPeak(man, plan, step), plan.mechanism==="cupulo");
   if(!_gn || _gn.strength < XI_CARD) return null;
-  const r = manStepEnv(man, step) || xiEnvelope(engineXi(_gn.canal, _gn.side, _gn.persistent, _gn.q));
+  // V24/M4: fallback PRZYPIĘTY do starej ścieżki jawnym q BEZ karku (q=null dostawałby kark
+  // z PROVOKE_POSE — tor manewrowy ma zostać bit-w-bit; _gn.q i tak nie istnieje w nysFromDyn).
+  const r = manStepEnv(man, step) || xiEnvelope(engineXi(_gn.canal, _gn.side, _gn.persistent, provokeQ(_gn.canal, _gn.side)));
   return r ? r.tEnd : null;
 }
 function setupGuideAnim(){
@@ -1326,6 +1328,12 @@ function renderDiag(){
       }
     });
   }
+  // V24: kark OBWIEDNI animacji — ta sama poza co karta (M3: karta Dix nie może animować latencji
+  // 2.25 s, gdy doc i piny spv mówią 2.40). Egzamin ŚWIADOMIE bez karku (spójnie z examPhaseNys —
+  // granica nazwana w doc, kandydat V25); bowlean pominięty (nić karty jest pivot:"neck", a engineXi
+  // gra pivot:"body" — kark wstrzykiwałby bezwładność tułowia w ruch czysto szyjny; kandydat V25
+  // razem z pivotem). Czysto runtime (obwiednie nie są pod żadną wyrocznią).
+  if(!exam && state.testKey!=="bowlean") phases.forEach(ph=>{ if(ph.nys) ph.nys.neck = poseNeck(ph.body, ph.yaw, ph.face); });
   // N7 (D6): NAKLADKA AVS — toniczny oczoplas NeuroVOR (skladowa POZIOMA) obecny w KAZDEJ pozycji testu
   // i NIEwyczerpujacy sie: fundament taksonomii GRACE-3 (AVS vs t-EVS) wreszcie demonstrowalny obok
   // przejsciowego, meczliwego oczoplasu BPPV. Default OFF -> zadna wyrocznia dom nie rusza sie bez wlaczenia.
