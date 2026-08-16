@@ -2574,11 +2574,20 @@ function renderDiag(){
   const TON_KANALU = { posterior:["--post","#0B221F"], horizontal:["--horiz","#2A1E02"], anterior:["--ant","#1A1230"] };
   const [tonVar, tonInk] = TON_KANALU[effCanal] || ["--primary","#03242E"];
   const TON = `--tone:var(${tonVar});--tone-ink:${tonInk}`;
-  const effSide  = antMode ? otherSide(A) : A;            // kanał przedni ucha PRZECIWNEGO (płaszczyzna LARP/RALP)
+  /* STRONA NIE WYNIKA Z POZY (poprawka 2026-08-16). Do V26 stało tu `antMode ? otherSide(A) : A`
+     — „kanał przedni ucha PRZECIWNEGO, płaszczyzna LARP/RALP". To rozumowanie o PARZE
+     WSPÓŁPŁASZCZYZNOWEJ: rządzi vHIT-em i odruchem z obrotu głowy, gdzie napęd daje wspólny
+     przepływ endolimfy. W BPPV napęd daje własny złóg JEDNEGO kanału i na partnera się nie
+     przenosi. Kwerenda: [H33] Bertholon 2002 — prowokacja OBUSTRONNA w Dix-Hallpike u 9/12, więc
+     strona badanego Dixa ucha NIE identyfikuje. Skutek starej reguły był LECZNICZY: karta
+     uruchamiała Yacovino dla ucha wyliczonego z pozy. Dziś karta rysuje kanał przedni ucha
+     BADANEGO (to on ma w tej pozie napęd dodatni: +0.0382 wobec −0.0312 po drugiej stronie),
+     a stronę oddaje TORSJI — z jawną notą, że u większości chorych torsji nie widać. */
+  const effSide  = A;
   const phases = D.phases(A,v,state.bltScenario).map(ph => antMode
     ? { ...ph, nys: nysFromGeom("anterior", effSide, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),   // TA SAMA poza co reszta aplikacji (było własne qSupineYaw z silnika)
         label: t("ku dołowi — czysty downbeat (kanał przedni)","downward — pure downbeat (anterior canal)"),
-        note: t(`To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.`,`This is NOT the posterior canal. Downbeat in the Dix-Hallpike indicates the ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}) — the same plane as the posterior canal of the lower ear (LARP/RALP). Head positioning unchanged; only the observed nystagmus differs.`) }
+        note: t(`To NIE kanał tylny — downbeat wskazuje kanał PRZEDNI. Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs. STRONY NIE USTALA POZYCJA: kanał przedni bywa prowokowany w Dix-Hallpike'u po OBU stronach (9/12 chorych — [H33]). Stronę niesie TORSJA: górny biegun bije ku uchu CHOREMU ([H32]) — ale u 57% potwierdzonych przypadków torsji nie widać ([H31]), a taki sam obraz daje apogeotropowe BPPV kanału TYLNEGO drugiej strony.`,`This is NOT the posterior canal — a downbeat indicates the ANTERIOR canal. Head positioning unchanged; only the observed nystagmus differs. THE POSITION DOES NOT GIVE THE SIDE: the anterior canal is often provoked in the Dix-Hallpike on BOTH sides (9/12 patients — [H33]). The side comes from the TORSION: the upper pole beats toward the AFFECTED ear ([H32]) — but in 57% of confirmed cases there is no visible torsion ([H31]), and apogeotropic posterior-canal BPPV of the other side looks the same.`) }
     : ph);
   // MĘCZLIWOŚĆ: przy powtórzeniach prowokacji Dix-Hallpike kanalolitiaza SŁABNIE, kupulolitiaza NIE (różnicowanie).
   // fatigue = ortogonalny mnożnik amplitudy (startNys/startDialNysIn); kupulo = 1 (nie wyczerpuje się).
@@ -2768,7 +2777,7 @@ function renderDiag(){
     ${fatPanel}
     ${(()=>{
       const interp = v0 => antMode
-        ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)
+        ? t(`Kanał PRZEDNI. Strony nie ustala pozycja — prowokacja bywa obustronna ([H33]); rozstrzyga TORSJA (górny biegun ku uchu choremu — [H32]), a nie widać jej u 57% chorych ([H31]). Potwierdź deep head-hangiem; lecz Yacovino.`,`The ANTERIOR canal. The position does not give the side — provocation is often bilateral ([H33]); the TORSION decides (upper pole toward the affected ear — [H32]), and it is invisible in 57% of patients ([H31]). Confirm with the deep head-hang; treat with Yacovino.`)
         : D.latNote(A, v0);
       const note = v0 => v0==="canalo"
         ? t("Swobodne złogi przemieszczają się w świetle kanału pod wpływem grawitacji.","Free-floating debris moves within the canal lumen under gravity.")
@@ -2790,12 +2799,13 @@ function renderDiag(){
       if(state.diagCentral) return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--ant)">${t('<b>Repozycja niewskazana.</b> Przy podejrzeniu ośrodkowego oczoplasu pozycyjnego (CPN) nie wykonuj manewrów repozycyjnych — najpierw ocena neurologiczna i MRI tylnego dołu. Wróć do widoku „Obwodowy — BPPV", jeśli obraz jednak spełnia kryteria BPPV.','<b>Repositioning is not indicated.</b> When central positional nystagmus (CPN) is suspected, do not perform repositioning maneuvers — first a neurological evaluation and MRI of the posterior fossa. Return to the "Peripheral — BPPV" view if the picture does meet BPPV criteria.')}</div></div>`;
       const rec = antMode
-        ? {primary:"yacovino", alts:[], note:t(`Downbeat w Dix-Hallpike → kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}), płaszczyzna LARP/RALP. Leczenie: Yacovino (deep head-hang → szybki ruch brody do klatki). Lateralizacja oczopląsem niepewna.`,`Downbeat in the Dix-Hallpike → ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}), LARP/RALP plane. Treatment: Yacovino (deep head-hang → quick chin-to-chest movement). Lateralization by nystagmus uncertain.`)}
+        ? {primary:"yacovino", alts:[], note:t(`Downbeat w Dix-Hallpike → kanał PRZEDNI. Leczenie: Yacovino (deep head-hang). STRONA: z torsji, jeśli jest widoczna (górny biegun ku uchu choremu — [H32]); pozycja badania jej NIE ustala ([H33]).`,`A downbeat in the Dix-Hallpike → the ANTERIOR canal. Treatment: Yacovino (deep head-hang). SIDE: from the torsion if visible (upper pole toward the affected ear — [H32]); the test position does NOT establish it ([H33]).`)}
         : recommend(state.testKey,v);
-      /* STRONA IDZIE Z KARTĄ, NIE ZE STANU. Przy downbeacie `effSide` to ucho PRZECIWNE (kanał
-         przedni leży po drugiej stronie), a `startManeuver` budował plan ze `state.side` — czyli
-         dla ucha, które ta sama karta przed chwilą wykluczyła. Zmierzone trzema gestami: karta
-         pisze „Leczenie dla strony lewa", a plan powstaje dla P. */
+      /* STRONA IDZIE Z KARTĄ, NIE ZE STANU — reguła zostaje, jej TREŚĆ się zmieniła (2026-08-16).
+         Dawniej `effSide` przy downbeacie było uchem PRZECIWNYM, a `startManeuver` budował plan ze
+         `state.side` — karta pisała „Leczenie dla strony lewa", a plan powstawał dla P. Dziś
+         `effSide === A`, bo pozycja badania strony NIE ustala ([H33]); karta i plan mówią to samo,
+         a o stronie rozstrzyga TORSJA opisana przez klinicystę, nie geometria pary kanałów. */
       const btns=[rec.primary,...rec.alts].map((k,idx)=>`<button class="${idx===0?'recoprimary':'recoalt'}" onclick="startManeuver('${k}','${effSide}')">${idx===0?t('Rozpocznij: ','Start: '):t('Alternatywa: ','Alternative: ')}${MANEUVERS[k].label} — ${MANEUVERS[k].desc}</button>`).join("");
       return `<div class="reco"><h4>${t("Sugerowane leczenie","Suggested treatment")}</h4>
         <div class="note" style="color:var(--text)">${rec.note}</div>

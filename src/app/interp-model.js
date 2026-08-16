@@ -70,6 +70,15 @@ export function werdyktCechy(ctx) {
     const m = znakModelu(pole === 'poziom' ? f.h : pole === 'pion' ? f.v : f.t);
     const o = ZNAK_OPISU[obs];
     if (m == null || o == null) return WERDYKT.nieporownywalne;
+    /* CECHA OPCJONALNA — jej OBECNOŚĆ rozstrzyga, BRAK nie wyklucza (dodane 2026-08-16).
+       Predykcja może oznaczyć składową jako `opcjonalne: ['t']`. Powód jest kliniczny, nie techniczny:
+       skręt w BPPV kanału PRZEDNIEGO jest w geometrii wyraźny (0.74), ale u 57,1% potwierdzonych
+       chorych NIE JEST WIDOCZNY ([H31] Castellucci 2020 — brak torsji także u 42,4% wszystkich
+       pozycyjnych downbeatów). Traktowanie opisu „torsja: zero" jako sprzeczności wykluczałoby
+       kanał przedni u WIĘKSZOŚCI chorych, którzy go mają. Odwrotnie natomiast działa OBECNOŚĆ:
+       opisany kierunek skrętu stronę rozstrzyga (górny biegun ku uchu choremu — [H32]). */
+    if (o === 0 && m !== 0 && Array.isArray(f.opcjonalne) && f.opcjonalne.includes(pole))
+      return WERDYKT.nieporownywalne;
     return o === m ? WERDYKT.zgodne : WERDYKT.rozne;
   }
 

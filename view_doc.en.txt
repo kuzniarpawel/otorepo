@@ -1002,3 +1002,24 @@ with the reader — which is why the 95 in-chapter references were reviewed by h
 attributions were corrected: the Cochrane figures [H28]→[H29]; the caloric↔vHIT dissociation
 [H20]→[H20][H21], because the Ménière criteria are symptom-based and say nothing about the vHIT; and the
 auditory axis [H24]→[H28], because GRACE-3 discusses the "plus" but does not introduce it.
+
+THE ANTERIOR CANAL: THE SIDE NO LONGER FOLLOWS FROM THE POSITION (2026-08-16, after V26)
+The Dix card in anterior mode computed the side as `otherSide(A)` — "the OPPOSITE ear, the LARP/RALP
+plane" — and launched the Yacovino maneuver for that same side. That is COPLANAR-PAIR reasoning: it
+governs the vHIT and the rotational reflex, where the drive is a shared endolymph flow. In BPPV the
+drive comes from ONE canal's own debris and does not carry over to the partner. The consequence was
+therapeutic: the app sent the maneuver to the ear derived from head positioning.
+The `NYS_SHOW.anterior.t` mask hid this — the anterior candidate was excluded on torsion, so the wrong
+vertical sign never got to do damage. V26 removed the mask and the defect surfaced: the model produced
+an UPBEAT with torsion toward the HEALTHY ear. Measured resting drives: right Dix AC-P +0.0382 vs
+AC-L −0.0312; head-hang (yaw 0) +0.0116 for BOTH sides.
+WHAT CHANGED: `effSide === A` (the card draws the anterior canal of the examined ear — that is the one
+with a positive drive in this pose), and the side is left to the TORSION. Three card sentences were
+rewritten to the query's content: provocation is often bilateral ([H33] 9/12), the upper pole beats
+toward the affected ear ([H32]), the torsion is invisible in 57% of patients ([H31]), and apogeotropic
+posterior-canal BPPV of the other side looks the same.
+A NEW CONCEPT IN THE INTERPRETATION MODEL — AN OPTIONAL FEATURE: its PRESENCE decides, its ABSENCE does
+not exclude. Without it, "torsion: zero" would rule out the anterior canal in most patients who have it.
+SCOPE PROOF for the rebaseline: `pose` 360 and `shell` 22 UNCHANGED, `_meta` (incl. domErr) unchanged,
+`engine` 1 key (`dyn`), `dom` 20 of 214 — all anterior-related: 6 Yacovino guide screens, 2 head-hang
+cards, 4 interpretation screens, 8 learning screens. Zero added, zero removed.

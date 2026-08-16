@@ -13,7 +13,7 @@
  * `stan` wchodzi ARGUMENTEM (nie importem `state.js`), bo `state.js` wciąga `actions.js`, a ten
  * cały graf renderera — wyrocznia w gołym Node nie miałaby jak tego zaimportować.
  */
-import { DIAG, nysFromGeom, otherSide, stepHeadQ } from '../pose/maneuvers.js';
+import { DIAG, nysFromGeom, stepHeadQ } from '../pose/maneuvers.js';
 import { OBS_FAZY, OBS_PROBY, WZORCE_DYNAMIKI, fazaDIAG, wartoscInstancji, spojnosc, flagi } from './obs-model.js';
 
 /* Predykcja modelu dla JEDNEJ kandydatury w JEDNEJ fazie, w konwencji `Vestibular.quickPhase`
@@ -32,16 +32,42 @@ export function fazaKandydatury(proba, fazaId, kand, scen) {
        buduje ją osobno (renderDiag, gałąź antMode) przez nysFromGeom, bo ułożenie głowy jest to
        samo, a inny jest tylko zaobserwowany oczopląs. Bez tego wyjątku kandydatura przednia
        dostawała predykcję kanału TYLNEGO, obie przechodziły identycznie i kanał wychodził null.
-       Zmierzone: chore ucho = PRZECIWNE do badanego, kierunek {h:0, v:-1, t:0} dla OBU stron
-       (czyli strony z kierunku nie ustalisz — to jest właśnie „maska modelu"). */
+       ZMIERZONE PO POPRAWCE (odciski Dixa): posterior/P v+0.81 t+1.00 · posterior/L v+0.81 t−1.00 ·
+       anterior/P v−1.00 t+0.74 · anterior/L v−1.00 t−0.74 — PION daje kanał, TORSJA stronę. */
     if (proba === 'dix' && kand.canal === 'anterior') {
-      const badana = otherSide(side);
-      const n = nysFromGeom('anterior', side, variant, stepHeadQ('supineHang', badana === 'P' ? 45 : -45, 'up'));
-      return { h: n.anat.h, v: n.anat.v, t: n.anat.t, s: n.strength == null ? 1 : n.strength };
+      /* STRONA NIE WYNIKA Z POZY — POPRAWKA 2026-08-16 (po zdjęciu maski anterior.t w V26).
+         DO TĄD stało tu `otherSide(side)`: kandydatura przednia była liczona w pozie ucha
+         PRZECIWNEGO, „bo płaszczyzna LARP/RALP". To rozumowanie o PARZE WSPÓŁPŁASZCZYZNOWEJ —
+         rządzi vHIT-em i odruchem z obrotu głowy, gdzie napęd daje wspólny przepływ endolimfy, więc
+         partner dostaje znak przeciwny. W BPPV napęd daje WŁASNY złóg jednego kanału i nic się na
+         partnera nie przenosi. Maska t=0 kryła skutek: kandydatura odpadała NA TORSJI. Po V26
+         wychodził z tego UPBEAT + torsja ku uchu ZDROWEMU — obraz, którego klinika nie opisuje.
+
+         CO MÓWI KWERENDA (ta sama, która kazała zdjąć maskę):
+           [H33] Bertholon 2002 — w grupie idiopatycznej prowokacja OBUSTRONNA w Dix-Hallpike u 9/12,
+                 wyłącznie w zwisie prostym u 2/12 ⇒ STRONA DIXA NIE IDENTYFIKUJE UCHA;
+           [H32] Garaycochea 2022 — stronę niesie TORSJA (górny biegun ku uchu CHOREMU), lecz była
+                 jednoznaczna tylko u 10/157 (6,35%); apo-PC drugiej strony daje TEN SAM obraz;
+           [H31] Castellucci 2020 — torsji BRAK u 57,1% potwierdzonych AC-BPPV.
+         DLATEGO: obie kandydatury przednie są ŻYWE w każdym Dixie, a predykcję bierzemy z pozy,
+         w której kanał JEST prowokowany (napęd +0.0382 w Dixie własnej strony wobec −0.0312
+         w przeciwnym) — bo klinicysta widzi ten sam downbeat niezależnie od tego, którą stronę bada.
+         Strona zostaje ROZSTRZYGNIĘTA TORSJĄ, gdy klinicysta ją opisze; przy opisie „torsja: zero"
+         (większość chorych) obie strony przeżywają i model uczciwie mówi „strona nieoznaczalna". */
+      const q = stepHeadQ('supineHang', side === 'P' ? 45 : -45, 'up');
+      const n = nysFromGeom('anterior', side, variant, q);
+      /* `opcjonalne: ['torsja']` — patrz werdyktCechy w interp-model: OBECNY skręt rozstrzyga stronę
+         ([H32]), a jego BRAK nie wyklucza kanału przedniego, bo torsji nie widać u 57,1% chorych
+         z potwierdzonym AC-BPPV ([H31]). Bez tego opis „torsja: zero" wykluczałby rozpoznanie
+         u większości tych, którzy je mają. */
+      return { h: n.anat.h, v: n.anat.v, t: n.anat.t, s: n.strength == null ? 1 : n.strength, opcjonalne: ['torsja'] };
     }
     const f = DIAG[proba].phases(side, variant, scen)[fazaDIAG(proba, fazaId, side)];
     if (!f || !f.nys || !f.nys.anat) return null;
-    return { h: f.nys.anat.h, v: f.nys.anat.v, t: f.nys.anat.t, s: f.nys.strength == null ? 1 : f.nys.strength };
+    /* Torsja kanału PRZEDNIEGO jest opcjonalna w KAŻDEJ próbie (nie tylko w Dixie): 57,1% z [H31]
+       to fakt o CHORYCH z AC-BPPV, nie o ułożeniu głowy. Dotyczy więc też deep head-hangu. */
+    return { h: f.nys.anat.h, v: f.nys.anat.v, t: f.nys.anat.t, s: f.nys.strength == null ? 1 : f.nys.strength,
+             ...(kand.canal === 'anterior' ? { opcjonalne: ['torsja'] } : {}) };
   } catch (e) { return null; }
 }
 

@@ -56,12 +56,36 @@ T('KA6/bez-duplikatow', ['dix', 'roll', 'bowlean', 'headhang'].every(p => {
   eq('BL3/strona-niewyprowadzalna', w.stronaWyprowadzalna, false);
   eq('BL4/mechanizm-niewyprowadzalny', w.mechanizmWyprowadzalny, false);
 }
-// HH1 — head-hang nie wyprowadza strony przy ŻADNYM opisie kierunku.
-for (const v of ['p1', 'm1', 'zero']) {
-  const r = rek('headhang', { 'pion#jedyna': 'm1', 'torsja#jedyna': v });
-  const w = interpretuj(r, 'headhang', DEPS);
-  if (w.pozostale.length) T(`HH1/${v}/strona-niewyprowadzalna`, w.stronaWyprowadzalna === false, 'head-hang nie może dać strony');
-  else ok++;
+/* HH1 — head-hang wyprowadza stronę TYLKO Z TORSJI. Przepisane 2026-08-16 po V26 (zdjęcie maski
+   anterior.t) i po poprawce pozy kandydatury przedniej. POPRZEDNIA TREŚĆ tej bramki brzmiała
+   „head-hang nie może dać strony przy ŻADNYM opisie" i była prawdziwa TYLKO DLATEGO, że maska
+   zerowała torsję — czyli pilnowała konwencji renderowania, nie kliniki.
+   DZIŚ, zgodnie z kwerendą: górny biegun bije ku uchu CHOREMU ([H32] Garaycochea 2022), więc opisana
+   torsja stronę NIESIE; ale u 57,1% potwierdzonych AC-BPPV torsji NIE MA ([H31] Castellucci 2020),
+   a przy „torsja: zero" obie strony muszą przeżyć i strona ma zostać nieoznaczalna.
+   ZMIERZONE ODCISKI: anterior/P v−1.00 t+0.74 · anterior/L v−1.00 t−0.74. */
+{
+  // (a) torsja OPISANA → strona wyprowadzalna i zgodna ze znakiem torsji
+  for (const [v, oczekiwana] of [['p1', 'P'], ['m1', 'L']]) {
+    const r = rek('headhang', { 'pion#jedyna': 'm1', 'torsja#jedyna': v });
+    const w = interpretuj(r, 'headhang', DEPS);
+    T(`HH1/${v}/strona-z-torsji`, w.stronaWyprowadzalna === true && w.strona === oczekiwana,
+      `torsja ${v} ma dać stronę ${oczekiwana} (górny biegun ku uchu choremu, [H32]), a wyszło ${w.strona}`);
+  }
+  // (b) torsja OPISANA JAKO ZERO → obie strony przeżywają, strona NIEOZNACZALNA ([H31]: 57,1% bez torsji)
+  {
+    const r = rek('headhang', { 'pion#jedyna': 'm1', 'torsja#jedyna': 'zero' });
+    const w = interpretuj(r, 'headhang', DEPS);
+    T('HH1/zero/strona-nieoznaczalna', w.stronaWyprowadzalna === false,
+      `bez torsji strona nie może wyjść (57,1% AC-BPPV nie ma torsji — [H31]), a wyszła ${w.strona}`);
+  }
+  // (c) sam downbeat, torsja NIEOPISANA → też nie wolno zgadywać strony
+  {
+    const r = rek('headhang', { 'pion#jedyna': 'm1' });
+    const w = interpretuj(r, 'headhang', DEPS);
+    T('HH1/brak-opisu/strona-nieoznaczalna', w.stronaWyprowadzalna === false,
+      `bez opisanej torsji strona nie może wyjść, a wyszła ${w.strona}`);
+  }
 }
 // ROLL — kierunek daje mechanizm, nasilenie daje stronę.
 {
@@ -231,10 +255,13 @@ for (const v of ['p1', 'm1', 'zero']) {
      kandydatury. Bramka nadal wymaga, zeby sugestia BYLA i zeby naprawde rozdzielala (SUG5). */
   eq('SUG1/bowlean-rozdziela-roll', sugerowaneProby(bl.pozostale, 'bowlean', DEPS), ['roll', 'lyingdown']);
 
-  // Head-hang: strony nie ustala ŻADNA próba w tym modelu (kanał przedni to wszędzie czysty
-  // downbeat). Pusta lista jest tu TWIERDZENIEM, nie luką — i musi taka zostać.
+  /* Head-hang: DO V26 pusta lista była twierdzeniem („kanał przedni to wszędzie czysty downbeat,
+     więc żadna próba strony nie ustali"). Po zdjęciu maski i poprawce pozy odciski Dixa są cztery
+     ROZŁĄCZNE (pion daje kanał, torsja stronę), więc Dix NAPRAWDĘ rozdziela kandydatury, które
+     head-hang zostawia — i model ma prawo go zasugerować. Bramka pilnuje teraz, że sugestia jest
+     NIEPUSTA i że wskazuje próbę, która faktycznie rozdziela (SUG5 sprawdza to niezależnie). */
   const hh = interpretuj(rek('headhang', { 'pion#jedyna': 'm1' }), 'headhang', DEPS);
-  eq('SUG2/headhang-zadna-proba', sugerowaneProby(hh.pozostale, 'headhang', DEPS), []);
+  eq('SUG2/headhang-rozdziela-dix', sugerowaneProby(hh.pozostale, 'headhang', DEPS), ['dix']);
 
   // Dix z samym kierunkiem: zostaje kanalo vs kupulo, a mechanizm rozstrzyga DYNAMIKA, która jest
   // ta sama we wszystkich próbach — więc żadne kolejne badanie nie pomoże.
@@ -322,7 +349,7 @@ if (bledy.length) {
   for (const b of bledy.slice(0, 20)) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 76;
+const OCZEKIWANE = 77;   /* 76 + 1: HH1 rozbite na strone-z-torsji (P,L) + zero + brak-opisu (V26 + poprawka pozy) */
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

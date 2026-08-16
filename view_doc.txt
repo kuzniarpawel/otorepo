@@ -1010,3 +1010,23 @@ CZEGO BRAMKA NIE ROBI: nie ocenia, czy praca mówi to, co przy niej napisano. To
 i dlatego 95 odsyłaczy w rozdziałach przejrzano ręcznie (2026-08-16). Poprawione trzy atrybucje:
 liczby Cochrane'a [H28]→[H29]; dysocjacja kaloryka↔vHIT [H20]→[H20][H21], bo kryteria Ménière'a są
 objawowe i o vHIT nie mówią; oś słuchowa [H24]→[H28], bo GRACE-3 „plus" omawia, ale go nie wprowadza.
+
+KANAŁ PRZEDNI: STRONA PRZESTAŁA WYNIKAĆ Z POZYCJI (2026-08-16, po V26)
+Karta Dix w trybie kanału przedniego liczyła stronę jako `otherSide(A)` — „ucho PRZECIWNE, płaszczyzna
+LARP/RALP" — i tą samą stroną uruchamiała manewr Yacovino. To rozumowanie o PARZE WSPÓŁPŁASZCZYZNOWEJ:
+rządzi vHIT-em i odruchem z obrotu głowy, gdzie napęd daje wspólny przepływ endolimfy. W BPPV napęd daje
+własny złóg JEDNEGO kanału i na partnera się nie przenosi. Skutek był leczniczy: aplikacja kierowała
+manewr do ucha wyliczonego z ułożenia głowy.
+Maska `NYS_SHOW.anterior.t` to KRYŁA — kandydatura przednia odpadała na torsji, więc zły znak pionu
+nigdy nie zdążył zaszkodzić. V26 zdjął maskę i usterka wyszła: model dawał UPBEAT + torsję ku uchu
+ZDROWEMU. Zmierzone napędy w spoczynku: Dix prawy AC-P +0,0382 wobec AC-L −0,0312; head-hang (yaw 0)
++0,0116 dla OBU stron.
+CO ZMIENIONE: `effSide === A` (karta rysuje kanał przedni ucha badanego — to on ma w tej pozie napęd
+dodatni), a stronę oddaje TORSJI. Trzy zdania karty przepisane na treść z kwerendy: prowokacja bywa
+obustronna ([H33] 9/12), górny biegun bije ku uchu choremu ([H32]), torsji nie widać u 57% chorych
+([H31]), a apogeotropowe BPPV kanału TYLNEGO drugiej strony daje ten sam obraz.
+NOWE POJĘCIE W MODELU INTERPRETACJI — CECHA OPCJONALNA: jej OBECNOŚĆ rozstrzyga, BRAK nie wyklucza.
+Bez tego opis „torsja: zero" wykluczałby kanał przedni u większości chorych, którzy go mają.
+DOWÓD ZAKRESU rebaseline'u: `pose` 360 i `shell` 22 BEZ ZMIAN, `_meta` (w tym domErr) bez zmian,
+`engine` 1 klucz (`dyn`), `dom` 20 z 214 — wszystkie związane z kanałem przednim: 6 ekranów przewodnika
+Yacovino, 2 karty head-hang, 4 ekrany interpretacji, 8 ekranów nauki. Zero nowych, zero usuniętych.

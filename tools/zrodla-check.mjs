@@ -146,13 +146,65 @@ for (const [tag, cyt, slownik, gdzie] of [
   T(`${tag}/bez-sierot`, sieroty.length === 0, `cytowania bez definicji w ${gdzie}: ${sieroty.slice(0, 5).join(', ')}`);
 }
 
-/* ═══════════ 4. ŻADEN WPIS NIE JEST MARTWY ═══════════
-   Wpis, którego nikt nie cytuje, to albo pozostałość po usuniętej treści, albo cytowanie zgubione
-   przy scalaniu — obie rzeczy chcemy zobaczyć od razu, a nie przy następnym przeglądzie. */
-for (const [tag, cyt, slownik] of [['DOC2/pl', cytDokPl, BIB], ['DOC2/en', cytDokEn, BIB_EN]]) {
-  const uzyte = new Set(cyt.map(c => c.h));
-  const martwe = [...slownik.keys()].filter(h => !uzyte.has(h));
-  T(`${tag}/bez-martwych`, martwe.length === 0, `wpisy bibliografii, których nikt nie cytuje: ${martwe.join(', ')}`);
+/* ═══════════ 4. ŻADEN WPIS NIE JEST OSIEROCONY ═══════════
+   Wpis, o którym nikt nie wspomina, to albo pozostałość po usuniętej treści, albo cytowanie zgubione
+   przy scalaniu. ALE „wspomina" to NIE to samo co „cytuje numerem".
+   POMIAR 2026-08-16 na main: pierwsza wersja (tylko numer w rozdziałach) zapaliła się na H25, H30,
+   H34, H35, H38, H39 — a wszystkie SĄ przywołane, tylko nazwiskiem („Bhandari 2022", „Imai",
+   „Hentze"), czyli dokładnie tak, jak zezwala zadeklarowana granica konwencji, albo cytowane
+   z `src`, albo z WNĘTRZA innego wpisu (odsyłacz w bibliografii). Bramka krzyczała więc na
+   poprawny tekst — a to uczy wyłączać wyrocznię.
+   DZIŚ: wpis jest ŻYWY, gdy jego numer pada gdziekolwiek poza jego własnym wpisem (rozdziały, inne
+   wpisy, kod) ALBO gdy jego oznaczenie (pierwsze nazwisko) pada w rozdziałach. Numer WYCOFANY
+   (jawna nota w treści wpisu) jest zwolniony — jego zadaniem jest właśnie NIE być cytowanym. */
+for (const [tag, cyt, slownik, plik] of [['DOC2/pl', cytDokPl, BIB, 'engine_doc.txt'],
+                                          ['DOC2/en', cytDokEn, BIB_EN, 'engine_doc.en.txt']]) {
+  const pelny = czytaj(plik);
+  const rozdzialy = cyt.map(c => c.linia).join('\n');
+  const osierocone = [...slownik.keys()].filter(h => {
+    const def = slownik.get(h);
+    if (/WYCOFANY|RETIRED/.test(def)) return false;                      // numer świadomie wycofany
+    if (cyt.some(c => c.h === h)) return false;                          // cytowany w rozdziałach
+    if (cytKod.some(c => c.h === h)) return false;                       // cytowany w kodzie
+    /* odsyłacz z wnętrza INNEGO wpisu: numer pada w pliku częściej, niż wynosi jego własna definicja */
+    const wystapien = (pelny.match(new RegExp(`\\[${h}\\]`, 'g')) || []).length;
+    if (wystapien > 1) return false;
+    const m = /^\[H\d+\]\s+([A-ZŁŚŻŹĆÓÖ][A-Za-zŁłŚśŻżŹźĆćÓóĘęĄąŃńÖö'’-]+)/.exec(def);
+    if (m && new RegExp(`\\b${m[1]}\\b`).test(rozdzialy + pelny.split(m[0])[0])) return false;  // przywołany nazwiskiem
+    return true;
+  });
+  T(`${tag}/bez-osieroconych`, osierocone.length === 0,
+    `wpisy bibliografii, o których nikt nie wspomina — ani numerem, ani nazwiskiem: ${osierocone.join(', ')}`);
+}
+
+/* ═══════════ 4b. DWA NUMERY NA JEDNĄ PRACĘ ═══════════
+   ZMIERZONE 2026-08-16 na main: [H17] i [H29] to była TA SAMA praca (Della Santina i wsp. 2005) —
+   drugi wpis dodano przy R3, nie zauważywszy pierwszego. Czytelnik dostawał dwa numery na jedno
+   źródło i nie miał jak rozstrzygnąć, który jest właściwy. Żadna z pozostałych reguł tego nie
+   widziała: oba numery MIAŁY definicje i oba zgadzały się z nazwiskiem obok.
+   KLUCZ PORÓWNANIA — mierzony, nie zgadnięty. Pierwsza wersja brała NAZWISKO + ROK i dała FAŁSZYWY
+   ALARM: „Hentze 2025 = H36 i H37" to DWIE RÓŻNE prace tego samego autora z tego samego roku
+   (Front Neurol 16:1654404 vs J Clin Med 14(2):434). Dlatego kluczem jest DOI, gdy jest — a gdy go
+   nie ma (jak w dawnym [H17]), nazwisko + rok + POCZĄTEK TYTUŁU. Duplikat z 2026-08-16 miał tytuł
+   identyczny co do znaku, więc obie ścieżki go łapią. */
+{
+  const klucze = new Map();
+  for (const [h, def] of BIB) {
+    if (/WYCOFANY|RETIRED/.test(def)) continue;
+    const doi = /doi:\s*(10\.\S+?)[.,;\s)]*$|doi:\s*(10\.[^\s,;]+)/i.exec(def);
+    let k = null;
+    if (doi) k = 'doi:' + (doi[1] || doi[2]).replace(/[.,;]+$/, '').toLowerCase();
+    else {
+      const m = /^\[H\d+\]\s+([A-ZŁŚŻŹĆÓÖ][A-Za-zŁłŚśŻżŹźĆćÓóĘęĄąŃńÖö'’-]+)[^(]*\((\d{4})\)[^„"“]*[„"“]([^”"]{0,45})/.exec(def);
+      if (!m) continue;
+      k = `${bez(m[1])} ${m[2]} ${bez(m[3]).toLowerCase().replace(/\s+/g, ' ').trim()}`;
+    }
+    if (!klucze.has(k)) klucze.set(k, []);
+    klucze.get(k).push(h);
+  }
+  const duble = [...klucze].filter(([, hs]) => hs.length > 1).map(([k, hs]) => `${k} = ${hs.join(' i ')}`);
+  T('BIB3/jedna-praca-jeden-numer', duble.length === 0,
+    `ta sama praca pod dwoma numerami: ${duble.join(' · ')}`);
 }
 
 /* ═══════════ 5. NUMER MUSI WSKAZYWAĆ TĘ PRACĘ, O KTÓREJ MOWA — TO JEST TA BRAMKA ═══════════ */
@@ -289,7 +341,7 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 73;   /* ZMIERZONE (npm run zrodla:check -- --ile), nie zgadnięte */
+const OCZEKIWANE = 88;   /* 87 + 1: komentarze o cesze OPCJONALNEJ dolozyly cytowanie [H31]/[H32] w src */
 if (process.argv.includes('--ile')) {
   console.log(`przypadków: ${ok + bledy.length} (zielonych ${ok}, czerwonych ${bledy.length})`);
   bledy.forEach(b => console.log('  ' + b));

@@ -59,13 +59,26 @@ export const Vestibular = (()=>{
   }
   // MASKA KLINICZNA — geometria daje magnitudy, ale konwencja kliniczna decyduje, KTÓRE składowe
   // wyrażamy. true = odsłoń realną składową geometryczną; false = utrzymaj konwencję kliniczną.
-  //   posterior.h: geom.≈0.21 (klin. pomijany) · anterior.t: geom.≈0.74 (override: czysty downbeat)
+  //   posterior.h: geom.≈0.21 (klin. pomijany) · anterior.t: geom.≈0.74 — MASKA ZDJĘTA 2026-08-16 (V26,
+  //   decyzja użytkownika): skręt kanału przedniego jest teraz WYRAŻONY, ipsi (górne bieguny ku uchu
+  //   CHOREMU). ZNAK wyprowadzony ze znakowanej geometrii tą samą regułą co A4 (v = −sign(Ω_x)·m.v,
+  //   h = +sign(Ω_y)·m.h, t = −sign(Ω_z)·m.t; Ω=+n dla Ewalda II, Ω=−n dla Ewalda III) — reguła
+  //   odtwarza WSZYSTKIE odsłonięte i zwalidowane składowe (horizontal.h, posterior.v/t, anterior.v)
+  //   i przewiduje dla anterior.t dokładnie +0.7386·ipsi, czyli to, co wpisano ręcznie. Zgodne
+  //   klinicznie: górny biegun ku uchu choremu [H32]. UWAGA DYDAKTYCZNA: geometria daje torsję 0.74,
+  //   ale u chorego NIE MA jej w 42% pozycyjnych downbeatów i w 57% potwierdzonych AC-BPPV [H31] —
+  //   karty mówią o tym wprost i NIE zachęcają do lateralizacji AC oczoplasem.
   //   horizontal.t: geom.≈0.18 (klin. czysto poziomy)   [liczby żywe IE-Map 2026-08-13; stare
   //   0.41/0.78/0.29 pochodziły z wektorów Wu]. ZNAK posterior.h POPRAWIONY 2026-08-13 (ocena II, A4):
   //   znakowana geometria (oś pobudzenia Ω=−n, Ewald III) daje składową poziomą KONTRA (−0.21), więc
   //   quickPhase wiąże ją z −ipsi — flaga jest od teraz bezpieczna do odsłonięcia (dziś false → h=0,
   //   zmiana martwa dla wyników).
-  const NYS_SHOW = { posterior:{h:false,t:true}, anterior:{h:false,t:false}, horizontal:{t:false} };
+  // POZOSTAŁE MASKI (świadomie w mocy): posterior.h (geom. 0.21, znak −ipsi po A4), horizontal.t
+  //   (geom. 0.18) oraz — nieujęta w tabeli — horizontal.v (geom. 0.031, zerowana literałem w kodzie).
+  //   PUŁAPKA: ręczny znak anterior.h (+ipsi) NIE zgadza się z regułą znakowanej geometrii (−ipsi),
+  //   dokładnie jak posterior.h przed A4 — flaga jest UŚPIONA, więc dziś martwa, ale przed jej
+  //   ewentualnym odsłonięciem znak trzeba poprawić.
+  const NYS_SHOW = { posterior:{h:false,t:true}, anterior:{h:false,t:true}, horizontal:{t:false} };
   function quickPhase(canal, ear /* 'L'|'P' */){
     const ipsi = ear==="P" ? +1 : -1;                 // + = strona prawa
     const m = nysMag(canal, ear);                     // realne magnitudy z CANAL_NORMALS
@@ -238,7 +251,8 @@ export const Vestibular = (()=>{
     //   ku zdrowemu; klinika: 10–30° ku CHOREMU), Bow&Lean apo przeczył regule Choung i tekstowi własnej
     //   karty, pseudo-SN w siadzie był zerem z konstrukcji, a asymetria Rolla żyła tylko z rektyfikacji
     //   wyświetlacza. Po poprawce (zmierzone): Roll apo zachowany z WEWNĘTRZNĄ asymetrią we właściwą
-    //   stronę (chore w dole 0.832 < zdrowe 0.885), null point yaw +8..9° ku CHOREMU, B&L apo wg reguły
+    //   stronę (chore w dole 0.966 < zdrowe 0.985 — liczby V25, przy zgięciu pozy 10.30°; do V24
+    //   0.832 < 0.885 przy 30°), null point yaw +7.5° ku CHOREMU, B&L apo wg reguły
     //   (skłon→zdrowa 0.120, odchylenie→chora 0.130), pseudo-SN w siadzie 0.052 (słaby — jak klinicznie).
     // KANAŁY PIONOWE świadomie ZOSTAJĄ na restPhi (wybór fenomenologiczny, nie fizyka): czysty cel przy
     //   osklepku dawałby PC silny UPORCZYWY bodziec w siadzie (0.708) — sprzeczny z kliniką; w Dix oba
@@ -248,7 +262,7 @@ export const Vestibular = (()=>{
     const drive=dot3(g, tangAt(G, cupHC ? CUPULA_DEG : restPhi(canal, side)));   // >0 = ampullofugalny (rosnące φ)
     let proj=G.exc*drive;                                   // exc: +1 pionowe (Ewald III), −1 poziomy (Ewald II)
     // LIGHT CUPULA (ocena II, D3/V12): lekki osklepek = ODWRÓCONY znak wyporu — ten sam punkt oceny
-    // (przy osklepku), to samo zero rzutu (null point WSPÓLNY z apo, ku uchu CHOREMU: +8.7° supineFlex /
+    // (przy osklepku), to samo zero rzutu (null point WSPÓLNY z apo, ku uchu CHOREMU: +7.5° supineFlex /
     // +6.9° supineFlat), przeciwny kierunek DCPN po obu stronach zera (geotropowy trwały).
     if(variant==="light") proj=-proj;
     const excited = proj>0;                                 // JEDNA reguła Ewalda — inwersja cupulo-HC zbędna po przeniesieniu punktu oceny
@@ -622,15 +636,16 @@ export const Vestibular = (()=>{
   //   piśmiennicze SPV apogeotropowy ≈ 0.4–0.7× geotropowy (kan. poziomy) porównuje się z EMERGENTNYM
   //   stosunkiem szczytów ξ obu symulacji, a ten przy 0.6 wynosił 0.736 (tuż POZA pasmem: cel statyczny
   //   kupulo przewyższa szczyt dynamiczny kanalo). 0.45 daje stosunek ~0.54 = środek pasma (z celem przy
-  //   osklepku po A1: 0.45·0.832/0.696). NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik
+  //   osklepku po A1: 0.45·0.966/0.784 = 0.554 — liczby V25; do V24 0.45·0.832/0.696 = 0.538, ta sama
+  //   pozycja w paśmie). NIE stała wyprowadzona z hydrodynamiki. Jeden globalny mnożnik
   //   (uproszczenie: nie per-kanał/per-geometria; dla kanałów PIONOWYCH pasmo 0.4–0.7 jest ekstrapolacją
   //   bez własnej normy piśmienniczej).
   const CUP_WEAK=0.45;
   // LIGHT CUPULA — waga statyczna lekkiego osklepka (ocena II, D3/V12). Start = CUP_WEAK (0.45): osobna
   // GAŁKA kalibracyjna (nie alias), kotwiczona jak CUP_WEAK do wielkości emergentnej — stosunek szczytów
-  // light/canalo-geo w Rollu 0.375/0.696 = 0.538 (środek tego samego pasma 0.4–0.7, którym skalibrowano
+  // light/canalo-geo w Rollu 0.435/0.784 = 0.554 [V25; do V24 0.375/0.696 = 0.538] (środek tego samego pasma 0.4–0.7, którym skalibrowano
   // CUP_WEAK; piśmiennictwo nie daje osobnej normy SPV light-vs-geo). „DCPN wyraźniejszy niż apo" wychodzi
-  // BEZ nowej stałej z samej rektyfikacji EWALD_INHIB (na tej samej fazie display 0.375 vs 0.169).
+  // BEZ nowej stałej z samej rektyfikacji EWALD_INHIB (na tej samej fazie display 0.435 vs 0.196).
   const LIGHT_W=0.45;
   // REKTYFIKACJA EWALDA II — o ile słabsza jest odpowiedź HAMUJĄCA niż pobudzająca. Jedno źródło: ta sama
   // stała rządzi dynamiką (dynNystagmus) i kartą testu (nysFromGeom w pose/maneuvers.js), gdzie do
