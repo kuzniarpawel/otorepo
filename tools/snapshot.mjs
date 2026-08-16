@@ -274,15 +274,36 @@ function engineOracle(h) {
         acSit: { exited: acSA.final.exited, peak: r5(peakOf(acSA).xi) } };
     }
     out.shortarm = sa;
-    const jamRes = {};
+    const jamRes = {}, jamPredFails = [];
     for (const side of ['P', 'L']) {
-      const jam = { phi: 306.8, xi: 0.5, dir: 1 };
+      // V23: parametry z JEDNEGO źródła (JAM_DEMO warstwy domenowej — bit-równe dawnemu literałowi
+      // 306.8=pcrus); fallback WEWNĘTRZNY, nie w bramce zewnętrznej — stary build bez eksportu
+      // zachowuje piny shortarm+jam bez zmian.
+      const jam = h.JAM_DEMO ? { ...h.JAM_DEMO } : { phi: 306.8, xi: 0.5, dir: 1 };
       const ep = h.Vestibular.simulateCanalithJam({ canal: 'posterior', side, q0: [1, 0, 0, 0], jam, timeline: h.maneuverTimeline(h.genPlan('epley', side), 'medium') });
       const yac = h.Vestibular.simulateCanalithJam({ canal: 'posterior', side, q0: [1, 0, 0, 0], jam,
         timeline: [{ q: h.stepHeadQ('supineDeepHang', 0, 'up'), tTrans: 0.8, tHold: 30 }, { q: [1, 0, 0, 0], tTrans: 0.8, tHold: 90 }] });
       jamRes[side] = { epley: { xiMid: r5(ep[Math.floor(ep.length / 2)].xi), jammed: ep.final.jammed, tRelease: r5(ep.final.tRelease) },
         deepHang: { jammed: yac.final.jammed, tRelease: r5(yac.final.tRelease), exited: yac.final.exited } };
+      // V23: karta jam — piny jako PŁASKIE klucze RODZEŃSTWA (diffKeys porównuje pierwszy poziom
+      // engine.jam: zagnieżdżenie w jamRes[side] zmieniłoby ISTNIEJĄCE klucze P/L zamiast dodać nowe).
+      // JAM_PRED — TWARDY throw wyłącznie na LOGICE predykcji (Epley trzyma, pełny Yacovino uwalnia);
+      // liczby (tRelease/relDelta/minXi/finalPhi/exited/postEpley) = piny r5 — rekalibracja
+      // crusGrav/bond zmieniająca liczby bez odwrócenia predykcji to jawny rebaseline, nie FAIL.
+      // exited ŚWIADOMIE pinem (kontyngentne od holdów derivedHold). relMap: churn przy okablowaniu
+      // karku B8 w diagnostyce = oczekiwany rebaseline.
+      if (h.jamDemo) {
+        const J = h.jamDemo(side);
+        if (!(J.epley.jammed === true && J.epley.tRelease == null && J.yac.jammed === false && J.yac.tRelease != null))
+          jamPredFails.push(`${side}: epley ${J.epley.jammed}/${J.epley.tRelease} yac ${J.yac.jammed}/${J.yac.tRelease}`);
+        jamRes[`${side}/yacFull`] = { tRelease: r5(J.yac.tRelease), relDelta: r5(J.yac.relDelta), minXi: r5(J.yac.minXi), finalPhi: r5(J.yac.finalPhi), exited: J.yac.exited };
+        jamRes[`${side}/postEpley`] = { exited: J.postEpley.exited, expelDur: r5(J.postEpley.expelDur) };
+        jamRes[`${side}/dix`] = { jammed: J.dix.jammed, endXi: J.dix.endXi.map(r5) };
+        jamRes[`${side}/relMap`] = Object.fromEntries(Object.entries(J.relMap).map(([k, v]) => [k, r5(v)]));
+        jamRes[`${side}/holds`] = { semont: J.semont.jammed, bascule: J.bascule.jammed };
+      }
     }
+    if (jamPredFails.length) throw new Error('WYROCZNIA JAM_PRED (Epley trzyma / Yacovino uwalnia) NIE PRZESZŁA: ' + jamPredFails.join(' · '));
     out.jam = jamRes;
   }
 
@@ -733,6 +754,13 @@ function domOracle(h, win) {
     grab('diag/dix/P/exam-multi', () => { h.examStart(4); });                                                           // multi PC+HC: etykieta MIESZANY
     leakGuard('diag/dix/P/exam-multi');
     grab('diag/dix/P/exam-off', () => { h.examEnd(); });                                                                // wieczny pin: OFF ≡ diag/dix/P
+  }
+  // V23: karta canalith jam w widoku CPN (dix, kanał tylny — bramka canal==='posterior' wyklucza
+  // antMode z konstrukcji). 2 klucze; higiena: powrót do widoku obwodowego + strona P.
+  if (h.toggleDiagCentral && h.openTest) {
+    grab('diag/dix/P/central', () => { h.openTest('dix'); if (h.setDiagSide) h.setDiagSide('P'); h.toggleDiagCentral(true); });
+    grab('diag/dix/L/central', () => { if (h.setDiagSide) h.setDiagSide('L'); });   // setDiagSide renderuje; diagCentral przeżywa zmianę strony
+    h.toggleDiagCentral(false); if (h.setDiagSide) h.setDiagSide('P');
   }
 
   return out;

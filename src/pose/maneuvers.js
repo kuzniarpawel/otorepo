@@ -1297,6 +1297,49 @@ function rollShortPhases(side){
   const out={aff:mk(side==="P"?90:-90), heal:mk(side==="P"?-90:90)};   // aff = ucho CHORE w dole
   _bltMemo.set(k,out); return out;
 }
+/* ============ V23: karta canalith jam — dane demo (JEDNO źródło parametrów z pinem engine.jam) ============
+   JAM_DEMO = czop przy wejściu do odnogi wspólnej (pcrus = ARC_SPAN.posterior − crusArc 12 = 306,8°) —
+   te same wartości konsumuje wyrocznia engine.jam (fallback wewnętrzny snapshotu) i karta: rozjazd
+   karta↔pin strukturalnie niemożliwy. Wszystkie liczby karty pochodzą z jamDemo (memo per strona,
+   zero literałów w renderze). Progi thr=0,6 (crusGrav) i zapas bond=0,3 g·s = WYBORY KALIBRACYJNE
+   silnika (nazwane na karcie). Rampa startowa nici jam (ξ: 0→0,50 przez ~15 s, tauC) to artefakt
+   xi0=0, NIE latencja kliniczna — karta czyta wyłącznie KOŃCE segmentów / stany ustalone. */
+const JAM_DEMO = Object.freeze({ phi: Vestibular.ARC_SPAN.posterior - 12, xi: 0.5, dir: 1 });
+function jamDemo(side){
+  const k="jamdemo#"+side; if(_bltMemo.has(k)) return _bltMemo.get(k);
+  const run=(plan)=>Vestibular.simulateCanalithJam({canal:"posterior", side, q0:[1,0,0,0], jam:{...JAM_DEMO},
+    timeline:maneuverTimeline(plan,"medium")});
+  const bounds=(tl)=>{ let tt=0; return tl.map(g=>(tt+=(g.tTrans||0)+(g.tHold||0))); };
+  const xiAt=(sim,te)=>{ let v=sim.length?sim[0].xi:0; for(const s of sim){ if(s.t<=te+1e-9) v=s.xi; else break; } return v; };
+  const ep=run(epley(side)), se=run(semont(side)), ba=run(bascule(side));
+  const yPlan=yacovino(side), yac=run(yPlan), yb=bounds(maneuverTimeline(yPlan,"medium"));
+  let minXi=0; for(const s of yac) if(s.xi<minXi) minXi=s.xi;
+  // łańcuch: Epley BEZPOŚREDNIO po uwolnieniu (konwencja B7: phi0+xi0+bond0 z final Yacovino;
+  // karta uczy sekwencji Yacovino → kontrolny Dix → Epley — liczba dotyczy Epleya od razu po uwolnieniu)
+  const post=Vestibular.simulateCanalith({canal:"posterior", side, q0:[1,0,0,0], phi0:yac.final.phi,
+    xi0:yac.final.xi, bond0:yac.final.bondFrac, settled:false, timeline:maneuverTimeline(epley(side),"medium")});
+  // pozycjo-niezależność: prowokacja Dix + powrót do siadu (istniejący akt) pod jamem — KOŃCE segmentów
+  const dixTl=actTimeline("dix", side);
+  const dix=Vestibular.simulateCanalithJam({canal:"posterior", side, q0:[1,0,0,0], jam:{...JAM_DEMO}, timeline:dixTl});
+  const endXi=bounds(dixTl).map(te=>xiAt(dix,te));
+  // mapa napędu uwolnienia: rel = −dir·dot(g,tang(φ)) = −dir·driveAt(…,tauP=1) w pozach standardowych;
+  // UWAGA churn: pozy diagnostyczne czekają na okablowanie karku B8 — dryf tych liczb przy B8 to
+  // oczekiwany rebaseline, nie regresja.
+  const rel=(body,yaw,face)=> -(JAM_DEMO.dir)*Vestibular.driveAt("posterior", side, JAM_DEMO.phi, stepHeadQ(body,yaw,face), 1);
+  const yA=side==="P"?45:-45;
+  const relMap={ sit:rel("sit",0,"fwd"), dixAff:rel("supineHang",yA,"up"), dixHeal:rel("supineHang",-yA,"up"),
+    supine:rel("supineFlex",0,"up"), deepHang:rel("supineDeepHang",0,"up"), chin:rel("supineChin",0,"up") };
+  const out={
+    epley:{jammed:ep.final.jammed, tRelease:ep.final.tRelease, xiEnd:ep.length?ep[ep.length-1].xi:0},
+    semont:{jammed:se.final.jammed, tRelease:se.final.tRelease},
+    bascule:{jammed:ba.final.jammed, tRelease:ba.final.tRelease},
+    yac:{jammed:yac.final.jammed, tRelease:yac.final.tRelease,
+         relDelta:yac.final.tRelease!=null?yac.final.tRelease-yb[0]:null,
+         minXi, finalPhi:yac.final.phi, exited:yac.final.exited},
+    postEpley:{exited:post.final.exited, expelDur:post.final.expelDur},
+    dix:{jammed:dix.final.jammed, endXi}, relMap, thr:0.6 };   // thr = crusGrav (domyślny próg jam.thrG silnika)
+  _bltMemo.set(k,out); return out;
+}
 // Etykiety chipów mechanizmu (D4/V16) — chipy renderują się tylko, gdy fenotyp ma >1 mechanizm (HC).
 function mechLabels(canal, v){
   if(canal!=="horizontal") return null;
@@ -1477,7 +1520,7 @@ function examAnswerKey(lesions){
 
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior",zuma:"horizontal",kim:"horizontal"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF, PRIORS, mulberry32, randomPatient, TEST_OF_CANAL, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF, PRIORS, mulberry32, randomPatient, TEST_OF_CANAL, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)

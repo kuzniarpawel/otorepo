@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo } from '../pose/maneuvers.js';
 import { spvTrace } from '../engine/spv-bridge.js';   // D8/V22: pierwsza konsumpcja UI mostu SPV (V13)
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
@@ -1049,6 +1049,36 @@ function renderGuide(){
 // Karta klasyfikacji Bárány (ICVD) + różnicowanie OŚRODKOWE (CPN). Etykieta podtypu z baranyClassify();
 // przełącznik „obwodowy (BPPV) / ośrodkowy (CPN)" (state.diagCentral) ujawnia czerwone flagi + schemat
 // uporczywego downbeatu. Czysto widokowa — zero zmian fizyki; domyślnie „obwodowy" (golden deterministyczny).
+// ===== V23: karta canalith jam — pułapka obwodowa w widoku CPN (WYŁĄCZNIE kanał TYLNY) =====
+// Bramka canal==="posterior" (parametr diagClassifyCard = effCanal) wyklucza antMode z konstrukcji
+// (dix z downbeat → effCanal="anterior" → karty brak; sprzeczność treściowa niemożliwa). Wszystkie
+// liczby z jamDemo (jedno źródło z pinem engine.jam). ZAKAZ xiEnvelope na nici jam (plateau:
+// tEnd=lastT — oczy zamarzałyby po końcu danych); pętla ciągła przez envOv {env:()=>1, tEnd:Infinity}
+// (kontrakt startNys: warunek stopu nigdy nie zachodzi; rAF w harnessie zneutralizowany — golden
+// widzi wyłącznie statyczny markup).
+function jamCard(side){
+  const J=jamDemo(side), f2=x=>(+x).toFixed(2);
+  const chip=(k,v)=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${v}</b></span>`;
+  const N=nysFromDyn("posterior", side, JAM_DEMO.xi, false);
+  const relChip=(lbl,v,star)=>chip(lbl, `${v>0?"+":""}${f2(v)}${star?" ★":""}`);
+  const mrow=(name,txt,warn)=>`<div style="display:grid;grid-template-columns:110px 1fr;gap:8px;padding:5px 0;border-top:1px solid var(--line);font-size:12.5px"><b${warn?' style="color:#b0813f"':''}>${name}</b><span>${txt}</span></div>`;
+  const holdTxt=t("TRZYMA — oczopląs bez zmian (stan ustalony ξ=0,50) przez cały manewr","HOLDS — nystagmus unchanged (steady state ξ=0.50) throughout the maneuver");
+  return `<div class="panelbox" style="margin-top:10px"><h4>${t("Pułapka obwodowa — canalith jam (czop złogu)","A peripheral pitfall — canalith jam (a debris plug)")}</h4>
+    <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-jamnys>${eyesSVG()}</div><span class="emk">L</span></div>
+    <div class="nyslabel"><span class="arrow">${arrowGlyph(N)}</span><span>${N.label}${t(" · uporczywy · pozycjo-niezależny · niemęczliwy"," · persistent · position-independent · non-fatiguing")}</span></div>
+    <div class="note">${t("Ten sam oczopląs w KAŻDEJ pozycji — nić symulacji prowokacji Dix z powrotem do siadu (końce segmentów):","The same nystagmus in EVERY position — a simulation thread of the Dix provocation with return to sitting (segment ends):")}</div>
+    <div>${chip(t("Dix (prowokacja)","Dix (provocation)"), `ξ=${f2(J.dix.endXi[0])}`)}${chip(t("siad po prowokacji","sitting after provocation"), `ξ=${f2(J.dix.endXi[1]!=null?J.dix.endXi[1]:J.dix.endXi[0])}`)}</div>
+    <div class="note">${t("Zmiana pozycji nie odwraca go i nie gasi; siadanie nie daje odwrócenia. Wygląda ośrodkowo — ale kierunek wciąż PASUJE DO JEDNEGO kanału (tu: tylny — upbeat ze skrętem), a objawów neurologicznych brak. Mechanizm (model): czop zbitych otoconiów klinuje się w świetle przewodu przy wejściu do odnogi wspólnej (φ=306,8°) i blokuje przepływ — osklepek zostaje w stałym odchyleniu, więc oczopląs nie zależy od pozycji głowy. STATUS ŹRÓDŁOWY: kazuistyka — częstość nieznana, ustalonego postępowania brak; próg uwolnienia 0,60 g i zapas 0,3 g·s to jawne WYBORY KALIBRACYJNE modelu (emergencja jamu wymagałaby średnic przewodu — granica źródła).","A change of position neither reverses nor extinguishes it; sitting up brings no reversal. It looks central — yet the direction still FITS A SINGLE canal (here: posterior — upbeat with torsion), and there are no neurological signs. Mechanism (model): a plug of clumped otoconia wedges in the duct lumen at the entrance to the common crus (φ=306.8°) and blocks the flow — the cupula stays constantly deflected, so the nystagmus does not depend on head position. SOURCE STATUS: case reports — frequency unknown, no established management; the release threshold 0.60 g and the 0.3 g·s reserve are explicit CALIBRATION CHOICES of the model (emergent jam would require duct diameters — a source boundary).")}</div>
+    <div class="obslabel" style="margin-top:8px">${t("Predykcja modelu (żywa symulacja, kanał tylny):","Model prediction (live simulation, posterior canal):")}</div>
+    ${mrow("Epley", J.epley.jammed?holdTxt:"—")}
+    ${mrow("Semont", J.semont.jammed?holdTxt:"—")}
+    ${mrow("Bascule", J.bascule.jammed?holdTxt:"—")}
+    ${mrow("Yacovino", t(`UWALNIA czop ~${f2(J.yac.relDelta)} s po wejściu w deep head-hang; potem transjent ODWRÓCONY do ξ=${f2(J.yac.minXi)} (krok „broda do klatki”) i zwykła kanalolitiaza`,`RELEASES the plug ~${f2(J.yac.relDelta)} s after entering the deep head-hang; then a REVERSED transient down to ξ=${f2(J.yac.minXi)} (the chin-to-chest step) and ordinary canalithiasis`), true)}
+    <div class="note">${t("DLACZEGO: uwolnienie wymaga UTRZYMANEJ siły stycznej ponad progiem (iglica przejścia nie uwalnia). Napęd uwolnienia w pozach standardowych (próg 0,60):","WHY: release requires a SUSTAINED tangential force above the threshold (a transition spike does not release). Release drive in the standard positions (threshold 0.60):")}</div>
+    <div>${relChip(t("siad","sitting"), J.relMap.sit)}${relChip(t("Dix chory","Dix affected"), J.relMap.dixAff)}${relChip(t("Dix zdrowy","Dix healthy"), J.relMap.dixHeal)}${relChip(t("na wznak (głowa ~30°)","supine (head ~30°)"), J.relMap.supine)}${relChip("deep head-hang", J.relMap.deepHang, true)}${relChip(t("broda do klatki","chin to chest"), J.relMap.chin)}</div>
+    <div class="note">${t("★ deep head-hang to JEDYNA standardowa poza nad progiem — siad wręcz DOCISKA czop (czas nie leczy). Uwolnienie ≠ wyleczenie: koniec pełnego Yacovino zostawia złóg W KANALE (φ≈","★ the deep head-hang is the ONLY standard position above the threshold — sitting actually PRESSES the plug in (time does not cure). Release ≠ cure: the end of the full Yacovino leaves the debris IN THE CANAL (φ≈")}${Math.round(J.yac.finalPhi)}°${t(") — to już zwykła kanalolitiaza. Epley wykonany BEZPOŚREDNIO po uwolnieniu czyści kanał (ekspulsja ","); — now ordinary canalithiasis. An Epley performed IMMEDIATELY after the release clears the canal (expulsion ")}${f2(J.postEpley.expelDur)}${t(" s). Sekwencja kliniczna: Yacovino (uwolnij) → kontrolny Dix (typowy przemijający oczopląs potwierdza uwolnienie) → Epley (repozycja)."," s). Clinical sequence: Yacovino (release) → a control Dix (a typical transient nystagmus confirms the release) → Epley (repositioning).")}</div>
+    <div class="note" style="color:var(--ant)">${t("DYSCYPLINA: jam to rozpoznanie z WYKLUCZENIA — domyślna ścieżka pozycjo-niezależnego oczopląsu pozostaje OŚRODKOWA (najpierw flagi i MRI powyżej). O jamie myśl dopiero, gdy: kierunek pasuje do JEDNEGO kanału + wywiad BPPV/świeżego manewru + ZERO objawów neurologicznych. Nie mylić z ramieniem bańkowym (short arm): predykcja „Epley-nie/Yacovino-tak” dotyczy zaklinowanego CZOPU, nie wolnego złogu w ramieniu.","DISCIPLINE: jam is a diagnosis of EXCLUSION — the default path for position-independent nystagmus remains CENTRAL (flags and MRI above come first). Think of jam only when: the direction fits a SINGLE canal + a history of BPPV/a recent maneuver + ZERO neurological signs. Do not confuse it with the short (ampullar) arm: the „Epley-no/Yacovino-yes” prediction concerns an impacted PLUG, not free debris in the arm.")}</div></div>`;
+}
 function diagClassifyCard(canal, v, side, antMode, mech){
   const central=!!state.diagCentral;
   const cls=baranyClassify(canal, v, side, antMode, mech);
@@ -1083,7 +1113,7 @@ function diagClassifyCard(canal, v, side, antMode, mech){
       <div class="note" style="color:var(--text)">${t('<b>Postępowanie:</b> NIE wykonuj repozycji. Skieruj na ocenę neurologiczną + MRI tylnego dołu (móżdżek, pogranicze szczytowo-potyliczne: malformacja Chiariego; SM; zmiany naczyniowe). Najczęstszy łagodny mimik: <b>migrena przedsionkowa</b> (ośrodkowy oczopląs pozycyjny w napadzie).','<b>Management:</b> Do NOT perform repositioning. Refer for neurological evaluation + MRI of the posterior fossa (cerebellum, craniocervical junction: Chiari malformation; MS; vascular lesions). The most common benign mimic: <b>vestibular migraine</b> (central positional nystagmus during an attack).')}</div>`;
   return `<div class="card" style="margin-top:12px">
       <div class="obslabel" style="margin-bottom:8px">${t("Klasyfikacja wg Bárány (ICVD) i różnicowanie ośrodkowe","Bárány classification (ICVD) and central differentiation")}</div>
-      ${seg}${central?cpn:bppv}</div>`;
+      ${seg}${central?cpn+(canal==="posterior"?jamCard(side):""):bppv}</div>`;
 }
 // ===== Mini-karta „znajdź płaszczyznę zerową" (ocena II, V12/D3) =====
 // Renderowana na karcie ROLL, NIEZALEŻNIE od state.variant: porównuje OBA mechanizmy trwałej kupulopatii
@@ -1560,6 +1590,8 @@ function renderDiag(){
     // CPN: uporczywy downbeat Z SILNIKA (preset 'downbeat' — odhamowanie drog kanalow przednich), nie literal:
     // fizyka i animacja maja jedno zrodlo; petla CIAGLA (startNys z obwiednia xi wylaczylby sie, a CPN jest UPORCZYWY).
     const cpn=$('[data-cpnnys]'); if(cpn) startNeuroNys(cpn, NeuroVOR.observe(NeuroVOR.scenario('downbeat'), false), 0);
+    // V23: oczy karty jam — pętla CIĄGŁA przez envOv (plateau nie wygasa; xiEnvelope ZAKAZANE na nici jam)
+    const jn=$('[data-jamnys]'); if(jn) startNys(jn, {...nysFromDyn("posterior", effSide, JAM_DEMO.xi, false), fatigue:1}, {env:()=>1, tEnd:Infinity, peak:1});
     if(state.testKey==="roll") setNullYaw(0);   // V12/D3: montaż mini-karty null point (suwak startuje w 0)
     sizeFlip("mechflip"); sizeFlip("phaseflip");
   });

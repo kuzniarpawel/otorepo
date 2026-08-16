@@ -992,7 +992,7 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
       debris; the light |ξ| envelope ≡ cupulo — the V12 mirror), short = a particle at the ampulla
       (init.arm through engineXi, φ<0 clamps to the ampulla on the SVG path). The JAM stays OUTSIDE
       the mechanism axis (a position-independent obstructive state with parameters of its own — the
-      direction is set by jam.xi, not the phenotype; a separate future card). Oracles: dom 126→138 —
+      direction is set by jam.xi, not the phenotype; a separate card DELIVERED in V23 — see the CANALITH JAM CARD section). Oracles: dom 126→138 —
       EXACTLY 24 HC keys changed (proof: 24/24 = a pure chip-panel insertion, zero removals) + 12
       additive mech-{light,short} × {roll,bowlean,lyingdown} × {P,L}; engine/pose bit-for-bit (the
       physics UNTOUCHED — zero edits to vestibular.js); the session explicitly narrowed to
@@ -1752,6 +1752,52 @@ substance of partial repositioning).
    preset loop), 24 keys changed MECHANICALLY (classified by a script: removing the card and the
    button recreates the old version byte for byte); dom 183→184; the eternal pins
    exam-off/ensemble-off UNTOUCHED.
+
+=== CANALITH JAM CARD — a peripheral pitfall in the CPN view (V23, 2026-08-16) ===
+ WHERE: the classification-card section in the "Central — CPN" view, the POSTERIOR canal ONLY —
+   the canal==="posterior" gate (the diagClassifyCard parameter = effCanal) excludes the antMode
+   mode BY CONSTRUCTION (the Dix with downbeat → effCanal="anterior" → no card; the contradiction
+   "a PC-jam card on the downbeat screen" is structurally impossible). The card lives BELOW the
+   flags and the MRI note — the safety hierarchy: the jam is a diagnosis of EXCLUSION, the default
+   path of position-independent nystagmus remains CENTRAL. In the exam (V21) it is invisible (the
+   whole classification card hidden).
+ SINGLE SOURCE OF PARAMETERS: JAM_DEMO = {phi: ARC_SPAN.posterior−crusArc = 306.8° (pcrus — the
+   entry to the common crus), xi: 0.5, dir: 1} — DERIVED, bit-equal to the former literal of the
+   engine.jam pin; the oracle consumes it via an INTERNAL fallback (an old build keeps its pins),
+   the card via jamDemo(side) (a memo per side; ZERO literals in the render — a drift of the
+   physics changes the numbers on the card). The thr=0.6 threshold (crusGrav) and the bond=0.3 g·s
+   reserve = named CALIBRATION CHOICES; source status: CASE REPORTS, no name attribution until
+   verification (candidate [H29]).
+ WHAT IT SHOWS (everything from live simulations): (1) position-independence — the thread of the
+   Dix provocation with a return to sitting (the existing actTimeline act) under the jam: the
+   segment ENDS ξ=0.4999/0.5000 (steady states; the starting ramp 0→0.50 over ~15 s is an xi0=0
+   artifact, NOT latency — the card reads the ends exclusively); the eyes in a CONTINUOUS loop via
+   envOv {env:()=>1, tEnd:∞} — xiEnvelope on the jam thread is FORBIDDEN (a plateau: tEnd=lastT,
+   the eyes would freeze after the data ends). (2) the prediction: Epley/Semont/Bascule HOLD (the
+   0.50 steady state through the whole maneuver), the Yacovino RELEASES ~3.20 s after entering the
+   deep head-hang (the offset INDEPENDENT of size: tRelease 22.0/13.0/10.0 for small/medium/big,
+   the offset always 3.20 — which is why the card gives a RELATIVE time; the 2-segment
+   engine.jam/deepHang pin's tRelease 3.05 counts from the POSITION, the full plan's 13.0 from the
+   plan's start — two protocols, one physics), then a REVERSED transient to ξ=−0.744 (the "chin to
+   chest" step). (3) WHY: the release-drive map rel=−dir·driveAt(…,tauP=1) in the standard poses
+   (the 0.60 threshold): sitting −0.965 (it PRESSES IN — time does not heal) · the affected-side
+   Dix +0.540 · the healthy-side Dix +0.457 · supine (head ~30°) −0.263 · the deep head-hang
+   +0.702 (the ONLY one above the threshold) · the chin −0.503. (4) release ≠ cure: the end of the
+   full Yacovino leaves the debris IN THE CANAL (φ≈41°) — ordinary canalithiasis; an Epley
+   DIRECTLY after the release (the B7 chain: phi0+xi0+bond0 from final) clears it with a 3.80 s
+   expulsion; the clinical sequence on the card: Yacovino → a control Dix → Epley (the number
+   explicitly concerns an Epley right after the release). (5) discipline: 3 conditions "when to
+   think of a jam" + the short-arm mirror (the prediction concerns the PLUG, not the ampullar arm).
+ ORACLES: JAM_PRED — a HARD throw exclusively on the LOGIC of the prediction (the Epley jammed ∧
+   tRelease null; the full Yacovino released) — a crusGrav/bond recalibration that changes the
+   numbers without flipping the prediction = an explicit rebaseline, not a FAIL; exited is
+   DELIBERATELY a pin, not a throw (contingent on the derivedHold holds). The pins as FLAT SIBLING
+   keys of engine.jam ({P,L}/{yacFull, postEpley, dix, relMap, holds} — nesting inside P/L would
+   change EXISTING keys at the diffKeys granularity; P/L bit-for-bit untouched). relMap: churn
+   when the B8 neck is wired into the diagnostics = an expected rebaseline (a comment at the pin).
+   Dom: +2 additive diag/dix/{P,L}/central (dom 184→186); seam += toggleDiagCentral/JAM_DEMO/
+   jamDemo (without toggleDiagCentral the central grabs would bake in a deterministic
+   'ERR:'-string that passes --check — the makeHandle trap named).
 
 ==========================================================================
  NeuroVOR MODULE — THE TONIC/CENTRAL LAYER (VOR · fixation · vHIT · HINTS)

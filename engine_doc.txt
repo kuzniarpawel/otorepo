@@ -934,7 +934,7 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
       obwiednia |ξ| light ≡ cupulo — lustro V12), short = cząstka przy bańce (init.arm przez
       engineXi, φ<0 klamruje się do bańki na ścieżce SVG). JAM POZA osią mechanizmu (stan
       obturacyjny pozycjo-niezależny z własnymi parametrami — kierunek zadaje jam.xi, nie fenotyp;
-      przyszła osobna karta). Wyrocznie: dom 126→138 — DOKŁADNIE 24 klucze HC zmienione (dowód:
+      osobna karta DOSTARCZONA w V23 — patrz sekcja KARTA CANALITH JAM). Wyrocznie: dom 126→138 — DOKŁADNIE 24 klucze HC zmienione (dowód:
       24/24 = czysta wstawka panelu chipów, zero usunięć) + 12 addytywnych mech-{light,short}
       × {roll,bowlean,lyingdown} × {P,L}; engine/pose bit-w-bit (fizyka NIETKNIĘTA — zero edycji
       vestibular.js); sesja zawężona jawnie do mech==="canalo" (śledzi złóg ramienia długiego).]
@@ -1629,6 +1629,47 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    Dom: +1 addytywny hints/preset/tevs (z pętli presetów), 24 klucze zmienione MECHANICZNIE
    (sklasyfikowane skryptem: usunięcie karty i przycisku odtwarza stary bajt w bajt); dom 183→184;
    wieczne piny exam-off/ensemble-off NIETKNIĘTE.
+
+=== KARTA CANALITH JAM — pułapka obwodowa w widoku CPN (V23, 2026-08-16) ===
+ GDZIE: sekcja karty klasyfikacji w widoku „Ośrodkowy — CPN", WYŁĄCZNIE kanał TYLNY — bramka
+   canal==="posterior" (parametr diagClassifyCard = effCanal) wyklucza tryb antMode Z KONSTRUKCJI
+   (dix z downbeat → effCanal="anterior" → karty brak; sprzeczność „karta PC-jam na ekranie
+   downbeat" strukturalnie niemożliwa). Karta żyje POD flagami i notą MRI — hierarchia
+   bezpieczeństwa: jam to rozpoznanie z WYKLUCZENIA, domyślna ścieżka pozycjo-niezależnego
+   oczopląsu pozostaje OŚRODKOWA. W egzaminie (V21) niewidoczna (cała karta klasyfikacji ukryta).
+ JEDNO ŹRÓDŁO PARAMETRÓW: JAM_DEMO = {phi: ARC_SPAN.posterior−crusArc = 306,8° (pcrus — wejście
+   do odnogi wspólnej), xi: 0,5, dir: 1} — WYPROWADZONE, bit-równe dawnemu literałowi pinu
+   engine.jam; wyrocznia konsumuje je fallbackiem WEWNĘTRZNYM (stary build zachowuje piny),
+   karta przez jamDemo(side) (memo per strona; ZERO literałów w renderze — dryf fizyki zmienia
+   liczby na karcie). Progi thr=0,6 (crusGrav) i zapas bond=0,3 g·s = nazwane WYBORY KALIBRACYJNE;
+   status źródłowy: KAZUISTYKA, bez atrybucji nazwiskowej do czasu weryfikacji (kandydat [H29]).
+ CO POKAZUJE (wszystko z żywych symulacji): (1) pozycjo-niezależność — nić prowokacji Dix
+   z powrotem do siadu (istniejący akt actTimeline) pod jamem: KOŃCE segmentów ξ=0,4999/0,5000
+   (stany ustalone; rampa startowa 0→0,50 przez ~15 s to artefakt xi0=0, NIE latencja — karta
+   czyta wyłącznie końce); oczy w pętli CIĄGŁEJ przez envOv {env:()=>1, tEnd:∞} — xiEnvelope
+   na nici jam ZAKAZANE (plateau: tEnd=lastT, oczy zamarzałyby po końcu danych). (2) predykcja:
+   Epley/Semont/Bascule TRZYMAJĄ (stan ustalony 0,50 przez cały manewr), Yacovino UWALNIA
+   ~3,20 s po wejściu w deep head-hang (offset NIEZALEŻNY od size: tRelease 22,0/13,0/10,0 dla
+   small/medium/big, offset zawsze 3,20 — dlatego karta podaje czas WZGLĘDNY; pin 2-segmentowy
+   engine.jam/deepHang tRelease 3,05 liczy od POZYCJI, pełny plan 13,0 od startu planu — dwa
+   protokoły, jedna fizyka), potem transjent ODWRÓCONY do ξ=−0,744 (krok „broda do klatki").
+   (3) DLACZEGO: mapa napędu uwolnienia rel=−dir·driveAt(…,tauP=1) w pozach standardowych
+   (próg 0,60): siad −0,965 (DOCISKA — czas nie leczy) · Dix chory +0,540 · Dix zdrowy +0,457 ·
+   na wznak (głowa ~30°) −0,263 · deep head-hang +0,702 (JEDYNA nad progiem) · broda −0,503.
+   (4) uwolnienie ≠ wyleczenie: koniec pełnego Yacovino zostawia złóg W KANALE (φ≈41°) — zwykła
+   kanalolitiaza; Epley BEZPOŚREDNIO po uwolnieniu (łańcuch B7: phi0+xi0+bond0 z final) czyści
+   z ekspulsją 3,80 s; sekwencja kliniczna na karcie: Yacovino → kontrolny Dix → Epley (liczba
+   jawnie dotyczy Epleya od razu po uwolnieniu). (5) dyscyplina: 3 warunki „kiedy myśleć o jam"
+   + lustro short-arm (predykcja dotyczy CZOPU, nie ramienia bańkowego).
+ WYROCZNIE: JAM_PRED — TWARDY throw wyłącznie na LOGICE predykcji (Epley jammed ∧ tRelease null;
+   pełny Yacovino uwolniony) — rekalibracja crusGrav/bond zmieniająca liczby bez odwrócenia
+   predykcji = jawny rebaseline, nie FAIL; exited ŚWIADOMIE pinem, nie throwem (kontyngentne od
+   holdów derivedHold). Piny jako PŁASKIE klucze RODZEŃSTWA engine.jam ({P,L}/{yacFull, postEpley,
+   dix, relMap, holds} — zagnieżdżenie w P/L zmieniłoby ISTNIEJĄCE klucze na granulacji diffKeys;
+   P/L bit-w-bit nietknięte). relMap: churn przy okablowaniu karku B8 w diagnostyce = oczekiwany
+   rebaseline (komentarz przy pinie). Dom: +2 addytywne diag/dix/{P,L}/central (dom 184→186);
+   seam += toggleDiagCentral/JAM_DEMO/jamDemo (bez toggleDiagCentral graby central zapiekłyby
+   deterministyczny 'ERR:'-string przechodzący --check — pułapka makeHandle nazwana).
 
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)
