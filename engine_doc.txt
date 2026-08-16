@@ -1168,7 +1168,7 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
        Roll. Zdanie „kanon pochodzi z konwencji kalorycznej" ma tu status hipotezy — udokumentowanej
        źródłami wtórnymi w R3-PRZEMIERZENIE 30° (punkt b/h), gdzie policzono też, ile uniesienia
        naprawdę potrzeba przy nachyleniu 10.4° tego atlasu (10.30°) i ile kosztuje przegięcie do 30°.
-       Bibliografia pomiarowa: [H29].
+       Bibliografia pomiarowa: [H17].
 
  R6-STARE. YACOVINO NIE CZYŚCI KANAŁU PRZEDNIEGO przy anatomicznie poprawnym łuku [ZAMKNIĘTE — wyżej].
      Minimum grawitacyjne w jego najgłębszym kroku (deep head-hang) to 233.8°, a ujście leży na 266°.
@@ -1342,7 +1342,7 @@ POZOSTAŁE (do decyzji):
        (c) PIŚMIENNICTWO SAMO SOBIE PRZECZY CO DO CELU: część źródeł mówi, że 30° ustawia kanał PIONOWO,
            część — że „wyrównuje kanały boczne POZIOMO". To cele przeciwne. Liczba, której deklarowany
            sens odwraca się między źródłami, jest PRZEKAZYWANA, nie wyprowadzana.
-       (d) KANON 30° NACHYLENIA NIE MA POKRYCIA W POMIARACH (por. R9): Della Santina i wsp. 2005 [H29]
+       (d) KANON 30° NACHYLENIA NIE MA POKRYCIA W POMIARACH (por. R9): [H17] Della Santina i wsp. 2005
            — ZWERYFIKOWANE U ŹRÓDŁA: kąt między normalną do kanału bocznego a osią Z ramki Reida
            19.9°±7.0 (lewy), czyli płaszczyzna kanału ~20° od poziomu Reida; Wu i wsp. 2021 (MRI, n=55)
            17.4°; IE-Map (nasz atlas) 10.4°. UWAGA UCZCIWOŚCIOWA: zdania z R9, jakoby praca Della Santiny
@@ -1381,7 +1381,7 @@ POZOSTAŁE (do decyzji):
          na bok w pozycji leżącej"; pełny tekst za paywallem Kargera (45 USD), więc nie można
          wykluczyć kąta w Metodach. WNIOSEK: punkt (a) („liczba nie jest ustalona") staje się
          MOCNIEJSZY — żaden z dwóch abstraktów źródłowych kąta nie niesie.
-       • LUKA POTWIERDZONA PRZEZ SAMYCH BADACZY: Hentze i wsp. 2025 [H37] piszą WPROST, że nikt
+       • LUKA POTWIERDZONA PRZEZ SAMYCH BADACZY: [H37] Hentze i wsp. 2025 piszą WPROST, że nikt
          dotąd nie zbadał wpływu uzyskanych kątów głowy na wynik diagnostyczny. To jawne
          potwierdzenie zdania z punktu (f) — nie znaleziono ANI JEDNEJ takiej pracy, bo jej nie ma.
        • PIERWSZY EMPIRYCZNY SYGNAŁ CO DO KIERUNKU [H36]: w randomizowanym badaniu krzyżowym
@@ -1653,7 +1653,7 @@ DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09)
   Tullio z PEŁNEJ geometrii (nysMag: przedni v1.00 : t0.74), OMIJAJĄC maskę — LOKALNIE, tylko dla SCDS.
   Maska NYS_SHOW pozostaje globalnie w mocy (BPPV bez zmian). Skręt kanału przedniego jest więc
   „ukryty" dla renderowania BPPV, ale DOSTĘPNY przez surową geometrię dla ścieżki ciśnieniowej.
-  → patrz MODUŁ NeuroVOR / ETAP 7 · pressureStimulus() (Minor 2000, [H18]).
+  → patrz MODUŁ NeuroVOR / ETAP 7 · pressureStimulus() ([H18] Minor 2000).
 
 === WARSTWA OBJAWOWA — pasek „Zawrót/Nudności" + karta RD (D5/V17, 2026-08-14) ===
 CZYSTO WIDOKOWA nadbudowa nad istniejącym śladem ξ(t) manewru (computeManSim) — zero wywołań
@@ -1680,7 +1680,7 @@ silnika, zero zmian fizyki (dowód: engine/pose bit-w-bit przy rebaseline).
  KARTA „CO DALEJ — RD" na OSTATNIM kroku manewru CZYSZCZĄCEGO (man.exited && krok n−1; ekspulsja
    bywa wcześniej — finał to naturalny moment „co dalej", krok liberacyjny ma już libNote):
    RD u 31–61% po ustąpieniu oczopląsu (łagiewka + niepełna kompensacja), poradnictwo zbija do ~13%,
-   supresanty przedsionkowe SZKODLIWE — poradnictwo + rehabilitacja [H26 Özgirgin 2024]; frazowanie
+   supresanty przedsionkowe SZKODLIWE — poradnictwo + rehabilitacja [H26] Özgirgin 2024; frazowanie
    1:1 z modułu NeuroVOR (spójność silników). gufoniApo (konwersja, exited=false) karty ŚWIADOMIE
    nie dostaje — jego nota nakazuje ponowny Roll. Zakres wyroczni: DOKŁADNIE 65 kluczy guide/*
    (każdy = wstawka .symrow; 12 finałów czyszczących dodatkowo z kartą RD), dom bez nowych kluczy.
@@ -1844,7 +1844,7 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    engine.jam; wyrocznia konsumuje je fallbackiem WEWNĘTRZNYM (stary build zachowuje piny),
    karta przez jamDemo(side) (memo per strona; ZERO literałów w renderze — dryf fizyki zmienia
    liczby na karcie). Progi thr=0,6 (crusGrav) i zapas bond=0,3 g·s = nazwane WYBORY KALIBRACYJNE;
-   status źródłowy: KAZUISTYKA, bez atrybucji nazwiskowej do czasu weryfikacji (kandydat [H29]).
+   status źródłowy: KAZUISTYKA, bez atrybucji nazwiskowej do czasu weryfikacji (kandydat [H17]).
  CO POKAZUJE (wszystko z żywych symulacji): (1) pozycjo-niezależność — nić prowokacji Dix
    z powrotem do siadu (istniejący akt actTimeline) pod jamem: KOŃCE segmentów ξ=0,4999/0,5000
    (stany ustalone; rampa startowa 0→0,50 przez ~15 s to artefakt xi0=0, NIE latencja — karta
@@ -1916,7 +1916,7 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    DWIE stałe, wyprowadzone z tej samej normalnej atlasu IE-Map, świadomie ROZDZIELONE (pierwsza
    wersja tej zmiany je myliła — złapał to krytyk geometrii):
      HC_TILT_DEG = acos(|n_y|/|n|) = 10.4398° — PEŁNE (dwuścienne) nachylenie płaszczyzny kanału.
-       Wielkość PORÓWNYWALNA Z PIŚMIENNICTWEM: Della Santina [H29] mierzy dokładnie ją (kąt normalnej
+       Wielkość PORÓWNYWALNA Z PIŚMIENNICTWEM: Della Santina [H17] mierzy dokładnie ją (kąt normalnej
        do osi Z Reida) = 19.9°, Wu 2021 = 17.4°. Wyłącznie do porównań w tekstach.
      HC_FLEX_DEG = atan2(|n_z|,|n_y|) = 10.2955° — ZGIĘCIE STRZAŁKOWE, przy którym grawitacja
        naprawdę kładzie się w płaszczyźnie kanału. USTAWIA POZĘ. Zgięcie karku obraca głowę wokół osi
@@ -2571,7 +2571,7 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      0.583→0.687, semantyka headroom bez zmian). Sonda n3.mjs (34 asercje). Wyrocznie: engine.neuro (wartości)
      + dom 12 ekranów (amplitudy/fusion; stroke NIEtknięty — jawne fixationGain:0).
  [x] WDROŻENIE OCENY II — ETAP N4 (nowe testy przyłóżkowe, czysto ADDYTYWNE):
-     • hsn(p,{peakVel=150,cycles=20}) [H25 Hain 1987] — oczopląs poszarpaniowy: ładunek velocity storage
+     • hsn(p,{peakVel=150,cycles=20}) [H25] Hain 1987 — oczopląs poszarpaniowy: ładunek velocity storage
        z ASYMETRII POBUDZENIOWEJ (modEx obu stron; strona hamowana obcięta — Ewald II), HSN_K=20, ładowanie
        1−exp(−cykle/6), zanik τ z postRotational (kompensacja SKRACA emergentnie: 15→4.95 s). Emergenty
        zweryfikowane: ostry UVH 9.3°/s ku zdrowemu; SKOMPENSOWANY UVH — ten sam HSN przy sponcie 0
@@ -2625,7 +2625,7 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
        tor obwodowy SVV ·(1−SVV_COMP_FRAC·c)); bramka |skewTone|<SKEW_CENTRAL chroni skew OŚRODKOWY
        (preset udaru −3° nie gaśnie). SVV_COMP_FRAC=0.6 (nie 0.75 z oceny — kompromis: pełny UVH przy c=1
        zostawia ~4°, a profil REZYDUALNY trzyma 2.4°≥progu). Preset residual: utricleR 0.35 (rekalibracja
-       po B2+C3). Normalizacja skew/OTR/SVV z kompensacją = marker kompensacji statycznej [H10; Vibert 2000].
+       po B2+C3). Normalizacja skew/OTR/SVV z kompensacją = marker kompensacji statycznej [H10] Curthoys & Halmagyi 1995; ponadto Vibert 2000.
      • D8 — timeline(scenariusz|overrides, tDays, {recovery}): mapa dni→parametry NAD niezmienioną fizyką:
        comp=1−exp(−t/6d); recovery: ton wraca (τ=30d, do 0.94·R0) + ładunek pacemakera 0.15·(R0−acute)·
        (1−exp(−t/14d)) — ŁADUNEK WYŁĄCZNIE w recovery (korekta weryfikatora L5-2: poza nim dublowałby
@@ -2675,6 +2675,11 @@ ZALEŻNOŚCI: NeuroVOR używa Scene3D.CAMERAS.frontal.right[0] (odbicie) oraz ko
 --------------------------------------------------------------------------
 Warstwa jest ZREDUKOWANĄ, fenomenologiczną implementacją uznanych modeli neurofizjologii
 odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hipotez naukowych.
+
+KONWENCJA CYTOWANIA (ujednolicona 2026-08-16, pilnowana przez npm run zrodla:check): numer może
+stać sam, ale jeśli towarzyszy mu oznaczenie źródła, oznaczenie idzie BEZPOŚREDNIO PO numerze
+i niesie ROK. Nawias zamyka się na numerze — źródła bez numeru dopisuje się PO nim, po średniku.
+Bramka obejmuje src oraz engine_doc i view_doc w obu językach.
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -2729,8 +2734,19 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
       J Neurophysiol 76(6):4009–4034.
       → 3D VOR i deficyt per pojedynczy kanał → headImpulse płaszczyzn (RALP/LARP), sakada wektorowa, verticalBeat.
 [H17] Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP (2005). "Orientation of human
-      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res Otolaryngol
-      6(3):191–206. → koplanarność RA∥LP, LA∥RP i orientacje kanałów → COPLANAR / PLANE_CANALS (RALP/LARP).
+      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res
+      Otolaryngol 6(3):191–206. doi:10.1007/s10162-005-0003-x. PMID 16088383.
+      → ZMIERZONE (3D CT, 22 osoby / 44 błędniki): kąty kierunkowe normalnej do kanału BOCZNEGO
+        względem osi stereotaktycznych Reida — X (nosowa) 108.7°±7.5, Y (lewa) 92.2°±5.7,
+        Z (górna) 19.9°±7.0. Kąt Z ≈ 20° znaczy, że PŁASZCZYZNA kanału bocznego jest pochylona
+        ~20° względem poziomu Reida. Kanały bliższe ortogonalności, niż podawano wcześniej.
+      → ZNACZENIE DLA MODELU (R3/R9): to jest POMIAR, wobec którego podręcznikowe „30° nachylenia"
+        jest zawyżeniem; nasz atlas IE-Map daje 10.4° (~1.3 SD poniżej tej średniej — niska norma,
+        nie błąd). Ponieważ kliniczne „unieś głowę o 30°" realizuje cel „kanał pionowo" DOKŁADNIE dla
+        anatomii 30°, przy 20° (ta praca) wystarcza ~20°, a przy 10.4° (nasz atlas) ~10°.
+      → CZEGO NIE ZWERYFIKOWANO: abstrakt NIE zawiera jawnego porównania z kanonem 30° (zdanie z R9
+        o „wprost odnotowanej różnicy" wymaga pełnego tekstu).
+      → w module NeuroVOR: koplanarność RA∥LP, LA∥RP i orientacje kanałów → COPLANAR / PLANE_CANALS (RALP/LARP).
 [H18] Minor LB (2000). "Superior canal dehiscence syndrome." Am J Otol 21(1):9–19; oraz Minor LB, Solomon D,
       Zinreich JS, Zee DS (1998), Arch Otolaryngol Head Neck Surg 124(3):249–258.
       → SCDS / trzecie okno; oczopląs pionowo-skrętny wyzwalany dźwiękiem (Tullio) i ciśnieniem (Hennebert),
@@ -2822,19 +2838,8 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         OR 12,38 (wzmacnia notę home V18: BD słabsze niż repozycja) · nudności w trakcie 16,7–32%
         (spójne z paskiem D5) · nawroty ~36%. Kontekst RCT ≠ odsetek kliniczny [H27] — różne miary.
 
-[H29] Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP (2005). "Orientation of human
-      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res
-      Otolaryngol 6(3):191–206. doi:10.1007/s10162-005-0003-x. PMID 16088383.
-      → ZMIERZONE (3D CT, 22 osoby / 44 błędniki): kąty kierunkowe normalnej do kanału BOCZNEGO
-        względem osi stereotaktycznych Reida — X (nosowa) 108.7°±7.5, Y (lewa) 92.2°±5.7,
-        Z (górna) 19.9°±7.0. Kąt Z ≈ 20° znaczy, że PŁASZCZYZNA kanału bocznego jest pochylona
-        ~20° względem poziomu Reida. Kanały bliższe ortogonalności, niż podawano wcześniej.
-      → ZNACZENIE DLA MODELU (R3/R9): to jest POMIAR, wobec którego podręcznikowe „30° nachylenia"
-        jest zawyżeniem; nasz atlas IE-Map daje 10.4° (~1.3 SD poniżej tej średniej — niska norma,
-        nie błąd). Ponieważ kliniczne „unieś głowę o 30°" realizuje cel „kanał pionowo" DOKŁADNIE dla
-        anatomii 30°, przy 20° (ta praca) wystarcza ~20°, a przy 10.4° (nasz atlas) ~10°.
-      → CZEGO NIE ZWERYFIKOWANO: abstrakt NIE zawiera jawnego porównania z kanonem 30° (zdanie z R9
-        o „wprost odnotowanej różnicy" wymaga pełnego tekstu).
+[H29] NUMER WYCOFANY 2026-08-16 — był duplikatem [H17] (Della Santina i wsp. 2005). Cytowania
+      przeniesione do [H17]; numeru nie używać ponownie bez decyzji.
 
 [H30] Porwal P, Adarsh VR, Pawar V, Dorasala S, Bijlani A, Nair P, Nayar R (2021). „Clinical and VNG
       Features in Anterior Canal BPPV — An Analysis of 13 Cases." Front Neurol 12:618269.
@@ -2966,5 +2971,5 @@ UPROSZCZENIA / ZASTRZEŻENIA:
     poziomym potrząsaniu ŚWIADOMIE niemodelowany: prosta flaga z verticalBeat odpalałaby fałszywie dla
     obwodowego neuronitis górnego, a poprawny model wymaga krzyżowego sprzężenia velocity storage);
   - HINTS jako model DYDAKTYCZNY — NIE zastępuje badania; ważny w AVS z utrzymującym się oczopląsem,
-    interpretować z HINTS „plus" (słuch) i kontekstem (Tarnutzer 2011 [H9]). UWAGA: skompensowany ubytek
+    interpretować z HINTS „plus" (słuch) i kontekstem ([H9] Tarnutzer 2011). UWAGA: skompensowany ubytek
     obwodowy może mieć bedside HIT „prawidłowy" (sakady ukryte) — pułapka, gdy nie ma już oczopląsu AVS.

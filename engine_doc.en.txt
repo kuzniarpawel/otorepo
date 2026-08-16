@@ -1254,7 +1254,7 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
        the Roll test. The sentence "the canon comes from the caloric convention" has the status of a
        hypothesis here — one documented from secondary sources in R3-MEASURED, THE 30° QUESTION (point b/h),
        where it was also computed how much raising is really needed at this atlas's 10.4° inclination
-       (10.30°) and how much the over-flexion to 30° costs. Measurement bibliography: [H29].
+       (10.30°) and how much the over-flexion to 30° costs. Measurement bibliography: [H17].
 
  R6-OLD. YACOVINO DOES NOT CLEAR THE ANTERIOR CANAL with an anatomically correct arc [CLOSED — above].
      The gravitational minimum at its deepest step (deep head-hang) is 233.8 deg while the opening is at
@@ -1438,7 +1438,7 @@ REMAINING (pending decision):
        (c) THE LITERATURE CONTRADICTS ITSELF ABOUT THE PURPOSE: some sources say that 30° sets the canal
            VERTICAL, others — that it "levels the lateral canals HORIZONTALLY". These are opposite goals. A
            number whose declared meaning reverses between sources is HANDED DOWN, not derived.
-       (d) THE 30° INCLINATION CANON HAS NO COVER IN MEASUREMENTS (cf. R9): Della Santina et al. 2005 [H29]
+       (d) THE 30° INCLINATION CANON HAS NO COVER IN MEASUREMENTS (cf. R9): [H17] Della Santina et al. 2005
            — VERIFIED AT THE SOURCE: the angle between the lateral canal's normal and the Z axis of Reid's
            frame is 19.9°±7.0 (left), i.e. the canal plane lies ~20° off Reid's horizontal; Wu et al. 2021
            (MRI, n=55) 17.4°; IE-Map (our atlas) 10.4°. AN HONESTY CAVEAT: the sentences in R9 claiming that
@@ -1478,7 +1478,7 @@ REMAINING (pending decision):
          the side while supine"; the full text sits behind a Karger paywall (USD 45), so an angle in the
          Methods cannot be excluded. CONCLUSION: point (a) ("the number is not fixed") becomes STRONGER -
          neither source abstract carries an angle.
-       * THE GAP IS CONFIRMED BY THE RESEARCHERS THEMSELVES: Hentze et al. 2025 [H37] state OUTRIGHT that
+       * THE GAP IS CONFIRMED BY THE RESEARCHERS THEMSELVES: [H37] Hentze et al. 2025 state OUTRIGHT that
          nobody has yet studied the influence of the achieved head angles on the diagnostic outcome. That
          openly confirms the sentence in point (f) - not a single such paper was found because none exists.
        * THE FIRST EMPIRICAL SIGNAL ABOUT DIRECTION [H36]: in a randomised crossover study with IMU
@@ -1744,6 +1744,11 @@ WHICH components we express (each can be revealed with a true flag):
   (superseded record) anterior.t=false - CLINICAL OVERRIDE: pure downbeat; "anterior = pure downbeat"
                                    was a clinical decision (torsion observationally a trace), NOT a
                                    result of the geometry. Held until 2026-08-16.
+                                   It fell not for convenience but because the literature query showed
+                                   that AC torsion IS sometimes present and CARRIES THE SIDE ([H30]
+                                   downbeat+torsion in a series; [H32] upper pole toward the affected
+                                   ear); its absence in some patients is a fact about the PATIENT, not
+                                   about the geometry of the canal.
   horizontal.t=false geom.≈0.18 — clinically purely horizontal (the small geometric torsion omitted)
 Beat signs and masks verified: posterior upbeat+ipsi torsion, anterior downbeat + ipsi torsion, horizontal toward the ear.
 The only immediately visible change vs before: posterior v:t = 0.81:1 (real) instead of 1:1.
@@ -1760,7 +1765,7 @@ DESIGN DECISION — EXCEPTION TO THE anterior.t MASK FOR SCDS/TULLIO (2026-07-09
   vector from the FULL geometry (nysMag: anterior v1.00 : t0.74), BYPASSING the mask — LOCALLY, only for SCDS.
   The NYS_SHOW mask remains globally in force (BPPV unchanged). The anterior canal's torsion is thus
   "hidden" for BPPV rendering, but AVAILABLE via the raw geometry for the pressure path.
-  → see NeuroVOR MODULE / STAGE 7 · pressureStimulus() (Minor 2000, [H18]).
+  → see NeuroVOR MODULE / STAGE 7 · pressureStimulus() ([H18] Minor 2000).
 
 === SYMPTOM LAYER — the "Vertigo/Nausea" bar + the RD card (D5/V17, 2026-08-14) ===
 A PURELY VIEW-SIDE overlay on the maneuver's existing cupular-deflection trace ξ(t) (computeManSim) —
@@ -1790,7 +1795,7 @@ zero engine calls, zero physics changes (proof: engine/pose is bit-for-bit at re
    can come earlier — the finale is the natural "what next" moment, and the liberatory step already
    has its libNote): residual dizziness (RD) in 31–61% after the nystagmus has resolved (the utricle +
    incomplete compensation), counselling cuts RD to ~13%, vestibular suppressants are HARMFUL —
-   counselling + rehabilitation [H26 Özgirgin 2024]; phrasing 1:1 with the NeuroVOR module (cross-engine
+   counselling + rehabilitation [H26] Özgirgin 2024; phrasing 1:1 with the NeuroVOR module (cross-engine
    consistency). gufoniApo (a conversion, exited=false) DELIBERATELY gets no card — its note orders
    a repeat Roll. Oracle scope: EXACTLY 65 guide/* keys (each = a .symrow insert; the 12 clearing
    finales additionally get the RD card), dom with no new keys.
@@ -1978,7 +1983,7 @@ substance of partial repositioning).
    the card via jamDemo(side) (a memo per side; ZERO literals in the render — a drift of the
    physics changes the numbers on the card). The thr=0.6 threshold (crusGrav) and the bond=0.3 g·s
    reserve = named CALIBRATION CHOICES; source status: CASE REPORTS, no name attribution until
-   verification (candidate [H29]).
+   verification (candidate [H17]).
  WHAT IT SHOWS (everything from live simulations): (1) position-independence — the thread of the
    Dix provocation with a return to sitting (the existing actTimeline act) under the jam: the
    segment ENDS ξ=0.4999/0.5000 (steady states; the starting ramp 0→0.50 over ~15 s is an xi0=0
@@ -2057,7 +2062,7 @@ substance of partial repositioning).
    TWO constants, both derived from the same atlas normal, deliberately SEPARATED (the first version of
    this change confused them — caught by the geometry critic):
      HC_TILT_DEG = acos(|n_y|/|n|) = 10.4398 deg — the FULL (dihedral) inclination of the canal plane.
-       This is the quantity COMPARABLE WITH THE LITERATURE: Della Santina [H29] measures exactly it
+       This is the quantity COMPARABLE WITH THE LITERATURE: Della Santina [H17] measures exactly it
        (the angle of the normal to Reid's Z axis) = 19.9, Wu 2021 = 17.4. Used for text comparisons only.
      HC_FLEX_DEG = atan2(|n_z|,|n_y|) = 10.2955 deg — the SAGITTAL FLEXION at which gravity actually
        comes to lie in the canal plane. IT SETS THE POSE. Neck flexion rotates the head about the
@@ -2733,7 +2738,7 @@ VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Sc
      Probe n3.mjs (34 assertions). Oracles: engine.neuro (values) + dom 12 screens (amplitudes/fusion; stroke
      NOT touched — an explicit fixationGain:0).
  [x] IMPLEMENTATION OF REVIEW II — STAGE N4 (new bedside tests, purely ADDITIVE):
-     • hsn(p,{peakVel=150,cycles=20}) [H25 Hain 1987] — head-shaking nystagmus: a velocity-storage charge from the
+     • hsn(p,{peakVel=150,cycles=20}) [H25] Hain 1987 — head-shaking nystagmus: a velocity-storage charge from the
        EXCITATORY ASYMMETRY (modEx of both sides; the inhibited side clipped — Ewald II), HSN_K=20, charging
        1−exp(−cycles/6), decay with the τ from postRotational (compensation SHORTENS it emergently: 15→4.95 s).
        Emergents verified: an acute UVH 9.3°/s toward the healthy ear; a COMPENSATED UVH — the same HSN at spont 0
@@ -2790,7 +2795,7 @@ VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Sc
        (the stroke preset's −3° does not fade). SVV_COMP_FRAC=0.6 (not the review's 0.75 — a compromise: a full UVH
        at c=1 leaves ~4°, while the RESIDUAL profile keeps 2.4°≥the threshold). Preset residual: utricleR 0.35
        (recalibration after B2+C3). Normalization of skew/OTR/SVV with compensation = a marker of static
-       compensation [H10; Vibert 2000].
+       compensation [H10] Curthoys & Halmagyi 1995; also Vibert 2000.
      • D8 — timeline(scenario|overrides, tDays, {recovery}): a days→parameters map ON TOP OF the unchanged physics:
        comp=1−exp(−t/6d); recovery: the tone returns (τ=30d, up to 0.94·R0) + a pacemaker charge 0.15·(R0−acute)·
        (1−exp(−t/14d)) — the CHARGE EXCLUSIVELY in recovery (the L5-2 verifier's correction: outside it, it would
@@ -2840,6 +2845,11 @@ DEPENDENCIES: NeuroVOR uses Scene3D.CAMERAS.frontal.right[0] (mirror) and the si
 --------------------------------------------------------------------------
 The layer is a REDUCED, phenomenological implementation of established models of the neurophysiology
 of the vestibulo-ocular reflex and peripheral/central differentiation — with no new scientific hypotheses.
+
+CITATION CONVENTION (unified 2026-08-16, guarded by npm run zrodla:check): a number may stand alone,
+but if a source designation accompanies it, the designation goes DIRECTLY AFTER the number and carries
+a YEAR. The bracket closes on the number — sources without a number are added AFTER it, past a
+semicolon. The gate covers src plus engine_doc and view_doc in both languages.
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -2894,8 +2904,19 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
       J Neurophysiol 76(6):4009–4034.
       → 3D VOR and the deficit per single canal → plane headImpulse (RALP/LARP), the vector saccade, verticalBeat.
 [H17] Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP (2005). "Orientation of human
-      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res Otolaryngol
-      6(3):191–206. → coplanarity RA∥LP, LA∥RP and canal orientations → COPLANAR / PLANE_CANALS (RALP/LARP).
+      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res
+      Otolaryngol 6(3):191–206. doi:10.1007/s10162-005-0003-x. PMID 16088383.
+      → MEASURED (3D CT, 22 subjects / 44 labyrinths): the direction angles of the LATERAL canal's normal
+        relative to Reid's stereotactic axes — X (nasal) 108.7°±7.5, Y (left) 92.2°±5.7,
+        Z (superior) 19.9°±7.0. A Z angle of ≈ 20° means that the PLANE of the lateral canal is inclined
+        ~20° relative to Reid's horizontal. The canals are closer to orthogonal than previously reported.
+      → SIGNIFICANCE FOR THE MODEL (R3/R9): this is the MEASUREMENT against which the textbook "30° of
+        inclination" is an overstatement; our IE-Map atlas gives 10.4° (~1.3 SD below that mean — a low
+        normal, not an error). Because the clinical "raise the head by 30°" realizes the goal "the canal
+        vertical" EXACTLY for a 30° anatomy, at 20° (this paper) ~20° suffices, and at 10.4° (our atlas) ~10°.
+      → WHAT WAS NOT VERIFIED: the abstract does NOT contain an explicit comparison with the 30° canon (the
+        sentence in R9 about "an explicitly noted difference" requires the full text).
+      → in the NeuroVOR module: RA∥LP, LA∥RP coplanarity and canal orientations → COPLANAR / PLANE_CANALS (RALP/LARP).
 [H18] Minor LB (2000). "Superior canal dehiscence syndrome." Am J Otol 21(1):9–19; and Minor LB, Solomon D,
       Zinreich JS, Zee DS (1998), Arch Otolaryngol Head Neck Surg 124(3):249–258.
       → SCDS / the third window; a vertical-torsional nystagmus triggered by sound (Tullio) and pressure (Hennebert),
@@ -2991,19 +3012,8 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         nausea during treatment 16.7–32% (consistent with the D5 bar) · recurrence ~36%. The RCT
         context ≠ the clinical percentage [H27] — different measures.
 
-[H29] Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP (2005). "Orientation of human
-      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res
-      Otolaryngol 6(3):191–206. doi:10.1007/s10162-005-0003-x. PMID 16088383.
-      → MEASURED (3D CT, 22 subjects / 44 labyrinths): the direction angles of the LATERAL canal's normal
-        relative to Reid's stereotactic axes — X (nasal) 108.7°±7.5, Y (left) 92.2°±5.7,
-        Z (superior) 19.9°±7.0. A Z angle of ≈ 20° means that the PLANE of the lateral canal is inclined
-        ~20° relative to Reid's horizontal. The canals are closer to orthogonal than previously reported.
-      → SIGNIFICANCE FOR THE MODEL (R3/R9): this is the MEASUREMENT against which the textbook "30° of
-        inclination" is an overstatement; our IE-Map atlas gives 10.4° (~1.3 SD below that mean — a low
-        normal, not an error). Because the clinical "raise the head by 30°" realizes the goal "the canal
-        vertical" EXACTLY for a 30° anatomy, at 20° (this paper) ~20° suffices, and at 10.4° (our atlas) ~10°.
-      → WHAT WAS NOT VERIFIED: the abstract does NOT contain an explicit comparison with the 30° canon (the
-        sentence in R9 about "an explicitly noted difference" requires the full text).
+[H29] NUMBER RETIRED 2026-08-16 — it duplicated [H17] (Della Santina et al. 2005). Citations moved
+      to [H17]; do not reuse this number without a decision.
 
 [H30] Porwal P, Adarsh VR, Pawar V, Dorasala S, Bijlani A, Nair P, Nayar R (2021). "Clinical and VNG
       Features in Anterior Canal BPPV - An Analysis of 13 Cases." Front Neurol 12:618269.
@@ -3142,5 +3152,5 @@ SIMPLIFICATIONS / CAVEATS:
     horizontal shaking DELIBERATELY not modelled: a simple flag from verticalBeat would fire falsely for a
     peripheral superior neuritis, and a correct model requires cross-coupled velocity storage);
   - HINTS as an EDUCATIONAL model — it does NOT replace an examination; valid in AVS with a persistent nystagmus,
-    interpret with HINTS "plus" (hearing) and context (Tarnutzer 2011 [H9]). NOTE: a compensated peripheral loss
+    interpret with HINTS "plus" (hearing) and context ([H9] Tarnutzer 2011). NOTE: a compensated peripheral loss
     can have a bedside HIT "normal" (covert saccades) — a pitfall when the AVS nystagmus is no longer present.

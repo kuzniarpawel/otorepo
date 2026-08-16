@@ -384,7 +384,7 @@ export const NeuroVOR = (()=>{
     return Math.max(0, 1 - g);                              // g=0.9→0.1 (obwód gaśnie); g=0→1 (ośrodek trwa); g<0→>1 (paradoks)
   }
   // ETAP N4 (ocena II, D5) — ŚLEDZENIE PŁYNNE (smooth pursuit): druga połowa kłaczka. Pościg i supresja
-  // VOR fiksacją to TEN SAM obwód kłaczkowo-móżdżkowy [H3, Zee 1981] — dlatego pursuitGain jest domyślnie
+  // VOR fiksacją to TEN SAM obwód kłaczkowo-móżdżkowy [H3] Leigh & Zee 2015; ponadto Zee 1981 — dlatego pursuitGain jest domyślnie
   // POCHODNĄ fixationGain (norma FIX_HEALTHY), a „pościg sakadyczny ≡ brak supresji fiksacją" wychodzi
   // z modelu, nie z reguły. Opcjonalny p.pursuitGain (null=pochodna) zostawia furtkę na dysocjacje.
   const FIX_HEALTHY = 0.65;  // zdrowy fixationGain (default makePatient) — wspólna kotwica normalizacji
@@ -429,7 +429,7 @@ export const NeuroVOR = (()=>{
   // Progi patologii GAIN vHIT per kanał — publikowane dolne granice normy (McGarvie 2015: HC ~0.8,
   // kanały pionowe ~0.7); kryterium BVH (obustronnie <0.6 [H19]) pozostaje zaostrzeniem tych progów.
   const GAIN_CUT = { horizontal:0.8, anterior:0.7, posterior:0.7 };
-  const P_MAX = 40;          // °/s — nasycenie pościgu (człon pościgowy vHIT, N7/C5) [H3 Leigh&Zee]
+  const P_MAX = 40;          // °/s — nasycenie pościgu (człon pościgowy vHIT, N7/C5) [H3] Leigh & Zee 2015
   const W_IN = 1/3;          // waga członu HAMOWANEGO w dwuusznej estymacie gain (pobudzenie:hamowanie ~3:1, N7/C5)
 
   // ETAP 6c — KOMPENSACJA DYNAMICZNA: fuzja sensoryczna + velocity storage. [H12][H13][H14]
@@ -501,7 +501,7 @@ export const NeuroVOR = (()=>{
     const modIn = rateIn - toneIn;                           // modulacja hamująca — ograniczona tonem (Ewald II)
     // N7 (ocena II, C5) — GAIN DWUUSZNY, ZALEŻNY OD PRĘDKOŚCI: estymata prędkości sumuje modulację
     // POBUDZANĄ i (obciętą tonem — Ewald II) HAMOWANĄ, normowaną do zdrowego przy TEJ SAMEJ prędkości
-    // (idealIn obcięty R0 → zdrowy trzyma 1.0 przy każdej Ohm). Emergenty [H5 Weber 2008]:
+    // (idealIn obcięty R0 → zdrowy trzyma 1.0 przy każdej Ohm). Emergenty [H5] Weber 2008:
     //   • martwy błędnik ma gain REZYDUALNY z ucha zdrowego: 0.50@50 → 0.36@200 → malejący z prędkością
     //     (dawniej wpisywany ręcznie jako gainR=0.35 — teraz presety trzymają wejściowe 0.1);
     //   • przy wolnym pchnięciu (≤~50°/s) zakres hamowania zdrowego ucha POKRYWA obrót → gain wysoki.
@@ -651,7 +651,7 @@ export const NeuroVOR = (()=>{
   // Droga „przez skrócenie integratorTau" (mechanizm wg Robinson 1984) jest w tym silniku ZAKAZANA —
   // sonda oceny II: tau=3 z fiksacją robi directionChanging=true → neuritis fałszywie „central".
   // ALEX_MIN>0 gwarantuje, że znak Vspont NIGDY się nie odwraca → directionChanging strukturalnie
-  // bezpieczne (zweryfikowane dla wszystkich presetów). [H3; Robinson 1984; Jeffcoat 2008]
+  // bezpieczne (zweryfikowane dla wszystkich presetów). [H3] Leigh & Zee 2015; ponadto Robinson 1984, Jeffcoat 2008
   const ALEX_GAIN = 0.02, ALEX_MIN = 0.1, ALEX_MAX = 2;
   function nystagmusAtGaze(p, gazeDeg, fixOn){
     const sp = observe(p, fixOn);                            // samoistny (po supresji fiksacji)
@@ -695,7 +695,7 @@ export const NeuroVOR = (()=>{
   const SKEW_CENTRAL = 2.5;   // próg skew dla flagi OŚRODKOWEJ (INFARCT). Poniżej: skew MAŁY — może być OBWODOWY
                               // (łagiewka, n. górny) → NIE liczony jako cecha ośrodkowa (unika fałszywego „udaru").
   // N6 (C3): OBWODOWA oś grawiceptywna GAŚNIE z kompensacją — normalizacja skew/OTR/SVV to jeden z najlepiej
-  // udokumentowanych markerów kompensacji statycznej [H10; Vibert&Häusler 2000]. Bramka |raw|<SKEW_CENTRAL:
+  // udokumentowanych markerów kompensacji statycznej [H10] Curthoys & Halmagyi 1995; ponadto Vibert & Häusler 2000. Bramka |raw|<SKEW_CENTRAL:
   // skew OŚRODKOWY (pniowy, ≥2.5°) NIE podlega kompensacji obwodowej (preset udaru −3° nie gaśnie).
   function gravEffective(p){
     const c = Math.max(0, Math.min(1, p.comp||0));
