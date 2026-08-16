@@ -1606,11 +1606,29 @@ KTÓRE składowe wyrażamy (każdą można odsłonić flagą true):
                                    posterior.h z −ipsi (kierunek KONTRA −0.21, ze znakowanej
                                    geometrii Ω=−n) — flaga jest bezpieczna do odsłonięcia.
   posterior.t=true                — skręt wyrażony; realne v:t ≈ 0.81:1 (było sztywne 1:1)
-  anterior.t=false   geom.≈0.74 — OVERRIDE KLINICZNY: czysty downbeat. UWAGA: geometria daje
-                                   ISTOTNY skręt (~0.74× pionu); "przedni = czysty downbeat" jest
-                                   decyzją kliniczną (torsja obserwacyjnie śladowa), NIE wynikiem geometrii.
+  anterior.t=TRUE    geom.≈0.74 — MASKA ZDJĘTA 2026-08-16 (V26, decyzja użytkownika). Skręt kanału
+                                   przedniego jest WYRAŻONY: +0.7386·ipsi, czyli górne bieguny ku uchu
+                                   CHOREMU. ZNAK wyprowadzony ze znakowanej geometrii tą samą regułą,
+                                   którą A4 poprawiło posterior.h — i potwierdzony klinicznie [H32].
+                                   Dawny zapis „przedni = czysty downbeat" był decyzją kliniczną,
+                                   nie wynikiem geometrii; wycofany. Powód kliniczny NIE ZNIKA, tylko
+                                   zmienia adresata: to nie model ma nie mieć torsji, tylko CHORY jej
+                                   często nie ma (42% pozycyjnych downbeatów, 57% potwierdzonych
+                                   AC-BPPV — [H31]) — i tak mówią teraz karty.
   horizontal.t=false geom.≈0.18 — klin. czysto poziomy (geom. mały skręt pominięty)
-Znaki bicia i maski zweryfikowane: tylny upbeat+skręt ipsi, przedni downbeat t=0, poziomy ku uchu.
+  horizontal.v       geom.≈0.03 — CZWARTA maska, NIEUJĘTA w tabeli: zerowana literałem `v:0` w kodzie
+                                   quickPhase, nie flagą. Odnotowane 2026-08-16 przy zdejmowaniu
+                                   anterior.t (przegląd wszystkich składowych).
+PUŁAPKA ZNAKU (odnotowana 2026-08-16, NIE naprawiana — flaga uśpiona): ręczny znak anterior.h to
+  +ipsi, a reguła znakowanej geometrii daje −ipsi — dokładnie ta sama niezgodność, którą A4 znalazło
+  w posterior.h. Dziś martwa (anterior.h=false); przed ewentualnym odsłonięciem znak POPRAWIĆ.
+REGUŁA ZNAKU (skalibrowana 2026-08-16 na składowych odsłoniętych i zwalidowanych — horizontal.h,
+  posterior.v, posterior.t, anterior.v — i odtwarzająca je WSZYSTKIE co do znaku):
+      v = −sign(Ω_x)·m.v      h = +sign(Ω_y)·m.h      t = −sign(Ω_z)·m.t
+  gdzie Ω = +n dla kanału poziomego (Ewald II) i Ω = −n dla kanałów pionowych (Ewald III).
+  Dla anterior.t reguła przewiduje +0.7386·ipsi — dokładnie to, co wpisano ręcznie, więc odsłonięcie
+  nie wymagało zmiany znaku. To jest test, którym należy sprawdzać KAŻDĄ następną maskę.
+Znaki bicia i maski zweryfikowane: tylny upbeat+skręt ipsi, przedni downbeat + skręt ipsi, poziomy ku uchu.
 Jedyna od razu widoczna zmiana vs poprzednio: tylny v:t = 0.81:1 (realne) zamiast 1:1.
 
 DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09):
@@ -1621,6 +1639,16 @@ DECYZJA PROJEKTOWA — WYJĄTEK OD MASKI anterior.t DLA SCDS/TULLIO (2026-07-09)
   ROZWAŻONE i ODRZUCONE: globalne odsłonięcie anterior.t (=true). Zmieniłoby renderowanie i geometrię
   BPPV kanału przedniego → ryzyko REGRESJI zwalidowanych testów (t1–t5 + ścieżka BPPV) i zmiana
   utrwalonej konwencji klinicznej „czysty downbeat".
+  [ZDEZAKTUALIZOWANE 2026-08-16 — V26: użytkownik POLECIŁ globalne odsłonięcie i zostało wykonane.
+   Obawa o regresję okazała się mierzalnie mała: 13 zmienionych kluczy złotego wzorca, wszystkie
+   związane z kanałem przednim (spv/headhang P+L, exam/cross, 6 ekranów przewodnika Yacovino,
+   4 ekrany karty head-hang), zero zmian w kanałach tylnym i poziomym, engine.neuro BIT-0.
+   „Utrwalona konwencja" upadła nie z powodu wygody, tylko dlatego, że kwerenda pokazała, iż torsja
+   AC bywa obecna i NIESIE STRONĘ ([H30] downbeat+torsja w serii; [H32] górny biegun ku uchu choremu),
+   a jej brak u części chorych to fakt o CHORYM, nie o geometrii kanału.
+   SKUTEK DLA TEGO WYJĄTKU: obejście przez nysMag() w pressureStimulus() jest teraz REDUNDANTNE —
+   ścieżka globalna daje ten sam stosunek 0.74. Zostawione BEZ ZMIAN (działa, jest zwalidowane,
+   a usuwanie go byłoby zmianą bez zysku); NeuroVOR pozostaje bit-w-bit — sprawdzone.]
   WYBRANE: nysMag() WYEKSPORTOWANO z modułu Vestibular; NeuroVOR.pressureStimulus() buduje wektor
   Tullio z PEŁNEJ geometrii (nysMag: przedni v1.00 : t0.74), OMIJAJĄC maskę — LOKALNIE, tylko dla SCDS.
   Maska NYS_SHOW pozostaje globalnie w mocy (BPPV bez zmian). Skręt kanału przedniego jest więc
@@ -2033,6 +2061,60 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    null pointa") — takiego napisu nie ma w kodzie, karta liczy pasmo ze skanu. NIE naprawiono świadomie:
    legacy otorepo.html („~30°" w monolicie; skrypt snapshot:mono i tak nie startuje — defekt sprzed
    V25, kandydat osobny) oraz view_doc.txt/view_doc.en.txt (definicja wariantu supineFlex „~30° (Roll)").
+
+=== ZDJĘCIE MASKI KLINICZNEJ anterior.t — SKRĘT KANAŁU PRZEDNIEGO WYRAŻONY (V26, 2026-08-16) ===
+ CO: `NYS_SHOW.anterior.t` false → true. Kanał przedni przestaje być w silniku „czystym downbeatem":
+   quickPhase daje teraz t = +0.7386·ipsi (górne bieguny ku uchu CHOREMU) obok v = −1.000.
+   Decyzja użytkownika; unieważnia wpis „ROZWAŻONE i ODRZUCONE" z 2026-07-09.
+ ZNAK — SPRAWDZONY PRZED ODSŁONIĘCIEM, NIE PO. Maska ukrywała nie tylko wartość, ale i znak, a znak
+   ręczny bywa w tym pliku BŁĘDNY (A4 znalazło to w posterior.h). Skalibrowałem więc regułę znaku na
+   składowych ODSŁONIĘTYCH i zwalidowanych i sprawdziłem, czy odtwarza je wszystkie:
+     v = −sign(Ω_x)·m.v · h = +sign(Ω_y)·m.h · t = −sign(Ω_z)·m.t,  Ω = +n (Ewald II) / −n (Ewald III)
+   Reguła odtwarza CO DO ZNAKU: horizontal.h (P i L), posterior.v, posterior.t (P i L), anterior.v —
+   czyli wszystko, co jest dziś widoczne i przeszło walidację kliniczną. Dla anterior.t przewiduje
+   +0.7386·ipsi, czyli DOKŁADNIE to, co było wpisane ręcznie. Odsłonięcie nie wymagało zmiany znaku.
+   POTWIERDZENIE NIEZALEŻNE, KLINICZNE: [H32] Garaycochea 2022 — w AC-BPPV górny biegun oka skręca ku
+   uchu CHOREMU. Dwie drogi, ten sam wynik.
+ PUŁAPKA ZNALEZIONA W PRZELOCIE (NIE naprawiana — flaga uśpiona): ręczny znak `anterior.h` to +ipsi,
+   a reguła daje −ipsi — ta sama niezgodność, którą A4 wykryło w posterior.h. Dziś martwa
+   (anterior.h=false); przed ewentualnym odsłonięciem znak POPRAWIĆ. Odnotowana też CZWARTA maska,
+   nieujęta w tabeli: horizontal.v (geom. 0.03) zerowana literałem `v:0`, nie flagą.
+ DLACZEGO TO NIE JEST OSŁABIENIE PRZEKAZU KLINICZNEGO. Dawne karty mówiły „lateralizacja AC z oczopląsu
+   NIEWIARYGODNA, bo czysty downbeat / torsja śladowa". Po zdjęciu maski to zdanie byłoby nieprawdziwe
+   W POŁOWIE (model torsję ma), więc przepisano je tak, żeby ZOSTAŁ WNIOSEK, a zmieniła się przesłanka:
+   nie „model nie ma torsji", tylko „CHORY jej często nie ma".
+     [H31] Castellucci 2020: oczopląs czysto pionowy, bez żadnej torsji, u 42.4% pozycyjnych downbeatów
+       i u 57.1% potwierdzonych AC-BPPV.
+     [H32] Garaycochea 2022: torsja słabsza niż pion; strona jednoznaczna tylko u ~połowy chorych;
+       prawostronna kupulolitiaza TYLNA (apo) wygląda IDENTYCZNIE jak lewostronne AC.
+     [H33] Bertholon 2002: torsja słaba, klinicznie często niewidoczna.
+   Zalecenie „nie lateralizuj AC oczopląsem" ZOSTAJE na wszystkich czterech kartach, z nowym uzasadnieniem.
+ TEKSTY ZMIENIONE (7 miejsc, wszystkie twierdziły, że torsji nie ma): latNote head-hang canalo ·
+   etykieta fazy head-hang · nota fazy head-hang · wiersz „Kierunek" w klasyfikacji Bárány ·
+   nota recommend dla Yacovino · etykieta i nota antMode na karcie Dix · renderer etykiety oczopląsu
+   w svg-screens (wycinał słowo „skrętny" WYŁĄCZNIE dla kanału przedniego — teraz gałąź jest wspólna
+   dla obu kanałów pionowych; kanał poziomy idzie inną gałęzią, więc jego maska t=false nietknięta).
+ SKUTKI ZMIERZONE: quickPhase AC t 0.0000 → ±0.7386. Karta head-hang: `dir` 0 → ∓1 (kierunek skrętu
+   przestaje być nieokreślony). Most SPV, prowokacja AC: składowa skrętna 0.0 → 20.9 °/s przy pionowej
+   28.3 °/s (stosunek 0.739). Macierz cross egzaminu: SIŁY BEZ ZMIAN (0.1185 / 0.4745 / 0.9419 —
+   dominanta pozostaje pionowa), zmienia się tylko wektor `anat`. Kanały TYLNY i POZIOMY bit-w-bit.
+ SCDS/TULLIO: obejście z 2026-07-09 (pressureStimulus czyta nysMag, omijając maskę) jest teraz
+   REDUNDANTNE — ścieżka globalna daje ten sam stosunek 0.74. Zostawione BEZ ZMIAN: działa, jest
+   zwalidowane, a usuwanie byłoby zmianą bez zysku. engine.neuro BIT-0 — sprawdzone.
+ LUKA POKRYCIA DOMKNIĘTA PRZY OKAZJI: cały tor antMode („downbeat w Dix–Hallpike'u → kanał przedni
+   ucha PRZECIWNEGO") nie miał w złotym wzorcu ANI JEDNEGO ekranu — etykieta oczopląsu i nota
+   lateralizacji mogły zacząć kłamać bez bajta różnicy. Dodano `dom diag/dix/{P,L}/antMode` z higieną
+   (powrót do widoku tylnego i strony P). Ta sama klasa luki co karta Roll pod sesją w V25.
+ WYROCZNIE/ZAKRES: 13 zmienionych / +2 dodane (antMode) / 0 usuniętych; liczniki plans 18, neuro 19,
+   pose 360, dom 189 → 191. Zmienione: engine.spv/headhang P+L (składowa skrętna), engine.exam/cross,
+   dom guide/yacovino/{P,L}/step1-3 (6 — etykieta „+ skrętny"), dom diag/headhang P, L, P/cupulo,
+   L/cupulo (4). BIT-0: engine.neuro (cały), wszystkie klucze kanału tylnego i poziomego, pose, plans,
+   sensitivity, expulsion, ensemble, GRACE, jam, rollact, sesja. 3 wyrocznie PASS.
+ CZEGO TO NIE ROZSTRZYGA: czy 0.74 to dobra WIDOCZNOŚĆ torsji. Geometria daje taki stosunek, ale
+   piśmiennictwo mówi, że u chorego torsja jest słaba albo nieobecna — model może ją więc PRZESZACOWYWAĆ
+   jako sygnał wizualny. Nie tłumimy jej sztucznie (to byłoby wracanie do maski inną drogą); zamiast
+   tego karty mówią wprost, ile z niej zostaje u chorego. Kandydat osobny: czy warto rysować torsję AC
+   słabiej niż tylną przy tej samej liczbie — to pytanie o RENDER, nie o geometrię.
 
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)

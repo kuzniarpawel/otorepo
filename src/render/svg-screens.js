@@ -45,7 +45,7 @@ function headDial(spec,headCamera,nys){               // spec: PoseSpec (schemat
         : `<text x="70" y="188" text-anchor="middle" fill="var(--muted)" font-size="9">${t("oczopląs poziomy słaby","weak horizontal nystagmus")}${nys.reversed?" ⟲":""}</text>`;
     } else {
       const arrow = nys.canal==="anterior" ? "↓" : "↑";
-      const tors = nys.canal==="anterior" ? "" : t(" + skrętny"," + torsional");   // kanał przedni: czysty downbeat
+      const tors = t(" + skrętny"," + torsional");   // V26: maska anterior.t zdjęta — kanał przedni też ma skręt (0,74 pionu, ku uchu choremu)
       nysNote = strong
         ? `<text x="70" y="186" text-anchor="middle" fill="var(--timer)" font-size="9" font-weight="600">${t("oczopląs","nystagmus")} ${arrow}${tors}</text>
            <text x="70" y="197" text-anchor="middle" fill="var(--muted)" font-size="8.5">${t("(najsilniejszy)","(strongest)")}</text>`
@@ -1190,7 +1190,7 @@ function examBanner(){
   const chip=([k,val])=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${val}</b></span>`;
   const parts=examAnswerKey(E.lesions).map(a=>{
     const sideTxt = a.canal==="anterior"
-      ? t(`${SIDE[a.side]} (w modelu) — lateralizacja AC z oczopląsu NIEWIARYGODNA (czysty downbeat); model daje maksimum w Dix IPSILATERALNYM, klasyczna reguła uczy ucha przeciwnego — granica źródła`,`${a.side==="L"?"left":"right"} (in the model) — AC lateralization by nystagmus is UNRELIABLE (pure downbeat); the model peaks in the IPSILATERAL Dix, the classical rule teaches the opposite ear — a source boundary`)
+      ? t(`${SIDE[a.side]} (w modelu) — lateralizacja AC z oczopląsu NIEWIARYGODNA (torsja u chorego często nieobecna, a przeciwstronne apo-PC wygląda tak samo); model daje maksimum w Dix IPSILATERALNYM, klasyczna reguła uczy ucha przeciwnego — granica źródła`,`${a.side==="L"?"left":"right"} (in the model) — AC lateralization by nystagmus is UNRELIABLE (the torsion is often absent in patients, and a contralateral apo-PC looks the same); the model peaks in the IPSILATERAL Dix, the classical rule teaches the opposite ear — a source boundary`)
       : SIDE[a.side];
     const recBtns = a.rec.primary ? `<div class="recobtns" style="margin-top:6px"><button class="recoprimary" onclick="startManeuver('${a.rec.primary}')">${t("Rozpocznij: ","Start: ")}${MANEUVERS[a.rec.primary].label} — ${MANEUVERS[a.rec.primary].desc}</button></div>` : "";
     return `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line)">
@@ -1219,7 +1219,7 @@ function renderDiag(){
   const ldtMeta = rawPhases.ldt || null;                    // analogicznie dla lying-down (V11/D2)
   const phases = rawPhases.map(ph => antMode
     ? { ...ph, nys: nysFromGeom("anterior", effSide, v, stepHeadQ("supineHang", A==="P"?45:-45, "up")),   // TA SAMA poza co reszta aplikacji (było własne qSupineYaw = zwis 10° zamiast opisanych 20°)
-        label: t("ku dołowi — czysty downbeat (kanał przedni)","downward — pure downbeat (anterior canal)"),
+        label: t("ku dołowi + skrętny ku uchu choremu (kanał przedni)","downward + torsional toward the affected ear (anterior canal)"),
         note: t(`To NIE kanał tylny. Downbeat w Dix-Hallpike wskazuje kanał PRZEDNI ucha przeciwnego (${SIDE[effSide]}) — ta sama płaszczyzna co tylny ucha dolnego (LARP/RALP). Ułożenie głowy bez zmian; różni się tylko zaobserwowany oczopląs.`,`This is NOT the posterior canal. Downbeat in the Dix-Hallpike indicates the ANTERIOR canal of the opposite ear (${effSide==="L"?"left":"right"}) — the same plane as the posterior canal of the lower ear (LARP/RALP). Head positioning unchanged; only the observed nystagmus differs.`) }
     : ph);
   // MĘCZLIWOŚĆ: przy powtórzeniach prowokacji Dix-Hallpike kanalolitiaza SŁABNIE, kupulolitiaza NIE (różnicowanie).
@@ -1553,7 +1553,7 @@ function renderDiag(){
     ${exam?examBanner():""}${sessionPanel}${exam?"":bltPanel}${exam?"":ldtPanel}${phaseHTML}${fatPanel}${state.testKey==="roll"&&!exam?nullPointCard(A):""}${exam?"":bltExtras}${exam?"":ldtExtras}
     ${exam?"":(()=>{
       const interp = (v0,m0) => antMode
-        ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to czysty downbeat — lateralizacja oczopląsem NIEWIARYGODNA (torsja śladowa). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a pure downbeat — lateralization by nystagmus is UNRELIABLE (trace torsion). Confirm with the deep head-hang; treat with Yacovino.`)
+        ? t(`Kanał przedni ucha przeciwnego (${SIDE[effSide]}). Oczopląs to downbeat ze skrętem ku uchu choremu, ale lateralizacja oczopląsem NIEWIARYGODNA (u chorego torsja bywa nieobecna). Potwierdź deep head-hangiem; lecz Yacovino.`,`Anterior canal of the opposite ear (${effSide==="L"?"left":"right"}). The nystagmus is a downbeat with torsion toward the affected ear, but lateralization by nystagmus is UNRELIABLE (the torsion is often absent in patients). Confirm with the deep head-hang; treat with Yacovino.`)
         : D.latNote(A, v0, m0);
       // D4/V16: twarz flipa = FENOTYP, treść twarzy = MECHANIZM efektywny (na twarzy bieżącego fenotypu
       // gra wybrany mech; twarz przeciwna pokazuje swój mechanizm klasyczny).

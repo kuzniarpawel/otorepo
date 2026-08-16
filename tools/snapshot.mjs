@@ -659,6 +659,21 @@ function domOracle(h, win) {
     }
   }
   if (h.setVariant) h.setVariant('canalo'); else if (h.state) h.state.variant = 'canalo';   // higiena: nie przenoś wariantu na dalsze sekcje
+  // V26: KARTA DIX W TRYBIE KANAŁU PRZEDNIEGO (antMode) — luka pokrycia ujawniona przy zdejmowaniu
+  // maski anterior.t. Cały tor „downbeat w Dix–Hallpike'u → kanał przedni ucha przeciwnego" nie miał
+  // w złotym wzorcu ANI JEDNEGO ekranu, więc etykieta oczopląsu i nota lateralizacji mogły zacząć
+  // kłamać bez jednego bajtu różnicy (ta sama klasa luki co Roll pod sesją w V25).
+  if (h.setDixObs) {
+    for (const side of ['P', 'L'])
+      grab(`diag/dix/${side}/antMode`, () => {
+        if (h.openTest) h.openTest('dix'); else Object.assign(h.state, { testKey: 'dix', screen: 'diag' });
+        if (h.setDiagSide) h.setDiagSide(side); else h.state.side = side;
+        h.setDixObs('ant');
+        h.render();
+      });
+    h.setDixObs('post');                                   // higiena: nie przenoś trybu na dalsze sekcje
+    if (h.setDiagSide) h.setDiagSide('P');
+  }
   // Bow & Lean: scenariusze historii pozycyjnej (ocena II, V5/E.4) — wyrocznia musi widzieć WSZYSTKIE
   // stany karty (textbook jest już w diag/bowlean/{P,L}; tu pozostałe trzy, w tym „model nie rozstrzyga"
   // i „test zadziałał jak manewr" — inaczej regresje trybu uczciwego byłyby niewidzialne).

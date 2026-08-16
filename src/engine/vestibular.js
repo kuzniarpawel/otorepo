@@ -59,13 +59,26 @@ export const Vestibular = (()=>{
   }
   // MASKA KLINICZNA — geometria daje magnitudy, ale konwencja kliniczna decyduje, KTÓRE składowe
   // wyrażamy. true = odsłoń realną składową geometryczną; false = utrzymaj konwencję kliniczną.
-  //   posterior.h: geom.≈0.21 (klin. pomijany) · anterior.t: geom.≈0.74 (override: czysty downbeat)
+  //   posterior.h: geom.≈0.21 (klin. pomijany) · anterior.t: geom.≈0.74 — MASKA ZDJĘTA 2026-08-16 (V26,
+  //   decyzja użytkownika): skręt kanału przedniego jest teraz WYRAŻONY, ipsi (górne bieguny ku uchu
+  //   CHOREMU). ZNAK wyprowadzony ze znakowanej geometrii tą samą regułą co A4 (v = −sign(Ω_x)·m.v,
+  //   h = +sign(Ω_y)·m.h, t = −sign(Ω_z)·m.t; Ω=+n dla Ewalda II, Ω=−n dla Ewalda III) — reguła
+  //   odtwarza WSZYSTKIE odsłonięte i zwalidowane składowe (horizontal.h, posterior.v/t, anterior.v)
+  //   i przewiduje dla anterior.t dokładnie +0.7386·ipsi, czyli to, co wpisano ręcznie. Zgodne
+  //   klinicznie: górny biegun ku uchu choremu [H32]. UWAGA DYDAKTYCZNA: geometria daje torsję 0.74,
+  //   ale u chorego NIE MA jej w 42% pozycyjnych downbeatów i w 57% potwierdzonych AC-BPPV [H31] —
+  //   karty mówią o tym wprost i NIE zachęcają do lateralizacji AC oczoplasem.
   //   horizontal.t: geom.≈0.18 (klin. czysto poziomy)   [liczby żywe IE-Map 2026-08-13; stare
   //   0.41/0.78/0.29 pochodziły z wektorów Wu]. ZNAK posterior.h POPRAWIONY 2026-08-13 (ocena II, A4):
   //   znakowana geometria (oś pobudzenia Ω=−n, Ewald III) daje składową poziomą KONTRA (−0.21), więc
   //   quickPhase wiąże ją z −ipsi — flaga jest od teraz bezpieczna do odsłonięcia (dziś false → h=0,
   //   zmiana martwa dla wyników).
-  const NYS_SHOW = { posterior:{h:false,t:true}, anterior:{h:false,t:false}, horizontal:{t:false} };
+  // POZOSTAŁE MASKI (świadomie w mocy): posterior.h (geom. 0.21, znak −ipsi po A4), horizontal.t
+  //   (geom. 0.18) oraz — nieujęta w tabeli — horizontal.v (geom. 0.031, zerowana literałem w kodzie).
+  //   PUŁAPKA: ręczny znak anterior.h (+ipsi) NIE zgadza się z regułą znakowanej geometrii (−ipsi),
+  //   dokładnie jak posterior.h przed A4 — flaga jest UŚPIONA, więc dziś martwa, ale przed jej
+  //   ewentualnym odsłonięciem znak trzeba poprawić.
+  const NYS_SHOW = { posterior:{h:false,t:true}, anterior:{h:false,t:true}, horizontal:{t:false} };
   function quickPhase(canal, ear /* 'L'|'P' */){
     const ipsi = ear==="P" ? +1 : -1;                 // + = strona prawa
     const m = nysMag(canal, ear);                     // realne magnitudy z CANAL_NORMALS

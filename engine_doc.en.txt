@@ -1719,11 +1719,33 @@ WHICH components we express (each can be revealed with a true flag):
                                    posterior.h to −ipsi (CONTRA direction −0.21, from the signed
                                    geometry Ω=−n) — the flag is safe to reveal.
   posterior.t=true                — torsion expressed; real v:t ≈ 0.81:1 (was a rigid 1:1)
-  anterior.t=false   geom.≈0.74 — CLINICAL OVERRIDE: pure downbeat. NOTE: the geometry gives
-                                   SIGNIFICANT torsion (~0.74× vertical); "anterior = pure downbeat" is
-                                   a clinical decision (torsion observationally trace), NOT a result of the geometry.
+  anterior.t=TRUE    geom.≈0.74 — MASK REMOVED 2026-08-16 (V26, the user's decision). The anterior
+                                   canal's torsion is now EXPRESSED: +0.7386*ipsi, i.e. the upper poles
+                                   toward the AFFECTED ear. The SIGN was derived from the signed geometry
+                                   by the same rule with which A4 corrected posterior.h, and confirmed
+                                   clinically [H32]. The old "anterior = pure downbeat" was a clinical
+                                   decision, not a result of the geometry; it has been withdrawn. The
+                                   clinical reason does NOT disappear, it changes addressee: it is not
+                                   the model that should lack torsion but the PATIENT who often does
+                                   (42% of positional downbeats, 57% of confirmed AC-BPPV - [H31]) -
+                                   and that is what the cards now say.
+                                   RULE OF SIGN (calibrated 2026-08-16 on the exposed, validated
+                                   components - horizontal.h, posterior.v, posterior.t, anterior.v -
+                                   and reproducing ALL of them): v = -sign(W_x)*m.v, h = +sign(W_y)*m.h,
+                                   t = -sign(W_z)*m.t, where W = +n for the horizontal canal (Ewald II)
+                                   and W = -n for the vertical canals (Ewald III). For anterior.t the
+                                   rule predicts +0.7386*ipsi - exactly what was hand-written, so the
+                                   unmasking needed no sign change. Use this test on EVERY next mask.
+                                   TRAP NOTED (NOT fixed - the flag is dormant): the hand-written sign of
+                                   anterior.h is +ipsi while the rule gives -ipsi, exactly the mismatch A4
+                                   found in posterior.h. Correct it before ever exposing that flag.
+                                   A FOURTH mask, absent from this table: horizontal.v (geom. 0.03) is
+                                   zeroed by a literal `v:0` in quickPhase, not by a flag.
+  (superseded record) anterior.t=false - CLINICAL OVERRIDE: pure downbeat; "anterior = pure downbeat"
+                                   was a clinical decision (torsion observationally a trace), NOT a
+                                   result of the geometry. Held until 2026-08-16.
   horizontal.t=false geom.≈0.18 — clinically purely horizontal (the small geometric torsion omitted)
-Beat signs and masks verified: posterior upbeat+ipsi torsion, anterior downbeat t=0, horizontal toward the ear.
+Beat signs and masks verified: posterior upbeat+ipsi torsion, anterior downbeat + ipsi torsion, horizontal toward the ear.
 The only immediately visible change vs before: posterior v:t = 0.81:1 (real) instead of 1:1.
 
 DESIGN DECISION — EXCEPTION TO THE anterior.t MASK FOR SCDS/TULLIO (2026-07-09):
@@ -2192,6 +2214,66 @@ substance of partial repositioning).
    exists in the code; the card computes the band from the scan. Deliberately NOT fixed: the legacy
    otorepo.html ("~30" in the monolith; the snapshot:mono script does not start anyway — a pre-V25 defect,
    a separate candidate) and view_doc.txt / view_doc.en.txt (the supineFlex variant defined as "~30 (Roll)").
+
+=== REMOVING THE CLINICAL MASK anterior.t - THE ANTERIOR CANAL'S TORSION EXPRESSED (V26, 2026-08-16) ===
+ WHAT: `NYS_SHOW.anterior.t` false -> true. The anterior canal stops being a "pure downbeat" in the
+   engine: quickPhase now returns t = +0.7386*ipsi (upper poles toward the AFFECTED ear) alongside
+   v = -1.000. The user's decision; it supersedes the "CONSIDERED AND REJECTED" entry of 2026-07-09.
+ THE SIGN - CHECKED BEFORE UNMASKING, NOT AFTER. The mask hid not only a value but a sign, and a
+   hand-written sign in this file has been WRONG before (A4 found exactly that in posterior.h). So the
+   rule of sign was calibrated on the components that are EXPOSED and validated, and tested for whether
+   it reproduces all of them:
+     v = -sign(W_x)*m.v · h = +sign(W_y)*m.h · t = -sign(W_z)*m.t,  W = +n (Ewald II) / -n (Ewald III)
+   The rule reproduces, TO THE SIGN: horizontal.h (P and L), posterior.v, posterior.t (P and L),
+   anterior.v - i.e. everything currently visible and clinically validated. For anterior.t it predicts
+   +0.7386*ipsi, EXACTLY what had been hand-written. The unmasking required no sign change.
+   INDEPENDENT CLINICAL CONFIRMATION: [H32] Garaycochea 2022 - in AC-BPPV the upper pole of the eye
+   beats toward the AFFECTED ear. Two routes, one answer.
+ A TRAP FOUND IN PASSING (NOT fixed - the flag is dormant): the hand-written sign of `anterior.h` is
+   +ipsi while the rule gives -ipsi - the same mismatch A4 detected in posterior.h. It is dead today
+   (anterior.h=false); correct the sign before ever exposing that flag. Also noted: a FOURTH mask absent
+   from the table - horizontal.v (geom. 0.03), zeroed by a literal `v:0` rather than by a flag.
+ WHY THIS DOES NOT WEAKEN THE CLINICAL MESSAGE. The old cards said "AC lateralization by nystagmus is
+   UNRELIABLE because it is a pure downbeat / the torsion is a trace". After unmasking that sentence
+   would be HALF false (the model does have torsion), so it was rewritten so that the CONCLUSION stays
+   while the premise changes: not "the model has no torsion" but "the PATIENT often has none".
+     [H31] Castellucci 2020: purely vertical nystagmus, with no torsion at all, in 42.4% of positional
+       downbeats and in 57.1% of confirmed AC-BPPV.
+     [H32] Garaycochea 2022: the torsion is weaker than the vertical; the side is unambiguous in only
+       about half of patients; a right-sided POSTERIOR cupulolithiasis (apo) looks IDENTICAL to a
+       left-sided AC.
+     [H33] Bertholon 2002: the torsion is weak and often clinically invisible.
+   The advice "do not lateralize AC by the nystagmus" STAYS on all four cards, with a new justification.
+ TEXTS CHANGED (7 sites, all of which asserted that there is no torsion): the head-hang canalo latNote ·
+   the head-hang phase label · the head-hang phase note · the "Direction" row of the Barany
+   classification · the recommend note for Yacovino · the antMode label and note on the Dix card · the
+   nystagmus-label renderer in svg-screens (it cut the word "torsional" for the anterior canal ONLY -
+   the branch is now shared by both vertical canals; the horizontal canal goes down a different branch,
+   so its t=false mask is untouched).
+ MEASURED CONSEQUENCES: AC quickPhase t 0.0000 -> +/-0.7386. The head-hang card: `dir` 0 -> -/+1 (the
+   torsional direction stops being undefined). The SPV bridge, AC provocation: the torsional component
+   0.0 -> 20.9 deg/s against a vertical 28.3 deg/s (ratio 0.739). The exam cross matrix: STRENGTHS
+   UNCHANGED (0.1185 / 0.4745 / 0.9419 - the dominant axis stays vertical); only the `anat` vector
+   changes. The POSTERIOR and HORIZONTAL canals are bit-for-bit.
+ SCDS/TULLIO: the 2026-07-09 workaround (pressureStimulus reads nysMag, bypassing the mask) is now
+   REDUNDANT - the global path yields the same 0.74 ratio. Left UNCHANGED: it works, it is validated,
+   and removing it would be a change with no gain. engine.neuro is BIT-0 - verified.
+ A COVERAGE GAP CLOSED IN PASSING: the whole antMode path ("downbeat in the Dix-Hallpike -> anterior
+   canal of the OPPOSITE ear") had NOT A SINGLE screen in the golden - the nystagmus label and the
+   lateralization note could have started lying without a byte of difference. Added
+   `dom diag/dix/{P,L}/antMode` with hygiene (return to the posterior view and side P). The same class
+   of gap as the Roll card under a session in V25.
+ ORACLES / SCOPE: 13 changed / +2 added (antMode) / 0 removed; counts plans 18, neuro 19, pose 360,
+   dom 189 -> 191. Changed: engine.spv/headhang P+L (the torsional component), engine.exam/cross,
+   dom guide/yacovino/{P,L}/step1-3 (6 - the "+ torsional" label), dom diag/headhang P, L, P/cupulo,
+   L/cupulo (4). BIT-0: engine.neuro (all of it), every posterior- and horizontal-canal key, pose,
+   plans, sensitivity, expulsion, ensemble, GRACE, jam, rollact, the session. 3 oracles PASS.
+ WHAT THIS DOES NOT SETTLE: whether 0.74 is the right VISIBILITY for the torsion. The geometry gives
+   that ratio, but the literature says that in patients the torsion is weak or absent - so the model may
+   OVERSTATE it as a visual signal. We do not damp it artificially (that would be reinstating the mask
+   by another route); instead the cards state outright how much of it survives in a patient. A separate
+   candidate: whether the AC torsion should be DRAWN more faintly than the posterior one at the same
+   number - that is a question about RENDERING, not about geometry.
 
 ==========================================================================
  NeuroVOR MODULE — THE TONIC/CENTRAL LAYER (VOR · fixation · vHIT · HINTS)
