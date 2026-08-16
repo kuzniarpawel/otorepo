@@ -2170,8 +2170,19 @@ substance of partial repositioning).
    (BLT_HISTORY has its own) — a V26 candidate: derive the afterRoll history from actTimeline instead of
    from a separate step list.
  THE MANEUVER NOTE (DIAG.roll.poseNote — the user's decision: "note it in the maneuver's notes"): the only
-   place in the application where a pose angle is JUSTIFIED rather than merely stated. Rewritten after the
-   review: it says where the number comes from, names the LIMIT (the figures belong to the setup pose; in
+   place in the application where a pose angle is JUSTIFIED rather than merely stated.
+   [SHORTENED 2026-08-16 at the user's request (V26a): the full version was too long for a clinical
+    card. WHAT STAYS ON THE CARD: the ~10 degree angle instead of 20-30 and where it comes from · 30
+    is a number from the caloric convention, NOT a measurement of sensitivity · the test can act as a
+    treatment, so the control can be mute, and that is NOT an error · a negative control right after
+    the provocation does not prove the patient was already cured · a pointer to this document. WHAT
+    LEFT THE CARD (and now lives ONLY here): the gain figures (100.0% vs 94.1%; peak 0.696->0.784;
+    latency 2.30->2.00 s), the limit "the figures belong to the SETUP pose, in the reading position the
+    optimum sits near 0", the size x hold matrix, and the caveat that the DISTRIBUTION of the
+    phenomenon is a property of the arc rather than a measurement in patients. Rendered length
+    1618 -> 832 characters; rebaseline scope: 11 dom keys, the Roll card only. Do NOT restore the long
+    version in the UI without an explicit request.]
+   Rewritten after the review: it says where the number comes from, names the LIMIT (the figures belong to the setup pose; in
    the reading position the optimum is near 0), qualifies the cost by SIZE and HOLD instead of stating it
    unconditionally, and closes by saying this is a property of the model's arc, NOT clinical knowledge (in
    a real patient a repeated Roll usually still shows DCPN). Hidden in exam mode.

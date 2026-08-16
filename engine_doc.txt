@@ -2020,7 +2020,18 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    (exitStep 2). Przed V25 obie mówiły „zostaje". Różnica bierze się z holdów (BLT_HISTORY ma własne)
    — kandydat V26: wyprowadzić historię afterRoll z actTimeline zamiast z osobnej listy kroków.
  UWAGA DO MANEWRU (DIAG.roll.poseNote — decyzja użytkownika: „odnotować w uwagach do manewru"):
-   jedyne miejsce w aplikacji, gdzie kąt pozy jest UZASADNIONY, a nie podany. Po krytyce przepisana:
+   jedyne miejsce w aplikacji, gdzie kąt pozy jest UZASADNIONY, a nie podany.
+   [SKRÓCONA 2026-08-16 na życzenie użytkownika (V26a): pełna wersja była za długa jak na kartę
+    kliniczną. NA KARCIE ZOSTAJE: kąt ~10° zamiast 20–30° i skąd się bierze · 30° = liczba
+    z konwencji kalorycznej, NIE pomiar czułości · test bywa zabiegiem, więc kontrolny bywa niemy,
+    i to NIE jest błąd · ujemna kontrola zaraz po prowokacji nie dowodzi wyleczenia sprzed badania ·
+    odesłanie do tego dokumentu. Z KARTY WYPADŁO (i żyje WYŁĄCZNIE tutaj): liczby zysku (100,0% vs
+    94,1%; szczyt 0,696→0,784; latencja 2,30→2,00 s), granica „liczby dotyczą pozy WYJŚCIOWEJ,
+    w pozycji odczytu optimum leży przy ~0°", macierz rozmiar × hold oraz zastrzeżenie, że ROZKŁAD
+    zjawiska jest własnością łuku, nie pomiarem na chorych. Długość renderowana 1618 → 832 znaki;
+    zakres rebaseline: 11 kluczy dom, wyłącznie karta Roll. NIE odtwarzać długiej wersji w UI bez
+    wyraźnej prośby.]
+   Po krytyce przepisana:
    podaje skąd liczba, nazywa GRANICĘ (liczby dotyczą pozy wyjściowej; w pozycji odczytu optimum jest
    przy ~0°), a koszt kwalifikuje ROZMIAREM i HOLDEM zamiast podawać bezwarunkowo, i kończy zdaniem,
    że to własność łuku modelu, NIE wiedza kliniczna (u chorego powtórzony Roll zwykle nadal daje DCPN).
