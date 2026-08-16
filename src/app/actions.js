@@ -528,9 +528,12 @@ function domknijAkt(){
      PROWOKACJA (dixRep++) otwiera nowy akt, bo to naprawde kolejne ulozenie glowy. */
   const klucz = `${proba}|${state.side}|${state.dixRep||0}`;
   if(S.aktDomkniety === klucz) return;
-  /* PROBA BEZ AKTU. `actTimeline` ma CICHY FALLBACK na ACT_STEPS.dix, wiec dla Bow & Lean
-     zasymulowalby Dix-Hallpike'a i zapisal cudze przesuniecie jako wynik tej proby. Zamiast tego
-     odnotowujemy POMINIECIE z powodem — sesja ma mowic, czego nie wie, a nie zmyslac. */
+  /* PROBA BEZ AKTU — STRAZNIK, NIE SCIEZKA RUTYNOWA. `actTimeline` ma CICHY FALLBACK na
+     ACT_STEPS.dix, wiec proba bez wlasnego wpisu zasymulowalaby Dix-Hallpike'a i zapisala cudze
+     przesuniecie jako swoj wynik. Do V19 lapalo to Bow & Lean; V19 dal mu wlasny akt (i zmierzone:
+     ten akt OPROZNIA kanal, phi 267°), wiec dzis kazda proba z DIAG ma wpis i ta galaz nie odpala.
+     ZOSTAJE mimo to: szosta proba dopisana bez aktu ma trafic na pominiecie z powodem, a nie na
+     cudza symulacje. Bramka AK5 pilnuje, ze lista jest kompletna. */
   if(!ACT_STEPS[proba]){
     S.acts = [...(S.acts||[]), { kind:proba, pominiety:"brakAktu" }];
     S.aktDomkniety = klucz; return;

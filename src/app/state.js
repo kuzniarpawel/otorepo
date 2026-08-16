@@ -18,6 +18,7 @@ const state={
   neuroOverlay:null,   // N7/D6: pacjent NeuroVOR nalozony TONICZNIE na ekrany diagnostyki pozycyjnej (null=wyl) — demonstracja AVS vs t-EVS (GRACE-3)
   diagPhaseFace:0,     // odsłonięta faza karty pozycji (Bow&Lean/Roll): 0=przód/bow · 1=tył/lean. W STANIE, by przetrwać re-render (np. przełącznik 3D nie przewraca karty)
   size:"medium",                                   // rozmiar/gęstość złogu otoconiów (small|medium|big) → dynamika + holdy + animacja
+  ensemble:false,   // D9/V20: chmura zlogu jako TRYB WIDOKU (opt-in). Nie jest stanem pacjenta ani fizyki — kanoniczna pojedyncza symulacja zostaje zrodlem timerow, wedrowki i sesji.
   session:null,   // D1/V10: sesja ciągła — null=OFF (ścieżka bit-identyczna); ON: stan JEDNEGO złogu
                   // {canal,side,size, phi(null=spoczynek naturalny/wyczyszczony),xi,bondFrac,stuck,exited,inCrus, rep, acts:[{kind,t}], tSession}
   plan:null, step:0,

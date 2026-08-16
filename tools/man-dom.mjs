@@ -350,6 +350,9 @@ T('K3g/brak-blokady-ostrzega', /wakenote/.test(app()), 'gdy platforma nie da blo
 st.wakeOK = true; A('render')();
 T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, nie strasz bez powodu');
 
+const { DIAG: _DIAG, ACT_STEPS: AKTY } = await import('../src/pose/maneuvers.js');
+const DIAG_KLUCZE = Object.keys(_DIAG);
+
 /* ═══════════ AK. GRANICA AKTU: PRZEJSCIE DO INTERPRETACJI PRZESUWA ZLOG ═══════════
    Decyzja kliniczna uzytkownika (2026-08-15): akt konczy sie PRZY PRZEJSCIU DO INTERPRETACJI,
    a nie po opisaniu obserwacji — opis mozna redagowac, wiec dopoki trwa, proba TRWA.
@@ -382,13 +385,28 @@ T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, ni
   T('AK3/idempotencja', st.session.phi === phiPo && (st.session.acts || []).length === 1,
     `ponowne wejscie w interpretacje przesunelo zlog drugi raz (${phiPo} -> ${st.session.phi}, aktow ${(st.session.acts || []).length})`);
 
+  /* AK4 ODWROCONE PRZY SCALENIU DO 1bcd9e3 (V19). Do tej wersji Bow & Lean NIE MIAL wpisu
+     w ACT_STEPS, wiec akt byl POMIJANY z powodem — a bramka pilnowala, zeby zamiast tego nie
+     zasymulowac po cichu Dix-Hallpike'a (cichy fallback `actTimeline`). V19 dodal `ACT_STEPS.bowlean`
+     (sklon 30 s / siad-centrum 5 s / odchylenie 30 s, pivot "neck" per krok), wiec luka sie zamknela
+     i bramka musi pilnowac ZDANIA PRZECIWNEGO: akt jest PRAWDZIWY.
+     ZMIERZONE przy scaleniu: akt Bow & Lean nie tylko przesuwa zlog, ale go WYPROWADZA
+     (phi 267° = pelny luk kanalu poziomego, exited=true) — to jest R10 „test bywa samoleczacy"
+     widziane od strony sesji. */
   czysty();
   A('openTest')('bowlean');
   A('przelaczSesje')();
   A('goInterpret')();
   const ost = (st.session.acts || [])[0] || {};
-  T('AK4/bowlean-pominiety-z-powodem', ost.pominiety === 'brakAktu' && st.session.phi == null,
-    `Bow & Lean nie ma aktu w silniku — ma byc pominiecie z powodem, a nie zasymulowany Dix (akt: ${JSON.stringify(ost)})`);
+  T('AK4/bowlean-ma-prawdziwy-akt', !ost.pominiety && typeof ost.phi === 'number',
+    `Bow & Lean ma od V19 wlasny akt — nie moze byc pomijany (akt: ${JSON.stringify(ost)})`);
+  T('AK4b/akt-bowlean-wyprowadza', ost.exited === true && st.session.exited === true,
+    `zmierzone przy scaleniu: akt Bow & Lean opróżnia kanał (phi ~267°) — jesli przestal, zmienila sie fizyka aktu`);
+  /* STRAZNIK „proba bez aktu" ZOSTAJE, choc dzis nie ma go co lapac: kazda proba z DIAG ma wpis.
+     Ta bramka pilnuje, ze tak jest — szosta proba dopisana bez aktu zapali ja, zanim ktos zauwazy,
+     ze `actTimeline` po cichu podstawia Dix-Hallpike'a. */
+  T('AK5/kazda-proba-ma-akt', DIAG_KLUCZE.every(k => !!AKTY[k]),
+    `proby bez wpisu w ACT_STEPS: ${DIAG_KLUCZE.filter(k => !AKTY[k]).join(', ')}`);
 }
 
 /* ═══════════ M. SESJA CIAGLA: MECZLIWOSC LICZONA RAZ, NIGDY DWA RAZY ═══════════
@@ -447,7 +465,7 @@ T('K3h/czulosc-blokada-dziala', !/wakenote/.test(app()), 'gdy blokada dziala, ni
 }
 
 /* ═══════════ O. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 94;   /* 88 + 6: AK1-AK4 (granica aktu: przejscie do interpretacji przesuwa zlog) */   /* 84 + 4: MC0-MC3 (sesja ciagla znosi mnoznik meczliwosci) */   /* 77 + 7: N1 x5 prob + N2 + N3 (lista prob wyliczana z DIAG) */
+const OCZEKIWANE = 96;   /* 94 + 2: AK4b (akt B&L wyprowadza) + AK5 (kazda proba ma akt) */   /* 88 + 6: AK1-AK4 (granica aktu: przejscie do interpretacji przesuwa zlog) */   /* 84 + 4: MC0-MC3 (sesja ciagla znosi mnoznik meczliwosci) */   /* 77 + 7: N1 x5 prob + N2 + N3 (lista prob wyliczana z DIAG) */
 if (bledy.length) {
   console.error(`✗ man:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));
