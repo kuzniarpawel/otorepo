@@ -563,6 +563,33 @@ SIMPLIFICATIONS RELATIVE TO FULL MODELS:
 
 
 KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
+     [V19-STATUS 2026-08-15: DELIVERED — SESSION↔SCENARIO-CARD INTEGRATION (closing the candidate
+      deferred from V10). Bowlean and lyingdown joined the ACTS: ACT_STEPS.bowlean (bow 30 s /
+      sit-centre 5 s / lean 30 s, pivot "neck" per step — actTimeline got st.pivot||"body",
+      because since B8 the pivot has physical effects) and ACT_STEPS.lyingdown [lying 30 /
+      sitting 30]; PHASE_OF {bowlean:[0,2], lyingdown:[0,1]}. PROOF BY CONSTRUCTION (a B7
+      analogue): an act from a seeded scenario reproduces the scenario card BIT-FOR-BIT (textbook
+      bow +0.975294 / lean −0.366342, delta 0.0e+0; LDT lie −0.381640 idem) — one thread, one
+      physics. SEEDING = the history scenario as the OPENING ACT (seedSessionFromScenario): the
+      click RESTARTS the chain (overwriting φ while keeping the old acts would break the B7
+      invariant) and maps bltInit→state: {phi:φ₀, xi:0 (the card's contract), bondFrac:
+      settled?1:0 — bond=0 for neutral would give a FALSE LDN of 0.077 (probe); no readhesion
+      for the history's sitting (a mirror of the settled:false convention — do NOT "improve"
+      it)}; tSession += the history's SIMULATED time (textbook ~332 s); neutral = a clean
+      freshSession. Cards under the session: the phases = a preview of the NEXT execution
+      (sessionPreview with a per-phase exitStep; the ξ accumulation deliberately untouched —
+      cutting at the exit sample would lose the peak, −0.749 vs −0.753), arrow+text from ONE ξ
+      (bltDirWord, V5), the badge and the watershed-map marker from THE SAME pv/state (the
+      marker = the session's current φ; it vanishes once the canal empties). THE R10 REWARD,
+      LIVE: seeding afterRoll (φ≈220°>190°) → the preview "beats toward the healthy side — AND
+      THE DEBRIS LEAVES THE CANAL" (exit t≈7.55 s) → the act → a silent control test (NPV ~72%).
+      The provocation guard hardened: !ACT_STEPS[testKey] instead of SCEN_DRIVEN (a card with no
+      act entry will not fire the Dix fallback); the sessKey memo extended with S.exited (the
+      fresh↔exited collision confirmed by a probe). Session OFF = bit-for-bit (a hard gate:
+      golden 0-diff after the whole feature); oracles: +10 additive dom session-* keys
+      (6 bowlean + 4 lyingdown, dom 164→174), a clean descent: bowlean session-off ≡
+      scen-afterRoll and lyingdown session-off ≡ the base card BIT-FOR-BIT. Engine physics
+      UNTOUCHED (zero edits to vestibular.js).]
 
  >>> R1 CLOSED 2026-08-05 (branch feature/vestibular) - see ARC_SPAN in the constants section. <<<
      The missing datum was the angular ampulla-to-opening separation. Supplied: Cardenas-Serna & Jeffery
@@ -1917,16 +1944,16 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         the SPV comes back); counselling cuts RD to ~13%. The basis of the 'residual' preset + the RD localization
         branch (stage N5).
 
-[H27] Bhattacharyya N, Gubbels SP, Schwartz SR, et al. (2017). "Clinical Practice Guideline: Benign Paroxysmal
-      Positional Vertigo (Update)." Otolaryngol Head Neck Surg 156(3_suppl):S1–S47.
-      doi:10.1177/0194599816689667. PMID 28248609.
-      → The source for the "Follow-up" step (Block 11 of the UI document): assessment AFTER repositioning as a
-        separate stage, repeating the maneuver when symptoms persist, no need for post-procedural postural
-        restrictions, observation as an acceptable option (BPPV can be self-limiting), and RESIDUAL DIZZINESS
-        after SUCCESSFUL repositioning as a common, self-limiting phenomenon that is NOT treated by repeating
-        the maneuver. Canal conversion (typically posterior → horizontal after an Epley) indicates
-        re-establishing the canal, not repeating the previous maneuver — the direct basis for acceptance
-        criterion 2 of Block 11.
+[H27] Bhattacharyya N, Gubbels SP, Schwartz SR, et al. (2017). "Clinical Practice Guideline: Benign
+      Paroxysmal Positional Vertigo (Update)." Otolaryngol Head Neck Surg 156(3_suppl):S1–S47.
+      doi:10.1177/0194599816689667. PMID 28248609. The "80%" figure is carried explicitly by the
+      accompanying Plain Language Summary of the same guideline family: Bhattacharyya N,
+      Hollingsworth DB, Mahoney K, O'Connor S (2017), Otolaryngol Head Neck Surg 156(3):417–425.
+      doi:10.1177/0194599816689671.
+      → CRP EFFICACY: a single repositioning maneuver abolishes the symptoms in ~80% of patients; NNT 1–3;
+        the percentage rises with repetition (series with repeated CRPs; do NOT cite "80–93%" as the range
+        of a single session — the upper values come from REPETITIONS, source verification 2026-08-16).
+        The basis of the clinical row of the Debris cloud card (D9/V20).
 
 [H28] Newman-Toker DE, Kerber KA, Hsieh YH, Pula JH, Omron R, Saber Tehrani AS, Mantokoudis G, Hanley DF,
       Zee DS, Kattah JC (2013). "HINTS outperforms ABCD2 to screen for stroke in acute continuous vertigo
@@ -1940,6 +1967,73 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         NEUTRAL weight rather than "supports peripheral". Together with [H8] (HINTS/INFARCT), [H9] (context
         and limits) and [H24] (GRACE-3: gait ataxia = central; HINTS inaccurate without training) it forms
         the complete basis for Block 12.
+
+[H29] Hilton MP, Pinder DK (2014). "The Epley (canalith repositioning) manoeuvre for benign paroxysmal
+      positional vertigo." Cochrane Database Syst Rev (12):CD003162. doi:10.1002/14651858.CD003162.pub3.
+      PMID 25485940.
+      → RCTs (meta-analysis): complete resolution of vertigo OR 4.42 (95% CI 2.62–7.44; 5 trials,
+        273 participants; proportions 56% vs 21% Epley vs sham/control) · conversion of Dix-Hallpike
+        to negative OR 9.62 (95% CI 6.0–15.42; 8 trials, 507) · Epley ≈ Semont/Gans (no difference) ·
+        Epley > Brandt-Daroff OR 12.38 (reinforces the home note V18: BD weaker than repositioning) ·
+        nausea during treatment 16.7–32% (consistent with the D5 bar) · recurrence ~36%. The RCT
+        context ≠ the clinical percentage [H27] — different measures.
+
+
+
+=== DEBRIS CLOUD — the multi-particle ensemble (D9/V20, 2026-08-16) ===
+ORCHESTRATION ABOVE THE ENGINE, no physics (zero edits to vestibular.js): the cloud = N=9
+independent simulateCanalith simulations on ONE canonical timeline (the clinician performs ONE
+maneuver — re-deriving the holds per particle would give each its own protocol and bypass the
+substance of partial repositioning).
+ THE GRID (ensembleSim/ENS_GRID): the midpoint quantiles of the uniform distribution on
+   [0.7,1.3]·r_size — m_k = 0.7+0.6·(k+0.5)/9. SOURCE BOUNDARY: the in-vivo size distribution of
+   the aggregate is UNMEASURED (see the note at H2) — the uniform band is a declaration of
+   ignorance, not a measurement; do NOT calibrate it. Midpoint quantiles converge to the integral
+   over the distribution (aggregate peak 1.0071/1.0085/1.0091 for N=7/9/13); a grid WITH ENDPOINTS
+   overweights the extremes and drifts with N (1.061→1.035) — the old "1.085" anchor from
+   assessment II is an artifact of such a coarse N=5 grid (reproduced 1.0865); the qualitative
+   thesis (dispersion shifts forward and raises the peak) stands, there is NO target number. The
+   grid's center (k=4) = EXACTLY 1.0 → the middle particle is BIT-EQUAL to the canonical maneuverSim.
+ AGGREGATION = the arithmetic MEAN of ξ over the particles: the engine ALREADY scales gain∝r³
+   inside simulateCanalith — an explicit extra r³ weight would count the mass TWICE (measured
+   1.353, outside the CUP_WEAK/SPV calibration) and is FORBIDDEN. fracMass (r³) is a separate
+   quantity: the fraction of MASS removed, not a signal weight.
+ PARTIAL REPOSITIONING — EMERGENT from the canonical holds (zero new constants): the derivedHold
+   guard TAUP_GUARD=1.1 guarantees clearing for r ≥ 1/√1.1 ≈ 0.953 — and exactly the particles with
+   r<0.95 fall out of the windows. The table (medium, P, pinned in engine.ensemble): epley 8/9 (96%
+   of the mass) · semont/bascule/yacovino 6/9 (84%) · lempert/gufoniGeo/zuma/kim 9/9 · gufoniApo
+   0/9 (a CONVERSION — the card renders it as a conversion, not as a failure). The card teaches
+   this directly: the FINEST particles remain (the slowest ones: τ ∝ r⁻², Stokes' law) — "repeat
+   the positional test".
+ SEPARATE AXES: rep does NOT enter the cloud (rep₂/rep₀ = fatigueFactor(2) identically to 6 digits
+   for the single particle and for the aggregate — gc enters linearly, the φ trajectory is
+   independent of gc) → the ensemble does NOT replace fatigueFactor (the cloud = SIZE dispersion
+   within one provocation; fatigueFactor = clump disintegration BETWEEN provocations, Imai) — a
+   separate calibration decision, outside V20. The canonical single simulation REMAINS the source:
+   of derivedHold/timers, of manExitStep/migration, of the V10/V19 session, of symRow/RD (D5), of
+   the sensitivity/EXPEL_SANE oracles. The cloud is a VIEW only (the card's numbers + the row of
+   dots; drawing the cloud on the otolith path is FORBIDDEN — the manFractions ramp is schematic,
+   positional realism would be fabrication).
+ CANAL SWITCH = A NOTE (not orchestration): the utricle lies over the non-ampullary HC opening —
+   part of HC-BPPV arises as a canal switch after treatment of the posterior canal (see R3); full
+   orchestration would require a p(switch) with no source and seeding φ₀ in another canal (session
+   territory) — a separate candidate. A design probe: the dynamics AFTER entry would be honest
+   (HC φ₀≈250–265 at the opening, settled:false → sitting up slides the debris toward restPhi, the
+   control Roll = geotropic DCPN +0.82..0.86/−0.91..−0.92, the phenotype insensitive to the depth
+   of entry).
+ UI: an opt-in "Debris cloud" in the #sessionbar shell (outside #app — golden untouched by
+   construction), the card ONLY on the guide's final step, OUTSIDE a session (the !state.session
+   gate: a session tells the story of ONE debris clump with a history). The clinical row
+   DELIVERED 2026-08-16 after source verification (the user's decision): "~80% after a single
+   session + rises with repetition" [H27]; the RCT context (56% vs 21%, OR 4.42) from [H28];
+   the original "80–93%" REJECTED — the upper values come from REPETITIONS, not from a single
+   session. Oracles: engine.ensemble (the grid + 9 maneuvers ×
+   2 sides: fractions/peak/tExit per particle; a diffKeys line in --check) + the hard CLOUD ORACLE
+   (throw: the center ≡ the canonical run bit-for-bit — the card cannot diverge from the eyes)
+   + 3 dom keys (ensemble-on ×2, ensemble-off ≡ the baseline finale BIT-FOR-BIT = the eternal pin
+   "OFF means zero bytes"; dom 174→177). Successor candidate: a cloud session (a chain per
+   particle, M× cost; a control test after a partial repositioning with a response ∝ the retained
+   mass) — deliberately outside V20.
 
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals

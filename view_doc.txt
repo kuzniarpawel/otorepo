@@ -903,3 +903,84 @@ WYDAJNOŚĆ (DESKTOP — telefonu brak w środowisku dev): zimny montaż (import
 OFFLINE/BUILD: vite build code-splituje three do assets/three-patient-*.js (~516 KB, lazy — index ~124 KB); chunk
   jest w precache dist/sw.js (3D działa offline po instalacji PWA); hash nazwy cache zmienia się z zawartością.
 GLB: NIE wdrożone (decyzja użytkownika: model proceduralny). Adapter kości gotowy — wymiana = ten sam show(spec,side).
+=== UDOSTĘPNIENIE OCENY II W UI (2026-08-15/16) ===
+Cała ta warstwa powstała z jednej obserwacji: silnik umiał więcej, niż ekran pokazywał. Wzorzec
+usterki był za każdym razem ten sam — WPISANA RĘCZNIE LISTA tam, gdzie model ma już własną. Naprawa
+też: wyprowadzić listę z jedynego źródła.
+
+LISTY WYPROWADZANE, NIE WPISANE
+ - Ekran wyboru próby trzymał cztery literały (`dix`/`roll`/`bowlean`/`headhang`), więc piąta próba
+   silnika (lying-down, V11/D2) była policzalna, ale NIEOSIĄGALNA. Dziś `Object.keys(DIAG)`.
+ - `OBS_PROBY` w obs-model.js było DRUGĄ ręczną listą czterech prób, obok `OBS_FAZY`. Rozjechały się
+   przy pierwszej okazji: karta się rysowała, a formularz i interpretacja nie znały próby. Dziś
+   `Object.keys(OBS_FAZY)`. Objaw był mylący — cztery scenariusze historii dawały dla lying-down
+   IDENTYCZNE odciski predykcji nie dlatego, że historia nie ma znaczenia, tylko dlatego, że
+   porównywane listy były PUSTE.
+ - Manewry `zuma`/`kim` NIE wymagały wdrożenia: lista manewrów czyta `CANALS[kanal].maneuvers`,
+   więc weszły same, gdy silnik je przyniósł. To ta sama zasada, tyle że zastosowana wcześniej.
+ Bramki: man:dom N1-N3 (każda próba z DIAG ma przycisk i nie ma przycisku bez próby) oraz AK5
+ (każda próba ma akt). Dowód failing-first: przywrócenie literałów gubi lying-down.
+ UWAGA: golden NIE PINUJE ekranu wyboru próby w trybie diagnostyki ani karty Bárány w trybie kanału
+ przedniego — rebaseline po obu zmianach dał ZERO różnic. Dlatego obie dziury zamknięte BRAMKAMI.
+
+HISTORIA POZYCYJNA (BLT) — PYTANIE, KTÓREGO NIE BYŁO GDZIE ZADAĆ
+`state.bltScenario` istniało od V5, ale bez przełącznika wododział R8 był niedostępny: silnik liczył
+kierunek Bow & Lean z warunków początkowych, a klinicysta nie miał jak podać historii. Przełącznik
+wchodzi w OBA TORY naraz — scenariusz zasila też `interp-deps`, bo sam przełącznik na karcie dałby
+ekran, na którym strzałka mówi jedno, a wniosek drugie. Scenariusz wchodzi DOMKNIĘCIEM we
+wstrzykiwaczu; wstrzykiwacz bez stanu (wyrocznie, tor nauki) dostaje `undefined` → „textbook",
+czyli ścieżka bez scenariusza zostaje bit-identyczna.
+Karty pokazywane WYŁĄCZNIE dla prób z `SCEN_DRIVEN` (bowlean, lyingdown) — gdzie indziej przełącznik
+niczego by nie zmieniał i uczyłby, że fizjologia jest losowa. Każda karta niesie φ₀ POLICZONE przez
+`bltInit` (146° / 173° / 220° / 200° spoczynku), nie wpisane: to WYNIK, nie etykieta.
+
+JEDNO TWIERDZENIE O CZASIE, NIE DWA
+Karta klasyfikacji Bárány mówiła dla kanału PRZEDNIEGO „< 1 min", chip tej samej próby „≈1 min",
+a silnik mierzy 61,25 s. Trzy miejsca, dwie wersje prawdy, obie na jednym ekranie. Karta bierze
+teraz oba pola wprost z `featsByVariant`. Bramka barany:check JT1-JT3, z kontrolą czułości w drugą
+stronę: karta nie może obiecywać „< 1 min" tam, gdzie pomiar to przekracza.
+
+TRZY KARTY POMIAROWE
+ - PŁASZCZYZNA ZEROWA (V12/D3) — tylko przy Rollu i mechanizmie osklepkowym. Zero przy ±8,7°,
+   WSPÓLNE dla ciężkiego i lekkiego osklepka; różni je KIERUNEK po obu stronach zera. Karta mówi
+   obie rzeczy, bo pokazanie samego kąta uczyłoby, że wystarczy go znaleźć.
+ - PASEK OBJAWOWY (V17/D5) — zawrót ~ |ξ|, nudności ~ 100(1−exp(−Σ|ξ|dt/25)). Saturacja
+   wykładnicza, nie suma obcięta: dawka ma plafon fizjologiczny. Próg 0,03 = ta sama konwencja co
+   3 % szczytu w `xiEnvelope`. `man.cum` NIE ISTNIEJE w tej gałęzi — dawka liczona z `man.sim`
+   i pamiętana przy obiekcie symulacji, ŚWIADOMIE bez dokładania pola do `computeManSim` (plik
+   wspólny z main; suma skumulowana to wielkość prezentacji, nie stan fizyki).
+ - ZAWROTY RESZTKOWE — tylko przy wyniku `residual`, źródło [H26]. Jedyne miejsce w aplikacji,
+   gdzie odradzamy LECZENIE (supresanty opóźniają kompensację), a nie manewr.
+
+SESJA CIĄGŁA (D1) — TRYB OPT-IN
+`state.session === null` to ścieżka BIT-IDENTYCZNA. Włączenie przewleka między badaniami stan
+JEDNEGO złogu.
+POWÓD, DLA KTÓREGO TO MUSI BYĆ WYKLUCZAJĄCE: sesja i mnożnik `fatigueFactor` opisują TO SAMO
+zjawisko — zmierzone 0,621/0,400/0,266 (sesja) wobec 0,630/0,406/0,270 (mnożnik), zgodność poniżej
+1,5 %. Oba naraz podnoszą męczliwość DO KWADRATU (0,391 zamiast 0,621). Dlatego mnożnik obowiązuje
+wyłącznie przy sesji wyłączonej, a efektywna wartość idzie do DOM jako `data-fatfactor` — bramka
+bez obserwowalnej wielkości nie pilnuje niczego (pierwsza wersja MC2 przechodziła też po zepsuciu
+kodu; wykrył to dowód failing-first).
+GRANICA AKTU: akt kończy się PRZY PRZEJŚCIU DO INTERPRETACJI (decyzja kliniczna użytkownika). Opis
+można redagować — dopóki trwa, próba trwa; przejście do interpretacji jest pierwszym gestem „mam to
+za sobą", a przesunięcie złogu jest nieodwracalne. Idempotencja po (próba, strona, numer
+prowokacji): bez niej sama nawigacja leczyłaby pacjenta. Reguła zgodności kanałów NIEPOTRZEBNA —
+zmierzone, że akt dowolnej próby rusza złóg (Dix przesuwa złóg poziomy 199,8°→173,0°, odpowiedź
+0,478 wobec 0,941 przy Rollu): głowa rusza się naprawdę, niezależnie od badanego kanału.
+
+CHMURA ZŁOGU (V20/D9) I ZASIEW SESJI (V19)
+Karta chmury renderuje się WYŁĄCZNIE na kroku finalnym i POZA sesją (sesja opowiada jeden złóg,
+chmura — rozkład rozmiarów). ODSTĘPSTWO OD MAIN: main trzyma przełącznik poza `#app` w `#sessionbar`,
+którego futureUI nie ma. Ślad w goldenie zmierzony: treść karty (+374 znaki) w 18 kluczach kroku
+finalnego, reszta dotkniętych to biały znak z warunku emitującego pusty string.
+Zasiew sesji ze scenariusza RESTARTUJE łańcuch (nadpisanie φ przy zachowanych aktach łamałoby
+inwariant „łańcuch ≡ jedna nić symulacji"). Pułapka: `bondFrac = settled ? 1 : 0` — bond 0 dla
+`neutral` dawałby FAŁSZYWY lying-down 0,077. Przy włączonej sesji karta przestaje pytać o historię
+i czyta stan złogu przez `sessionPreview`; zasiew `afterRoll` (φ ≈ 220°) daje podgląd „ta próba
+OPRÓŻNI kanał" — R10 na żywo, zapowiedziane zawczasu zamiast niemego testu kontrolnego.
+
+NUMERACJA ŹRÓDEŁ ROZESZŁA SIĘ MIĘDZY GAŁĘZIAMI — i to złapało dwa błędne cytowania w kartach.
+futureUI: [H26] Özgirgin · [H27] Bhattacharyya · [H28] Newman-Toker · [H29] Cochrane (dodany przy
+scaleniu V20b). main ma pod [H28] Cochrane. Karta RD i karta chmury cytowały numery Z PODSUMOWANIA
+MAIN, czyli kierowały do złych prac. Przy każdym przenoszeniu treści z main numery źródeł trzeba
+sprawdzić w bibliografii TEJ gałęzi, a nie przepisać.

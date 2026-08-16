@@ -909,3 +909,68 @@ PERFORMANCE (DESKTOP — no phone in the dev environment): a cold mount (import 
 OFFLINE/BUILD: vite build code-splits three into assets/three-patient-*.js (~516 KB, lazy — index ~124 KB); the chunk
   is in the precache dist/sw.js (3D works offline after PWA installation); the cache name hash changes with the content.
 GLB: NOT deployed (user decision: a procedural model). The bone adapter is ready — a swap = the same show(spec,side).
+=== SURFACING ASSESSMENT II IN THE UI (2026-08-15/16) ===
+This whole layer came out of one observation: the engine knew more than the screen showed. The
+defect pattern was the same every time — a HAND-WRITTEN LIST where the model already has its own.
+So was the fix: derive the list from the single source.
+
+DERIVED LISTS, NOT WRITTEN ONES
+ - The test-selection screen held four literals, so the engine's fifth test (lying-down, V11/D2) was
+   computable but UNREACHABLE. Now `Object.keys(DIAG)`.
+ - `OBS_PROBY` in obs-model.js was a SECOND hand-written list of four tests, next to `OBS_FAZY`.
+   They drifted at the first opportunity: the card rendered, while the form and the interpretation
+   did not know the test. Now `Object.keys(OBS_FAZY)`. The symptom was misleading — four history
+   scenarios yielded IDENTICAL prediction fingerprints for lying-down not because history does not
+   matter, but because the compared lists were EMPTY.
+ - The `zuma`/`kim` maneuvers needed NO work: the maneuver list reads `CANALS[canal].maneuvers`, so
+   they appeared by themselves when the engine brought them.
+ Gates: man:dom N1-N3 and AK5. Failing-first proof: restoring the literals loses lying-down.
+ NOTE: the golden does NOT pin the test-selection screen in diagnostics mode, nor the Bárány card in
+ anterior-canal mode — rebaselining after both changes produced ZERO differences. Hence GATES.
+
+POSITIONAL HISTORY (BLT) — A QUESTION WITH NOWHERE TO ASK IT
+`state.bltScenario` existed since V5, but without a switch the R8 watershed was unreachable. The
+switch enters BOTH tracks at once — the scenario also feeds `interp-deps`, because the switch alone
+would give a screen where the arrow says one thing and the conclusion another. It enters as a
+CLOSURE in the injector; a stateless injector (oracles, learning track) gets `undefined` →
+"textbook", so the path without a scenario stays bit-identical.
+Cards shown ONLY for `SCEN_DRIVEN` tests. Each carries φ₀ COMPUTED by `bltInit` (146°/173°/220°/
+200° at rest), not written in: it is a RESULT, not a label.
+
+ONE CLAIM ABOUT DURATION, NOT TWO
+The Bárány card said "< 1 min" for the ANTERIOR canal, the chip of the same test "≈1 min", and the
+engine measures 61.25 s. Both fields now come straight from `featsByVariant`. Gate barany:check
+JT1-JT3, with the reverse sensitivity control.
+
+THREE MEASUREMENT CARDS
+ - NULL PLANE (V12/D3) — only for the roll test and a cupular mechanism. The null at ±8.7° is
+   SHARED by the heavy and the light cupula; the DIRECTION on either side separates them.
+ - SYMPTOM BAR (V17/D5) — vertigo ~ |xi|, nausea ~ 100(1−exp(−sum|xi|dt/25)), threshold 0.03.
+   `man.cum` does NOT exist on this branch — the dose is computed from `man.sim` and memoized on the
+   simulation object, deliberately WITHOUT adding a field to `computeManSim`.
+ - RESIDUAL DIZZINESS — only for the `residual` outcome, source [H26]. The only place in the app
+   where we advise against TREATMENT (suppressants delay compensation), not against a maneuver.
+
+CONTINUOUS SESSION (D1) — OPT-IN MODE
+`state.session === null` is the BIT-IDENTICAL path. WHY THE TWO MUST EXCLUDE EACH OTHER: the session
+and the `fatigueFactor` multiplier describe THE SAME phenomenon — measured 0.621/0.400/0.266 vs
+0.630/0.406/0.270, agreement below 1.5 %. Applied together they SQUARE the fatigue (0.391 instead of
+0.621). The effective value goes to the DOM as `data-fatfactor` — a gate without an observable
+quantity guards nothing (the first MC2 passed even with the code broken; the failing-first proof
+caught it).
+ACT BOUNDARY: an act ends ON MOVING TO INTERPRETATION (the user's clinical decision). Idempotent per
+(test, side, provocation count): without it, navigation alone would treat the patient. No
+canal-matching rule is needed — measured: any test's act moves the debris.
+
+DEBRIS CLOUD (V20/D9) AND SESSION SEEDING (V19)
+The cloud card renders ONLY on the final step and OUTSIDE a session. DEVIATION FROM MAIN: main keeps
+the toggle outside `#app` in `#sessionbar`, which futureUI does not have. Golden footprint measured:
+the card's content (+374 chars) in 18 final-step keys; the rest of the touched keys is whitespace.
+Seeding the session from a scenario RESTARTS the chain. Trap: `bondFrac = settled ? 1 : 0` — a bond
+of 0 for `neutral` would give a FALSE lying-down 0.077. With the session on, the card stops asking
+about history and reads the debris state via `sessionPreview`.
+
+SOURCE NUMBERING DRIFTED BETWEEN BRANCHES — and it caught two wrong citations in the cards.
+futureUI: [H26] Özgirgin · [H27] Bhattacharyya · [H28] Newman-Toker · [H29] Cochrane. main has
+Cochrane under [H28]. When porting content from main, source numbers must be checked against THIS
+branch's bibliography, not copied.

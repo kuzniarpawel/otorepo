@@ -1624,7 +1624,7 @@ function renderFollowup(){
       ${alty}
       ${kroki.zakaz.length?`<div class="fuzakaz"><span class="eyebrow">${t("Czego ten ekran celowo nie proponuje","What this screen deliberately does not offer")}</span>
         <ul>${kroki.zakaz.map(z=>`<li><b>${t(AKCJE[z.akcja].pl, AKCJE[z.akcja].en)}</b> — ${t(z.pl, z.en)}</li>`).join("")}</ul></div>`:""}
-      ${/* ZAWROTY RESZTKOWE (ocena II V17/D5, źródło [H28] Özgirgin 2024). Karta wchodzi WYŁĄCZNIE
+      ${/* ZAWROTY RESZTKOWE (ocena II V17/D5, źródło [H26] Özgirgin 2024). Karta wchodzi WYŁĄCZNIE
             przy tym jednym wyniku, bo tylko tam ma desygnat, i mówi trzy rzeczy, których model
             kontroli sam z siebie nie powie:
               — SKUTECZNY manewr ≠ zdrowy pacjent: RD dotyczy 31–61 % chorych PO ustąpieniu oczopląsu;
@@ -1640,7 +1640,7 @@ function renderFollowup(){
           <li>${t("Zjawisko jest zwykle <b>samoograniczające</b> (dni–tygodnie). Samo poradnictwo obniża jego częstość do ok. 13 %.","The phenomenon is usually <b>self-limiting</b> (days to weeks). Counselling alone lowers its frequency to about 13 %.")}</li>
           <li>${t("Leki tłumiące układ przedsionkowy <b>szkodzą</b> — opóźniają kompensację ośrodkową, czyli dokładnie ten proces, który znosi objaw.","Vestibular suppressants are <b>harmful</b> — they delay central compensation, the very process that resolves the symptom.")}</li>
         </ul>
-        <div class="note">${t("Źródło: Özgirgin i wsp., Front Neurol 2024 [H28]. Aplikacja nie stawia rozpoznania i nie zleca leczenia — to tło do rozmowy z pacjentem.","Source: Özgirgin et al., Front Neurol 2024 [H28]. The app makes no diagnosis and prescribes no treatment — this is background for the conversation with the patient.")}</div>
+        <div class="note">${t("Źródło: Özgirgin i wsp., Front Neurol 2024 [H26]. Aplikacja nie stawia rozpoznania i nie zleca leczenia — to tło do rozmowy z pacjentem.","Source: Özgirgin et al., Front Neurol 2024 [H26]. The app makes no diagnosis and prescribes no treatment — this is background for the conversation with the patient.")}</div>
       </div>` : ""}
     </div>`;
   };
@@ -2351,7 +2351,7 @@ function renderGuide(){
         <div class="note" style="margin-top:10px">${konwersja
           ? t("Ten manewr NIE opróżnia kanału i nie ma tego robić — Gufoni apogeotropowy jest manewrem KONWERSJI (apo→geo). Zero cząstek na wyjściu to wynik zgodny z zamiarem, nie porażka.","This maneuver does NOT empty the canal and is not meant to — the apogeotropic Gufoni is a CONVERSION maneuver (apo→geo). Zero particles out is the intended result, not a failure.")
           : t("Cząstki mniejsze osiadają wolniej i część z nich nie mieści się w oknie czyszczenia — dlatego repozycja bywa CZĘŚCIOWA. To wychodzi z fizyki, nie z osobnej reguły.","Smaller particles settle more slowly and some do not fit inside the clearing window — which is why repositioning can be PARTIAL. This follows from the physics, not from a separate rule.")}</div>
-        ${konwersja ? "" : `<div class="note">${t("Kontekst kliniczny: skuteczność repozycji to ok. 80 % po pojedynczej sesji, z dalszym wzrostem przy powtórzeniach (AAO-HNS 2017 [H27]); przegląd Cochrane 2014 [H28] daje ustąpienie zawrotu 56 % vs 21 % bez manewru. To NIE są te same miary co frakcja powyżej — model pokazuje masę złogu, nie odsetek pacjentów.","Clinical context: repositioning succeeds in about 80 % after a single session, rising with repeats (AAO-HNS 2017 [H27]); the Cochrane 2014 review [H28] reports vertigo resolution 56 % vs 21 % without a maneuver. These are NOT the same measures as the fraction above — the model shows debris mass, not a percentage of patients.")}</div>`}
+        ${konwersja ? "" : `<div class="note">${t("Kontekst kliniczny: skuteczność repozycji to ok. 80 % po pojedynczej sesji, z dalszym wzrostem przy powtórzeniach (AAO-HNS 2017 [H27]); przegląd Cochrane 2014 [H29] daje ustąpienie zawrotu 56 % vs 21 % bez manewru. To NIE są te same miary co frakcja powyżej — model pokazuje masę złogu, nie odsetek pacjentów.","Clinical context: repositioning succeeds in about 80 % after a single session, rising with repeats (AAO-HNS 2017 [H27]); the Cochrane 2014 review [H29] reports vertigo resolution 56 % vs 21 % without a maneuver. These are NOT the same measures as the fraction above — the model shows debris mass, not a percentage of patients.")}</div>`}
         <div class="note">${t("Rozkład rozmiarów agregatu in vivo jest NIEZMIERZONY — pasmo cząstek to deklaracja niewiedzy, nie pomiar. Chmura jest widokiem: timery, wędrówka otolitu i objawy liczą się dalej z pojedynczej cząstki.","The in-vivo size distribution of the aggregate is UNMEASURED — the particle band is a declaration of ignorance, not a measurement. The cloud is a view: timers, otolith migration and symptoms are still computed from a single particle.")}</div>`}
       </div>`; })() : ""}
     </div><div class="col col--ctl">
