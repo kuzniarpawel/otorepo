@@ -1483,6 +1483,53 @@ silnika, zero zmian fizyki (dowód: engine/pose bit-w-bit przy rebaseline).
    nie dostaje — jego nota nakazuje ponowny Roll. Zakres wyroczni: DOKŁADNIE 65 kluczy guide/*
    (każdy = wstawka .symrow; 12 finałów czyszczących dodatkowo z kartą RD), dom bez nowych kluczy.
 
+=== CHMURA ZŁOGU — ensemble wielocząstkowy (D9/V20, 2026-08-16) ===
+ORKIESTRACJA NAD SILNIKIEM, bez fizyki (zero edycji vestibular.js): chmura = N=9 niezależnych
+symulacji simulateCanalith na JEDNEJ kanonicznej timeline (klinicysta wykonuje JEDEN manewr —
+re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła treść częściowej repozycji).
+ SIATKA (ensembleSim/ENS_GRID): kwantyle ŚRODKOWE rozkładu jednostajnego na [0.7,1.3]·r_size —
+   m_k = 0.7+0.6·(k+0.5)/9. GRANICA ŹRÓDŁA: rozkład rozmiarów agregatu in vivo NIEZMIERZONY
+   (patrz nota przy H2) — pasmo jednostajne to deklaracja niewiedzy, nie pomiar; NIE kalibrować.
+   Kwantyle środkowe zbiegają do całki po rozkładzie (szczyt agregatu 1.0071/1.0085/1.0091 dla
+   N=7/9/13); siatka z KRAŃCAMI przeważa ekstrema i dryfuje z N (1.061→1.035) — dawna kotwica
+   oceny „1.085" to artefakt takiej grubej siatki N=5 (odtworzone 1.0865); teza jakościowa
+   (dyspersja przesuwa w przód i podnosi szczyt) stoi, liczby docelowej NIE MA. Środek siatki
+   (k=4) = DOKŁADNIE 1.0 → cząstka środkowa BIT-RÓWNA kanonicznej maneuverSim.
+ AGREGACJA = ŚREDNIA arytmetyczna ξ po cząstkach: silnik JUŻ skaluje gain∝r³ wewnątrz
+   simulateCanalith — jawna dodatkowa waga r³ liczyłaby masę DWA RAZY (zmierzone 1.353, poza
+   kalibracją CUP_WEAK/SPV) i jest ZAKAZANA. fracMass (r³) to osobna wielkość: frakcja MASY
+   usuniętej, nie waga sygnału.
+ CZĘŚCIOWA REPOZYCJA — EMERGENTNA z kanonicznych holdów (zero nowych stałych): strażnik
+   derivedHold TAUP_GUARD=1.1 gwarantuje czyszczenie dla r ≥ 1/√1.1 ≈ 0.953 — i dokładnie cząstki
+   r<0.95 wypadają z okien. Tabela (medium, P, pinowana w engine.ensemble): epley 8/9 (96% masy) ·
+   semont/bascule/yacovino 6/9 (84%) · lempert/gufoniGeo/zuma/kim 9/9 · gufoniApo 0/9 (KONWERSJA —
+   karta renderuje jako konwersję, nie porażkę). Karta uczy wprost: zostają NAJDROBNIEJSZE
+   (najwolniejsze: τ ∝ r⁻², Stokes) — „powtórz test pozycyjny".
+ OSIE ROZDZIELNE: rep NIE wchodzi do chmury (rep₂/rep₀ = fatigueFactor(2) co do 6 cyfr identycznie
+   dla pojedynczej i agregatu — gc wchodzi liniowo, trajektoria φ od gc niezależna) → ensemble NIE
+   zastępuje fatigueFactor (chmura = dyspersja ROZMIARU w jednej prowokacji; fatigueFactor = rozpad
+   kłębka MIĘDZY prowokacjami, Imai) — osobna decyzja kalibracyjna, poza V20. Kanoniczna pojedyncza
+   symulacja ZOSTAJE źródłem: derivedHold/timerów, manExitStep/wędrówki, sesji V10/V19, symRow/RD
+   (D5), wyroczni sensitivity/EXPEL_SANE. Chmura jest WYŁĄCZNIE widokiem (liczby karty + rząd kropek;
+   ZAKAZ rysowania chmury na ścieżce otolitu — rampa manFractions jest schematyczna, pozycyjny
+   realizm byłby fabrykacją).
+ CANAL SWITCH = NOTA (nie orkiestracja): łagiewka leży nad niebańkowym ujściem HC — część HC-BPPV
+   powstaje jako canal switch po leczeniu tylnego (patrz R3); pełna orkiestracja wymagałaby
+   p(switch) bez źródła i zasiewu φ₀ w innym kanale (terytorium sesji) — kandydat osobny. Sonda
+   projektu: dynamika PO wejściu byłaby uczciwa (HC φ₀≈250–265 przy ujściu, settled:false → siad
+   zsuwa ku restPhi, kontrolny Roll = DCPN geotropowy +0.82..0.86/−0.91..−0.92, fenotyp nieczuły
+   na głębokość wejścia).
+ UI: opt-in „Chmura złogu" w powłoce #sessionbar (poza #app — golden nietknięty z konstrukcji),
+   karta TYLKO na finalnym kroku guide, POZA sesją (bramka !state.session: sesja opowiada JEDEN
+   złóg z historią). Wiersz kliniczny o skuteczności CRP ~80–93% NIE wszedł — repo nie ma źródła
+   ([1]–[15], [H1]–[H26] przejrzane); kandydat [H27]: AAO-HNS 2017 (Bhattacharyya) / Cochrane 2014
+   (Hilton & Pinder) — weryfikacja źródła = rola użytkownika. Wyrocznie: engine.ensemble (siatka +
+   9 manewrów × 2 strony: frakcje/szczyt/tExit per cząstka; linia diffKeys w --check) + TWARDA
+   WYROCZNIA CHMURY (throw: środek ≡ kanoniczna bit-w-bit — karta nie może rozjechać się z oczami)
+   + 3 klucze dom (ensemble-on ×2, ensemble-off ≡ finał bazowy BIT-W-BIT = wieczny pin „OFF to
+   zero bajtów"; dom 174→177). Kandydat następcy: sesja chmury (łańcuch per cząstka, koszt M×;
+   kontrolny test po częściowej repozycji z odpowiedzią ∝ zatrzymanej masie) — świadomie poza V20.
+
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)
  Plik: src/engine/neuro-vor.js  |  Moduł: export const NeuroVOR = (()=>{ ... })()

@@ -2,7 +2,7 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0 } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0 } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -949,6 +949,30 @@ function renderGuide(){
   // finał to naturalny moment „co dalej", a krok liberacyjny ma już libNote; Lempert czyści w 3/6).
   // gufoniApo (konwersja, exited=false) karty ŚWIADOMIE nie dostaje — jego gufoniNote nakazuje ponowny
   // Roll. Treść: frazowanie RD 1:1 z neuro-vor.js (spójność silników) + „~13%" z [H26] Özgirgin 2024.
+  // D9/V20: karta „Chmura złogu" na FINALNYM kroku (bramka: ensemble ON, POZA sesją — sesja opowiada
+  // JEDEN złóg z historią, chmura by temu przeczyła na tym samym ekranie). Chmura jest WYŁĄCZNIE
+  // widokiem: oczy/pasek objawów/otolit grają dalej kanoniczną pojedynczą symulację (nota uczciwości
+  // w karcie); ZAKAZ rysowania chmury na ścieżce otolitu — rampa manFractions jest schematyczna,
+  // pozycyjny realizm byłby fabrykacją (klasa błędu usuniętej ścieżki awaryjnej stepXiPeak).
+  const ensCard = (state.ensemble && !state.session && state.step===n-1) ? (()=>{
+    const ekey=state._manKey+"|ens";
+    if(state._ensKey!==ekey){ state._ensKey=ekey; state._ensSim=ensembleSim(state.plan, state.size); }
+    const E=state._ensSim, pm=Math.round(100*E.fracMass);
+    const main = (state.maneuverKey==="gufoniApo" && E.exitedN===0)
+      ? t(`Żadna cząstka nie opuszcza kanału (0 z ${E.M}) — manewr KONWERSJI: celem jest zmiana postaci apo→geo; po nim ponowny Roll test i leczenie postaci geotropowej.`,`No particle leaves the canal (0 of ${E.M}) — a CONVERSION maneuver: the goal is the apo→geo change; afterward repeat the Roll test and treat the geotropic form.`)
+      : E.exitedN===E.M
+      ? t(`Cała chmura w łagiewce (${E.M} z ${E.M} cząstek) — w modelu kanał czysty. Kontrolny test pozycyjny wg protokołu.`,`The whole cloud is in the utricle (${E.M} of ${E.M} particles) — canal clear in the model. Control positional test per protocol.`)
+      : t(`Usunięto ~${pm}% masy złogu (${E.exitedN} z ${E.M} cząstek chmury) — pozostają cząstki najdrobniejsze (najwolniejsze: τ ∝ r⁻², prawo Stokesa). <b>Powtórz test pozycyjny.</b>`,`Removed ~${pm}% of the debris mass (${E.exitedN} of ${E.M} cloud particles) — the finest (slowest: τ ∝ r⁻², Stokes' law) particles remain. <b>Repeat the positional test.</b>`);
+    const swNote = (p.canal==="posterior" && E.exitedN>0)
+      ? `<div class="note">${t("Po ekspulsji złóg ląduje w łagiewce, która leży nad niebańkowym ujściem kanału poziomego — część przypadków HC-BPPV powstaje jako „canal switch” po leczeniu kanału tylnego. Model przełączenia nie symuluje (cząstki po wyjściu są w łagiewce „bezpieczne”); przy nawrocie zawrotów po manewrze zbadaj także kanał poziomy (Roll test).","After expulsion the debris lands in the utricle, which lies above the non-ampullary opening of the horizontal canal — a share of HC-BPPV arises as a \"canal switch\" after posterior-canal treatment. The model does not simulate the switch (exited particles stay \"safe\" in the utricle); if vertigo recurs after the maneuver, examine the horizontal canal too (Roll test).")}</div>` : "";
+    const dots=E.parts.map(p2=>{ const rr=3+3.5*(p2.m-0.7)/0.6;
+      return `<span title="r ×${p2.m.toFixed(2)}${p2.exited?` — ${t("wyszła po","exited after")} ${Math.round(p2.tExit)} s`:` — ${t("pozostaje w kanale","remains in the canal")}`}" style="display:inline-block;width:${(2*rr).toFixed(1)}px;height:${(2*rr).toFixed(1)}px;border-radius:50%;margin:0 3px;${p2.exited?"background:var(--primary)":"border:1.5px solid var(--muted)"};vertical-align:middle"></span>`; }).join("");
+    return `<div class="card" style="margin-top:10px">
+        <div class="obslabel" style="margin-bottom:4px">${t("Chmura złogu — repozycja częściowa","Debris cloud — partial repositioning")}</div>
+        <div style="margin:2px 0 6px;text-align:center">${dots}</div>
+        <div class="note">${main}</div>${swNote}
+        <div class="note">${t("Chmura (rozkład rozmiaru cząstek) i męczliwość przy powtórzeniach (rozpraszanie kłębka — oś rep, fatigueFactor) to OSOBNE osie modelu; chmura ich nie zastępuje. Oczy, pasek objawów i wędrówka otolitu pokazują cząstkę środkową chmury (kanoniczną symulację) — chmura żyje w liczbach tej karty.","The cloud (particle-size distribution) and fatigability across repetitions (clump dispersal — the rep axis, fatigueFactor) are SEPARATE model axes; the cloud does not replace them. The eyes, the symptom bar, and the otolith migration show the cloud's middle particle (the canonical simulation) — the cloud lives in this card's numbers.")}</div></div>`;
+  })() : "";
   const rdCard = (_man.exited && state.step===n-1)
     ? `<div class="card" style="margin-top:10px">
         <div class="obslabel" style="margin-bottom:4px">${t("Co dalej — zawroty rezydualne (RD)","What next — residual dizziness (RD)")}</div>
@@ -989,7 +1013,7 @@ function renderGuide(){
       </div>
       <div class="title">${st.title}</div>
       <div class="instr">${st.instr}</div></div>
-    ${rdCard}${timerBlock}${state.session ? (()=>{   // rdCard (D5) i pasek sesji (V10) inline: przy pustych ZERO bajtów różnicy (golden)
+    ${ensCard}${rdCard}${timerBlock}${state.session ? (()=>{   // ensCard (D9)/rdCard (D5)/pasek sesji (V10) inline: przy pustych ZERO bajtów różnicy (golden)
       const S2=state.session, match=CANAL_OF[state.maneuverKey]===S2.canal;
       const chipS=(k,val)=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${val}</b></span>`;
       const chips = S2.exited

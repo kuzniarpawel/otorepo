@@ -286,6 +286,33 @@ function engineOracle(h) {
     out.jam = jamRes;
   }
 
+  // ENSEMBLE (ocena II, V20/D9): chmura N=9 cząstek na JEDNEJ kanonicznej timeline — pin tabeli
+  // frakcji częściowej repozycji (sedno D9) + siatki (cicha zmiana siatki = FAIL) dla 9 manewrów × 2
+  // stron. TWARDA WYROCZNIA CHMURY (throw, nie pin — wzorzec fenotypu V15): środkowa cząstka
+  // (grid[4]=1.0) MUSI być BIT-RÓWNA maneuverSim — karta chmury nie może rozjechać się z tym, co
+  // grają oczy/pasek objawów (kanoniczna pojedyncza). Pokrycie ścieżki size LICZBOWEGO w silniku
+  // (poza ensemble nieużywanej — regresje ciągłego r byłyby bez tego niewidzialne).
+  if (h.ensembleSim && h.ENS_GRID && h.maneuverSim) {
+    const r5 = x => x == null ? null : +(+x).toFixed(5);
+    const r1 = x => x == null ? null : +(+x).toFixed(1);
+    const ens = { grid: h.ENS_GRID.map(r5) };
+    const cloudFails = [];
+    for (const key of Object.keys(h.MANEUVERS || {})) {
+      for (const side of ['P', 'L']) {
+        const plan = h.genPlan(key, side);
+        const e = h.ensembleSim(plan, 'medium');
+        ens[`${key}/${side}`] = { M: e.M, exitedN: e.exitedN, fracN: r5(e.fracN), fracMass: r5(e.fracMass),
+          meanPeak: r5(e.meanPeak), tPeak: r5(e.tPeak), tExit: e.parts.map(p => r1(p.tExit)) };
+        const mid = e.parts[4].sim, can = h.maneuverSim(plan, 'medium');
+        let eq = mid.length === can.length;
+        if (eq) for (let i = 0; i < mid.length; i++) { if (mid[i].xi !== can[i].xi || mid[i].phi !== can[i].phi || mid[i].exited !== can[i].exited) { eq = false; break; } }
+        if (!eq) cloudFails.push(`${key}/${side}`);
+      }
+    }
+    if (cloudFails.length) throw new Error('WYROCZNIA CHMURY (środek≡kanoniczna) NIE PRZESZŁA: ' + cloudFails.join(', '));
+    out.ensemble = ens;
+  }
+
   // LYING-DOWN (ocena II, V11/D2): pin liczb faz per scenariusz×strona — dom zaokrągla φ₀ i tnie ξ
   // progiem XI_CARD, więc dryf podprogowy byłby w dom niewidzialny (precedens sessionChain).
   if (h.ldtPhases) {
@@ -554,6 +581,14 @@ function domOracle(h, win) {
     grab('diag/lyingdown/P/session-off',  () => { h.toggleSessionMode(false); h.render(); });
     if (h.setBltScenario) h.setBltScenario('textbook'); else if (h.state) h.state.bltScenario = 'textbook';   // higiena po zasiewach
   }
+  // V20/D9: CHMURA ZŁOGU na finalnym kroku guide — karta częściowej repozycji (Epley 8/9), gałąź
+  // konwersji (gufoniApo 0/9) i WIECZNY pin własności „OFF = zero bajtów" (ensemble-off ≡ step finalny
+  // bazowy). Strażnik h.toggleEnsembleMode — stary build pomija cicho; higiena = OFF w ostatnim grabie.
+  if (h.toggleEnsembleMode && h.startManeuver) {
+    grab('guide/epley/P/ensemble-on', () => { h.startManeuver('epley'); if (h.state && h.state.plan) h.state.step = h.state.plan.steps.length - 1; h.toggleEnsembleMode(true); h.render(); });
+    grab('guide/gufoniApo/P/ensemble-on', () => { h.startManeuver('gufoniApo'); if (h.state && h.state.plan) h.state.step = h.state.plan.steps.length - 1; h.render(); });
+    grab('guide/epley/P/ensemble-off', () => { h.startManeuver('epley'); if (h.state && h.state.plan) h.state.step = h.state.plan.steps.length - 1; h.toggleEnsembleMode(false); h.render(); });
+  }
 
   return out;
 }
@@ -632,6 +667,7 @@ if (!CHECK) {
       diffKeys(snap.engine.spv, gold.engine.spv, 'engine.spv/', diffs);                              // V13/D6: jw.
       diffKeys(snap.engine.shortarm, gold.engine.shortarm, 'engine.shortarm/', diffs);               // V15/D10: jw.
       diffKeys(snap.engine.jam, gold.engine.jam, 'engine.jam/', diffs);                              // V15/D10: jw.
+      diffKeys(snap.engine.ensemble, gold.engine.ensemble, 'engine.ensemble/', diffs);               // V20/D9: jw.
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

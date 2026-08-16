@@ -8,6 +8,7 @@ const state={
   mode:"treat", screen:"setup",
   side:"P", canal:null, maneuverKey:null, testKey:null, variant:"canalo", dixObs:"post", dixRep:0,   // dixRep = numer powtórzenia prowokacji Dix-Hallpike (męczliwość oczopląsu)
   mechanism:null,   // D4/V16: mechanizm w obrębie fenotypu (null = klasyczny: geo→canalo, apo→cupulo; HC także "light"/"short"); jam celowo POZA (stan obturacyjny, nie mechanizm)
+  ensemble:false,   // D9/V20: chmura złogu (tryb zaawansowany, default OFF = ścieżka bit-identyczna); tryb WIDOKU, nie stan złogu — zmiana strony/rozmiaru go nie resetuje
   bltScenario:"textbook",   // Bow & Lean: scenariusz historii pozycyjnej (klucz BLT_HISTORY; ocena II V5)
   diagCentral:false,
   neuroOverlay:null,   // N7/D6: pacjent NeuroVOR nalozony TONICZNIE na ekrany diagnostyki pozycyjnej (null=wyl) — demonstracja AVS vs t-EVS (GRACE-3)   // przełącznik karty klasyfikacji: false=obwodowy (BPPV, klasyfikacja Bárány) · true=ośrodkowy (CPN)

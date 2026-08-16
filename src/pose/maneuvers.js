@@ -619,6 +619,42 @@ function maneuverTimeline(plan, size="medium"){
 function maneuverSim(plan, size="medium"){
   return Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, timeline:maneuverTimeline(plan,size), size});
 }
+/* ============ D9/V20: ENSEMBLE — chmura N niezależnych symulacji (BEZ FIZYKI) ============
+   Orkiestracja NAD silnikiem: N cząstek o promieniach z JAWNEJ siatki kwantylowej, każda gra
+   TĘ SAMĄ kanoniczną timeline (klinicysta wykonuje JEDEN manewr — re-derywacja holdów per cząstka
+   dałaby każdej własny protokół i ominęła całą treść częściowej repozycji). GRANICA ŹRÓDŁA:
+   rozkład rozmiarów agregatu in vivo NIEZMIERZONY (patrz engine_doc przy H2) — pasmo jednostajne
+   [0.7,1.3]·r_size to deklaracja niewiedzy, nie pomiar (NIE kalibrować do danych, których nie ma).
+   Siatka = kwantyle ŚRODKOWE rozkładu jednostajnego (m_k = 0.7+0.6·(k+0.5)/N): zbiega do całki po
+   rozkładzie (szczyt agregatu 1.0071/1.0085/1.0091 dla N=7/9/13 — sonda projektu; siatka z krańcami
+   przeważa ekstrema i dryfuje z N: 1.061→1.035), a środek siatki (k=4, N=9) = DOKŁADNIE 1.0 →
+   środkowa cząstka jest BIT-RÓWNA kanonicznej maneuverSim (twarda wyrocznia chmury: karta nie może
+   rozjechać się z tym, co grają oczy). Kotwica oceny „1.085" zidentyfikowana jako artefakt grubej
+   siatki N=5 z krańcami (odtworzone 1.0865) — teza jakościowa (dyspersja przesuwa i podnosi szczyt)
+   stoi, liczby docelowej NIE MA. AGREGACJA = ŚREDNIA arytmetyczna ξ po cząstkach: silnik JUŻ skaluje
+   gain∝r³ wewnątrz simulateCanalith — jawna dodatkowa waga r³ liczyłaby masę DWA RAZY (zmierzone
+   1.353, poza kalibracją CUP_WEAK/SPV) i jest ZAKAZANA. Chmura jest WYŁĄCZNIE widokiem: derivedHold/
+   timery/manExitStep/sesja/symptomy czytają dalej kanoniczną pojedynczą symulację. Osie rozdzielne:
+   rep NIE wchodzi (rep₂/rep₀ = fatigueFactor(2) co do 6 cyfr identycznie dla pojedynczej i chmury —
+   ensemble NIE zastępuje męczliwości; osobna decyzja kalibracyjna). */
+const ENS_BAND=[0.7,1.3], ENS_N=9;
+const ENS_GRID=Array.from({length:ENS_N},(_,k)=> ENS_BAND[0] + (ENS_BAND[1]-ENS_BAND[0])*(k+0.5)/ENS_N);
+function ensembleSim(plan, size="medium"){
+  const tl=maneuverTimeline(plan, size), r0=Vestibular.sizeR(size);
+  const parts=ENS_GRID.map(m=>{
+    const sim=Vestibular.simulateCanalith({canal:plan.canal, side:plan.side, timeline:tl, size:m*r0});
+    let tExit=null; for(const s of sim){ if(s.exited){ tExit=s.t; break; } }
+    return {m, sim, exited:sim.final.exited, inCrus:!!sim.final.inCrus, tExit};
+  });
+  const n=Math.min(...parts.map(p=>p.sim.length));
+  let meanPeak=0, tPeak=0;
+  for(let i=0;i<n;i++){ let s=0; for(const p of parts) s+=p.sim[i].xi; s/=parts.length;
+    if(Math.abs(s)>Math.abs(meanPeak)){ meanPeak=s; tPeak=parts[0].sim[i].t; } }
+  const exitedN=parts.filter(p=>p.exited).length;
+  const mass=parts.reduce((a,p)=>a+p.m*p.m*p.m,0);
+  const fracMass=parts.reduce((a,p)=>a+(p.exited?p.m*p.m*p.m:0),0)/mass;   // frakcja MASY (r³) — inna wielkość niż waga sygnału (ta jest w silniku)
+  return {parts, M:parts.length, exitedN, fracN:exitedN/parts.length, fracMass, meanPeak, tPeak};
+}
 // v: "canalo" (kanalolitiaza / geotropowy) | "cupulo" (kupulolitiaza / apogeotropowy)
 // CHIPY PER KANAŁ (ocena II, A6/V8): kanał PRZEDNI ma w silniku WYPROWADZONY brak latencji (R7: złóg
 // startuje dociśnięty do osklepka, 0.5 s = sam czas przejścia) i napad ~61 s — wspólne chipy
@@ -1289,7 +1325,7 @@ function baranyClassify(canal, variant, side, antMode, mech){
 }
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior",zuma:"horizontal",kim:"horizontal"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
