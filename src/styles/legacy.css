@@ -186,6 +186,14 @@
      OBOK niej, nie w srodku. Rzad, zeby oba elementy trzymaly wspolna linie bazowa. */
   .sesjaprzeł{display:flex; align-items:center; gap:10px}
   .sesjaprzeł__s{font-size:13px; color:var(--muted)}
+  /* Chmura zlogu: rzad kropek o promieniu ∝ rozmiar czastki. KOLOR NIE JEST JEDYNYM NOSNIKIEM —
+     wypelnienie (wyszla) vs sam obrys (zostala) rozni ksztaltem, a `title` niesie liczby. */
+  .enscloud{display:flex; align-items:center; gap:9px; padding:10px 2px; flex-wrap:wrap}
+  .enskropka{border-radius:50%; border:1.5px solid var(--line-strong); background:none; flex:0 0 auto}
+  .enskropka--out{background:var(--post); border-color:var(--post)}
+  .enstog{margin-left:auto; appearance:none; cursor:pointer; border:1px solid var(--line-strong);
+          background:none; color:var(--muted); border-radius:999px; padding:3px 12px; font-size:12px}
+  .enstog[aria-pressed="true"]{border-color:var(--primary); color:var(--primary)}
   .segobs{grid-template-columns:1fr 1fr}
   .segobs .opt{display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-height:auto;padding:10px 12px;font-size:13.5px}
   .segobs .opt small{font-weight:450;color:var(--muted);font-size:11px;line-height:1.25}

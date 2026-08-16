@@ -4,7 +4,7 @@ import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
 import { SIDE, sideN, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, CANAL_OF, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim,
          computeManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manExitStep, manFractions, guideNysSeconds,
-         DIAG, variantLabels, recommend, baranyClassify, BLT_HISTORY, SCEN_DRIVEN, nullScan, nullYawOf, bltInit } from '../pose/maneuvers.js';
+         DIAG, variantLabels, recommend, baranyClassify, BLT_HISTORY, SCEN_DRIVEN, nullScan, nullYawOf, bltInit, ensembleSim, sessionPreview } from '../pose/maneuvers.js';
 import { state } from '../app/state.js';
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
          POWODY_NIEWIARYGODNOSCI,
@@ -2320,6 +2320,40 @@ function renderGuide(){
           <div class="symrow"><span class="symlab">${t("Nudności","Nausea")}</span><div class="symbar"><div class="symfill symfill--naus" style="width:${np}%"></div></div><span class="symval">${np}%</span></div>
           <div class="note" style="margin-top:8px">${t("Poglądowo, z tej samej fizyki, która napędza oczopląs: zawrót ~ bieżące odchylenie osklepka, nudności ~ skumulowana dawka od początku manewru. To NIE jest pomiar kliniczny.","Illustrative, from the same physics that drives the nystagmus: vertigo ~ the current cupular deflection, nausea ~ the cumulative dose since the maneuver began. This is NOT a clinical measurement.")}</div>
         </div>`; })()}
+    ${/* CHMURA ZLOGU (D9/V20) — CZESCIOWA REPOZYCJA JAKO ZJAWISKO EMERGENTNE, nie jako osobna
+          regula. Silnik dostaje 9 czastek o promieniach z jawnej siatki kwantylowej [0,7..1,3]·r
+          i KAZDA gra TE SAMA kanoniczna timeline (klinicysta wykonuje JEDEN manewr). Ktore wyjda,
+          wychodzi samo ze straznika derivedHold — nie z tabeli.
+          GRANICA ZRODLA: rozklad rozmiarow agregatu in vivo jest NIEZMIERZONY; pasmo jednostajne
+          to deklaracja niewiedzy, nie pomiar. Karta mowi to wprost.
+          TYLKO NA KROKU FINALNYM (wczesniej pytanie „ile wyszlo" nie ma desygnatu) i TYLKO POZA
+          sesja (sesja opowiada JEDEN zlog — mieszanie obu narracji byloby dwoma pacjentami naraz).
+          SLAD W GOLDENIE, zmierzony: TRESC karty (+374 znaki) siedzi wylacznie w kluczach kroku
+          finalnego — 18 z 94 dotknietych. Pozostale 76 to BIALY ZNAK z warunku emitujacego "",
+          ta sama klasa co przy innych kartach warunkowych; zero nowych i zero usunietych kluczy. */""}
+    ${(state.step === n-1 && !state.session) ? (()=>{
+      const kluczE = `${state.plan.name}|${state.plan.side}|${state.size}`;
+      if(state._ensKey !== kluczE){ state._ensKey = kluczE; state._ensSim = ensembleSim(state.plan, state.size); }
+      const e = state._ensSim, konwersja = state.plan.mechanism === "cupulo" && e.exitedN === 0;
+      const kropki = e.parts.map(p2=>{
+        const r = (3.5 + 3.5*p2.m).toFixed(1);
+        const tyt = `${t("rozmiar","size")} ×${p2.m.toFixed(2)} — ${p2.exited ? t(`opuścił kanał w ${p2.tExit.toFixed(1)} s`,`left the canal at ${p2.tExit.toFixed(1)} s`) : t("został w kanale","stayed in the canal")}`;
+        return `<span class="enskropka${p2.exited?" enskropka--out":""}" style="width:${r*2}px;height:${r*2}px" title="${tyt}"></span>`;
+      }).join("");
+      return `<div class="panelbox" style="margin-bottom:12px"><h4>${t("Chmura złogu","Debris cloud")}
+          <button class="enstog" aria-pressed="${!!state.ensemble}" onclick="toggleChmura()">${state.ensemble ? t("ukryj","hide") : t("pokaż","show")}</button></h4>
+        ${!state.ensemble ? `<div class="note">${t("Jeden manewr, dziewięć rozmiarów cząstek — pokazuje, ile złogu naprawdę opuszcza kanał.","One maneuver, nine particle sizes — shows how much debris actually leaves the canal.")}</div>` : `
+        <div class="enscloud">${kropki}</div>
+        <div class="fupods"><dl>
+          <dt>${t("Opuściło kanał","Left the canal")}</dt><dd><b>${e.exitedN} / ${e.M}</b> ${t("cząstek","particles")}</dd>
+          <dt>${t("Frakcja masy","Mass fraction")}</dt><dd><b>${Math.round(e.fracMass*100)} %</b></dd>
+        </dl></div>
+        <div class="note" style="margin-top:10px">${konwersja
+          ? t("Ten manewr NIE opróżnia kanału i nie ma tego robić — Gufoni apogeotropowy jest manewrem KONWERSJI (apo→geo). Zero cząstek na wyjściu to wynik zgodny z zamiarem, nie porażka.","This maneuver does NOT empty the canal and is not meant to — the apogeotropic Gufoni is a CONVERSION maneuver (apo→geo). Zero particles out is the intended result, not a failure.")
+          : t("Cząstki mniejsze osiadają wolniej i część z nich nie mieści się w oknie czyszczenia — dlatego repozycja bywa CZĘŚCIOWA. To wychodzi z fizyki, nie z osobnej reguły.","Smaller particles settle more slowly and some do not fit inside the clearing window — which is why repositioning can be PARTIAL. This follows from the physics, not from a separate rule.")}</div>
+        ${konwersja ? "" : `<div class="note">${t("Kontekst kliniczny: skuteczność repozycji to ok. 80 % po pojedynczej sesji, z dalszym wzrostem przy powtórzeniach (AAO-HNS 2017 [H27]); przegląd Cochrane 2014 [H28] daje ustąpienie zawrotu 56 % vs 21 % bez manewru. To NIE są te same miary co frakcja powyżej — model pokazuje masę złogu, nie odsetek pacjentów.","Clinical context: repositioning succeeds in about 80 % after a single session, rising with repeats (AAO-HNS 2017 [H27]); the Cochrane 2014 review [H28] reports vertigo resolution 56 % vs 21 % without a maneuver. These are NOT the same measures as the fraction above — the model shows debris mass, not a percentage of patients.")}</div>`}
+        <div class="note">${t("Rozkład rozmiarów agregatu in vivo jest NIEZMIERZONY — pasmo cząstek to deklaracja niewiedzy, nie pomiar. Chmura jest widokiem: timery, wędrówka otolitu i objawy liczą się dalej z pojedynczej cząstki.","The in-vivo size distribution of the aggregate is UNMEASURED — the particle band is a declaration of ignorance, not a measurement. The cloud is a view: timers, otolith migration and symptoms are still computed from a single particle.")}</div>`}
+      </div>`; })() : ""}
     </div><div class="col col--ctl">
     <div class="card stepcard">
       <div class="stephead">
@@ -2653,6 +2687,24 @@ function renderDiag(){
                   : `φ₀ ≈ ${Math.round(Vestibular.restPhi("horizontal", A))}° ${t("(spoczynek)","(at rest)")}`;
         return `<button class="opt" aria-pressed="${(state.bltScenario||"textbook")===k}" onclick="setBltScenario('${k}')">${BLT_HISTORY[k].label}<small>${phi}</small></button>`;
       }).join("")}</div>
+      ${/* PODGLAD Z SESJI (V19) — cala tresc integracji. Przy WLACZONEJ sesji karta przestaje
+            pytac o historie i CZYTA stan zloga: `sessionPreview` liczy NASTEPNE wykonanie tej proby
+            z biezacego polozenia. Scenariusz zostaje jako ZASIEW (akt otwierajacy), nie jako opcja.
+            Faza z `exited` niesie najwazniejsza rzecz, ktorej scenariusz sam nie powie: ze ta proba
+            OPROZNI kanal — czyli test bywa samoleczacy (R10). */""}
+      ${state.session && SCEN_DRIVEN.has(state.testKey) ? (()=>{
+        const pv = sessionPreview(state.session, state.testKey);
+        const fazy = (pv.phases||[]).map((f,i)=>`<dt>${t("Faza","Phase")} ${i+1}</dt><dd>|ξ| <b>${Math.abs(f.xi).toFixed(3)}</b>${f.exited?` — <b>${t("złóg opuszcza kanał","the debris leaves the canal")}</b>`:""}</dd>`).join("");
+        return `<div class="card" style="margin-bottom:4px;${TON}">
+          <div class="label"><span class="eyebrow">${t("Podgląd z sesji — następne wykonanie","Session preview — the next run")}</span></div>
+          <div class="fupods"><dl>
+            <dt>${t("Złóg teraz","Debris now")}</dt><dd>${state.session.exited ? t("poza kanałem","outside the canal") : (state.session.phi!=null?`φ ≈ ${Math.round(state.session.phi)}°`:t("spoczynek","at rest"))}</dd>
+            ${fazy}
+          </dl></div>
+          <div class="note" style="margin-top:10px">${pv.exited
+            ? t("Ta próba OPRÓŻNI kanał — po niej test kontrolny będzie niemy, a to wynik, nie usterka (test bywa samoleczący).","This test WILL empty the canal — the control test afterwards will be silent, and that is a result, not a fault (the test can be self-treating).")
+            : t("Liczone z bieżącego położenia złogu, a nie ze scenariusza: przy włączonej sesji aplikacja wie, gdzie złóg jest, bo sama go tam zostawiła.","Computed from where the debris is now, not from the scenario: with the session on, the app knows where the debris is because it left it there.")}</div>
+        </div>` ; })() : ""}
       <div class="note" style="margin-top:10px">${(()=>{ const ini=bltInit(A, state.bltScenario||"textbook");
         const phi = ini && ini.phi0!=null ? Math.round(ini.phi0) : Math.round(Vestibular.restPhi("horizontal", A));
         return t(`Scenariusz ustala położenie złogu: φ₀ ≈ ${phi}° — POLICZONE symulacją historii przez silnik, nie wpisane. Strzałki i napisy poniżej to WYNIK symulacji dla tego położenia, nie reguła. To cecha PACJENTA, nie ustawienie testu; bez znanej historii model nie rozstrzyga strony i mówi to wprost, zamiast zgadywać.`,
