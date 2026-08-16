@@ -1916,7 +1916,11 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    f) MANEWRY BEZ ZMIAN, wszystkie: epley, semont, bascule, lempert, gufoniGeo, gufoniApo, zuma, kim —
       φ końcowe i szczyty identyczne. Lempert nie używa tej pozy (złóg wychodzi w t=71.55 s, poza jest
       później); zuma używa jej w kroku 4., ale po wyjściu złogu — zmienia się wyłącznie TEKST instrukcji.
- KOSZT NR 1 — TEST STAJE SIĘ ZABIEGIEM. TO NIE ZGIĘCIE O TYM DECYDUJE (korekta po krytyce; pierwsza
+ ZJAWISKO NR 1 — TEST STAJE SIĘ ZABIEGIEM. [WERDYKT KLINICZNY UŻYTKOWNIKA 2026-08-16: to NIE JEST BŁĄD.
+   Badanie pozycyjne bywa zabiegiem i ma zostać ODNOTOWANE, nie naprawione. Poniższe zostaje jako opis
+   zjawiska i jego granic, nie jako defekt do usunięcia. Otwarte pozostaje wyłącznie, czy ROZKŁAD
+   (4/4 dla medium/big) nie zawyża częstości — to własność łuku, nie pomiar na chorych.]
+   TO NIE ZGIĘCIE O TYM DECYDUJE (korekta po krytyce; pierwsza
    wersja tego wpisu przypisywała efekt zgięciu i była MYLĄCA). Zmierzona macierz rozmiar × hold
    (scenariusz neutral, akt chore→centrum→zdrowe, koniec fazy 3 = 27.4 + hold):
      MAŁY złóg: nie opróżnia kanału przy ŻADNYM zgięciu ani holdzie (20 i 30 s, 10.30° i 30°).
@@ -1931,7 +1935,7 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    ochronnej roli 30° było nadinterpretacją i zostało wycofane.
    Skutek dla karty: kontrolny test po akcie milknie (medium/big). DIAGNOSTYKA NIETKNIĘTA — obie fazy
    niosą pełną odpowiedź, lateralizacja poprawna w 3/4 scenariuszy jak przed zmianą.
- KOSZT NR 2 — UTRATA SELEKTYWNOŚCI KANAŁOWEJ (znalezisko krytyka wyroczni, ZWERYFIKOWANE i NAJMOCNIEJSZE
+ ZJAWISKO NR 2 — PRZECIEK KANAŁU PRZEDNIEGO NA KARTĘ ROLLA (dawniej „utrata selektywności") (znalezisko krytyka wyroczni, ZWERYFIKOWANE i NAJMOCNIEJSZE
    przeciw tej zmianie): w macierzy cross egzaminu pacjent z kanałem PRZEDNIM daje w pozycji Roll
    odpowiedź 0.0127 przy zgięciu 30° (niema) i 0.1185 przy 10.30° (WIDOCZNA — próg XI_CARD 0.10).
    Przejście progu leży między 15° a 10.30° (15° → 0.0701). Czyli w geometrii TEGO modelu 30° JEDNAK
@@ -1941,6 +1945,22 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    sam w sobie NIE jest nowy (HC w Dix 0.478, PC w Rollu 0.530 — pinowane od V21); nowa jest wyłącznie
    ta jedna komórka przechodząca próg widoczności. DECYZJA KLINICZNA (użytkownika): czy uczyć, że test
    Roll przy anatomicznym zgięciu bywa dodatni w AC-BPPV, czy uznać to za argument za pasmem 15–20°.
+   [ROZSTRZYGNIĘTE 2026-08-16 — ZOSTAJE KĄT ANATOMICZNY (decyzja użytkownika), a pomiar WYGLĄDU
+    oczopląsu w dużej mierze rozbraja zarzut. W pozycji Rolla, składowe w układzie pacjenta:
+      HC: h ±1.000, v 0, t 0 — czysto POZIOMY, ZMIENIA KIERUNEK między stronami (0.784 chore w dole
+          vs 0.297 zdrowe), czyli klasyczny DCPN;
+      AC: h 0, v −1.000, t 0 — czysty DOWNBEAT, BEZ zmiany kierunku, i praktycznie JEDNOSTRONNY
+          (0.1185 przy uchu chorym w dole vs 0.0003 przy zdrowym).
+    Osie są ORTOGONALNE, więc obraz nie jest mylący: klinicysta czyta „pozycyjny downbeat", czyli
+    dokładnie ścieżkę AC/ośrodkową, a nie DCPN kanału poziomego. Karta wyświetla „oczopląs ↓ (downbeat)
+    (słaby)" — sprawdzone. UWAGA KONWENCYJNA: zerowa torsja AC to MASKA KLINICZNA (NYS_SHOW.anterior.t
+    = false, „czysty downbeat"); geometria tego atlasu daje torsję 0.739 względem składowej pionowej.
+    U realnego chorego w VOG obraz byłby więc downbeat + torsja — jeszcze DALEJ od czysto poziomego HC.
+    Analogicznie ukryta jest torsja HC (geom. 0.182). Pasmo 15–20° ODRZUCONE: próg widoczności AC leży
+    przy 12.07°, ale dolna połowa pasma (do 18°) i tak nie powstrzymuje opróżnienia kanału, a przeciek
+    kanału TYLNEGO na kartę Rolla (0.53 przy 10.30°, wciąż 0.40 przy 30°) jest widoczny przy KAŻDYM
+    kącie — „selektywności" nie było nigdy. Dobieranie kąta pozy pod pożądane zachowanie diagnostyczne
+    byłoby naginaniem pozy do wyniku, czyli błędem, który usunął przepis pozy z 2026-08-05.]
  SPRZECZNOŚĆ WEWNĘTRZNA DO ROZSTRZYGNIĘCIA (krytyk geometrii): dwie ścieżki modelują TO SAMO badanie
    i mówią różnie — preset historii BLT_HISTORY.afterRoll („po teście Roll, oba boki") zostawia złóg
    w kanale (φ₀ 220.15, exitedInHistory=false), a akt sesji ACT_STEPS.roll ten sam test OPRÓŻNIA

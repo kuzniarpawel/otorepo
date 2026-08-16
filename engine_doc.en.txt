@@ -2067,7 +2067,12 @@ substance of partial repositioning).
    f) MANEUVERS ALL UNCHANGED: epley, semont, bascule, lempert, gufoniGeo, gufoniApo, zuma, kim —
       identical final phi and peaks. Lempert does not use this pose (the debris exits at t=71.55 s, the
       pose comes later); zuma uses it in step 4, but after the exit — only the instruction TEXT changes.
- COST No. 1 — THE TEST BECOMES A TREATMENT. THE FLEXION IS NOT WHAT DECIDES THAT (a correction after the
+ PHENOMENON No. 1 — THE TEST BECOMES A TREATMENT. [THE USER'S CLINICAL RULING 2026-08-16: this is NOT an
+   error. A positional test can act as a treatment and is to be NOTED, not fixed. What follows stands as a
+   description of the phenomenon and its limits, not as a defect to remove. The only thing still open is
+   whether the DISTRIBUTION (4/4 for medium/big) overstates the frequency — that is a property of the arc,
+   not a measurement in patients.]
+   THE FLEXION IS NOT WHAT DECIDES THAT (a correction after the
    review; the first version of this entry attributed the effect to the flexion and was MISLEADING).
    The measured size x hold matrix (neutral scenario, act affected->centre->healthy, end of phase 3 =
    27.4 + hold):
@@ -2083,7 +2088,7 @@ substance of partial repositioning).
    protective role to 30 degrees was an overreach and has been withdrawn.
    Effect on the card: the control test after the act falls mute (medium/large). DIAGNOSIS UNTOUCHED —
    both phases carry a full response, lateralisation correct in 3/4 scenarios as before the change.
- COST No. 2 — LOSS OF CANAL SELECTIVITY (the oracle critic's finding, VERIFIED, and the STRONGEST point
+ PHENOMENON No. 2 — ANTERIOR-CANAL LEAKAGE ONTO THE ROLL CARD (formerly "loss of canal selectivity") (the oracle critic's finding, VERIFIED, and the STRONGEST point
    against this change): in the exam cross matrix a patient with ANTERIOR-canal debris produces, in the
    Roll position, a response of 0.0127 at a 30-degree flexion (mute) and 0.1185 at 10.30 (VISIBLE — the
    XI_CARD threshold is 0.10). The crossing lies between 15 and 10.30 (15 -> 0.0701). So in THIS model's
@@ -2094,6 +2099,23 @@ substance of partial repositioning).
    0.530 — pinned since V21); what is new is this single cell crossing the visibility threshold. A
    CLINICAL DECISION (the user's): whether to teach that the Roll test at the anatomical flexion can be
    positive in AC-BPPV, or to treat this as an argument for a 15-20 degree band.
+   [SETTLED 2026-08-16 — THE ANATOMICAL ANGLE STAYS (the user's decision), and measuring the APPEARANCE of
+    the nystagmus largely defuses the objection. In the Roll position, components in the patient frame:
+      HC: h +/-1.000, v 0, t 0 — purely HORIZONTAL, DIRECTION-CHANGING between sides (0.784 affected ear
+          down vs 0.297 healthy), i.e. a classic DCPN;
+      AC: h 0, v -1.000, t 0 — pure DOWNBEAT, NO direction change, and practically UNILATERAL
+          (0.1185 with the affected ear down vs 0.0003 with the healthy one).
+    The axes are ORTHOGONAL, so the picture is not confusing: the clinician reads "positional downbeat",
+    i.e. exactly the AC/central pathway, not a horizontal-canal DCPN. The card displays "nystagmus down
+    (downbeat) (weak)" — verified. A NOTE ON CONVENTION: the AC's zero torsion is a CLINICAL MASK
+    (NYS_SHOW.anterior.t = false, "pure downbeat"); this atlas's geometry gives a torsion of 0.739 relative
+    to the vertical component. In a real patient under VOG the picture would therefore be downbeat plus
+    torsion — even further from the purely horizontal HC. The HC torsion is hidden the same way (geom.
+    0.182). The 15-20 degree band was REJECTED: the AC visibility threshold sits at 12.07 degrees, but the
+    lower half of the band (up to 18) still fails to stop the canal from emptying, and the POSTERIOR canal's
+    leakage onto the Roll card (0.53 at 10.30, still 0.40 at 30) is visible at EVERY angle — the
+    "selectivity" never existed. Choosing a pose angle to obtain a desired diagnostic behaviour would be
+    bending the pose to the result, the very error the 2026-08-05 pose derivation removed.]
  AN INTERNAL CONTRADICTION TO BE RESOLVED (geometry critic): two paths model the SAME examination and say
    different things — the history preset BLT_HISTORY.afterRoll ("after the Roll test, both sides") leaves
    the debris in the canal (phi0 220.15, exitedInHistory=false), while the session act ACT_STEPS.roll
