@@ -1157,7 +1157,12 @@ ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
        Resztę różnicy (10.4 vs 20) mogą tłumaczyć definicje punktów Reida (punkt podoczodołowy vs
        orbitale, środek przewodu vs porion) i zmienność osobnicza. NIE korygujemy geometrii pod średnią
        innej pracy — zszywanie źródeł jest dokładnie tym, co usunięto w b5f55b1.
-     SKUTEK DLA R3: żaden. R3 jest niezależne od pochylenia ramki (patrz korekta przy R3).
+     SKUTEK DLA R3: żaden dla POCHYLENIA RAMKI. [KOREKTA 2026-08-16] Ale kanon 30° wraca w R3 innym
+       wejściem: to TA SAMA liczba, którą klinika wpisuje jako „unieś/przygnij głowę o 30°" w teście
+       Roll. Zdanie „kanon pochodzi z konwencji kalorycznej" ma tu status hipotezy — udokumentowanej
+       źródłami wtórnymi w R3-PRZEMIERZENIE 30° (punkt b/h), gdzie policzono też, ile uniesienia
+       naprawdę potrzeba przy nachyleniu 10.4° tego atlasu (10.30°) i ile kosztuje przegięcie do 30°.
+       Bibliografia pomiarowa: [H29].
 
  R6-STARE. YACOVINO NIE CZYŚCI KANAŁU PRZEDNIEGO przy anatomicznie poprawnym łuku [ZAMKNIĘTE — wyżej].
      Minimum grawitacyjne w jego najgłębszym kroku (deep head-hang) to 233.8°, a ujście leży na 266°.
@@ -1263,6 +1268,103 @@ POZOSTAŁE (do decyzji):
      WNIOSEK: R3 sprowadza się do jednego pytania i jest ZABLOKOWANE NA R10. Kalibracja stałych per
        kanał pozostaje ODRADZANA — nie ma czego kalibrować — różnica jest geometryczna, a reszta mieści
        się w ilości złogu.
+
+ R3-PRZEMIERZENIE 30° (2026-08-16, po dostarczeniu R10 w V10/V19 i okablowaniu karku w V24).
+     BLOKADA PADŁA: silnik MA pamięć położenia, więc „gdzie złóg leży na starcie" przestało być
+     założeniem. Pytanie „po co 30° przygięcia w teście Roll" dało się wreszcie zmierzyć na REALNYM
+     rozkładzie startów zamiast na jednym przyjętym φ₀.
+     PROTOKÓŁ: poza o dowolnym zgięciu = headQOf(0, −90+flex, yaw), kark neckPitch=flex (konwencja V24
+       + NECK_PREFIX). TRZY WYROCZNIE BIT-W-BIT przed pomiarem: headQOf(0,−90,·)≡stepHeadQ("supineFlat"),
+       headQOf(0,−60,·)≡stepHeadQ("supineFlex"), akt(30°,20 s)≡actTimeline("roll"); lustro P/L 0.0e+0.
+       Akt jak w silniku: chore 20 s → centrum 5 s → zdrowe 20 s → siad 30 s. Starty: 4 scenariusze
+       BLT_HISTORY (146.2/173.0/221.4/spoczynek 199.8) + przemiatanie łuku co 0.05°. dt=0.05, medium.
+     WYNIK 1 — ZGIĘCIE DECYDUJE (hold 20 s, kolejność chore-najpierw = ACT_STEPS.roll):
+       zgięcie  0°: kanał opróżniony 4/4 scenariuszy (95.3% łuku), φ→267.3 = ujście
+       zgięcie 15°: 4/4 (58.5% łuku)   ·   zgięcie 20°: 0/4 (17.0%)   ·   zgięcie 30°: 0/4 (1.9%)
+       Próg leży między 15° a 20°; przy 30° zapas do krawędzi ≈11°.
+     WYNIK 2 — KONSEKWENCJA JEST JAKOŚCIOWA, NIE SEKUNDOWA: przy 0° kontrolny retest (akt #2 łańcucha
+       sesji, po SESSION_REST z readhesion) jest NIEMY — intensity 0.0000 we WSZYSTKICH 4 scenariuszach;
+       przy 30° retest odpowiada (0.400–0.412). Test przy zgięciu 0° wykonuje pracę manewru i NISZCZY
+       WŁASNĄ KONTROLĘ: nie da się zweryfikować, czy pacjent wyzdrowiał, czy badanie skłamało.
+       To mocniejsze sformułowanie niż dawne „30° kupuje ~6 s" (ta liczba się broni: t_req 18.4–19.0 s
+       przy 0° wobec 23.5–24.2 s przy 30°).
+     WYNIK 3 — TO, CZEGO R10 WCZEŚNIEJ NIE POZWALAŁ POWIEDZIEĆ: ochrona jest NIEZALEŻNA OD STARTU.
+       Rozrzut t_req po całym realnym zakresie φ₀ wynosi 0.6 s (18.4–19.0 przy 0°; 23.5–24.2 przy 30°).
+       Dawna odpowiedź brzmiała „zależy od tego, gdzie złóg leży, a silnik tego nie wie" — teraz wie:
+       PRAWIE NIE ZALEŻY. To jest właściwy zysk z domknięcia R10 w tym wątku.
+     WYNIK 4 — OGRANICZENIE, KTÓRE UNIEWAŻNIA PROSTĄ ODPOWIEDŹ: ochrona jest funkcją HOLDU, nie samego
+       zgięcia (scenariusz neutral, chore-najpierw): hold 15 s → nie opróżnia przy żadnym zgięciu;
+       20 s → opróżnia przy 0°, nie przy 30°; 25 s i 30 s → opróżnia TAKŻE przy 30°; 45–60 s → opróżnia
+       nawet przy 45°. Czyli 30° chroni WYŁĄCZNIE w wąskim paśmie holdu ~20 s, a przy holdzie 30 s
+       (który ten sam wpis nazywa „normalnym holdem 30–60 s") nie chroni wcale.
+     ZASTRZEŻENIE PRZECIW WŁASNEMU WYNIKOWI (obowiązkowe): ACT_STEPS.roll koduje hold 20 s — dokładnie
+       tę wartość, przy której 30° wychodzi na ochronne. Zgodność modelu z własnym parametrem NIE jest
+       dowodem; gdyby akt miał 30 s, wynik byłby odwrotny. Pasmo ochrony (18.5–23.5 s) leży w środku
+       rozrzutu klinicznych holdów, więc rozstrzygnięcie zależy od tego, jak długo BADAJĄCY trzyma pozycję.
+     KOSZT: szczyt fazy chorego ucha spada przy 30° o 12.9% (afterRoll) do 20.1% (textbook); najsłabsza
+       zmierzona odpowiedź 0.323 to 3.2× ponad XI_CARD — KARTA NIGDY NIE MILKNIE. Koszt jest realny
+       w amplitudzie, ale nie kosztuje widoczności.
+     ZNALEZISKO POBOCZNE (mocniejsze od głównego) — KOLEJNOŚĆ WAŻY WIĘCEJ NIŻ ZGIĘCIE: przy kolejności
+       „zdrowe ucho najpierw" faza chorego ucha zapada się do intensity 0.008–0.086 (złóg zdążył wyjść
+       albo się przemieścić) i LATERALIZACJA WSKAZUJE ZŁĄ STRONĘ w 4/4 scenariuszy przy 0°; przy 30°
+       ratują się textbook i afterDix, afterRoll i neutral nadal mylą. Przy „chore najpierw" wskazanie
+       jest poprawne w 3/4 (wyjątek textbook — flip WEWNĘTRZNY dla φ₀=146°, niezależny od opróżnienia).
+       Emergentne potwierdzenie Bhandari 2022, cytowanego już w R10.
+     CZEGO POMIAR NIE ROZSTRZYGA: model nie ma dostępu do niczego, co może być prawdziwym powodem
+       klinicznych 30° — komfortu chorego, ucisku tętnicy kręgowej przy wyproście, ustawienia kanału
+       względem osi obrotu w realnym wykonaniu, tradycji opisu. Odpowiedź brzmi: W GEOMETRII TEGO MODELU
+       (jeden atlas, ramka Reida) 30° ma sens mechaniczny — chroni test przed staniem się zabiegiem
+       i ratuje kontrolę — O ILE hold nie przekracza ~23 s. To odpowiedź modelu, nie kliniki.
+     STATUS ŹRÓDŁOWY 30° — KWERENDA WYKONANA 2026-08-16. WERDYKT: 30° NIE JEST POMIAREM WYDAJNOŚCI
+       TESTU. Jest liczbą przeniesioną z KANONU ORIENTACJI KANAŁU, a ten ma rodowód KALORYCZNY.
+       (a) LICZBA NIE JEST USTALONA. Piśmiennictwo podaje równolegle „20°", „20–30°", „30° zgięcia"
+           oraz — u Haina (dizziness-and-balance.com) — „głowa lekko uniesiona, tak by kanał boczny był
+           optymalnie zorientowany", BEZ żadnego kąta. Wielkość zmierzona miałaby jedną wartość.
+       (b) UZASADNIENIE JEST DOSŁOWNIE KALORYCZNE: „uniesienie ustawia kanał boczny w płaszczyźnie
+           PIONOWEJ". W próbie kalorycznej ten warunek jest FIZYCZNIE KONIECZNY — teoria konwekcji
+           Bárány'ego (1906) wymaga pionowej płaszczyzny kanału, żeby różnica gęstości endolimfy w ogóle
+           wprawiła ją w ruch. W teście POZYCYJNYM konwekcji nie ma; jest wyłącznie grawitacja działająca
+           na złóg. Liczba przeszła z jednej procedury do drugiej razem ze zdaniem uzasadniającym.
+       (c) PIŚMIENNICTWO SAMO SOBIE PRZECZY CO DO CELU: część źródeł mówi, że 30° ustawia kanał PIONOWO,
+           część — że „wyrównuje kanały boczne POZIOMO". To cele przeciwne. Liczba, której deklarowany
+           sens odwraca się między źródłami, jest PRZEKAZYWANA, nie wyprowadzana.
+       (d) KANON 30° NACHYLENIA NIE MA POKRYCIA W POMIARACH (por. R9): Della Santina i wsp. 2005 [H29]
+           — ZWERYFIKOWANE U ŹRÓDŁA: kąt między normalną do kanału bocznego a osią Z ramki Reida
+           19.9°±7.0 (lewy), czyli płaszczyzna kanału ~20° od poziomu Reida; Wu i wsp. 2021 (MRI, n=55)
+           17.4°; IE-Map (nasz atlas) 10.4°. UWAGA UCZCIWOŚCIOWA: zdania z R9, jakoby praca Della Santiny
+           „WPROST odnotowywała różnicę wobec podręcznikowych 30°", NIE UDAŁO SIĘ potwierdzić na poziomie
+           abstraktu — wymaga pełnego tekstu; sama LICZBA jest potwierdzona.
+       (e) POMIAR W NASZYM SILNIKU — TA SAMA WIELKOŚĆ, KTÓREJ CHCE UZASADNIENIE KLINICZNE. |g|_pł
+           (ułamek grawitacji leżący W PŁASZCZYŹNIE kanału) jest maksimum dokładnie wtedy, gdy kanał
+           stoi „pionowo" w sensie tego uzasadnienia. Zmierzone dla kanału poziomego P:
+             pozycja NEUTRALNA na wznak (twarz w górę, przed obrotem): maksimum przy zgięciu +10.30°,
+               |g|_pł = 1.000000 — a nachylenie kanału tego atlasu wynosi 10.44°. RÓWNOŚĆ NIE JEST
+               PRZYPADKOWA: żeby położyć kanał pionowo, trzeba unieść głowę DOKŁADNIE O JEGO NACHYLENIE.
+               Przy +30° |g|_pł = 0.9415 (−5.9% wobec optimum) — PRZEGIĘCIE o ~20°.
+             pozycja TESTOWA (głowa obrócona 90°, ucho w dole): optimum przesuwa się na −1.77°,
+               a +30° kosztuje 14.5%.
+       (f) WNIOSEK. Uzasadnienie kliniczne jest GEOMETRYCZNIE ŚCISŁE — ale dla anatomii o nachyleniu 30°.
+           Przy nachyleniach ZMIERZONYCH (10–20°) uniesienie realizujące ten sam cel wynosi 10–20°, czyli
+           DOLNY kraniec klinicznego pasma „20–30°". 30° przegina o dokładnie tyle, o ile kanon zawyża
+           anatomię. Nie znaleziono ANI JEDNEJ pracy porównującej kąty uniesienia pod względem czułości
+           testu Roll — pasmo „20–30°" jest konwencją, nie optimum zmierzonym na chorych.
+       (g) SKUTEK DLA WYNIKU WYŻEJ: zmierzony efekt ochronny 30° (test nie staje się zabiegiem, kontrola
+           zostaje żywa) jest zatem SKUTKIEM UBOCZNYM PRZEGIĘCIA, nie zamiarem — i tak trzeba go opisywać.
+           Nie unieważnia to pomiaru: efekt jest realny w tej geometrii. Unieważnia narrację „30° dobrano,
+           żeby chronić test". Osobno przypominam ograniczenie: ochrona znika przy holdzie ≥25 s.
+       (h) CZEGO NIE ROZSTRZYGNIĘTO: oryginalnych opisów McClure'a (1985) i Pagniniego/Nutiego/
+           Vannucchiego (1989) NIE udało się przeczytać w oryginale (brak dostępu) — nie wiadomo więc,
+           czy kąt w ogóle w nich wystąpił, czy dokleił się później. Rodowód kaloryczny 30° opiera się
+           na źródłach WTÓRNYCH (przeglądy, StatPearls, materiały dydaktyczne), zgodnych co do treści;
+           pracy Bárány'ego z 1906 nie czytano. Do czasu domknięcia (a)+(h) zdanie „30° pochodzi
+           z konwencji kalorycznej" ma status DOBRZE UDOKUMENTOWANEJ HIPOTEZY, nie faktu z pierwszej ręki.
+     RZETELNOŚĆ POMIARU: warstwa adwersaryjna PADŁA (3 z 5 agentów warsztatu, w tym OBAJ krytycy,
+       zakończone błędami API). Rdzeń zweryfikowany niezależnym kodem głównej pętli: wyrocznie póz
+       bit-w-bit, tożsamość aktu z actTimeline, lustro P/L, 4 scenariusze × {0°,30°} × {opróżnienie,
+       retest, koszt} + tabela odporności na hold. Przy weryfikacji złapano BŁĄD WŁASNY: pierwsze
+       porównanie lateralizacji szło na surowym |ξ| zamiast na intensity po rektyfikacji Ewalda II
+       (wynik z rektyfikacją jest w „znalezisku pobocznym"). Pomiar NIE ma niezależnej kontroli
+       adwersaryjnej — przy sporze o którąkolwiek liczbę należy ją przemierzyć od nowa.
 
  R3-STARE. STAŁE SKALIBROWANO WYŁĄCZNIE DLA KANAŁU TYLNEGO; kanały poziomy i przedni dziedziczą je bez własnej
      walidacji i wychodzą klinicznie na odwrót:
@@ -2419,6 +2521,20 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         (95% CI 6,0–15,42; 8 badań, 507) · Epley ≈ Semont/Gans (bez różnicy) · Epley > Brandt-Daroff
         OR 12,38 (wzmacnia notę home V18: BD słabsze niż repozycja) · nudności w trakcie 16,7–32%
         (spójne z paskiem D5) · nawroty ~36%. Kontekst RCT ≠ odsetek kliniczny [H27] — różne miary.
+
+[H29] Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP (2005). "Orientation of human
+      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res
+      Otolaryngol 6(3):191–206. doi:10.1007/s10162-005-0003-x. PMID 16088383.
+      → ZMIERZONE (3D CT, 22 osoby / 44 błędniki): kąty kierunkowe normalnej do kanału BOCZNEGO
+        względem osi stereotaktycznych Reida — X (nosowa) 108.7°±7.5, Y (lewa) 92.2°±5.7,
+        Z (górna) 19.9°±7.0. Kąt Z ≈ 20° znaczy, że PŁASZCZYZNA kanału bocznego jest pochylona
+        ~20° względem poziomu Reida. Kanały bliższe ortogonalności, niż podawano wcześniej.
+      → ZNACZENIE DLA MODELU (R3/R9): to jest POMIAR, wobec którego podręcznikowe „30° nachylenia"
+        jest zawyżeniem; nasz atlas IE-Map daje 10.4° (~1.3 SD poniżej tej średniej — niska norma,
+        nie błąd). Ponieważ kliniczne „unieś głowę o 30°" realizuje cel „kanał pionowo" DOKŁADNIE dla
+        anatomii 30°, przy 20° (ta praca) wystarcza ~20°, a przy 10.4° (nasz atlas) ~10°.
+      → CZEGO NIE ZWERYFIKOWANO: abstrakt NIE zawiera jawnego porównania z kanonem 30° (zdanie z R9
+        o „wprost odnotowanej różnicy" wymaga pełnego tekstu).
 
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE

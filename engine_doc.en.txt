@@ -1242,7 +1242,12 @@ KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
        of the gap (10.4 vs 20) may be explained by Reid landmark definitions (infraorbital point vs
        orbitale, meatus centre vs porion) and individual variation. We do NOT adjust the geometry toward
        another paper's mean — stitching sources is exactly what was removed in b5f55b1.
-     EFFECT ON R3: none. R3 is independent of the frame pitch (see the correction under R3).
+     EFFECT ON R3: none FOR THE FRAME PITCH. [CORRECTION 2026-08-16] But the 30° canon returns to R3 by a
+       different entrance: it is THE SAME number the clinic writes down as "raise/flex the head by 30°" in
+       the Roll test. The sentence "the canon comes from the caloric convention" has the status of a
+       hypothesis here — one documented from secondary sources in R3-MEASURED, THE 30° QUESTION (point b/h),
+       where it was also computed how much raising is really needed at this atlas's 10.4° inclination
+       (10.30°) and how much the over-flexion to 30° costs. Measurement bibliography: [H29].
 
  R6-OLD. YACOVINO DOES NOT CLEAR THE ANTERIOR CANAL with an anatomically correct arc [CLOSED — above].
      The gravitational minimum at its deepest step (deep head-hang) is 233.8 deg while the opening is at
@@ -1354,6 +1359,109 @@ REMAINING (pending decision):
      CONCLUSION: R3 reduces to a single question and is BLOCKED ON R10. Per-canal calibration remains
        DISCOURAGED — there is nothing to calibrate — the difference is geometric, and the rest fits inside
        the amount of debris.
+
+ R3-MEASURED, THE 30° QUESTION (2026-08-16, after R10 was delivered in V10/V19 and the neck wired in V24).
+     THE BLOCK FELL: the engine HAS position memory, so "where the debris lies at the start" stopped being
+     an assumption. The question "what is the 30° of flexion in the Roll test FOR" could finally be measured
+     on a REAL distribution of starting points instead of on a single assumed φ₀.
+     PROTOCOL: a pose at an arbitrary flexion = headQOf(0, −90+flex, yaw), neck neckPitch=flex (the V24
+       convention + NECK_PREFIX). THREE BIT-FOR-BIT ORACLES before the measurement:
+       headQOf(0,−90,·)≡stepHeadQ("supineFlat"), headQOf(0,−60,·)≡stepHeadQ("supineFlex"),
+       act(30°,20 s)≡actTimeline("roll"); the P/L mirror 0.0e+0. The act as in the engine: affected 20 s →
+       centre 5 s → healthy 20 s → sitting 30 s. Starting points: the 4 BLT_HISTORY scenarios
+       (146.2/173.0/221.4/rest 199.8) + a sweep of the arc every 0.05°. dt=0.05, medium.
+     RESULT 1 — THE FLEXION DECIDES (hold 20 s, affected-ear-first order = ACT_STEPS.roll):
+       flexion  0°: the canal emptied in 4/4 scenarios (95.3% of the arc), φ→267.3 = the opening
+       flexion 15°: 4/4 (58.5% of the arc)   ·   flexion 20°: 0/4 (17.0%)   ·   flexion 30°: 0/4 (1.9%)
+       The threshold lies between 15° and 20°; at 30° the margin to the edge is ≈11°.
+     RESULT 2 — THE CONSEQUENCE IS QUALITATIVE, NOT A MATTER OF SECONDS: at 0° the control retest (act #2 of
+       the session chain, after SESSION_REST with readhesion) is SILENT — intensity 0.0000 in ALL 4 scenarios;
+       at 30° the retest responds (0.400–0.412). A test at 0° flexion does the maneuver's work and DESTROYS
+       ITS OWN CONTROL: there is no way to verify whether the patient recovered or the examination lied.
+       That is a stronger formulation than the old "30° buys ~6 s" (that number holds up: t_req 18.4–19.0 s
+       at 0° against 23.5–24.2 s at 30°).
+     RESULT 3 — WHAT R10 PREVIOUSLY MADE IT IMPOSSIBLE TO SAY: the protection is INDEPENDENT OF THE START.
+       The spread of t_req over the whole real range of φ₀ is 0.6 s (18.4–19.0 at 0°; 23.5–24.2 at 30°).
+       The old answer read "it depends on where the debris lies, and the engine does not know that" — now it
+       does: IT ALMOST DOES NOT DEPEND. That is the real gain from closing R10 in this thread.
+     RESULT 4 — THE LIMITATION THAT VOIDS THE SIMPLE ANSWER: the protection is a function of THE HOLD, not of
+       the flexion itself (the neutral scenario, affected-first): hold 15 s → does not empty at any flexion;
+       20 s → empties at 0°, not at 30°; 25 s and 30 s → empty ALSO at 30°; 45–60 s → empty even at 45°.
+       So 30° protects ONLY within a narrow hold band of ~20 s, and at a 30 s hold (which the same entry
+       calls "a normal 30–60 s hold") it does not protect at all.
+     A CAVEAT AGAINST MY OWN RESULT (mandatory): ACT_STEPS.roll encodes a hold of 20 s — exactly the value
+       at which 30° comes out protective. A model agreeing with its own parameter is NOT proof; had the act
+       been 30 s, the result would be the opposite. The protection band (18.5–23.5 s) lies in the middle of
+       the spread of clinical holds, so the verdict depends on how long THE EXAMINER holds the position.
+     THE COST: the peak of the affected-ear phase falls at 30° by 12.9% (afterRoll) to 20.1% (textbook); the
+       weakest measured response, 0.323, is 3.2× above XI_CARD — THE CARD NEVER GOES SILENT. The cost is real
+       in amplitude, but it does not cost visibility.
+     A SIDE FINDING (stronger than the main one) — THE ORDER WEIGHS MORE THAN THE FLEXION: with the
+       "healthy ear first" order the affected-ear phase collapses to intensity 0.008–0.086 (the debris had
+       time to leave or to move) and THE LATERALIZATION POINTS TO THE WRONG SIDE in 4/4 scenarios at 0°; at
+       30° textbook and afterDix are rescued, afterRoll and neutral still mislead. With "affected first" the
+       indication is correct in 3/4 (the exception being textbook — an INTERNAL flip for φ₀=146°, independent
+       of the emptying). An emergent confirmation of Bhandari 2022, already cited in R10.
+     WHAT THE MEASUREMENT DOES NOT DECIDE: the model has no access to anything that may be the real reason
+       for the clinical 30° — the patient's comfort, vertebral-artery compression in extension, the canal's
+       alignment relative to the axis of rotation in a real performance, the tradition of the write-up. The
+       answer reads: IN THE GEOMETRY OF THIS MODEL (one atlas, Reid's frame) 30° makes mechanical sense — it
+       protects the test from becoming a treatment and it rescues the control — PROVIDED the hold does not
+       exceed ~23 s. That is the model's answer, not the clinic's.
+     THE SOURCE STATUS OF 30° — LITERATURE SEARCH PERFORMED 2026-08-16. VERDICT: 30° IS NOT A MEASUREMENT OF
+       THE TEST'S PERFORMANCE. It is a number carried over from THE CANON OF CANAL ORIENTATION, and that
+       canon has a CALORIC pedigree.
+       (a) THE NUMBER IS NOT SETTLED. The literature gives, side by side, "20°", "20–30°", "30° of flexion"
+           and — in Hain (dizziness-and-balance.com) — "the head slightly raised, so that the lateral canal
+           is optimally oriented", with NO angle at all. A measured quantity would have one value.
+       (b) THE JUSTIFICATION IS LITERALLY CALORIC: "raising the head brings the lateral canal into the
+           VERTICAL plane". In the caloric test that condition is PHYSICALLY NECESSARY — Bárány's convection
+           theory (1906) requires a vertical canal plane for the endolymph density difference to set it in
+           motion at all. In a POSITIONAL test there is no convection; there is only gravity acting on the
+           debris. The number crossed from one procedure to the other together with its justifying sentence.
+       (c) THE LITERATURE CONTRADICTS ITSELF ABOUT THE PURPOSE: some sources say that 30° sets the canal
+           VERTICAL, others — that it "levels the lateral canals HORIZONTALLY". These are opposite goals. A
+           number whose declared meaning reverses between sources is HANDED DOWN, not derived.
+       (d) THE 30° INCLINATION CANON HAS NO COVER IN MEASUREMENTS (cf. R9): Della Santina et al. 2005 [H29]
+           — VERIFIED AT THE SOURCE: the angle between the lateral canal's normal and the Z axis of Reid's
+           frame is 19.9°±7.0 (left), i.e. the canal plane lies ~20° off Reid's horizontal; Wu et al. 2021
+           (MRI, n=55) 17.4°; IE-Map (our atlas) 10.4°. AN HONESTY CAVEAT: the sentences in R9 claiming that
+           Della Santina's paper "EXPLICITLY notes the difference from the textbook 30°" COULD NOT be
+           confirmed at abstract level — that requires the full text; the NUMBER itself is confirmed.
+       (e) THE MEASUREMENT IN OUR ENGINE — THE SAME QUANTITY THE CLINICAL JUSTIFICATION IS ABOUT. |g|_plane
+           (the fraction of gravity lying IN THE PLANE of the canal) is at its maximum exactly when the canal
+           stands "vertical" in the sense of that justification. Measured for the horizontal canal P:
+             the NEUTRAL supine position (face up, before the turn): the maximum falls at a flexion of
+               +10.30°, |g|_plane = 1.000000 — and this atlas's canal inclination is 10.44°. THE EQUALITY IS
+               NOT ACCIDENTAL: to lay the canal vertical the head must be raised EXACTLY BY ITS INCLINATION.
+               At +30° |g|_plane = 0.9415 (−5.9% relative to the optimum) — AN OVER-FLEXION of ~20°.
+             the TEST position (head turned 90°, ear down): the optimum shifts to −1.77°, and +30° costs
+               14.5%.
+       (f) CONCLUSION. The clinical justification is GEOMETRICALLY EXACT — but for an anatomy inclined at 30°.
+           At the MEASURED inclinations (10–20°) the raising that realizes the same goal is 10–20°, i.e. the
+           LOWER edge of the clinical band "20–30°". 30° over-flexes by exactly as much as the canon
+           overstates the anatomy. NOT A SINGLE paper comparing raising angles for the sensitivity of the
+           Roll test was found — the "20–30°" band is a convention, not an optimum measured on patients.
+       (g) EFFECT ON THE RESULT ABOVE: the measured protective effect of 30° (the test does not become a
+           treatment, the control stays alive) is therefore A SIDE EFFECT OF THE OVER-FLEXION, not an
+           intention — and it has to be described that way. This does not void the measurement: the effect is
+           real in this geometry. It voids the narrative "30° was chosen in order to protect the test".
+           Separately, a reminder of the limitation: the protection disappears at a hold ≥25 s.
+       (h) WHAT WAS NOT DECIDED: the original descriptions by McClure (1985) and Pagnini/Nuti/Vannucchi
+           (1989) COULD NOT be read in the original (no access) — so it is not known whether the angle
+           occurred in them at all or was glued on later. The caloric pedigree of 30° rests on SECONDARY
+           sources (reviews, StatPearls, teaching materials) that agree in content; Bárány's 1906 paper was
+           not read. Until (a)+(h) are closed, the sentence "30° comes from the caloric convention" has the
+           status of A WELL-DOCUMENTED HYPOTHESIS, not a first-hand fact.
+     THE MEASUREMENT'S INTEGRITY: the adversarial layer FELL (3 of the 5 workshop agents, including BOTH
+       critics, ended in API errors). The core was verified by independent code driving the main loop: the
+       pose oracles bit-for-bit, the act's identity with actTimeline, the P/L mirror, 4 scenarios ×
+       {0°,30°} × {emptying, retest, cost} + the hold-robustness table. During verification AN ERROR OF MY
+       OWN was caught: the first lateralization comparison ran on the raw |ξ| instead of on the intensity
+       after the Ewald-II rectification (the rectified result is the one in "the side finding"). The
+       measurement has NO independent adversarial control — in a dispute over any single number it must be
+       re-measured from scratch.
+
  R3-OLD. THE CONSTANTS WERE CALIBRATED FOR THE POSTERIOR CANAL ONLY; the horizontal and anterior canals inherit
      them without their own validation and come out clinically backwards:
         latency:  posterior 1.95 s . HORIZONTAL 2.30 s . anterior 3.15 s
@@ -2565,6 +2673,20 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         Epley > Brandt-Daroff OR 12.38 (reinforces the home note V18: BD weaker than repositioning) ·
         nausea during treatment 16.7–32% (consistent with the D5 bar) · recurrence ~36%. The RCT
         context ≠ the clinical percentage [H27] — different measures.
+
+[H29] Della Santina CC, Potyagaylo V, Migliaccio AA, Minor LB, Carey JP (2005). "Orientation of human
+      semicircular canals measured by three-dimensional multiplanar CT reconstruction." J Assoc Res
+      Otolaryngol 6(3):191–206. doi:10.1007/s10162-005-0003-x. PMID 16088383.
+      → MEASURED (3D CT, 22 subjects / 44 labyrinths): the direction angles of the LATERAL canal's normal
+        relative to Reid's stereotactic axes — X (nasal) 108.7°±7.5, Y (left) 92.2°±5.7,
+        Z (superior) 19.9°±7.0. A Z angle of ≈ 20° means that the PLANE of the lateral canal is inclined
+        ~20° relative to Reid's horizontal. The canals are closer to orthogonal than previously reported.
+      → SIGNIFICANCE FOR THE MODEL (R3/R9): this is the MEASUREMENT against which the textbook "30° of
+        inclination" is an overstatement; our IE-Map atlas gives 10.4° (~1.3 SD below that mean — a low
+        normal, not an error). Because the clinical "raise the head by 30°" realizes the goal "the canal
+        vertical" EXACTLY for a 30° anatomy, at 20° (this paper) ~20° suffices, and at 10.4° (our atlas) ~10°.
+      → WHAT WAS NOT VERIFIED: the abstract does NOT contain an explicit comparison with the 30° canon (the
+        sentence in R9 about "an explicitly noted difference" requires the full text).
 
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals
