@@ -406,6 +406,52 @@ function engineOracle(h) {
     out.exam = ex;
   }
 
+  // GRACE (ocena II, V22/D8): demo t-EVS na ekranie HINTS + archetypy taksonomii.
+  // TWARDE THROWY (własności fizyczne, nie piny): (a) CISZA SPOCZYNKU EMERGENTNA — wszystkie próbki
+  // t≤TEVS_REST < 1e-9 (fizyka daje DOKŁADNIE 0: restPhi+adhezja; próg VIS_THRESH byłby za luźny);
+  // (b) paroksyzm ≥ VIS_THRESH; (c) czysto siedząca symulacja 30 s = dokładne 0; (d) TRANSLACJA:
+  // szczyt |ξ| demo bit-równy kanonicznemu engineXi, tPeak przesunięte o dokładnie TEVS_REST —
+  // prefiks spoczynku niczego nie zmienia w fizyce prowokacji (analog B7); (e) hints() zdrowego:
+  // normal/applicable=false/nota null/pattern none; (f) kontrast AVS: spv(neuritisR)≥VIS_THRESH
+  // i applicable=true. Ogon po SIT_SEG ŚWIADOMIE bez throwa (margines 0,18 °/s = zapieczona
+  // kruchość) — dryf łapie pin. Piny kompaktowe + linia diffKeys w --check.
+  if (h.tevsDemoSim && h.TEVS_REST != null && h.spvTrace && h.NeuroVOR && h.engineXi) {
+    const r5 = x => x == null ? null : +(+x).toFixed(5);
+    const sim = h.tevsDemoSim();
+    const trace = h.spvTrace(sim, 'posterior', 'P');
+    const V = h.NeuroVOR.VIS_THRESH, dt = trace[1].t - trace[0].t, REST = h.TEVS_REST, provEnd = REST + 0.5 + 40;
+    if (Math.abs(REST / dt - Math.round(REST / dt)) > 1e-9) throw new Error(`WYROCZNIA GRACE: TEVS_REST=${REST} niepodzielne przez dt=${dt}`);
+    const mag = trace.map(s => Math.max(Math.abs(s.spvH), Math.abs(s.spvVert), Math.abs(s.spvTors)));
+    let pk = 0, tPk = 0, tOn = null, over = 0, hump = 0;
+    trace.forEach((s, i) => {
+      if (s.t <= REST && mag[i] > 1e-9) throw new Error(`WYROCZNIA GRACE (cisza spoczynku): |SPV|=${mag[i]} @t=${s.t}`);
+      if (mag[i] > pk) { pk = mag[i]; tPk = s.t; }
+      if (s.t <= provEnd && mag[i] >= V) { if (tOn == null) tOn = s.t; over += dt; }
+      if (s.t > provEnd && mag[i] > hump) hump = mag[i];
+    });
+    if (pk < V) throw new Error(`WYROCZNIA GRACE (paroksyzm podprogowy): szczyt ${pk} < ${V}`);
+    const sitSim = h.Vestibular.simulateCanalith({ canal: 'posterior', side: 'P', q0: [1, 0, 0, 0], timeline: [{ q: [1, 0, 0, 0], tTrans: 0.5, tHold: 30, pivot: 'body' }] });
+    let sitMax = 0; for (const s of sitSim) sitMax = Math.max(sitMax, Math.abs(s.xi));
+    if (sitMax > 1e-9) throw new Error(`WYROCZNIA GRACE (siedzenie nie jest ciszą): max|ξ|=${sitMax}`);
+    const bare = h.engineXi('posterior', 'P', false, null, null);
+    let bpk = 0, btPk = 0; for (const s of bare) { const m = Math.abs(s.xi); if (m > bpk) { bpk = m; btPk = s.t; } }
+    let dpk = 0, dtPk = 0; for (const s of sim) { const m = Math.abs(s.xi); if (m > dpk) { dpk = m; dtPk = s.t; } }
+    if (Math.abs(dpk - bpk) > 1e-12 || Math.abs((dtPk - btPk) - REST) > dt / 2 + 1e-9)
+      throw new Error(`WYROCZNIA GRACE (translacja): |ξ| demo ${dpk}@${dtPk} vs kanon ${bpk}@${btPk} (REST=${REST})`);
+    const Hh = h.NeuroVOR.hints(h.NeuroVOR.makePatient({}));
+    if (!(Hh.verdict === 'normal' && Hh.applicable === false && Hh.verdictNote == null && Hh.ny.pattern === 'none'))
+      throw new Error(`WYROCZNIA GRACE (hints zdrowego): ${Hh.verdict}/${Hh.applicable}/${Hh.verdictNote}/${Hh.ny.pattern}`);
+    const avsSpv = h.NeuroVOR.observe(h.NeuroVOR.scenario('neuritisR'), false).spv;
+    const Ha = h.NeuroVOR.hints(h.NeuroVOR.scenario('neuritisR'));
+    const Hc = h.NeuroVOR.hints(h.NeuroVOR.scenario('strokeCentral'));
+    if (!(avsSpv >= V && Ha.applicable === true)) throw new Error(`WYROCZNIA GRACE (kontrast AVS): spv=${avsSpv}, applicable=${Ha.applicable}`);
+    out.grace = {
+      tevsDemo: { n: trace.length, peak: r5(pk), tPeak: r5(tPk), latency: r5(tOn - REST), overDur: r5(over), hump: r5(hump), tail: r5(mag[mag.length - 1]) },
+      archetypes: { tevs: { verdict: Hh.verdict, applicable: Hh.applicable, ny: Hh.ny.pattern },
+        avs: { verdict: Ha.verdict, applicable: Ha.applicable }, avsCentral: { verdict: Hc.verdict, applicable: Hc.applicable }, avsSpv: r5(avsSpv) },
+    };
+  }
+
   // NeuroVOR — czyste odczyty kliniczne dla zestawu pacjentów
   const NV = h.NeuroVOR;
   if (NV) {
@@ -768,6 +814,7 @@ if (!CHECK) {
       diffKeys(snap.engine.jam, gold.engine.jam, 'engine.jam/', diffs);                              // V15/D10: jw.
       diffKeys(snap.engine.ensemble, gold.engine.ensemble, 'engine.ensemble/', diffs);               // V20/D9: jw.
       diffKeys(snap.engine.exam, gold.engine.exam, 'engine.exam/', diffs);                           // V21/D7: jw.
+      diffKeys(snap.engine.grace, gold.engine.grace, 'engine.grace/', diffs);                        // V22/D8: jw.
     } else {
       diffKeys(snap[layer], gold[layer], layer + '/', diffs);
     }

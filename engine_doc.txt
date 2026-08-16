@@ -1591,6 +1591,45 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    Dom: 6 kluczy exam-* (on ×3 z łańcuchem zmiany testu, reveal, multi, off ≡ diag/dix/P BIT-W-BIT
    = wieczny pin „OFF to zero bajtów"; dom 177→183). Podwójny collect bajtowo identyczny.
 
+=== KARTA GRACE-3 + DEMO PACJENTA t-EVS NA EKRANIE HINTS (D8/V22, 2026-08-16) ===
+ DWA ARTEFAKTY: (1) karta różnicowa t-EVS/AVS/s-EVS (graceCard) — STATYCZNY <details> zawsze na
+   ekranie HINTS pod werdyktem (treść 1:1 z notą [H24], pasma czasowe DOPISANE do noty w tym samym
+   kroku — jedno źródło; wiersz „Zobacz w aplikacji" spina presety obu silników); zwinięta domyślnie
+   (stan hintsGrace bez re-renderu, wzorzec hintsAdvanced), rozwinięta w trybie demo. Dowód zakresu
+   MECHANICZNY: identyczny substring karty we wszystkich kluczach dom hints/* (24/24 sklasyfikowane:
+   karta wszędzie + przycisk presetu tevs tam, gdzie rząd presetów). (2) demo „pacjent t-EVS na
+   ekranie HINTS": preset tevs (HINTS_PRESETS, wpis PRZED rd — kolejność w OBIEKCIE nośna: ostatni
+   preset pętli grabów zostaje bazą kluczy hints/nerve/* w golden) — pacjent NeuroVOR-owo ZDROWY
+   (cała patologia BPPV żyje w silniku Vestibular), panel demo zamiast panelu „Własny".
+ JEDNA NIĆ SYMULACJI (tevsDemoSim, maneuvers.js): spoczynek TEVS_REST=8 s (cisza EMERGENTNA
+   z restPhi+adhezji — twardy throw 1e-9, nie „if" w renderze) → prowokacja Dix (okno 40 s
+   i tTrans 0,5 IDENTYCZNE z engineXi — odcinek po prefiksie jest czystą translacją czasową,
+   throw translacyjny: szczyt |ξ| bit-równy kanonicznemu, tPeak przesunięte o dokładnie 8 s)
+   → SIT_SEG (siadanie = DRUGA prowokacja: transjent ODWRÓCONY 11,6 °/s podpisany na wykresie;
+   ogon 1,41 °/s podpisany „podprogowy" — świadomie BEZ throwa „cisza wraca", margines do progu
+   2 °/s byłby zapieczoną kruchością; dryf łapie pin). Z tej samej nici: WYKRES = spvTrace
+   (PIERWSZA konsumpcja UI mostu V13; 3 składowe spvH/spvVert/spvTors + pas ±VIS_THRESH z żywej
+   stałej + linia kontrastu AVS z observe(neuritisR)=28,3 °/s — garb przejściowy vs linia stała
+   to cała taksonomia na jednym obrazku) i OCZY (xiEnvelope odcinka prowokacji, t rebazowane
+   o TEVS_REST; start WYŁĄCZNIE z przycisku „Prowokacja" — spec: oś oczopląsu żyje tylko podczas
+   prowokacji; zero autostartu w rAF). Chipy metryk LICZONE ZE ŚLADU (latencja 2,30 s do progu
+   2 °/s, szczyt 26,1 °/s @ 10,15 s prowokacji, nadprogowo 33,1 s < 60 s — nie są zapieczonymi
+   twierdzeniami). Werdykt silnika czytany ŻYWCEM: hints(makePatient({})) = normal/applicable=false/
+   nota null/pattern none (lekcja: HINTS niestosowalny → wykonaj Dix) — bramka #A7.
+ CYKL MODUŁÓW (naprawa w tym kroku): import mostu przez svg-screens domknął cykl neuro-vor→i18n→
+   state→actions→svg-screens→spv-bridge→neuro-vor — ciało mostu potrafiło wykonać się PRZED ciałem
+   neuro-vor (esbuild IIFE, post-order cyklu) i jedyny zapis modułowy (XI_VIS) czytał undefined.
+   XI_VIS = teraz odczyt LENIWY (xiVis(); wartość i jedno źródło stałych bez zmian; seam dostaje
+   liczbę jak dotąd). Granica trybu: demo twardo PC-P canalo (postać uporczywa nie wygasa i psułaby
+   lekcję ciszy), bez phi0/init (strefa artefaktu A2 nietknięta; sesja V19 tylko przez actTimeline).
+ WYROCZNIE: engine.grace (piny tevsDemo {n,peak,tPeak,latency,overDur,hump,tail} + archetypes
+   {tevs,avs,avsCentral,avsSpv}; linia diffKeys w --check) + TWARDE THROWY (a)-(f): cisza spoczynku
+   1e-9 · paroksyzm ≥ VIS_THRESH · czysto siedząca symulacja = dokładne 0 · translacja bit-exact
+   · hints() zdrowego · kontrast AVS (spv ≥ progu ∧ applicable=true) + TEVS_REST podzielne przez dt.
+   Dom: +1 addytywny hints/preset/tevs (z pętli presetów), 24 klucze zmienione MECHANICZNIE
+   (sklasyfikowane skryptem: usunięcie karty i przycisku odtwarza stary bajt w bajt); dom 183→184;
+   wieczne piny exam-off/ensemble-off NIETKNIĘTE.
+
 ==========================================================================
  MODUŁ NeuroVOR — WARSTWA TONICZNA/OŚRODKOWA (VOR · fiksacja · vHIT · HINTS)
  Plik: src/engine/neuro-vor.js  |  Moduł: export const NeuroVOR = (()=>{ ... })()
@@ -2244,6 +2283,13 @@ odruchu przedsionkowo-ocznego i różnicowania obwód/ośrodek — bez nowych hi
         dydaktyczna + autorytet dla całego różnicowania OTOREPO (HINTS + BPPV); migrena przedsionkowa (s-EVS)
         CELOWO nie modelowana — flagowana jako różnicowa. (Od N1: preset vmInterictal pokazuje s-EVS
         międzynapadowo — badanie prawidłowe, rozpoznanie z wywiadu.)
+        PASMA CZASOWE zespołów (dopisane 2026-08-16 dla karty GRACE V22/D8 — z taksonomii papieru;
+        „< 2 tyg." to zakres obowiązywania wytycznych, NIE definicja długości AVS): t-EVS — krótkie
+        napady sekundowe-minutowe wyzwalane pozycją (BPPV: paroksyzm < 1 min — kotwica progu 1 min
+        Bárány, patrz komentarz przy oknie 60 s engineXi), między napadami bez objawów; AVS — CIĄGŁY
+        ostry zespół, trwa dni; s-EVS — samoistne epizody minuty-godziny, między napadami badanie
+        prawidłowe. Ménière — także napadowy — poza wyliczeniem s-EVS w [H24] (papier wymienia
+        migrenę przedsionkową i TIA tylnego kręgu); karta V22 odnotowuje to jawnie.
 
 [H25] Hain TC, Fetter M, Zee DS (1987). "Head-shaking nystagmus in patients with unilateral peripheral
       vestibular lesions." Am J Otolaryngol 8(1):36–47. doi:10.1016/S0196-0709(87)80017-0.

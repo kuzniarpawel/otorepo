@@ -1707,6 +1707,52 @@ substance of partial repositioning).
    multi, off ≡ diag/dix/P BIT-FOR-BIT = the eternal pin "OFF means zero bytes"; dom 177→183).
    The double collect is byte-identical.
 
+=== GRACE-3 CARD + t-EVS PATIENT DEMO ON THE HINTS SCREEN (D8/V22, 2026-08-16) ===
+ TWO ARTIFACTS: (1) the t-EVS/AVS/s-EVS differential card (graceCard) — a STATIC <details> always
+   on the HINTS screen below the verdict (content 1:1 with note [H24], the time bands APPENDED to
+   the note in the same step — a single source; the "See in the app" row ties together the presets
+   of both engines); collapsed by default (the hintsGrace state without a re-render, the
+   hintsAdvanced pattern), expanded in demo mode. The scope proof is MECHANICAL: an identical card
+   substring in all dom hints/* keys (24/24 classified: the card everywhere + the tevs preset
+   button wherever the preset row is). (2) the "t-EVS patient on the HINTS screen" demo: the tevs
+   preset (HINTS_PRESETS, the entry BEFORE rd — the order in the OBJECT is load-bearing: the last
+   preset of the grab loop remains the base of the hints/nerve/* keys in the golden) — a patient
+   NeuroVOR-wise HEALTHY (all the BPPV pathology lives in the Vestibular engine), a demo panel
+   instead of the "Custom" panel.
+ ONE SIMULATION THREAD (tevsDemoSim, maneuvers.js): rest TEVS_REST=8 s (silence EMERGENT from
+   restPhi+adhesion — a hard 1e-9 throw, not an "if" in the render) → the Dix provocation (the
+   40 s window and tTrans 0.5 IDENTICAL to engineXi — the segment after the prefix is a pure time
+   translation, a translational throw: the |ξ| peak bit-equal to the canonical one, tPeak shifted
+   by exactly 8 s) → SIT_SEG (sitting up = a SECOND provocation: an INVERTED transient 11.6 °/s
+   labelled on the plot; a 1.41 °/s tail labelled "sub-threshold" — deliberately WITHOUT a
+   "silence returns" throw, a margin to the 2 °/s threshold would be baked-in brittleness; drift
+   is caught by the pin). From the same thread: the PLOT = spvTrace (the FIRST UI consumption of
+   the V13 bridge; the 3 components spvH/spvVert/spvTors + a ±VIS_THRESH band from the live
+   constant + an AVS contrast line from observe(neuritisR)=28.3 °/s — a transient hump vs a
+   constant line is the whole taxonomy in one picture) and the EYES (the xiEnvelope of the
+   provocation segment, t rebased by TEVS_REST; started EXCLUSIVELY from the "Provocation" button
+   — the spec: the nystagmus axis lives only during a provocation; zero autostart in rAF). The
+   metric chips are COMPUTED FROM THE TRACE (latency 2.30 s to the 2 °/s threshold, peak 26.1 °/s
+   @ 10.15 s of the provocation, above threshold 33.1 s < 60 s — they are not baked-in claims).
+   The engine verdict is read LIVE: hints(makePatient({})) = normal/applicable=false/note null/
+   pattern none (the lesson: HINTS not applicable → perform the Dix) — gate #A7.
+ MODULE CYCLE (fixed in this step): importing the bridge through svg-screens closed the cycle
+   neuro-vor→i18n→state→actions→svg-screens→spv-bridge→neuro-vor — the bridge body could execute
+   BEFORE the neuro-vor body (esbuild IIFE, post-order of the cycle) and the only module-level
+   write (XI_VIS) read undefined. XI_VIS = now a LAZY read (xiVis(); the value and the single
+   source of the constants unchanged; the seam receives a number as before). Mode boundary: the
+   demo is hard-set to PC-P canalo (the persistent form does not decay and would spoil the
+   silence lesson), no phi0/init (the A2 artifact zone untouched; the V19 session only via
+   actTimeline).
+ ORACLES: engine.grace (tevsDemo pins {n,peak,tPeak,latency,overDur,hump,tail} + archetypes
+   {tevs,avs,avsCentral,avsSpv}; a diffKeys line in --check) + HARD THROWS (a)-(f): the rest
+   silence 1e-9 · the paroxysm ≥ VIS_THRESH · a purely seated simulation = an exact 0 · a
+   bit-exact translation · the hints() of the healthy · the AVS contrast (spv ≥ threshold ∧
+   applicable=true) + TEVS_REST divisible by dt. Dom: +1 additive hints/preset/tevs (from the
+   preset loop), 24 keys changed MECHANICALLY (classified by a script: removing the card and the
+   button recreates the old version byte for byte); dom 183→184; the eternal pins
+   exam-off/ensemble-off UNTOUCHED.
+
 ==========================================================================
  NeuroVOR MODULE — THE TONIC/CENTRAL LAYER (VOR · fixation · vHIT · HINTS)
  File: src/engine/neuro-vor.js  |  Module: export const NeuroVOR = (()=>{ ... })()
@@ -2366,6 +2412,14 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
         dysmetria). An educational framing + authority for all of OTOREPO's differentiation (HINTS + BPPV);
         vestibular migraine (s-EVS) DELIBERATELY not modelled — flagged as a differential. (Since N1: the
         vmInterictal preset shows s-EVS between attacks — a normal examination, the diagnosis comes from the history.)
+        TIME BANDS of the syndromes (added 2026-08-16 for the V22/D8 GRACE card — from the paper's
+        taxonomy; "< 2 wk" is the guideline's range of applicability, NOT a definition of the AVS
+        duration): t-EVS — short seconds-to-minutes attacks triggered by position (BPPV: a paroxysm
+        < 1 min — the anchor of the Bárány 1-min threshold, see the comment at the 60 s engineXi
+        window), no symptoms between attacks; AVS — a CONTINUOUS acute syndrome, lasting days;
+        s-EVS — spontaneous episodes of minutes-to-hours, a normal examination between attacks.
+        Ménière — also paroxysmal — is outside the s-EVS enumeration in [H24] (the paper lists
+        vestibular migraine and posterior-circulation TIA); the V22 card notes this explicitly.
 
 [H25] Hain TC, Fetter M, Zee DS (1987). "Head-shaking nystagmus in patients with unilateral peripheral
       vestibular lesions." Am J Otolaryngol 8(1):36–47. doi:10.1016/S0196-0709(87)80017-0.

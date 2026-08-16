@@ -39,7 +39,13 @@ import { NeuroVOR } from './neuro-vor.js';
 // śladu porównuje po prostu |spv*| ≥ NeuroVOR.VIS_THRESH, bo ślad JEST w °/s. Trzeci literał progu
 // (obok nystagmusPhase 0.05 i XI_CARD 0.10 — różne skale, pasmo nazwane w engine_doc) NIE powstaje:
 // to pochodna dwóch stałych publicznych. Unifikacja progów = osobna decyzja z rebaseline.
-const XI_VIS = NeuroVOR.VIS_THRESH / NeuroVOR.SPV_MAX;
+// D8/V22: odczyt LENIWY (funkcja), nie eager const — od kiedy svg-screens importuje most (pierwsza
+// konsumpcja UI śladu), spv-bridge żyje wewnątrz cyklu modułów (neuro-vor→i18n→state→actions→
+// svg-screens→spv-bridge→neuro-vor) i jego ciało potrafi wykonać się PRZED ciałem neuro-vor
+// (esbuild IIFE, post-order cyklu) — jedyny zapis na poziomie modułu czytał wtedy undefined.
+// Wartość i jedno źródło stałych BEZ ZMIAN: VIS_THRESH/SPV_MAX z NeuroVOR w chwili pierwszego użycia.
+let _xiVis = null;
+function xiVis(){ return _xiVis != null ? _xiVis : (_xiVis = NeuroVOR.VIS_THRESH / NeuroVOR.SPV_MAX); }
 
 function spvTrace(sim, canal, side){
   if(!Array.isArray(sim) || !sim.length) throw new TypeError("spvTrace: sim musi być NIEPUSTĄ tablicą próbek {t, xi} (wyjście simulateCanalith/Cupulolith/LightCupula)");
@@ -56,4 +62,4 @@ function spvTrace(sim, canal, side){
   return out;
 }
 
-export { spvTrace, XI_VIS };
+export { spvTrace, xiVis };

@@ -2,7 +2,8 @@
 import { Vestibular } from '../engine/vestibular.js';
 import { Scene3D } from '../engine/scene3d.js';
 import { NeuroVOR } from '../engine/neuro-vor.js';
-import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey } from '../pose/maneuvers.js';
+import { SIDE, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, PHASE_OF, sessionInit, sessionPreview, SESSION_REST, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, stepHeadQ, poseSpec, gravArrowFor, sizeRadius, maneuverTimeline, maneuverSim, ensembleSim, DIAG, CANAL_OF, recommend, baranyClassify, MECHS_BY_PHENO, mechOf, persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim } from '../pose/maneuvers.js';
+import { spvTrace } from '../engine/spv-bridge.js';   // D8/V22: pierwsza konsumpcja UI mostu SPV (V13)
 import { state } from '../app/state.js';
 import { $, cancelAnims, loopRAF, easeInOut, syncWake, beep } from '../runtime/registry.js';
 import { setHintsPlane, hintsHIT, rerunHintsHIT, setMode, openHints, setHintsDx, setHintsNeuritisSide, setHintsFix, setHintsGaze, setHintsComp, setHintsRecovery, hintsActivePatient, HINTS_PRESETS, loadHintsPreset, loadHintsNeuritis, openHintsCustom, exitHintsCustom, setHintsAdvanced, fmtParamVal, setHintsParam, applyHintsNerve, setHintsNerveEar, setHintsNerveBranch, setHintsNerveSev, hintsRandomPatient, revealHintsQuiz, hintsSCDSStim, saveShareHints, pickCanal, openMan, openTest, setDixObs, pickSize, setGuideSide, setDiagSide, startManeuver, backToSetup, goStep, toggleAuto, toggleSound } from '../app/actions.js';
@@ -1611,6 +1612,129 @@ function hintsVerdictHTML(H){
   return `<div class="hverdict ${v}"><h4>${tr("Werdykt HINTS","HINTS verdict")}</h4><div class="vv">${vText}</div>
     ${applic}${row(hiRow)}${row(nyRow)}${row(tsRow)}${foot}</div>`;
 }
+/* ============ D8/V22: karta taksonomii GRACE-3 + demo pacjenta t-EVS ============ */
+// Dane demo — JEDNA nić (tevsDemoSim) → ślad spvTrace + metryki liczone ZE ŚLADU (chipy nie są
+// zapieczonymi twierdzeniami — dryf fizyki zmieni liczby na karcie) + obwiednia oczu WYŁĄCZNIE
+// z odcinka prowokacji (t rebazowane o TEVS_REST; tożsamość z kanoniczną prowokacją pilnuje throw
+// translacyjny wyroczni — 8 s ciszy zostaje na wykresie, nie w oczekiwaniu po kliknięciu).
+let _tevsData=null;
+function tevsData(){
+  if(_tevsData) return _tevsData;
+  const sim=tevsDemoSim();
+  const trace=spvTrace(sim,"posterior","P");
+  const mag=trace.map(s=>Math.max(Math.abs(s.spvH),Math.abs(s.spvVert),Math.abs(s.spvTors)));
+  const V=NeuroVOR.VIS_THRESH, dt=trace.length>1?trace[1].t-trace[0].t:0.05, provEnd=TEVS_REST+0.5+40;
+  let pk=0, tPk=0, tOn=null, over=0, hump=0;
+  trace.forEach((s,i)=>{
+    if(mag[i]>pk){ pk=mag[i]; tPk=s.t; }
+    if(s.t<=provEnd && mag[i]>=V){ if(tOn==null) tOn=s.t; over+=dt; }
+    if(s.t>provEnd && mag[i]>hump) hump=mag[i];
+  });
+  const eyes=xiEnvelope(sim.filter(s=>s.t>=TEVS_REST).map(s=>({t:s.t-TEVS_REST, xi:s.xi})));
+  const avsSpv=NeuroVOR.observe(NeuroVOR.scenario("neuritisR"), false).spv;
+  _tevsData={sim, trace, mag, V, pk, tPk, tOn, over, hump, tail:mag[mag.length-1], provEnd, eyes, avsSpv};
+  return _tevsData;
+}
+// Wykres SPV(t): 3 składowe śladu (spvH/spvVert/spvTors — kontrakt mostu per składowa; przy PC
+// dominacja torsji jest sama w sobie lekcją) + pas progu ±VIS_THRESH (żywa stała, zakaz literału)
+// + linia kontrastu AVS z observe() (poziom STAŁY vs garb prowokacyjny = cała taksonomia na jednym
+// obrazku). Czysto statyczny SVG (zero rAF — wyrocznie dom widzą pełną treść).
+function spvChartSVG(){
+  const D=tevsData(), W=560, Hh=250, Lm=36, Rm=8, Tm=18, Bm=30;
+  const tMax=D.trace[D.trace.length-1].t, yMax=Math.max(D.pk, D.avsSpv)*1.1;
+  const X=tt=>Lm+(W-Lm-Rm)*tt/tMax, Y=v=>Tm+(Hh-Tm-Bm)*(1-(v+yMax)/(2*yMax));
+  const line=(fld,col,wd)=>{ let d=""; for(let i=0;i<D.trace.length;i+=4){ const s=D.trace[i]; d+=(d?"L":"M")+X(s.t).toFixed(1)+" "+Y(s[fld]).toFixed(1); } return `<path d="${d}" fill="none" stroke="${col}" stroke-width="${wd}"/>`; };
+  const zone=(tt,lbl)=>`<line x1="${X(tt).toFixed(1)}" y1="${Tm}" x2="${X(tt).toFixed(1)}" y2="${Hh-Bm}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${(X(tt)+3).toFixed(1)}" y="${Tm+9}" fill="var(--muted)" font-size="8.5">${lbl}</text>`;
+  return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${t("Ślad SPV demo t-EVS","t-EVS demo SPV trace")}" style="width:100%;height:auto">
+    <rect x="${Lm}" y="${Y(D.V).toFixed(1)}" width="${W-Lm-Rm}" height="${(Y(-D.V)-Y(D.V)).toFixed(1)}" fill="var(--panel2)" opacity="0.6"/>
+    <line x1="${Lm}" y1="${Y(0).toFixed(1)}" x2="${W-Rm}" y2="${Y(0).toFixed(1)}" stroke="var(--line)"/>
+    <line x1="${Lm}" y1="${Y(D.avsSpv).toFixed(1)}" x2="${W-Rm}" y2="${Y(D.avsSpv).toFixed(1)}" stroke="#b0813f" stroke-dasharray="6 4" stroke-width="1.4"/>
+    <text x="${W-Rm}" y="${(Y(D.avsSpv)-4).toFixed(1)}" text-anchor="end" fill="#b0813f" font-size="9">${t(`AVS (neuronitis): poziom STAŁY ${D.avsSpv.toFixed(1)} °/s — bez prowokacji`,`AVS (neuritis): CONSTANT level ${D.avsSpv.toFixed(1)} °/s — no provocation`)}</text>
+    <text x="${Lm+3}" y="${(Y(D.V)-3).toFixed(1)}" fill="var(--muted)" font-size="8.5">${t(`próg widoczności ±${D.V} °/s`,`visibility threshold ±${D.V} °/s`)}</text>
+    ${zone(0, t("spoczynek (siad)","rest (sitting)"))}${zone(TEVS_REST, t("prowokacja Dix-Hallpike","Dix-Hallpike provocation"))}${zone(D.provEnd, t("siadanie — ODWRÓCONY (2. prowokacja)","sitting up — REVERSED (2nd provocation)"))}
+    ${line("spvH","#9FE3F6",1.3)}${line("spvVert","#3a8f6f",1.3)}${line("spvTors","#FF9FBD",1.6)}
+    <text x="${Lm}" y="${Hh-8}" fill="var(--muted)" font-size="9">0 s</text><text x="${W-Rm}" y="${Hh-8}" text-anchor="end" fill="var(--muted)" font-size="9">${tMax.toFixed(0)} s</text>
+    <text x="4" y="${Tm+8}" fill="var(--muted)" font-size="9">°/s</text>
+    <text x="${(W/2).toFixed(0)}" y="${Hh-8}" text-anchor="middle" fill="var(--muted)" font-size="9"><tspan fill="#9FE3F6">— ${t("poziomy","horizontal")}</tspan>  <tspan fill="#3a8f6f">— ${t("pionowy","vertical")}</tspan>  <tspan fill="#FF9FBD">— ${t("skrętny","torsional")}</tspan></text>
+  </svg>`;
+}
+// Karta różnicowa t-EVS/AVS/s-EVS — STATYCZNA (identyczny substring we wszystkich kluczach dom
+// hints/* — dowód zakresu mechaniczny), zawsze na ekranie HINTS pod werdyktem; rozwinięta w trybie
+// demo. Treść 1:1 z notą [H24] (pasma czasowe dopisane do noty w tym samym kroku — jedno źródło).
+function graceCard(open){
+  const cell=(a,b,c)=>`<span>${a}</span><span>${b}</span><span>${c}</span>`;
+  const row=(lbl,a,b,c)=>`<div style="display:grid;grid-template-columns:86px 1fr 1fr 1fr;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:12px;line-height:1.35">${`<span style="color:var(--muted)">${lbl}</span>`}${cell(a,b,c)}</div>`;
+  const btn=(on,lbl)=>`<button class="preset" style="font-size:11px;padding:4px 8px" onclick="${on}">${lbl}</button>`;
+  return `<details class="advbox" ${open||state.hintsGrace?"open":""} ontoggle="setHintsGrace(this.open)"><summary>${t("Kiedy w ogóle HINTS? — t-EVS / AVS / s-EVS (GRACE-3)","When is HINTS applicable at all? — t-EVS / AVS / s-EVS (GRACE-3)")}</summary>
+    <div style="display:grid;grid-template-columns:86px 1fr 1fr 1fr;gap:8px;font-size:12px;font-weight:700;padding-bottom:4px"><span></span><span style="color:var(--post)">t-EVS (BPPV)</span><span style="color:var(--ant)">AVS</span><span style="color:var(--horiz)">s-EVS</span></div>
+    ${row(t("Przebieg / czas","Course / time"),
+      t("napady sekundy–minuty (BPPV: paroksyzm <1 min), między napadami bez objawów","attacks of seconds–minutes (BPPV: paroxysm <1 min), symptom-free between attacks"),
+      t("CIĄGŁY — ostry początek, trwa dni","CONTINUOUS — acute onset, lasts days"),
+      t("samoistne epizody minuty–godziny, między nimi norma","spontaneous episodes of minutes–hours, normal in between"))}
+    ${row(t("Wyzwalacz","Trigger"),
+      t("OBOWIĄZKOWY — zmiana pozycji głowy (położenie się, obrót w łóżku, pochylenie)","OBLIGATE — a change of head position (lying down, rolling in bed, bending)"),
+      t("brak — trwa także w SPOCZYNKU (ruch głowy NASILA, ale nie wyzwala)","none — persists at REST (head movement EXACERBATES, does not trigger)"),
+      t("brak (napady samoistne); wywiad migrenowy / napadowość","none (spontaneous attacks); migraine history / episodicity"))}
+    ${row(t("Oczopląs samoistny","Spontaneous nystagmus"),
+      t("NIE — złóg w spoczynku (restPhi), ξ=0","NO — debris at rest (restPhi), ξ=0"),
+      t("TAK — toniczny, w każdej pozycji, nie wyczerpuje się","YES — tonic, in every position, non-fatiguing"),
+      t("międzynapadowo NIE — badanie prawidłowe","interictally NO — the exam is normal"))}
+    ${row(t("Oczopląs prowokowany","Provoked nystagmus"),
+      t("TAK: latencja → paroksyzm → wyczerpanie (Dix-Hallpike / Roll)","YES: latency → paroxysm → fatigue (Dix-Hallpike / Roll)"),
+      t("obecny stale, pozycją tylko modulowany","present throughout, merely modulated by position"),
+      t("między napadami brak","absent between attacks"))}
+    ${row(t("Czy HINTS?","Is HINTS applicable?"),
+      t("NIE — brak oczopląsu samoistnego (bramka silnika: applicable=false)","NO — no spontaneous nystagmus (engine gate: applicable=false)"),
+      t("TAK — triada w trwającym AVS, TYLKO przeszkoleni (HINTS+); każda ataksja chodu = OŚRODEK","YES — the triad in ongoing AVS, TRAINED examiners only (HINTS+); any gait ataxia = CENTRAL"),
+      t("NIE międzynapadowo — rozpoznanie z WYWIADU","NOT interictally — the diagnosis comes from the HISTORY"))}
+    ${row(t("Badanie z wyboru","Test of choice"),
+      t("Dix-Hallpike → Epley; Roll → Gufoni. NIE HINTS, NIE CT","Dix-Hallpike → Epley; Roll → Gufoni. NOT HINTS, NOT CT"),
+      t("HINTS(+); wątpliwość → MRI DWI+MRA (wczesne MRI bywa fałszywie ujemne — powtórz 48–72 h); NIE CT","HINTS(+); if in doubt → MRI DWI+MRA (early MRI can be falsely negative — repeat at 48–72 h); NOT CT"),
+      t("kryteria migreny przedsionkowej vs TIA tylnego kręgu; 5 D (dyplopia, dyzartria, dysfagia, dysfonia, dysmetria)","vestibular-migraine criteria vs posterior-circulation TIA; the 5 Ds (diplopia, dysarthria, dysphagia, dysphonia, dysmetria)"))}
+    ${row(t("Pułapka / flaga","Pitfall / flag"),
+      t("CPN: downbeat bez latencji, niemęczliwy → MRI (Diagnostyka → widok „Ośrodkowy”)","CPN: a downbeat without latency, non-fatiguing → MRI (Diagnostics → the „Central” view)"),
+      t("pseudo-AVS bez oczopląsu → znieś fiksację (Frenzel)","pseudo-AVS without nystagmus → remove fixation (Frenzel)"),
+      t("TIA tylnego kręgu wygląda jak napad migreny — czynniki naczyniowe = pilna diagnostyka","a posterior-circulation TIA mimics a migraine attack — vascular risk factors = urgent work-up"))}
+    ${row(t("Zobacz w aplikacji","See in the app"),
+      btn("loadHintsPreset('tevs')", t("▶ Pacjent t-EVS — demo","▶ t-EVS patient — demo"))+btn("openTest('dix')", "→ Dix-Hallpike"),
+      btn("openHints('neuritisR')", t("→ Neuronitis","→ Neuritis"))+btn("openHints('strokeCentral')", t("→ Udar","→ Stroke")),
+      btn("loadHintsPreset('vmi')", t("→ Migrena przeds.","→ Vestibular migraine")))}
+    <div class="note">${t("Triada HINTS obowiązuje TYLKO w trwającym AVS z oczopląsem samoistnym — poza nim werdykt to interpretacja instrumentalna (bramka stosowalności silnika). Ménière — także napadowy — ma własne presety; [H24] w kolumnie s-EVS wymienia migrenę przedsionkową i TIA. Źródło: GRACE-3 [H24].","The HINTS triad applies ONLY in ongoing AVS with spontaneous nystagmus — outside it the verdict is an instrumental interpretation (the engine's applicability gate). Ménière — also episodic — has its own presets; [H24] lists vestibular migraine and TIA in the s-EVS column. Source: GRACE-3 [H24].")}</div>
+  </details>`;
+}
+// Panel demo t-EVS (zamiast panelu „Własny” przy preset tevs): pacjent NeuroVOR ZDROWY, cała
+// patologia BPPV w śladzie tevsDemoSim. Oczy startują WYŁĄCZNIE z przycisku prowokacji (spec:
+// „oś oczopląsu zasilana spvTrace tylko podczas prowokacji, poza nią cisza”).
+function tevsDemoPanel(){
+  const D=tevsData();
+  const H=NeuroVOR.hints(NeuroVOR.makePatient({}));
+  const chip=(k,v)=>`<span style="display:inline-flex;gap:6px;align-items:baseline;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px;margin:3px 4px 0 0"><span style="color:var(--muted)">${k}:</span><b>${v}</b></span>`;
+  const chips = chip(t("latencja","latency"), `${(D.tOn-TEVS_REST).toFixed(2)} s`)
+    + chip(t("szczyt","peak"), `${D.pk.toFixed(1)} °/s @ ${(D.tPk-TEVS_REST).toFixed(1)} s`)
+    + chip(t("nadprogowo","above threshold"), `${D.over.toFixed(1)} s (<60 s)`)
+    + chip(t("odwrócenie przy siadaniu","reversal on sitting"), `${D.hump.toFixed(1)} °/s`)
+    + chip(t("ogon","tail"), `${D.tail.toFixed(2)} °/s (${t("podprogowy","subthreshold")})`);
+  return `<div class="panelbox hpanel custompanel" style="margin-top:12px">
+    <h4>${t("Pacjent t-EVS (BPPV, kanał tylny P) na ekranie HINTS — demo","t-EVS patient (BPPV, posterior canal R) on the HINTS screen — demo")}</h4>
+    <div class="presets">${hintsPresetsRow()}</div>
+    <div class="note" style="margin-top:8px">${t("Między prowokacjami złóg SPOCZYWA na dnie kanału (restPhi) → ξ=0: oczopląsu samoistnego brak, HIT prawidłowy, skew ujemny — badanie spoczynkowe NIE odróżnia tego pacjenta od zdrowego. Dlatego HINTS/vHIT wychodzą „prawidłowe” w BPPV. Werdykt silnika dla tego pacjenta:","Between provocations the debris RESTS at the canal's bottom (restPhi) → ξ=0: no spontaneous nystagmus, a normal HIT, no skew — the resting exam does NOT distinguish this patient from a healthy one. That is why HINTS/vHIT come out „normal” in BPPV. The engine's verdict for this patient:")} <b>«${H.verdict}»</b>, applicable=<b>${H.applicable}</b>${t(" (triada HINTS wg GRACE-3 NIESTOSOWALNA — brak oczopląsu samoistnego) → WYKONAJ test pozycyjny: Dix-Hallpike."," (the HINTS triad per GRACE-3 is NOT APPLICABLE — no spontaneous nystagmus) → PERFORM a positional test: Dix-Hallpike.")}</div>
+    <div class="eyesrow" style="margin-top:8px"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-tevsnys>${eyesSVG()}</div><span class="emk">L</span></div>
+    <div class="hctrl" style="justify-content:center;margin-top:4px"><button class="preset" onclick="tevsProvoke()">${t("▶ Prowokacja Dix-Hallpike (odtwórz symulację)","▶ Dix-Hallpike provocation (replay the simulation)")}</button></div>
+    <div class="note">${t("Oczy grają RAZ obwiednię ξ(t) tej samej symulacji, którą rysuje wykres (latencja → paroksyzm → wyczerpanie → odwrócenie przy siadaniu) i gasną same. Animacja niesie kształt i czas; amplitudę w °/s niesie wykres.","The eyes play ONCE the ξ(t) envelope of the same simulation the chart draws (latency → paroxysm → fatigue → reversal on sitting up) and stop by themselves. The animation carries shape and timing; the amplitude in °/s lives in the chart.")}</div>
+    ${spvChartSVG()}
+    <div style="margin-top:4px">${chips}</div>
+    <div class="obsrow" style="margin-top:10px"><div class="obslabel">${t("Kontrast: AVS (neuronitis) — oczopląs CIĄGŁY, bez prowokacji","Contrast: AVS (neuritis) — CONTINUOUS nystagmus, no provocation")}</div>
+      <div class="eyesrow"><span class="emk">${t("P","R")}</span><div class="eyeswrap" data-tevsavs>${eyesSVG()}</div><span class="emk">L</span></div>
+      <div class="note" style="margin-top:4px">${t(`Linia przerywana na wykresie = ten pacjent (${D.avsSpv.toFixed(1)} °/s w ciemności, STALE — także w „spoczynku”). Garb przejściowy vs linia ciągła to cała taksonomia GRACE-3 na jednym obrazku. Odwrotny most: przycisk „Nakładka AVS → diagnostyka” w trybie Własny.`,`The dashed line on the chart = this patient (${D.avsSpv.toFixed(1)} °/s in darkness, CONSTANTLY — including „at rest”). A transient hump vs a constant line is the whole GRACE-3 taxonomy in one picture. The reverse bridge: the „AVS overlay → diagnostics” button in the Custom mode.`)}</div></div>
+  </div>`;
+}
+// Odtworzenie prowokacji demo: startNys z obwiednią Z TEJ SAMEJ symulacji (envOv — zero drugiej
+// fizyki); kierunek z nysFromGeom kanonicznej karty Dix. Bez zmian stanu — bez re-renderu.
+function tevsProvoke(){
+  const c=$('[data-tevsnys]'); if(!c) return;
+  const N=nysFromGeom("posterior","P","canalo", provokeQ("posterior","P"));
+  startNys(c, {...N, fatigue:1}, tevsData().eyes);
+}
 function renderHints(){
   const key=state.hintsScenario||"neuritisR";
   const custom=!!state.hintsCustom;                // tryb „matematycznego pacjenta"
@@ -1630,8 +1754,8 @@ function renderHints(){
       ${fam==="neuritis" ? `<div class="sidewrap"><em>${t("strona","side")}</em><div class="sidepill"><button data-s="L" aria-pressed="${state.hintsSide==='L'}" onclick="setHintsNeuritisSide('L')">L</button><button data-s="P" aria-pressed="${state.hintsSide==='P'}" onclick="setHintsNeuritisSide('P')">${t("P","R")}</button></div></div>` : ""}</div>
     <div class="group" style="margin-top:4px"><div class="label"><span class="eyebrow">${tr("Scenariusz","Scenario")}</span><span class="hint">${tr("zmienia tylko parametry fizjologii","changes only the physiology parameters")}</span></div>
       <div class="seg four">${famBtn('normal',tr('Zdrowy','Healthy'),tr('prawidłowy VOR','normal VOR'),"setHintsDx('normal')")}${famBtn('neuritis',tr('Neuronitis','Neuritis'),tr('obwód','peripheral'),"setHintsDx('neuritis')")}${famBtn('stroke',tr('Udar','Stroke'),tr('ośrodek (AVS)','central (AVS)'),"setHintsDx('stroke')")}${famBtn('custom',tr('Własny','Custom'),tr('matematyczny pacjent','mathematical patient'),"openHintsCustom()")}</div></div>
-    <div data-verdict>${hintsVerdictBlock(H)}</div>
-    ${custom ? (state.hintsQuiz && !state.hintsQuizReveal ? hintsQuizBanner() : hintsCustomPanel()) : hintsCompPanel(key)}
+    <div data-verdict>${hintsVerdictBlock(H)}</div>${graceCard(state.hintsPreset==="tevs")}
+    ${custom ? (state.hintsQuiz && !state.hintsQuizReveal ? hintsQuizBanner() : (state.hintsPreset==="tevs" ? tevsDemoPanel() : hintsCustomPanel())) : hintsCompPanel(key)}
     <div class="panelbox hpanel" style="margin-top:12px">
       <h4>${tr("Oczopląs samoistny — widok frontalny","Spontaneous nystagmus — frontal view")}</h4>
       <div class="hint-eyes ${fixOn?'':'dark'}">
@@ -1669,6 +1793,9 @@ function renderHints(){
   requestAnimationFrame(()=>{
     const c=$('[data-neuronys]'); if(c) startNeuroNys(c, nys, gazeDeg);
     const sk=$('[data-skew]'); if(sk) startSkew(sk, H.ts);
+    // D8/V22: oczy kontrastu AVS w panelu demo t-EVS — pętla ciągła (precedens karty CPN);
+    // oczy DEMO celowo NIE startują tu (wyłącznie z przycisku prowokacji — spec D8).
+    const ta=$('[data-tevsavs]'); if(ta) startNeuroNys(ta, NeuroVOR.observe(NeuroVOR.scenario('neuritisR'), false), 0);
   });
 }
 // Pacjent = scenariusz + KOMPENSACJA ośrodkowa (tylko obwód). Regeneracja błędnika → sticky pacemaker (Bechterew).
@@ -2001,13 +2128,19 @@ function nerveLesionSummary(){
   return tr(`<b>Neuronitis</b> — ${brW}, ucho ${earW}, nasilenie <b>${Math.round(sev*100)}%</b>.<br>Spodziewany obraz: ${exp}.`,`<b>Neuritis</b> — ${brW}, ${earW} ear, severity <b>${Math.round(sev*100)}%</b>.<br>Expected picture: ${exp}.`);
 }
 
+// D8/V22: rząd presetów wspólny dla panelu „Własny" i panelu demo t-EVS (jedno źródło przycisków;
+// "tevs" w liście PRZED "rd" — jak w obiekcie HINTS_PRESETS).
+function hintsPresetsRow(){
+  const active=state.hintsPreset;
+  const presetBtn=k=>`<button class="preset" aria-pressed="${active===k}" onclick="loadHintsPreset('${k}')">${HINTS_PRESETS[k].label}</button>`;
+  return presetBtn("healthy")
+    + `<button class="preset" aria-pressed="${active==='neuritis'}" onclick="loadHintsNeuritis()">${tr("Neuronitis","Neuritis")}</button>`
+    + ["bvh","meniereP","meniereL","scdsP","scdsL","stroke","vmi","laby","aica","downbeat","tevs","rd"].map(presetBtn).join("");
+}
 // Panel sterowania parametrami (PARAM_SPEC): presety + selektor nerwu + suwaki basic + zaawansowane (zwijane).
 function hintsCustomPanel(){
   const p=state.hintsCustom||NeuroVOR.makePatient({}), active=state.hintsPreset;
-  const presetBtn=k=>`<button class="preset" aria-pressed="${active===k}" onclick="loadHintsPreset('${k}')">${HINTS_PRESETS[k].label}</button>`;
-  const presets = presetBtn("healthy")
-    + `<button class="preset" aria-pressed="${active==='neuritis'}" onclick="loadHintsNeuritis()">${tr("Neuronitis","Neuritis")}</button>`
-    + ["bvh","meniereP","meniereL","scdsP","scdsL","stroke","vmi","laby","aica","downbeat","rd"].map(presetBtn).join("");
+  const presets = hintsPresetsRow();
   const ear=state.hintsNerveEar||"P", branch=state.hintsNerveBranch||"superior", sev=state.hintsNerveSev==null?1:state.hintsNerveSev;
   const ne=(e)=>`<button aria-pressed="${ear===e}" onclick="setHintsNerveEar('${e}')">${e}</button>`;
   const nb=(b,l)=>`<button aria-pressed="${branch===b}" onclick="setHintsNerveBranch('${b}')">${l}</button>`;
@@ -2150,8 +2283,8 @@ function sideSel(current, fn, lbl){
   return `<div class="sidesel"><span class="lbl">${lbl}</span><div class="tabs">${opt('L')}${opt('P')}</div></div>`;
 }
 
-export { FLIP_ICO, SIZE_LABELS, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable, setNullYaw, nullPointCard };
+export { FLIP_ICO, SIZE_LABELS, _otoStart, headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, CANAL_PATHS, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, fmt, fmtClock, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, phiToFrac, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compStage, compRowHTML, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, webglAvailable, setNullYaw, nullPointCard, tevsProvoke, tevsData, graceCard };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
-Object.assign(window, { headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, setNullYaw });
+Object.assign(window, { headDial, startDialNysIn, startDialNys, backHeadSVG, startBackHeadTurn, profileMarks, frontFace, figProj, posture, labyrinth, placeOtolith, eyesSVG, nysOffset, startNys, arrowGlyph, diagCanalSVG, startDiagOtolith, computeManSim, currentManSim, manStepEnv, stepXiPeak, manPhi, manFractions, guideNysSeconds, setupGuideAnim, updateGoBtn, toggleTimer, resetTimer, adjust, setStepSeconds, initGuideSlider, flipGuide, sizeFlip, render, renderSetup, renderGuide, renderDiag, hintsNysLabel, hintsVerdictHTML, renderHints, hintsCompPatient, compNoteHTML, hintsCompPanel, hintsSupplHTML, refreshHintsComp, neuroNysParams, startNeuroNys, hitSVG, startHIT, hitSaccadeDir, hitPushLabel, hintsHitSpecOf, hitLabel, skewSVG, startSkew, skewLabel, hintsVerdictBlock, nerveLesionSummary, hintsCustomPanel, hintsQuizBanner, hintsReadoutHTML, refreshHintsCustom, scdsRestNote, scdsLabel, flipDiagMech, flipPhases, sideSel, setNullYaw, tevsProvoke });

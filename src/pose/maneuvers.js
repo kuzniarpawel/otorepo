@@ -390,6 +390,25 @@ function xiEnvelope(sim){
   return {env, tEnd, peak};
 }
 
+/* ============ D8/V22: demo pacjenta t-EVS na ekranie HINTS ============
+   JEDNA nić symulacji dla całego demo (wykres SPV i oczy grają z tego samego sim):
+   spoczynek (TEVS_REST s siadu — cisza EMERGENTNA z restPhi+adhezji, nie z „if”; twardy throw
+   1e-9 w wyroczni) → prowokacja Dix (okno 40 s i tTrans 0,5 IDENTYCZNE z engineXi — część po
+   prefiksie jest czystą translacją czasową, pilnowaną throwem translacyjnym) → SIT_SEG
+   (siadanie = DRUGA prowokacja: transjent ODWRÓCONY, podpisany na wykresie, nie przemilczany;
+   ogon podprogowy ~1,8 °/s — pin, świadomie BEZ throwa „cisza wraca”, margines 0,18 °/s byłby
+   zapieczoną kruchością). Demo twardo zamknięte na PC-P canalo (postać uporczywa nie wygasa
+   i psułaby lekcję ciszy); CELOWO bez phi0/init (strefa artefaktu A2 nietknięta; ewentualne
+   spotkanie z sesją V19 wyłącznie przez szwy actTimeline). */
+const TEVS_REST = 8;   // s spoczynku przed prowokacją (nazwany wybór demonstracyjny, pasmo sensowne 5–10 s)
+let _tevsSim = null;
+function tevsDemoSim(){
+  if(!_tevsSim) _tevsSim = Vestibular.simulateCanalith({canal:"posterior", side:"P", q0:[1,0,0,0],
+    timeline:[{q:[1,0,0,0], tTrans:0, tHold:TEVS_REST, pivot:"body"},
+              {q:provokeQ("posterior","P"), tTrans:0.5, tHold:40, pivot:"body"}, SIT_SEG]});
+  return _tevsSim;
+}
+
 /* ============ Manewry jako sekwencje orientacji 3D (timeline kwaternionów) ============
    Wejście do symulacji dynamiki: każdy krok manewru → orientacja głowy (head→świat) jako
    kwaternion, zgodnie z modelem "orientacja głowy = orientacja ciała ∘ skręt szyi".
@@ -1458,7 +1477,7 @@ function examAnswerKey(lesions){
 
 const CANAL_OF={epley:"posterior",semont:"posterior",bascule:"posterior",lempert:"horizontal",gufoniGeo:"horizontal",gufoniApo:"horizontal",yacovino:"anterior",zuma:"horizontal",kim:"horizontal"};
 
-export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF, PRIORS, mulberry32, randomPatient, TEST_OF_CANAL, examPhaseNys, examAnswerKey };
+export { SIDE, stepPivot, otherSide, earToScreen, yawToA, makeManualOrientation, epley, semont, bascule, lempert, yacovino, gufoniGeo, gufoniApo, zuma, kim, MANEUVERS, CANALS, XI_CARD, BLT_HISTORY, bltInit, bltPhases, bltZones, bltDirWord, ldtPhases, nullScan, nullYawOf, SCEN_DRIVEN, TAU_BOND, readhesion, SESSION_REST, SIT_SEG, ACT_STEPS, PHASE_OF, actTimeline, sessionInit, sessionSim, sessionPreview, nysFromGeom, nysFromDyn, provokeQ, engineXi, xiEnvelope, POSE_SPEC, poseOf, headQOf, stepGravity, stepHeadQ, composeHead, SK, SKEL, fkJoints, POSE3D, TORSO_Q, bodyClass, bodyJoints, poseSpec, gravArrowFor, sizeRadius, holdMult, sizedSeconds, derivedHold, maneuverTimeline, maneuverSim, ENS_GRID, ensembleSim, featsByVariant, DIAG, variantLabels, MECHS_BY_PHENO, mechOf, variantOfMech, persistentOf, SHORT_PHI0, rollShortPhases, mechLabels, recommend, baranyClassify, CANAL_OF, PRIORS, mulberry32, randomPatient, TEST_OF_CANAL, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim };
 
 // handlery inline (onclick=…) — powierzchnia globalna jak w klasycznym <script>
 if (typeof window !== "undefined")   // guard: moduł importowalny też w czystym Node (tools/bridge-check.mjs)
