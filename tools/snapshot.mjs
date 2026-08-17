@@ -915,7 +915,17 @@ function domOracle(h, win) {
   if (h.goObs && h.setObsPole && h.oznaczObsPole && h.setObsGrupa) {
     // Rekordy obserwacji PRZEŻYWAJĄ nawigację (to celowe), więc bez zerowania między scenariuszami
     // wyciekałyby jeden na drugi i kolejność bloków zaczęłaby wpływać na złoty wzorzec.
-    const czystyObs = () => { h.state.obs = {}; h.state.obsGrupa = null; h.state.dixObs = null; };
+    /* PRZECIEK MIĘDZY SCENARIUSZAMI ZŁAPANY PRZY SCALENIU (Etap 4, 2026-08-17). Do listy weszły
+       `variantZrodlo`, `sideZrodlo`, `variant` i `mechanism`. Powód jest mierzalny, nie estetyczny:
+       gałąź main dołożyła 62 scenariusze rodziny `diag` (warianty cupulo), a one wołają `setVariant`, które ustawia
+       `variantZrodlo='nadpisany'`. Scenariusze Bloku 9 lecą PO nich i nic tego pola nie zerowało —
+       więc ekran interpretacji dla przypadku PUSTEGO (zero opisu, zero gestów) zaczął pisać
+       „ustawiony ręcznie przez Ciebie" zamiast „HIPOTEZA MODELU". Golden zamroziłby zdanie, które
+       przypisuje użytkownikowi decyzję, której nie podjął — czyli dokładnie tę klasę usterki, dla
+       której Blok 9 wprowadził `variantZrodlo`. Bez tej linii przypadki przechodzą przez KOLEJNOŚĆ
+       scenariuszy, a nie przez kod aplikacji. */
+    const czystyObs = () => { h.state.obs = {}; h.state.obsGrupa = null; h.state.dixObs = null;
+      h.state.variant = 'canalo'; h.state.variantZrodlo = null; h.state.sideZrodlo = null; h.state.mechanism = null; };
     const obs = (tag, proba, kroki) => grab(`obs/${tag}`, () => {
       czystyObs();
       if (h.openTest) h.openTest(proba); else Object.assign(h.state, { testKey: proba });

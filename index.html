@@ -36,12 +36,7 @@
   <header class="apptop" id="apptop">
     <div class="brand"><span class="brand__mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13c0-5 4-8 7.5-8S20 7.5 20 11c0 3-2.5 4-2.5 6.5S16 21 14 21s-2-2-2-3.5S10.5 15 9 14s-4 .5-4-1Z" stroke="var(--primary)" stroke-width="1.6"></path></svg></span>
       <span class="brand__txt"><b class="brand__name">OTO<span>REPO</span></b><span class="brand__sub" id="brandSub"></span></span></div>
-    <!-- TRYBY ZAAWANSOWANE (sesja ciągła D1/V10 · chmura złogu D9/V20 · egzamin D7/V21). Przy scaleniu
-         main→futureUI trzy przełączniki miały DWA możliwe domy: pasek `#sessionbar` powłoki (main) albo
-         karta ekranu (futureUI). Wybrane JEDNO miejsce — powłoka — z dwóch powodów: leżą POZA `#app`,
-         więc złoty wzorzec DOM ich nie widzi (tak samo jak `#langbar`), i dotyczą CAŁEJ sesji, a nie
-         pojedynczej karty. Etykiety wypełnia `syncSessionBar()` przez t(), stąd puste napisy w markupie
-         byłyby ryzykiem — zostają angielskie literały jak w `#langbar`. -->
+    <!-- Tryby zaawansowane (sesja D1/V10 · chmura D9/V20 · egzamin D7/V21) — uzasadnienie miejsca: commit scalenia Etapu 3. -->
     <div class="apptools"><div id="langbar" class="langbar" role="group" aria-label="Language / Język"><button type="button" data-lang="en" aria-pressed="false" onclick="setLangUI('en')">EN</button><button type="button" data-lang="pl" aria-pressed="false" onclick="setLangUI('pl')">PL</button></div><div id="sessionbar" class="langbar" role="group" aria-label="Advanced modes / Tryby zaawansowane"><button type="button" data-session aria-pressed="false" onclick="toggleSessionMode(this.getAttribute('aria-pressed')!=='true')">Continuous session</button><button type="button" data-ensemble aria-pressed="false" onclick="toggleEnsembleMode(this.getAttribute('aria-pressed')!=='true')">Debris cloud</button><button type="button" data-exam aria-pressed="false" onclick="toggleExamMode(this.getAttribute('aria-pressed')!=='true')">Exam — random patient</button></div></div>
   </header>
   <!-- Sloty nawigacji: markup i miejsce w siatce powstają teraz, wypełnia je Blok 3. -->
