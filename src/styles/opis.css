@@ -1,0 +1,93 @@
+/* OTOREPO — GENERATOR OPISU BADANIA I ZAPIS SESJI (Blok 15).
+   Układ z dokumentu: komputer — podgląd i formularz OBOK SIEBIE (nadrzędny `.pagegrid` robi to
+   sam); telefon — podgląd jest OSOBNYM ekranem, a przycisk „Kopiuj" ma być duży i pierwszy.
+   Dlatego podgląd stoi w kolumnie `col--viz`, która na telefonie ląduje pod formularzem, a akcja
+   kopiowania jest pełnej szerokości. */
+
+.opiskarta__n { margin: .5rem 0 .75rem; color: var(--muted); }
+
+/* --- przełączniki sekcji --- */
+.opissek__l { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .375rem; }
+.opissek__b {
+  width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: space-between;
+  gap: .75rem; padding: .5rem .75rem; text-align: left;
+  border: 1px solid var(--line); border-radius: var(--r-sm, 10px); background: var(--surface); color: inherit;
+  cursor: pointer;
+}
+.opissek__b[aria-checked="true"] { border-color: var(--accent); background: var(--accent-weak, var(--surface)); }
+.opissek__b[disabled] { cursor: default; opacity: .8; }
+.opissek__n { font-weight: 600; }
+.opissek__c { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .875rem; }
+
+/* --- działania --- */
+.opisakcje__kop { width: 100%; min-height: 52px; margin: .25rem 0 .5rem; }
+.opisakcje__r { display: flex; flex-wrap: wrap; gap: .5rem; }
+.opiskom, .opisblad { margin-top: .5rem; padding: .5rem .625rem; border-radius: var(--r-sm, 10px); font-size: .9375rem; }
+.opiskom { background: var(--ok-weak, var(--surface)); border: 1px solid var(--line); }
+.opisblad { background: var(--warn-weak, var(--surface)); border: 1px solid var(--warn, var(--line)); }
+
+/* --- podgląd i edycja --- */
+.opispodglad__t, .opispodglad__e {
+  width: 100%; max-width: 100%; box-sizing: border-box;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .875rem; line-height: 1.5;
+  /* Opis bywa długi, ale POZIOMO nie przewija się nigdy — zawijamy w kolumnie. */
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm, 10px);
+  padding: .75rem; margin: 0 0 .5rem;
+}
+.opispodglad__t { max-height: 60vh; overflow-y: auto; }
+/* BLOK 16 — „blokada przypadkowego zoomu formularzy" (dokument, kolumna „Telefon"). Pole edycji
+   opisu jest JEDYNYM polem tekstowym w całej aplikacji i miało 14 px: Safari na iOS powiększa
+   wtedy widok przy każdym wejściu w pole, a wyjścia z powiększenia nie ma — użytkownik zostaje
+   z przyciętym układem w środku badania. Regułą jest 16 px, i to jest też minimum treści
+   z rozdziału o typografii, więc nie ma tu sprzeczności do wyważenia. Podgląd (nieedytowalny)
+   zostaje mniejszy: w nim nie ma czego ogniskować. */
+.opispodglad__e { min-height: 18rem; resize: vertical; color: inherit; font-size: 1rem; }
+/* Ostrzeżenie o ulotności edycji ma być widoczne ZANIM ktoś zacznie pisać, a nie w stopce. */
+.opisostrz {
+  margin: 0 0 .5rem; padding: .5rem .625rem; font-size: .875rem;
+  border: 1px solid var(--warn, var(--line)); border-radius: var(--r-sm, 10px);
+  background: var(--warn-weak, var(--surface));
+}
+
+/* --- lista zapisanych sesji --- */
+.opissesje__l { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .375rem; }
+.opissesje__l li {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .5rem .625rem; border: 1px solid var(--line); border-radius: var(--r-sm, 10px);
+}
+.opissesje__p { font-weight: 600; overflow-wrap: anywhere; }
+.opissesje__r { display: flex; gap: .375rem; }
+.opissesje__brak { margin-top: .5rem; color: var(--muted); }
+
+/* --- tolerancja manewru (karta na ekranie kontroli) --- */
+.futol__l { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .5rem; }
+.futol__b {
+  min-height: 44px; padding: .5rem .75rem; text-align: left;
+  border: 1px solid var(--line); border-radius: var(--r-sm, 10px); background: var(--surface); color: inherit; cursor: pointer;
+}
+.futol__b[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-weak, var(--surface)); }
+
+/* --- kasowanie zapisów w arkuszu ustawień ---
+   TEN PRZYCISK NIE JEST PRZEŁĄCZNIKIEM i do 2026-08-12 błędnie nosił klasę `.toggle` (miał tylko
+   modyfikator `--del` nadpisujący geometrię). Skutek był widoczny na ekranie: legacy.css rysuje
+   każdemu `.toggle` białą GAŁKĘ przez `::after` (21 px, top/left 3 px), więc kółko przełącznika
+   siedziało na literach napisu, a a11y.css wypełnia `.toggle` szarością `--line-strong` — czyli
+   kasowanie NIEODWRACALNE było najbardziej wypełnionym elementem całego okna, mimo że w tym
+   języku wypełnienie znaczy „główna akcja". Modyfikator nie mógł tego cofnąć: `.toggle--del`
+   i `.toggle` mają tę samą specyficzność, a a11y.css idzie później w kaskadzie.
+   Własna klasa zamyka całą rodzinę błędu: żadna przyszła reguła dla przełączników już tu nie
+   spadnie. Zależności są na atrybutach (`[data-sesje-usun]`, `[data-potwierdz]`), nie na klasie,
+   więc wyrocznie opis:dom H5/H9 i pwa:dom I7 zmiany nie widzą. */
+.sesjeusun {
+  appearance: none; cursor: pointer; flex: 0 0 auto;
+  width: auto; min-height: 44px; padding: 0 .75rem;
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm, 10px);
+  background: none; color: var(--text);
+  font: inherit; font-size: 13px; font-weight: 600;
+}
+.sesjeusun:hover { border-color: var(--crit); color: var(--crit); }
+/* Krok potwierdzenia — bursztyn, bo to PYTANIE, nie błąd. Wypełnienia nie ma nawet tutaj: pełna
+   czerwień należy w tej aplikacji wyłącznie do cech alarmowych w wyniku HINTS. */
+.sesjeusun[data-potwierdz="1"] { border-color: var(--warn, var(--line)); color: var(--warn, inherit); font-weight: 700; }

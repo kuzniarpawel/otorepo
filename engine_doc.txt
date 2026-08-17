@@ -3,7 +3,11 @@
  Pliki: src/engine/vestibular.js (Vestibular) · src/engine/neuro-vor.js (NeuroVOR)
         (monolit otorepo.html = zamrożone źródło złotego snapshotu — te same IIFE)
  Charakter: czyste moduły ES BEZ DOM (testowalne offline w node; importowalne w .mjs)
- Ostatnia aktualizacja: 2026-08-13 (V1 oceny II: sekcje Vestibular zsynchronizowane z kodem po
+ Ostatnia aktualizacja: 2026-08-14 (scalenie: podstawa z main [ocena II silnikow, V1-V9 + N1-N7],
+                        na nia przeniesione rozdzialy Blokow 8-16 z galezi futureUI — kazde ich
+                        twierdzenie ILOSCIOWE przeliczone na NOWYM silniku, bibliografia futureUI
+                        przenumerowana [H25]/[H26] -> [H27]/[H28] wobec kolizji z main)
+ Poprzednio: 2026-08-13 (V1 oceny II: sekcje Vestibular zsynchronizowane z kodem po
                         przebudowie 2026-08-05/06 — geometria w całości z IE-Map [13], siła właściwa R7,
                         phi0/sizeUm; skorygowane liczby kalibracji, walidacji i magnitud)
  Uwaga: `Vestibular` = fizyka BPPV (złóg otolitowy w kanale). `NeuroVOR` = warstwa
@@ -689,6 +693,29 @@ UPROSZCZENIA WZGLĘDEM PEŁNYCH MODELI:
 
 
 ZNANE ROZBIEŻNOŚCI KLINICZNE (przegląd neurofizjologiczny 2026-08-05)
+     [V19-STATUS 2026-08-15: DOSTARCZONE — INTEGRACJA SESJA↔KARTY SCENARIUSZOWE (domknięcie odłożonego
+      kandydata z V10). Bowlean i lyingdown weszły do AKTÓW: ACT_STEPS.bowlean (skłon 30 s / siad-
+      centrum 5 s / odchylenie 30 s, pivot "neck" per krok — actTimeline dostał st.pivot||"body",
+      bo od B8 pivot ma skutki fizyczne) i ACT_STEPS.lyingdown [leżenie 30 / siad 30]; PHASE_OF
+      {bowlean:[0,2], lyingdown:[0,1]}. DOWÓD KONSTRUKCYJNY (analog B7): akt z zasianego scenariusza
+      odtwarza kartę scenariuszową BIT-W-BIT (textbook bow +0.975294 / lean −0.366342, delta 0.0e+0;
+      LDT lie −0.381640 idem) — jedna nić, jedna fizyka. ZASIEW = scenariusz historii jako AKT
+      OTWIERAJĄCY (seedSessionFromScenario): klik RESTARTUJE łańcuch (nadpisanie φ przy zachowaniu
+      starych aktów łamałoby inwariant B7) i mapuje bltInit→stan: {phi:φ₀, xi:0 (kontrakt karty),
+      bondFrac: settled?1:0 — bond=0 dla neutral dawałby FAŁSZYWY LDN 0.077 (sonda); bez readhesion
+      za siad historii (lustro konwencji settled:false — NIE „poprawiać")}; tSession += czas
+      SYMULOWANY historii (textbook ~332 s); neutral = czysty freshSession. Karty pod sesją: fazy =
+      podgląd NASTĘPNEGO wykonania (sessionPreview z per-fazowym exitStep; akumulacja ξ świadomie
+      nietknięta — cięcie w próbce wyjścia gubiłoby szczyt −0.749 vs −0.753), strzałka+napis z JEDNEGO
+      ξ (bltDirWord, V5), badge i znacznik mapy wododziału z TEGO SAMEGO pv/stanu (znacznik = bieżące
+      φ sesji, znika po opróżnieniu). NAGRODA R10 NA ŻYWO: zasiew afterRoll (φ≈220°>190°) → podgląd
+      „bije ku zdrowej — I ZŁÓG OPUSZCZA KANAŁ" (exit t≈7.55 s) → akt → niemy test kontrolny (NPV
+      ~72%). Strażnik prowokacji wzmocniony: !ACT_STEPS[testKey] zamiast SCEN_DRIVEN (karta bez
+      wpisu aktu nie odpali fallbacku dixowego); sessKey memo rozszerzony o S.exited (kolizja
+      fresh↔exited potwierdzona sondą). Sesja OFF = bit-w-bit (bramka twarda: golden 0-diff po całym
+      feature); wyrocznie +10 addytywnych kluczy dom session-* (6 bowlean + 4 lyingdown, dom 164→174),
+      zejście czyste: bowlean session-off ≡ scen-afterRoll i lyingdown session-off ≡ karta bazowa
+      BIT-W-BIT. Fizyka silnika NIETKNIĘTA (zero edycji vestibular.js).]
 
  >>> R1 ZAMKNIĘTE 2026-08-05 (gałąź feature/vestibular) — patrz ARC_SPAN w sekcji stałych. <<<
      Brakującą daną był kątowy odstęp bańka↔ujście. Dostarczona: Cárdenas-Serna & Jeffery (48 dorosłych
@@ -1725,7 +1752,7 @@ re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła
    karta TYLKO na finalnym kroku guide, POZA sesją (bramka !state.session: sesja opowiada JEDEN
    złóg z historią). Wiersz kliniczny DOSTARCZONY 2026-08-16 po weryfikacji źródeł (decyzja
    użytkownika): „~80% po pojedynczej sesji + wzrost przy powtórzeniach" [H27]; kontekst RCT
-   (56% vs 21%, OR 4,42) z [H28]; pierwotne „80–93%" ODRZUCONE — górne wartości pochodzą z
+   (56% vs 21%, OR 4,42) z [H29]; pierwotne „80–93%" ODRZUCONE — górne wartości pochodzą z
    POWTÓRZEŃ, nie z pojedynczej sesji. Wyrocznie: engine.ensemble (siatka +
    9 manewrów × 2 strony: frakcje/szczyt/tExit per cząstka; linia diffKeys w --check) + TWARDA
    WYROCZNIA CHMURY (throw: środek ≡ kanoniczna bit-w-bit — karta nie może rozjechać się z oczami)
@@ -2224,7 +2251,8 @@ API PUBLICZNE (zwracane z modułu)
    rate−tone. Dawniej wysoki ton spoczynkowy sam zjadał zapas do sufitu: ton ≥167 Hz przy gain=1.0 dawał
    vHIT PATOLOGICZNY bez żadnego ubytku wzmocnienia — a ton do 200 Hz jest osiągalny suwakiem w
    Laboratorium. Przeczyło to własnej tezie modułu: w fazie DRAŻNIENIA Ménière'a gain jest zachowany,
-   więc vHIT pozostaje PRAWIDŁOWY, i to jest cecha RÓŻNICUJĄCA tę jednostkę [H20]. Nasycenie nadal
+   więc vHIT pozostaje PRAWIDŁOWY, i to jest cecha RÓŻNICUJĄCA tę jednostkę [H20] (samą dysocjację
+    kaloryka↔vHIT niesie [H21] — kryteria Ménière'a są objawowe i o vHIT nie mówią). Nasycenie nadal
    działa tam, gdzie ma fizjologiczny sens — przy bardzo dużej prędkości głowy (Ω>387°/s dla gain 1.0 — poza protokołem vHIT; po N3, było 262).
    ETAP 7 (E2): drugi argument POLIMORFICZNY — 'P'/'L' (poziomy, jw., liczbowo bez zmian) LUB {canal,ear}
    (dowolny z 6 kanałów; płaszczyzny HC/RALP/LARP). Zwraca też canal/ear/plane/coplanar/saccade{h,v,t}. Zob. vhitPlane.
@@ -2593,7 +2621,8 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
      engine.neuro pinuje nowe klucze (hsn, shimpHC_P/L, pursuit, dva) dla wszystkich pacjentów. Sonda
      n4.mjs (27 asercji). dom: tylko 4 ekrany (bvh/stroke/nerve-superior — nowe findings).
  [x] WDROŻENIE OCENY II — ETAP N5 (nowe osie):
-     • OŚ SŁUCHOWA (D3, HINTS-plus [H24]): hearingL/R (0..1; <0.65 = niedosłuch w teście pocierania palców)
+     • OŚ SŁUCHOWA (D3): sam „plus" pochodzi z [H28] Newman-Toker 2013, ramę ED daje [H24] GRACE-3 2023.
+        hearingL/R (0..1; <0.65 = niedosłuch w teście pocierania palców)
        + grupa PARAM_SPEC. NIE zmienia werdyktu triady (słuch to „plus"); clinicalReadout raportuje +
        ambiguity „AVS + ostry niedosłuch: labyrinthitis vs AICA — patologiczny HIT NIE wyklucza udaru".
        Fluktuacja LF (Ménière) i ABG (SCDS) poza zakresem → OGRANICZENIA.
@@ -2747,6 +2776,8 @@ Bramka obejmuje src oraz engine_doc i view_doc w obu językach.
       → CZEGO NIE ZWERYFIKOWANO: abstrakt NIE zawiera jawnego porównania z kanonem 30° (zdanie z R9
         o „wprost odnotowanej różnicy" wymaga pełnego tekstu).
       → w module NeuroVOR: koplanarność RA∥LP, LA∥RP i orientacje kanałów → COPLANAR / PLANE_CANALS (RALP/LARP).
+      → UWAGA NUMERACYJNA: do 2026-08-16 ta sama praca miała na gałęzi main DRUGI numer [H29];
+        wpisy scalono tutaj, a slot 29 nosi dziś przegląd Cochrane 2014.
 [H18] Minor LB (2000). "Superior canal dehiscence syndrome." Am J Otol 21(1):9–19; oraz Minor LB, Solomon D,
       Zinreich JS, Zee DS (1998), Arch Otolaryngol Head Neck Surg 124(3):249–258.
       → SCDS / trzecie okno; oczopląs pionowo-skrętny wyzwalany dźwiękiem (Tullio) i ciśnieniem (Hennebert),
@@ -2829,7 +2860,19 @@ Bramka obejmuje src oraz engine_doc i view_doc w obu językach.
         pojedynczej sesji — górne wartości pochodzą z POWTÓRZEŃ, weryfikacja źródeł 2026-08-16).
         Podstawa wiersza klinicznego karty „Chmura złogu" (D9/V20).
 
-[H28] Hilton MP, Pinder DK (2014). "The Epley (canalith repositioning) manoeuvre for benign paroxysmal
+[H28] Newman-Toker DE, Kerber KA, Hsieh YH, Pula JH, Omron R, Saber Tehrani AS, Mantokoudis G, Hanley DF,
+      Zee DS, Kattah JC (2013). "HINTS outperforms ABCD2 to screen for stroke in acute continuous vertigo
+      and dizziness." Acad Emerg Med 20(10):986–996. doi:10.1111/acem.12223. PMID 24127701.
+      → Źródło „plusa" w HINTS+ (Blok 12 dokumentu UI): dołożenie przesiewowej oceny słuchu do triady
+        head-impulse / oczopląs / test of skew. NOWY jednostronny niedosłuch w ostrym zespole przedsionkowym
+        podnosi podejrzenie zawału w zakresie tętnicy AICA (błędnik jest unaczyniony z tego dorzecza), więc
+        wchodzi do wyniku jako CECHA ALARMOWA. Kierunek działa TYLKO W JEDNĄ STRONĘ: obecność niedosłuchu
+        podnosi czujność, jego brak niczego nie wyklucza (zapalenie błędnika daje ten sam obraz) — dlatego
+        w modelu OTOREPO odpowiedź „słuch symetryczny" ma wagę NEUTRALNĄ, a nie „wspiera obwód".
+        Razem z [H8] (HINTS/INFARCT), [H9] (kontekst i ograniczenia) i [H24] (GRACE-3: ataksja chodu =
+        ośrodek; HINTS niedokładny bez przeszkolenia) tworzy komplet podstaw Bloku 12.
+
+[H29] Hilton MP, Pinder DK (2014). "The Epley (canalith repositioning) manoeuvre for benign paroxysmal
       positional vertigo." Cochrane Database Syst Rev (12):CD003162. doi:10.1002/14651858.CD003162.pub3.
       PMID 25485940.
       → RCT (metaanaliza): pełne ustąpienie zawrotu OR 4,42 (95% CI 2,62–7,44; 5 badań, 273 uczestników;
@@ -2837,9 +2880,6 @@ Bramka obejmuje src oraz engine_doc i view_doc w obu językach.
         (95% CI 6,0–15,42; 8 badań, 507) · Epley ≈ Semont/Gans (bez różnicy) · Epley > Brandt-Daroff
         OR 12,38 (wzmacnia notę home V18: BD słabsze niż repozycja) · nudności w trakcie 16,7–32%
         (spójne z paskiem D5) · nawroty ~36%. Kontekst RCT ≠ odsetek kliniczny [H27] — różne miary.
-
-[H29] NUMER WYCOFANY 2026-08-16 — był duplikatem [H17] (Della Santina i wsp. 2005). Cytowania
-      przeniesione do [H17]; numeru nie używać ponownie bez decyzji.
 
 [H30] Porwal P, Adarsh VR, Pawar V, Dorasala S, Bijlani A, Nair P, Nayar R (2021). „Clinical and VNG
       Features in Anterior Canal BPPV — An Analysis of 13 Cases." Front Neurol 12:618269.
@@ -2940,6 +2980,56 @@ Bramka obejmuje src oraz engine_doc i view_doc w obu językach.
         przemieścić złóg JUŻ ZNAJDUJĄCY SIĘ w kanale poziomym; test roll nie rusza złogu w kanałach
         pionowych. To niezależne, symulacyjne potwierdzenie R10 i zjawiska nr 1 wpisu V25.
 
+
+
+=== CHMURA ZŁOGU — ensemble wielocząstkowy (D9/V20, 2026-08-16) ===
+ORKIESTRACJA NAD SILNIKIEM, bez fizyki (zero edycji vestibular.js): chmura = N=9 niezależnych
+symulacji simulateCanalith na JEDNEJ kanonicznej timeline (klinicysta wykonuje JEDEN manewr —
+re-derywacja holdów per cząstka dałaby każdej własny protokół i ominęła treść częściowej repozycji).
+ SIATKA (ensembleSim/ENS_GRID): kwantyle ŚRODKOWE rozkładu jednostajnego na [0.7,1.3]·r_size —
+   m_k = 0.7+0.6·(k+0.5)/9. GRANICA ŹRÓDŁA: rozkład rozmiarów agregatu in vivo NIEZMIERZONY
+   (patrz nota przy H2) — pasmo jednostajne to deklaracja niewiedzy, nie pomiar; NIE kalibrować.
+   Kwantyle środkowe zbiegają do całki po rozkładzie (szczyt agregatu 1.0071/1.0085/1.0091 dla
+   N=7/9/13); siatka z KRAŃCAMI przeważa ekstrema i dryfuje z N (1.061→1.035) — dawna kotwica
+   oceny „1.085" to artefakt takiej grubej siatki N=5 (odtworzone 1.0865); teza jakościowa
+   (dyspersja przesuwa w przód i podnosi szczyt) stoi, liczby docelowej NIE MA. Środek siatki
+   (k=4) = DOKŁADNIE 1.0 → cząstka środkowa BIT-RÓWNA kanonicznej maneuverSim.
+ AGREGACJA = ŚREDNIA arytmetyczna ξ po cząstkach: silnik JUŻ skaluje gain∝r³ wewnątrz
+   simulateCanalith — jawna dodatkowa waga r³ liczyłaby masę DWA RAZY (zmierzone 1.353, poza
+   kalibracją CUP_WEAK/SPV) i jest ZAKAZANA. fracMass (r³) to osobna wielkość: frakcja MASY
+   usuniętej, nie waga sygnału.
+ CZĘŚCIOWA REPOZYCJA — EMERGENTNA z kanonicznych holdów (zero nowych stałych): strażnik
+   derivedHold TAUP_GUARD=1.1 gwarantuje czyszczenie dla r ≥ 1/√1.1 ≈ 0.953 — i dokładnie cząstki
+   r<0.95 wypadają z okien. Tabela (medium, P, pinowana w engine.ensemble): epley 8/9 (96% masy) ·
+   semont/bascule/yacovino 6/9 (84%) · lempert/gufoniGeo/zuma/kim 9/9 · gufoniApo 0/9 (KONWERSJA —
+   karta renderuje jako konwersję, nie porażkę). Karta uczy wprost: zostają NAJDROBNIEJSZE
+   (najwolniejsze: τ ∝ r⁻², Stokes) — „powtórz test pozycyjny".
+ OSIE ROZDZIELNE: rep NIE wchodzi do chmury (rep₂/rep₀ = fatigueFactor(2) co do 6 cyfr identycznie
+   dla pojedynczej i agregatu — gc wchodzi liniowo, trajektoria φ od gc niezależna) → ensemble NIE
+   zastępuje fatigueFactor (chmura = dyspersja ROZMIARU w jednej prowokacji; fatigueFactor = rozpad
+   kłębka MIĘDZY prowokacjami, Imai) — osobna decyzja kalibracyjna, poza V20. Kanoniczna pojedyncza
+   symulacja ZOSTAJE źródłem: derivedHold/timerów, manExitStep/wędrówki, sesji V10/V19, symRow/RD
+   (D5), wyroczni sensitivity/EXPEL_SANE. Chmura jest WYŁĄCZNIE widokiem (liczby karty + rząd kropek;
+   ZAKAZ rysowania chmury na ścieżce otolitu — rampa manFractions jest schematyczna, pozycyjny
+   realizm byłby fabrykacją).
+ CANAL SWITCH = NOTA (nie orkiestracja): łagiewka leży nad niebańkowym ujściem HC — część HC-BPPV
+   powstaje jako canal switch po leczeniu tylnego (patrz R3); pełna orkiestracja wymagałaby
+   p(switch) bez źródła i zasiewu φ₀ w innym kanale (terytorium sesji) — kandydat osobny. Sonda
+   projektu: dynamika PO wejściu byłaby uczciwa (HC φ₀≈250–265 przy ujściu, settled:false → siad
+   zsuwa ku restPhi, kontrolny Roll = DCPN geotropowy +0.82..0.86/−0.91..−0.92, fenotyp nieczuły
+   na głębokość wejścia).
+ UI: opt-in „Chmura złogu" w powłoce #sessionbar (poza #app — golden nietknięty z konstrukcji),
+   karta TYLKO na finalnym kroku guide, POZA sesją (bramka !state.session: sesja opowiada JEDEN
+   złóg z historią). Wiersz kliniczny DOSTARCZONY 2026-08-16 po weryfikacji źródeł (decyzja
+   użytkownika): „~80% po pojedynczej sesji + wzrost przy powtórzeniach" [H27]; kontekst RCT
+   (56% vs 21%, OR 4,42) z [H29]; pierwotne „80–93%" ODRZUCONE — górne wartości pochodzą z
+   POWTÓRZEŃ, nie z pojedynczej sesji. Wyrocznie: engine.ensemble (siatka +
+   9 manewrów × 2 strony: frakcje/szczyt/tExit per cząstka; linia diffKeys w --check) + TWARDA
+   WYROCZNIA CHMURY (throw: środek ≡ kanoniczna bit-w-bit — karta nie może rozjechać się z oczami)
+   + 3 klucze dom (ensemble-on ×2, ensemble-off ≡ finał bazowy BIT-W-BIT = wieczny pin „OFF to
+   zero bajtów"; dom 174→177). Kandydat następcy: sesja chmury (łańcuch per cząstka, koszt M×;
+   kontrolny test po częściowej repozycji z odpowiedzią ∝ zatrzymanej masie) — świadomie poza V20.
+
 UPROSZCZENIA / ZASTRZEŻENIA:
   - oczopląs POZIOMY UVH: skręt jako stały ułamek poziomu (TORS_FRAC=0.5) — poglądowo; kanały PIONOWE
     (etap 7/E3) składane realnie PER PARA współpłaszczyznowa (verticalBeat), lecz z uproszczonym TORS_V=0.8;
@@ -2973,3 +3063,953 @@ UPROSZCZENIA / ZASTRZEŻENIA:
   - HINTS jako model DYDAKTYCZNY — NIE zastępuje badania; ważny w AVS z utrzymującym się oczopląsem,
     interpretować z HINTS „plus" (słuch) i kontekstem ([H9] Tarnutzer 2011). UWAGA: skompensowany ubytek
     obwodowy może mieć bedside HIT „prawidłowy" (sakady ukryte) — pułapka, gdy nie ma już oczopląsu AVS.
+
+================================================================================
+OBSERWACJE POZA MODELEM — czego silnik BPPV NIE liczy (Blok 8)
+================================================================================
+Krok „Oczopląs" pozwala klinicyscie zapisac to, co ZOBACZYL u pacjenta. Czesc cech, o ktore
+formularz pyta, NIE MA odpowiednika w silniku — i to jest zapisane wprost, zeby nikt nie wzial
+milczenia modelu za jego przewidywanie. Karta „Porownaj z przewidywaniem" zwraca dla nich
+werdykt `nieporownywalne`, a nie `rozne`.
+
+1. WPLYW FIKSACJI WZROKU. Silnik BPPV nie ma parametru fiksacji. Sprawdzone: zbior kluczy
+   `Vestibular` (isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch,
+   position, simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor,
+   qmul, qconj, qaxis, rotate, GEXC, CANAL_NORMALS, CUP_WEAK) nie zawiera ani jednego.
+   Supresja fiksacyjna istnieje WYLACZNIE w NeuroVOR (patrz [H3]) i jest czytana tylko przez
+   ekran HINTS. Klinicznie cecha jest wazna (oczoplas obwodowy tlumi sie przy fiksacji,
+   osrodkowy nie), wiec pole zostaje w formularzu — z waga 1 i jawna adnotacja przy pytaniu.
+
+2. ODWROCENIE KIERUNKU PO POSADZENIU. Model nie ma fazy siadu w probie diagnostycznej:
+   `DIAG.dix.phases` to JEDNA faza, a `engineXi` buduje os czasu z jednego segmentu
+   {q, tTrans, tHold}. Transjent liberacyjny opisany wyzej (dynamika manewrow) ma TEN SAM ZNAK
+   co pobudzenie pierwotne i nie jest odwroceniem. Pole zostaje w formularzu z waga 1.
+
+3. ZAWROTY TOWARZYSZACE OCZOPLASOWI. Kryterium nie ma w repozytorium — `baranyClassify` nie ma
+   takiego wiersza w `crit[]`. Luki NIE zasypujemy wymyslonym kryterium; nazywamy ja tutaj,
+   zeby Blok 9 wiedzial, czego brakuje.
+
+CZAS TRWANIA JAKO TWIERDZENIE, NIE PARAMETR ANIMACJI
+Okno symulacji proby pozycyjnej (wprost w `engineXi`, maneuvers.js) udaje CZAS KLINICZNY, a nie
+wygode animacji. Dwie liczby maja rozny status — obie PRZELICZONE PONOWNIE po ocenie II silnika:
+  - kanalolitiaza — czas wyznacza FIZYKA. Naturalny zanik (|ksi| < 3% szczytu): tylny 42,00 s,
+    poziomy 45,20 s, przedni 61,25 s. Okno ma ten zanik POMIESCIC, a nie go wyznaczac: 55 s dla
+    tylnego i poziomego, 75 s dla PRZEDNIEGO — jego napad jest tak dlugi, ze potrzebuje okna
+    postaci uporczywej, zeby zmiescic sie z zapasem.
+  - kupulolitiaza — ksi NIE WYGASA (zmierzone |ksi| = 100 % szczytu jeszcze po 300 s dla kanalu
+    tylnego i poziomego), wiec tEnd JEST oknem i niczym wiecej. Ta liczba (75 s) jest wprost
+    twierdzeniem klinicznym i musi przekraczac prog 60 s. WYJATEK: kupulolitiaza kanalu PRZEDNIEGO
+    przygasa do 24,0 % szczytu, bo deep head-hang slabo obciaza osklepek przedni — aplikacja mowi
+    to wprost w nocie tego testu, a wyrocznia wiaze swoj wyjatek WLASNIE Z TA NOTA. Usuniecie noty
+    przywraca rygor „> 95 % szczytu" i zapala bramke: wyjatek ma byc napisany w aplikacji, a nie
+    schowany w wyroczni.
+NAJWAZNIEJSZA ZMIANA PO OCENIE II: kanalolitiaza kanalu PRZEDNIEGO trwa 61,25 s, czyli WIECEJ niz
+60 s progu Barany. Tego nie da sie naprawic szerokoscia okna — to dlugosc napadu w modelu kloci sie
+z progiem. Werdykt kliniczny (2026-08-14): liczba ZOSTAJE, bo jest emergentna fizyka silnika,
+a klamal CHIP. Kanal przedni ma wiec wlasny chip „Przemijajacy (≈1 min)" zamiast wspolnego „< 60 s"
+— i wlasna nazwe latencji („krotka/nieobecna"), bo jego zlog startuje docisniety do osklepka.
+Bramka: npm run barany:check — porownuje dzis ZMIERZONY czas z OBIETNICA WYPISANA NA CHIPIE, a nie
+z jedna liczba na wszystkie kanaly; chip o tresci nierozpoznanej NIE przechodzi (trzeba mu dopisac
+regule, nie przepuscic go milczeniem). Golden przypina WARTOSCI, ale nie wyraza RELACJI — dlatego
+poprzednia wartosc (18 s, krotsza od postaci przemijajacej) przechodzila na zielono.
+
+================================================================================
+INTERPRETACJA — CO MODEL POTRAFI ROZSTRZYGNAC, A CZEGO NIE (Blok 9)
+================================================================================
+Krok „Interpretacja" prowadzi od OPISANEJ obserwacji do kanalu, strony i mechanizmu. Nie ma
+w nim drugiego, niezaleznego zbioru regul klinicznych: bylby to trzeci opis tej samej wiedzy
+(po silniku i po `baranyClassify`) i rozjechalby sie przy pierwszej zmianie parametru. Zamiast
+tego ENUMERUJEMY 20 kandydatur (proba x kanal x strona x mechanizm) i sprawdzamy, ktore z nich
+opisana obserwacja WYKLUCZA. Kandydatura pada, gdy chocby jedna opisana cecha ROZSTRZYGAJACA
+jest sprzeczna z predykcja modelu. Bez punktacji, bez procentow, bez rankingu.
+
+„Zgodnosc" opisuje RELACJE opisu do wzorca, nie stan pacjenta, i NIE MA postaci liczbowej.
+Liczba przy nazwie kanalu czytalaby sie jak prawdopodobienstwo rozpoznania u tego pacjenta.
+
+GRANICE ROZSTRZYGALNOSCI — ZMIERZONE NA PREDYKCJACH SILNIKA
+Cztery zdania ponizej sa twierdzeniami o MODELU, a nie o starannosci badajacego. Aplikacja
+wypowiada je wprost na ekranie interpretacji, kazde z wlasnym, innym uzasadnieniem.
+
+1. DIX-HALLPIKE: kierunek daje STRONE (torsja +-1), ale NIE daje mechanizmu. Kanalolitiaza
+   i kupulolitiaza maja identyczny kierunek {h:0, v:+0,81, t:+1} — rozni je wylacznie
+   `strength` (1,00 vs 0,45; po ocenie II CUP_WEAK zeszlo z 0,60 na 0,45), ktorego formularz
+   nie mierzy. Mechanizm wynika WYLACZNIE
+   z dynamiki (latencja, czas trwania, meczliwosc), a ta jest ta sama we WSZYSTKICH probach,
+   wiec zadne kolejne badanie pozycyjne go nie rozstrzygnie.
+
+2. PROBA OBROTOWA (roll): kierunek daje MECHANIZM (geo/apo), a strone daje dopiero ASYMETRIA
+   SILY, i to w przeciwnych zwrotach dla obu mechanizmow — kanalolitiaza: chore ucho SILNIEJ
+   (1,00/0,45); kupulolitiaza: chore ucho SLABIEJ (0,20/0,45). Relacja przezyla ocene II bez
+   zmiany, same liczby nie: EWALD_INHIB zostalo 0,45, a CUP_WEAK zeszlo 0,60 -> 0,45. To jedyny z czterech przypadkow
+   braku strony, ktory da sie naprawic OPISEM, wiec ekran prosi o konkretna ceche zamiast
+   deklarowac ograniczenie modelu.
+
+3. BOW & LEAN: strona jest NIEWYPROWADZALNA Z OPISU — ale po ocenie II z INNEGO powodu niz
+   dotad, wiec zdanie musialo sie zmienic. Do V5 dwuznacznosc byla STRUKTURALNA: nasilenie bylo
+   symetryczne, wiec 4 kandydatury dawaly tylko 2 rozlaczne odciski predykcji. Nowy silnik liczy
+   te probe z WARUNKOW POCZATKOWYCH (BLT_HISTORY, wododzial R8) i odciski sie rozeszly —
+   ZMIERZONE: 4 rozlaczne z relacja sil, wciaz 2 po samym kierunku. Rozeszly sie jednak wzdluz
+   MECHANIZMU, a nie strony (kanalolitiaza: pierwsza faza silniejsza; kupulolitiaza: fazy rowne),
+   a formularz pyta o KIERUNEK sklonu i odchylenia, nie o ich wzajemna sile. ZMIERZONE: zaden
+   z 9 mozliwych opisow kierunku tej proby nie wyprowadza strony. Wniosek dla klinicysty zostaje
+   wiec ten sam — rozdziela je proba obrotowa.
+
+4. DEEP HEAD-HANG: strone niesie TORSJA, i tylko ona. [PRZEPISANE 2026-08-16 po V26 — dawna tresc
+   brzmiala „wszystkie 4 kandydatury maja ten sam kierunek {h:0, v:-1, t:0}, ZADNA proba w tym
+   modelu strony nie ustali". Bylo to prawdziwe TYLKO DLATEGO, ze maska NYS_SHOW.anterior.t zerowala
+   torsje — twierdzenie o KONWENCJI RENDEROWANIA przebrane za twierdzenie o modelu.]
+   ZMIERZONE PO ZDJECIU MASKI: anterior/P {h:0, v:-1.00, t:+0.74} · anterior/L {h:0, v:-1.00, t:-0.74}
+   — strony rozdziela znak torsji. Ale to NIE znaczy, ze model lateralizuje kanal przedni „zawsze":
+     · torsji NIE WIDAC u 57,1% potwierdzonych AC-BPPV ([H31] Castellucci 2020), wiec przy opisie
+       „torsja: zero" obie strony przezywaja i strona zostaje nieoznaczalna — i tak ma byc;
+     · ten sam obraz daje apogeotropowe BPPV kanalu TYLNEGO drugiej strony ([H32] Garaycochea 2022),
+       wiec sama torsja nie jest dowodem kanalu;
+     · POZYCJA badania strony NIE ustala: prowokacja bywa obustronna w Dix-Hallpike'u (9/12 chorych,
+       [H33] Bertholon 2002). Dlatego kandydatura kanalu przedniego w Dixie przestala byc liczona
+       w pozie ucha PRZECIWNEGO (rozumowanie o parze wspolplaszczyznowej LARP/RALP — rzadzi vHIT-em,
+       nie BPPV) i cztery odciski Dixa sa dzis rozlaczne: PION daje kanal, TORSJA strone.
+   DWA PRZYPISY, ktore ta sama kwerenda dorzuca do obrazu: kanal przedni bywa dodatni takze
+   w tescie ROLL, i to JEDNOSTRONNIE — 6/9 wykonanych prob, downbeat u 4 ([H30] Porwal 2021),
+   wiec „przedni = tylko head-hang" jest uproszczeniem; a WYKONANY kat glowy ma mierzalny
+   wplyw na wykrycie oczoplasu ([H36] Hentze 2025, RCT crossover) — czyli o czulosci decyduje
+   nie tylko to, KTORA probe robisz, ale i JAK dokladnie ja wykonasz.
+
+SUGEROWANA NASTEPNA PROBA JEST WYPROWADZANA, NIE WPISANA
+Nie ma w kodzie ani jednej recznie wpisanej pary „proba -> proba". Pytamy model: czy
+kandydatury, ktore przetrwaly, maja w innej probie ROZNE predykcje (`odciskPredykcji`). Odcisk
+obejmuje kierunek per faza ORAZ relacje sil miedzy fazami; bez relacji sil (kanalolitiaza,P)
+i (kanalolitiaza,L) maja przy rollu identyczny odcisk kierunku, wiec roll wygladalby na probe
+nierozdzielajaca — a jest jedyna, ktora ustala strone kanalu poziomego. Zmierzone: roll ma
+4 rozlaczne odciski z sila i tylko 2 bez niej.
+Pusta lista sugestii jest TWIERDZENIEM („zadna proba tego nie rozdzieli"), nie luka. Odeslanie
+klinicysty do badania, ktore z gory nic nie wniesie, byloby gorsze od milczenia.
+
+OBRAZ NIETYPOWY NIE PROWADZI DO MANEWRU (kryterium odbioru nr 3)
+`recommend()` ZAWSZE zwraca manewr pierwszego rzutu i pozostaje NIETKNIETY — po prostu nie jest
+wolany, gdy `nietypowy()` jest prawdziwe. Alarm liczy sie po WSZYSTKICH rekordach sesji, nie po
+biezacej probie: inaczej rada „zrob nastepna probe" kasowalaby go, bo downbeat opisany w Dix-
+Hallpike znikalby z pamieci po przelaczeniu na roll. Kwarantanna („obserwacja niewiarygodna")
+wycisza WNIOSEK, ale NIE alarm — `interpretuj` robi drugi, KONTROLNY przebieg z polami
+kwarantannowanymi i jesli ten nie zostawia zadnej kandydatury, obraz zostaje nietypowy.
+
+ZRODLO MECHANIZMU
+`state.variant` steruje animacja, chipami cech, klasyfikacja Barany i doborem manewru. Do
+Bloku 9 wygladal identycznie w trzech roznych sytuacjach; najgrozniejsza z nich — „zostal
+z poprzedniego ekranu, bo animacja musi cos rysowac" — udawala wniosek. `state.variantZrodlo`
+rozroznia je jawnie: wyprowadzony (za jawnym gestem, tylko gdy zostal dokladnie jeden
+mechanizm) / nadpisany recznie / brak. Zmiana opisu zdejmuje wyprowadzenie, ale NIE mechanizm:
+animacja musi cos rysowac, znika samo twierdzenie o zrodle.
+
+Bramki: npm run interp:check (model czysty, gola konsola Node) oraz npm run interp:dom
+(skan DOM w jsdom — kryterium nr 3 jest twierdzeniem o EKRANIE, nie o modelu).
+
+================================================================================
+MANEWR I TRYB EKSPERCKI — CO MODEL DOBIERA, A CZEGO NIE MIERZY (Blok 10)
+================================================================================
+Krok „Manewr" prowadzi repozycję i — w trybie eksperckim — dobiera manewr dla użytkownika, który
+kanał, stronę i mechanizm już zna. Nie ma tu ani jednej pary „kanał+mechanizm → manewr" wpisanej
+ręcznie: pytamy `recommend()`, czyli to samo źródło, z którego korzysta ścieżka diagnostyczna.
+Most kanał→próba wyprowadzamy z DIAG, bo `recommend()` ma CICHY WYNIK DOMYŚLNY (wszystko poza
+'dix' i 'headhang' spada do gałęzi kanału poziomego), więc literówka w kluczu nie dałaby błędu,
+tylko manewr niewłaściwego kanału.
+
+CO KARTA DOBORU MOŻE POWIEDZIEĆ, A CZEGO NIE
+Mockup podpisuje zalecany manewr słowami „najwyższa zgodność z rozpoznaniem". Model nie liczy
+zgodności z rozpoznaniem tego pacjenta — liczy PIERWSZY RZUT WG WYTYCZNYCH dla kanału i mechanizmu,
+które PODAŁ UŻYTKOWNIK. Karta pisze więc dokładnie to i dodatkowo wymienia, które z trzech wartości
+naprawdę pochodzą od człowieka: `state.side` ma literał 'P', a `state.variant` literał 'canalo',
+więc bez `sideZrodlo`/`variantZrodlo` zdanie „kanał, stronę i mechanizm podałeś Ty" byłoby przy
+pierwszym wejściu nieprawdą — i to w zdaniu, którego całą funkcją jest uczciwość atrybucji.
+
+„DO USTĄPIENIA OCZOPLĄSU + ZAPAS" JEST PODŁOGĄ, NIGDY SKRÓCENIEM
+To najważniejsza liczba tego bloku i jedyna, która mogłaby zaszkodzić pacjentowi.
+Reguła przeżyła ocenę II silnika bez zmiany, ale jej UZASADNIENIE trzeba było napisać od nowa, bo
+liczby urosły o rząd wielkości i KIERUNEK BŁĘDU przestał być jednostronny.
+Zaszyty `cap` 12 s ZNIKNĄŁ. Hold dynamiki jest dziś WYPROWADZANY (`derivedHold`: najmniejsza para
+{h, u} z HOLD_STEPS/UNTIMED_STEPS, przy której silnik wyprowadza złóg do łagiewki, ze strażnikiem
+tauP × 1,1). Dawne obcięcie do 12 s było głębokie i NIERÓWNE — semont 20 % zaleconego holdu,
+gufoniGeo 30 %, lempert 44 %, epley 53 %, yacovino 77 % — więc „czy manewr czyści" mierzyło
+częściowo agresywność obcięcia, a nie geometrię kanału.
+ZMIERZONE PONOWNIE (siatka manewr × strona × rozmiar × etap):
+  • liczba sięga 74,60 s (Bascule, mały złóg, etap 3) — dawne „nigdy ponad ~19 s" nie obowiązuje;
+  • Semont ma `seconds=90` i instrukcję „Utrzymaj 1–3 min", a model daje 38,80 / 50,05 s;
+  • Gufoni geotropowy: 25,05 s przy 60 s protokołu;
+  • Epley etap 1: 35,35 s przy 30 s protokołu — tu tryb realnie WYDŁUŻA (do 50 s).
+Model bywa więc i KRÓTSZY, i DŁUŻSZY od protokołu. To reguły nie znosi, tylko ją WZMACNIA: tryb ma
+prawo WYŁĄCZNIE PODNOSIĆ czas protokolarny. Gdyby ustawiał liczbę wprost, skróciłby rzut Semonta
+o 25–35 s poniżej dolnej granicy WŁASNEJ instrukcji aplikacji, a przy włączonym auto-przejściu sam
+przesunąłby pacjenta dalej. Dla kupulolitiazy tryb jest NIEDOSTĘPNY: ξ nie wygasa (zmierzone
+|ξ| = 100 % szczytu jeszcze po 300 s — kanał tylny i poziomy), więc zdanie „do ustąpienia" nie ma
+desygnatu. Bramka: npm run man:check (sekcja D), dowód failing-first = 54 naruszenia na siatce
+manewr × strona × rozmiar × etap.
+
+WYJŚCIE ZŁOGU JEST OSOBNĄ OSIĄ, NIE KRYTERIUM CZASOWYM
+W Epleyu złóg opuszcza kanał w kroku SIAD, który NIE MA odliczania. Wtłoczenie obu rzeczy w jedno
+pole kazałoby wybrać, którą zataić — akurat o kroku, w którym powstaje oczopląs liberacyjny.
+Dla kanałów pionowych etap wyjścia pochodzi z FIZYKI (`manExitStep`); dla kanału poziomego
+i kupulolitiazy ze SCHEMATU (n-2) i ekran to przyznaje, zamiast podawać regułę jako pomiar.
+
+NAZWY POZYCJI KRYJĄ ODWRÓCENIE
+`sideL` znaczy „na boku LEWYM", ale `leanL` znaczy „na boku PRAWYM": pozy Semonta są nazwane od
+strony PRZECHYŁU, nie od boku, na którym pacjent leży. Pomyłka wypisałaby przy kozetce odwrotne
+ucho, a fizyka by nie drgnęła, bo nazwa nie wchodzi do symulacji. Wyrocznia sprawdza te nazwy
+wobec ZNAKU GRAWITACJI w ramce głowy, nie wobec komentarza.
+
+LICZNIK POZYCJI: ZEGAR ŚCIENNY I PRZERWA W OBSERWACJI
+Licznik sumował `dt` z klatek rAF. Wygląda to na „stoi przy zgaszonym ekranie", ale `last` jest
+zmienną domknięcia i nikt jej nie rusza przy powrocie widoczności, a znacznik rAF biegnie w czasie
+rzeczywistym — pierwsza klatka po odblokowaniu dostawała `dt` równe CAŁEJ przerwie i nadrabiała ją
+jednym skokiem razem z warunkiem końca etapu, sygnałem i auto-przejściem; przy dłuższej przerwie
+kaskadą aż do `markConsumed`. Czas mierzy teraz kotwica zegara ściennego (`hold-clock.js`, moduł
+czysty, BEZ `Date.now` — czas wchodzi argumentem, żeby bramka była deterministyczna), a `dt`
+zostaje wyłącznie animacji.
+Przerwa dłuższa niż 3 s jest zdarzeniem KLINICZNYM: aplikacja umie zmierzyć czas, ale nie umie
+stwierdzić, czy pacjent utrzymał pozycję, gdy nikt na ekran nie patrzył. Zatrzymuje więc odliczanie
+i prosi o potwierdzenie. Krótsze mrugnięcia nie alarmują — alarm bez powodu uczy ignorowania
+komunikatu (ten sam mechanizm, przez który `dixRep` nie wszedł do odcisku decyzyjnego).
+Ostrzeżenie o braku blokady ekranu pochodzi z FAKTYCZNEJ próby, nie z detekcji API: blokada bywa
+odrzucona mimo obecnego `wakeLock` (brak secure context, polityka systemu, oszczędzanie energii).
+
+LEWO I PRAWO ZAWSZE Z WŁAŚCICIELEM (kryterium odbioru nr 2)
+Kryterium było spełnione już przed tym blokiem — każde zdanie z kierunkiem niesie właściciela —
+więc dołożyliśmy ZAPADKĘ, a nie naprawę. Jednostką jest ZDANIE, nie okno N znaków (okno dawało
+22 fałszywe trafienia, bo „w stronę zdrową" bywa 56 znaków przed samą nazwą strony), a słownik
+form jest ZAMKNIĘTY i brany z tabeli odmiany — wzorzec prefiksowy „lew*/praw*" łapie „prawidłowy",
+„prawdopodobieństwo" i „poprawić", więc bramka świeciłaby na napisach bez związku z kierunkiem.
+Osobno poprawiono 29 miejsc, w których MIANOWNIK („lewa"/„prawa") był wklejany w biernik, celownik
+i dopełniacz: było „w stronę lewa", „na bok prawa", „ku uchu lewa", „po stronie prawa".
+Rebaseline `engine.plans` ma dowód zakresu: po usunięciu pól tekstowych diff planów jest PUSTY,
+czyli `body/yaw/face/seconds/progress` są bit w bit — fizyka i geometria nietknięte.
+
+CZEGO TEN BLOK NIE ROBI
+Karta „Kontrola po manewrze" z mockupu (ustąpienie / częściowa poprawa / brak poprawy / konwersja
+kanałowa / podejrzenie drugiej strony / residual dizziness / badanie niewiarygodne) to Blok 11
+dokumentu i krok `followup`, który pozostaje `pending`. Blok 10 buduje pod nią miejsce: sygnał
+konwersji kanałowej po WYKONANYM manewrze już działa, bo `consumed` gasiło dotąd nie tylko zdanie
+„wniosek nieaktualny" (słusznie), lecz także „bieżące wejścia wskazują INNY kanał" (błędnie) —
+a to jest wskazanie do NOWEGO manewru, nie zarzut wobec starego.
+
+Bramki: npm run man:check (czysty model, gołe Node) i npm run man:dom (skan DOM w jsdom —
+kryteria odbioru nr 1 i nr 3 są twierdzeniami o EKRANIE, nie o modelu).
+
+================================================================================
+KONTROLA PO MANEWRZE — CO APLIKACJA ZAPISUJE, A CZEGO NIE WIE (Blok 11)
+================================================================================
+Krok „Kontrola" zamyka proces kliniczny i obsługuje wyniki inne niż natychmiastowe ustąpienie.
+Odpowiedź na pytanie „co obserwujesz teraz?" jest OBSERWACJĄ KLINICYSTY, nie wnioskiem aplikacji:
+model nie ocenia, czy repozycja się udała, tylko wyprowadza z odpowiedzi NASTĘPNY KROK. To ta sama
+granica, którą trzymają Bloki 6, 8 i 9 — kwestionariusz wybiera ścieżkę, formularz opisuje
+obserwację, interpretacja eliminuje kandydatury i żaden z nich nie stawia rozpoznania.
+Podstawa kliniczna: [H27] (AAO-HNS, aktualizacja wytycznych BPPV 2017).
+
+SIEDEM ODPOWIEDZI, TRZY Z NICH ZAKAZUJĄ REPOZYCJI
+Słownik jest ZAMKNIĘTY: bez pozycji „inne" i bez pola tekstowego (kryterium odbioru nr 3 zaczyna
+się od tego, że nie ma gdzie wpisać nazwiska). Trzy odpowiedzi odbierają ekranowi prawo do
+zaproponowania manewru, każda z INNEGO powodu i każda z powodem NAPISANYM:
+  • konwersja kanałowa — złóg jest w innym kanale, więc ten sam manewr leczyłby kanał, w którym
+    już go nie ma; alternatywa tego samego kanału też nie dotyczy kanału docelowego;
+  • zawroty resztkowe — bez oczopląsu pozycyjnego NIE MA CZEGO repozycjonować, a zjawisko jest
+    opisane po SKUTECZNEJ repozycji i zwykle samoograniczające (dni–tygodnie);
+  • badanie niewiarygodne — ocena, którą klinicysta sam nazwał niewiarygodną, nie uzasadnia
+    kolejnej repozycji; krok dostaje status „niewiarygodny", NIE „zakończony" (ten sam błąd, który
+    Blok 8 wyciął przy lateralizacji).
+Wyszarzenie przycisku bez podania powodu byłoby milczeniem, nie ostrzeżeniem, więc zakazane akcje
+w ogóle nie są przyciskami — są zdaniem w sekcji „czego ten ekran celowo nie proponuje".
+
+KRYTERIUM ODBIORU NR 1 — KONIEC MANEWRU NIE JEST POWROTEM NA POCZĄTEK
+Zmierzone przed zmianą: `zakonczSerie` wołało `backToSetup()`, czyli seria kończyła się DOKŁADNIE
+tam, gdzie się zaczęła — na liście kanałów, bez jednego zdania o tym, co się wydarzyło, i bez
+miejsca na wynik kontroli. Dojście SEKWENCYJNE do ostatniego etapu nadal nie nawiguje nigdzie:
+„wykonany" to stan manewru, a nie polecenie nawigacji.
+
+KRYTERIUM ODBIORU NR 2 — KONWERSJA PROWADZI DO PONOWNEJ INTERPRETACJI
+Model zwraca listę akcji ZAKAZANYCH osobno od listy oferowanych, a ekran zakazanych nie renderuje.
+Bramka czyta tabelę reguł WPROST, i to nie jest nadgorliwość: `nastepneKroki` odsiewa akcje
+zakazane, więc dopisanie „powtórz manewr" do listy kroków konwersji NIE ZMIENIAŁO wyniku funkcji
+— mutacja przechodziła całą wyrocznię na zielono. Filtr broni ekranu, ale przestaje pilnować
+źródła. W trybie eksperckim (bez próby) „ustal kanał i stronę od nowa" celuje w ekran doboru, a nie
+w ekran interpretacji, który bez `testKey` nie ma z czego się zbudować.
+
+KRYTERIUM ODBIORU NR 3 — ZAKOŃCZENIE BEZ DANYCH IDENTYFIKACYJNYCH
+Kryterium było spełnione już przed tym blokiem (w aplikacji nie ma ani jednego pola tekstowego),
+więc dołożyliśmy ZAPADKĘ, a nie naprawę — ten sam ruch, co przy kryterium nr 2 Bloku 10. Bramka
+skanuje OSIEM ekranów wzorcem strukturalnym (znacznik pola, nie słowo); suwaki `type=range` są
+dozwolone, bo to parametry modelu, nie dane. Drugą połową jest STRAŻNIK WPISU: chodzi po gotowym
+rekordzie i go ODRZUCA, zamiast po cichu czyścić — sanityzacja dawałaby zapis, który wygląda na
+zapisany, a części treści w nim nie ma (lekcja z toru VOG). Reguła jest strukturalna: każda wartość
+musi pochodzić ze słownika zamkniętego albo być liczbą, więc napis spoza słownika jest naruszeniem
+niezależnie od tego, co znaczy. Zakończenie sesji NIE MA warunku wstępnego — pierwsza wersja miała
+przycisk wewnątrz karty „Co dalej", która renderuje się dopiero po wybraniu odpowiedzi, czyli sesji
+nie dało się zakończyć bez zaznaczenia czegokolwiek.
+
+HISTORIA SERII: CZASY SĄ PLANOWE, NIE ZMIERZONE
+Powtórzenie manewru to NOWE wykonanie (nowy odcisk przebiegu, nowy wpis), inaczej trzy powtórzenia
+wyglądałyby w podsumowaniu jak jedno podejście. Wpis niesie czasy Z PLANU (protokolarne albo
+ustawione suwakiem) i mówi to wprost: aplikacja odlicza jeden etap naraz i nie sumuje czasu przez
+manewr, więc nazwanie tego „czasem wykonania" byłoby fikcją. Wpis NIE NIESIE ZEGARA — po pierwsze
+złoty wzorzec ma zostać deterministyczny, po drugie godzina badania jest daną, która razem z resztą
+zbliża zapis do dokumentacji pacjenta.
+
+PORÓWNANIE PRZED I PO
+Opis sprzed manewru jest KOPIOWANY w chwili uznania manewru za wykonany. Bez tej kopii porównanie
+znikałoby dokładnie wtedy, gdy powstaje jego druga strona: rekordy obserwacji są kluczowane PRÓBĄ,
+więc opisanie próby kontrolnej nadpisuje opis sprzed manewru. Karta przyznaje, że kolumna „po
+manewrze" wypełnia się dopiero po opisaniu kontroli cechą po cesze w kroku „Oczopląs" — sama
+odpowiedź z tej karty jej nie zastępuje.
+
+CZEGO TEN BLOK NIE ROBI
+Podsumowanie sesji żyje WYŁĄCZNIE w pamięci tej sesji: aplikacja nie zapisuje go na urządzeniu
+i nigdzie nie wysyła. Trwały zapis stanu i generator opisu badania to Blok 15 dokumentu — zapis
+danych klinicznych na dysk jest osobną decyzją (zgoda, retencja, kasowanie), a nie skutkiem
+ubocznym kroku „Kontrola". Wynik kontroli jest przygotowany dla tego generatora: `podsumowanieSesji`
+zwraca same identyfikatory ze słowników zamkniętych, więc etykiety dokłada ekran.
+
+Bramki: npm run fu:check (czysty model, gołe Node, niezmienniki na pełnym iloczynie 588 kombinacji)
+i npm run fu:dom (skan DOM w jsdom — wszystkie trzy kryteria odbioru są zdaniami o tym, CO ROBI
+APLIKACJA, a nie o modelu).
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+BADANIE HINTS/HINTS+ Z KWALIFIKACJĄ — DWA TORY, JEDNE DRZWI (Blok 12)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Źródła: [H8] Kattah 2009 (HINTS, mnemonik INFARCT) · [H9] Tarnutzer 2011 (kontekst i ograniczenia) ·
+[H24] GRACE-3 2023 (taksonomia czas-i-wyzwalacze; ataksja chodu = ośrodek; HINTS niedokładny bez
+przeszkolenia) · [H28] Newman-Toker 2013 („plus" = przesiewowa ocena słuchu).
+Bramki: npm run hints:check (czysty model, gołe Node, niezmienniki na PEŁNYM iloczynie 14 400 stanów
+badania) i npm run hints:dom (jsdom, prawdziwy graf modułów — wszystkie trzy kryteria odbioru są
+zdaniami o tym, CO ROBI APLIKACJA).
+
+DWA TORY, KTÓRYCH NIE WOLNO MYLIĆ
+OTOREPO ma teraz w module HINTS dwie rzeczy o przeciwnym kierunku działania:
+  • SYMULATOR (screen `hints`, silnik NeuroVOR) — wybierasz patologię, a model pokazuje, jak
+    zachowają się oczy. Uczy WZORCA;
+  • BADANIE (screen `hintsBad`, src/app/hints-model.js) — zapisujesz to, co ZOBACZYŁEŚ u pacjenta,
+    a aplikacja porządkuje obserwacje. Zapisuje OBSERWACJĘ.
+Rozdzielenie jest fizyczne (osobne ekrany, osobny stan, osobne wyrocznie) z tego samego powodu, dla
+którego Blok 8 oderwał formularz obserwacji od animacji oczopląsu przewidywanego: dopóki formularz
+sąsiaduje z modelem, „zgodność" mierzy tylko to, czy ktoś dobrze przepisał ekran. Model badania nie
+importuje silnika i wyrocznia tego pilnuje (bramka J12).
+
+KRYTERIUM ODBIORU NR 1 — JEDNE DRZWI
+Zmierzone PRZED zmianą: SIEDEM z siedmiu dróg wejścia do modułu wchodziło przy PUSTEJ kwalifikacji
+(kafelki 2 i 5 ekranu startowego, zakładka HINTS, openHints, openHintsCustom, obszar „Laboratorium",
+link `#p=` z udostępnionym pacjentem), a jedyna bramka w aplikacji — `triageGo` — leżała na ścieżce,
+której żadna z nich nie dotykała. Dziś drzwi są JEDNE: ekran kwalifikacji, a za nim `wolnoBadac`.
+Wejście istnieje dokładnie dwoma sposobami:
+  • kwalifikacja POTWIERDZONA — odpowiedzi układają się w ostry zespół przedsionkowy (ciągłe zawroty
+    z utrzymującym się oczopląsem samoistnym, bez czerwonych flag);
+  • kwalifikacja POMINIĘTA ŚWIADOMIE — użytkownik wybiera POWÓD ze słownika zamkniętego (pokaz
+    dydaktyczny / symulacja / kwalifikacja poza aplikacją / wejście mimo odradzania). Powód wchodzi
+    do wyniku jako zastrzeżenie i nie znika z niego do końca sesji; przy „pokazie" i „symulacji"
+    wynik jawnie mówi, że TO NIE JEST ZAPIS BADANIA PACJENTA.
+Odmowa nie jest cicha: ekran pisze, że nie wpuścił, i podaje czego brakuje. Kwalifikacja czyta TEN
+SAM stan `triage`, co Blok 6 — dwa różne kwestionariusze o tym samym pacjencie mogłyby powiedzieć
+dwie różne rzeczy, a użytkownik nie miałby jak zgadnąć, które z nich obowiązuje.
+
+Odnośnik `#p=` bramkujemy najmocniej z całej siódemki i to jest świadome: udostępniony link potrafi
+posadzić klinicystę od razu przed werdyktem „wzorzec obwodowy — uspokajający", policzonym dla
+PARAMETRÓW Z LINKU, a nie dla pacjenta, który przed nim siedzi.
+
+PRZESZKOLENIE BADAJĄCEGO JAKO POLE, NIE JAKO ZASTRZEŻENIE PRAWNE
+GRACE-3 [H24] mówi wprost, że HINTS wykonany bez przeszkolenia jest niedokładny. Pytamy o to RAZ,
+w kwalifikacji, i wynik nosi odpowiedź sam — zamiast kazać użytkownikowi zaznaczać „badanie
+niewiarygodne" przy każdym badaniu. Brak przeszkolenia (albo brak odpowiedzi) nie blokuje badania,
+ale ODBIERA WYNIKOWI WARTOŚĆ USPOKAJAJĄCĄ: komplet obwodowy schodzi wtedy z „wzorzec wspierający
+uszkodzenie obwodowe" na „wzorzec obwodowy, ale bez wartości uspokajającej".
+
+DLACZEGO OPCJE NIE NAZYWAJĄ SIĘ „PRAWIDŁOWY / NIEPRAWIDŁOWY"
+Dokument użytkownika opisuje wybory jako „prawidłowy, nieprawidłowy, nie można ocenić". Zachowujemy
+KSZTAŁT (duże wybory, zawsze jawne „nie można ocenić"), ale nie te dwa napisy — bo w HINTS one się
+ODWRACAJĄ i to jest cała pointa badania. PRAWIDŁOWA próba pchnięcia głową u pacjenta z ostrym
+zespołem przedsionkowym jest ustaleniem GROŹNYM („Impulse Normal" z mnemoniku INFARCT [H8]),
+a NIEPRAWIDŁOWA — uspokajającym. Przycisk „prawidłowy" nad ustaleniem, które znaczy „udar do
+wykluczenia", byłby najgorszym napisem w całej aplikacji. Opcje nazywają więc to, CO WIDAĆ
+(„sakada korygująca" / „oczy zostają na celu"), a znaczenie dokłada wynik. Wyrocznia trzyma to jako
+ZAPADKĘ (bramka B7), żeby nikt nie „poprawił" tego z powrotem do dosłownego brzmienia dokumentu.
+
+SZEŚĆ SKŁADOWYCH — I DLACZEGO TRZY Z NICH WAŻĄ INACZEJ
+Trzon (HI · N · TS) rozstrzyga o wniosku. „Plus" (słuch) i chód mogą DOŁOŻYĆ cechę alarmową, ale
+same nie tworzą wyniku uspokajającego: symetryczny słuch usuwa jedną cechę alarmową i nie dokłada
+nic w drugą stronę [H28], a chód bez podparcia jest zgodny z obwodem, lecz nie zastępuje triady.
+Każda składowa niesie trzy teksty: INSTRUKCJĘ (jak wykonać), ZNACZENIE (co z tego wynika) i PUŁAPKĘ
+(czego ten element NIE mówi). Pułapka jest tu polem klinicznie najważniejszym — bez niej moduł
+uczyłby, że ujemny test of skew wyklucza udar.
+
+DWA SPRZĘŻENIA MIĘDZY SKŁADOWYMI (nie da się ich wyrazić napisem na ekranie)
+  • „Impulse Normal" jest cechą alarmową WYŁĄCZNIE przy obecnym oczopląsie samoistnym. U pacjenta
+    bez oczopląsu prawidłowa próba pchnięcia głową jest zwyczajnie prawidłowa — czytanie jej jako
+    „ośrodek" byłoby fałszywym alarmem w najczęstszej sytuacji ambulatoryjnej. Gdy oczopląsu NIE
+    OCENIONO, wynik też nie jest alarmem, ale wniosek i tak nie może wtedy wyjść uspokajający, bo
+    trzon jest niekompletny.
+  • Sakady po OBU stronach nie wspierają obwodu w sensie HINTS: HINTS zakłada JEDNOSTRONNY ostry
+    zespół przedsionkowy, a obustronna wiestibulopatia daje sakady wszędzie i wygląda uspokajająco
+    przy realnym, ciężkim uszkodzeniu ([H23], BVH).
+
+KRYTERIUM ODBIORU NR 2 — „NIE MOŻNA OCENIĆ" NIE JEST WYNIKIEM PRAWIDŁOWYM
+Zapisane CZTERY razy, na czterech różnych poziomach, bo jedno miejsce dałoby się obejść przypadkiem:
+  1. waga opcji: „nie oceniono" nigdy nie wchodzi do listy wspierających obwód;
+  2. wniosek: „wzorzec wspierający uszkodzenie obwodowe" WYMAGA kompletnego trzonu — jedna nieoceniona
+     składowa HINTS wystarczy, żeby wynik nie mógł wyjść uspokajający;
+  3. ekran: nieocenione składowe są WYMIENIONE z nazwy w osobnej liście, więc nie da się ich
+     przemilczeć;
+  4. wygląd: opcja „nie można ocenić" ma obrys przerywany i kwadratowe pole zamiast okrągłego —
+     różni się od odpowiedzi, zanim ktokolwiek przeczyta napis.
+Osobno pilnujemy różnicy między „jeszcze nie odpowiedziano" a „nie można ocenić": ponowne dotknięcie
+tej samej odpowiedzi ją ZDEJMUJE i wraca do stanu bez odpowiedzi. Gdyby cofnięcie ustawiało „nie
+można ocenić", użytkownik zaznaczałby brak oceny samym wahaniem.
+
+SZEŚĆ WNIOSKÓW — I JEDEN, KTÓRY POWSTAŁ Z BŁĘDU
+Wniosek „badanie niepełne" mówi „nie oceniono wszystkich trzech składowych". Pierwsza wersja modelu
+wrzucała do niego także stany, w których trzon był OCENIONY, ale nie układał się w obraz obwodowy
+(sakady po obu stronach, prawidłowy HIT bez oczopląsu) — czyli pokazywała napis NIEPRAWDZIWY nad
+badaniem, które zostało wykonane w całości. Stąd osobny wniosek „badanie wykonane, wynik
+nierozstrzygający": prowadzi do innego działania niż „dokończ badanie".
+Kolejność sprawdzania jest WYMAGANIEM, nie stylem: alarm idzie pierwszy, przed „HINTS nie ma
+zastosowania" i przed „badanie niepełne", bo obecne odchylenie skośne albo niemożność chodzenia bez
+podparcia znaczą to samo niezależnie od tego, czy resztę badania dało się wykonać.
+
+ASYMETRIA NIEWIARYGODNOŚCI
+Badanie nazwane niewiarygodnym NIE MOŻE uspokajać, ale NIE ZNOSI zauważonej cechy alarmowej. „Nie
+byłem pewien" nie kasuje tego, co zobaczyłeś. Ta asymetria jest sprawdzana na całym iloczynie
+odpowiedzi w obie strony (bramki D10 i F5).
+
+KRYTERIUM ODBIORU NR 3 — CO ZNACZY „WYRAŹNE OSTRZEŻENIE"
+Ostrzeżenie istnieje WTEDY I TYLKO WTEDY, gdy zaznaczono cechę alarmową (równoważność sprawdzana
+w obie strony na 14 400 stanach), stoi NAD wnioskiem, ma role="alert", wymienia z nazwy cechy,
+które je wywołały, i powtarza postępowanie z karty czerwonej flagi Bloku 6: pilna ocena neurologiczna,
+MRI z dyfuzją (DWI) i angiografią (MRA), tomografia komputerowa NIE nadaje się do wykluczenia udaru
+tylnego dołu, wczesne MRI bywa fałszywie ujemne (powtórz po 48–72 h). Dwa różne zdania o tym samym
+postępowaniu znaczyłyby, że jedno z nich jest nieaktualne.
+
+CZEGO TEN BLOK NIE ROBI
+  • Nie stawia rozpoznania i nie wyklucza udaru. Wynik obwodowy mówi wprost, że jest wynikiem
+    BADANIA PRZY ŁÓŻKU, a pusta lista cech alarmowych mówi wprost, że NIE JEST wykluczeniem
+    przyczyny ośrodkowej.
+  • Nie zapisuje niczego na dysk. `wpisHints` przygotowuje rekord ze słowników zamkniętych dla
+    generatora opisu badania (Blok 15), a strażnik `bezDanychOsobowychHints` ten rekord ODRZUCA,
+    gdy pojawi się w nim cokolwiek spoza słownika — zamiast po cichu czyścić. Sanityzacja byłaby
+    gorsza od odmowy: zapis wyglądałby na zapisany, a dane zniknęłyby bez śladu.
+  • Nie mierzy czasu. Wpis nie niesie zegara — z tych samych dwóch powodów, co wpis kontroli
+    (determinizm złotego wzorca + godzina badania to dana pacjenta).
+  • Nie ocenia składowych za użytkownika i nie ma ANI JEDNEGO pola tekstowego na żadnym z trzech
+    ekranów, więc wpisanie danych pacjenta jest strukturalnie niemożliwe.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+TRYB NAUKI I BIBLIOTEKA PRZYPADKÓW — KLUCZ LICZONY, NIE WPISANY (Blok 13)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Bramki: npm run nauka:check (czysty model, gołe Node) i npm run nauka:dom (jsdom, prawdziwy graf
+modułów). Kryteria odbioru K1, K2 i K4 są zdaniami o modelu i o ekranie; K3 wymaga silnika układu,
+więc został ZMIERZONY W PRZEGLĄDARCE i wynik zapisano niżej.
+
+ZASADA: PRZYPADEK NIE NIESIE KLUCZA ODPOWIEDZI
+Biblioteka przypadków dydaktycznych to najbardziej naturalne miejsce, w którym ta aplikacja mogłaby
+zacząć kłamać. Wystarczyłoby wpisać do przypadku pole `rozpoznanie: 'kanał tylny, prawy,
+kanalolitiaza'` — i od tej chwili istniałby SZÓSTY opis tej samej wiedzy klinicznej (po silniku,
+`baranyClassify`, `interp-model`, `man-model` i `followup-model`). Rozjechałby się przy pierwszej
+zmianie parametru, a quiz świeciłby dalej na zielono, bo sprawdzałby zgodność z własną odpowiedzią.
+Przypadek niesie więc WYWIAD (słownik `triage-model`) i OBSERWACJĘ (słownik `obs-model`), a klucz
+do każdego z sześciu etapów LICZY ten sam model, którego używa ścieżka kliniczna:
+
+  etap „przewidywanie" → wzorce kierunku z `odciskPredykcji` dla kandydatur tej próby i tej strony
+  etap „rozpoznanie"   → `interpretuj().pozostale`, bramkowane przez `nietypowy()`
+  etap „mechanizm"     → `interpretuj().mechanizm` (null = model nie rozstrzyga)
+  etap „manewr"        → `recommend(próba, mechanizm)` przez `doborZProby`
+  etap „kontrola"      → `REGULY_KROKOW[wynik]` z Bloku 11, wraz z zakazami i ich powodami
+
+Zmiana w silniku zmienia lekcję albo zapala wyrocznię; trzeciej możliwości nie ma. Bramka A8
+zabrania przypadkowi nieść pole o nazwie `rozpoznanie`, `kanal`, `strona`, `mechanizm`, `manewr`
+i sześciu innych, a bramka B dowodzi POMIAREM, że klucz idzie z silnika: odwrócenie jednego pola
+skrętu w rekordzie odwraca stronę w kluczu, a podmiana dynamiki zmienia manewr z Epleya na Semonta.
+
+CZTERY POLA KOŃCA PRZYPADKU — TRZY WYLICZANE, JEDNO AUTORSKIE
+Dokument wymaga, by przypadek kończył się cechą rozstrzygającą, pułapką, alternatywą i następnym
+krokiem. Trzy z nich model już liczy (`rozstrzygajaca`, `wykluczone`/`pozostale`, `sugerowaneProby`
+albo `REGULY_KROKOW`). Autorska jest wyłącznie PUŁAPKA — i dlatego jest jedynym polem, którego
+wyrocznia pilnuje po TREŚCI: musi wskazywać cechę albo flagę realnie obecną w tym przypadku (A9),
+żeby nie dało się dopisać morału niezwiązanego z obrazem.
+
+KRYTERIUM ODBIORU NR 1 — ODPOWIEDŹ NIE JEST UKRYTA, JEJ NIE MA
+`informacjaZwrotna()` zwraca null, dopóki nie padła decyzja, i jest JEDYNYM wejściem do werdyktu,
+więc ekran nie ma czego schować ani odsłonić. Wyrocznia jsdom mierzy to na `#app.innerHTML`:
+przed decyzją nie ma tam ani karty informacji zwrotnej, ani atrybutu `data-nwerdykt`, ani zapisu
+obserwacji (ten jest ZASŁONIĘTY do chwili przewidywania — inaczej etap przewidywania byłby
+pytaniem o to, co widać obok).
+Wskazówka jest trzecią drogą wprost z dokumentu, ale WSKAZUJE CECHĘ, nigdy nie podaje wyniku
+(bramka D10 sprawdza, że nie niesie kanału, strony, mechanizmu ani manewru), zostaje zapisana
+i wchodzi do oceny przypadku.
+DOPOWIEDZENIE, KTÓREGO DOKUMENT NIE ŻĄDAŁ: odpowiedź raz udzielona jest ZAMROŻONA. Bez tego
+„decyzja przed odsłonięciem odpowiedzi" byłaby fikcją — wystarczyłoby kliknąć cokolwiek,
+przeczytać werdykt i poprawić. Odmowa zapisu jest widoczna i ma powód.
+
+KRYTERIUM ODBIORU NR 4 — WERDYKT TRÓJWARTOŚCIOWY
+`trafna` (jedyna odpowiedź, jaką ten opis pozwala udowodnić) / `dopuszczalna` (model NIE ROZDZIELA
+jej od innych) / `bledna` (opis ją wyklucza). Zbiór dopuszczalnych bierze się z `pozostale`
+i `alternatywy`, a nie z deklaracji autora — niejednoznaczność jest WŁASNOŚCIĄ MODELU, nie opinią
+o przypadku. Ekran nazywa dwa różne jej rodzaje: „model nie zna jedynej odpowiedzi" (brak trafnej
+w ogóle) oraz „model nie oddziela tej odpowiedzi od innych" (trafna istnieje, ale obok stoją
+odpowiedzi nie do podważenia). Bez tego drugiego sygnału ekran milczałby dokładnie tam, gdzie cała
+lekcja przypadku polega na nazwaniu granicy wiedzy.
+
+CO ZNALAZŁA KRYTYKA, ZANIM POWSTAŁ EKRAN
+Pierwsza wersja modelu oznaczała jako BŁĘDNY „wzorzec, którego ta próba nie potrafi dać". Była to
+nieprawda i najgroźniejsza pomyłka całego bloku: awansowała UPROSZCZENIE SILNIKA do twierdzenia
+klinicznego. Model przewiduje dla kanału przedniego czysty downbeat bez składowej skrętnej, więc
+podręcznikowy oczopląs skrętno-pionowy kanału przedniego zostałby uczniowi oznaczony jako
+„niemożliwy"; próba Dix-Hallpike'a kładzie głowę do tyłu i potrafi sprowokować także inny kanał.
+Nośnikiem błędu jest więc UCHO, nie „niemożliwość": wzorzec drugiego ucha przy próbie jednostronnej
+jest błędny, bo to jedyna pomyłka, która wysyła klinicystę na manewr niewłaściwej strony.
+Powód „niemożliwy wzorzec" został ze słownika USUNIĘTY, a bramka F1 pilnuje, żeby nie wrócił.
+Druga naprawa: kandydatura, KTÓRA PRZEŻYŁA, nie jest odpowiedzią błędną nigdy — także wtedy, gdy
+obraz niesie cechę ośrodkową. Inaczej każdy downbeat w Dix-Hallpike'u (a on zapala `flagaOsrodkowa`)
+kasowałby BPPV kanału przedniego z różnicowania i uczeń wychodziłby ze zdaniem „downbeat = nigdy
+BPPV". Aplikacja mówi co innego: na ekranie diagnostyki NAZYWA kanał przedni i RÓWNOCZEŚNIE
+wstrzymuje leczenie. Lekcja odbija to dokładnie — „obraz nietypowy" jest trafną, kandydatura
+zostaje dopuszczalną.
+Trzecia naprawa: na etapie manewru nie wolno, by „nie repozycjonuję" i jakikolwiek manewr były
+równocześnie nie-błędne. Model aplikacji traktuje obserwację i repozycję jako WYKLUCZAJĄCE SIĘ
+(`REGULY_KROKOW.residual`: `obserwuj` jako główny ORAZ jawny zakaz repozycji z powodem), więc
+lekcja, która dopuszczałaby obie, odwracałaby semantykę własnego programu. Przy obrazie nietypowym
+trafną jest wstrzymanie się i KAŻDY manewr jest błędny; przy obrazie typowym odwrotnie. Dzięki temu
+przypadek, którego cała lekcja polega na wstrzymaniu ręki, przestał dawać ten sam werdykt temu,
+kto się zatrzymał, i temu, kto nie.
+
+BRAMKA MOCY ROZSTRZYGAJĄCEJ — I PRÓG, KTÓRY ODRZUCONO PO POMIARZE
+Etap, na którym żadna odpowiedź nie jest błędna, nie mierzy niczego, a wygląda na oceniony.
+Pierwszy próg brzmiał „odpowiedzi nie-błędnych najwyżej połowa" i wywalił WSZYSTKIE 13 przypadków,
+w tym te, które wiernie odbijają model aplikacji: przy wyniku kontroli „częściowa poprawa" Blok 11
+dopuszcza cztery akcje z sześciu. Próg mierzył intuicję o ostrości quizu, a nie własność modelu,
+więc został odrzucony. Zostało wymaganie sprawdzalne: każdy etap ma mieć NOŚNIK BŁĘDU, z dwoma
+wyjątkami wypowiedzianymi wprost i wyliczanymi z modelu — przewidywanie przy próbie OBUSTRONNEJ
+(nie ma ucha, o które można się pomylić) oraz mechanizm, gdy przeżyły OBA warianty (nie ma czego
+wykluczyć). Do tego: co najmniej trzy z pięciu etapów muszą mieć odpowiedź trafną.
+
+BIBLIOTEKA — 13 PRZYPADKÓW
+Trzy poziomy (podstawowy 3, kliniczny 5, ekspercki 5) i cztery rodzaje (klasyczne 4, prawie typowe
+4, wielokanałowe 2, ośrodkowe 3). Wywiad przypadków OŚRODKOWYCH wygląda na BPPV — napadowo,
+pozycyjnie, bez czerwonych flag — i to jest ich sens: gdyby ośrodkowość dało się odczytać
+z wywiadu, przypadek uczyłby czytania wywiadu, a nie oczopląsu. Czerwonych flag uczy Blok 6.
+Bramka H8 wymaga, by przypadek, w którym nie zostaje ANI JEDNA kandydatura, niósł flagę (f1/f2/f3)
+— inaczej „nie pasuje do wzorca" udawałoby twierdzenie o ośrodku, a jest tylko luką w słowniku
+silnika.
+
+KRYTERIUM ODBIORU NR 2 — POSTĘP ZAPISANY LOKALNIE
+Cały kontakt z pamięcią przeglądarki mieszka w `nauka-store.js` (jedyny brudny moduł bloku), więc
+czysty model działa w gołym Node, a złoty wzorzec zostaje deterministyczny: postęp wczytuje się RAZ,
+na boocie, poza renderem, a scenariusze złotego wzorca przypinają go jawnie. Zapis jest wersjonowany,
+odporny na tryb prywatny i brak miejsca (odmowa jest WIDOCZNA, nie cicha), i niesie wyłącznie
+identyfikatory ze słowników: przypadek, ocena, werdykty etapów, użyte wskazówki. Strażnik
+`bezDanychOsobowychNauka` sprawdza to przed zapisem i ODRZUCA wpis, zamiast go czyścić — cicha
+sanitacja wyglądałaby jak zapis, którego nie było. Zegara nie ma: czas rozwiązywania jest daną
+o użytkowniku, a złoty wzorzec i tak musi zostać deterministyczny.
+Wpisy przypadków, których już nie ma w bibliotece, NIE ZNIKAJĄ po cichu — są liczone osobno
+(`nieznaneWpisy`) i pokazywane, bo licznik cofający się sam z siebie jest gorszy niż liczba,
+której użytkownik nie rozumie.
+
+KRYTERIUM ODBIORU NR 5 (MOJE, NIE Z DOKUMENTU) — NAUKA NIE DOTYKA PACJENTA
+Tor nauki i tor pacjenta dzielą jeden obiekt stanu, a skażenie byłoby CZĘŚCIOWO NIEODWRACALNE:
+`decisionSeq` jest jawnie monotoniczny, `obsOdciski` jest pochodny od `obs`, a `kontrole` to
+historia serii indeksowana przez `flow.maneuver.kontrolaIdx`. Odruchowa mitygacja — „zapisz stan,
+uruchom lekcję, przywróć" — nie działa dla żadnego z tych trzech pól i zawodzi po cichu. Separacja
+jest więc STRUKTURALNA: `nauka-state.js` pisze wyłącznie do pól `nauka*`, klucz liczy się na
+zamrożonym literale PACJENT_ZERO (nigdy na spreadzie stanu), a moduły nauki mają zakaz importu
+`state.js`. Wyrocznia bierze odcisk 32 pól opisujących pacjenta przed lekcją i po niej — w tym
+`decisionSeq` i `obsOdciski`, bo to właśnie te dwa psuje każdy snapshot — i wymaga, żeby były
+identyczne. Kierunek odwrotny też: trwająca sesja pacjenta nie zmienia treści lekcji.
+Konsekwencją tej zasady jest to, czego w lekcji CELOWO NIE MA: animacji silnika ani figury 3D.
+Obie stoją na `state.side`, `state.canal`, `state.variant`, `state.maneuverKey` i `state.plan`,
+więc pokazanie manewru wymagałoby ich nadpisania — a po wyjściu z nauki klinicysta zastałby na
+karcie ułożenia cudzy przypadek, przy `variantZrodlo` nadal mówiącym „wyprowadzony z opisu
+obserwacji". Ilustracją przypadku jest ZAPIS OBSERWACJI złożony ze słowników Bloku 8.
+
+KRYTERIUM ODBIORU NR 3 — ZMIERZONE W PRZEGLĄDARCE
+jsdom nie ma silnika układu, więc „bez poziomego przewijania" nie da się sprawdzić wyrocznią.
+Pomiar: 13 przypadków × 6 etapów, przed odpowiedzią i po niej, plus dwa ekrany biblioteki.
+Przy 360×720 — 145 pomiarów, 0 przewinięć, najdalsza prawa krawędź dokładnie 360 px.
+Przy 320×640 — 144 pomiary, 0 przewinięć, najdalsza prawa krawędź dokładnie 320 px.
+Oś sześciu etapów ZAWIJA (siatka `auto-fit`), a nie przewija się w poziomie: przy 360 px sześć
+pozycji w jednym rzędzie to ~600 px, czyli połowa lekcji za krawędzią. Tabela zapisu obserwacji
+ma `table-layout:fixed` i łamanie długich wartości, bo to ona pierwsza rozpychała wiersz.
+Na 1280 px zmierzono układ D3: kolumna sterowania 296..676, kolumna ilustracji 696..1217, obie
+w jednym wierszu; pola dotykowe opcji mają 56 px.
+
+CZEGO TEN BLOK NIE ROBI
+  • Nie stawia rozpoznania i nie ocenia klinicysty. Werdykt dotyczy odpowiedzi na przypadek
+    SYNTETYCZNY i jest liczony wobec modelu, którego granice ten sam ekran nazywa.
+  • Nie pokazuje wyniku jako liczby ani procentu. Wynik przypadku jest PROFILEM etapów, bo
+    pojedyncza liczba kłamałaby w obie strony: nagradzałaby trafienie tam, gdzie trafiać nie było
+    czym, i karałaby odpowiedź obronną.
+  • Nie ma ani jednego pola tekstowego na żadnym z ekranów nauki, więc wpisanie danych pacjenta
+    jest strukturalnie niemożliwe — ta sama zasada, co w Blokach 8, 11 i 12.
+  • Nie mierzy czasu rozwiązywania i nie zapisuje niczego poza identyfikatorami ze słowników.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+LABORATORIUM NEUROOTOLOGICZNE — STANOWISKO, NIE PACJENT (Blok 14)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Bramki: npm run lab:check (czysty model, gołe Node, 580 przypadków) i npm run lab:dom (jsdom,
+prawdziwy graf modułów, 47 przypadków).
+
+CO ZMIERZONO PRZED NAPISANIEM CZEGOKOLWIEK
+  · Kryterium odbioru nr 1 BYŁO JUŻ SPEŁNIONE: na dziewięciu ekranach ścieżki klinicznej jest zero
+    kontrolek laboratoryjnych, a pełny przebieg wywiad → próba → oczopląs → interpretacja → manewr
+    → kontrola przechodzi bez tknięcia stanu matematycznego pacjenta. Robota polegała więc na
+    zamienieniu tego pomiaru w STAŁĄ BRAMKĘ, zanim któryś przyszły blok cicho go złamie.
+  · Kryterium odbioru nr 2 NIE BYŁO spełnione w ogóle: silnik ma 27 parametrów w 8 grupach,
+    wszystkie mają zakres, ale 14 nie miało jednostki, a OPIS miał 0 z 27. Grupy miały po jednym
+    zdaniu pomocy; parametry nie miały nic.
+  · Kryterium odbioru nr 3 okazało się WYLICZALNE: `clinicalReadout` zwraca czternaście pól,
+    a różnica dwóch odczytów mówi wprost, co się ruszyło.
+
+ZASADA: SKUTEK JEST MIERZONY, A NIE WPISANY
+Kusiło, żeby zrobić tabelę „parametr → skutek". Byłaby to DRUGA definicja fizjologii obok silnika
+i rozjechałaby się przy pierwszej zmianie równania. Zamiast tego Laboratorium liczy obraz kliniczny
+PRZED zmianą i PO niej, i pokazuje różnicę: które badanie zmieniło wynik i które zdanie opisu
+przyszło albo zniknęło. Bramka G9 zabrania wprost, żeby taka tabela kiedykolwiek powstała.
+Z 27 parametrów × 2 krańce × 2 konteksty kliniczne wyrocznia sprawdza, że każdy parametr albo
+COŚ RUSZA, albo sam deklaruje, czego brakuje, żeby go było widać. Suwak, który nic nie robi i nie
+mówi dlaczego, uczy, że fizjologia jest przypadkowa.
+
+BRAK SKUTKU JEST WYNIKIEM, NIE AWARIĄ
+Zmierzone: supresja fiksacyjna u zdrowego nie zmienia obrazu, bo nie ma oczopląsu, który dałoby się
+stłumić. Ekran mówi to wprost i podaje powód ze słownika (`brakOczoplasu`, `brakStronyChorej`,
+`brakObrotu`, `brakBodzca`, `brakSpojrzeniaBocznego`). Powód jest polem PARAMETRU, a nie domysłem
+po fakcie — zgadywanie („pewnie dlatego, że…") byłoby wymyślaniem fizjologii, której model nie
+policzył.
+
+CZTERY GRANICE MODELU, KTÓRE ZNALAZŁA KRYTYKA — TRZY ZAMKNIĘTE PRZEZ OCENĘ II SILNIKA
+Krytyka fizjologiczna uruchomiła silnik i pokazała cztery miejsca, w których opis parametru byłby
+NIEPRAWDĄ, gdyby napisać go wprost. W Bloku 14 silnika NIE ZMIENIANO — zmiana równań jest decyzją
+kliniczną użytkownika, nie robotą przy interfejsie — więc każda granica została NAZWANA w opisie
+parametru i PRZYPIĘTA bramką (sekcja H wyroczni).
+Ocena II silnika zamknęła TRZY z tych czterech, a bramki zachowały się dokładnie tak, jak je
+zaprojektowano: zapaliły się na NAPRAWIE i wymusiły poprawkę opisu, zamiast zostawić komentarz,
+który po cichu stracił ważność. Cztery bramki sekcji H są dziś ODWRÓCONE — pilnują, że naprawa się
+utrzymała:
+  1. NASYCENIE AFERENTU — ZAMKNIĘTE. Aferent nie nasyca się już przy prędkości pchnięcia głową:
+     zmierzone przy tonie 150, 200, 240 i 300 Hz vHIT zostaje PRAWIDŁOWY. Wcześniej powyżej
+     ok. 167 Hz wychodził patologicznie MIMO sprawnego kanału (ton 200 Hz + wzmocnienie 1,0 →
+     gain 0,63) i uderzało to w najważniejszą dysocjację modułu. Dziś prawidłowy vHIT w fazie
+     drażnienia choroby Ménière’a (~150 Hz) jest jej cechą odróżniającą Z KONSTRUKCJI; bramka H1a
+     zapali się, jeśli nasycenie wróci.
+  2. SUWAK TO NIE ODCZYT — GRANICA WĘŻSZA. `gain` jest wzmocnieniem TRANSDUKCJI kanału. Silnik
+     odwzorowuje PEŁNE wypadnięcie gałęzi nerwu jako 0,100 (przed oceną II: 0,35) — zero nadal
+     jest krańcem modelu, nie stanem pacjenta. Ton nie psuje już pchnięcia, więc zmierzony gain
+     zależy od tego suwaka, a nie od tonu.
+  3. VEMP JEST ASYMETRIĄ — GRANICA ZOSTAJE, ALE PRZESTAŁA MILCZEĆ. Odczyt VEMP jest RÓŻNICĄ między
+     uszami, więc utrata OBUSTRONNA nie daje żadnej asymetrii. Silnik kiedyś po prostu o niej
+     milczał; dziś nazywa ją wprost („cVEMP: obustronnie zniesiony … brak asymetrii mimo ubytku"),
+     ale sama granica jest ta sama: model porównuje RÓŻNICĘ, a nie poziom bezwzględny. Bez tego
+     zdania Laboratorium uczyłoby, że dołożenie ubytku po drugiej stronie NAPRAWIA pierwszy.
+  4. KANAŁY PIONOWE — ZAMKNIĘTE. Izolowane wypadnięcie kanału pionowego daje dziś lokalizację
+     OBWODOWĄ i tylko ją (zmierzone: 4 objawy obwodowe, 0 ośrodkowych). Fałszywy wpis „izolowany
+     oczopląs pionowo-skrętny — klasycznie podejrzany o ośrodek" zniknął, a wraz z nim sprzeczność
+     w silniku. Granica została węższa i nadal jest prawdziwa: zestaw HINTS liczy oczopląs
+     wyłącznie ze składowej POZIOMEJ, więc pionowej po prostu nie widzi.
+
+LABORATORIUM NIE POKAZUJE WERDYKTU ANI LOKALIZACJI
+`clinicalReadout` je liczy i w ścieżce klinicznej mają sens: tam obraz przychodzi OD PACJENTA,
+a model go interpretuje. W Laboratorium kierunek jest ODWROTNY — to użytkownik ustawia patologię
+suwakami, więc „rozpoznanie: ośrodkowe" nad tymi suwakami jest echem wejścia, a nie wynikiem.
+Model trzyma jawną listę pól zakazanych (`POLA_ZAKAZANE_W_LAB`), a wyrocznia DOM sprawdza, że
+żadne z nich nie trafiło na ekran. Ekran pokazuje OPIS BADANIA i mówi wprost, że to nie rozpoznanie.
+
+KRYTERIUM ODBIORU NR 1 — DWA POMIARY ZAMIAST LISTY EKRANÓW
+Ręczna lista ekranów zawsze się zestarzeje, więc bramka mierzy co innego:
+  1. pełny przebieg kliniczny domyka się bez wejścia do Laboratorium i bez tknięcia jego stanu;
+  2. CAŁY eksperyment — otwarcie, suwaki, drugie stanowisko, porównanie, reset, rozwinięcie opisu —
+     nie zmienia ANI JEDNEGO z 29 pól opisujących pacjenta ANI JEDNEGO z 16 pól symulatora HINTS.
+Drugiego pomiaru nie da się obejść, dokładając nową kontrolkę. Warunkiem jego istnienia było
+oddanie Laboratorium WŁASNYCH pól stanu (`labA`, `labB`, `labEksperyment`, …) zamiast pisania do
+`hintsCustom`: gdyby eksperyment pisał do pól symulatora, przeciek siedziałby w MODELU DANYCH
+i nie byłoby dwóch rzeczy, które można porównać.
+
+DWA STANOWISKA
+Porównanie dwóch patologii z układu „komputer" wymaga DWÓCH pacjentów naraz, więc Laboratorium ma
+stanowiska A i B. Jeden globalny zestaw parametrów by tego nie udźwignął: użytkownik przestawiałby
+jedną patologię w drugą i porównywał ją z pamięcią.
+
+SCENARIUSZE REFERENCYJNE — ZAWSZE JAKO KOPIA
+Osiem eksperymentów stoi na scenariuszach SILNIKA (`normal`, `neuritisR`, `strokeCentral`, `bvh`),
+nie na własnych definicjach patologii. Wstrzykiwacz wydaje scenariusz WYŁĄCZNIE jako kopię:
+`NeuroVOR.SCENARIOS` to współdzielona stała, a referencja, którą da się zmienić, nie jest
+referencją — przycisk „wróć do referencji" wracałby wtedy do wartości już zatrutej.
+Reset jest sprawdzalny: po nim lista odchyleń musi być PUSTA. A każde odchylenie niesie WŁASNY
+pomiar kontrfaktyczny: co zmieni się, jeśli ten JEDEN parametr wróci do referencji. Bez tego lista
+odchyleń uczyłaby fałszywej przyczynowości — czytelnik przypisywałby cały obraz każdemu
+odchyleniu z osobna.
+
+CO ZŁAPAŁY BRAMKI PO DRODZE
+  · Nawigacja podświetlała „Diagnostykę", gdy użytkownik stał w Laboratorium: `syncShell`
+    PRZEPISUJE `state.area` wynikiem `areaZeStanu`, a ta nie znała trybu `lab` (zmierzone:
+    `goLab()` dawał area='lab', a `goArea('lab')` kończył z area='diag').
+  · Klucz złotego wzorca o nazwie `hints` od dawna zrzucał chrom EKRANU KWALIFIKACJI, a nie
+    symulatora — `goHintsKwal()` woła `render()`, ale nie `syncShell()`, więc atrybuty powłoki
+    zostawały z poprzedniego przejścia. Teraz scenariusz wchodzi pełną drogą i domyka `syncShell()`.
+  · Bramka czystości modułu zapaliła się na klinicznym „third window": dehiscencja kanału górnego
+    JEST trzecim oknem błędnika i to słowo ma prawo stać w opisie parametru. Bramka szuka teraz
+    UŻYCIA W KODZIE (`window.`), a nie słowa — z kontrolą czułości w obie strony.
+  · Pierwsza wersja bramki „co jest normą" wymagała słowa „norma" i wywaliła dwa parametry, które
+    normy NIE MAJĄ: kompensacja 0–1 to nie odchylenie od zdrowia, tylko dwa równie prawdziwe stany.
+    Bramka mierzy teraz własność, a nie słowo: opis ma PRZYPIĄĆ KONKRETNĄ LICZBĘ DO ZNACZENIA.
+
+CZEGO TEN BLOK NIE ROBI
+  · Nie zmienia ani jednej liczby w silniku i nie dokłada ani jednego parametru.
+  · Nie stawia rozpoznania i nie pokazuje werdyktu.
+  · Nie ma ani jednego pola tekstowego (suwak zakresu nie jest polem tekstowym).
+  · Nie jest potrzebny do zakończenia podstawowej diagnostyki — i to jest zmierzone dwoma
+    niezależnymi pomiarami, a nie zadeklarowane.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+GENERATOR OPISU BADANIA I ZAPIS SESJI — OPIS LICZONY, NIE PRZECHOWYWANY (Blok 15)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Bramki: npm run opis:check (czysty model, gołe Node, 353 przypadki) i npm run opis:dom (jsdom,
+prawdziwy graf modułów i prawdziwa pamięć przeglądarki, 95 przypadków).
+
+CO ZMIERZONO PRZED NAPISANIEM CZEGOKOLWIEK
+  · Na dziewięciu ekranach ścieżki klinicznej było ZERO kontrolek opisu, kopiowania i eksportu:
+    aplikacja nie produkowała ani jednego zdania do wklejenia w dokumentację.
+  · Po pełnym przebiegu wywiad → kontrola pamięć przeglądarki była PUSTA — przypadek nie
+    przeżywał odświeżenia karty.
+  · Wpis kontroli miał dziewięć pól i żadne nie niosło TOLERANCJI, której dokument wymaga
+    w opisie. Danej, której się nie zbiera, generator nie ma prawa wymyślić — więc powstało
+    jedno pytanie ze słownikiem zamkniętym, zadawane przy kontroli.
+  · W całym `src/` nie było ani jednego `fetch`, `XMLHttpRequest`, `sendBeacon` ani `WebSocket`
+    i nadal nie ma — pilnuje tego bramka skanująca tor zapisu.
+
+ZASADA: OPIS JEST LICZONY PRZY KAŻDYM RENDERZE
+Najprostszym sposobem złamania kryterium odbioru nr 1 („opis aktualizuje po zmianie rozpoznania")
+byłoby TRZYMANIE gotowego tekstu w stanie: każda zmiana rozpoznania zostawia wtedy w pamięci
+zdanie, które przestało być prawdą, a użytkownik kopiuje je do dokumentacji. Dlatego opis nie ma
+żadnego miejsca zapisu. Wyrocznia mierzy to mutacją: piętnaście zmian klinicznie znaczących
+(kanał, wartość i ŹRÓDŁO strony, mechanizm, obraz ośrodkowy, wynik kontroli, tolerancja, manewr,
+opis oczopląsu, wywiad, druga próba, druga kontrola) MUSI zmienić tekst, a sześć zmian
+nieklinicznych (tryb 3D, obszar, mapa kroków, rozwinięta grupa pytań, stanowisko Laboratorium,
+licznik decyzji) NIE MOŻE go ruszyć. Bez tej drugiej połowy bramka przechodziłaby też dla
+generatora, który wypisuje cały stan bez wyboru.
+
+ANI JEDNEGO SŁOWA KLINICZNEGO WŁASNEGO
+Generator nie zna nazwy żadnego kanału, manewru ani cechy oczopląsu — wszystkie etykiety wchodzą
+przez wstrzykiwacz ze słowników, z których korzystają ekrany. Własne napisy byłyby SZÓSTYM opisem
+tej samej wiedzy, a rozjazd trafiałby prosto do dokumentacji. Wyrocznia nie czyta kodu, tylko
+mierzy zachowanie: podmiana etykiety w słowniku MUSI zmienić tekst opisu (osiem etykiet + wartości
+opisu oczopląsu). Kontrola czułości pilnuje, żeby ten sam stan bez podmiany dawał tekst identyczny.
+
+NAJWAŻNIEJSZE ZDANIE TEGO BLOKU: „STRONA ZAJĘTA — NIEUSTALONE"
+`state.side` ma literał 'P', a `state.variant` literał 'canalo'. Obie wartości istnieją tylko
+dlatego, że animacja musi coś rysować, i żadnej użytkownik nie musi dotknąć — Blok 9 i 10
+zbudowały na to `variantZrodlo` i `sideZrodlo`. Generator, który wypisałby je jak ustalenia,
+wkładałby STRONNOŚĆ do dokumentacji medycznej na podstawie wartości domyślnej. Reguła jest więc
+twarda: w części „Interpretacja" strona i mechanizm pojawiają się WYŁĄCZNIE ze źródłem; bez źródła
+sekcja mówi „nieustalone" i nie podaje wartości. Stan `opis/bez-strony` jest PRZYPIĘTY w złotym
+wzorcu, więc ciche zamienienie tego zdania na „prawe" zapali wyrocznię.
+Osobną rzeczą jest strona WYKONANEGO manewru — to fakt („zrobiono to uchu prawemu"), a nie
+wniosek, więc wolno ją napisać. Zestawienie obu zdań jest informacją, a nie sprzecznością: leczono
+stronę, której nikt nie potwierdził.
+
+CZEGO OPIS NIE NIESIE
+  · Rad aplikacji. Model kwalifikacji niesie akapity zaleceń („rozważ MRI DWI") — one są dla
+    użytkownika NA EKRANIE. Opis badania jest zapisem tego, co zrobiono i co stwierdzono;
+    wklejanie do dokumentacji cudzych zaleceń podpisanych nazwiskiem klinicysty jest czymś innym.
+    Do opisu wchodzi TYTUŁ kwalifikacji, nie jej uzasadnienie.
+  · Instancji odrzuconych jako niewiarygodne — te wchodzą jako „opisano i odrzucono, powód X",
+    a nie jako stwierdzenie. Milczenie czytałoby się jako „nie patrzyliśmy".
+  · Znacznika czasu. Data badania jest daną dokumentacji, a nie odczytem z przeglądarki.
+  · Rozpoznania. Zastrzeżenie o charakterze narzędzia jest sekcją OBOWIĄZKOWĄ, której nie da się
+    wyłączyć przełącznikiem — także wtedy, gdy użytkownik wyłączy wszystkie pozostałe.
+
+PIERWSZE POLE TEKSTOWE W CAŁEJ APLIKACJI
+Dokument wymaga edycji tekstu przed skopiowaniem. Pole tekstowe jest jedynym miejscem, w które da
+się wpisać nazwisko pacjenta — do Bloku 15 nie było ich zero przez przypadek. Rozwiązaniem nie
+jest odmowa ani filtrowanie wpisanego tekstu (filtr nazwisk jest niemożliwy i wygląda jak
+obietnica), tylko TRWAŁOŚĆ:
+  · edycja żyje w `state.opisEdycja` i nie jest nigdzie zapisywana,
+  · zapis sesji bierze POLA PRZYPADKU, a nie tekst,
+  · eksport ustrukturyzowany bierze te same pola i przechodzi przez strażnika,
+  · wyjście z ekranu edycję kasuje, a ostrzeżenie stoi PRZY POLU, zanim ktoś zacznie pisać.
+Wyrocznia mierzy to BAJTAMI: po wpisaniu znacznika w pole i zapisaniu sesji pamięć przeglądarki
+nie może go zawierać. Osobna bramka pilnuje, że pól tekstowych jest DOKŁADNIE JEDNO: zero na
+ośmiu ekranach klinicznych i w modułach Nauki i Laboratorium, zero na ekranie opisu przed gestem
+„Edytuj", jedno po nim.
+
+STRAŻNIK DANYCH: REGUŁA STRUKTURALNA, NIE SŁOWNIKOWA
+Nie szukamy imion — wymagamy, żeby KAŻDA wartość zapisu była liczbą, wartością logiczną albo
+napisem ZE SŁOWNIKA. Napis spoza słownika jest naruszeniem niezależnie od tego, co znaczy, więc
+wpisanie nazwiska w jakiekolwiek pole nie ma jak przejść (40 prób w wyroczni, każda przez inną
+furtkę: pola przypadku, rekordy obserwacji, instancje, wywiad, wpisy kontroli, przebieg, wejścia
+odcisku). Strażnik ODRZUCA i mówi dlaczego, zamiast po cichu czyścić — cicha sanitacja wygląda jak
+zapis, którego nie było. Odcisk opisu (jedyna wartość wyliczana, a nie słownikowa) jest
+PRZELICZANY z rekordu i musi się zgadzać.
+
+CO ZAPISUJE SESJA, A CZEGO NIE ZAPISUJE
+Lista 29 pól przypadku — ta sama, którą Blok 14 bierze na odcisk, żeby udowodnić, że Laboratorium
+nie tyka pacjenta — jest teraz w JEDNYM miejscu i podzielona na dwie rozłączne części: 19 pól
+zapisu i 10 ulotnych. Wyrocznia sprawdza, że suma jest równa całości, więc pole dołożone
+w przyszłym bloku nie wypadnie z zapisu po cichu.
+Zegar i plan są ulotne NIE dla oszczędności miejsca: odtworzenie sesji z licznikiem w biegu
+mierzyłoby czas utrzymania pozycji, w której pacjenta dawno nie ma. Po odtworzeniu licznik stoi,
+plan jest przebudowany z klucza manewru, a ekran pokwitowania mówi wprost, że licznika NIE
+wznowiono.
+
+STRESZCZENIA SĄ WYLICZANE, A NIE ZAPISYWANE
+`flow.triage` niesie obok identyfikatorów gotowy TYTUŁ wyniku w obu językach, bo pasek przebiegu
+musi go wypisać bez wołania modelu. Do zapisu wchodzą wyłącznie identyfikatory — zdanie przeliczy
+`syncTriage` po odtworzeniu. To PROJEKCJA przy zapisie, a nie czyszczenie naruszenia: strażnik
+dalej odrzuca wpis, w którym takie zdanie się pojawi.
+
+NAJDROŻSZY BŁĄD TEGO BLOKU I ZAPADKA NA NIEGO
+Strażnik powstał na przypadku ZBUDOWANYM RĘCZNIE i nie wiedział o trzech rzeczach, które prawdziwy
+przebieg wkłada do `flow`: streszczeniu kwalifikacji, streszczeniu kontroli i opisie SPRZED
+manewru. Odrzucał więc KAŻDY prawdziwy zapis — czyli „zapisz sesję" nie zadziałało ani razu, przy
+353 zielonych przypadkach wyroczni modelu. Znalazła to dopiero wyrocznia ekranu, na prawdziwym
+grafie modułów (ta sama lekcja, co przy eksporcie na torze VOG: strażnik chodził wyłącznie po
+wpisie napisanym ręcznie).
+Sama naprawa nie wystarczy, bo następny blok dołoży kolejne streszczenie. Dlatego wyrocznia mierzy
+teraz POKRYCIE: każdy klucz prawdziwego `flow`, `flow.maneuver`, `flow.maneuver.inputs`, wpisu
+kontroli i streszczenia kwalifikacji musi być na liście strażnika — z kontrolą czułości w obie
+strony i z żądaniem, żeby prawdziwy zapis przez strażnika PRZESZEDŁ.
+
+ZDANIE O PRYWATNOŚCI, KTÓRE BLOK 15 CZYNIŁ NIEPRAWDĄ
+Karta zakończenia sesji mówiła: „aplikacja nie zapisuje go na urządzeniu i nigdzie nie wysyła".
+Do tego bloku było to prawdą, bo nie było czym zapisać. Zapis istnieje, więc zdanie musiało się
+zmienić — i zmieniło się dokładnie tam, gdzie użytkownik pyta o prywatność: aplikacja nadal nie
+wysyła niczego poza urządzenie, a przypadek zostaje w pamięci przeglądarki TYLKO wtedy, gdy
+użytkownik sam zapisze sesję. Bramka pilnuje, żeby stare zdanie nie wróciło.
+
+KRYTERIUM ODBIORU NR 3 — KASOWANIE TAM, GDZIE SIĘ GO SZUKA
+„Usuń wszystkie zapisane sesje" stoi w USTAWIENIACH, a nie na ekranie, do którego trzeba wejść
+przez zakończoną sesję. Przy przycisku stoi LICZBA zapisów, bo „usuń wszystko" bez powiedzenia ile
+jest gestem w ciemno, a samo kasowanie idzie przez potwierdzenie w dwóch krokach — sąsiaduje
+z przełącznikiem języka. Kasujemy KLUCZ, a nie zawartość: pusta lista w pamięci wygląda jak zapis.
+
+CZEGO TEN BLOK NIE ROBI
+  · Nie zmienia ani jednej liczby w silniku i nie dokłada ani jednego parametru.
+  · Nie stawia rozpoznania i nie ocenia skuteczności leczenia.
+  · Nie wysyła niczego do sieci i nie ma czym — w torze zapisu nie ma ani jednego wywołania sieci.
+  · Nie zapisuje nic samo z siebie: otwarcie ekranu opisu, przełączanie sekcji i edycja tekstu
+    zostawiają pamięć przeglądarki dokładnie taką, jaka była (zmierzone bajt po bajcie).
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+PWA, OFFLINE I ZACHOWANIE MOBILNE — AKTUALIZACJA, KTÓRA CZEKA (Blok 16)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Bramki: npm run pwa:check (czysty model ORAZ uruchomiony szablon service workera, gołe Node,
+235 przypadków) i npm run pwa:dom (jsdom, prawdziwy graf modułów i sztuczny service worker,
+89 przypadków).
+
+CO ZMIERZONO NA ZBUDOWANYM `dist`, ZANIM POWSTAŁA JEDNA LINIA KODU
+  · APLIKACJA NIE WSTAWAŁA OFFLINE — mimo kompletnego precache. Po zatrzymaniu serwera i
+    przeładowaniu karta pokazywała pustkę, a w konsoli stał błąd „Expected a JavaScript module
+    but the server responded with text/html". W pamięci podręcznej leżało 11 z 11 zasobów,
+    z leniwym pakietem 3D włącznie.
+    Przyczyna, zmierzona a nie zgadnięta: `caches.match` honoruje nagłówek `Vary`. Moduł ES jest
+    pobierany w trybie CORS, więc jego żądanie niesie `Origin`, którego NIE MIAŁO żądanie
+    z `cache.addAll`. Dowód rozstrzygający: `fetch(url)` na ten sam plik trafiał w cache (200),
+    a `import(url)` tego samego pliku — nie.
+  · PIERWSZE PRZEŁADOWANIE PO WDROŻENIU DAWAŁO PUSTĄ APLIKACJĘ. Worker przejmował kartę
+    natychmiast (`skipWaiting` + `clients.claim`), kasował stary cache, a karta trzymała jeszcze
+    STARY dokument — którego moduł miał już nazwę z nowym hashem, więc nie istniał ani w nowym
+    cache, ani na serwerze. Zmierzone: `#app` 336 znaków, brak powierzchni testowej. Drugie
+    przeładowanie wracało do żywych. W praktyce znaczy to: po każdym wdrożeniu pierwsze wejście
+    pokazuje białą stronę.
+  · Skrótów klawiaturowych z dokumentu (spacja — pauza, strzałki — etap) nie było w ogóle; jedyne
+    `keydown` w aplikacji obsługiwały suwak fazy i karty do odwracania.
+  · Jedyne pole tekstowe w aplikacji (edycja opisu, Blok 15) miało 14 px — Safari na iOS
+    powiększa wtedy widok przy każdym wejściu w pole.
+  · Produkcja na GitHub Pages odpowiada `Vary: Accept-Encoding`, a nie `Vary: Origin`, więc
+    wydany PWA offline najprawdopodobniej działał — ale z przypadku, nie z konstrukcji. Jeden
+    nagłówek serwera dzielił aplikację od całkowitej awarii trybu offline.
+
+AKTUALIZACJA JEST ZDARZENIEM KLINICZNYM, NIE TECHNICZNYM
+Nowa wersja wchodzi przez przeładowanie karty, a przeładowanie kasuje przypadek trzymany
+w pamięci. Dlatego reguły są dwie i są różne:
+  · TWARDA BLOKADA — w trakcie manewru repozycyjnego (licznik biegnie albo etap jest zmieniony)
+    aktualizacja nie ma prawa wejść ŻADNĄ drogą, także na wyraźne życzenie. Pacjent leży
+    w pozycji, a czas utrzymania jest częścią procedury.
+  · MIĘKKIE OSTRZEŻENIE — otwarty przypadek (opisany oczopląs, zapisana kontrola, odpowiedzi
+    kwalifikacji) da się stracić świadomie, ale użytkownik musi wiedzieć, że właśnie to robi.
+Sygnałów otwartego przypadku jest dziesięć i każdy jest sprawdzany OSOBNO: wyrocznia żąda, żeby
+każdy z osobna wstrzymał wdrożenie automatyczne. To ta sama zapadka, co przy strażniku Bloku 15 —
+lista ułożona „z głowy" przeoczy pole dołożone w następnym bloku.
+
+NOWA WERSJA CZEKA, ZAMIAST PRZEJMOWAĆ KARTĘ
+Worker nie woła już `skipWaiting` przy instalacji. Czeka, aż aplikacja sama poprosi (wiadomość
+`OTOREPO_WDROZ`) albo zamkną się wszystkie karty. Dzięki temu stary cache NIE ZNIKA spod otwartej
+karty: zmierzone na żywo — w trakcie manewru, po wdrożeniu nowej wersji, stary pakiet 3D nadal
+ładował się poprawnie (`import` starego pliku z hashem: 200, moduł zaimportowany).
+Kryterium odbioru nr 3 („aktualizacja jest komunikowana i wykonywana po zakończeniu sesji") jest
+zrealizowane dosłownie: wdrożenie odpala się w `zakonczSesje`, i to nie bezwarunkowo — model
+najpierw MIERZY na stanie, czy zostało jeszcze cokolwiek do stracenia.
+
+TRZY POPRAWKI W SAMYM WORKERZE, KAŻDA Z POMIARU
+  1. brak `skipWaiting` w instalacji (patrz wyżej),
+  2. `ignoreVary: true` w dopasowaniu do cache — bez tego moduły ES nie trafiają w kompletny
+     precache, a aplikacja nie wstaje offline,
+  3. dokument z cache dostaje WYŁĄCZNIE nawigacja. Dawny fallback podawał `otorepo.html` na każde
+     nieudane żądanie, więc brak pliku `.js` kończył się błędem typu MIME zamiast czytelnego braku;
+     teraz żądanie skryptu dostaje 504.
+Szablon workera został WYDZIELONY do `tools/sw-template.mjs` po to, żeby dało się go URUCHOMIĆ:
+wyrocznia montuje sztuczny `self`, sztuczny `caches` i sztuczne `fetch`, po czym mierzy, co worker
+naprawdę robi z żądaniem. Dopóki szablon siedział w środku skryptu budującego, jedynym dowodem
+jego poprawności było czytanie kodu — i to jest dokładnie ta klasa dowodu, przez którą aplikacja
+przez cały czas nie wstawała offline. Dowód failing-first: przywrócenie `skipWaiting` zapala G2,
+usunięcie `ignoreVary` zapala G11, a podanie dokumentu na każde pudło zapala G17 i G18.
+
+DECYZJĘ PODEJMUJE CZYSTY MODEL, EKRAN JEJ NIE POWTARZA
+`pwa-model.js` nie zna DOM-u, `navigator`a ani zegara. Odpowiada na trzy pytania naraz: czy pokazać
+komunikat, czy wolno wdrożyć i co dokładnie powiedzieć. Pasek nowej wersji leży POZA `#shell` —
+tak jak arkusz ustawień i mapa kroków — więc dwadzieścia przypiętych stanów powłoki zostało
+bajt w bajt takich samych; złoty wzorzec przybył o DWA klucze i ani jeden nie zmienił się w żadnej
+innej warstwie.
+Pasek nigdy nie jest oknem modalnym: aktualizacja aplikacji nie ma prawa zabrać ekranu klinicyście,
+który trzyma pacjenta w pozycji. W trybie skupienia zwija się do jednej linii — z pomiaru: pełny
+pasek ma 76 px i zachodził na suwak czasu utrzymania pozycji, czyli komunikat, na który w trakcie
+repozycji i tak nie da się zareagować, zasłaniał kontrolkę kliniczną. Po zwężeniu (48 px) nie
+zachodzi już ani na licznik, ani na przycisk, ani na suwak, ani na pasek postępu.
+
+SKRÓT KLAWIATUROWY, KTÓRY DOMYŚLNIE ODMAWIA
+Spacja pauzuje i wznawia licznik, strzałki przechodzą między etapami — ale tylko na ekranie manewru
+i tylko wtedy, gdy klawisz nie należy do kogoś innego. Model odmawia z NAZWANYM powodem, gdy:
+kursor stoi w polu tekstowym (spacja ma pisać), fokus jest na przycisku albo przełączniku (spacja
+ma go wcisnąć), fokus jest na suwaku czasu utrzymania albo liście wyboru (strzałka należy do nich —
+Blok 2 dołożył tę obsługę świadomie, bo bez niej czas utrzymania jest nieustawialny z klawiatury),
+klawisz ma modyfikator, jest przytrzymany, albo nie ma dokąd iść po osi etapów.
+Kontrola czułości idzie w OBIE strony: przycisk nie zjada strzałek, a suwak nie zjada spacji —
+bramka „odmawiaj zawsze" przechodziłaby wszystkie testy odmowy i nie dawała ani jednego skrótu.
+Zmierzone w przeglądarce: spacja uruchamia i pauzuje licznik, strzałki zmieniają etap, strzałka
+z fokusem na suwaku NIE zmienia etapu, a spacja z fokusem na przycisku nie zostaje przechwycona.
+
+ZDANIE O OFFLINE JEST FUNKCJĄ FAKTU, A NIE OBIETNICĄ
+Dokument żąda, żeby aplikacja informowała, które treści wymagają połączenia. Zdanie w ustawieniach
+jest generowane z listy funkcji sieciowych — lista jest pusta, więc zdanie brzmi „wszystko działa
+bez połączenia", a bramka skanuje cały `src/` (z usuniętymi komentarzami, bo komentarz o `fetch`
+nie jest wywołaniem) i przewróci się przy pierwszym prawdziwym wywołaniu sieci. Zdanie jest przy
+tym PRECYZYJNE: aplikacja nie wysyła i nie pobiera danych, ale worker pobiera z sieci własne pliki,
+dopóki nie ma ich w pamięci podręcznej — i to jest w tym zdaniu napisane.
+
+ZOOM FORMULARZA BEZ ODBIERANIA POWIĘKSZANIA
+Pole edycji opisu ma teraz 16 px, więc iOS nie powiększa widoku przy wejściu w nie. Bramka mierzy
+KASKADĘ (ostatnią obowiązującą deklarację), a nie pierwszą pasującą regułę, i ma kontrolę czułości
+w obie strony. Osobna bramka pilnuje, że problemu NIE rozwiązano zakazem powiększania w `viewport`:
+`user-scalable=no` odbiera powiększanie także tym, którzy go potrzebują.
+
+ARKUSZ USTAWIEŃ PRZESTAŁ BYĆ ZAMROŻONY JĘZYKOWO
+Cały panel ustawień powstawał raz, na boocie, więc po przełączeniu języka zostawał w starym — przy
+komplecie zielonych wyroczni, bo arkusz leży poza `#app`. Ten sam błąd, który naprawiono kiedyś dla
+nawigacji i paska przebiegu. Blok 16 dokłada tam dwa zdania (o offline i o skrótach), więc
+zamrożony język przestał być drobiazgiem: panel jest teraz przebudowywany przy zmianie języka.
+
+CZEGO TEN BLOK NIE ROBI
+  · Nie zmienia ani jednej liczby w silniku i nie dokłada ani jednego parametru.
+  · Nie dokłada ani jednego wywołania sieci — bramka to sprawdza.
+  · Nie zmienia zawartości `#app`: 183 przypięte stany DOM i 360 stanów pozy są bajt w bajt takie
+    same jak przed blokiem.
+  · Nie wprowadza routingu z dokumentu (`/start`, `/diagnostyka/bppv/…`) — to osobna, duża zmiana.
+
+CZEGO NIE DA SIĘ ZMIERZYĆ BEZ URZĄDZENIA
+Instalacja na ekranie początkowym i uruchomienie bez paska przeglądarki (kryterium odbioru nr 1)
+opierają się na manifeście (`display: standalone`, `start_url` aliasowany w buildzie) i NIE zostały
+sprawdzone na prawdziwym telefonie. Tak samo obszary bezpieczne przy wycięciu ekranu i tryb
+prezentacyjny w orientacji poziomej: reguły istnieją i są zmierzone w oknie o proporcjach telefonu,
+ale nie na sprzęcie.

@@ -1,0 +1,151 @@
+/* OTOREPO — kwalifikacja wstępna („Wywiad", Blok 6).
+ *
+ * Zasada, która steruje całym wyglądem tego ekranu: karta wyniku ma być czytelna JAKO OSTRZEŻENIE
+ * albo JAKO ŚCIEŻKA, i to bez czytania tekstu — ale nigdy WYŁĄCZNIE kolorem. Stąd przy każdej
+ * kategorii dochodzi gruby lewy pas i znak ⚠ w tytule (dokładany w markupie), a nie samo tło.
+ */
+
+.triagegrid{ margin-top:var(--sp-3); }
+
+/* ---- pojedyncze pytanie ---- */
+.tq{ margin-bottom:var(--sp-3); border-left:3px solid transparent; }
+.tq__q{ font-family:var(--display); font-size:16px; font-weight:700; margin:0 0 2px; line-height:1.25; }
+.tq__hint{ margin:0 0 var(--sp-3); font-size:12.5px; color:var(--muted); line-height:1.35; }
+.tq__opts{ display:grid; gap:var(--sp-1); }
+/* Pytanie bieżące jest wyróżnione OBRYSEM, nie tłem: na telefonie wszystkie pytania stoją jedno
+   pod drugim i tło zlewałoby się z kartami odpowiedzi. */
+.tq--biezace{ border-left-color:var(--primary); }
+.tq--gotowe .tq__q::after{ content:" ✓"; color:var(--ok); font-size:14px; }
+
+.tqopt{
+  appearance:none; cursor:pointer; width:100%; text-align:left;
+  display:flex; align-items:flex-start; gap:var(--sp-3);
+  min-height:var(--tap); padding:var(--sp-2) var(--sp-3);
+  background:var(--panel2); color:var(--text);
+  border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font:inherit; font-size:14px; line-height:1.35;
+  transition:border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.tqopt:hover{ border-color:var(--primary); }
+.tqopt__box{
+  flex:0 0 auto; width:18px; height:18px; margin-top:1px; border-radius:5px;
+  border:1.5px solid var(--line-strong); display:grid; place-items:center;
+}
+.tqopt[aria-pressed="true"]{ border-color:var(--primary); background:color-mix(in oklab, var(--primary) 12%, var(--panel2)); }
+.tqopt[aria-pressed="true"] .tqopt__box{ border-color:var(--primary); background:var(--primary); }
+/* Znak wyboru NIE jest samym kolorem — musi przetrwać skalę szarości i tryb wysokiego kontrastu. */
+.tqopt[aria-pressed="true"] .tqopt__box::after{ content:"✓"; color:var(--ink); font-size:12px; font-weight:900; line-height:1; }
+.tqopt__txt{ flex:1 1 auto; min-width:0; }
+
+/* ---- karta wyniku ---- */
+.tw{ border-left:4px solid var(--line-strong); }
+.tw__ttl{ font-family:var(--display); font-size:17px; font-weight:700; line-height:1.25; margin-bottom:var(--sp-2); }
+.tw__tresc{ margin:0 0 var(--sp-3); font-size:14px; line-height:1.5; color:var(--text); }
+.tw__uwagi{ margin:0 0 var(--sp-3); padding-left:18px; display:grid; gap:6px; }
+.tw__uwagi li{ font-size:13px; line-height:1.4; color:var(--muted); }
+.tw__why{ margin-bottom:var(--sp-3); }
+.tw__why summary{ cursor:pointer; font-size:13px; font-weight:700; color:var(--primary); min-height:var(--tap); display:flex; align-items:center; }
+.tw__powody{ margin:var(--sp-1) 0 0; padding-left:18px; display:grid; gap:4px; }
+.tw__powody li{ font-size:12.5px; line-height:1.4; color:var(--muted); }
+/* Jedyna zalecana akcja. Styl JAWNY, nie odziedziczony: klasa .recoprimary jest w legacy.css
+   opisana wyłącznie wewnątrz bloku `.reco` na ekranie testu, więc poza nim przycisk zostawał
+   surowy — zmierzone 22 px wysokości, czyli najważniejsza kontrolka ekranu poniżej progu
+   dotykowego. Zależność od cudzego selektora zakresowego jest tu pułapką, bo wygląda na
+   działającą do chwili, gdy ktoś sprawdzi rozmiar. */
+.tw__akcje{ display:grid; gap:var(--sp-2); }
+.tw__akcje .recoprimary{
+  appearance:none; cursor:pointer; width:100%;
+  min-height:var(--tap); padding:var(--sp-3) var(--sp-4);
+  background:var(--primary); color:var(--ink);
+  border:0; border-radius:var(--r-md);
+  font:inherit; font-size:15px; font-weight:800; line-height:1.25; text-align:center;
+}
+.tw__akcje .recoprimary:hover{ filter:brightness(1.08); }
+.tw__pewnosc{ margin:var(--sp-3) 0 0; font-size:12px; color:var(--faint); }
+
+/* Kategorie. Kolor zawsze RAZEM z pasem i (dla czerwonej) znakiem ⚠ w tytule. */
+.tw--czerwona{ border-left-color:var(--crit); background:var(--crit-bg, color-mix(in oklab, var(--crit) 10%, var(--panel))); }
+.tw--czerwona .tw__ttl{ color:var(--crit); }
+.tw--tEVS, .tw--AVS{ border-left-color:var(--ok); }
+.tw--tEVS .tw__ttl, .tw--AVS .tw__ttl{ color:var(--ok); }
+.tw--sEVS, .tw--pseudoAVS, .tw--niepewna{ border-left-color:var(--warn); }
+.tw--sEVS .tw__ttl, .tw--pseudoAVS .tw__ttl, .tw--niepewna .tw__ttl{ color:var(--warn); }
+.tw--wtoku{ border-left-color:var(--line-strong); }
+.tw--wtoku .tw__ttl{ color:var(--muted); font-size:15px; }
+
+/* Panel wyniku trzyma się góry przy przewijaniu pytań — dokument: „kwestionariusz i dynamiczne
+   podsumowanie ryzyka mogą być widoczne obok siebie". */
+@container main (min-width:900px){
+  .triagegrid .col--viz .tw{ position:sticky; top:var(--sp-2); }
+}
+
+/* ---- pasek czerwonej flagi w powłoce ----
+   Dokument: „Czerwone flagi są widoczne PRZED przejściem do manewru lub HINTS". Karta wyniku
+   zostaje na ekranie Wywiadu, więc sam sygnał musi jechać z użytkownikiem przez cały przebieg. */
+.flowflag{
+  margin-top:var(--sp-2);
+  display:flex; align-items:center; gap:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3);
+  border:1px solid var(--crit); border-left-width:4px; border-radius:var(--r-md);
+  background:var(--crit-bg, color-mix(in oklab, var(--crit) 12%, transparent));
+  font-size:12.5px; line-height:1.4;
+}
+.flowflag b{ color:var(--crit); flex:0 0 auto; }
+.flowflag span{ flex:1 1 auto; min-width:0; color:var(--text); }
+
+/* ============ Sterowanie symulacją + jawna perspektywa (Blok 7) ============ */
+
+/* Nota perspektywy. Nie jest ozdobnikiem: na jednym ekranie sąsiadują dwa panele o PRZECIWNYCH
+   konwencjach stron („Widok frontalny" = oczami badającego, „Głowa z góry" = od tyłu), a od
+   strony zależy, które ucho zostanie poddane repozycji. */
+/* 12,5 px i --muted, nie 11,5 px i --faint: po naprawie Z2 ta nota stoi już na trzech ekranach
+   i niesie informację o STRONIE, a Blok 2 ustalił 12,5 px jako podłogę dla etykiet. Nota mniejsza
+   od własnej podłogi czytelności byłaby ostrzeżeniem, którego nie warto czytać. */
+.perspnote{
+  margin:6px 0 0; font-size:12.5px; line-height:1.35; color:var(--muted);
+  border-left:2px solid var(--line-strong); padding-left:8px;
+}
+.emk abbr{ text-decoration:none; border-bottom:1px dotted var(--line-strong); cursor:help; }
+
+/* Pasek odtwarzania. Przykleja się do DOŁU scrollportu — dolna nawigacja leży poza nim
+   (shell.css), więc nic go nie zasłoni i nie trzeba doliczać --nav-h. */
+.vizbar{
+  position:sticky; bottom:var(--sp-3); z-index:var(--z-actionbar);
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-1);
+  margin:var(--sp-3) 0; padding:var(--sp-2);
+  background:color-mix(in srgb, var(--panel) 92%, transparent);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  border:1px solid var(--line-strong); border-radius:var(--r-md);
+  box-shadow:var(--shadow);
+}
+.vizbtn{
+  appearance:none; cursor:pointer; flex:0 0 auto;
+  display:inline-flex; align-items:center; gap:6px;
+  min-height:var(--tap); padding:var(--sp-1) var(--sp-3);
+  background:var(--panel2); color:var(--text);
+  border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font:inherit; font-size:13px; font-weight:700;
+}
+.vizbtn:hover{ border-color:var(--primary); }
+/* Stan wciśnięcia NIE samym kolorem — dochodzi wypełnienie i obrys (a11y.css: „STAN NIGDY
+   SAMYM KOLOREM"), a przy pauzie zmienia się też glif i napis. */
+.vizbtn[aria-pressed="true"]{ border-color:var(--primary); background:color-mix(in oklab, var(--primary) 16%, var(--panel2)); color:var(--text); }
+.vizbtn[aria-disabled="true"]{ opacity:.5; cursor:default; }
+.vizbtn[aria-disabled="true"]:hover{ border-color:var(--line-strong); }
+.vizbtn__glif{ font-size:11px; line-height:1; }
+.vizbar__stan{ flex:1 1 100%; font-size:11.5px; color:var(--faint); padding-left:2px; }
+@media (min-width:600px){ .vizbar__stan{ flex:0 1 auto; margin-left:auto; padding-right:4px; } }
+
+/* Statyczna sekwencja pozycji (kryterium odbioru nr 4). NIE zastępuje animacji oczopląsu —
+   pokazuje UŁOŻENIA, które są z natury statyczne. */
+.seqcard{ margin:var(--sp-3) 0; }
+.seqcard summary{ cursor:pointer; font-weight:700; font-size:14px; min-height:var(--tap); display:flex; align-items:center; }
+.seqlist{ list-style:none; margin:var(--sp-2) 0 0; padding:0; display:grid; gap:var(--sp-2); }
+@media (min-width:560px){ .seqlist{ grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); } }
+.seqitem{ display:flex; gap:var(--sp-2); align-items:flex-start; padding:var(--sp-2); background:var(--panel2); border:1px solid var(--line); border-radius:var(--r-md); }
+.seqitem__n{ flex:0 0 auto; width:20px; height:20px; border-radius:50%; display:grid; place-items:center; font-size:11px; font-weight:800; color:var(--primary); border:1px solid var(--primary); }
+.seqitem__img{ flex:0 0 74px; width:74px; }
+.seqitem__img svg{ width:100%; height:auto; display:block; }
+.seqitem__txt{ flex:1 1 auto; min-width:0; }
+.seqitem__txt b{ display:block; font-size:12.5px; line-height:1.25; }
+.seqitem__txt small{ display:block; font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.3; }

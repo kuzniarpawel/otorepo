@@ -1,0 +1,32 @@
+/* OTOREPO — jedyny arkusz wpinany z index.html. Kolejnosc importow = kolejnosc kaskady.
+ * NIE importowac CSS z main.js: snapshot.mjs buduje modules przez esbuild z bundle:true/write:false
+ * i bez outfile, wiec import pliku .css konczy sie twardym bledem i wywala trzy warstwy wyroczni naraz.
+ */
+@import './tokens.css';    /* nowe tokeny (addytywne) — MUSI byc przed legacy */
+@import './legacy.css';    /* zastane reguly, przeniesione 1:1 z index.html */
+@import './theme.css';     /* korekty WARTOSCI odziedziczonych — MUSI byc po legacy */
+@import './shell.css';     /* powloka: siatka, paski, model przewijania */
+@import './layout.css';    /* uklad tresci wewnatrz #app */
+@import './flow.css';      /* pasek przebiegu klinicznego: 6 krokow + ostrzezenie (Blok 5) */
+@import './triage.css';    /* kwalifikacja wstepna „Wywiad" + pasek czerwonej flagi (Blok 6) */
+@import './start.css';     /* ekran startowy oparty na celu uzytkownika (Blok 4) — UKLAD */
+@import './start-scene.css'; /* ekran startowy, styl „scena kliniczna" — MUSI byc po start.css (nadpisuje material, nie uklad) */
+/* Arkusz Bloku 8 NIE BYL WPIETY NIGDZIE — caly ekran „Oczoplas" renderowal sie bez stylow, przy
+   komplecie zielonych wyroczni (domOracle czyta innerHTML, nie kaskade). Bramka: interp:dom
+   sprawdza, ze kazdy plik z src/styles/ jest zaimportowany wlasnie tutaj. */
+@import './obs.css';       /* krok „Oczoplas": formularz opisu obserwacji (Blok 8) */
+@import './interp.css';    /* interpretacja: obraz nietypowy, kandydatury (Blok 9) */
+@import './followup.css';  /* krok „Kontrola" po manewrze: siedem odpowiedzi, seria, koniec sesji (Blok 11) */
+@import './hints-exam.css';
+@import './nauka.css';     /* tryb nauki: biblioteka przypadkow i lekcja (Blok 13) */
+@import './opis.css';      /* generator opisu badania i zapis sesji (Blok 15) */
+@import './lab.css';       /* Laboratorium neurootologiczne: eksperymenty i parametry (Blok 14) */
+@import './pwa.css';       /* pasek nowej wersji aplikacji (Blok 16) */
+/* Ekrany kliniczne w stylu „scena kliniczna" (tura 2 paczki projektowej). MUSI byc po arkuszach
+   poszczegolnych ekranow: nadpisuje MATERIAL (szklo, obrys, ton kanalu), nigdy ukladu. */
+@import './clinic-scene.css';
+/* Ekrany pozostale (tura 3): Kontrola, Opis badania, Nauka, Laboratorium. MUSI byc po
+   clinic-scene.css — bierze z niego tokeny materialu (--clin-glass, --clin-deep, --lift-*)
+   i nadpisuje wylacznie material, nigdy ukladu. */
+@import './rest-scene.css';
+@import './a11y.css';      /* pola dotykowe, fokus, stan nie-tylko-kolorem, ograniczenie ruchu */

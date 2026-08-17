@@ -6,8 +6,10 @@
  *    start_url "otorepo.html" (manifest bez zmian), a fallback SW dalej trafia;
  * 3. GENERUJE dist/sw.js: precache = faktyczna zawartość dist/, nazwa cache
  *    = hash zawartości → każda zmiana buildu sama wymusza odświeżenie
- *    (koniec ręcznych bumpów otorepo-vN). Logika identyczna z dotychczasowym
- *    ręcznym sw.js: cache-first, GET-only, fallback do otorepo.html.
+ *    (koniec ręcznych bumpów otorepo-vN). Cache-first, GET-only; od Bloku 16
+ *    nowa wersja CZEKA zamiast przejmować kartę w trakcie manewru, dopasowanie
+ *    ignoruje Vary (moduły ES idą w trybie CORS), a dokument z cache dostaje
+ *    wyłącznie nawigacja — nigdy żądanie skryptu.
  *
  * Rejestracja SW pozostaje w markupie aplikacji (index.html) i jest wyłączona
  * pod window.Capacitor — bez zmian.
@@ -16,6 +18,7 @@ import { readFileSync, writeFileSync, copyFileSync, cpSync, existsSync, readdirS
 import { createHash } from 'node:crypto';
 import { join, resolve, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { swSource } from './sw-template.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -30,6 +33,11 @@ copyFileSync(join(ROOT, 'manifest.json'), join(DIST, 'manifest.json'));
 copyFileSync(join(ROOT, 'privacy.html'), join(DIST, 'privacy.html'));
 copyFileSync(join(ROOT, '.nojekyll'), join(DIST, '.nojekyll'));
 cpSync(join(ROOT, 'icons'), join(DIST, 'icons'), { recursive: true });
+/* assets/ — render sceny ekranu startowego. Wchodzi znacznikiem <img src="assets/…">, czyli POZA
+   grafem Vite'a (Vite przetwarza tylko url() w CSS i importy w JS), więc bez tej kopii pierwszy
+   start offline pokazałby scenę bez renderu. Nazwa cache to hash zawartości dist/, więc plik
+   sam wchodzi do precache i sam wymusza odświeżenie — bumpu nie trzeba. */
+cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true });
 
 // 2. alias dla starych instalacji (start_url otorepo.html)
 copyFileSync(join(DIST, 'index.html'), join(DIST, 'otorepo.html'));
@@ -44,36 +52,9 @@ const h = createHash('sha256');
 for (const f of rel) h.update(f).update(readFileSync(join(DIST, f)));
 const CACHE = 'otorepo-' + h.digest('hex').slice(0, 10);
 
-// 4. sw.js
-const sw = `/* OTOREPO — service worker (PWA offline).
-   PLIK GENEROWANY przez tools/build-dist.mjs — nie edytować ręcznie.
-   Precache = pełna zawartość dist/; nazwa cache pochodzi z hasha zawartości,
-   więc każda zmiana buildu automatycznie wymusza odświeżenie (bez ręcznych bumpów vN). */
-const CACHE = '${CACHE}';
-const ASSETS = ${JSON.stringify(['./', ...rel], null, 2).replace(/\n/g, '\r\n')};
-
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
-});
-
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.map((k) => (k === CACHE ? null : caches.delete(k)))))
-      .then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then((cached) =>
-      cached || fetch(e.request).catch(() => caches.match('otorepo.html'))
-    )
-  );
-});
-`;
-writeFileSync(join(DIST, 'sw.js'), sw);
+// 4. sw.js — TRESC pochodzi z tools/sw-template.mjs. Wydzielona, bo wyrocznia pwa:check
+//    URUCHAMIA tego workera (sztuczny self/caches/fetch) zamiast czytac kod i wierzyc mu na slowo.
+writeFileSync(join(DIST, 'sw.js'), swSource(CACHE, ['./', ...rel]));
 
 const kb = rel.reduce((s, f) => s + statSync(join(DIST, f)).size, 0) / 1024;
 console.log(`dist/ gotowy: ${rel.length} plików w precache (${kb.toFixed(0)} KB), CACHE=${CACHE}`);

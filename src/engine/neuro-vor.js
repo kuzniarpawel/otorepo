@@ -521,7 +521,7 @@ export const NeuroVOR = (()=>{
     // Kryterium PATOLOGII na GAIN per kanał (jak w pracowniach vHIT), NIE na amplitudzie sakady: próg na
     // saccadeAmp dryfował z amplitudą pchnięcia (gain 0.75 → „norma" przy amp 8°, „patologia" przy 15°)
     // i jednym efektywnym cięciem ~0.83 nadrozpoznawał kanały PIONOWE (publikowane LLN: HC <0.8, pionowe
-    // <0.7 — McGarvie 2015; BVH <0.6 [H19]). saccadeAmp/overt/covert zostają: rysują sakadę i podział
+    // <0.7 — McGarvie 2015 (bez numeru w tej bibliografii); BVH <0.6 — [H19] Strupp 2017). saccadeAmp/overt/covert zostają: rysują sakadę i podział
     // jawna/ukryta, ale nie orzekają. [H5][H21]
     const abnormal = gain < GAIN_CUT[ex.canal];              // vHIT PATOLOGICZNY (deficyt gain) — NIEZALEŻNY od kompensacji i amplitudy
     // KOMPENSACJA DYNAMICZNA: całość korekty stała, ale przesuwa się w czasie z sakady JAWNEJ (overt —
@@ -714,7 +714,7 @@ export const NeuroVOR = (()=>{
   // ETAP 7 ([H22]) — SVV / GRAWICEPTYWNY PRZECHYŁ PIONU (subiektywna pionowa). Osobny, CZULSZY pomiar niż
   // odchylenie skośne: łączy ŁAGIEWKĘ (utricle) i kanały PIONOWE (przedni+tylny). W ostrym ubytku OBWODOWYM
   // pion przechyla się KU STRONIE CHOREJ (ipsiwersyjnie). Neuronitis DOLNY (utrata tylnego) daje MAŁY przechył
-  // ku choremu, mimo prawidłowego odchylenia skośnego (skew z łagiewki = 0) — zgodne z Musat 2025. Symetria
+  // ku choremu, mimo prawidłowego odchylenia skośnego (skew z łagiewki = 0) — zgodne z [H22] Musat 2025. Symetria
   // (BVH) → 0. NIE wpływa na werdykt HINTS (to odczyt uzupełniający, nie składowa INFARCT).
   // SVV i odchylenie skośne leżą na TEJ SAMEJ osi grawiceptywnej (triada OTR: przechył głowy — torsja —
   // skew), a SVV jest jej NAJCZULSZYM składnikiem. Dlatego przechył musi wynikać z OBU źródeł asymetrii:

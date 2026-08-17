@@ -1,0 +1,225 @@
+/* OTOREPO — wyrocznia kwalifikacji wstępnej („Wywiad", Blok 6).
+ *
+ * Kryteria odbioru z dokumentu użytkownika są tu sprawdzane jako NIEZMIENNIKI na PEŁNYM
+ * iloczynie kartezjańskim odpowiedzi, a nie na kilku ręcznie dobranych przypadkach:
+ *   1. „HINTS nie jest proponowany przy krótkich, wyłącznie pozycyjnych napadach"
+ *   2. „Przy czerwonej fladze użytkownik otrzymuje komunikat o konieczności pilnej oceny
+ *       ZAMIAST pozornego rozpoznania BPPV"
+ *   3. „Każda rekomendacja wskazuje, które odpowiedzi do niej doprowadziły"
+ * Ręcznie dobrany przypadek udowadnia, że reguła działa dla niego. Przejście po całym iloczynie
+ * udowadnia, że NIE ISTNIEJE kombinacja odpowiedzi, która ją łamie — a to zupełnie inna siła
+ * twierdzenia przy module, który ma nie dopuścić do niewłaściwego użycia HINTS.
+ *
+ * Uruchomienie: npm run triage:check
+ */
+import {
+  TRIAGE_QUESTIONS, TRIAGE_IDS, triageQuestion, activeQuestions, nextQuestionId,
+  triageComplete, toggleFlaga, czerwoneFlagi, triageResult, sciezkaDozwolona,
+} from '../src/app/triage-model.js';
+
+let ok = 0; const bledy = [];
+const T = (tag, warunek, opis) => { if (warunek) ok++; else bledy.push(`${tag}: ${opis}`); };
+const eq = (tag, a, b) => T(tag, JSON.stringify(a) === JSON.stringify(b), `oczekiwano ${JSON.stringify(b)}, jest ${JSON.stringify(a)}`);
+
+/* ============ 1. Kształt kwestionariusza ============ */
+eq('KS1/pytania', TRIAGE_IDS, ['przebieg', 'wyzwalacz', 'oczoplas', 'flagi']);
+T('KS2/dwujezyczne', TRIAGE_QUESTIONS.every(q => q.pl && q.en && q.plHint && q.enHint
+  && (q.opcje || []).every(o => o.pl && o.en)), 'każde pytanie i każda opcja muszą mieć PL i EN');
+// „Odpowiedź «nie wiem / nie można ocenić» jest zawsze dostępna, gdy ma znaczenie kliniczne."
+for (const id of ['przebieg', 'wyzwalacz', 'oczoplas'])
+  T(`KS3/${id}-niewiem`, triageQuestion(id).opcje.some(o => /nieznane|nieoceniony/.test(o.v)),
+    'pytanie rozstrzygające musi mieć wyjście „nie wiem"');
+T('KS4/flagi-wielokrotne', triageQuestion('flagi').typ === 'wielokrotny', 'czerwone flagi to wybór wielokrotny');
+T('KS5/flagi-bezwarunkowe', typeof triageQuestion('flagi').gdy !== 'function',
+  'czerwone flagi MUSZĄ być pytane zawsze — dokument: „widoczne PRZED przejściem do manewru lub HINTS"');
+T('KS6/ataksja-jest', triageQuestion('flagi').opcje.some(o => o.v === 'ataksja'),
+  'GRACE-3 stawia ataksję chodu najwyżej: każda ataksja = ośrodek');
+T('KS7/5D-jest', triageQuestion('flagi').opcje.some(o => /5 D|5 Ds/.test(o.pl + o.en)), 'lista 5 D');
+T('KS8/brak-wylaczny', triageQuestion('flagi').opcje.find(o => o.v === 'brak').wylaczna === true,
+  '„nie stwierdzono" musi być opcją wyłączną');
+
+/* ============ 2. Przełącznik flag ============ */
+eq('FL1/dodaj', toggleFlaga([], 'ataksja'), ['ataksja']);
+eq('FL2/odejmij', toggleFlaga(['ataksja'], 'ataksja'), []);
+eq('FL3/brak-czysci', toggleFlaga(['ataksja', 'pieciod'], 'brak'), ['brak']);
+eq('FL4/flaga-czysci-brak', toggleFlaga(['brak'], 'ataksja'), ['ataksja']);
+eq('FL5/brak-toggle', toggleFlaga(['brak'], 'brak'), []);
+eq('FL6/null', toggleFlaga(null, 'ataksja'), ['ataksja']);
+eq('FL7/czerwone-pomija-brak', czerwoneFlagi({ flagi: ['brak'] }), []);
+eq('FL8/czerwone-liczy', czerwoneFlagi({ flagi: ['ataksja', 'bolGlowy'] }), ['ataksja', 'bolGlowy']);
+
+/* ============ 3. Przepływ pytań ============ */
+eq('PP1/pierwsze', nextQuestionId({}), 'przebieg');
+eq('PP2/napadowe-pyta-o-wyzwalacz', nextQuestionId({ przebieg: 'napadowe' }), 'wyzwalacz');
+eq('PP3/ciagle-pyta-o-oczoplas', nextQuestionId({ przebieg: 'ciagle' }), 'oczoplas');
+// Pytanie o wyzwalacz NIE MA sensu przy zawrotach ciągłych i odwrotnie — warunkowe znikają.
+eq('PP4/ciagle-pomija-wyzwalacz', activeQuestions({ przebieg: 'ciagle' }).map(q => q.id), ['przebieg', 'oczoplas', 'flagi']);
+eq('PP5/napadowe-pomija-oczoplas', activeQuestions({ przebieg: 'napadowe' }).map(q => q.id), ['przebieg', 'wyzwalacz', 'flagi']);
+eq('PP6/nieznane-pomija-oba', activeQuestions({ przebieg: 'nieznane' }).map(q => q.id), ['przebieg', 'flagi']);
+eq('PP7/na-koncu-flagi', nextQuestionId({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny' }), 'flagi');
+T('PP8/komplet', triageComplete({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] }), 'komplet odpowiedzi');
+T('PP9/pusta-lista-flag-to-brak-odpowiedzi', !triageComplete({ przebieg: 'nieznane', flagi: [] }),
+  'pusta lista flag NIE jest odpowiedzią — „nie stwierdzono" wymaga świadomego kliknięcia');
+
+/* ============ 4. NIEZMIENNIKI na pełnym iloczynie kartezjańskim ============ */
+const WART = {
+  przebieg: [undefined, 'napadowe', 'ciagle', 'nieznane'],
+  wyzwalacz: [undefined, 'pozycyjny', 'samoistny', 'nieznane'],
+  oczoplas: [undefined, 'obecny', 'brak', 'nieoceniony'],
+};
+const FLAGI_POJ = ['ataksja', 'pieciod', 'ogniskowe', 'bolGlowy', 'niedoslych'];
+const ZESTAWY_FLAG = [undefined, [], ['brak']];
+for (let m = 1; m < (1 << FLAGI_POJ.length); m++)
+  ZESTAWY_FLAG.push(FLAGI_POJ.filter((_, i) => m & (1 << i)));
+
+const kombinacje = [];
+for (const p of WART.przebieg) for (const w of WART.wyzwalacz) for (const o of WART.oczoplas) for (const f of ZESTAWY_FLAG)
+  kombinacje.push({ przebieg: p, wyzwalacz: w, oczoplas: o, flagi: f });
+
+const zlamane = { hintsPrzyNapadach: [], flagaBezPilnej: [], flagaZeSciezka: [], zlaSciezka: [], bezPowodu: [],
+  bezTekstu: [], zlyPowod: [], hintsBezOczoplasu: [], diagPrzyCiagle: [] };
+for (const k of kombinacje) {
+  const w = triageResult(k);
+  const flagi = czerwoneFlagi(k);
+  const opis = JSON.stringify(k);
+
+  // KRYTERIUM 1 — HINTS nigdy przy napadach.
+  if (k.przebieg === 'napadowe' && w.sciezka === 'hints') zlamane.hintsPrzyNapadach.push(opis);
+  // KRYTERIUM 2 — czerwona flaga zawsze wygrywa i nigdy nie prowadzi do ścieżki.
+  if (flagi.length && w.kategoria !== 'czerwona') zlamane.flagaBezPilnej.push(opis);
+  if (flagi.length && w.sciezka !== null) zlamane.flagaZeSciezka.push(opis);
+  // KRYTERIUM 3 — każdy wynik uzasadniony odpowiedziami. Wyjątek: PUSTY kwestionariusz nie jest
+  // rekomendacją, tylko stanem wyjściowym — nie ma czego uzasadniać i nie ma tam karty wyniku.
+  // Liczy się odpowiedź na pytanie AKTYWNE. Wartość przy pytaniu, które w tym stanie nie jest
+  // zadawane (np. „oczopląs" przy nieustalonym przebiegu), nie jest odpowiedzią użytkownika —
+  // interfejs nigdy jej nie zbierze, bo pytanie się wtedy nie pokazuje.
+  const aktywne = activeQuestions(k).map(q => q.id);
+  const cokolwiekOdpowiedziano = aktywne.some(id => id === 'flagi'
+    ? (Array.isArray(k.flagi) && k.flagi.length) : !!k[id]);
+  if (cokolwiekOdpowiedziano && (!Array.isArray(w.powody) || !w.powody.length)) zlamane.bezPowodu.push(opis);
+  for (const p of (w.powody || [])) {
+    const q = p && triageQuestion(p.qid);
+    if (!p || !q || !(q.opcje || []).some(o => o.v === p.wartosc) || !p.pl || !p.en) zlamane.zlyPowod.push(opis);
+  }
+  // Kształt wyniku.
+  if (![null, 'diag', 'hints'].includes(w.sciezka)) zlamane.zlaSciezka.push(opis);
+  if (!w.tytul || !w.tytul.pl || !w.tytul.en || !w.tresc || !w.tresc.pl || !w.tresc.en) zlamane.bezTekstu.push(opis);
+  // HINTS wyłącznie przy ciągłych zawrotach Z oczopląsem.
+  if (w.sciezka === 'hints' && !(k.przebieg === 'ciagle' && k.oczoplas === 'obecny')) zlamane.hintsBezOczoplasu.push(opis);
+  // Próby pozycyjne nie są odpowiedzią na ciągły zespół przedsionkowy.
+  if (w.sciezka === 'diag' && k.przebieg === 'ciagle') zlamane.diagPrzyCiagle.push(opis);
+}
+T('IN1/kryterium-1-HINTS-nie-przy-napadach', !zlamane.hintsPrzyNapadach.length,
+  `${zlamane.hintsPrzyNapadach.length} kombinacji, np. ${zlamane.hintsPrzyNapadach[0]}`);
+T('IN2/kryterium-2-flaga-daje-pilna-ocene', !zlamane.flagaBezPilnej.length,
+  `${zlamane.flagaBezPilnej.length} kombinacji, np. ${zlamane.flagaBezPilnej[0]}`);
+T('IN3/kryterium-2-flaga-blokuje-sciezke', !zlamane.flagaZeSciezka.length,
+  `${zlamane.flagaZeSciezka.length} kombinacji, np. ${zlamane.flagaZeSciezka[0]}`);
+T('IN4/kryterium-3-zawsze-uzasadnione', !zlamane.bezPowodu.length,
+  `${zlamane.bezPowodu.length} kombinacji bez uzasadnienia, np. ${zlamane.bezPowodu[0]}`);
+T('IN5/uzasadnienie-wskazuje-realne-odpowiedzi', !zlamane.zlyPowod.length,
+  `${zlamane.zlyPowod.length} kombinacji, np. ${zlamane.zlyPowod[0]}`);
+T('IN6/sciezka-z-dozwolonych', !zlamane.zlaSciezka.length, `${zlamane.zlaSciezka.length} kombinacji`);
+T('IN7/zawsze-dwujezyczny-tekst', !zlamane.bezTekstu.length, `${zlamane.bezTekstu.length} kombinacji`);
+T('IN8/HINTS-tylko-AVS-z-oczoplasem', !zlamane.hintsBezOczoplasu.length,
+  `${zlamane.hintsBezOczoplasu.length} kombinacji, np. ${zlamane.hintsBezOczoplasu[0]}`);
+T('IN9/proby-pozycyjne-nie-przy-ciaglych', !zlamane.diagPrzyCiagle.length,
+  `${zlamane.diagPrzyCiagle.length} kombinacji, np. ${zlamane.diagPrzyCiagle[0]}`);
+T('IN10/iloczyn-niepusty', kombinacje.length === 4 * 4 * 4 * (3 + 31),
+  `iloczyn ma ${kombinacje.length} kombinacji — jeśli spadł, niezmienniki przestały być wyczerpujące`);
+
+/* ============ 5. Konkretne rozstrzygnięcia kliniczne ============ */
+const R = (o) => triageResult(o);
+{
+  // Klasyczny obraz BPPV, bez flag.
+  const w = R({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] });
+  eq('KL1/tEVS', [w.kategoria, w.sciezka, w.pewnosc], ['tEVS', 'diag', 'wysoka']);
+  T('KL1b/nie-stawia-rozpoznania', /nie rozpoznanie/.test(w.uwagi.map(u => u.pl).join(' ')),
+    'karta ścieżki MUSI powiedzieć wprost, że nie jest rozpoznaniem');
+}
+{
+  // Ten sam obraz BPPV, ale z ataksją chodu — flaga bije komplet cech obwodowych.
+  const w = R({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['ataksja'] });
+  eq('KL2/ataksja-bije-BPPV', [w.kategoria, w.sciezka], ['czerwona', null]);
+  T('KL2b/mowi-o-osrodku', /OŚRODKOWĄ/.test(w.tresc.pl), 'komunikat musi wskazać przyczynę ośrodkową');
+  T('KL2c/bez-CT', /NIE nadaje się|CT is NOT/.test(w.uwagi.map(u => u.pl + u.en).join(' ')),
+    'GRACE-3: tomografia NIE nadaje się do wykluczenia udaru tylnego dołu');
+  T('KL2d/fałszywie-ujemne-MRI', /48–72/.test(w.uwagi.map(u => u.pl).join(' ')),
+    'wczesne MRI bywa fałszywie ujemne — trzeba to powiedzieć');
+}
+{
+  const w = R({ przebieg: 'ciagle', oczoplas: 'obecny', flagi: ['brak'] });
+  eq('KL3/AVS', [w.kategoria, w.sciezka], ['AVS', 'hints']);
+  T('KL3b/tylko-przeszkoleni', /przeszkolon/.test(w.uwagi.map(u => u.pl).join(' ')),
+    'GRACE-3: HINTS wiarygodny WYŁĄCZNIE u przeszkolonych');
+}
+{
+  const w = R({ przebieg: 'ciagle', oczoplas: 'brak', flagi: ['brak'] });
+  eq('KL4/pseudoAVS', [w.kategoria, w.sciezka], ['pseudoAVS', null]);
+  T('KL4b/znies-fiksacje', /fiksacj/.test(w.tresc.pl), 'najpierw zniesienie fiksacji, nie HINTS');
+}
+{
+  const w = R({ przebieg: 'napadowe', wyzwalacz: 'samoistny', flagi: ['brak'] });
+  eq('KL5/sEVS', [w.kategoria, w.sciezka], ['sEVS', null]);
+  T('KL5b/uczciwie-o-modelu', /nie modeluje/.test(w.tresc.pl),
+    'silnik nie modeluje migreny przedsionkowej — trzeba to powiedzieć, a nie wpychać w BPPV');
+  T('KL5c/wymienia-roznicowe', /migrena|Ménière|TIA/.test(w.tresc.pl), 'wskaż rozpoznania różnicowe');
+}
+{
+  const w = R({ przebieg: 'ciagle', oczoplas: 'nieoceniony', flagi: ['brak'] });
+  eq('KL6/nieoceniony', [w.kategoria, w.sciezka, w.pewnosc], ['niepewna', null, 'niska']);
+}
+{
+  const w = R({ przebieg: 'nieznane', flagi: ['brak'] });
+  eq('KL7/nieznany-przebieg', [w.kategoria, w.sciezka], ['niepewna', null]);
+}
+{
+  // Niejasny wyzwalacz: próba pozycyjna jest tania i rozstrzygająca, ale HINTS dalej odpada.
+  const w = R({ przebieg: 'napadowe', wyzwalacz: 'nieznane', flagi: ['brak'] });
+  eq('KL8/niejasny-wyzwalacz', [w.kategoria, w.sciezka, w.pewnosc], ['niepewna', 'diag', 'niska']);
+  T('KL8b/tlumaczy-brak-HINTS', /HINTS nie jest tu proponowany/.test(w.uwagi.map(u => u.pl).join(' ')),
+    'trzeba powiedzieć, DLACZEGO nie HINTS, a nie tylko go nie pokazać');
+}
+{
+  // Brak potwierdzenia „nie stwierdzono flag" obniża pewność, choć ścieżka zostaje ta sama.
+  const zFlaga = R({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] });
+  const bez = R({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny' });
+  eq('KL9/pewnosc-spada-bez-przegladu-flag', [zFlaga.pewnosc, bez.pewnosc], ['wysoka', 'srednia']);
+  eq('KL9b/sciezka-ta-sama', [zFlaga.sciezka, bez.sciezka], ['diag', 'diag']);
+}
+T('KL10/bramka-sciezki', sciezkaDozwolona({ przebieg: 'ciagle', oczoplas: 'obecny', flagi: ['brak'] }, 'hints')
+  && !sciezkaDozwolona({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] }, 'hints'),
+  'bramka ścieżki musi zgadzać się z wynikiem');
+
+/* ============ 6. Czystość modułu ============ */
+{
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(new URL('../src/app/triage-model.js', import.meta.url), 'utf8');
+  // Skan po KODZIE, nie po pliku: komentarze wyjaśniają WŁAŚNIE te zakazy, więc surowy skan
+  // całego pliku zapalał się na własnym uzasadnieniu. Tripwire, który łapie swój komentarz,
+  // uczy wyłączania tripwire'ów.
+  const kod = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+  T('CZ1/bez-importow', !/^\s*import\s/m.test(kod), 'moduł musi być bez importów (wyrocznia w gołym Node)');
+  T('CZ2/bez-dom', !/\b(document|window|localStorage|navigator)\b/.test(kod), 'zero odwołań do DOM');
+  T('CZ3/bez-zegara', !/Date\.now|Math\.random|new Date/.test(kod), 'zero źródeł niedeterminizmu');
+  T('CZ4/bez-t', !/\bt\(/.test(kod), 'napisy surowe — wywołanie tłumaczenia na poziomie modułu zamraża język');
+  T('CZ5/skan-dziala', /\bt\(/.test(src) && !/\bt\(/.test(kod),
+    'kontrola samego skanu: wzorzec MUSI występować w komentarzu i znikać po jego usunięciu');
+}
+
+/* ============ Wynik ============ */
+const razem = ok + bledy.length;
+console.log(`\nOTOREPO — wyrocznia kwalifikacji wstępnej (Blok 6)`);
+console.log(`przypadki     : ${razem}`);
+console.log(`iloczyn odp.  : ${kombinacje.length} kombinacji sprawdzonych niezmiennikami`);
+if (bledy.length) {
+  console.error(`\n✗ FAIL — ${bledy.length} z ${razem}:`);
+  for (const b of bledy) console.error('  · ' + b);
+  process.exit(1);
+}
+const OCZEKIWANE = 62;
+if (razem !== OCZEKIWANE) {
+  console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
+  process.exit(1);
+}
+console.log(`\n✓ PASS — kwalifikacja wstępna zgodna (${razem} przypadków).`);

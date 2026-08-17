@@ -341,7 +341,10 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 54;   /* ZMIERZONE na main (npm run zrodla:check -- --ile); futureUI ma swoja liczbe */
+const OCZEKIWANE = 101;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
+                            8-16 futureUI, wszystkie zielone. Nie ma tu dwoch numeracji — [H28] to
+                            Newman-Toker, [H29] Cochrane 2014 (slot zwolniony przez scalenie [H17]/[H29]
+                            w Etapie 1), a cytowania main przenumerowane. Byly: 54 (main) / 88 (futureUI). */
 if (process.argv.includes('--ile')) {
   console.log(`przypadków: ${ok + bledy.length} (zielonych ${ok}, czerwonych ${bledy.length})`);
   bledy.forEach(b => console.log('  ' + b));

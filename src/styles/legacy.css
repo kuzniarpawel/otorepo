@@ -1,0 +1,373 @@
+/* OTOREPO — CSS przeniesiony 1:1 z index.html (linie 29-341) w etapie E1 przebudowy UI.
+ *
+ * ZERO zmian tresci regul w tym kroku — celem bylo wylacznie wyniesienie stylu z markupu,
+ * zeby kazda pozniejsza zmiana byla widoczna w diffie. Nowe warstwy (tokens/shell/layout/a11y)
+ * dochodza jako OSOBNE pliki; tego pliku nie rozbudowujemy — z niego tylko ubywa, w miare jak
+ * reguly trafiaja do warstw docelowych.
+ *
+ * Kasowanie regul WYLACZNIE na podstawie maszynowego dowodu martwoty (nie grepa):
+ * .hint-eyes.dark wyglada na martwa, a jest zywa (svg-screens.js:1083 — zniesienie fiksacji).
+ */
+  :root{
+    --bg:#0A0F15; --panel:#131B24; --panel2:#1A2531; --line:#28394A;
+    --text:#EDF3F9; --muted:#93A8BB; --faint:#5F7488;
+    --primary:#4FD2EE; --primary-press:#84E2F7; --ink:#03242E;
+    --timer:#FFC53D; --timer-ink:#3a2a00;
+    --left:#5FA8FF; --right:#FF7AB3;
+    --post:#2DD4BF; --horiz:#FBBF24; --ant:#A78BFA;
+    --danger:#FB7185; --r:18px;
+    --shadow:0 14px 34px -16px rgba(0,0,0,.65);
+    --display:"Sora",ui-sans-serif,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(900px 480px at 85% -8%, rgba(79,210,238,.09), transparent 60%),
+      radial-gradient(1100px 640px at 10% -12%, #141F2C 0%, var(--bg) 58%);
+    color:var(--text); -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+    font-family:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+    line-height:1.5; min-height:100dvh;
+  }
+  .wrap{max-width:560px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom));}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums;}
+  h1{font-family:var(--display); font-size:20px; letter-spacing:-.01em; margin:0; font-weight:700;}
+  .sub{color:var(--muted); font-size:13px; margin-top:2px;}
+  .eyebrow{font-family:var(--display); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); font-weight:700;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:16px; box-shadow:var(--shadow);}
+  .topbar{display:flex; align-items:center; gap:12px; margin:4px 0 8px;}
+  /* i18n: przełącznik języka — statyczna powłoka POZA #app (nie rusza golden), zawsze widoczny */
+  .langbar{position:fixed; top:calc(6px + env(safe-area-inset-top)); right:10px; z-index:60; display:flex; gap:2px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:2px; box-shadow:0 2px 8px rgba(0,0,0,.28);}
+  .langbar button{appearance:none; -webkit-appearance:none; border:0; background:transparent; color:var(--muted); font:600 11px/1 inherit; letter-spacing:.05em; padding:5px 9px; border-radius:999px; cursor:pointer;}
+  .langbar button[aria-pressed="true"]{background:var(--primary); color:#06222c;}
+  .topbar .mark{width:44px;height:44px;border-radius:14px;
+    background:linear-gradient(160deg,#1E3540,#0E1822);
+    border:1px solid #2E4757; display:grid; place-items:center; flex:0 0 auto;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 16px -8px rgba(79,210,238,.35);}
+  .disclaimer{font-size:12px; color:var(--muted); background:linear-gradient(160deg,rgba(255,197,61,.07),transparent 55%),var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px; padding:12px 14px; margin:16px 0 4px;}
+  .disclaimer b{color:#F4D48A}
+
+  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:999px;padding:4px;margin-top:18px}
+  .tabs button{appearance:none;cursor:pointer;border:none;background:transparent;color:var(--muted);
+    font-family:var(--display);font-weight:700;font-size:13.5px;padding:12px 6px;border-radius:999px;
+    transition:background .18s,color .18s;min-height:44px}
+  .tabs button[aria-selected="true"]{background:var(--primary);color:var(--ink);
+    box-shadow:0 4px 14px -4px rgba(79,210,238,.55)}
+
+  .group{margin-top:22px}
+  .group > .label{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px}
+  .group > .label .hint{font-size:12px; color:var(--faint)}
+  .seg{display:grid; gap:8px}
+  .seg.two{grid-template-columns:1fr 1fr}
+  .seg.three{grid-template-columns:1fr 1fr 1fr}
+  .opt{appearance:none; cursor:pointer; text-align:left;
+    background:var(--panel); color:var(--text); border:1px solid var(--line);
+    border-radius:15px; padding:13px 13px; font-size:14px; font-weight:600;
+    transition:border-color .15s, background .15s, box-shadow .15s, transform .06s; min-height:56px;}
+  .opt small{display:block; font-weight:450; color:var(--muted); font-size:11.5px; margin-top:3px; line-height:1.35;}
+  .opt:active{transform:scale(.985)}
+  .opt[aria-pressed="true"]{border-color:var(--primary);
+    background:color-mix(in oklab, var(--primary) 12%, var(--panel));
+    box-shadow:inset 0 0 0 1px var(--primary), 0 6px 18px -10px rgba(79,210,238,.5);}
+  .opt[data-side="L"][aria-pressed="true"]{border-color:var(--left); box-shadow:inset 0 0 0 1px var(--left); background:color-mix(in oklab, var(--left) 13%, var(--panel))}
+  .opt[data-side="P"][aria-pressed="true"]{border-color:var(--right); box-shadow:inset 0 0 0 1px var(--right); background:color-mix(in oklab, var(--right) 12%, var(--panel))}
+  .opt:disabled{opacity:.4; cursor:not-allowed}
+  .canaldot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:1px;box-shadow:0 0 8px currentColor}
+  .cta{margin-top:22px; width:100%; border:none; cursor:pointer;
+    background:linear-gradient(180deg,var(--primary-press),var(--primary)); color:var(--ink);
+    font-family:var(--display); font-weight:700; font-size:16px;
+    border-radius:15px; padding:16px; transition:filter .15s, transform .06s;
+    box-shadow:0 10px 24px -10px rgba(79,210,238,.55);}
+  .cta:active{transform:scale(.99)} .cta:hover{filter:brightness(1.06)}
+  .cta:disabled{background:#25404b; color:#6f8a93; cursor:not-allowed; box-shadow:none}
+
+  .ghead{display:flex; align-items:center; gap:11px; margin:calc(-16px - env(safe-area-inset-top)) -16px 14px; padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+    position:sticky; top:0; z-index:40;
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);}
+  .iconbtn{appearance:none; cursor:pointer; background:var(--panel2); border:1px solid var(--line);
+    color:var(--text); border-radius:12px; width:42px;height:42px; display:grid;place-items:center; flex:0 0 auto}
+  .iconbtn:active{transform:scale(.95)}
+  .ghead .ttl{flex:1; min-width:0}
+  .ghead .ttl b{display:block; font-family:var(--display); font-size:15.5px; line-height:1.25; letter-spacing:-.01em}
+  .ghead .ttl span{font-size:12px; color:var(--muted)}
+  .sidesel{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
+  .sidesel .lbl{font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .sidesel .tabs{flex:1;margin:0}
+
+
+  .viz{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; align-items:start}   /* start: karta „Ułożenie" NIE rozciąga się do sąsiada → stała wysokość między krokami (2D i 3D) */
+  /* Stała wysokość OBU kart (Ułożenie + Głowa/Głowa z góry) we wszystkich krokach/pozycjach:
+     wzorzec = karta „Głowa (z góry)" z Epley 2/5 (najwyższa treść: dial + 2 linie etykiet) = 392 px
+     przy szerokości 259 px. Treść krótsza → pusta przestrzeń u dołu; wysokość nie skacze. */
+  .viz .panelbox, .minihead .panelbox{ aspect-ratio: 259/392 }
+  .panelbox{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:12px; box-shadow:var(--shadow)}
+  .headnote{font-size:13px;color:var(--text);text-align:center;padding:8px 4px 2px;line-height:1.45}
+  .panelbox h4{margin:0 0 8px; font-family:var(--display); font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--faint); font-weight:700}
+  svg{display:block; width:100%; height:auto}
+
+  .stepcard{margin-bottom:10px; border-color:#2F4152;
+    background:linear-gradient(170deg, color-mix(in oklab, var(--primary) 6%, var(--panel)), var(--panel) 45%);}
+  .stepcard .num{font-family:var(--display); font-size:11px; color:var(--timer); font-weight:700; letter-spacing:.12em}
+  .stepcard .title{font-family:var(--display); font-size:18px; font-weight:700; letter-spacing:-.01em; margin:3px 0 7px}
+  .stepcard .instr{font-size:14.5px; color:#D6E0EA}
+  .stepcard .meta{font-size:12px; color:var(--faint); margin-top:8px}
+
+  .ring{position:relative; width:104px;height:104px; flex:0 0 auto}
+  .ring svg{position:absolute; inset:0}
+  .ring .read{position:absolute; inset:0; display:grid; place-items:center; text-align:center}
+  .ring .read b{font-size:26px; font-weight:700; letter-spacing:.5px}
+  .ring .read em{display:block; font-style:normal; font-size:10px; color:var(--muted); margin-top:-2px}
+  .adjust{display:flex; align-items:center; gap:8px; justify-content:center; margin-top:10px; font-size:13px; color:var(--muted)}
+  .adjust button{appearance:none;cursor:pointer;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--text);font-size:18px;line-height:1;font-weight:700}
+  .nostimer{font-size:13px;color:var(--muted);background:var(--panel2);border:1px dashed var(--line);
+    border-radius:12px;padding:14px;text-align:center}
+
+  .nav{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px}
+  .nav button{appearance:none;cursor:pointer;border-radius:13px;padding:14px;font-weight:700;font-size:15px;
+    border:1px solid var(--line); background:var(--panel2); color:var(--text)}
+  .nav button.next{background:var(--primary); color:var(--ink); border-color:transparent}
+  .nav button:disabled{opacity:.4; cursor:not-allowed}
+  .nav button:active{transform:translateY(1px)}
+
+  .switchrow{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:11px 13px; font-size:13px}
+  .toggle{appearance:none;cursor:pointer;width:46px;height:27px;border-radius:999px;background:var(--line);position:relative;border:none;flex:0 0 auto;transition:background .15s}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:left .15s}
+  .toggle[aria-checked="true"]{background:var(--primary)} .toggle[aria-checked="true"]::after{left:22px}
+
+  /* diagnostics */
+  .eyes{max-width:240px;margin:6px auto 0}
+  .phase{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px;box-shadow:var(--shadow)}
+  .phase .ptitle, .phaseface .ptitle{font-family:var(--display);font-size:14px;font-weight:700;margin-bottom:2px}
+  .phase .ppos, .phaseface .ppos{font-size:12px;color:var(--muted)}
+  #mechflip .face h4, #phaseflip .phaseface .ptitle{margin-top:26px}
+  .nyslabel{font-size:13.5px;color:var(--text);margin-top:8px;display:flex;gap:9px;align-items:center;justify-content:center;
+    background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px}
+  .nyslabel .arrow{color:var(--timer);font-weight:800;font-size:19px;line-height:1}
+  .note{font-size:12.5px;color:var(--muted);margin-top:9px}
+  .viewpoint{font-size:11px;color:var(--faint);text-align:center;margin-top:7px}
+  .eyesrow{display:flex; align-items:center; gap:10px}
+  .eyeswrap{flex:1; min-width:0}
+  .emk{font-weight:800; font-size:15px; color:var(--muted); flex:0 0 auto; width:16px; text-align:center}
+  .gravmark{display:flex; align-items:center; justify-content:center; gap:5px; margin-top:7px;
+    font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint)}
+  .gravmark svg{width:18px; height:18px; color:var(--muted)}
+  .features{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .features span{font-size:11.5px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+  .reco{margin-top:16px;background:linear-gradient(165deg, color-mix(in oklab, var(--primary) 14%, var(--panel)), var(--panel) 70%);
+    border:1px solid color-mix(in srgb, var(--primary) 55%, var(--line));border-radius:var(--r);padding:15px;box-shadow:var(--shadow)}
+  .reco h4{margin:0 0 6px;font-family:var(--display);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--primary);font-weight:700}
+  .obsrow{margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px}
+  .obslabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px}
+/* PASEK OBJAWOWY (ocena II V17/D5). UKŁAD mieszka tutaj, bo to nowa struktura, a nie przemalowanie
+   istniejącej — arkusz sceny klinicznej nadpisuje MATERIAŁ, nigdy układu.
+   KOLOR NIE JEST JEDYNYM NOŚNIKIEM: obok każdego paska stoi liczba, więc wartość czyta się bez
+   rozróżniania barw. Paski nie są kontrolkami — nie mają fokusu ani roli, bo niczego nie ustawiają. */
+  .symrow{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; margin-top:8px}
+  .symlab{font-size:12.5px; color:var(--muted); min-width:64px}
+  .symval{font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--muted); min-width:44px; text-align:right}
+  .symbar{height:8px; border-radius:999px; background:rgba(122,147,168,.22); overflow:hidden}
+  .symfill{height:100%; border-radius:999px; transition:width .18s linear}
+  .symfill--dizz{background:var(--horiz)}
+  .symfill--naus{background:var(--ant)}
+  /* Karta zawrotow resztkowych — UKLAD (material bierze rest-scene.css). Obrys przerywany, bo to
+     nie jest akcja ani wynik, tylko TLO KLINICZNE: ta sama konwencja co odmowa/brak wyniku. */
+  .furd{margin-top:12px; padding:12px 14px; border:1px dashed rgba(122,147,168,.42); border-radius:12px}
+  .furd .eyebrow{display:block; margin-bottom:8px}
+  .furd ul{margin:0; padding-left:18px; display:grid; gap:6px; font-size:13px; line-height:1.45}
+  .furd .note{margin-top:10px}
+  /* Przelacznik sesji: pastylka `.toggle` ma STALE 46x27 px i wlasny suwak, wiec napis musi stac
+     OBOK niej, nie w srodku. Rzad, zeby oba elementy trzymaly wspolna linie bazowa. */
+  .sesjaprzeł{display:flex; align-items:center; gap:10px}
+  .sesjaprzeł__s{font-size:13px; color:var(--muted)}
+  /* Chmura zlogu: rzad kropek o promieniu ∝ rozmiar czastki. KOLOR NIE JEST JEDYNYM NOSNIKIEM —
+     wypelnienie (wyszla) vs sam obrys (zostala) rozni ksztaltem, a `title` niesie liczby. */
+  .enscloud{display:flex; align-items:center; gap:9px; padding:10px 2px; flex-wrap:wrap}
+  .enskropka{border-radius:50%; border:1.5px solid var(--line-strong); background:none; flex:0 0 auto}
+  .enskropka--out{background:var(--post); border-color:var(--post)}
+  .enstog{margin-left:auto; appearance:none; cursor:pointer; border:1px solid var(--line-strong);
+          background:none; color:var(--muted); border-radius:999px; padding:3px 12px; font-size:12px}
+  .enstog[aria-pressed="true"]{border-color:var(--primary); color:var(--primary)}
+  .segobs{grid-template-columns:1fr 1fr}
+  .segobs .opt{display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-height:auto;padding:10px 12px;font-size:13.5px}
+  .segobs .opt small{font-weight:450;color:var(--muted);font-size:11px;line-height:1.25}
+  .redflag{margin-top:14px;background:linear-gradient(160deg,#3a1620,#2a1118);border:1px solid #d9576b;border-radius:var(--r);padding:13px 14px;font-size:12.8px;color:#ffd9df;line-height:1.5}
+  .redflag b{color:#ff8a9c}
+  .recobtns{display:grid;gap:8px;margin-top:12px}
+  .recobtns button{appearance:none;cursor:pointer;border-radius:12px;padding:14px;font-weight:700;font-size:14px;text-align:left;min-height:48px}
+  .recobtns .recoprimary{background:var(--primary);color:var(--ink);border:none;box-shadow:0 8px 20px -10px rgba(79,210,238,.6)}
+  .recobtns .recoalt{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+  .recobtns button:active{transform:scale(.99)}
+  .minihead{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;align-items:start}
+
+  .footnote{margin-top:20px; font-size:11px; color:var(--faint); text-align:center; line-height:1.5}
+  .hidden{display:none !important}
+  :focus-visible{outline:2px solid var(--primary); outline-offset:2px}
+  @media (max-width:380px){ .viz,.minihead{grid-template-columns:1fr} }
+  /* --- kompaktowe sterowanie + karta odwracana (Repozycja) --- */
+  .sidewrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto}
+  .sidewrap em{font-style:normal;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .sidepill{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel2)}
+  .sidepill button{appearance:none;cursor:pointer;border:none;background:transparent;color:var(--muted);font-weight:800;font-size:15px;width:44px;height:36px}
+  .sidepill button[aria-pressed="true"][data-s="L"]{background:var(--left);color:#06121f}
+  .sidepill button[aria-pressed="true"][data-s="P"]{background:var(--right);color:#2a0a18}
+  .sizerow{display:flex;align-items:center;gap:10px;margin:2px 0 10px}
+  .sizerow .lbl{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .sizepill{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel2)}
+  .sizepill button{appearance:none;cursor:pointer;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:12.5px;padding:6px 14px;height:34px}
+  .sizepill button[aria-pressed="true"]{background:var(--primary);color:var(--ink)}
+  .diagside{display:flex; align-items:center; gap:12px; margin:10px 0 4px}
+  .diagside .lbl{font-size:13px; color:var(--muted)}
+  .phaseface{padding:4px 2px 2px}
+  .tcard{background:color-mix(in srgb, var(--panel) 92%, transparent);
+    -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+    border:1px solid #30435500;border:1px solid var(--line);border-radius:var(--r);padding:11px 12px 12px;margin-bottom:12px;
+    position:sticky;bottom:calc(10px + env(safe-area-inset-bottom));z-index:35;
+    box-shadow:0 -8px 30px -12px rgba(0,0,0,.7), var(--shadow)}
+  .tcard .trow1{display:flex;align-items:center;gap:8px}
+  .tcard .go{background:var(--timer);color:var(--timer-ink);border:none;border-radius:11px;padding:11px 18px;font-weight:700;font-size:14px;cursor:pointer;min-height:44px;
+    box-shadow:0 6px 16px -8px rgba(255,197,61,.6)}
+  .tcard .go.run{background:var(--panel2);color:var(--text);border:1px solid var(--line);box-shadow:none}
+  .tcard .ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:11px;width:44px;height:44px;cursor:pointer;font-size:16px}
+  .tg{display:flex;gap:6px;margin-left:auto}
+  .ic{width:44px;height:44px;border-radius:11px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);display:grid;place-items:center;cursor:pointer}
+  .ic svg{width:19px;height:19px}
+  .ic[aria-checked="true"]{background:color-mix(in oklab, var(--primary) 16%, var(--panel2));border-color:var(--primary);color:var(--primary)}
+  .tval{font-size:19px;font-weight:700;color:var(--timer);min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+  .tprogwrap{height:5px;background:var(--line);border-radius:4px;overflow:hidden;margin:11px 0 0}
+  .tprog{height:100%;width:100%;background:linear-gradient(90deg,#FFD877,var(--timer));border-radius:4px}
+  .slider{margin-top:13px;padding:0 4px}
+  .track{position:relative;height:6px;border-radius:6px;background:var(--line);touch-action:none}
+  .fill{position:absolute;left:0;top:0;height:100%;border-radius:6px;background:var(--timer)}
+  .tk{position:absolute;top:50%;width:2px;height:12px;background:var(--faint);transform:translate(-50%,-50%);border-radius:2px;opacity:.7}
+  .knob{position:absolute;top:50%;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--timer);transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:grab}
+  .knob:active{cursor:grabbing}
+  .ticks{position:relative;height:18px;margin-top:9px;font-size:11px;color:var(--muted)}
+  .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap;cursor:pointer;padding:4px 6px}
+  .ticks span.r{transform:translateX(-100%)}
+  .nostimer-inline{flex:1;font-size:13px;color:var(--muted)}
+  .flipwrap{perspective:1200px;margin-bottom:10px}
+  .flip{position:relative;min-height:200px;transition:transform .5s cubic-bezier(.4,.15,.2,1);transform-style:preserve-3d;cursor:pointer;outline:none}
+  .flip.flipped{transform:rotateY(180deg)}
+  .flip:focus-visible{box-shadow:0 0 0 2px var(--primary);border-radius:var(--r)}
+  .flip .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;margin:0;overflow:hidden}
+  .flip .back{transform:rotateY(180deg)}
+  .fliphint{position:absolute;top:11px;right:12px;display:flex;align-items:center;gap:5px;font-size:10px;color:var(--faint);pointer-events:none}
+  .fliphint svg{width:13px;height:13px}
+  .stephead{display:flex; align-items:center; gap:10px; margin-bottom:7px}
+  .stephead .num{flex:1; text-align:center; margin:0}
+  .stepnav{width:40px; height:40px; border-radius:12px; border:1px solid var(--line); background:var(--panel2);
+    color:var(--text); display:grid; place-items:center; cursor:pointer; flex:0 0 auto}
+  .stepnav svg{width:18px; height:18px}
+  .stepnav:disabled{opacity:.35; cursor:default}
+  .stepnav.fin{background:var(--primary); color:var(--ink); border-color:transparent; box-shadow:0 6px 16px -8px rgba(79,210,238,.6)}
+  @media (prefers-reduced-motion:reduce){ .toggle::after,.opt,.cta,.tabs button{transition:none !important} }
+  @media (prefers-reduced-motion:reduce){ .flip{transition:none !important} }
+
+  /* --- HINTS / różnicowanie ośrodek↔obwód --- */
+  .tabs.three{grid-template-columns:1fr 1fr 1fr}
+  .tabs.three button{font-size:12.5px;padding:12px 3px}
+  .hctrl{display:flex;align-items:center;gap:10px;margin:11px 0 2px;flex-wrap:wrap}
+  .hctrl .lbl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);flex:0 0 auto;font-weight:700}
+  .pillseg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel2)}
+  .pillseg button{appearance:none;cursor:pointer;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:12.5px;padding:8px 13px;min-height:36px;transition:background .15s,color .15s}
+  .pillseg button[aria-pressed="true"]{background:var(--primary);color:var(--ink)}
+  .hint-eyes{background:radial-gradient(120% 120% at 50% 30%, #10202b, var(--panel));border:1px solid var(--line);border-radius:14px;padding:12px 10px 10px;transition:background .2s}
+  .hint-eyes.dark{background:radial-gradient(120% 120% at 50% 30%, #0a0f14, #05080b);border-color:#1a2630}
+  .frenzel-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;letter-spacing:.05em;color:var(--faint);margin-top:2px}
+  .hverdict{margin-top:14px;border-radius:var(--r);padding:14px 15px;border:1px solid var(--line);box-shadow:var(--shadow);background:var(--panel)}
+  .hverdict.peripheral{background:linear-gradient(160deg,rgba(63,209,158,.12),var(--panel) 62%);border-color:#2f7f68}
+  .hverdict.central{background:linear-gradient(160deg,#3a1620,#2a1118);border-color:#d9576b}
+  .hverdict h4{margin:0 0 5px;font-family:var(--display);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:var(--faint)}
+  .hverdict .vv{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:2px}
+  .hverdict.peripheral .vv{color:#7fe3c4} .hverdict.central .vv{color:#ff9bab}
+  .hrow{display:flex;gap:9px;align-items:flex-start;margin-top:8px;font-size:13px;line-height:1.42}
+  .hrow .tag{font-size:11px;font-weight:800;padding:2px 8px;border-radius:7px;flex:0 0 auto;margin-top:1px;min-width:22px;text-align:center;background:var(--panel2);color:var(--faint);border:1px solid var(--line)}
+  .hrow .tag.ok{background:rgba(63,209,158,.16);color:#7fe3c4;border-color:#2f7f68}
+  .hrow .tag.bad{background:rgba(217,87,107,.16);color:#ff9bab;border-color:#d9576b}
+  .comptag{float:right;font-weight:700;font-size:12px;color:var(--primary);text-transform:none;letter-spacing:0}
+  .comprange{-webkit-appearance:none;appearance:none;width:100%;height:7px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);margin:10px 0 5px;cursor:pointer}
+  .comprange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:21px;height:21px;border-radius:50%;background:var(--primary);border:2px solid var(--ink);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .comprange::-moz-range-thumb{width:19px;height:19px;border-radius:50%;background:var(--primary);border:2px solid var(--ink);cursor:pointer}
+  .comprow{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin:3px 0 5px}
+  .comprow b{color:var(--text);font-weight:700}
+  /* --- Matematyczny pacjent (własne parametry) --- */
+  .seg.four{grid-template-columns:1fr 1fr}
+  .custompanel .presets{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}
+  .preset{appearance:none;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);
+    font-weight:700;font-size:12px;padding:7px 11px;border-radius:999px;transition:background .15s,border-color .15s}
+  .preset:hover{border-color:var(--primary)}
+  .preset[aria-pressed="true"]{border-color:var(--primary);color:var(--primary);background:rgba(79,210,238,.12)}
+  .pgroup{margin:10px 0 4px;padding-top:8px;border-top:1px solid var(--line)}
+  .pgtitle{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:4px}
+  .pghelp{display:block;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted);font-weight:500;margin-top:2px}
+  .prow{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .prow .plabel{flex:0 0 40%;font-size:12.5px;color:var(--text)}
+  .prow .prange{flex:1 1 auto;margin:0}
+  .prow .pval{flex:0 0 60px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:var(--primary);font-weight:700}
+  .pillseg.small button{padding:6px 10px;min-height:30px;font-size:11.5px}
+  .advbox{margin-top:8px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:var(--panel2)}
+  .advbox summary{cursor:pointer;padding:11px 2px;font-size:12.5px;font-weight:700;color:var(--text);list-style:none}
+  .advbox summary::-webkit-details-marker{display:none}
+  .advbox summary::before{content:"▸ ";color:var(--primary)}
+  .advbox[open] summary::before{content:"▾ "}
+  .advbox[open]{padding-bottom:10px}
+  .readout{margin-top:12px;border-radius:var(--r);padding:14px 15px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+  .readout h4{margin:0 0 8px;font-family:var(--display);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:var(--faint)}
+  .readout .rfind{margin:0 0 10px;padding-left:18px;font-size:13px;line-height:1.5}
+  .readout .rfind li{margin:3px 0}
+  .rloc{font-size:14px;margin:4px 0 8px}
+  .rloc .eyebrow{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:4px}
+  .rsigns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .rchip{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+  .rchip.per{background:rgba(63,209,158,.14);color:#7fe3c4;border-color:#2f7f68}
+  .rchip.cen{background:rgba(217,87,107,.14);color:#ff9bab;border-color:#d9576b}
+  .rsub{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+  .rsub ul{margin:4px 0 0;padding-left:18px}.rsub li{margin:3px 0}
+
+  /* Etap 3: przełącznik 2D/3D na karcie „Ułożenie" + kontener canvasa Three.js */
+  .mini3d{margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.4px;padding:2px 9px;border-radius:8px;
+    border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;vertical-align:2px}
+  .mini3d[aria-pressed="true"]{border-color:var(--primary);color:var(--primary);background:rgba(79,210,238,.12)}
+  .threewrap{width:100%;aspect-ratio:5/4;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:11px}
+  .threewrap canvas{width:100%!important;height:auto!important;display:block;border-radius:8px}
+
+
+/* USUNIETO 2026-08-12 — 13 regul w czterech rodzinach, na MASZYNOWY DOWOD MARTWOTY (nie grep):
+     .badge / .badge.L / .badge.P      — plakietka strony; zastapiona przez .emk i .sidepill
+     .steps-dots (4 reguly)            — kropki postepu manewru; zastapione osia .osetapow (Blok 10)
+     .timerwrap                        — stary uklad timera; zastapiony przez .tcard/.trow1
+     .tctrl (5 regul)                  — stare sterowanie timerem; zastapione przez .tg/.ic/.go w .tcard
+
+   DOWOD, dwie niezalezne metody, obie zerowe:
+     1. skan statyczny — zero literalow w src/ i index.html, zero nazw SKLADANYCH w szablonach
+        (`foo--${x}`), zero manipulacji przez classList, zero wystapien w 208 przypietych
+        kluczach zlotego wzorca (warstwy dom i shell);
+     2. skan RUNTIME — zero wystapien w zywym DOM na 32 stanach ekranow (start, setup, wywiad,
+        cztery proby, oczoplas, interpretacja, cztery manewry po trzy etapy, kontrola, opis,
+        nauka, lekcja, laboratorium, trzy ekrany HINTS, symulator, pacjent wlasny).
+
+   Bramka czulosci skanera: .hint-eyes.dark (ostrzezenie z naglowka tego pliku) zostala
+   rozpoznana jako ZYWA — bez tego wynikom nie wolno ufac.
+
+   Reguly .tctrl button.go nadawaly przyciskowi timera zolc --timer. Zywa jest dzis .tcard .go
+   (clinic-scene.css), gdzie przycisk jest cyanowy — zolc wrocila do jednego znaczenia: czas. */
+/* ═══ SCALENIE main→futureUI (Etap 3): style, których przebudowa UI nie znała ═══
+   Reguły z inline'owego <style> gałęzi main dla kart dodanych w ocenie II (V17 pasek objawów,
+   V20 nota liberacyjna, µm przy rozmiarze złogu). Zmierzone regułą-po-regule: z 249 reguł main
+   osiemnastu nie było w src/styles, ale czternaście z nich `legacy.css` jawnie wypisuje jako
+   ZASTĄPIONE (.badge, .steps-dots, .timerwrap, .tctrl) — tu wchodzi wyłącznie reszta, czyli
+   klasy naprawdę EMITOWANE przez scalony renderer. Modyfikatory zostają w konwencji main
+   (`.symfill.dizz`), bo taki markup emituje `symRow` w karcie timera. */
+.libnote{display:block;width:max-content;margin:7px auto 0;font-size:11px;font-weight:800;letter-spacing:.03em; padding:3px 10px;border-radius:999px;background:rgba(63,209,158,.16);color:#7fe3c4;border:1px solid #2f7f68}
+.sizerow .um{font-size:11px;letter-spacing:0;text-transform:none;color:var(--muted);font-weight:700;margin-left:6px}
+.symlbl{font-size:11.5px;color:var(--muted);flex:0 0 auto}
+.symfill.dizz{background:var(--primary)}
+.symfill.dizz.over{background:var(--ant)}
+.symfill.naus{background:#b0813f}

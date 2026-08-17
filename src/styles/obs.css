@@ -1,0 +1,109 @@
+/* OTOREPO — krok „Oczopląs": opis ZAOBSERWOWANEGO wyniku (Blok 8).
+ *
+ * Zasada, która steruje całym wyglądem: to jest ekran RELACJI CZŁOWIEKA, a nie panel wyniku
+ * modelu. Stąd brak jakiejkolwiek liczby procentowej, brak paska „pewności" i brak koloru,
+ * który sugerowałby „dobrze/źle". Kompletność opisu jest podana SŁOWEM, bo liczba czytałaby się
+ * jak prawdopodobieństwo rozpoznania.
+ */
+
+.obsintro{ margin-bottom:var(--sp-3); }
+.obsintro .instr{ font-size:14px; line-height:1.5; color:var(--text); }
+
+/* ---- grupa pytań ---- */
+.ogrupa{ margin-bottom:var(--sp-2); }
+.ogrupa summary{
+  cursor:pointer; list-style:none; display:flex; align-items:center; gap:var(--sp-2);
+  min-height:var(--tap); font-family:var(--display); font-weight:700; font-size:15px;
+}
+.ogrupa summary::-webkit-details-marker{ display:none; }
+.ogrupa__t{ flex:1 1 auto; min-width:0; }
+.ogrupa__n{ flex:0 0 auto; font-size:12.5px; color:var(--muted); font-weight:600; }
+.ogrupa[open] summary{ border-bottom:1px solid var(--line); padding-bottom:var(--sp-2); margin-bottom:var(--sp-2); }
+
+/* ---- pojedyncze pytanie ---- */
+.oq{ margin-bottom:var(--sp-3); }
+.oq__q{ font-size:14px; font-weight:700; line-height:1.3; margin-bottom:4px; }
+.oq--gotowe .oq__q::after{ content:" ✓"; color:var(--ok); }
+/* Pole, którego model NIE przewiduje. Mówimy to WPROST przy pytaniu, a nie w stopce:
+   inaczej użytkownik miałby prawo sądzić, że aplikacja umie to porównać z predykcją. */
+.oq__poza{ font-size:12px; color:var(--faint); line-height:1.35; margin-bottom:6px;
+  border-left:2px solid var(--line-strong); padding-left:8px; }
+.oq__opts{ display:grid; gap:var(--sp-1); }
+
+/* Przycisk odpowiedzi. Kryterium odbioru nr 3: KAŻDA opcja kierunku niesie pełny opis słowny
+   („ku PRAWEMU uchu pacjenta", nie „w prawo"), więc przycisk musi mieć miejsce na zdanie. */
+.oqopt{
+  appearance:none; cursor:pointer; width:100%; text-align:left;
+  display:flex; align-items:flex-start; gap:var(--sp-3);
+  min-height:var(--tap); padding:var(--sp-2) var(--sp-3);
+  background:var(--panel2); color:var(--text);
+  border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font:inherit; font-size:14px; line-height:1.4;
+}
+.oqopt:hover{ border-color:var(--primary); }
+.oqopt__box{ flex:0 0 auto; width:18px; height:18px; margin-top:2px; border-radius:5px;
+  border:1.5px solid var(--line-strong); display:grid; place-items:center; }
+.oqopt[aria-pressed="true"]{ border-color:var(--primary); background:color-mix(in oklab, var(--primary) 12%, var(--panel2)); }
+.oqopt[aria-pressed="true"] .oqopt__box{ border-color:var(--primary); background:var(--primary); }
+/* Znak wyboru NIE samym kolorem — musi przetrwać skalę szarości i tryb wysokiego kontrastu. */
+.oqopt[aria-pressed="true"] .oqopt__box::after{ content:"✓"; color:var(--ink); font-size:12px; font-weight:900; line-height:1; }
+.oqopt__txt{ flex:1 1 auto; min-width:0; }
+
+/* ---- znacznik wiarygodności ----
+   Trzy stany, każdy z własnym GLIFEM: „niewiarygodne" wycisza wniosek, ale nie gasi ostrzeżeń,
+   więc użytkownik musi widzieć różnicę także bez koloru. */
+.oznak{
+  appearance:none; cursor:pointer; margin-top:6px;
+  display:inline-flex; align-items:center; gap:6px;
+  min-height:36px; padding:4px var(--sp-3);
+  background:transparent; border:1px dashed var(--line-strong); border-radius:var(--r-md);
+  font:inherit; font-size:12px; color:var(--muted);
+}
+.oznak--niepewne{ border-style:solid; border-color:var(--warn); color:var(--warn); }
+.oznak--niewiarygodne{ border-style:solid; border-color:var(--crit); color:var(--crit); }
+
+/* ---- podsumowanie ---- */
+.opodsum{ position:sticky; top:var(--sp-2); }
+.opodsum h4{ margin-bottom:var(--sp-2); }
+.opas{ display:flex; align-items:baseline; gap:var(--sp-2); padding:5px 0; border-bottom:1px solid var(--line); }
+.opas__n{ flex:1 1 auto; font-size:13px; color:var(--muted); }
+.opas__v{ flex:0 0 auto; font-size:13px; font-weight:700; }
+.opas__v--pelny{ color:var(--ok); }
+.opas__v--czesciowy{ color:var(--warn); }
+.opas__v--szczatkowy, .opas__v--nieDotyczy{ color:var(--faint); }
+.oflagi{ margin-top:var(--sp-3); padding:var(--sp-2) var(--sp-3); border:1px solid var(--crit); border-left-width:4px;
+  border-radius:var(--r-md); background:var(--crit-bg, color-mix(in oklab, var(--crit) 10%, transparent)); }
+.oflagi b{ color:var(--crit); font-size:13px; }
+.oflagi ul{ margin:6px 0 0; padding-left:18px; display:grid; gap:4px; }
+.oflagi li{ font-size:12.5px; line-height:1.4; color:var(--text); }
+
+.oakcje{ display:grid; gap:var(--sp-2); margin-top:var(--sp-3); }
+.oakcje .recoprimary{
+  appearance:none; cursor:pointer; width:100%;
+  min-height:var(--tap); padding:var(--sp-3) var(--sp-4);
+  background:var(--primary); color:var(--ink); border:0; border-radius:var(--r-md);
+  font:inherit; font-size:15px; font-weight:800; line-height:1.25; text-align:center;
+}
+/* aria-disabled, NIGDY disabled — kontrolka niedostępna ma zostać fokusowalna, żeby użytkownik
+   czytnika w ogóle dowiedział się, że istnieje (ta sama konwencja co w pasku przebiegu). */
+.oakcje .recoprimary[aria-disabled="true"]{ opacity:.5; cursor:default; }
+.oakcje .recoalt{
+  appearance:none; cursor:pointer; width:100%; min-height:var(--tap); padding:var(--sp-2) var(--sp-3);
+  background:transparent; color:var(--muted); border:1px solid var(--line-strong); border-radius:var(--r-md);
+  font:inherit; font-size:13px;
+}
+
+/* ---- wejście z ekranu próby ---- */
+.obsgo{
+  appearance:none; cursor:pointer; width:100%; text-align:left;
+  display:flex; align-items:center; gap:var(--sp-3);
+  min-height:var(--tap); padding:var(--sp-2) var(--sp-3);
+  background:var(--panel2); color:var(--text);
+  border:1px solid var(--line-strong); border-radius:var(--r-md); font:inherit;
+}
+.obsgo:hover{ border-color:var(--primary); }
+.obsgo__t{ font-weight:700; font-size:14px; flex:0 0 auto; }
+.obsgo__s{ flex:1 1 auto; min-width:0; font-size:12.5px; color:var(--muted); line-height:1.35; }
+.obsgo__go{ flex:0 0 auto; color:var(--primary); font-size:18px; }
+.obspodstawa{ margin-top:6px; font-size:12.5px; color:var(--muted); }
+.obspodstawa b{ color:var(--text); }

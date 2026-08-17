@@ -1,0 +1,93 @@
+/* OTOREPO — korekty WARTOŚCI odziedziczonych (Blok 2: system wizualny i dostępność).
+ *
+ * DLACZEGO OSOBNY PLIK, A NIE tokens.css: tokens.css jest importowany PRZED legacy.css, więc
+ * może wyłącznie DOKŁADAĆ nowe tokeny — nadpisanie wartości zastanej zostałoby zjedzone przez
+ * późniejszą deklarację w legacy.css (ta sama specyficzność, wygrywa późniejsza). Ten plik idzie
+ * PO legacy i zawiera wyłącznie zmiany wartości, które są PRODUKTEM Bloku 2 i mają własne
+ * kryteria odbioru. Reguł w legacy.css nie ruszamy — mają zostać nietknięte do czasu maszynowego
+ * dowodu martwoty (grep myli: .hint-eyes.dark wygląda na nieużywaną, a jest wizualizacją
+ * zniesienia fiksacji — filarem modułu HINTS).
+ */
+:root{
+  /* KONTRAST — policzone, nie oszacowane (WCAG 2.1, kanał względnej luminancji).
+     --faint #5F7488 dawał 3,59:1 na --panel i 3,21:1 na --panel2, przy 37 użyciach (19 w CSS,
+     18 w stylach inline generowanych przez svg-screens.js) i WYŁĄCZNIE w rozmiarach 9,5-12 px,
+     czyli tam, gdzie obowiązuje próg 4,5:1 dla zwykłego tekstu. Nowa wartość: 5,69:1 / 5,09:1.
+     Zmiana samego tokena naprawia też style inline, bo one też odwołują się przez var(). */
+  --faint:#8296A9;
+
+  /* Obrys KONTROLEK musi spełniać 3:1 (WCAG 1.4.11, elementy nietekstowe). --line (#28394A) ma
+     1,47:1 — zostaje jako obrys DEKORACYJNY (karty, separatory), ale granica pola, w które można
+     kliknąć, dostaje własny token. */
+  --line-strong:#5A7288;
+
+  /* SEMANTYKA STATUSU. Dotąd: zieleń istniała wyłącznie jako literały (#7fe3c4, #2f7f68,
+     rgba(63,209,158,…)), a rolę „ostrzeżenia" pełnił --timer — czyli TEN SAM żółty znaczył
+     „trwa odliczanie pozycji" i „uwaga". W narzędziu klinicznym to realne ryzyko interpretacyjne,
+     więc ostrzeżenie dostaje własną barwę, a --timer wraca do jednego znaczenia: czas. */
+  --ok:#5BDCAE;   --ok-bg:rgba(91,220,174,.12);   --ok-line:#2F7F68;
+  --warn:#FFB866; --warn-bg:rgba(255,184,102,.12); --warn-line:#8A6023;
+  --crit:#FF8FA0; --crit-bg:rgba(255,143,160,.12); --crit-line:#8A3A46;
+  --danger:var(--crit);   /* był zadeklarowany i miał ZERO użyć — teraz to alias semantyczny */
+
+  /* BARWA PRAWEGO UCHA vs BARWA ALARMU. `--right` (#FF7AB3) i `--crit` (#FF8FA0) to dwa ciepłe
+     róże o ZUPEŁNIE różnym znaczeniu: „prawe ucho pacjenta" i „wymaga pilnej oceny neurologicznej".
+     Zmierzone CIEDE2000: ΔE00 = 9,4 — poniżej progu, przy którym dwie barwy da się rozróżnić
+     jednym spojrzeniem (~10). Dla porównania ΔE00(--crit, --left) = 40,8, ΔE00(--crit, --ant) = 29,2,
+     czyli reszta palety jest rozsunięta 3-4 razy szerzej. Ryzyko jest realne, bo obie występują
+     jako WYPEŁNIENIE i sąsiadują: pigułka strony stoi w nagłówku ekranu, na którym HINTS potrafi
+     wyświetlić płytę alarmową.
+
+     Nowa wartość przesuwa róż w stronę magenty, ZOSTAWIAJĄC parę ciepły/zimny z `--left`:
+       ΔE00 do --crit : 9,4 -> 17,1  (1,8x dalej)
+       ΔE00 do --ant  : 24,3 -> 19,0 (nadal dwukrotnie powyżej progu)
+       kontrast na --panel / --panel2 : 7,18/6,42 -> 7,50/6,71 (LEPSZY niż był i niż --left)
+     Warianty głębsze (#E8478F, #E24FA8) dawały większy rozstaw, ale schodziły do 4,2-4,4:1 na
+     --panel2, czyli pod próg 4,5:1 dla tekstu — odrzucone. Atrament pigułki (#2a0a18) ZOSTAJE:
+     na nowym wypełnieniu daje 7,86:1, więc zmiana niczego by nie kupiła.
+     JEDYNE użycia `--right` to trzy reguły w legacy.css — w JS nie ma ani jednego.
+     Z tych trzech ŻYJĄ DWIE: `.opt[data-side="P"]` (ekran doboru) i `.sidepill button[data-s="P"]`
+     (Diagnostyka, Manewr) — obie sprawdzone w przeglądarce. Trzecia, `.badge.P`, dobiera obramowanie
+     literałem `#5a2c44` pod STARY róż, ale sam `.badge` NIE JEST EMITOWANY: zero wystąpień w src/
+     i zero w 208 przypiętych kluczach złotego wzorca. Nie dokładamy więc korekty odcienia dla
+     elementu-widma; to materiał na sprzątanie legacy.css, dla którego jest teraz maszynowy dowód
+     martwoty wymagany przez nagłówek tego pliku. */
+  --right:#FF7ADD;
+
+  /* KROJ NAGŁÓWKÓW. --display deklarował "Sora", której nigdy nie ładujemy — wklejone base64 to
+     wyłącznie IBM Plex Sans (4 x @font-face). Nagłówki spadały więc po cichu na font systemowy,
+     przez co krój nagłówka i treści rozjeżdżał się przypadkowo, inaczej na każdym systemie.
+     Dociąganie Sory inline rozdęłoby precache PWA; hierarchię budujemy wagą i światłem. */
+  --display:"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+/* ============ TYPOGRAFIA ============
+   Dokument: treść min. 16 px na telefonie i 15-16 px na komputerze; etykiety nie mniej niż 13-14 px.
+   Stan zastany: .opt 14 px, .opt small 11,5 px, .hint 12 px, .eyebrow 10,5 px — poniżej progu w
+   aplikacji używanej w jasnym gabinecie, często jedną ręką i pod presją czasu. Podnosimy tam, gdzie
+   tekst NIESIE TREŚĆ; mikroetykiety wersalikowe zostają najmniejsze, ale wchodzą powyżej 11 px.
+   Wartości są mobile-first: na wąskim ekranie największe, bo tam czyta się najtrudniej. */
+.opt{ font-size:16px; }
+.opt small{ font-size:13px; }
+.group > .label .hint{ font-size:13px; }
+.eyebrow{ font-size:11.5px; }
+.footnote{ font-size:12px; }
+.note, .viewpoint{ font-size:13px; }
+
+/* Karty obserwacji oczopląsu (.segobs) mają własne, mniejsze rozmiary o wyższej specyficzności:
+   13,5 px treści i 11 px opisu. To są przyciski, którymi klinicysta OPISUJE zaobserwowany
+   oczopląs — tekst niosący treść, nie ozdobnik. */
+.segobs .opt{ font-size:15px; }
+.segobs .opt small{ font-size:12.5px; }
+
+@media (min-width:768px){
+  /* Na większym ekranie dokument dopuszcza wyższą gęstość — 15 px pozostaje w widełkach. */
+  .opt{ font-size:15px; }
+  .opt small{ font-size:12.5px; }
+}
+
+/* ZNANE, ŚWIADOMIE ODŁOŻONE: 6 miejsc w svg-screens.js podaje font-size poniżej 13 px w stylu
+   INLINE (2 x 11 px, 3 x 12 px, 1 x 12,5 px) — styl inline bije każdy selektor bez !important.
+   Naprawa należy do jedynego rebaseline warstwy dom (E2B/R1), razem z resztą markupowej części
+   Bloku 2. Nie przebijamy ich !important: reguła zaczepiona o literał w JS przestaje działać po
+   cichu, gdy ktoś ten literał zmieni. */

@@ -1,0 +1,194 @@
+/* OTOREPO — dostępność (Blok 2). Czysty CSS na istniejącym markupie: żadna reguła tutaj nie
+ * wymaga zmiany HTML generowanego przez render(), więc etap przechodzi BEZ rebaseline złotego
+ * wzorca. Rzeczy, które markupu wymagają (suwak czasu utrzymania pozycji nieosiągalny z
+ * klawiatury, klikalność całego wiersza), idą razem z jedynym planowanym rebaseline.
+ */
+
+/* ============ 1. POLA DOTYKOWE ============
+   Dokument: minimum 48 px wysokości. Na wskaźniku precyzyjnym (mysz, rysik) dokument dopuszcza
+   większą gęstość — 40 px, nadal powyżej progu WCAG 2.2 AA (24 px) i powyżej dotychczasowych
+   wartości. Zmiana idzie przez token, więc jest jedno miejsce do korekty. */
+@media (pointer:fine){ :root{ --tap:40px; } }
+
+.tabs button,
+.tcard .go,
+.pillseg button,
+.advbox summary,
+/* Rozwijane sekcje tury 3 — `.ndet` to „Dlaczego / Pułapka / Co dalej" w informacji zwrotnej
+   Nauki, `.lgrupa` to grupy parametrów Laboratorium. Oba są wyzwalaczami rozwinięcia, dokładnie
+   jak `.advbox summary` wyżej, więc podlegają tej samej regule. ZMIERZONE po wdrożeniu
+   rest-scene.css: trzy `<summary>` w `.ndet` stały na 32 px. Wpis należy TUTAJ, a nie
+   w rest-scene.css: pole dotykowe jest niezmiennikiem aplikacji, a ten arkusz idzie ostatni
+   i wygrywa z arkuszami ekranów.
+
+   CZEGO TU CELOWO NIE MA: `.lparam__n` (30 sztuk), `.lstan` i `.nwsk__b` stoją na 36 px, bo tyle
+   dała paczka projektowa. Zmierzone przed wdrożeniem: miały 22 px, więc tura je PODNIOSŁA, a 36 px
+   jest powyżej progu WCAG 2.2 AA (24 px). Nie podciągamy ich do --tap, bo `.lparam__n` siedzi
+   w wierszu wyrównanym do LINII BAZOWEJ razem z wartością parametru — wymuszenie 40 px rozbiłoby
+   to wyrównanie, a rozwiązanie pseudo-elementem (jak przy przełączniku 2D/3D niżej) kolidowałoby
+   ze znacznikiem `.lparam__i`. To jest świadomie odłożone, nie przeoczone. */
+.ndet summary,
+.lgrupa > summary,
+.preset,
+.langbar button,
+.sizepill button{ min-height:var(--tap); }
+
+.iconbtn,
+.tcard .ghost,
+.ic,
+.stepnav,
+.adjust button{ width:var(--tap); height:var(--tap); }
+
+/* Wybór STRONY PACJENTA — najwyższy koszt pomyłki w całej aplikacji (mylenie L/P to błąd
+   kliniczny, nie estetyczny). Pole celowo większe niż minimum. */
+.sidepill button{ width:calc(var(--tap) + 8px); height:var(--tap); }
+
+/* Przełącznik 2D/3D to mała plakietka w nagłówku karty — pełne 48 px rozbiłoby wiersz nagłówka,
+   więc powiększamy strefę dotyku pseudo-elementem, nie samym pudełkiem. Pudełko ma ~18 px,
+   więc po 15 px z góry i z dołu wychodzi dokładnie 48 px (zmierzone: przy -13px było 44). */
+.mini3d{ position:relative; }
+.mini3d::after{ content:""; position:absolute; inset:-15px -8px; }
+
+/* Karty obserwacji na ekranie testu (.segobs) nadpisują min-height:56px z .opt wartością `auto`
+   i lądowały na 36 px — a to są przyciski wyboru cechy oczopląsu. */
+.segobs .opt{ min-height:var(--tap); }
+
+/* .pillseg.small ma WYŻSZĄ specyficzność (0,2,1) niż .pillseg button (0,1,1), więc kolejność
+   importów by nie wystarczyła — trzeba dorównać selektorem. 6 przycisków na ekranie „Własny". */
+.pillseg.small button{ min-height:var(--tap); }
+
+/* Przycisk „Powtórz prowokację" miał style="min-height:auto" WPISANY W MARKUP i utykał na 36 px.
+   W E2B deklaracja wyjechała z markupu do tej klasy — dzięki temu pole dotykowe idzie przez token
+   i nie da się go już przypadkiem zablokować stylem inline. */
+.opt.opt--inline{
+  min-height:var(--tap);
+  padding:9px 12px;
+  flex:0 0 auto;
+  text-align:center;
+}
+
+/* Karta faz testu miała style="min-height:470px" wpisane w markup — liczba dobrana pod jedną
+   szerokość, więc na telefonie zostawiała pustkę, a w szerokiej kolumnie przycinała treść.
+   Wysokość i tak wyrównuje sizeFlip() po zmierzeniu obu warstw; tu zostaje tylko podłoga. */
+#phaseflip{ min-height:200px; }
+
+/* SUWAKI PARAMETRÓW (input[type=range]) — realna, najgorsza luka: sam element ma 7 px wysokości,
+   więc strefa chwytu też miała 7 px. Na ekranie „matematycznego pacjenta" jest ich 32.
+   Podnosimy WYSOKOŚĆ ELEMENTU do pola dotykowego, a wygląd toru przenosimy na pseudo-element
+   ścieżki — dzięki temu suwak wygląda identycznie, a da się go chwycić kciukiem. */
+/* Ta sama luka i to samo lekarstwo dla suwaków LABORATORIUM. Zmierzone: lab.css daje `.lsuwak`
+   podłogę `min-height:32px`, która bije `height` z arkusza ekranu (min-height wygrywa z height,
+   gdy jest większa) — więc suwak stał na 32 px, poniżej pola dotykowego, mimo że arkusz sceny
+   deklarował co innego. Wysokość należy tutaj, obok `.comprange`, bo to jeden niezmiennik.
+   OSOBNA reguła, nie dopisanie do `.comprange`: tamten blok zeruje `margin-block`, a `.lsuwak`
+   ma odstęp od nazwy parametru i zlanie go z etykietą byłoby naprawą jednej rzeczy kosztem drugiej. */
+.lsuwak{ height:var(--tap); }
+
+.comprange{
+  height:var(--tap);
+  background:transparent;
+  border:0;
+  border-radius:0;
+  margin-block:0;
+}
+.comprange::-webkit-slider-runnable-track{
+  height:7px; border-radius:var(--r-pill);
+  background:var(--panel2); border:1px solid var(--line-strong);
+}
+/* Wyśrodkowanie uchwytu na torze: (7 + 2*1 obramowania - 21 - 2*2 obramowania) / 2 = -8 px.
+   W WebKit uchwyt pozycjonuje się względem ścieżki, nie elementu. */
+.comprange::-webkit-slider-thumb{ margin-top:-8px; }
+.comprange::-moz-range-track{
+  height:7px; border-radius:var(--r-pill);
+  background:var(--panel2); border:1px solid var(--line-strong);
+}
+
+/* Suwak czasu utrzymania pozycji: uchwyt i znaczniki miały 24 px i ~18 px wysokości. Powiększamy
+   strefę chwytu, nie grafikę — wygląd suwaka zostaje. */
+.knob{ width:28px; height:28px; }
+.knob::after{ content:""; position:absolute; inset:-12px; border-radius:50%; }
+.ticks{ height:44px; }
+.ticks span{ padding:12px 8px; }
+
+/* Przełączniki dwustanowe: samo pudełko 46x27 zostaje (jest czytelnym wskaźnikiem), ale klikalny
+   jest cały wiersz-rodzic, więc powiększamy strefę dotyku przełącznika do minimum. */
+.toggle{ position:relative; }
+.toggle::before{ content:""; position:absolute; inset:-11px -2px; }
+
+/* ============ 2. FOKUS ============
+   Globalna reguła :focus-visible{outline:2px solid var(--primary); outline-offset:2px} z legacy
+   działa wszędzie POZA kontenerami z overflow:hidden — a takie są wszystkie pigułki
+   (.sidepill/.pillseg/.sizepill mają overflow:hidden dla zaokrąglenia). Tam pierścień z
+   offsetem 2px jest PRZYCINANY i fokus staje się niewidoczny. Wewnątrz rysujemy go do środka. */
+:is(.sidepill, .pillseg, .sizepill) button:focus-visible{
+  outline:none;
+  box-shadow:inset 0 0 0 3px var(--primary), inset 0 0 0 5px var(--ink);
+}
+/* Element sfokusowany klawiaturą nie może wjechać pod przyklejony nagłówek ekranu ani pod
+   przyklejony pasek akcji — obie warstwy są sticky wewnątrz tego samego scrollportu. */
+#app :focus-visible{
+  scroll-margin-top:calc(var(--topbar-h) + var(--sp-7));
+  scroll-margin-bottom:calc(var(--nav-h) + var(--sp-7));
+}
+/* Karta odwracana jest interaktywna (cursor:pointer, tabindex) i miała outline:none. */
+.flip:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+
+/* ============ 3. STAN NIGDY SAMYM KOLOREM ============
+   Selektory ZAWĘŻONE do konkretnych komponentów. Globalne [aria-pressed="true"]::after trafiłoby
+   też w pigułki o stałej szerokości (.sidepill/.sizepill) i rozepchnęłoby je albo przycięło. */
+.opt{ position:relative; }
+.opt[aria-pressed="true"]::after{
+  content:"✓";
+  position:absolute; top:6px; right:8px;
+  font-size:12px; font-weight:800; line-height:1; color:var(--primary);
+}
+/* Kanał ma już kropkę koloru (.canaldot) — w skali szarości trzy kanały byłyby nieodróżnialne,
+   więc kropka dostaje dodatkowo obrys o różnej grubości niesionej przez sam kolor tła karty.
+   (Pełne rozróżnienie kształtem przychodzi z przebudową wizualizacji — tu pilnujemy STANU.) */
+.opt[aria-pressed="true"] .canaldot{ box-shadow:0 0 0 2px var(--text), 0 0 8px currentColor; }
+
+/* Postęp kroków: „zrobiony" i „bieżący" różniły się WYŁĄCZNIE barwą (primary vs timer). */
+.steps-dots i.cur{ height:8px; }
+.steps-dots i.done{ height:5px; }
+
+/* Werdykty i znaczniki obwód/ośrodek: zieleń vs czerwień to jedyna różnica. Dokładamy glif. */
+.hrow .tag.ok::before{ content:"✓ "; }
+.hrow .tag.bad::before{ content:"! "; }
+.rchip.per::before{ content:"✓ "; }
+.rchip.cen::before{ content:"⚠ "; }
+
+/* ============ 4. OGRANICZENIE RUCHU ============
+   Reguła uniwersalna (preferencja systemowa) + bliźniacza sterowana atrybutem, żeby własny
+   przełącznik aplikacji działał niezależnie od ustawień systemu.
+
+   ZAKRES CELOWO OGRANICZONY DO OZDOBNIKÓW: wyłączamy przejścia CSS i animacje CSS (obrót karty,
+   suwaki przełączników, podświetlenia). NIE zatrzymujemy pętli rAF rysujących OCZOPLĄS i wędrówkę
+   otolitu — to nie dekoracja, tylko TREŚĆ KLINICZNA. Zatrzymanie ich w losowej klatce pokazałoby
+   oko w spoczynku pod podpisem opisującym kierunek i siłę oczopląsu, czyli obraz sprzeczny z
+   opisem. Statyczna sekwencja pozycji jako pełnoprawna alternatywa dla animacji jest zadaniem
+   Bloku 7 (wymaga zmiany markupu i osobnej decyzji merytorycznej). */
+@media (prefers-reduced-motion:reduce){
+  *, *::before, *::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after{
+  animation-duration:.01ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:.01ms !important;
+  scroll-behavior:auto !important;
+}
+
+/* ============ 5. OBRYSY KONTROLEK ============
+   Granica pola, w które można kliknąć, musi mieć 3:1 (WCAG 1.4.11). --line ma 1,47:1 i zostaje
+   dla ramek dekoracyjnych (karty, separatory); kontrolki dostają --line-strong (3,10-3,47:1). */
+.opt, .iconbtn, .stepnav, .tcard .ghost, .ic,
+.sidepill, .pillseg, .sizepill, .preset, .adjust button,
+.tctrl button, .nav button, .toggle{ border-color:var(--line-strong); }
+.toggle{ background:var(--line-strong); }
+.toggle[aria-checked="true"]{ background:var(--primary); }

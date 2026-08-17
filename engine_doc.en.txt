@@ -4,7 +4,11 @@
  Files: src/engine/vestibular.js (Vestibular) · src/engine/neuro-vor.js (NeuroVOR)
         (monolith otorepo.html = frozen source of the golden snapshot — the same IIFEs)
  Nature: pure ES modules WITHOUT DOM (offline-testable in node; importable in .mjs)
- Last update: 2026-08-13 (V1 of assessment II: the Vestibular sections synchronized with the code after
+ Last update: 2026-08-14 (merge: base from main [engine assessment II, V1-V9 + N1-N7], with the
+                        Block 8-16 chapters from the futureUI branch ported onto it — every
+                        QUANTITATIVE claim in them re-measured against the NEW engine, the futureUI
+                        bibliography renumbered [H25]/[H26] -> [H27]/[H28] after the clash with main)
+ Previously: 2026-08-13 (V1 of assessment II: the Vestibular sections synchronized with the code after
                         the 2026-08-05/06 rebuild — the geometry entirely from IE-Map [13], specific
                         force R7, phi0/sizeUm; corrected calibration, validation and magnitude numbers)
  Note: `Vestibular` = BPPV physics (otolith debris in the canal). `NeuroVOR` = the
@@ -720,6 +724,33 @@ SIMPLIFICATIONS RELATIVE TO FULL MODELS:
 
 
 KNOWN CLINICAL DISCREPANCIES (neurophysiology review 2026-08-05)
+     [V19-STATUS 2026-08-15: DELIVERED — SESSION↔SCENARIO-CARD INTEGRATION (closing the candidate
+      deferred from V10). Bowlean and lyingdown joined the ACTS: ACT_STEPS.bowlean (bow 30 s /
+      sit-centre 5 s / lean 30 s, pivot "neck" per step — actTimeline got st.pivot||"body",
+      because since B8 the pivot has physical effects) and ACT_STEPS.lyingdown [lying 30 /
+      sitting 30]; PHASE_OF {bowlean:[0,2], lyingdown:[0,1]}. PROOF BY CONSTRUCTION (a B7
+      analogue): an act from a seeded scenario reproduces the scenario card BIT-FOR-BIT (textbook
+      bow +0.975294 / lean −0.366342, delta 0.0e+0; LDT lie −0.381640 idem) — one thread, one
+      physics. SEEDING = the history scenario as the OPENING ACT (seedSessionFromScenario): the
+      click RESTARTS the chain (overwriting φ while keeping the old acts would break the B7
+      invariant) and maps bltInit→state: {phi:φ₀, xi:0 (the card's contract), bondFrac:
+      settled?1:0 — bond=0 for neutral would give a FALSE LDN of 0.077 (probe); no readhesion
+      for the history's sitting (a mirror of the settled:false convention — do NOT "improve"
+      it)}; tSession += the history's SIMULATED time (textbook ~332 s); neutral = a clean
+      freshSession. Cards under the session: the phases = a preview of the NEXT execution
+      (sessionPreview with a per-phase exitStep; the ξ accumulation deliberately untouched —
+      cutting at the exit sample would lose the peak, −0.749 vs −0.753), arrow+text from ONE ξ
+      (bltDirWord, V5), the badge and the watershed-map marker from THE SAME pv/state (the
+      marker = the session's current φ; it vanishes once the canal empties). THE R10 REWARD,
+      LIVE: seeding afterRoll (φ≈220°>190°) → the preview "beats toward the healthy side — AND
+      THE DEBRIS LEAVES THE CANAL" (exit t≈7.55 s) → the act → a silent control test (NPV ~72%).
+      The provocation guard hardened: !ACT_STEPS[testKey] instead of SCEN_DRIVEN (a card with no
+      act entry will not fire the Dix fallback); the sessKey memo extended with S.exited (the
+      fresh↔exited collision confirmed by a probe). Session OFF = bit-for-bit (a hard gate:
+      golden 0-diff after the whole feature); oracles: +10 additive dom session-* keys
+      (6 bowlean + 4 lyingdown, dom 164→174), a clean descent: bowlean session-off ≡
+      scen-afterRoll and lyingdown session-off ≡ the base card BIT-FOR-BIT. Engine physics
+      UNTOUCHED (zero edits to vestibular.js).]
 
  >>> R1 CLOSED 2026-08-05 (branch feature/vestibular) - see ARC_SPAN in the constants section. <<<
      The missing datum was the angular ampulla-to-opening separation. Supplied: Cardenas-Serna & Jeffery
@@ -1845,7 +1876,7 @@ substance of partial repositioning).
    construction), the card ONLY on the guide's final step, OUTSIDE a session (the !state.session
    gate: a session tells the story of ONE debris clump with a history). The clinical row
    DELIVERED 2026-08-16 after source verification (the user's decision): "~80% after a single
-   session + rises with repetition" [H27]; the RCT context (56% vs 21%, OR 4.42) from [H28];
+   session + rises with repetition" [H27]; the RCT context (56% vs 21%, OR 4.42) from [H29];
    the original "80–93%" REJECTED — the upper values come from REPETITIONS, not from a single
    session. Oracles: engine.ensemble (the grid + 9 maneuvers ×
    2 sides: fractions/peak/tExit per particle; a diffKeys line in --check) + the hard CLOUD ORACLE
@@ -2388,7 +2419,9 @@ PUBLIC API (returned from the module)
    rate−tone. Previously a high resting tone by itself ate up the headroom to the ceiling: a tone ≥167 Hz with gain=1.0
    gave a PATHOLOGICAL vHIT with no gain loss whatsoever — and a tone up to 200 Hz is reachable with the slider in
    the Laboratory. That contradicted the module's own thesis: in the IRRITATIVE phase of Ménière's the gain is
-   preserved, so the vHIT stays NORMAL, and that is the DIFFERENTIATING feature of this entity [H20]. Saturation still
+   preserved, so the vHIT stays NORMAL, and that is the DIFFERENTIATING feature of this entity [H20] (the
+    caloric↔vHIT dissociation itself is carried by [H21] — the Ménière criteria are symptom-based and say
+    nothing about the vHIT). Saturation still
    acts where it makes physiological sense — at a very high head velocity (Ω>387°/s for gain 1.0 — outside the vHIT protocol; after N3, it was 262).
    STAGE 7 (E2): the second argument is POLYMORPHIC — 'P'/'L' (horizontal, as above, numerically unchanged) OR {canal,ear}
    (any of the 6 canals; planes HC/RALP/LARP). It also returns canal/ear/plane/coplanar/saccade{h,v,t}. See vhitPlane.
@@ -2761,7 +2794,8 @@ VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Sc
      oracle pins the new keys (hsn, shimpHC_P/L, pursuit, dva) for all patients. Probe n4.mjs (27 assertions).
      dom: only 4 screens (bvh/stroke/nerve-superior — new findings).
  [x] IMPLEMENTATION OF REVIEW II — STAGE N5 (new axes):
-     • THE AUDITORY AXIS (D3, HINTS-plus [H24]): hearingL/R (0..1; <0.65 = hearing loss on the finger-rub test)
+     • THE AUDITORY AXIS (D3): the "plus" itself comes from [H28] Newman-Toker 2013, the ED framing from
+        [H24] GRACE-3 2023. hearingL/R (0..1; <0.65 = hearing loss on the finger-rub test)
        + a PARAM_SPEC group. It does NOT change the triad verdict (hearing is the "plus"); clinicalReadout reports
        it + ambiguity "AVS + acute hearing loss: labyrinthitis vs AICA — a pathological HIT does NOT rule out
        stroke". LF fluctuation (Ménière's) and the ABG (SCDS) are out of scope → CAVEATS.
@@ -2849,7 +2883,8 @@ of the vestibulo-ocular reflex and peripheral/central differentiation — with n
 CITATION CONVENTION (unified 2026-08-16, guarded by npm run zrodla:check): a number may stand alone,
 but if a source designation accompanies it, the designation goes DIRECTLY AFTER the number and carries
 a YEAR. The bracket closes on the number — sources without a number are added AFTER it, past a
-semicolon. The gate covers src plus engine_doc and view_doc in both languages.
+semicolon. The gate covers src plus engine_doc and view_doc in both languages; details and declared
+limits → view_doc.
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -2917,6 +2952,8 @@ semicolon. The gate covers src plus engine_doc and view_doc in both languages.
       → WHAT WAS NOT VERIFIED: the abstract does NOT contain an explicit comparison with the 30° canon (the
         sentence in R9 about "an explicitly noted difference" requires the full text).
       → in the NeuroVOR module: RA∥LP, LA∥RP coplanarity and canal orientations → COPLANAR / PLANE_CANALS (RALP/LARP).
+      → NUMBERING NOTE: until 2026-08-16 the same work also carried a second number, [H29], on the
+        main branch; the entries were merged here, and slot 29 now holds the Cochrane 2014 review.
 [H18] Minor LB (2000). "Superior canal dehiscence syndrome." Am J Otol 21(1):9–19; and Minor LB, Solomon D,
       Zinreich JS, Zee DS (1998), Arch Otolaryngol Head Neck Surg 124(3):249–258.
       → SCDS / the third window; a vertical-torsional nystagmus triggered by sound (Tullio) and pressure (Hennebert),
@@ -3002,7 +3039,20 @@ semicolon. The gate covers src plus engine_doc and view_doc in both languages.
         of a single session — the upper values come from REPETITIONS, source verification 2026-08-16).
         The basis of the clinical row of the Debris cloud card (D9/V20).
 
-[H28] Hilton MP, Pinder DK (2014). "The Epley (canalith repositioning) manoeuvre for benign paroxysmal
+[H28] Newman-Toker DE, Kerber KA, Hsieh YH, Pula JH, Omron R, Saber Tehrani AS, Mantokoudis G, Hanley DF,
+      Zee DS, Kattah JC (2013). "HINTS outperforms ABCD2 to screen for stroke in acute continuous vertigo
+      and dizziness." Acad Emerg Med 20(10):986–996. doi:10.1111/acem.12223. PMID 24127701.
+      → The source for the "plus" in HINTS+ (Block 12 of the UI document): adding a hearing screen to the
+        head-impulse / nystagmus / test-of-skew triad. NEW unilateral hearing loss in an acute vestibular
+        syndrome raises suspicion of an AICA-territory infarct (the labyrinth is supplied from that
+        territory), so it enters the result as an ALARM FEATURE. The direction works ONE WAY ONLY: the
+        presence of hearing loss raises concern, its absence excludes nothing (labyrinthitis produces the
+        same picture) — which is why, in the OTOREPO model, the answer "symmetric hearing" carries a
+        NEUTRAL weight rather than "supports peripheral". Together with [H8] (HINTS/INFARCT), [H9] (context
+        and limits) and [H24] (GRACE-3: gait ataxia = central; HINTS inaccurate without training) it forms
+        the complete basis for Block 12.
+
+[H29] Hilton MP, Pinder DK (2014). "The Epley (canalith repositioning) manoeuvre for benign paroxysmal
       positional vertigo." Cochrane Database Syst Rev (12):CD003162. doi:10.1002/14651858.CD003162.pub3.
       PMID 25485940.
       → RCTs (meta-analysis): complete resolution of vertigo OR 4.42 (95% CI 2.62–7.44; 5 trials,
@@ -3011,9 +3061,6 @@ semicolon. The gate covers src plus engine_doc and view_doc in both languages.
         Epley > Brandt-Daroff OR 12.38 (reinforces the home note V18: BD weaker than repositioning) ·
         nausea during treatment 16.7–32% (consistent with the D5 bar) · recurrence ~36%. The RCT
         context ≠ the clinical percentage [H27] — different measures.
-
-[H29] NUMBER RETIRED 2026-08-16 — it duplicated [H17] (Della Santina et al. 2005). Citations moved
-      to [H17]; do not reuse this number without a decision.
 
 [H30] Porwal P, Adarsh VR, Pawar V, Dorasala S, Bijlani A, Nair P, Nayar R (2021). "Clinical and VNG
       Features in Anterior Canal BPPV - An Analysis of 13 Cases." Front Neurol 12:618269.
@@ -3121,6 +3168,63 @@ semicolon. The gate covers src plus engine_doc and view_doc in both languages.
         not move debris in the vertical canals. This is independent, simulation-based confirmation of R10
         and of phenomenon No. 1 in the V25 entry.
 
+
+
+=== DEBRIS CLOUD — the multi-particle ensemble (D9/V20, 2026-08-16) ===
+ORCHESTRATION ABOVE THE ENGINE, no physics (zero edits to vestibular.js): the cloud = N=9
+independent simulateCanalith simulations on ONE canonical timeline (the clinician performs ONE
+maneuver — re-deriving the holds per particle would give each its own protocol and bypass the
+substance of partial repositioning).
+ THE GRID (ensembleSim/ENS_GRID): the midpoint quantiles of the uniform distribution on
+   [0.7,1.3]·r_size — m_k = 0.7+0.6·(k+0.5)/9. SOURCE BOUNDARY: the in-vivo size distribution of
+   the aggregate is UNMEASURED (see the note at H2) — the uniform band is a declaration of
+   ignorance, not a measurement; do NOT calibrate it. Midpoint quantiles converge to the integral
+   over the distribution (aggregate peak 1.0071/1.0085/1.0091 for N=7/9/13); a grid WITH ENDPOINTS
+   overweights the extremes and drifts with N (1.061→1.035) — the old "1.085" anchor from
+   assessment II is an artifact of such a coarse N=5 grid (reproduced 1.0865); the qualitative
+   thesis (dispersion shifts forward and raises the peak) stands, there is NO target number. The
+   grid's center (k=4) = EXACTLY 1.0 → the middle particle is BIT-EQUAL to the canonical maneuverSim.
+ AGGREGATION = the arithmetic MEAN of ξ over the particles: the engine ALREADY scales gain∝r³
+   inside simulateCanalith — an explicit extra r³ weight would count the mass TWICE (measured
+   1.353, outside the CUP_WEAK/SPV calibration) and is FORBIDDEN. fracMass (r³) is a separate
+   quantity: the fraction of MASS removed, not a signal weight.
+ PARTIAL REPOSITIONING — EMERGENT from the canonical holds (zero new constants): the derivedHold
+   guard TAUP_GUARD=1.1 guarantees clearing for r ≥ 1/√1.1 ≈ 0.953 — and exactly the particles with
+   r<0.95 fall out of the windows. The table (medium, P, pinned in engine.ensemble): epley 8/9 (96%
+   of the mass) · semont/bascule/yacovino 6/9 (84%) · lempert/gufoniGeo/zuma/kim 9/9 · gufoniApo
+   0/9 (a CONVERSION — the card renders it as a conversion, not as a failure). The card teaches
+   this directly: the FINEST particles remain (the slowest ones: τ ∝ r⁻², Stokes' law) — "repeat
+   the positional test".
+ SEPARATE AXES: rep does NOT enter the cloud (rep₂/rep₀ = fatigueFactor(2) identically to 6 digits
+   for the single particle and for the aggregate — gc enters linearly, the φ trajectory is
+   independent of gc) → the ensemble does NOT replace fatigueFactor (the cloud = SIZE dispersion
+   within one provocation; fatigueFactor = clump disintegration BETWEEN provocations, Imai) — a
+   separate calibration decision, outside V20. The canonical single simulation REMAINS the source:
+   of derivedHold/timers, of manExitStep/migration, of the V10/V19 session, of symRow/RD (D5), of
+   the sensitivity/EXPEL_SANE oracles. The cloud is a VIEW only (the card's numbers + the row of
+   dots; drawing the cloud on the otolith path is FORBIDDEN — the manFractions ramp is schematic,
+   positional realism would be fabrication).
+ CANAL SWITCH = A NOTE (not orchestration): the utricle lies over the non-ampullary HC opening —
+   part of HC-BPPV arises as a canal switch after treatment of the posterior canal (see R3); full
+   orchestration would require a p(switch) with no source and seeding φ₀ in another canal (session
+   territory) — a separate candidate. A design probe: the dynamics AFTER entry would be honest
+   (HC φ₀≈250–265 at the opening, settled:false → sitting up slides the debris toward restPhi, the
+   control Roll = geotropic DCPN +0.82..0.86/−0.91..−0.92, the phenotype insensitive to the depth
+   of entry).
+ UI: an opt-in "Debris cloud" in the #sessionbar shell (outside #app — golden untouched by
+   construction), the card ONLY on the guide's final step, OUTSIDE a session (the !state.session
+   gate: a session tells the story of ONE debris clump with a history). The clinical row
+   DELIVERED 2026-08-16 after source verification (the user's decision): "~80% after a single
+   session + rises with repetition" [H27]; the RCT context (56% vs 21%, OR 4.42) from [H29];
+   the original "80–93%" REJECTED — the upper values come from REPETITIONS, not from a single
+   session. Oracles: engine.ensemble (the grid + 9 maneuvers ×
+   2 sides: fractions/peak/tExit per particle; a diffKeys line in --check) + the hard CLOUD ORACLE
+   (throw: the center ≡ the canonical run bit-for-bit — the card cannot diverge from the eyes)
+   + 3 dom keys (ensemble-on ×2, ensemble-off ≡ the baseline finale BIT-FOR-BIT = the eternal pin
+   "OFF means zero bytes"; dom 174→177). Successor candidate: a cloud session (a chain per
+   particle, M× cost; a control test after a partial repositioning with a response ∝ the retained
+   mass) — deliberately outside V20.
+
 SIMPLIFICATIONS / CAVEATS:
   - HORIZONTAL UVH nystagmus: torsion as a fixed fraction of the horizontal (TORS_FRAC=0.5) — illustrative; the VERTICAL canals
     (stage 7/E3) are composed realistically PER coplanar PAIR (verticalBeat), but with a simplified TORS_V=0.8;
@@ -3154,3 +3258,1001 @@ SIMPLIFICATIONS / CAVEATS:
   - HINTS as an EDUCATIONAL model — it does NOT replace an examination; valid in AVS with a persistent nystagmus,
     interpret with HINTS "plus" (hearing) and context ([H9] Tarnutzer 2011). NOTE: a compensated peripheral loss
     can have a bedside HIT "normal" (covert saccades) — a pitfall when the AVS nystagmus is no longer present.
+
+================================================================================
+OBSERVATIONS OUTSIDE THE MODEL — what the BPPV engine does NOT compute (Block 8)
+================================================================================
+The "Nystagmus" step lets the clinician record what they SAW in the patient. Some of the features
+the form asks about have NO counterpart in the engine — and that is written down explicitly, so
+that nobody mistakes the model's silence for its prediction. The "Compare with the model's
+prediction" card returns the verdict `nieporownywalne` (not comparable) for them, never `rozne`
+(different).
+
+1. EFFECT OF VISUAL FIXATION. The BPPV engine has no fixation parameter. Verified: the key set of
+   `Vestibular` (isExcitatory, quickPhase, nysMag, nystagmus, gHead, qSupineYaw, qPitch, position,
+   simulateCanalith, simulateCupulolith, dynNystagmus, nystagmusPhase, fatigueFactor, qmul, qconj,
+   qaxis, rotate, GEXC, CANAL_NORMALS, CUP_WEAK) contains not a single one. Fixation suppression
+   exists EXCLUSIVELY in NeuroVOR (see [H3]) and is read only by the HINTS screen. Clinically the
+   feature matters (peripheral nystagmus is suppressed by fixation, central is not), so the field
+   stays in the form — with weight 1 and an explicit annotation next to the question.
+
+2. DIRECTION REVERSAL ON SITTING UP. The model has no sitting-up phase in the diagnostic test:
+   `DIAG.dix.phases` is a SINGLE phase, and `engineXi` builds its time axis from one segment
+   {q, tTrans, tHold}. The liberatory transient described above (maneuver dynamics) has THE SAME
+   SIGN as the primary excitation and is not a reversal. The field stays in the form with weight 1.
+
+3. VERTIGO ACCOMPANYING THE NYSTAGMUS. The criterion is not in the repository — `baranyClassify`
+   has no such row in `crit[]`. We do NOT fill the gap with an invented criterion; we name it here
+   so that Block 9 knows what is missing.
+
+DURATION AS A CLAIM, NOT AN ANIMATION PARAMETER
+The positional-test simulation window (inline in `engineXi`, maneuvers.js) stands for CLINICAL TIME,
+not animation convenience. The two numbers have different status — both RE-MEASURED after engine
+assessment II:
+  - canalithiasis — the duration is set by PHYSICS. Natural decay (|xi| < 3% of peak): posterior
+    42.00 s, horizontal 45.20 s, anterior 61.25 s. The window must ACCOMMODATE that decay, not
+    define it: 55 s for the posterior and horizontal canals, 75 s for the ANTERIOR — its attack is
+    so long that it needs the persistent form's window to fit with a margin.
+  - cupulolithiasis — xi does NOT decay (measured |xi| = 100 % of peak even after 300 s for the
+    posterior and horizontal canals), so tEnd IS the window and nothing else. That number (75 s) is
+    a clinical claim outright and must exceed the 60 s threshold. EXCEPTION: anterior-canal
+    cupulolithiasis fades to 24.0 % of peak, because deep head-hang loads the anterior cupula
+    weakly — the app says so outright in that test's note, and the oracle ties its exception TO
+    THAT NOTE. Removing the note restores the "> 95 % of peak" requirement and turns the gate red:
+    the exception belongs in the app, not hidden inside the oracle.
+THE MOST IMPORTANT CHANGE AFTER ASSESSMENT II: ANTERIOR-canal canalithiasis lasts 61.25 s, i.e.
+MORE than the 60 s Bárány threshold. No window width can fix that — the attack length in the model
+collides with the threshold. Clinical verdict (2026-08-14): the number STAYS, because it is
+emergent engine physics; it was the CHIP that lied. The anterior canal therefore has its own chip
+"Transient (≈1 min)" instead of the shared "< 60 s" — and its own latency label ("short/absent"),
+because its debris starts pressed against the cupula.
+Gate: npm run barany:check — it now compares the MEASURED duration with the PROMISE PRINTED ON THE
+CHIP, not with one number for all canals; a chip whose wording is unrecognized does NOT pass (it
+must be given a rule, not waved through in silence). The golden pins VALUES but does not express
+RELATIONS — which is why the previous value (18 s, shorter than the transient form) passed green.
+
+================================================================================
+INTERPRETATION — WHAT THE MODEL CAN SETTLE, AND WHAT IT CANNOT (Block 9)
+================================================================================
+The "Interpretation" step leads from a RECORDED observation to canal, side and mechanism. It holds
+no second, independent set of clinical rules: that would be a third description of the same
+knowledge (after the engine and `baranyClassify`) and would drift apart at the first parameter
+change. Instead we ENUMERATE 20 candidates (test x canal x side x mechanism) and check which of
+them the recorded observation EXCLUDES. A candidate falls when even one recorded DECISIVE feature
+contradicts the model's prediction. No scoring, no percentages, no ranking.
+
+"Agreement" describes the RELATION of the record to a pattern, not the state of the patient, and
+has NO numeric form. A number next to a canal name would read as the probability of a diagnosis in
+this patient.
+
+LIMITS OF DECIDABILITY — MEASURED ON THE ENGINE'S PREDICTIONS
+The four statements below are claims about the MODEL, not about the examiner's diligence. The app
+states each of them explicitly on the interpretation screen, each with its own distinct reason.
+
+1. DIX-HALLPIKE: the direction gives the SIDE (torsion +-1) but NOT the mechanism. Canalithiasis
+   and cupulolithiasis have an identical direction {h:0, v:+0.81, t:+1} — they differ only in
+   `strength` (1.00 vs 0.45; assessment II moved CUP_WEAK from 0.60 down to 0.45), which the form
+   does not measure. The mechanism follows EXCLUSIVELY
+   from the dynamics (latency, duration, fatigability), and those are the same in ALL tests, so no
+   further positional test will settle it.
+
+2. ROLL TEST: the direction gives the MECHANISM (geo/apo), while the side comes only from the
+   ASYMMETRY OF INTENSITY — and in opposite directions for the two mechanisms: canalithiasis, the
+   affected ear STRONGER (1.00/0.45); cupulolithiasis, the affected ear WEAKER (0.20/0.45). The
+   relation survived assessment II unchanged, the numbers did not: EWALD_INHIB stayed at 0.45 while
+   CUP_WEAK went 0.60 -> 0.45. This is
+   the only one of the four missing-side cases that can be fixed by RECORDING more, so the screen
+   asks for a specific feature instead of declaring a limitation of the model.
+
+3. BOW & LEAN: the side is NOT DERIVABLE FROM THE DESCRIPTION — but after assessment II for a
+   DIFFERENT reason than before, so the sentence had to change. Up to V5 the ambiguity was
+   STRUCTURAL: the intensity was symmetric, so 4 candidates yielded only 2 disjoint prediction
+   fingerprints. The new engine computes this test from INITIAL CONDITIONS (BLT_HISTORY, the R8
+   watershed) and the fingerprints separated — MEASURED: 4 disjoint with the intensity relation,
+   still 2 by direction alone. They separated along the MECHANISM, however, not the side
+   (canalithiasis: first phase stronger; cupulolithiasis: phases equal), while the form asks about
+   the DIRECTION of the bow and the lean, not about their relative intensity. MEASURED: none of the
+   9 possible direction descriptions of this test derives a side. The conclusion for the clinician
+   is therefore unchanged — the roll test separates them.
+
+4. DEEP HEAD-HANG: the side is carried by the TORSION, and by nothing else. [REWRITTEN 2026-08-16
+   after V26 — the former text read „all 4 candidates have the same direction {h:0, v:-1, t:0}; NO
+   test in this model will establish the side". That was true ONLY because the NYS_SHOW.anterior.t
+   mask zeroed the torsion — a claim about a RENDERING CONVENTION dressed up as a claim about the model.]
+   MEASURED AFTER REMOVING THE MASK: anterior/P {h:0, v:-1.00, t:+0.74} · anterior/L {h:0, v:-1.00,
+   t:-0.74} — the sign of the torsion separates the sides. This does NOT mean the model lateralizes
+   the anterior canal „always":
+     · the torsion is INVISIBLE in 57.1% of confirmed AC-BPPV ([H31] Castellucci 2020), so with
+       „torsion: zero" both sides survive and the side stays undeterminable — as it should;
+     · apogeotropic posterior-canal BPPV of the other side produces the same picture ([H32]
+       Garaycochea 2022), so torsion alone does not prove the canal;
+     · THE TEST POSITION does not establish the side: provocation is often bilateral in the
+       Dix-Hallpike (9/12 patients, [H33] Bertholon 2002). This is why the anterior-canal candidate
+       in the Dix is no longer computed in the pose of the OPPOSITE ear (coplanar-pair reasoning,
+       LARP/RALP — it governs the vHIT, not BPPV), and the four Dix fingerprints are now disjoint:
+       the VERTICAL gives the canal, the TORSION gives the side.
+   TWO FOOTNOTES the same query adds: the anterior canal is also positive in the ROLL test, and
+   UNILATERALLY so — 6/9 of the performed tests, a downbeat in 4 ([H30] Porwal 2021), so
+   "anterior = head-hang only" is a simplification; and the ACTUALLY EXECUTED head angle has a
+   measurable effect on nystagmus detection ([H36] Hentze 2025, an RCT crossover) — sensitivity
+   depends not only on WHICH test you run but on HOW precisely you run it.
+
+THE SUGGESTED NEXT TEST IS DERIVED, NOT WRITTEN DOWN
+There is not a single hand-written "test -> test" pair in the code. We ask the model: do the
+candidates that survived have DIFFERENT predictions in another test (`odciskPredykcji`)? The
+fingerprint covers the direction per phase AND the relation of intensities between phases; without
+the intensity relation, (canalithiasis,R) and (canalithiasis,L) have an identical direction
+fingerprint in the roll test, so the roll would look like a test that does not separate them — and
+it is the only one that establishes the side of the horizontal canal. Measured: the roll has 4
+disjoint fingerprints with intensity and only 2 without it.
+An empty suggestion list is a CLAIM ("no test will separate this"), not a gap. Sending the
+clinician to an examination that cannot contribute anything would be worse than silence.
+
+AN ATYPICAL PICTURE DOES NOT LEAD TO A MANEUVER (acceptance criterion 3)
+`recommend()` ALWAYS returns a first-line maneuver and remains UNTOUCHED — it is simply not called
+when `nietypowy()` is true. The alarm is computed over ALL records of the session, not over the
+current test: otherwise the advice "do the next test" would clear it, because a downbeat recorded
+in the Dix-Hallpike would vanish from memory on switching to the roll. Quarantine ("unreliable
+observation") silences the CONCLUSION but NOT the alarm — `interpretuj` performs a second, CONTROL
+pass including the quarantined fields, and if that pass leaves no candidate at all, the picture
+stays atypical.
+
+SOURCE OF THE MECHANISM
+`state.variant` drives the animation, the feature chips, the Barany classification and the choice
+of maneuver. Until Block 9 it looked identical in three different situations; the most dangerous of
+them — "it is left over from the previous screen, because the animation has to draw something" —
+posed as a conclusion. `state.variantZrodlo` tells them apart explicitly: derived (by an explicit
+gesture, and only when exactly one mechanism remains) / manually overridden / none. Changing the
+record removes the derivation but NOT the mechanism: the animation has to draw something, only the
+claim about its source disappears.
+
+Gates: npm run interp:check (pure model, bare Node) and npm run interp:dom (a DOM scan in jsdom —
+criterion 3 is a claim about the SCREEN, not about the model).
+
+================================================================================
+MANEUVER AND EXPERT MODE — WHAT THE MODEL SELECTS, AND WHAT IT DOES NOT MEASURE (Block 10)
+================================================================================
+The "Maneuver" step guides the repositioning and — in expert mode — selects a maneuver for a user
+who already knows the canal, side and mechanism. There is not a single hand-written
+"canal+mechanism -> maneuver" pair: we ask `recommend()`, the same source the diagnostic path uses.
+The canal->test bridge is derived from DIAG, because `recommend()` has a SILENT DEFAULT (anything
+other than 'dix' and 'headhang' falls into the horizontal-canal branch), so a typo in the key would
+not raise an error — it would return a maneuver for the wrong canal.
+
+WHAT THE SELECTION CARD MAY SAY, AND WHAT IT MAY NOT
+The mockup captions the recommended maneuver "highest agreement with the diagnosis". The model does
+not compute agreement with the diagnosis of this patient — it computes the FIRST-LINE MANEUVER PER
+THE GUIDELINES for the canal and mechanism the USER PROVIDED. The card says exactly that, and it
+also names which of the three values really came from a human: `state.side` holds the literal 'P'
+and `state.variant` the literal 'canalo', so without `sideZrodlo`/`variantZrodlo` the sentence "you
+provided the canal, side and mechanism" would be false on first entry — in the very sentence whose
+whole purpose is honest attribution.
+
+"UNTIL THE NYSTAGMUS SUBSIDES + MARGIN" IS A FLOOR, NEVER A SHORTENING
+This is the most important number in the block and the only one that could harm a patient.
+The rule survived engine assessment II unchanged, but its JUSTIFICATION had to be rewritten,
+because the numbers grew by an order of magnitude and the DIRECTION OF THE ERROR stopped being
+one-sided.
+The hard-wired `cap` of 12 s is GONE. The dynamics hold is now DERIVED (`derivedHold`: the smallest
+pair {h, u} from HOLD_STEPS/UNTIMED_STEPS at which the engine carries the debris out to the
+utricle, with a tauP x 1.1 guard). The old 12 s truncation was deep and UNEVEN — semont 20 % of the
+recommended hold, gufoniGeo 30 %, lempert 44 %, epley 53 %, yacovino 77 % — so "does the maneuver
+clear the canal" partly measured the aggressiveness of the truncation rather than canal geometry.
+RE-MEASURED (grid maneuver x side x size x stage):
+  - the number reaches 74.60 s (Bascule, small debris, stage 3) — the old "never above ~19 s" no
+    longer holds;
+  - Semont has `seconds=90` and the instruction "Hold 1-3 min", while the model gives 38.80/50.05 s;
+  - Gufoni geotropic: 25.05 s against a 60 s protocol;
+  - Epley stage 1: 35.35 s against a 30 s protocol — here the mode genuinely EXTENDS (to 50 s).
+The model is therefore sometimes SHORTER and sometimes LONGER than the protocol. That does not
+abolish the rule, it STRENGTHENS it: the mode may ONLY RAISE the protocol time. Setting the number
+directly would shorten the Semont drop by 25-35 s below the lower bound of the app's OWN
+instruction, and with auto-advance on it would move the patient along by itself. For
+cupulolithiasis the mode is UNAVAILABLE: xi does not decay (measured |xi| = 100 % of peak even
+after 300 s — posterior and horizontal canals), so "until it subsides" has no referent.
+Gate: npm run man:check (section D); failing-first proof = 54 violations across the grid
+maneuver x side x size x stage.
+
+DEBRIS EXIT IS A SEPARATE AXIS, NOT A TIMING CRITERION
+In the Epley the debris leaves the canal during the SIT-UP step, which has NO countdown. Forcing
+both facts into one field would mean concealing one of them — for the very step in which the
+liberatory nystagmus arises. For vertical canals the exit stage comes from PHYSICS (`manExitStep`);
+for the horizontal canal and cupulolithiasis it comes from a SCHEME (n-2), and the screen admits
+that instead of presenting a rule as a measurement.
+
+POSITION NAMES HIDE AN INVERSION
+`sideL` means "on the LEFT side", but `leanL` means "on the RIGHT side": the Semont poses are named
+after the direction of the TILT, not after the side the patient lies on. A mistake here would print
+the wrong ear at the bedside, and the physics would not react, because the name never enters the
+simulation. The oracle checks these names against the SIGN OF GRAVITY in the head frame, not
+against the comment.
+
+POSITION TIMER: WALL CLOCK AND THE GAP IN OBSERVATION
+The timer summed `dt` from rAF frames. That looks like "it stops when the screen goes dark", but
+`last` is a closure variable that nobody touches on returning to visibility, while the rAF timestamp
+runs in real time — so the first frame after unlocking received `dt` equal to the WHOLE gap and
+caught it up in a single jump, together with the end-of-stage condition, the sound and the
+auto-advance; for a longer gap, as a cascade all the way to `markConsumed`. Time is now measured by
+a wall-clock anchor (`hold-clock.js`, a pure module, WITHOUT `Date.now` — the current time is passed
+as an argument so the gate stays deterministic), and `dt` is left to the animation alone.
+A gap longer than 3 s is a CLINICAL event: the app can measure time, but it cannot tell whether the
+patient held the position while nobody was looking at the screen. It therefore stops the countdown
+and asks for confirmation. Shorter blinks do not raise an alarm — an alarm without a reason teaches
+people to ignore the message (the same mechanism that kept `dixRep` out of the decision fingerprint).
+The warning about the missing screen lock comes from an ACTUAL attempt, not from feature detection:
+the lock is sometimes refused despite `wakeLock` being present (no secure context, system policy,
+power saving).
+
+LEFT AND RIGHT ALWAYS WITH AN OWNER (acceptance criterion 2)
+The criterion was already met before this block — every sentence containing a direction also names
+the owner — so we added a RATCHET rather than a fix. The unit is the SENTENCE, not a window of N
+characters (a window produced 22 false hits, because "toward the healthy side" can sit 56 characters
+before the side name), and the dictionary of forms is CLOSED and taken from the declension table:
+a prefix pattern "lew*/praw*" matches Polish words for "correct", "probability" and "improve", so
+the gate would fire on text unrelated to direction.
+Separately, 29 places were corrected where the NOMINATIVE ("lewa"/"prawa") had been pasted into
+accusative, dative and genitive contexts.
+The `engine.plans` rebaseline carries a scope proof: after removing the text fields the plan diff is
+EMPTY, i.e. `body/yaw/face/seconds/progress` are bit-for-bit — physics and geometry untouched.
+
+WHAT THIS BLOCK DOES NOT DO
+The "Post-maneuver control" card from the mockup (resolution / partial improvement / no improvement /
+canal conversion / suspicion of the other side / residual dizziness / unreliable examination) is
+Block 11 of the document and the `followup` step, which stays `pending`. Block 10 prepares the ground
+for it: the canal-conversion signal after a PERFORMED maneuver already works, because `consumed` used
+to silence not only the sentence "the conclusion is out of date" (rightly) but also "the current
+inputs point to a DIFFERENT canal" (wrongly) — and that is an indication for a NEW maneuver, not a
+charge against the old one.
+
+Gates: npm run man:check (pure model, bare Node) and npm run man:dom (a DOM scan in jsdom —
+acceptance criteria 1 and 3 are claims about the SCREEN, not about the model).
+
+================================================================================
+POST-MANEUVER CONTROL — WHAT THE APP RECORDS, AND WHAT IT DOES NOT KNOW (Block 11)
+================================================================================
+The "Follow-up" step closes the clinical process and handles outcomes other than immediate
+resolution. The answer to "what do you observe now?" is the CLINICIAN'S OBSERVATION, not the app's
+conclusion: the model does not judge whether the repositioning succeeded — it derives the NEXT STEP
+from the answer. This is the same boundary Blocks 6, 8 and 9 hold: the questionnaire picks a
+pathway, the form describes an observation, the interpretation eliminates candidacies, and none of
+them makes a diagnosis. Clinical basis: [H27] (AAO-HNS BPPV guideline update, 2017).
+
+SEVEN ANSWERS, THREE OF WHICH FORBID REPOSITIONING
+The vocabulary is CLOSED: no "other" entry and no text field (acceptance criterion 3 starts with
+there being nowhere to type a name). Three answers take away the screen's right to offer a
+maneuver, each for a DIFFERENT reason and each with the reason WRITTEN OUT:
+  • canal conversion — the debris is in another canal, so the same maneuver would treat a canal it
+    is no longer in; an alternative for the same canal does not address the target canal either;
+  • residual dizziness — without positional nystagmus there is NOTHING to reposition, and the
+    phenomenon is described after SUCCESSFUL repositioning and is usually self-limiting (days to
+    weeks);
+  • unreliable examination — an assessment the clinician themselves called unreliable does not
+    justify another repositioning; the step gets the status "unreliable", NOT "done" (the same
+    error Block 8 cut out at lateralization).
+Greying a button out without giving a reason would be silence, not a warning, so forbidden actions
+are not buttons at all — they are a sentence under "what this screen deliberately does not offer".
+
+ACCEPTANCE CRITERION 1 — THE END OF A MANEUVER IS NOT A RETURN TO THE START
+Measured before the change: `zakonczSerie` called `backToSetup()`, i.e. the series ended EXACTLY
+where it began — on the canal list, without a single sentence about what had happened and with no
+place for the control result. Reaching the last stage SEQUENTIALLY still navigates nowhere:
+"performed" is a state of the maneuver, not a navigation command.
+
+ACCEPTANCE CRITERION 2 — CONVERSION LEADS TO RE-INTERPRETATION
+The model returns the list of FORBIDDEN actions separately from the offered ones, and the screen
+does not render the forbidden ones. The gate reads the rule table DIRECTLY, and that is not
+over-zealousness: `nastepneKroki` filters out forbidden actions, so adding "repeat the maneuver" to
+the conversion step list did NOT change the function's result — the mutation passed the entire
+oracle. The filter protects the screen but stops guarding the source. In expert mode (no test)
+"re-establish canal and side" targets the selection screen, not the interpretation screen, which
+without `testKey` has nothing to build itself from.
+
+ACCEPTANCE CRITERION 3 — ENDING WITHOUT IDENTIFYING DATA
+The criterion was already met before this block (there is not a single text field in the app), so
+we added a RATCHET rather than a fix — the same move as for criterion 2 of Block 10. The gate scans
+EIGHT screens with a structural pattern (a field tag, not a word); `type=range` sliders are allowed,
+because they are model parameters, not data. The other half is the RECORD GUARD: it walks the
+finished record and REJECTS it instead of quietly cleaning it — sanitizing would produce a record
+that looks saved while part of its content is missing (a lesson from the VOG track). The rule is
+structural: every value must come from a closed vocabulary or be a number, so a string outside the
+vocabulary is a violation regardless of what it means. Ending the session has NO precondition — the
+first version had the button inside the "What next" card, which only renders after an answer is
+chosen, i.e. the session could not be ended without selecting something.
+
+SERIES HISTORY: THE TIMES ARE FROM THE PLAN, NOT MEASURED
+Repeating a maneuver is a NEW performance (a new flow record, a new entry); otherwise three
+repetitions would look like a single attempt in the summary. The entry carries times FROM THE PLAN
+(protocol or set with the slider) and says so explicitly: the app counts one stage at a time and
+does not sum the time across the maneuver, so calling it "execution time" would be a fiction. The
+entry CARRIES NO CLOCK — first, the golden snapshot must stay deterministic; second, the time of
+the examination is a datum that, together with the rest, moves the record toward patient
+documentation.
+
+BEFORE AND AFTER
+The pre-maneuver description is COPIED at the moment the maneuver is considered performed. Without
+that copy the comparison would disappear exactly when its second half comes into being: observation
+records are keyed by TEST, so describing the control test overwrites the description from before
+the maneuver. The card admits that the "after" column fills in only once the control has been
+described feature by feature in the "Nystagmus" step — the answer on this card does not replace it.
+
+WHAT THIS BLOCK DOES NOT DO
+The session summary lives ONLY in this session's memory: the app does not store it on the device
+and does not send it anywhere. Persistent state and the examination-report generator are Block 15
+of the document — writing clinical data to disk is a separate decision (consent, retention,
+deletion), not a side effect of the "Follow-up" step. The control result is prepared for that
+generator: `podsumowanieSesji` returns only identifiers from closed vocabularies, so the labels are
+added by the screen.
+
+Gates: npm run fu:check (pure model, bare Node, invariants over the full product of 588
+combinations) and npm run fu:dom (a DOM scan in jsdom — all three acceptance criteria are claims
+about WHAT THE APP DOES, not about the model).
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+THE HINTS/HINTS+ EXAMINATION WITH QUALIFICATION — TWO TRACKS, ONE DOOR (Block 12)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Sources: [H8] Kattah 2009 (HINTS, the INFARCT mnemonic) · [H9] Tarnutzer 2011 (context and limits) ·
+[H24] GRACE-3 2023 (the timing-and-triggers taxonomy; gait ataxia = central; HINTS inaccurate without
+training) · [H28] Newman-Toker 2013 (the "plus" = a hearing screen).
+Gates: npm run hints:check (pure model, bare Node, invariants over the FULL product of 14,400
+examination states) and npm run hints:dom (jsdom, the real module graph — all three acceptance
+criteria are claims about WHAT THE APP DOES).
+
+TWO TRACKS THAT MUST NOT BE CONFUSED
+The HINTS module now holds two things that work in opposite directions:
+  • the SIMULATOR (screen `hints`, the NeuroVOR engine) — you pick a pathology and the model shows
+    how the eyes will behave. It teaches the PATTERN;
+  • the EXAMINATION (screen `hintsBad`, src/app/hints-model.js) — you record what you SAW in the
+    patient and the app organizes the observations. It records the OBSERVATION.
+The separation is physical (separate screens, separate state, separate oracles) for the same reason
+Block 8 tore the observation form away from the animation of the PREDICTED nystagmus: as long as the
+form sits next to the model, "agreement" measures only whether someone copied the screen correctly.
+The examination model does not import the engine, and the oracle enforces that (gate J12).
+
+ACCEPTANCE CRITERION 1 — ONE DOOR
+Measured BEFORE the change: SEVEN of seven entry paths into the module went through with an EMPTY
+qualification (tiles 2 and 5 of the start screen, the HINTS tab, openHints, openHintsCustom, the
+"Laboratory" area, and the `#p=` link carrying a shared patient), while the only gate in the app —
+`triageGo` — sat on a path none of them touched. Today the door is ONE: the qualification screen,
+with `wolnoBadac` behind it. Entry exists in exactly two ways:
+  • qualification CONFIRMED — the answers form an acute vestibular syndrome (continuous dizziness
+    with sustained spontaneous nystagmus, no red flags);
+  • qualification DELIBERATELY SKIPPED — the user picks a REASON from a closed vocabulary (teaching
+    demonstration / simulation / qualification done outside the app / proceeding despite the advice
+    against it). The reason enters the result as a caveat and stays there for the rest of the
+    session; for "demonstration" and "simulation" the result says explicitly that THIS IS NOT A
+    RECORD OF A PATIENT EXAMINATION.
+The refusal is not silent: the screen states that it did not let you in and says what is missing.
+The qualification reads THE SAME `triage` state as Block 6 — two different questionnaires about the
+same patient could say two different things, and the user would have no way to guess which holds.
+
+The `#p=` link is gated most firmly of all seven, deliberately: a shared link can seat a clinician
+straight in front of the verdict "peripheral pattern — reassuring", computed for the PARAMETERS IN
+THE LINK rather than for the patient sitting in front of them.
+
+EXAMINER TRAINING AS A FIELD, NOT A LEGAL DISCLAIMER
+GRACE-3 [H24] states plainly that HINTS performed without training is inaccurate. We ask ONCE, in the
+qualification, and the result carries the answer itself — instead of making the user tick "unreliable
+examination" every time. A lack of training (or a missing answer) does not block the examination, but
+it REMOVES THE REASSURING VALUE of the result: a full peripheral set then drops from "pattern
+supporting a peripheral lesion" to "peripheral pattern, but with no reassuring value".
+
+WHY THE OPTIONS ARE NOT CALLED "NORMAL / ABNORMAL"
+The user document describes the choices as "normal, abnormal, cannot assess". We keep the SHAPE (big
+choices, always an explicit "cannot assess") but not those two labels — because in HINTS they INVERT,
+and that inversion is the whole point of the test. A NORMAL head impulse in a patient with an acute
+vestibular syndrome is the DANGEROUS finding (the "Impulse Normal" of INFARCT [H8]), and an ABNORMAL
+one is reassuring. A button labelled "normal" above a finding that means "rule out a stroke" would be
+the worst label in the entire app. The options therefore name WHAT IS SEEN ("corrective saccade" /
+"the eyes stay on target"), and the meaning is added by the result. The oracle keeps this as a
+RATCHET (gate B7), so nobody "fixes" it back to the document's literal wording.
+
+SIX COMPONENTS — AND WHY THREE OF THEM WEIGH DIFFERENTLY
+The core (HI · N · TS) settles the conclusion. The "plus" (hearing) and gait may ADD an alarm feature,
+but on their own they never create a reassuring result: symmetric hearing removes one alarm feature
+and adds nothing in the other direction [H28], and walking unaided is consistent with a peripheral
+cause but does not substitute for the triad. Every component carries three texts: the INSTRUCTION
+(how to perform it), the MEANING (what follows from it) and the TRAP (what this element does NOT
+tell you). The trap is the clinically most important field here — without it the module would teach
+that a negative test of skew excludes a stroke.
+
+TWO COUPLINGS BETWEEN COMPONENTS (which no on-screen label can express)
+  • "Impulse Normal" is an alarm feature ONLY when spontaneous nystagmus is present. In a patient
+    without nystagmus a normal head impulse is simply normal — reading it as "central" would be a
+    false alarm in the commonest outpatient situation. When the nystagmus was NOT ASSESSED the result
+    is not an alarm either, but the conclusion still cannot come out reassuring, because the core is
+    incomplete.
+  • Saccades on BOTH sides do not support a peripheral cause in the HINTS sense: HINTS assumes a
+    UNILATERAL acute vestibular syndrome, whereas bilateral vestibulopathy produces saccades
+    everywhere and looks reassuring in the face of real, severe loss ([H23], BVH).
+
+ACCEPTANCE CRITERION 2 — "CANNOT ASSESS" IS NOT A NORMAL RESULT
+Written down FOUR times, at four different levels, because a single place could be bypassed by
+accident:
+  1. option weight: "not assessed" never enters the list of findings supporting a peripheral cause;
+  2. conclusion: "pattern supporting a peripheral lesion" REQUIRES a complete core — one unassessed
+     HINTS component is enough to make a reassuring result impossible;
+  3. screen: unassessed components are LISTED BY NAME in a separate list, so they cannot be passed
+     over in silence;
+  4. appearance: the "cannot assess" option has a dashed outline and a square box instead of a round
+     one — it differs from an answer before anyone reads the label.
+We separately guard the difference between "not answered yet" and "cannot assess": touching the same
+answer again REMOVES it and returns to the unanswered state. If undoing an answer set "cannot
+assess", the user would be marking a missing assessment through sheer hesitation.
+
+SIX CONCLUSIONS — AND ONE THAT CAME OUT OF A BUG
+The conclusion "incomplete examination" says "not all three components were assessed". The first
+version of the model also dropped into it the states where the core WAS assessed but did not form a
+peripheral picture (saccades on both sides, a normal HIT without nystagmus) — that is, it displayed
+an UNTRUE label over an examination that had been carried out in full. Hence the separate conclusion
+"examination performed, result inconclusive": it leads to a different action than "finish the
+examination".
+The order of the checks is a REQUIREMENT, not a matter of style: the alarm comes first, before
+"HINTS does not apply here" and before "incomplete examination", because a present skew deviation or
+an inability to walk unaided mean the same thing regardless of whether the rest of the examination
+could be performed.
+
+THE ASYMMETRY OF UNRELIABILITY
+An examination called unreliable CANNOT reassure, but it does NOT cancel an alarm feature that was
+noticed. "I was not sure" does not erase what you saw. This asymmetry is checked in both directions
+over the whole product of answers (gates D10 and F5).
+
+ACCEPTANCE CRITERION 3 — WHAT "A CLEAR WARNING" MEANS
+The warning exists IF AND ONLY IF an alarm feature was marked (the equivalence is checked in both
+directions over 14,400 states), it stands ABOVE the conclusion, it carries role="alert", it names the
+features that triggered it, and it repeats the management from the red-flag card of Block 6: urgent
+neurological evaluation, MRI with diffusion (DWI) and angiography (MRA), CT is NOT suitable for ruling
+out a posterior-fossa stroke, early MRI can be false-negative (repeat after 48–72 h). Two different
+sentences about the same management would mean that one of them is out of date.
+
+WHAT THIS BLOCK DOES NOT DO
+  • It makes no diagnosis and excludes no stroke. The peripheral result states outright that it is a
+    BEDSIDE result, and an empty list of alarm features states outright that it is NOT an exclusion of
+    a central cause.
+  • It writes nothing to disk. `wpisHints` prepares a record from closed vocabularies for the
+    examination-report generator (Block 15), and the guard `bezDanychOsobowychHints` REJECTS that
+    record whenever anything outside the vocabulary appears in it — rather than silently cleaning it.
+    Sanitization would be worse than refusal: the record would look saved while the data vanished
+    without a trace.
+  • It measures no time. The record carries no clock — for the same two reasons as the follow-up
+    record (the golden snapshot must stay deterministic + the time of the examination is patient data).
+  • It does not judge the components for the user, and there is NOT A SINGLE text field on any of the
+    three screens, so entering patient data is structurally impossible.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+LEARNING MODE AND CASE LIBRARY — THE KEY IS COMPUTED, NOT WRITTEN IN (Block 13)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Gates: npm run nauka:check (pure model, bare Node) and npm run nauka:dom (jsdom, the real module
+graph). Acceptance criteria K1, K2 and K4 are claims about the model and the screen; K3 needs
+a layout engine, so it was MEASURED IN THE BROWSER and the result is recorded below.
+
+THE PRINCIPLE: A CASE CARRIES NO ANSWER KEY
+A library of teaching cases is the most natural place for this app to start lying. It would be
+enough to write a field `diagnosis: 'posterior canal, right, canalithiasis'` into a case — and from
+that moment there would be a SIXTH description of the same clinical knowledge (after the engine,
+`baranyClassify`, `interp-model`, `man-model` and `followup-model`). It would drift at the first
+parameter change while the quiz stayed green, because it would be checking agreement with its own
+answer. A case therefore carries the HISTORY (the `triage-model` vocabulary) and the OBSERVATION
+(the `obs-model` vocabulary), and the key to each of the six stages is COMPUTED by the same model
+the clinical path uses:
+
+  stage "prediction"   → direction patterns from `odciskPredykcji` for this provocation and side
+  stage "recognition"  → `interpretuj().pozostale`, gated by `nietypowy()`
+  stage "mechanism"    → `interpretuj().mechanizm` (null = the model does not settle it)
+  stage "maneuver"     → `recommend(provocation, mechanism)` via `doborZProby`
+  stage "follow-up"    → `REGULY_KROKOW[result]` from Block 11, with its prohibitions and reasons
+
+A change in the engine changes the lesson or turns an oracle red; there is no third option. Gate A8
+forbids a case to carry a field named `rozpoznanie`, `kanal`, `strona`, `mechanizm`, `manewr` and
+six others, and section B proves BY MEASUREMENT that the key comes from the engine: reversing one
+torsion field in the record reverses the side in the key, and swapping the dynamics changes the
+maneuver from Epley to Semont.
+
+FOUR END-OF-CASE FIELDS — THREE COMPUTED, ONE AUTHORED
+The document requires every case to end with a decisive feature, a trap, an alternative and a next
+step. Three of them the model already computes (`rozstrzygajaca`, `wykluczone`/`pozostale`,
+`sugerowaneProby` or `REGULY_KROKOW`). Only the TRAP is authored — and that is why it is the one
+field the oracle polices by CONTENT: it must point at a feature or a flag genuinely present in that
+case (A9), so that no moral unrelated to the picture can be attached.
+
+ACCEPTANCE CRITERION 1 — THE ANSWER IS NOT HIDDEN, IT DOES NOT EXIST
+`informacjaZwrotna()` returns null until a decision has been made, and it is the ONLY entry to the
+verdict, so the screen has nothing to hide or reveal. The jsdom oracle measures this on
+`#app.innerHTML`: before the decision there is no feedback card, no `data-nwerdykt` attribute and
+no observation record (that one is COVERED until the prediction — otherwise the prediction stage
+would be a question about what is visible next to it).
+The hint is the third route straight from the document, but it POINTS AT A FEATURE and never gives
+the result (gate D10 checks that it carries no canal, side, mechanism or maneuver); it is recorded
+and enters the case result.
+AN ADDITION THE DOCUMENT DID NOT ASK FOR: an answer once given is FROZEN. Without it, "a decision
+before the answer is revealed" would be a fiction — it would be enough to click anything, read the
+verdict and correct it. The refusal to record is visible and carries a reason.
+
+ACCEPTANCE CRITERION 4 — A THREE-VALUED VERDICT
+`correct` (the only answer this description allows to be proven) / `defensible` (the model does NOT
+SEPARATE it from the others) / `incorrect` (the description excludes it). The defensible set comes
+from `pozostale` and `alternatywy`, not from an author's declaration — ambiguity is a PROPERTY OF
+THE MODEL, not an opinion about the case. The screen names two different kinds of it: "the model
+does not know a single answer" (no correct option at all) and "the model does not separate this
+answer from the others" (a correct one exists, but irrefutable answers stand beside it). Without
+that second signal the screen would fall silent exactly where the whole lesson of the case is to
+name the boundary of knowledge.
+
+WHAT THE CRITIQUE FOUND BEFORE THE SCREEN EXISTED
+The first version of the model marked as INCORRECT "a pattern this provocation cannot produce".
+That was untrue and the most dangerous mistake of the whole block: it promoted a SIMPLIFICATION OF
+THE ENGINE into a clinical claim. The model predicts a pure downbeat with no torsional component
+for the anterior canal, so a textbook torsional-vertical anterior-canal nystagmus would have been
+marked "impossible" for the learner; and a Dix-Hallpike lays the head back and can provoke another
+canal too. The carrier of error is therefore the EAR, not "impossibility": the pattern of the other
+ear in a one-sided provocation is incorrect, because that is the single mistake that sends
+a clinician to the wrong ear. The reason "impossible pattern" was REMOVED from the dictionary and
+gate F1 keeps it from coming back.
+Second repair: a candidate THAT SURVIVED is never an incorrect answer — not even when the picture
+carries a central feature. Otherwise every downbeat in a Dix-Hallpike (which raises `flagaOsrodkowa`)
+would erase anterior-canal BPPV from the differential and the learner would leave with the sentence
+"downbeat = never BPPV". The app says otherwise: on the diagnostic screen it NAMES the anterior
+canal and AT THE SAME TIME withholds treatment. The lesson mirrors exactly that — "atypical picture"
+is the correct answer, the candidate stays defensible.
+Third repair: at the maneuver stage, "I do not reposition" and any maneuver must never both be
+non-incorrect. The app's own model treats observation and repositioning as MUTUALLY EXCLUSIVE
+(`REGULY_KROKOW.residual`: `obserwuj` as the main step AND an explicit prohibition on repositioning
+with a stated reason), so a lesson allowing both would invert the semantics of its own program.
+With an atypical picture, holding back is correct and EVERY maneuver is incorrect; with a typical
+picture the reverse. Thanks to this, the case whose entire lesson is to stay one's hand stopped
+giving the same verdict to the learner who stopped and the one who did not.
+
+THE DISCRIMINATING-POWER GATE — AND A THRESHOLD REJECTED AFTER MEASUREMENT
+A stage on which no answer is incorrect measures nothing while looking assessed. The first threshold
+read "at most half the answers may be non-incorrect" and it threw out ALL 13 cases, including those
+that faithfully mirror the app's model: for the follow-up result "partial improvement", Block 11
+permits four actions out of six. The threshold measured an intuition about quiz sharpness rather
+than a property of the model, so it was rejected. What remains is checkable: every stage must have
+a CARRIER OF ERROR, with two exceptions stated outright and computed from the model — prediction in
+a BILATERAL provocation (there is no ear to be wrong about) and the mechanism when BOTH variants
+survive (there is nothing to exclude). On top of that: at least three of the five stages must have
+a correct answer.
+
+THE LIBRARY — 13 CASES
+Three levels (basic 3, clinical 5, expert 5) and four kinds (classic 4, near-typical 4, multicanal 2,
+central 3). The history of the CENTRAL cases looks like BPPV — episodic, positional, no red flags —
+and that is their point: if centrality could be read from the history, the case would teach reading
+the history rather than the nystagmus. Red flags are taught by Block 6. Gate H8 requires a case in
+which NOT A SINGLE candidate survives to carry a flag (f1/f2/f3) — otherwise "matches no pattern"
+would pose as a claim about a central cause, while it is only a gap in the engine's vocabulary.
+
+ACCEPTANCE CRITERION 2 — PROGRESS SAVED LOCALLY
+All contact with browser storage lives in `nauka-store.js` (the block's only dirty module), so the
+pure model runs in bare Node and the golden snapshot stays deterministic: progress is read ONCE,
+at boot, outside rendering, and the golden scenarios pin it explicitly. The store is versioned,
+resistant to private mode and to a full quota (the refusal is VISIBLE, not silent), and carries only
+identifiers from the vocabularies: case, result, stage verdicts, hints used. The guard
+`bezDanychOsobowychNauka` checks this before writing and REJECTS the record rather than cleaning it —
+silent sanitization would look like a save that never happened. There is no clock: solving time is
+data about the user, and the golden snapshot has to stay deterministic anyway.
+Entries for cases no longer in the library DO NOT DISAPPEAR silently — they are counted separately
+(`nieznaneWpisy`) and shown, because a counter that moves backwards on its own is worse than a number
+the user does not understand.
+
+ACCEPTANCE CRITERION 5 (MINE, NOT FROM THE DOCUMENT) — LEARNING DOES NOT TOUCH THE PATIENT
+The learning track and the patient track share one state object, and contamination would be PARTLY
+IRREVERSIBLE: `decisionSeq` is explicitly monotonic, `obsOdciski` is derived from `obs`, and
+`kontrole` is a series history indexed by `flow.maneuver.kontrolaIdx`. The reflex mitigation — "save
+the state, run the lesson, restore" — works for none of those three fields and fails silently. The
+separation is therefore STRUCTURAL: `nauka-state.js` writes only to `nauka*` fields, the key is
+computed on the frozen literal PACJENT_ZERO (never on a spread of the state), and the learning
+modules are forbidden to import `state.js`. The oracle takes a fingerprint of 32 fields describing
+the patient before and after the lesson — including `decisionSeq` and `obsOdciski`, precisely the two
+that any snapshot breaks — and requires them to be identical. The reverse direction too: an ongoing
+patient session does not change the content of the lesson.
+A consequence of this rule is what the lesson DELIBERATELY LACKS: engine animation and the 3D figure.
+Both stand on `state.side`, `state.canal`, `state.variant`, `state.maneuverKey` and `state.plan`, so
+showing a maneuver would require overwriting them — and on leaving the learning area the clinician
+would find someone else's case on the positioning card, with `variantZrodlo` still saying "derived
+from the observation record". The illustration of a case is the OBSERVATION RECORD assembled from
+the Block 8 vocabularies.
+
+ACCEPTANCE CRITERION 3 — MEASURED IN THE BROWSER
+jsdom has no layout engine, so "no horizontal scrolling" cannot be checked by an oracle.
+The measurement: 13 cases × 6 stages, before and after the answer, plus the two library screens.
+At 360×720 — 145 measurements, 0 overflows, the furthest right edge exactly 360 px.
+At 320×640 — 144 measurements, 0 overflows, the furthest right edge exactly 320 px.
+The six-stage axis WRAPS (an `auto-fit` grid) instead of scrolling horizontally: at 360 px, six
+items in one row is ~600 px, i.e. half the lesson beyond the edge. The observation-record table uses
+`table-layout:fixed` and breaks long values, because that table was the first to widen the row.
+At 1280 px the D3 layout was measured: control column 296..676, illustration column 696..1217, both
+in one row; the option touch targets are 56 px.
+
+WHAT THIS BLOCK DOES NOT DO
+  • It makes no diagnosis and does not grade the clinician. The verdict concerns an answer to
+    a SYNTHETIC case and is computed against a model whose limits the same screen names.
+  • It shows no result as a number or a percentage. A case result is a PROFILE of stages, because
+    a single number would lie in both directions: it would reward hitting where there was nothing to
+    hit, and penalize a defensible answer.
+  • There is not a single text field on any learning screen, so entering patient data is structurally
+    impossible — the same principle as in Blocks 8, 11 and 12.
+  • It does not measure solving time and stores nothing beyond identifiers from the vocabularies.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+THE NEUROTOLOGY LABORATORY — A BENCH, NOT A PATIENT (Block 14)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Gates: npm run lab:check (pure model, bare Node, 580 cases) and npm run lab:dom (jsdom, the real
+module graph, 47 cases).
+
+WHAT WAS MEASURED BEFORE ANYTHING WAS WRITTEN
+  · Acceptance criterion 1 WAS ALREADY MET: across nine screens of the clinical pathway there are
+    zero laboratory controls, and the full run history → provocation → nystagmus → interpretation →
+    maneuver → follow-up completes without touching the mathematical patient’s state. The work was
+    therefore to turn that measurement into a STANDING GATE before some future block quietly breaks it.
+  · Acceptance criterion 2 was not met at all: the engine has 27 parameters in 8 groups; all have
+    a range, but 14 had no unit, and the DESCRIPTION count was 0 of 27. Groups had one sentence of
+    help each; parameters had nothing.
+  · Acceptance criterion 3 turned out to be COMPUTABLE: `clinicalReadout` returns fourteen fields,
+    and the difference between two readouts states outright what moved.
+
+THE PRINCIPLE: THE EFFECT IS MEASURED, NOT WRITTEN IN
+It was tempting to build a "parameter → effect" table. That would be a SECOND definition of the
+physiology beside the engine, and it would drift at the first change of an equation. Instead the
+laboratory computes the clinical picture BEFORE and AFTER the change and shows the difference:
+which examination changed its result, and which sentence of the findings arrived or disappeared.
+Gate G9 forbids such a table from ever being created.
+Over 27 parameters × 2 extremes × 2 clinical contexts, the oracle checks that every parameter
+either MOVES SOMETHING or itself declares what is missing for it to become visible. A slider that
+does nothing and does not say why teaches that physiology is arbitrary.
+
+NO EFFECT IS A RESULT, NOT A FAULT
+Measured: fixation suppression in a healthy patient changes nothing, because there is no nystagmus
+to suppress. The screen states this outright and gives a reason from a closed vocabulary
+(`brakOczoplasu`, `brakStronyChorej`, `brakObrotu`, `brakBodzca`, `brakSpojrzeniaBocznego`). The
+reason is a field of the PARAMETER, not a guess after the fact — guessing ("probably because…")
+would be inventing physiology the model never computed.
+
+FOUR LIMITS OF THE MODEL THAT THE CRITIQUE FOUND — THREE CLOSED BY ENGINE ASSESSMENT II
+The physiology critique ran the engine and showed four places where a parameter description would
+be UNTRUE if written plainly. In Block 14 the engine was NOT changed — changing the equations is
+the user’s clinical decision, not interface work — so each limit was NAMED in the parameter’s
+description and PINNED by a gate (section H of the oracle).
+Engine assessment II closed THREE of those four, and the gates behaved exactly as designed: they
+turned red ON THE REPAIR and forced the description to be updated, rather than leaving a comment
+that quietly went out of date. Four section-H gates are now INVERTED — they keep watch that the
+repair holds:
+  1. AFFERENT SATURATION — CLOSED. The afferent no longer saturates at head-impulse velocity:
+     measured at tones of 150, 200, 240 and 300 Hz, vHIT stays NORMAL. Previously, above about
+     167 Hz it came out abnormal DESPITE an intact canal (tone 200 Hz + gain 1.0 → measured gain
+     0.63), which struck at the module’s most important dissociation. Today a normal vHIT in the
+     irritative phase of Ménière’s disease (~150 Hz) is its distinguishing feature BY CONSTRUCTION;
+     gate H1a turns red if the saturation returns.
+  2. A SLIDER IS NOT A READING — A NARROWER LIMIT. `gain` is the canal’s TRANSDUCTION gain. The
+     engine represents a COMPLETE loss of a nerve branch as 0.100 (before assessment II: 0.35) —
+     zero is still a limit of the model, not a patient state. Tone no longer breaks the head
+     impulse, so the measured gain depends on this slider rather than on tone.
+  3. VEMP IS AN ASYMMETRY — THE LIMIT STAYS, BUT IT STOPPED BEING SILENT. The VEMP reading is a
+     DIFFERENCE between ears, so a BILATERAL loss produces no asymmetry at all. The engine used to
+     simply stay silent about it; today it names it outright ("cVEMP: bilaterally absent … no
+     asymmetry despite the deficit"), but the limit itself is the same: the model compares the
+     DIFFERENCE, not the absolute level. Without that sentence the laboratory would teach that
+     adding a deficit on the other side REPAIRS the first one.
+  4. VERTICAL CANALS — CLOSED. An isolated vertical-canal loss now yields a PERIPHERAL localization
+     and only that (measured: 4 peripheral signs, 0 central). The false entry "isolated
+     vertical-torsional nystagmus — classically suspicious for a central cause" is gone, and with
+     it the contradiction in the engine. The limit became narrower and is still true: the HINTS
+     battery computes the nystagmus from the HORIZONTAL component only, so it simply does not see
+     the vertical one.
+
+THE LABORATORY SHOWS NO VERDICT AND NO LOCALIZATION
+`clinicalReadout` computes them, and in the clinical pathway they make sense: there the picture
+comes FROM THE PATIENT and the model interprets it. In the laboratory the direction is REVERSED —
+the user sets the pathology with sliders, so "diagnosis: central" above those sliders is an echo of
+the input, not a result. The model keeps an explicit list of forbidden fields
+(`POLA_ZAKAZANE_W_LAB`) and the DOM oracle checks that none of them reached the screen. The screen
+shows the EXAMINATION FINDINGS and states outright that this is not a diagnosis.
+
+ACCEPTANCE CRITERION 1 — TWO MEASUREMENTS INSTEAD OF A LIST OF SCREENS
+A hand-written list of screens always goes stale, so the gate measures something else:
+  1. the full clinical pathway closes without entering the laboratory and without touching its state;
+  2. an ENTIRE experiment — opening it, sliders, the second bench, the comparison, the reset,
+     expanding a description — changes NOT ONE of the 29 fields describing the patient and NOT ONE
+     of the 16 fields of the HINTS simulator.
+The second measurement cannot be evaded by adding a new control. Its precondition was giving the
+laboratory ITS OWN state fields (`labA`, `labB`, `labEksperyment`, …) instead of writing to
+`hintsCustom`: had the experiment written to the simulator’s fields, the leak would live in the
+DATA MODEL and there would be no two things to compare.
+
+TWO BENCHES
+Comparing two pathologies, as the desktop layout requires, needs TWO patients at once, so the
+laboratory has benches A and B. A single global parameter set could not carry it: the user would
+convert one pathology into the other and compare it against memory.
+
+REFERENCE SCENARIOS — ALWAYS AS A COPY
+The eight experiments stand on the ENGINE’s scenarios (`normal`, `neuritisR`, `strokeCentral`,
+`bvh`), not on their own definitions of the pathologies. The injector hands out a scenario ONLY as
+a copy: `NeuroVOR.SCENARIOS` is a shared constant, and a reference that can be changed is not
+a reference — the "return to the reference" button would then return to an already poisoned value.
+The reset is checkable: after it, the list of deviations must be EMPTY. And every deviation carries
+its OWN counterfactual measurement: what changes if that ONE parameter returns to the reference.
+Without it, the list of deviations would teach false causality — the reader would attribute the
+whole picture to each deviation separately.
+
+WHAT THE GATES CAUGHT ALONG THE WAY
+  · The navigation highlighted "Diagnostics" while the user stood in the laboratory: `syncShell`
+    OVERWRITES `state.area` with the result of `areaZeStanu`, which did not know the `lab` mode
+    (measured: `goLab()` gave area='lab', while `goArea('lab')` ended with area='diag').
+  · A golden key named `hints` had long been capturing the chrome of the QUALIFICATION screen
+    rather than the simulator — `goHintsKwal()` calls `render()` but not `syncShell()`, so the
+    shell attributes stayed from the previous pass. The scenario now takes the full route and
+    closes with `syncShell()`.
+  · The module purity gate fired on the clinical "third window": superior canal dehiscence IS
+    a third window of the labyrinth and that phrase has every right to stand in a parameter
+    description. The gate now looks for USE IN CODE (`window.`) rather than the word — with
+    a sensitivity control in both directions.
+  · The first version of the "what is normal" gate demanded the word "normal" and threw out two
+    parameters that HAVE no normal: compensation 0–1 is not a deviation from health but two equally
+    true states. The gate now measures the property, not the word: a description must PIN
+    A SPECIFIC NUMBER TO A MEANING.
+
+WHAT THIS BLOCK DOES NOT DO
+  · It changes not a single number in the engine and adds not a single parameter.
+  · It makes no diagnosis and shows no verdict.
+  · It has not a single text field (a range slider is not a text field).
+  · It is not needed to complete basic diagnostics — and that is measured by two independent
+    measurements, not declared.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+EXAMINATION REPORT GENERATOR AND SESSION RECORD — COMPUTED, NOT STORED (Block 15)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Gates: npm run opis:check (pure model, bare Node, 353 cases) and npm run opis:dom (jsdom, the real
+module graph and real browser storage, 95 cases).
+
+WHAT WAS MEASURED BEFORE ANYTHING WAS WRITTEN
+  · Across the nine screens of the clinical pathway there were ZERO report, copy or export
+    controls: the app produced not one sentence that could be pasted into a record.
+  · After a full run history → follow-up, browser storage was EMPTY — the case did not survive
+    a page reload.
+  · The control entry had nine fields and none of them carried TOLERANCE, which the document
+    requires in the report. A generator may not invent data that is never collected — so one
+    question with a closed vocabulary was added at the control step.
+  · Nowhere in `src/` was there a single `fetch`, `XMLHttpRequest`, `sendBeacon` or `WebSocket`,
+    and there still is not — a gate scans the whole save path.
+
+THE PRINCIPLE: THE REPORT IS RECOMPUTED ON EVERY RENDER
+The simplest way to break acceptance criterion 1 ("the report updates after a change of
+diagnosis") would be to STORE the finished text in state: every change of diagnosis then leaves
+in memory a sentence that has stopped being true, and the user copies it into the record. So the
+report has no storage at all. The oracle measures this by mutation: fifteen clinically meaningful
+changes (canal, the value and the SOURCE of the side, mechanism, central picture, control result,
+tolerance, maneuver, nystagmus description, history, a second test, a second control) MUST change
+the text, and six non-clinical ones (3D mode, area, step map, expanded question group, laboratory
+bench, decision counter) MUST NOT touch it. Without that second half the gate would also pass for
+a generator that simply dumps the whole state.
+
+NOT ONE CLINICAL WORD OF ITS OWN
+The generator knows the name of no canal, no maneuver and no nystagmus feature — every label comes
+in through the injector from the dictionaries the screens use. Its own strings would be a SIXTH
+description of the same knowledge, and the drift would go straight into medical documentation. The
+oracle does not read the code, it measures behaviour: replacing a label in a dictionary MUST
+change the report text (eight labels plus the nystagmus values). A sensitivity control checks that
+the same state without the replacement yields an identical text.
+
+THE MOST IMPORTANT SENTENCE OF THIS BLOCK: "AFFECTED SIDE — NOT ESTABLISHED"
+`state.side` holds the literal 'P' and `state.variant` the literal 'canalo'. Both values exist
+only because the animation has to draw something, and the user need not have touched either —
+Blocks 9 and 10 built `variantZrodlo` and `sideZrodlo` for exactly this. A generator that printed
+them as findings would put LATERALITY into medical documentation on the strength of a default. The
+rule is therefore hard: in the "Interpretation" part the side and the mechanism appear ONLY with a
+source; without one the section says "not established" and gives no value. The `opis/bez-strony`
+state is PINNED in the golden snapshot, so silently turning that sentence into "right" turns the
+oracle red.
+The side of the PERFORMED maneuver is a different thing — it is a fact ("this was done to the
+right ear"), not a conclusion, so it may be written. The two sentences side by side are
+information, not a contradiction: a side was treated that nobody confirmed.
+
+WHAT THE REPORT DOES NOT CARRY
+  · The app's advice. The triage model carries paragraphs of recommendations ("consider MRI DWI")
+    — those are for the user ON SCREEN. An examination report records what was done and what was
+    found; pasting someone else's recommendations into a record signed by a clinician is a
+    different thing. The report carries the triage TITLE, not its justification.
+  · Instances rejected as unreliable — they appear as "described and rejected, reason X", never as
+    a finding. Silence would read as "we did not look".
+  · A timestamp. The date of an examination belongs to the documentation, not to a browser clock.
+  · A diagnosis. The disclaimer about the nature of the tool is a MANDATORY section that no switch
+    can disable — including when the user disables every other one.
+
+THE FIRST TEXT FIELD IN THE WHOLE APP
+The document requires editing the text before copying. A text field is the only place where a
+patient's name can be typed — up to Block 15 there were zero of them, and not by accident. The
+answer is neither refusal nor filtering the typed text (a name filter is impossible and looks like
+a promise), but PERSISTENCE:
+  · the edit lives in `state.opisEdycja` and is stored nowhere,
+  · saving a session takes the CASE FIELDS, not the text,
+  · the structured export takes the same fields and passes the guard,
+  · leaving the screen clears the edit, and the warning stands NEXT TO THE FIELD, before anyone
+    starts typing.
+The oracle measures this in BYTES: after typing a marker into the field and saving the session,
+browser storage must not contain it. A separate gate keeps the count at EXACTLY ONE: zero on the
+eight clinical screens and in the Learning and Laboratory modules, zero on the report screen
+before the "Edit" gesture, one after it.
+
+THE DATA GUARD: A STRUCTURAL RULE, NOT A WORD LIST
+We do not look for names — we require EVERY value in the record to be a number, a boolean or a
+string FROM A DICTIONARY. A string outside the dictionaries is a violation regardless of what it
+means, so a name typed into any field has no way through (40 attempts in the oracle, each through
+a different door: case fields, observation records, instances, history, control entries, flow,
+fingerprint inputs). The guard REFUSES and says why instead of quietly cleaning — silent
+sanitisation looks like a save that never happened. The observation fingerprint (the only computed
+rather than dictionary value) is RECOMPUTED from the record and must match.
+
+WHAT A SESSION SAVES AND WHAT IT DOES NOT
+The list of 29 case fields — the same one Block 14 fingerprints to prove the Laboratory does not
+touch the patient — now lives in ONE place and is split into two disjoint parts: 19 saved fields
+and 10 volatile ones. The oracle checks that the sum equals the whole, so a field added by a future
+block cannot silently drop out of the record.
+The clock and the plan are volatile NOT to save space: restoring a session with a running counter
+would be measuring how long a patient is held in a position they left long ago. After a restore the
+counter is stopped, the plan is rebuilt from the maneuver key, and the receipt says outright that
+the timer was NOT resumed.
+
+SUMMARIES ARE COMPUTED, NOT SAVED
+`flow.triage` carries, next to its identifiers, the finished TITLE of the result in both languages,
+because the flow bar must print it without calling the model. Only identifiers go into the record —
+`syncTriage` recomputes the sentence after a restore. This is a PROJECTION at save time, not the
+cleaning of a violation: the guard still rejects a record in which such a sentence appears.
+
+THE MOST EXPENSIVE MISTAKE OF THIS BLOCK, AND THE TRIPWIRE FOR IT
+The guard was written against a HAND-BUILT case and therefore did not know about three things the
+real pathway puts into `flow`: the triage summary, the control summary and the description from
+BEFORE the maneuver. It rejected EVERY real save — that is, "save the session" never worked once,
+with 353 green cases in the model oracle. Only the screen oracle, on the real module graph, found
+it (the same lesson as the export on the VOG track: the guard had only ever walked a hand-written
+record).
+Fixing it is not enough, because the next block will add another summary. So the oracle now
+measures COVERAGE: every key of the real `flow`, `flow.maneuver`, `flow.maneuver.inputs`, the
+control entry and the triage summary must be on the guard's list — with sensitivity controls in
+both directions and a demand that a real record PASS the guard.
+
+THE PRIVACY SENTENCE THIS BLOCK MADE UNTRUE
+The session-ending card said: "the app does not store it on the device and does not send it
+anywhere". Up to this block that was true, because there was nothing to store with. Storage now
+exists, so the sentence had to change — and it changed exactly where the user asks about privacy:
+the app still sends nothing off the device, and the case stays in browser storage ONLY if the user
+saves the session themselves. A gate keeps the old sentence from coming back.
+
+ACCEPTANCE CRITERION 3 — DELETION WHERE PEOPLE LOOK FOR IT
+"Delete all saved sessions" sits in the SETTINGS, not on a screen reachable only through a finished
+session. The NUMBER of records stands next to the button, because "delete everything" without
+saying how much is a gesture in the dark, and the deletion itself takes two steps — it neighbours
+the language switch. We delete the KEY, not its contents: an empty list in storage still looks like
+something was saved.
+
+WHAT THIS BLOCK DOES NOT DO
+  · It changes not a single number in the engine and adds not a single parameter.
+  · It makes no diagnosis and does not judge treatment efficacy.
+  · It sends nothing over the network and has nothing to send it with — the save path contains not
+    one network call.
+  · It saves nothing on its own: opening the report screen, toggling sections and editing the text
+    leave browser storage exactly as it was (measured byte for byte).
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════
+PWA, OFFLINE AND MOBILE BEHAVIOUR — AN UPDATE THAT WAITS (Block 16)
+════════════════════════════════════════════════════════════════════════════════════════════════
+Gates: npm run pwa:check (the pure model AND the service-worker template actually EXECUTED, bare
+Node, 235 cases) and npm run pwa:dom (jsdom, the real module graph and a fake service worker,
+89 cases).
+
+WHAT WAS MEASURED ON THE BUILT `dist` BEFORE A SINGLE LINE WAS WRITTEN
+  · THE APP DID NOT COME UP OFFLINE — despite a complete precache. With the server stopped, a
+    reload showed nothing and the console carried "Expected a JavaScript module but the server
+    responded with text/html". All 11 of 11 assets were in the cache, the lazy 3D chunk included.
+    The cause, measured rather than guessed: `caches.match` honours `Vary`. An ES module is fetched
+    in CORS mode, so its request carries `Origin`, which the `cache.addAll` request did NOT have.
+    The decisive proof: `fetch(url)` on that same file hit the cache (200), while `import(url)` of
+    the same file did not.
+  · THE FIRST RELOAD AFTER A DEPLOY LEFT THE APP BLANK. The worker took the tab over immediately
+    (`skipWaiting` + `clients.claim`), deleted the old cache, and the tab was still holding the OLD
+    document — whose module already had a new hashed name, so it existed neither in the new cache
+    nor on the server. Measured: `#app` 336 characters, no test surface. The second reload brought
+    it back. In practice: after every deployment the first visit shows a white page.
+  · The keyboard shortcuts the document asks for (space — pause, arrows — step) did not exist; the
+    only `keydown` handlers in the app served the phase slider and the flip cards.
+  · The only text field in the app (report editing, Block 15) was 14 px — Safari on iOS then zooms
+    the view on every focus.
+  · Production on GitHub Pages answers with `Vary: Accept-Encoding`, not `Vary: Origin`, so the
+    released PWA most likely did work offline — by accident, not by construction. One response
+    header stood between the app and a total offline failure.
+
+AN UPDATE IS A CLINICAL EVENT, NOT A TECHNICAL ONE
+A new version arrives through a page reload, and a reload discards the case held in memory. Hence
+two different rules:
+  · HARD BLOCK — during a repositioning maneuver (timer running, or the step already changed) an
+    update may not be applied by ANY route, including an explicit request. The patient is lying in
+    a position and the hold time is part of the procedure.
+  · SOFT WARNING — an open case (described nystagmus, a recorded follow-up, triage answers) may be
+    lost deliberately, but the user must know that is what they are doing.
+There are ten signals of an open case and each is checked SEPARATELY: the oracle demands that each
+one on its own suspends the automatic update. Same ratchet as the Block 15 guard — a list written
+from memory will miss the field a future block adds.
+
+THE NEW VERSION WAITS INSTEAD OF TAKING THE TAB
+The worker no longer calls `skipWaiting` on install. It waits until the app asks (an
+`OTOREPO_WDROZ` message) or every tab is closed. The old cache therefore does NOT vanish from under
+an open tab: measured live — mid-maneuver, after a new version was deployed, the old 3D chunk still
+loaded correctly (`import` of the old hashed file: 200, module imported).
+Acceptance criterion 3 ("the update is communicated and applied when the session ends") is met
+literally: deployment fires in `zakonczSesje`, and not unconditionally — the model first MEASURES
+on the state whether anything is left to lose.
+
+THREE FIXES IN THE WORKER ITSELF, EACH FROM A MEASUREMENT
+  1. no `skipWaiting` on install (see above),
+  2. `ignoreVary: true` in the cache lookup — without it ES modules miss a complete precache and
+     the app does not come up offline,
+  3. the cached document is served to NAVIGATIONS ONLY. The old fallback handed out `otorepo.html`
+     for every failed request, so a missing `.js` ended in a MIME-type error instead of a readable
+     failure; a script request now gets a 504.
+The worker template was EXTRACTED into `tools/sw-template.mjs` so that it can be RUN: the oracle
+mounts a fake `self`, a fake `caches` and a fake `fetch`, then measures what the worker actually
+does with a request. While the template lived inside the build script, the only evidence for its
+correctness was reading the code — and that is exactly the class of evidence under which the app
+never came up offline. Failing-first proof: restoring `skipWaiting` turns G2 red, removing
+`ignoreVary` turns G11 red, and serving the document for every miss turns G17 and G18 red.
+
+THE DECISION BELONGS TO A PURE MODEL; THE SCREEN DOES NOT REPEAT IT
+`pwa-model.js` knows nothing of the DOM, of `navigator`, or of a clock. It answers three questions
+at once: whether to show the message, whether applying is allowed, and exactly what to say. The
+new-version bar lives OUTSIDE `#shell` — like the settings sheet and the step map — so the twenty
+pinned shell states stayed byte-identical; the golden snapshot gained TWO keys and not one key
+changed in any other layer.
+The bar is never modal: an app update has no right to take the screen from a clinician holding a
+patient in position. In focus mode it collapses to a single line — from measurement: the full bar
+is 76 px and overlapped the position-hold slider, so a message nobody can act on mid-repositioning
+was covering a clinical control. Narrowed to 48 px it no longer overlaps the timer, the button, the
+slider or the progress bar.
+
+A SHORTCUT WHOSE DEFAULT ANSWER IS "NO"
+Space pauses and resumes the timer, arrows move between steps — but only on the maneuver screen and
+only when the key does not belong to somebody else. The model refuses with a NAMED reason when: the
+caret is in a text field (space must type), a button or switch has focus (space must press it), the
+hold-time slider or a select has focus (the arrow belongs to them — Block 2 added that handling
+deliberately, because without it the hold time cannot be set from a keyboard at all), the key
+carries a modifier, is held down, or there is no step in that direction.
+The sensitivity control runs BOTH ways: a button does not eat arrows and a slider does not eat
+space — a gate that always refuses would pass every refusal test and deliver no shortcut at all.
+Measured in a browser: space starts and pauses the timer, arrows change the step, an arrow with the
+slider focused does NOT change the step, and space with the button focused is not hijacked.
+
+THE OFFLINE SENTENCE IS A FUNCTION OF A FACT, NOT A PROMISE
+The document asks the app to say which content needs a connection. The sentence in settings is
+generated from the list of network-using features — the list is empty, so the sentence reads
+"everything works offline", and a gate scans all of `src/` (with comments stripped, because a
+comment about `fetch` is not a call) and will fall over at the first real network call. The sentence
+is also PRECISE: the app sends and fetches no data, but the worker does fetch its own files from
+the network until they are in the cache — and the sentence says so.
+
+BLOCKING FORM ZOOM WITHOUT TAKING ZOOM AWAY
+The report editing field is now 16 px, so iOS no longer zooms on focus. The gate measures the
+CASCADE (the last declaration that applies), not the first matching rule, and has sensitivity
+controls both ways. A separate gate keeps the problem from being "solved" by forbidding zoom in the
+viewport: `user-scalable=no` takes magnification away from the people who need it.
+
+THE SETTINGS SHEET STOPPED BEING FROZEN IN ONE LANGUAGE
+The whole settings panel was built once, at boot, so after a language switch it stayed in the old
+one — with every oracle green, because the sheet lives outside `#app`. The same bug that was fixed
+long ago for the navigation and the flow bar. Block 16 adds two sentences there (about offline and
+about the shortcuts), so a frozen language stopped being a detail: the panel is now rebuilt on a
+language change.
+
+WHAT THIS BLOCK DOES NOT DO
+  · It changes not a single number in the engine and adds not a single parameter.
+  · It adds not one network call — a gate checks this.
+  · It does not change the contents of `#app`: 183 pinned DOM states and 360 pose states are
+    byte-identical to what they were before the block.
+  · It does not introduce the routing map from the document (`/start`, `/diagnostyka/bppv/…`) —
+    that is a separate, large change.
+
+WHAT CANNOT BE MEASURED WITHOUT A DEVICE
+Installation to the home screen and launching without a browser bar (acceptance criterion 1) rest
+on the manifest (`display: standalone`, `start_url` aliased at build time) and were NOT checked on
+a real phone. The same goes for safe areas around a display cutout and the landscape presentation
+mode: the rules exist and were measured in a phone-shaped window, but not on hardware.

@@ -1,0 +1,215 @@
+/* OTOREPO — powłoka aplikacji (Blok 1: fundament responsywny; Blok 3 wypełni nawigację).
+ *
+ * PODZIAŁ RÓL, konsekwentnie:
+ *   @media     — GDZIE jest nawigacja i ile miejsca ma powłoka (cecha urządzenia/okna).
+ *   @container — ILE KOLUMN ma treść (cecha miejsca, którym dysponuje komponent).
+ * Wynika to wprost z dokumentu projektowego: „Breakpointy są punktami orientacyjnymi. Ostateczne
+ * przełączenie układu powinno wynikać z miejsca potrzebnego komponentowi."
+ *
+ * JEDEN MODEL PRZEWIJANIA NA WSZYSTKICH SZEROKOŚCIACH. Powłoka jest siatką o wysokości ekranu,
+ * a przewija się WYŁĄCZNIE .mainscroll. Dzięki temu topbar i dolny pasek leżą POZA scrollportem,
+ * więc: (a) nie potrzebują z-index ponad treścią, (b) sticky wewnątrz treści (.ghead, .tcard) ma
+ * dobrze określony kontener, (c) pasek nawigacji nie może zasłonić przyklejonej akcji.
+ * Alternatywa (przewijanie całego dokumentu) dawała sticky zerowy zakres i wymuszała ręczne
+ * kompensowanie wysokości pasków w kilku miejscach naraz.
+ */
+
+[hidden]{ display:none !important; }   /* sloty nawigacji są puste do Bloku 3; grid nie może ich wskrzesić */
+
+.shell{
+  height:100vh; height:100svh;    /* svh, nie dvh — układ nie skacze przy chowaniu paska adresu */
+  display:grid;
+  /* minmax(0,1fr), NIE domyślne auto. Niejawna kolumna `auto` rozszerza się do min-content
+     zawartości, więc pojedynczy szeroki element w treści (tu: .topbar renderowany w #app,
+     min-content 378 px) rozpychał całą powłokę poza okno 360 px — przy czym przelew był
+     niewidoczny w documentElement.scrollWidth, bo chował się w scrollporcie. */
+  grid-template-columns:minmax(0,1fr);
+  /* REGUŁA: każda zmiana grid-template-areas MUSI iść w parze ze zmianą grid-template-rows.
+     Lista wierszy krótsza niż lista obszarów nie jest błędem składni — ścieżki się PRZESUWAJĄ.
+     Przy „top/flow/main/nav" i starych rzędach „auto 1fr auto" jedyny 1fr trafiłby na pasek
+     przebiegu: na krótkim ekranie rozdąłby się na pół okna, a na długim (diagnostyka ~3000 px)
+     `main` dostałby `auto`, przerósł powłokę i został przycięty przez overflow:hidden — dół
+     ekranu i przyklejony pasek startu manewru stałyby się niedostępne. Jedynym 1fr jest `main`. */
+  grid-template-rows:auto auto 1fr auto;
+  grid-template-areas:"top" "flow" "main" "nav";
+  overflow:hidden;
+}
+
+.apptop{
+  grid-area:top;
+  display:flex; align-items:center; gap:var(--sp-3);
+  padding:var(--sp-2) max(var(--shell-pad), var(--safe-l), var(--safe-r));
+  padding-top:calc(var(--sp-2) + var(--safe-t));
+  min-height:calc(var(--topbar-h) + var(--safe-t));
+  border-bottom:1px solid var(--line);
+  background:var(--bg);
+}
+.brand{ display:flex; align-items:center; gap:var(--sp-3); min-width:0; }
+.brand__mark{
+  width:38px; height:38px; border-radius:var(--r-md); flex:0 0 auto;
+  display:grid; place-items:center;
+  background:linear-gradient(160deg,#1E3540,#0E1822); border:1px solid #2E4757;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 16px -8px rgba(79,210,238,.35);
+}
+.brand__txt{ min-width:0; }
+.brand__name{
+  display:block; font-family:var(--display); font-size:19px; font-weight:700;
+  letter-spacing:.14em; line-height:1.1; color:var(--text);
+}
+.brand__name span{ color:var(--primary); }
+.brand__sub{
+  display:block; font-size:var(--fs-xs,12px); color:var(--muted); line-height:1.3;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.apptools{ margin-left:auto; display:flex; align-items:center; gap:var(--sp-2); flex:0 0 auto; }
+
+/* Pasek języka przestaje być pływającą wysepką nad treścią — wchodzi do paska narzędzi.
+   Traci position:fixed z legacy.css, więc nie zasłania już nagłówka i nie tworzy własnego
+   kontekstu stosu (z-index:60 był najwyższą warstwą w aplikacji, bez powodu). */
+#langbar.langbar{ position:static; top:auto; right:auto; z-index:auto; box-shadow:none; }
+
+.mainscroll{
+  grid-area:main;
+  overflow-y:auto;
+  min-height:0;                    /* OBOWIĄZKOWE: bez tego element siatki nie skurczy się poniżej treści */
+  min-width:0;                     /* to samo w poziomie — element siatki ma domyślnie min-width:auto */
+  overscroll-behavior:contain;
+  container-type:inline-size;      /* kontener zapytań dla liczby kolumn treści (E2B) */
+  container-name:main;
+  padding-inline:max(var(--shell-pad), var(--safe-l), var(--safe-r));
+  /* Poświata tła przeniesiona z body: była pozycjonowana w procentach szerokości OKNA, więc na
+     szerokim ekranie odklejała się od kolumny treści i świeciła w pustkę. */
+  background:
+    radial-gradient(900px 480px at 85% -8%, rgba(79,210,238,.09), transparent 60%),
+    radial-gradient(1100px 640px at 10% -12%, #141F2C 0%, transparent 58%);
+}
+
+.railnav{ grid-area:rail; display:none; }
+.bottomnav{
+  grid-area:nav;
+  padding-bottom:var(--safe-b);
+  min-height:calc(var(--nav-h) + var(--safe-b));
+  border-top:1px solid var(--line);
+  background:var(--bg);
+}
+
+/* ============ NAWIGACJA (Blok 3) ============
+   Jedna definicja obszarów (src/app/nav-model.js) zasila oba warianty, więc nazwy i znaczenia
+   nie mogą się rozjechać między telefonem a komputerem. */
+.railnav ul, .bottomnav ul{ list-style:none; margin:0; padding:0; }
+
+.navitem{
+  appearance:none; cursor:pointer; width:100%;
+  display:flex; align-items:center; gap:var(--sp-3);
+  background:transparent; border:0; color:var(--muted);
+  font:inherit; text-align:left;
+  min-height:var(--tap); padding:var(--sp-2) var(--sp-3); border-radius:var(--r-md);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.navitem__icon{ width:24px; height:24px; flex:0 0 auto; display:grid; place-items:center; }
+.navitem__icon svg{ width:24px; height:24px; }
+.navitem__label{ font-weight:700; font-size:14px; }
+.navitem__desc{ display:block; font-size:12px; color:var(--faint); font-weight:400; }
+.navitem:hover{ color:var(--text); background:var(--panel2); }
+/* Stan aktywny NIE tylko kolorem: dochodzi wypełnione tło i pasek wskaźnika. */
+.navitem.is-active{ color:var(--primary); background:color-mix(in oklab, var(--primary) 12%, transparent); }
+
+/* --- szyna boczna (komputer) --- */
+.railnav{ padding:var(--sp-4) var(--sp-3); }
+.railnav li + li{ margin-top:var(--sp-1); }
+.railnav .navitem{ flex-wrap:wrap; }
+.railnav .navitem__label{ flex:1 1 auto; }
+.railnav .navitem__desc{ flex:1 0 100%; padding-left:calc(24px + var(--sp-3)); margin-top:2px; }
+.railnav .navitem.is-active{ box-shadow:inset 3px 0 0 var(--primary); }
+
+/* --- dolny pasek (telefon) --- */
+.bottomnav ul{ display:flex; }
+.bottomnav li{ flex:1 1 0; min-width:0; }
+.bottomnav .navitem{
+  flex-direction:column; gap:2px; align-items:center; text-align:center;
+  padding:var(--sp-2) var(--sp-1); border-radius:0;
+  min-height:calc(var(--nav-h) - var(--sp-1));
+}
+.bottomnav .navitem__label{ font-size:11.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.bottomnav .navitem.is-active{ background:transparent; box-shadow:inset 0 3px 0 var(--primary); }
+
+/* Zdublowany nagłówek: renderSetup rysuje własny .topbar z logo i podtytułem OTOREPO, co po
+   wprowadzeniu paska powłoki dawało dwie marki jedna pod drugą. Ukrywamy CZYSTO CSS-em —
+   przeniesienie go do chromu wymaga zmiany markupu obecnego w 90 z 91 kluczy złotego wzorca,
+   czyli drugiego rebaseline, a ten należy do przebudowy ekranu startowego (Blok 4). */
+#app > .topbar{ display:none; }
+
+/* Zaślepka „Nauka" i warstwy modalne */
+.stubview{ padding:var(--sp-6) 0; max-width:var(--col-max); margin-inline:auto; }
+.stub h2{ font-family:var(--display); font-size:20px; margin:0 0 var(--sp-3); }
+.stub p{ margin:0; color:var(--muted); line-height:var(--lh,1.5); }
+
+.leavedlg{ border:0; background:transparent; padding:0; max-width:min(420px, 92vw); }
+.leavedlg::backdrop{ background:rgba(3,10,16,.66); }
+.leavedlg h2{ font-family:var(--display); font-size:17px; margin:0 0 var(--sp-2); }
+.leavedlg p{ margin:0 0 var(--sp-4); color:var(--muted); font-size:14px; line-height:1.45; }
+.dlgrow{ display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-2); }
+
+.sheet{
+  position:fixed; inset:0; z-index:var(--z-sheet);
+  display:grid; place-items:end center;
+  background:rgba(3,10,16,.6);
+  padding:var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-b));
+}
+.sheet__panel{ width:min(520px, 100%); }
+.sheet__panel h2{ font-family:var(--display); font-size:18px; margin:0 0 var(--sp-3); }
+@media (min-width:768px){ .sheet{ place-items:center; } }
+
+.skiplink{
+  position:absolute; left:var(--sp-2); top:var(--sp-2); z-index:var(--z-modal);
+  transform:translateY(-200%);
+  background:var(--primary); color:var(--ink); font-weight:700;
+  padding:var(--sp-3) var(--sp-4); border-radius:var(--r-md); text-decoration:none;
+}
+.skiplink:focus-visible{ transform:translateY(0); }
+
+.bootnote{ color:var(--muted); font-size:14px; text-align:center; padding:var(--sp-8) var(--sp-4); }
+
+/* ============ Breakpointy powłoki ============
+   Progi są orientacyjne i dotyczą WYŁĄCZNIE chromu (gdzie siedzi nawigacja, ile jest oddechu).
+   Liczba kolumn treści jest sterowana osobno, zapytaniami kontenera. */
+
+@media (min-width:768px){
+  :root{ --shell-pad:20px; --col-max:720px; }
+}
+@media (min-width:1024px){
+  :root{ --shell-pad:24px; }
+}
+@media (min-width:1200px){
+  :root{ --shell-pad:32px; }
+  /* Szyna boczna zastępuje dolny pasek. Markup istnieje od E2A, treść dostaje w Bloku 3 —
+     do tego czasu element ma atrybut hidden i reguły poniżej nie mają na czym działać. */
+  .shell{
+    /* Kolumna szyny jest `auto`, NIE var(--rail-w). Sztywna szerokość rezerwowałaby 248 px także
+       wtedy, gdy szyna jest pusta (hidden) — treść uciekała wtedy o te 248 px w prawo zamiast się
+       wyśrodkować (zmierzone: left=447 zamiast 323 przy 1366 px). Przy `auto` kolumna bez
+       widocznej zawartości zwija się do zera, a szerokość nadaje sama szyna. Rozwiązanie działa
+       bez :has(), więc nie wymaga WebView >= 105 (Capacitor, minSdk 24). */
+    grid-template-columns:auto minmax(0,1fr);
+    grid-template-areas:"rail top" "rail flow" "rail main";
+    grid-template-rows:auto auto 1fr;
+    max-width:var(--content-max);
+    margin-inline:auto;
+  }
+  .railnav:not([hidden]){ display:block; width:var(--rail-w); border-right:1px solid var(--line); }
+  .railnav:not([hidden]) ~ .bottomnav{ display:none; }
+}
+@media (min-width:1440px){
+  :root{ --rail-w:272px; }
+}
+@media (min-width:1600px){
+  :root{ --shell-pad:40px; }
+}
+
+/* Telefon w poziomie: pionu jest tyle co nic — chrom musi zejść z drogi, bo w trybie skupienia
+   liczy się bieżąca pozycja i timer, a nie logotyp. */
+@media (orientation:landscape) and (max-height:520px){
+  :root{ --topbar-h:44px; }
+  .apptop{ min-height:calc(44px + var(--safe-t)); padding-block:var(--sp-1); }
+  .brand__sub{ display:none; }
+}

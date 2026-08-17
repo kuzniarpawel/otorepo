@@ -7,7 +7,11 @@
  Zasada: jedno źródło prawdy 3D wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
          Ścieżka SVG jest w pełni offline (bez three.js); ścieżka 3D dokłada three.js jako
          leniwie ładowany chunk (Etap 3–5) — DOMYŚLNA gdy WebGL dostępny, SVG = fallback.
- Ostatnia aktualizacja: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN;
+ Ostatnia aktualizacja: 2026-08-14 (przeglad po ocenie II silnikow: twierdzenia ILOSCIOWE przeliczone
+        na nowym silniku — cap 12 s zniknal na rzecz derivedHold, luk kanalu jest ARC_SPAN per kanal
+        zamiast wspolnego 178°, CUP_WEAK 0,6 -> 0,45, chipy Barany per kanal; nazwane dwie rzeczy,
+        ktore wymiana silnika po cichu zmienila: sufit 24 s wedrowki otolitu i martwy prog phiToFrac)
+ Poprzednio: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN;
         panel otolitowy SVV & VEMP w HINTS)
 ==========================================================================
 
@@ -22,7 +26,10 @@ Karta w renderDiag (svg-screens.js), pod kartą mechanizmu, nad zaleceniem lecze
 segmentem „Obwodowy (BPPV) ↔ Ośrodkowy (CPN)" (state.diagCentral, handler toggleDiagCentral; render pełny).
  - OBWODOWY (domyślny): etykieta podtypu z pose/maneuvers.js:baranyClassify(kanał,wariant,strona,antMode) —
    subtype + „zespół ustalony / wyłaniający się" (established/emerging) + chipy cech (Latencja / Czas trwania /
-   Męczliwość / Kierunek / Strona chora). Czysta funkcja kliniczna (jak recommend/variantLabels) — SYNTEZA konwencji
+   Męczliwość / Kierunek / Strona chora). CHIPY SĄ PER KANAŁ (ocena II): kanał PRZEDNI ma własne teksty
+   „Latencja krótka/nieobecna" i „Przemijający (≈1 min)" zamiast wspólnych „1–5 s"/„< 60 s", bo w silniku
+   jego złóg startuje dociśnięty do osklepka, a napad trwa 61,25 s — czyli PONAD próg Bárány. Wspólny chip
+   kłamałby o własnej fizyce; bramka barany:check porównuje pomiar z treścią chipa, a nie z jedną liczbą. Czysta funkcja kliniczna (jak recommend/variantLabels) — SYNTEZA konwencji
    już zakodowanych w DIAG (latNote/features), ZERO wpływu na fizykę. Golden łapie ten widok (deterministyczny).
  - OŚRODKOWY (po kliknięciu): blok .redflag z czerwonymi flagami CPN (bez latencji / uporczywy / niemęczliwy /
    czysto pionowy — zwł. downbeat — lub czysto skrętny / kierunek spoza kanału / pozycja neutralna / objawy neuro),
@@ -54,15 +61,32 @@ Silnik przyjmuje `size` ("small"|"medium"|"big"; medium=r1=baza) skalujący dyna
  - HOLDY ZALEŻNE OD ROZMIARU (małe = wolno osiadające → dłuższe utrzymanie pozycji):
      • klinicznie zalecany hold kroku: sizedSeconds() mnoży `st.seconds` (small ×1.6, siatka 15 s;
        medium/big bez zmian) w genPlan() — stąd suwak/licznik startują z dłuższą wartością dla small.
-     • hold DYNAMIKI (maneuverTimeline): cap holdu 12 s → dla small round(12/r²)≈20 s, by wolny złóg
-       zdążył osiągnąć φ=178° (wyjście). Zweryfikowane: small z dłuższymi holdami CZYŚCI Epley/Semont/
-       Yacovino/Lempert (bez nich Semont/Yacovino utykały na φ≈157°/128°). medium/big: cap 12 s (regresja).
+     • hold DYNAMIKI (maneuverTimeline): PO OCENIE II cap 12 s NIE ISTNIEJE — hold jest WYPROWADZANY
+       (`derivedHold`: najmniejsza para {h, u} z HOLD_STEPS/UNTIMED_STEPS, przy której silnik wyprowadza
+       złóg do łagiewki, ze strażnikiem tauP × 1,1). Rozmiar nadal działa, ale przez fizykę, nie przez
+       wzór na cap. ZMIERZONE tHold per krok (strona P): Semont small 15/60/60/15 · medium 6/45/45/6 ·
+       big 6/30/30/6; Yacovino small 9/45/45/9 · medium i big 6/30/30/6; Bascule small 6/75/75/75/6 ·
+       big 6/30/30/30/6. Epley i Lempert wychodzą tym samym holdem we wszystkich rozmiarach.
+       Dawne obcięcie do 12 s było głębokie i NIERÓWNE (semont 20 % zaleconego holdu, gufoniGeo 30 %,
+       lempert 44 %, epley 53 %, yacovino 77 %), więc „czy manewr czyści" mierzyło częściowo
+       agresywność obcięcia, a nie geometrię kanału.
      • NOTA w UI (tylko small): „wydłużono zalecany czas utrzymania pozycji" z cytatem literaturowym.
- - ANIMACJA OTOLITU wg rozmiaru (setupGuideAnim): DUR przejścia ∝ 1/r² (prędkość osiadania Stokesa ∝ r²)
-   → small ~2630 ms (wolniej), medium 1600 ms (bez zmian), big ~878 ms (szybciej); clamp [800,3000].
+ - ANIMACJA OTOLITU (setupGuideAnim): DUR bierze się dziś Z OKNA OCZOPLĄSU, nie ze wzoru na rozmiar —
+   `guideNysSeconds` × 1000, widełki [1200, 24000] ms. Zamysł: wędrówka złogu i oczopląs mają kończyć się
+   RAZEM, bo na flipkarcie widać obie strony. Wzór 1/r² (small ~2630 ms · medium 1600 ms · big ~878 ms,
+   widełki [800,3000]) został WYŁĄCZNIE jako awaryjna ścieżka dla kroków BEZ oczopląsu. Bascule krok 1
+   ma stałe 3600 ms (przyleganie → odklejanie → start wędrówki jako jedno ciągłe okno).
+   ZMIERZONE PO OCENIE II (2026-08-14) — obietnica „obie strony kończą się razem" NIE jest dotrzymana:
+   tEnd przekracza sufit 24 s w 122 ze 156 kroków z oczopląsem (78 %), a najdłuższy krok ma 74,60 s.
+   Dawniej hold dynamiki był obcięty capem 12 s, więc tEnd nigdy nie sięgał widełek i sufit był tylko
+   zabezpieczeniem skrajności; dziś jest regułą. W tych krokach wędrówka kończy się PIERWSZA, a oczopląs
+   gra dalej. Podniesienie sufitu to decyzja o UI (animacja do ~75 s), więc liczba czeka na rozstrzygnięcie
+   kliniczne — dokument mówi, jak jest, a nie jak było.
    Intensywność/latencja oczopląsu (startNys/startDialNys, obwiednia manStepEnv) wynikają wprost z
    ξ(t) skalowanego rozmiarem — bez osobnego kodu.
- - Uwaga spójności: sizeRadius() w warstwie UI musi pozostać ZGODNE z SIZE_R w module Vestibular.
+ - Uwaga spójności — ZAŁATWIONA: sizeRadius() nie jest już kopią, tylko delegacją
+   (`const sizeRadius = s => Vestibular.sizeR(s)`), więc dwie tabele nie mają jak się rozjechać.
+   Zmierzone: small 0,78 · medium 1 · big 1,35 po obu stronach.
  CYTAT (uzasadnienie dłuższych holdów dla drobnych/wolno osiadających złogów):
    Hain TC, Squires TM, Stone HA (2005). „Clinical implications of a mathematical model of BPPV."
    Ann N Y Acad Sci 1039:384-394. (uzasadnienie utrzymania pozycji ~30 s w CRP; wolne osiadanie otoconiów).
@@ -137,6 +161,15 @@ hintsHIT, refreshHints*). Wejście domyślne: łagodny neuronitis górny P (nerv
    śladowy skew łagiewkowy (<SKEW_CENTRAL, nerw górny) pokazywany jako OBWODOWY, nie „ośrodek".
 Fizyka i literatura: engine_doc „ETAP 7 / NEUROANATOMIA" [H15]-[H21].
 
+--- CO SILNIK JUŻ UMIE, A TEGO EKRANU NIE DOTYKA (stan po ocenie II NeuroVOR, 2026-08-14) ---
+Ocena II (N1-N7) rozszerzyła NeuroVOR do 50 kluczy; warstwa UI woła 20. Różnica NIE jest luką
+w dokumentacji, tylko FAKTEM o zakresie ekranu — i lepiej ją nazwać, niż zostawić czytelnikowi
+wrażenie, że symulator pokazuje wszystko, co model liczy. NIEPODPIĘTE do UI są m.in.:
+  hsn (oczopląs po potrząsaniu głową) · shimp (odwrócona reguła sakady: BRAK sakady = ubytek) ·
+  smoothPursuit · dva (ostrość dynamiczna) · posture · compensatePair · timeline (oś dni) ·
+  alexanderGrade (stopnie I-III) · vhitPlane · caloricBattery · directionChanging.
+Wpięcie któregokolwiek z nich to osobna decyzja projektowa — ten dokument opisuje ekran, jaki jest.
+
 --------------------------------------------------------------------------
  Scene3D  (etap A)
 --------------------------------------------------------------------------
@@ -205,7 +238,9 @@ screenAngleCW(p) -> stopnie
      kamera-obserwator sylwetki. KIERUNKI OCZOPLĄSU BEZ ZMIAN (q-literały testów nietknięte; regresja czysta).
  [x] Mechanizm diagnostyczny (otolit w kanale) napędzony REALNYM φ(t) z silnika (simulateCanalith):
      cząstka po latencji wędruje wg grawitacji i zatrzymuje się (Dix/Yacovino→wyjście; Roll→ku bańce),
-     bez sztucznej pętli. Kupulolitiaza: osklepek odgina się wg ξ(t) (uporczywie). φ→ułamek ścieżki = φ/360.
+     bez sztucznej pętli. Kupulolitiaza: osklepek odgina się wg ξ(t) (uporczywie). φ→ułamek ścieżki liczy
+     się dziś Z ŁUKU KANAŁU (ARC_SPAN, zmierzony z IE-Map: poziomy 267,3° · przedni 281,1° · tylny 318,8°),
+     a nie ze wspólnego 360°/178°.
  [ ] Labirynt REPOZYCYJNY (Wędrówka otolitów) wciąż na interpolacji 'progress' — wierne φ(t) dla CAŁEGO
      manewru wymaga KWATERNIONOWEJ OSI CZASU MANEWRU (orientacja głowy per krok = orientacja ciała ∘ skręt).
      Próba offline: szybki model orientacji NIE wyprowadza cząstki (Epley krok 'na bok, nos w dół' cofa φ)
@@ -219,10 +254,112 @@ screenAngleCW(p) -> stopnie
      Surowe φ jest front-loaded i dla kanału poziomego idzie ku bańce → schemat zamiast surowego φ/krok.
      Gufoni-apo (brak wyjścia): ruch ku bańce wg silnika + notka 'konwersja'.
      Ścieżki CANAL_PATHS: start = BAŃKA (φ≈0), koniec = WYJŚCIE (pionowe → odnoga wspólna→łagiewka; poziomy
-     → wprost do łagiewki), φ≈180≈1.0. Schemat anatomiczny: bańki z grzebieniami+kopuły, odnoga wspólna
+     → wprost do łagiewki). Wyjście leży dziś na ARC_SPAN kanału (267,3–318,8°), nie na φ≈180 — `phiToFrac`
+     dostał argument `canal` (poprawka 2026-08-14). Gałąź, która go używa (manewr BEZ ekspulsji, mechanizm
+     inny niż kupulo), jest przy obecnym silniku NIEOSIĄGALNA — zmierzone 0 z 54 przypadków manewr × strona
+     × rozmiar — więc była to mina, a nie widoczna usterka: gdyby któryś manewr przestał czyścić kanał,
+     schemat pokazywałby złóg „w łagiewce" już na 56–67 % łuku. Schemat anatomiczny: bańki z grzebieniami+kopuły, odnoga wspólna
      (widełki kan. pionowych → pień do łagiewki), komora łagiewki. viewBox PRZYCIĘTY do treści (38 35 205 164,
      bez pustych marginesów) + SVG skalowany do 80% (inline style width:80%, wyśrodkowany); stałe LAB_* w svg-screens.js.
      Gufoni-apo (brak wyjścia) → notka 'manewr konwersji' w panelu labiryntu (renderGuide).
+     TA SAMA GEOMETRIA W SCHEMACIE `startAnatSVG` (Blok 4): głowa w profilu z podświetlonym błędnikiem
+     rysowanym z CANAL_PATHS/LAB_AMP/LAB_UTR/LAB_CRUS przez jedną transformację (skala LS, przesunięcie
+     LX/LY w układzie głowy, HX/HY/HS w układzie rysunku). Punkty odnośników („kanały półkoliste",
+     „łagiewka") liczą się TĄ SAMĄ parą gx/gy, więc kreska nie może się rozjechać z rysunkiem po zmianie
+     skali. Kolory kanałów = kod barwny aplikacji (--post/--horiz/--ant). Szyja wychodzi poza viewBox
+     i jest przez niego przycięta.
+     GDZIE TEN SCHEMAT ŻYJE: ekran startowy pokazuje domyślnie RENDER (assets/head-xray.jpg, scena
+     kliniczna — patrz niżej), a schemat wchodzi na jego miejsce przy `prefers-reduced-data: reduce`.
+     To nie jest zapasowa kopia „na wszelki wypadek": kosztuje zero bajtów sieci, bo siedzi w pakiecie,
+     i jest JEDYNĄ wersją sceny działającą bez zasobu graficznego.
+
+=== SCENA KLINICZNA EKRANU STARTOWEGO (start-scene.css + startScene/startHint/startResume) ===
+ Render przestaje być kafelkiem w kolumnie bocznej i staje się TŁEM prawej części obszaru treści;
+ karty leżą na nim jak szkło. Trzy warstwy: render → kurtyna kierunkowa (punkty załamania = krawędzie
+ kolumn siatki) → poświata + domknięcie dołu. Obraz i jego poświata siedzą w JEDNYM pudełku
+ (.startscene__plate), bo poświata jest w PROCENTACH tego pudełka — dwa niezależne kotwiczenia
+ rozjeżdżają się przy każdej zmianie kadru.
+ PODMIANA MATERIAŁU: jedna stała CLIN_RENDER w svg-screens.js. Wymóg kadru: proporcja bliska 3:2,
+ błędnik w prawej-górnej ćwiartce, tło ciemne, BEZ wypalonego logotypu; inny kadr wymaga przeliczenia
+ pary procentów .startscene__glow. Zasób: JPEG 1264x768, 74 kB (materiał źródłowy z paczki projektowej
+ był 782-kilobajtowym PNG-iem NAZWANYM .jpg — przekodowany, bo wchodzi do precache PWA). Kopiuje go
+ tools/build-dist.mjs, bo <img src> jest POZA grafem Vite.
+ KOD BARWNY KAFLI: startQuick(..., ton) — ton jest ARGUMENTEM, nie wyliczeniem z numeru (numer
+ porządkowy i znaczenie kliniczne to dwie różne rzeczy). Barwa nigdy nie jest jedynym nośnikiem:
+ numer, ikona i pełny opis zostają.
+ KARTA POWROTU DO SESJI stoi na resumeStepId/resumeSummary z flow-model.js — NIE na activeStepId
+ (wyprowadzany z ekranu, na starcie null) ani flowVisible (dla ekranu startowego false z założenia).
+ Kropki postępu to te same statusy, co pasek przebiegu (flowStatuses), przez wspólny wstrzykiwacz
+ src/app/flow-deps.js. Karta NIE pokazuje czasu przerwania: stan zapisuje CO zrobił użytkownik,
+ nigdy KIEDY, a przybliżenie („niedawno") w karcie powrotu do badania byłoby zmyśleniem.
+ NA TELEFONIE karta idzie NAD karty trybu — przez przestawienie CAŁEJ kolumny bocznej w kontenerze
+ flex, bo order przestawia elementy wyłącznie wewnątrz jednego kontenera (paczka miała order:-1 na
+ samej karcie i to nie działało: zmierzone y=927 px, czyli pod kartami trybu).
+=== SCENA KLINICZNA — EKRANY POZOSTALE (rest-scene.css, tura 3 paczki projektowej) ===
+ Zakres: Kontrola po manewrze, Opis badania i zapis sesji, Nauka (biblioteka + lekcja),
+ Laboratorium (lista + eksperyment). Import w index.css PO clinic-scene.css; arkusz nadpisuje
+ MATERIAL, nigdy ukladu, i nie kopiuje ani jednej wartosci z tur 1-2 (bierze je tokenami).
+ TRZY NOWE RODZAJE TRESCI. DOKUMENT (podglad opisu): wlasny papier --doc-paper #070B0F, kroj
+ maszynowy, interlinia 1,75 — to jedyny tekst, ktory wychodzi POZA aplikacje, wiec czyta sie go
+ zdanie po zdaniu, a nie skanuje jak liste. ZASLONA (Nauka): ukosna szrafura w tonie obszaru +
+ obrys przerywany — mowi „tu cos jest i zostanie pokazane"; odrozniona od szarych kart „braku
+ wyniku", bo celowe ukrycie i brak danych to dwie rozne rzeczy. POMIAR (Laboratorium): karta
+ „Co sie zmienilo" wypelniona STALA, nie tonem — stan „nic sie nie zmienilo" ma te sama wage
+ wizualna co stan ze zmiana, bo w eksperymencie brak skutku JEST wynikiem.
+ DWIE REGULY OBSZAROW. Nauka niesie --ant w calosci (ten sam fiolet, co karta „Ucze sie" na
+ Starcie). Laboratorium nie dostaje ZADNEGO tonu klinicznego: barwa kanalu albo stanu sugerowalaby
+ rozpoznanie, ktorego to miejsce z definicji nie stawia. Ton wraca w jednym miejscu — .lobraz
+ („Obraz kliniczny"), plus bursztyn .lgranica, bo zdanie o granicy uczciwosci symulacji nie moze
+ wygladac jak kolejny wiersz opisu.
+ TON WYNIKU KONTROLI: jedna mapa [data-fuwynik] dla TRZECH miejsc (odpowiedz, wiersz serii, karta
+ „Co dalej"). Wartosci nie sa zgadywane z nazwy, tylko wyprowadzone z flag, ktore model juz niesie:
+ zamyka -> --post, nowaPodstawa -> --ant, wiarygodny bez obu -> --horiz, !wiarygodny -> --faint
+ (+ obrys przerywany). Renderer dopisuje data-fuwynik w trzech miejscach; to JEDYNA zmiana markupu
+ calej tury.
+ ROZJAZD IDENTYFIKATOROW — najwazniejsza rzecz z tej tury. Paczka celowala w `bezZmian`,
+ `zmianaKierunku`, `nkafel--bezbledu`, `nfeed--trafne`, `nwynik--zewskazowka`. ZADEN z nich nie
+ istnieje: WYNIKI ma SIEDEM pozycji (ustapienie, czesciowaPoprawa, brakPoprawy, konwersja,
+ drugaStrona, residual, niewiarygodne), OCENY cztery (rozwiazany, zeWskazowka, zBledami,
+ nieukonczony — wielkosc liter ma znaczenie w selektorze), WERDYKTY trzy (trafna, dopuszczalna,
+ bledna; „niejednoznaczny" nie jest czwartym werdyktem, tylko zdaniem .nfeed__nj). Selektor na
+ nieistniejacy identyfikator jest NIEWIDOCZNY dla kazdej wyroczni — domOracle czyta innerHTML,
+ jsdom nie stosuje kaskady — a --tone spada wtedy na :root{--tone:var(--primary)}, czyli karta
+ „Co dalej" po odpowiedzi „badanie niewiarygodne" wygladalaby jak zwykla karta akcji.
+ BRAMKA CSS4-CSS8 w tools/interp-dom.mjs (33 -> 39 przypadkow): kazdy identyfikator z WYNIK_IDS,
+ OCENY i WERDYKT_IDS musi miec regule tonu w rest-scene.css, plus .nkafel--nowy (stan startowy,
+ ktorego zadna petla po slowniku nie zlapie). Sprawdzone czulosciowo: po przywroceniu trzech nazw
+ z paczki bramka zapala sie na dokladnie tych trzech.
+ PULAPKA „min-height bije height" — TRZY RAZY w tej paczce. lab.css .lsuwak{min-height:32px},
+ nauka.css .netap{min-height:44px}: deklaracja `height` z arkusza sceny byla martwa. Skutki byly
+ widoczne, nie teoretyczne — suwak stal na 32 px zamiast pola dotykowego, a os etapow na telefonie
+ zostawala szescioma PUSTYMI kaflami po 44 px zamiast paskow postepu po 5 px (etykiety juz ukryte).
+ Wysokosc suwaka przeniesiona do a11y.css obok .comprange (jeden niezmiennik, jedno miejsce);
+ os etapow dostala min-height:0 w obu blokach telefonu.
+ KROJ MASZYNOWY: paczka wolala var(--mono, "IBM Plex Mono", monospace), ale --mono nie istnial,
+ a IBM Plex Mono nie jest wklejony (cztery @font-face w base64 to odmiany Plex SANS). Fallback
+ schodzil na rodzajowe monospace, czyli na Windows na Courier New — i podmienial POPRAWNY stos,
+ ktory .opispodglad__t mial juz z opis.css. Token --mono bierze stos zastany (ui-monospace,
+ SFMono-Regular, Menlo, Consolas); do piatki miejsc z LICZBAMI dolozone font-variant-numeric:
+ tabular-nums, bo kroj maszynowy sam nie wyrownuje cyfr w pionie.
+ POLA DOTYKOWE: .ndet summary (32 px) i .lgrupa > summary podciagniete w a11y.css do var(--tap),
+ dokladnie jak .advbox summary. CELOWO ZOSTAWIONE na 36 px: .lparam__n (30 sztuk), .lstan,
+ .nwsk__b — tyle dala paczka, przed tura mialy 22 px, a 36 px jest powyzej progu WCAG 2.2 AA
+ (24 px); .lparam__n siedzi w wierszu wyrownanym do linii bazowej razem z wartoscia parametru,
+ wiec wymuszenie 40 px rozbiloby to wyrownanie.
+ ZLOTY WZORZEC: rebaseline WYLACZNIE osmiu kluczy dom/followup/* (engine 0, pose 0, shell 0,
+ _meta 0). Dowiedzione, ze roznica to WYLACZNIE dopisane data-fuwynik: po ich mechanicznym zdjeciu
+ nowy zrzut jest znakowo identyczny ze starym, przy kontroli czulosci (zdjecie takze aria-pressed
+ daje roznice). Pozostale piec ekranow nie ruszylo ANI JEDNEGO znaku — to jest dowod, ze tura jest
+ poza Kontrola czysto CSS-owa.
+ POMIAR W PRZEGLADARCE (golden nie widzi CSS): siedem odpowiedzi Kontroli niesie cztery rozne tony
+ zgodnie z mapa; jedno pelne wypelnienie na ekran (Kontrola: krok glowny, Opis: „Kopiuj opis");
+ dokument 12,5 px/interlinia 21,875 px na papierze rgb(7,11,15); cztery oceny Nauki daja cztery
+ rozne tony i ZADNA nie spada na cyjan; Laboratorium --tone=--faint, .lobraz na --clin-deep.
+ Telefon: „Kopiuj opis" przyklejony (sticky, 52 px), suwak 48 px, os etapow szesc paskow po 5 px
+ w jednym rzedzie, nazwy przyciskow zostaja w drzewie dostepnosci (1x1 + clip-path, nie aria-label).
+ Zero przewijania poziomego na 360 px na wszystkich szesciu ekranach.
+ NIE WIDZIANE NA OCZY: panel podgladu nie kompozytowal klatek przez cala ture, wiec caly odbior
+ jest liczbowy (getComputedStyle), a nie wzrokowy.
  [x] ETAP C: pełne ciało (tułów+szyja+kończyny) jako rzut 3D — ZROBIONE (figProj/bodyJoints, patrz
         ARCHITEKTURA figProj niżej oraz PODSUMOWANIE SESJI 2026-07-02). Swobodny wybór kamery (K4) pozostaje
         w migracja_3d.txt jako projekt na przyszłość.
@@ -231,6 +368,23 @@ ZALEŻNOŚCI
  Scene3D używa Vestibular.rotate / Vestibular.qaxis (wspólna algebra kwaternionów).
 
 
+ NAWIGACJA MIEDZY OBSZARAMI (shell.js: OBSZAR_EKRANU). `render()` dyspozytuje po `state.screen`,
+ wiec zmiana obszaru MUSI opuscic ekran nalezacy do innego obszaru. Blok 3 mial tu jeden warunek
+ (`screen === 'start'`) i to wystarczalo, dopoki innych ekranow-obszarow nie bylo. Blok 13 dolozyl
+ naukaBib/naukaLekcja, Blok 14 labLista/labEksp — i wtedy dotkniecie „Diagnostyka" z Nauki albo
+ z Laboratorium przestalo dzialac: `area` i `mode` szly na 'diag', ale `screen` zostawal, wiec
+ rysowal sie dalej stary ekran. ZGLOSZONE PRZEZ UZYTKOWNIKA, nie przez wyrocznie — wszystkie
+ wchodzily na te ekrany akcjami modulu (goNauka/goLab), nigdy PRZEZ NAWIGACJE z innego obszaru.
+ Zamiast kolejnego `if` jest mapa ekran→obszar (ekrany spoza mapy naleza do Diagnostyki, tak jak
+ galaz domyslna w `render()`), a warunek brzmi: opusc ekran, jesli nalezy do INNEGO obszaru niz
+ docelowy. Ponowne dotkniecie wlasnego obszaru celowo nie cofa — inaczej „Diagnostyka" w trakcie
+ badania wyrzucalaby klinicyste z „Oczoplasu" na poczatek. Bramka K w pwa-dom.mjs (79 -> 89):
+ siedem przejsc miedzy obszarami, zakaz cofania we wlasnym obszarze i kontrola, ze kazdy ekran
+ „nauka*"/„lab*" z dyspozytora ma przypisany obszar. Wyrocznia trzyma WLASNA mape oczekiwan —
+ importowanie tej samej tabeli, co kod, potwierdzaloby tylko, ze tabela rowna sie sama sobie.
+ SZYNA BOCZNA pojawia sie od `@media (min-width:1200px)`; ponizej ma `display:none`, a nawigacje
+ przejmuje `.bottomnav`. Panel podgladu w Claude Code ma ~500 px szerokosci, wiec szyny tam NIE MA
+ z zalozenia — to nie usterka, tylko ten sam uklad co na telefonie.
 === KOMPAKTOWY UKŁAD KROKU REPOZYCJI (renderGuide) — jeden ekran ===
 Wybór strony: pigułka L|P w nagłówku (.sidepill, kolor L=--left/P=--right, aria-pressed), onclick=setGuideSide.
   Usunięto pełnowierszowy sideSel z widoku Repozycji (sideSel nadal w Diagnostyce).
@@ -574,7 +728,7 @@ CO SPRAWDZONO I POTWIERDZONO:
    ampullofugal pobudza) — POPRAWNE. Znak ξ (flow=gc·G.exc·dφ) koduje pobudzenie/hamowanie spójnie.
 4. Asymetria Ewalda II (hamowanie ×0.45): wpięta w manStepEnv (magnituda oczopląsu manewru) ORAZ w diagnostyce
    (nysFromGeom tryb "asym"). dynNystagmus odwraca też KIERUNEK przy ξ<0 (reguła Ewalda — hamowanie odwraca).
-5. KUPULOLITIAZA słabsza od kanalolitiazy (Vestibular.CUP_WEAK=0.6): nysFromGeom mnoży `strength` wariantu "cupulo"
+5. KUPULOLITIAZA słabsza od kanalolitiazy (Vestibular.CUP_WEAK=0.45; do oceny II 0.6): nysFromGeom mnoży `strength` wariantu "cupulo"
    przez CUP_WEAK → oczy/dial na karcie mechanizmu (tył flipa #mechflip) biją z mniejszą amplitudą niż "canalo",
    ale z flagą `persistent` (uporczywy). TEN SAM współczynnik skaluje ξ w simulateCupulolith (silnik). Golden
    NIETKNIĘTY: diagnostyka snapszotowana przy variant=canalo (domyślny), więc ścieżka "cupulo" poza wzorcem.
@@ -715,6 +869,17 @@ POPRAWKA (tylko poza/czas Yacovino — NIE tknięto geometrii kanału / nystagmu
 WERYFIKACJA: φ→178 exited dla P/L × small/medium/big; pozostałe manewry bez zmian (gufoniApo φ=69 exited=false
   = poprawne, to konwersja bez ewakuacji); bridge/view/golden zielone; wizualnie 4 kroki zgodne z markerami.
 INWARIANT audyt #1 zachowany: gHead(headQ)==gravity == 2.5e-16 dla wszystkich kroków.
+KOREKTA PO OCENIE II SILNIKA (2026-08-14 — raport wyżej zostaje jako zapis tamtej sesji):
+  • `dynHold=22` NIE ISTNIEJE. Zniknął razem z capem 12 s (2026-08-05), bo hold jest teraz WYPROWADZANY
+    (`derivedHold`). Yacovino dostaje dziś tHold 9/45/45/9 s dla małego złogu i 6/30/30/6 s dla średniego
+    i dużego — bez żadnego ręcznego override'u.
+  • φ=178 NIE JEST progiem wyjścia. Łuk jest ZMIERZONY per kanał (ARC_SPAN, IE-Map): kanał przedni 281,1°.
+    Yacovino wyprowadza złóg do φ=281,1 (exited) dla obu stron i wszystkich trzech rozmiarów.
+  • Liczby φ 173 / 145→118→82 / 157 / 128 z raportu opisują STARY, wspólny łuk 178° i mają dziś wartość
+    wyłącznie historyczną — pokazują, JAK znaleziono błąd, a nie gdzie leży złóg.
+  • Sam wniosek kliniczny raportu OSTAŁ SIĘ i jest dziś wyprowadzany, a nie założony: ekspulsja z kanału
+    przedniego wymaga brody na klatce (patrz engine_doc, B6+B8 — jedno prawo komory), czyli manewr
+    Yacovino jest w tym modelu fizycznie nośny.
 
 ===== Etap 5: 3D DOMYŚLNY renderer + SVG fallback (finał migracji) =====
 webglAvailable() [svg-screens.js, cache _webglOK]: tworzy canvas, próbuje getContext('webgl'/'experimental-webgl'),
@@ -738,3 +903,130 @@ WYDAJNOŚĆ (DESKTOP — telefonu brak w środowisku dev): zimny montaż (import
 OFFLINE/BUILD: vite build code-splituje three do assets/three-patient-*.js (~516 KB, lazy — index ~124 KB); chunk
   jest w precache dist/sw.js (3D działa offline po instalacji PWA); hash nazwy cache zmienia się z zawartością.
 GLB: NIE wdrożone (decyzja użytkownika: model proceduralny). Adapter kości gotowy — wymiana = ten sam show(spec,side).
+=== UDOSTĘPNIENIE OCENY II W UI (2026-08-15/16) ===
+Cała ta warstwa powstała z jednej obserwacji: silnik umiał więcej, niż ekran pokazywał. Wzorzec
+usterki był za każdym razem ten sam — WPISANA RĘCZNIE LISTA tam, gdzie model ma już własną. Naprawa
+też: wyprowadzić listę z jedynego źródła.
+
+LISTY WYPROWADZANE, NIE WPISANE
+ - Ekran wyboru próby trzymał cztery literały (`dix`/`roll`/`bowlean`/`headhang`), więc piąta próba
+   silnika (lying-down, V11/D2) była policzalna, ale NIEOSIĄGALNA. Dziś `Object.keys(DIAG)`.
+ - `OBS_PROBY` w obs-model.js było DRUGĄ ręczną listą czterech prób, obok `OBS_FAZY`. Rozjechały się
+   przy pierwszej okazji: karta się rysowała, a formularz i interpretacja nie znały próby. Dziś
+   `Object.keys(OBS_FAZY)`. Objaw był mylący — cztery scenariusze historii dawały dla lying-down
+   IDENTYCZNE odciski predykcji nie dlatego, że historia nie ma znaczenia, tylko dlatego, że
+   porównywane listy były PUSTE.
+ - Manewry `zuma`/`kim` NIE wymagały wdrożenia: lista manewrów czyta `CANALS[kanal].maneuvers`,
+   więc weszły same, gdy silnik je przyniósł. To ta sama zasada, tyle że zastosowana wcześniej.
+ Bramki: man:dom N1-N3 (każda próba z DIAG ma przycisk i nie ma przycisku bez próby) oraz AK5
+ (każda próba ma akt). Dowód failing-first: przywrócenie literałów gubi lying-down.
+ UWAGA: golden NIE PINUJE ekranu wyboru próby w trybie diagnostyki ani karty Bárány w trybie kanału
+ przedniego — rebaseline po obu zmianach dał ZERO różnic. Dlatego obie dziury zamknięte BRAMKAMI.
+
+HISTORIA POZYCYJNA (BLT) — PYTANIE, KTÓREGO NIE BYŁO GDZIE ZADAĆ
+`state.bltScenario` istniało od V5, ale bez przełącznika wododział R8 był niedostępny: silnik liczył
+kierunek Bow & Lean z warunków początkowych, a klinicysta nie miał jak podać historii. Przełącznik
+wchodzi w OBA TORY naraz — scenariusz zasila też `interp-deps`, bo sam przełącznik na karcie dałby
+ekran, na którym strzałka mówi jedno, a wniosek drugie. Scenariusz wchodzi DOMKNIĘCIEM we
+wstrzykiwaczu; wstrzykiwacz bez stanu (wyrocznie, tor nauki) dostaje `undefined` → „textbook",
+czyli ścieżka bez scenariusza zostaje bit-identyczna.
+Karty pokazywane WYŁĄCZNIE dla prób z `SCEN_DRIVEN` (bowlean, lyingdown) — gdzie indziej przełącznik
+niczego by nie zmieniał i uczyłby, że fizjologia jest losowa. Każda karta niesie φ₀ POLICZONE przez
+`bltInit` (146° / 173° / 220° / 200° spoczynku), nie wpisane: to WYNIK, nie etykieta.
+
+JEDNO TWIERDZENIE O CZASIE, NIE DWA
+Karta klasyfikacji Bárány mówiła dla kanału PRZEDNIEGO „< 1 min", chip tej samej próby „≈1 min",
+a silnik mierzy 61,25 s. Trzy miejsca, dwie wersje prawdy, obie na jednym ekranie. Karta bierze
+teraz oba pola wprost z `featsByVariant`. Bramka barany:check JT1-JT3, z kontrolą czułości w drugą
+stronę: karta nie może obiecywać „< 1 min" tam, gdzie pomiar to przekracza.
+
+TRZY KARTY POMIAROWE
+ - PŁASZCZYZNA ZEROWA (V12/D3) — tylko przy Rollu i mechanizmie osklepkowym. Zero przy ±8,7°,
+   WSPÓLNE dla ciężkiego i lekkiego osklepka; różni je KIERUNEK po obu stronach zera. Karta mówi
+   obie rzeczy, bo pokazanie samego kąta uczyłoby, że wystarczy go znaleźć.
+ - PASEK OBJAWOWY (V17/D5) — zawrót ~ |ξ|, nudności ~ 100(1−exp(−Σ|ξ|dt/25)). Saturacja
+   wykładnicza, nie suma obcięta: dawka ma plafon fizjologiczny. Próg 0,03 = ta sama konwencja co
+   3 % szczytu w `xiEnvelope`. `man.cum` NIE ISTNIEJE w tej gałęzi — dawka liczona z `man.sim`
+   i pamiętana przy obiekcie symulacji, ŚWIADOMIE bez dokładania pola do `computeManSim` (plik
+   wspólny z main; suma skumulowana to wielkość prezentacji, nie stan fizyki).
+ - ZAWROTY RESZTKOWE — tylko przy wyniku `residual`, źródło [H26]. Jedyne miejsce w aplikacji,
+   gdzie odradzamy LECZENIE (supresanty opóźniają kompensację), a nie manewr.
+
+SESJA CIĄGŁA (D1) — TRYB OPT-IN
+`state.session === null` to ścieżka BIT-IDENTYCZNA. Włączenie przewleka między badaniami stan
+JEDNEGO złogu.
+POWÓD, DLA KTÓREGO TO MUSI BYĆ WYKLUCZAJĄCE: sesja i mnożnik `fatigueFactor` opisują TO SAMO
+zjawisko — zmierzone 0,621/0,400/0,266 (sesja) wobec 0,630/0,406/0,270 (mnożnik), zgodność poniżej
+1,5 %. Oba naraz podnoszą męczliwość DO KWADRATU (0,391 zamiast 0,621). Dlatego mnożnik obowiązuje
+wyłącznie przy sesji wyłączonej, a efektywna wartość idzie do DOM jako `data-fatfactor` — bramka
+bez obserwowalnej wielkości nie pilnuje niczego (pierwsza wersja MC2 przechodziła też po zepsuciu
+kodu; wykrył to dowód failing-first).
+GRANICA AKTU: akt kończy się PRZY PRZEJŚCIU DO INTERPRETACJI (decyzja kliniczna użytkownika). Opis
+można redagować — dopóki trwa, próba trwa; przejście do interpretacji jest pierwszym gestem „mam to
+za sobą", a przesunięcie złogu jest nieodwracalne. Idempotencja po (próba, strona, numer
+prowokacji): bez niej sama nawigacja leczyłaby pacjenta. Reguła zgodności kanałów NIEPOTRZEBNA —
+zmierzone, że akt dowolnej próby rusza złóg (Dix przesuwa złóg poziomy 199,8°→173,0°, odpowiedź
+0,478 wobec 0,941 przy Rollu): głowa rusza się naprawdę, niezależnie od badanego kanału.
+
+CHMURA ZŁOGU (V20/D9) I ZASIEW SESJI (V19)
+Karta chmury renderuje się WYŁĄCZNIE na kroku finalnym i POZA sesją (sesja opowiada jeden złóg,
+chmura — rozkład rozmiarów). ODSTĘPSTWO OD MAIN: main trzyma przełącznik poza `#app` w `#sessionbar`,
+którego futureUI nie ma. Ślad w goldenie zmierzony: treść karty (+374 znaki) w 18 kluczach kroku
+finalnego, reszta dotkniętych to biały znak z warunku emitującego pusty string.
+Zasiew sesji ze scenariusza RESTARTUJE łańcuch (nadpisanie φ przy zachowanych aktach łamałoby
+inwariant „łańcuch ≡ jedna nić symulacji"). Pułapka: `bondFrac = settled ? 1 : 0` — bond 0 dla
+`neutral` dawałby FAŁSZYWY lying-down 0,077. Przy włączonej sesji karta przestaje pytać o historię
+i czyta stan złogu przez `sessionPreview`; zasiew `afterRoll` (φ ≈ 220°) daje podgląd „ta próba
+OPRÓŻNI kanał" — R10 na żywo, zapowiedziane zawczasu zamiast niemego testu kontrolnego.
+
+NUMERACJA ŹRÓDEŁ ROZESZŁA SIĘ MIĘDZY GAŁĘZIAMI — i to złapało dwa błędne cytowania w kartach.
+futureUI: [H26] Özgirgin · [H27] Bhattacharyya · [H28] Newman-Toker · [H29] Cochrane (dodany przy
+scaleniu V20b). main ma pod [H28] Cochrane. Karta RD i karta chmury cytowały numery Z PODSUMOWANIA
+MAIN, czyli kierowały do złych prac. Przy każdym przenoszeniu treści z main numery źródeł trzeba
+sprawdzić w bibliografii TEJ gałęzi, a nie przepisać.
+
+KONWENCJA CYTOWANIA I BRAMKA ŹRÓDEŁ (npm run zrodla:check)
+Reguła wynika z pomiaru, nie z gustu: ze 130 cytowań w `src` aż 83 to SAME `[Hnn]` bez nazwiska —
+w komentarzach silnika numer JEST odnośnikiem i wymuszanie nazwiska rozdęłoby je bez korzyści.
+Konwencja brzmi więc: NUMER MOŻE STAĆ SAM, ale jeśli towarzyszy mu oznaczenie źródła, oznaczenie idzie
+BEZPOŚREDNIO PO numerze i niesie ROK. Dzięki temu bramka NIE POTRZEBUJE słownika nazwisk — oznaczeniem
+jest po prostu to, co następuje po numerze, a rok odróżnia cytat od prozy: nowe źródło z nowym
+nazwiskiem działa bez dopisywania czegokolwiek.
+Bramka obejmuje `src` ORAZ cztery dokumenty (engine_doc i view_doc, PL i EN) i pilnuje pięciu rzeczy:
+  • każdy cytowany numer ma definicję, a żaden wpis bibliografii nie jest martwy;
+  • oznaczenie stojące po numerze zgadza się z definicją — to ta reguła, która złapałaby oba błędne
+    cytowania z kart;
+  • NAWIAS ZAMYKA SIĘ NA NUMERZE. Zmierzone przy wdrożeniu: SZEŚĆ cytowań postaci `[Hnn Autor ROK]`
+    i `[Hnn; Inny 1984; Trzeci 2008]`. Wzorzec `[Hnn]` ich nie widział, więc były poza KAŻDYM
+    pomiarem — nie liczyły się nawet jako cytowania. Cichy brak jest gorszy od błędu;
+  • LICZBA ZNAMIENNA należy do jednej pracy. To jedyna reguła, która złapałaby błąd z rozdziału
+    CHMURA ZŁOGU: liczby (56% vs 21%, OR 4,42) są własnością [H29], a stały przy numerze pracy
+    o udarze — numer stał tam SAM, więc porównanie numer↔nazwisko nie miało czego porównać.
+    Właściciel jest WYPROWADZANY z bibliografii, nie wpisany. Tokenem jest wyłącznie liczba o WŁASNEJ
+    STRUKTURZE (iloraz szans, zakres procentowy, „x% vs y%"): pomiar z gołymi wartościami dał fałszywy
+    alarm — „15°/s" z opisu oczopląsu poszarpaniowego trafiało w niezwiązane zdanie „spvV 15°/s";
+  • lustro PL i EN cytuje te same numery tyle samo razy.
+CZEGO BRAMKA NIE ROBI: nie ocenia, czy praca mówi to, co przy niej napisano. To zostaje czytelnikowi —
+i dlatego 95 odsyłaczy w rozdziałach przejrzano ręcznie (2026-08-16). Poprawione trzy atrybucje:
+liczby Cochrane'a [H28]→[H29]; dysocjacja kaloryka↔vHIT [H20]→[H20][H21], bo kryteria Ménière'a są
+objawowe i o vHIT nie mówią; oś słuchowa [H24]→[H28], bo GRACE-3 „plus" omawia, ale go nie wprowadza.
+
+KANAŁ PRZEDNI: STRONA PRZESTAŁA WYNIKAĆ Z POZYCJI (2026-08-16, po V26)
+Karta Dix w trybie kanału przedniego liczyła stronę jako `otherSide(A)` — „ucho PRZECIWNE, płaszczyzna
+LARP/RALP" — i tą samą stroną uruchamiała manewr Yacovino. To rozumowanie o PARZE WSPÓŁPŁASZCZYZNOWEJ:
+rządzi vHIT-em i odruchem z obrotu głowy, gdzie napęd daje wspólny przepływ endolimfy. W BPPV napęd daje
+własny złóg JEDNEGO kanału i na partnera się nie przenosi. Skutek był leczniczy: aplikacja kierowała
+manewr do ucha wyliczonego z ułożenia głowy.
+Maska `NYS_SHOW.anterior.t` to KRYŁA — kandydatura przednia odpadała na torsji, więc zły znak pionu
+nigdy nie zdążył zaszkodzić. V26 zdjął maskę i usterka wyszła: model dawał UPBEAT + torsję ku uchu
+ZDROWEMU. Zmierzone napędy w spoczynku: Dix prawy AC-P +0,0382 wobec AC-L −0,0312; head-hang (yaw 0)
++0,0116 dla OBU stron.
+CO ZMIENIONE: `effSide === A` (karta rysuje kanał przedni ucha badanego — to on ma w tej pozie napęd
+dodatni), a stronę oddaje TORSJI. Trzy zdania karty przepisane na treść z kwerendy: prowokacja bywa
+obustronna ([H33] 9/12), górny biegun bije ku uchu choremu ([H32]), torsji nie widać u 57% chorych
+([H31]), a apogeotropowe BPPV kanału TYLNEGO drugiej strony daje ten sam obraz.
+NOWE POJĘCIE W MODELU INTERPRETACJI — CECHA OPCJONALNA: jej OBECNOŚĆ rozstrzyga, BRAK nie wyklucza.
+Bez tego opis „torsja: zero" wykluczałby kanał przedni u większości chorych, którzy go mają.
+DOWÓD ZAKRESU rebaseline'u: `pose` 360 i `shell` 22 BEZ ZMIAN, `_meta` (w tym domErr) bez zmian,
+`engine` 1 klucz (`dyn`), `dom` 20 z 214 — wszystkie związane z kanałem przednim: 6 ekranów przewodnika
+Yacovino, 2 karty head-hang, 4 ekrany interpretacji, 8 ekranów nauki. Zero nowych, zero usuniętych.

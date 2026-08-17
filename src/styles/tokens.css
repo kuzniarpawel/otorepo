@@ -1,0 +1,56 @@
+/* OTOREPO — tokeny projektowe. Warstwa DOKŁADANA w Bloku 1 (E2A).
+ *
+ * ZASADA TEGO PLIKU NA TYM ETAPIE: wyłącznie tokeny NOWE (addytywne).
+ * Żaden token nie nadpisuje wartości istniejącej w legacy.css, bo to zmieniłoby wygląd, a etap
+ * przenoszenia stylu (E1) był jedynym momentem, w którym regresja wizualna była w 100 % wykrywalna
+ * (nic innego się nie zmieniało). Zmiany WARTOŚCI, które mają widoczny skutek — kontrast --faint
+ * (3,59:1 przy 37 użyciach w rozmiarach 9,5-12 px), --display (deklaruje "Sora", której nigdy nie
+ * ładujemy — wklejone base64 to wyłącznie IBM Plex Sans), semantyka statusu (dziś ten sam żółty
+ * --timer znaczy „trwa odliczanie" i „ostrzeżenie") — należą do Bloku 2, gdzie SĄ produktem etapu
+ * i mają własne kryteria odbioru.
+ */
+:root{
+  /* ODSTĘPY — dotąd ~20 literałów bez wspólnego rytmu */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:20px; --sp-6:24px; --sp-7:32px; --sp-8:40px;
+
+  /* Wcięcie treści — JEDNO źródło. .ghead liczy z niego ujemny margines, żeby dwie liczby,
+     które musiały być ręcznie równe, przestały móc się rozjechać. */
+  --pad-x:16px;
+  --pad-y:16px;
+  --gap-card:12px;
+  /* Oddech powłoki NA TELEFONIE = 0. Wcięcie treści daje już #app (--pad-x); dołożenie drugiego
+     na .mainscroll odbierało 32 px szerokości i wypychało siatkę trzech przycisków poza ekran
+     (zmierzone: #app 394 px w oknie 360 px). Poziomy przelew był przy tym NIEWIDOCZNY w
+     documentElement.scrollWidth, bo overflow-y:auto wymusza overflow-x:auto i chowa go wewnątrz
+     scrollportu — stąd wartość bazowa 0 i wzrost dopiero od 768 px. */
+  --shell-pad:0px;
+
+  /* PROMIENIE — --r (18px) zostaje jako źródło dla --r-lg */
+  --r-xs:6px; --r-sm:10px; --r-md:12px; --r-lg:var(--r); --r-pill:999px;
+
+  /* WARSTWY — dotąd trzy magiczne liczby (60/40/35) rozsiane po pliku */
+  --z-sticky:10;           /* .ghead  */
+  --z-actionbar:20;        /* .tcard  */
+  --z-nav:30;              /* .apptop, .railnav, .bottomnav */
+  --z-sheet:40; --z-modal:50;
+
+  /* BEZPIECZNE MARGINESY — mimo viewport-fit=cover osie L/R nie były używane ani razu
+     (telefon w poziomie z wcięciem na aparat przycinał treść). */
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+
+  /* RUCH */
+  --dur-fast:100ms; --dur:180ms; --dur-slow:320ms;
+  --ease:cubic-bezier(.4,.15,.2,1);
+
+  /* WYMIARY POWŁOKI */
+  --content-max:1560px;    /* twardy limit szerokości powłoki — interfejs nie rozjeżdża się w nieskończoność */
+  --col-max:560px;         /* limit JEDNEJ kolumny treści = dzisiejsza wartość; rośnie od 768px (dwie kolumny dochodzą w E2B) */
+  --rail-w:248px;
+  --topbar-h:56px;
+  --nav-h:64px;
+  --tap:48px;              /* minimalne pole dotykowe (egzekwowane w Bloku 2) */
+}

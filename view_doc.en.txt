@@ -8,7 +8,11 @@
  Principle: a single 3D source of truth shared with the engine (head frame x=right, y=up, z=nose).
          The SVG path is fully offline (no three.js); the 3D path adds three.js as a
          lazy-loaded chunk (Stage 3–5) — DEFAULT when WebGL is available, SVG = fallback.
- Last update: 2026-07-15 (Bárány/ICVD classification card + central differentiation CPN;
+ Last update: 2026-08-14 (review after the engine assessments II: QUANTITATIVE claims re-measured against
+        the new engine — the 12 s cap gave way to derivedHold, the canal arc is ARC_SPAN per canal instead
+        of a shared 178°, CUP_WEAK 0.6 -> 0.45, Bárány chips per canal; two things the engine swap changed
+        silently are now named: the 24 s ceiling of the otolith journey and the dead phiToFrac threshold)
+ Previously: 2026-07-15 (Bárány/ICVD classification card + central differentiation CPN;
         otolithic SVV & VEMP panel in HINTS)
 ==========================================================================
 
@@ -23,7 +27,11 @@ Card in renderDiag (svg-screens.js), below the mechanism card, above the treatme
 segment "Peripheral (BPPV) ↔ Central (CPN)" (state.diagCentral, handler toggleDiagCentral; full render).
  - PERIPHERAL (default): subtype label from pose/maneuvers.js:baranyClassify(canal,variant,side,antMode) —
    subtype + "established / emerging syndrome" (established/emerging) + feature chips (Latency / Duration /
-   Fatigability / Direction / Affected side). Pure clinical function (like recommend/variantLabels) — a SYNTHESIS of conventions
+   Fatigability / Direction / Affected side). THE CHIPS ARE PER CANAL (assessment II): the ANTERIOR canal has
+   its own texts "Short/absent latency" and "Transient (≈1 min)" instead of the shared "1-5 s"/"< 60 s",
+   because in the engine its debris starts pressed against the cupula and the attack lasts 61.25 s — i.e.
+   ABOVE the Bárány threshold. A shared chip would contradict the engine's own physics; the barany:check gate
+   compares the measurement with the chip's wording, not with one number for all canals. Pure clinical function (like recommend/variantLabels) — a SYNTHESIS of conventions
    already encoded in DIAG (latNote/features), ZERO effect on physics. Golden captures this view (deterministic).
  - CENTRAL (after click): a .redflag block with the CPN red flags (no latency / persistent / non-fatigable /
    purely vertical — especially downbeat — or purely torsional / direction outside any canal / neutral position / neuro symptoms),
@@ -55,15 +63,32 @@ The engine accepts `size` ("small"|"medium"|"big"; medium=r1=baseline) scaling t
  - SIZE-DEPENDENT HOLDS (small = slow settling → longer position hold):
      • clinically recommended step hold: sizedSeconds() multiplies `st.seconds` (small ×1.6, 15 s grid;
        medium/big unchanged) in genPlan() — hence the slider/counter start from a longer value for small.
-     • DYNAMICS hold (maneuverTimeline): hold cap 12 s → for small round(12/r²)≈20 s, so the slow debris
-       has time to reach φ=178° (exit). Verified: small with longer holds CLEARS Epley/Semont/
-       Yacovino/Lempert (without them Semont/Yacovino stalled at φ≈157°/128°). medium/big: cap 12 s (regression).
+     • DYNAMICS hold (maneuverTimeline): AFTER ASSESSMENT II the 12 s cap DOES NOT EXIST — the hold is
+       DERIVED (`derivedHold`: the smallest pair {h, u} from HOLD_STEPS/UNTIMED_STEPS at which the engine
+       carries the debris out to the utricle, with a tauP x 1.1 guard). Size still matters, but through the
+       physics rather than a cap formula. MEASURED tHold per step (side R): Semont small 15/60/60/15 ·
+       medium 6/45/45/6 · big 6/30/30/6; Yacovino small 9/45/45/9 · medium and big 6/30/30/6; Bascule small
+       6/75/75/75/6 · big 6/30/30/30/6. Epley and Lempert clear with the same hold at every size.
+       The old 12 s truncation was deep and UNEVEN (semont 20 % of the recommended hold, gufoniGeo 30 %,
+       lempert 44 %, epley 53 %, yacovino 77 %), so "does the maneuver clear the canal" partly measured the
+       aggressiveness of the truncation rather than canal geometry.
      • NOTE in the UI (small only): "the recommended position-hold time was extended" with a literature citation.
- - OTOLITH ANIMATION by size (setupGuideAnim): transition DUR ∝ 1/r² (Stokes settling velocity ∝ r²)
-   → small ~2630 ms (slower), medium 1600 ms (unchanged), big ~878 ms (faster); clamp [800,3000].
+ - OTOLITH ANIMATION (setupGuideAnim): DUR now comes FROM THE NYSTAGMUS WINDOW, not from a size formula —
+   `guideNysSeconds` × 1000, clamped to [1200, 24000] ms. The intent: the debris journey and the nystagmus
+   should end TOGETHER, because the flip card shows both sides. The 1/r² formula (small ~2630 ms · medium
+   1600 ms · big ~878 ms, clamp [800,3000]) survives ONLY as the fallback path for steps WITHOUT nystagmus.
+   Bascule step 1 has a fixed 3600 ms (adhesion → detachment → start of the journey as one continuous window).
+   MEASURED AFTER ASSESSMENT II (2026-08-14) — the promise "both sides end together" is NOT kept: tEnd
+   exceeds the 24 s ceiling in 122 of 156 steps with nystagmus (78 %), and the longest step is 74.60 s.
+   Previously the dynamics hold was truncated by the 12 s cap, so tEnd never reached the clamp and the ceiling
+   was only a guard against extremes; today it is the rule. In those steps the journey finishes FIRST while
+   the nystagmus keeps playing. Raising the ceiling is a UI decision (an animation up to ~75 s), so the number
+   awaits a clinical call — this document states how it IS, not how it was.
    Nystagmus intensity/latency (startNys/startDialNys, manStepEnv envelope) follow directly from
    ξ(t) scaled by size — with no separate code.
- - Consistency note: sizeRadius() in the UI layer must stay CONSISTENT with SIZE_R in the Vestibular module.
+ - Consistency note — SETTLED: sizeRadius() is no longer a copy but a delegation
+   (`const sizeRadius = s => Vestibular.sizeR(s)`), so the two tables have no way to drift apart.
+   Measured: small 0.78 · medium 1 · big 1.35 on both sides.
  CITATION (rationale for longer holds for fine/slow-settling debris):
    Hain TC, Squires TM, Stone HA (2005). "Clinical implications of a mathematical model of BPPV."
    Ann N Y Acad Sci 1039:384-394. (rationale for holding the position ~30 s in CRP; slow settling of otoconia).
@@ -138,6 +163,15 @@ hintsHIT, refreshHints*). Default entry: mild superior neuritis R (nerveBranchLe
    a trace utricular skew (<SKEW_CENTRAL, superior nerve) shown as PERIPHERAL, not "central".
 Physics and literature: engine_doc "STAGE 7 / NEUROANATOMY" [H15]-[H21].
 
+--- WHAT THE ENGINE ALREADY DOES THAT THIS SCREEN NEVER TOUCHES (state after NeuroVOR assessment II, 2026-08-14) ---
+Assessment II (N1-N7) grew NeuroVOR to 50 keys; the UI layer calls 20. The difference is NOT a documentation
+gap but a FACT about the screen's scope — and it is better named than left to suggest that the simulator shows
+everything the model computes. Not wired to the UI, among others:
+  hsn (head-shaking nystagmus) · shimp (the inverted saccade rule: ABSENCE of a saccade = deficit) ·
+  smoothPursuit · dva (dynamic visual acuity) · posture · compensatePair · timeline (a day axis) ·
+  alexanderGrade (grades I-III) · vhitPlane · caloricBattery · directionChanging.
+Wiring any of these up is a separate design decision — this document describes the screen as it is.
+
 --------------------------------------------------------------------------
  Scene3D  (stage A)
 --------------------------------------------------------------------------
@@ -206,7 +240,9 @@ screenAngleCW(p) -> degrees
      silhouette camera-observer. NYSTAGMUS DIRECTIONS UNCHANGED (the test q-literals untouched; a clean regression).
  [x] Diagnostic mechanism (otolith in the canal) driven by the REAL φ(t) from the engine (simulateCanalith):
      the particle, after the latency, travels by gravity and stops (Dix/Yacovino→exit; Roll→toward the cupula),
-     without an artificial loop. Cupulolithiasis: the cupula deflects per ξ(t) (persistently). φ→fraction of the path = φ/360.
+     without an artificial loop. Cupulolithiasis: the cupula deflects per ξ(t) (persistently). φ→fraction of the
+     path is now computed FROM THE CANAL'S ARC (ARC_SPAN, measured from IE-Map: horizontal 267.3° · anterior
+     281.1° · posterior 318.8°), not from a shared 360°/178°.
  [ ] The REPOSITIONING labyrinth (Otolith journey) is still on 'progress' interpolation — a faithful φ(t) for the WHOLE
      maneuver requires a QUATERNION MANEUVER TIMELINE (head orientation per step = body orientation ∘ neck twist).
      Offline attempt: a fast orientation model does NOT expel the particle (Epley step 'to the side, nose down' reverses φ)
@@ -220,10 +256,49 @@ screenAngleCW(p) -> degrees
      The raw φ is front-loaded and for the horizontal canal goes toward the cupula → a schematic instead of raw φ/step.
      Gufoni-apo (no exit): movement toward the cupula per the engine + a 'conversion' note.
      CANAL_PATHS paths: start = CUPULA (φ≈0), end = EXIT (vertical → common crus→utricle; horizontal
-     → straight to the utricle), φ≈180≈1.0. Anatomical schematic: ampullae with cristae+cupulae, common crus
+     → straight to the utricle). The exit now sits at the canal's ARC_SPAN (267.3-318.8°), not at φ≈180 —
+     `phiToFrac` gained a `canal` argument (fix of 2026-08-14). The branch that uses it (a maneuver WITHOUT
+     expulsion, mechanism other than cupulo) is UNREACHABLE with the current engine — measured 0 of 54 cases
+     across maneuver × side × size — so this was a landmine rather than a visible defect: if some maneuver
+     stopped clearing the canal, the schematic would show the debris "in the utricle" at 56-67 % of the arc. Anatomical schematic: ampullae with cristae+cupulae, common crus
      (the fork of the vertical canals → a trunk to the utricle), utricle chamber. viewBox CROPPED to the content (38 35 205 164,
      no empty margins) + SVG scaled to 80% (inline style width:80%, centered); the LAB_* constants in svg-screens.js.
      Gufoni-apo (no exit) → a 'conversion maneuver' note in the labyrinth panel (renderGuide).
+     THE SAME GEOMETRY IN THE `startAnatSVG` SCHEMATIC (Block 4): a head in profile with the labyrinth
+     highlighted, drawn from CANAL_PATHS/LAB_AMP/LAB_UTR/LAB_CRUS through a single transform (scale LS,
+     offset LX/LY in head space, HX/HY/HS in drawing space). The callout anchor points ("semicircular
+     canals", "utricle") are computed with the SAME gx/gy pair, so a leader line cannot drift away from
+     the drawing when the scale changes. Canal colours = the application colour code
+     (--post/--horiz/--ant). The neck runs past the viewBox and is clipped by it.
+     WHERE THIS SCHEMATIC LIVES: the start screen shows the RENDER by default (assets/head-xray.jpg,
+     the clinical scene — see below), and the schematic takes its place under
+     `prefers-reduced-data: reduce`. It is not a spare copy kept "just in case": it costs zero network
+     bytes because it ships inside the bundle, and it is the ONLY version of the scene that works
+     without the image asset.
+
+=== THE CLINICAL SCENE OF THE START SCREEN (start-scene.css + startScene/startHint/startResume) ===
+ The render stops being a tile in the side column and becomes the BACKGROUND of the right-hand part of
+ the content area; the cards lie on it like glass. Three layers: render -> directional curtain (its
+ breakpoints are the grid column edges) -> glow + bottom close-off. The image and its glow sit in ONE
+ box (.startscene__plate), because the glow is expressed in PERCENTAGES of that box — two independent
+ anchorings drift apart on every change of framing.
+ SWAPPING THE MATERIAL: one constant, CLIN_RENDER, in svg-screens.js. Framing requirements: aspect close
+ to 3:2, labyrinth in the upper-right quadrant, dark background, NO burned-in logotype; a different
+ framing requires recomputing one pair of percentages in .startscene__glow. Asset: JPEG 1264x768, 74 kB
+ (the source material in the design package was a 782 kB PNG NAMED .jpg — transcoded, because it enters
+ the PWA precache). tools/build-dist.mjs copies it, since <img src> is OUTSIDE the Vite graph.
+ TILE COLOUR CODE: startQuick(..., tone) — the tone is an ARGUMENT, not derived from the number (the
+ ordinal and the clinical meaning are two different things). Colour is never the only carrier: the
+ number, the icon and the full description all remain.
+ THE RESUME CARD stands on resumeStepId/resumeSummary from flow-model.js — NOT on activeStepId (derived
+ from the screen, null on start) nor on flowVisible (false for the start screen by design). The progress
+ dots are the same statuses as the flow bar (flowStatuses), through the shared injector
+ src/app/flow-deps.js. The card does NOT show the time of interruption: the state records WHAT the user
+ did, never WHEN, and an approximation ("recently") in a card that returns to an examination would be
+ an invention.
+ ON THE PHONE the card goes ABOVE the mode cards — by reordering the WHOLE side column inside a flex
+ container, because order only reorders items within one container (the package had order:-1 on the card
+ itself and it did nothing: measured y=927 px, i.e. below the mode cards).
  [x] STAGE C: full body (trunk+neck+limbs) as a 3D projection — DONE (figProj/bodyJoints, see the
         figProj ARCHITECTURE below and the SESSION SUMMARY 2026-07-02). Free camera choice (K4) remains
         in migracja_3d.txt as a project for the future.
@@ -232,6 +307,90 @@ DEPENDENCIES
  Scene3D uses Vestibular.rotate / Vestibular.qaxis (shared quaternion algebra).
 
 
+=== CLINICAL SCENE — REMAINING SCREENS (rest-scene.css, design package turn 3) ===
+ Scope: post-maneuver Control, Report and session saving, Learning (library + lesson), Laboratory
+ (list + experiment). Imported in index.css AFTER clinic-scene.css; the sheet overrides MATERIAL,
+ never layout, and copies no value from turns 1-2 (it takes them as tokens).
+ THREE NEW KINDS OF CONTENT. DOCUMENT (report preview): its own paper --doc-paper #070B0F,
+ monospace, line height 1.75 — the only text that leaves the app, so it is read sentence by
+ sentence, not scanned like a list. CURTAIN (Learning): diagonal hatching in the area tone +
+ dashed outline — it says "something is here and will be shown"; distinct from the grey "no
+ result" cards, because deliberate concealment and missing data are two different things.
+ MEASUREMENT (Laboratory): the "What changed" card is filled with STEEL, not tone — the state
+ "nothing changed" carries the same visual weight as a state with a change, because in an
+ experiment the absence of an effect IS a result.
+ TWO AREA RULES. Learning carries --ant throughout (the same violet as the "I am learning" card on
+ Start). The Laboratory gets NO clinical tone: a canal or state colour would suggest a diagnosis
+ this place by definition does not make. The tone returns in one place — .lobraz ("Clinical
+ picture"), plus the amber .lgranica, because a sentence about where the simulation stops being
+ honest must not look like another line of description.
+ CONTROL-RESULT TONE: one [data-fuwynik] map for THREE places (answer, series row, "What next"
+ card). The values are not guessed from names but derived from flags the model already carries:
+ zamyka -> --post, nowaPodstawa -> --ant, reliable with neither -> --horiz, not reliable -> --faint
+ (+ dashed outline). The renderer emits data-fuwynik in three places; that is the ONLY markup
+ change in the whole turn.
+ IDENTIFIER DRIFT — the most important finding of this turn. The package targeted `bezZmian`,
+ `zmianaKierunku`, `nkafel--bezbledu`, `nfeed--trafne`, `nwynik--zewskazowka`. NONE of them exists:
+ WYNIKI has SEVEN entries (ustapienie, czesciowaPoprawa, brakPoprawy, konwersja, drugaStrona,
+ residual, niewiarygodne), OCENY four (rozwiazany, zeWskazowka, zBledami, nieukonczony — case
+ matters in a selector), WERDYKTY three (trafna, dopuszczalna, bledna; "ambiguous" is not a fourth
+ verdict but the .nfeed__nj sentence). A selector on a non-existent identifier is INVISIBLE to
+ every oracle — domOracle reads innerHTML, jsdom does not apply the cascade — and --tone then falls
+ back to :root{--tone:var(--primary)}, so the "What next" card after the answer "examination
+ unreliable" would look like an ordinary action card.
+ GATE CSS4-CSS8 in tools/interp-dom.mjs (33 -> 39 cases): every identifier from WYNIK_IDS, OCENY
+ and WERDYKT_IDS must have a tone rule in rest-scene.css, plus .nkafel--nowy (the starting state,
+ which no loop over a dictionary would catch). Sensitivity-checked: restoring three of the
+ package's names lights the gate on exactly those three.
+ THE "min-height beats height" TRAP — THREE TIMES in this package. lab.css .lsuwak{min-height:32px},
+ nauka.css .netap{min-height:44px}: the scene sheet's `height` declaration was dead. The effects
+ were visible, not theoretical — the slider stood at 32 px instead of a touch target, and on the
+ phone the stage axis stayed as six EMPTY 44 px tiles instead of 5 px progress bars (labels already
+ hidden). Slider height moved to a11y.css next to .comprange (one invariant, one place); the stage
+ axis got min-height:0 in both phone blocks.
+ MONOSPACE: the package called var(--mono, "IBM Plex Mono", monospace), but --mono did not exist
+ and IBM Plex Mono is not embedded (the four base64 @font-face entries are Plex SANS variants). The
+ fallback dropped to generic monospace — Courier New on Windows — and replaced the CORRECT stack
+ .opispodglad__t already had from opis.css. The --mono token takes the existing stack (ui-monospace,
+ SFMono-Regular, Menlo, Consolas); the five places carrying NUMBERS also got
+ font-variant-numeric:tabular-nums, because a monospace face alone does not align digits vertically.
+ TOUCH TARGETS: .ndet summary (32 px) and .lgrupa > summary raised in a11y.css to var(--tap),
+ exactly like .advbox summary. DELIBERATELY LEFT at 36 px: .lparam__n (30 of them), .lstan,
+ .nwsk__b — that is what the package specified, before this turn they were 22 px, and 36 px is
+ above the WCAG 2.2 AA threshold (24 px); .lparam__n sits in a row baseline-aligned with the
+ parameter value, so forcing 40 px would break that alignment.
+ GOLDEN SNAPSHOT: rebaseline of EXACTLY eight dom/followup/* keys (engine 0, pose 0, shell 0,
+ _meta 0). Proven that the difference is ONLY the added data-fuwynik: after mechanically stripping
+ them the new dump is character-identical to the old one, with a sensitivity control (stripping
+ aria-pressed as well does produce a difference). The other five screens moved NOT ONE character —
+ that is the proof that outside Control this turn is purely CSS.
+ BROWSER MEASUREMENT (the golden cannot see CSS): the seven Control answers carry four distinct
+ tones per the map; one full fill per screen (Control: the main step, Report: "Copy report"); the
+ document at 12.5 px / 21.875 px line height on rgb(7,11,15) paper; the four Learning grades give
+ four distinct tones and NONE falls back to cyan; Laboratory --tone=--faint, .lobraz on --clin-deep.
+ Phone: "Copy report" sticky at 52 px, slider 48 px, stage axis six 5 px bars in one row, button
+ names kept in the accessibility tree (1x1 + clip-path, not aria-label). Zero horizontal scrolling
+ at 360 px on all six screens.
+ NEVER SEEN WITH EYES: the preview pane composited no frames throughout this turn, so the whole
+ acceptance is numeric (getComputedStyle), not visual.
+ NAVIGATION BETWEEN AREAS (shell.js: OBSZAR_EKRANU). `render()` dispatches on `state.screen`, so
+ changing area MUST leave a screen belonging to another area. Block 3 had a single condition here
+ (`screen === 'start'`) and that sufficed while no other area had screens. Block 13 added
+ naukaBib/naukaLekcja, Block 14 labLista/labEksp — and then tapping "Diagnostics" from Learning or
+ the Laboratory stopped working: `area` and `mode` moved to 'diag', but `screen` stayed, so the old
+ screen kept rendering. REPORTED BY THE USER, not by an oracle — all of them entered those screens
+ through module actions (goNauka/goLab), never THROUGH NAVIGATION from another area.
+ Instead of one more `if` there is a screen→area map (screens outside the map belong to Diagnostics,
+ matching the default branch in `render()`), and the rule reads: leave the screen if it belongs to
+ an area OTHER than the target. Re-tapping your own area deliberately does not reset — otherwise
+ "Diagnostics" mid-examination would throw the clinician from "Nystagmus" back to the start.
+ Gate K in pwa-dom.mjs (79 -> 89): seven inter-area transitions, the no-reset rule within one area,
+ and a check that every "nauka*"/"lab*" screen in the dispatcher has an area. The oracle keeps its
+ OWN expectation map — importing the same table as the code would only confirm the table equals
+ itself.
+ THE SIDE RAIL appears from `@media (min-width:1200px)`; below that it is `display:none` and
+ `.bottomnav` takes over navigation. The Claude Code preview pane is ~500 px wide, so the rail is
+ NOT there by design — it is not a defect, just the same layout as on a phone.
 === COMPACT REPOSITIONING STEP LAYOUT (renderGuide) — one screen ===
 Side selection: an L|R pill in the header (.sidepill, color L=--left/R=--right, aria-pressed), onclick=setGuideSide.
   Removed the full-row sideSel from the Repositioning view (sideSel still in Diagnostics).
@@ -575,7 +734,7 @@ WHAT WAS CHECKED AND CONFIRMED:
    ampullofugal excites) — CORRECT. The sign of ξ (flow=gc·G.exc·dφ) encodes excitation/inhibition consistently.
 4. Ewald II asymmetry (inhibition ×0.45): wired into manStepEnv (maneuver nystagmus magnitude) AND into diagnostics
    (nysFromGeom "asym" mode). dynNystagmus also reverses the DIRECTION when ξ<0 (Ewald's rule — inhibition reverses).
-5. CUPULOLITHIASIS weaker than canalithiasis (Vestibular.CUP_WEAK=0.6): nysFromGeom multiplies the "cupulo" variant's `strength`
+5. CUPULOLITHIASIS weaker than canalithiasis (Vestibular.CUP_WEAK=0.45; 0.6 before assessment II): nysFromGeom multiplies the "cupulo" variant's `strength`
    by CUP_WEAK → the eyes/dial on the mechanism card (the back of the #mechflip flip) beat with a smaller amplitude than "canalo",
    but with a `persistent` flag. THE SAME coefficient scales ξ in simulateCupulolith (engine). Golden
    UNTOUCHED: diagnostics is snapshotted at variant=canalo (default), so the "cupulo" path is outside the pattern.
@@ -716,6 +875,17 @@ CORRECTION (only the Yacovino pose/time — the canal geometry / nystagmus / HIN
 VERIFICATION: φ→178 exited for R/L × small/medium/big; the other maneuvers unchanged (gufoniApo φ=69 exited=false
   = correct, it is a conversion without evacuation); bridge/view/golden green; visually the 4 steps consistent with the markers.
 INVARIANT audit #1 preserved: gHead(headQ)==gravity == 2.5e-16 for all steps.
+CORRECTION AFTER ENGINE ASSESSMENT II (2026-08-14 — the report above stays as the record of that session):
+  • `dynHold=22` DOES NOT EXIST. It went away together with the 12 s cap (2026-08-05), because the hold is
+    now DERIVED (`derivedHold`). Yacovino today gets tHold 9/45/45/9 s for small debris and 6/30/30/6 s for
+    medium and big — with no manual override at all.
+  • φ=178 IS NOT THE EXIT THRESHOLD. The arc is MEASURED per canal (ARC_SPAN, IE-Map): anterior canal 281.1°.
+    Yacovino carries the debris out to φ=281.1 (exited) for both sides and all three sizes.
+  • The φ numbers 173 / 145→118→82 / 157 / 128 in the report describe the OLD shared 178° arc and today have
+    only historical value — they show HOW the bug was found, not where the debris sits.
+  • The report's clinical conclusion SURVIVED and is now derived rather than assumed: expelling debris from
+    the anterior canal requires chin-to-chest (see engine_doc, B6+B8 — one chamber law), i.e. the Yacovino
+    maneuver is physically sound in this model.
 
 ===== Stage 5: 3D DEFAULT renderer + SVG fallback (migration finale) =====
 webglAvailable() [svg-screens.js, cache _webglOK]: creates a canvas, tries getContext('webgl'/'experimental-webgl'),
@@ -739,3 +909,117 @@ PERFORMANCE (DESKTOP — no phone in the dev environment): a cold mount (import 
 OFFLINE/BUILD: vite build code-splits three into assets/three-patient-*.js (~516 KB, lazy — index ~124 KB); the chunk
   is in the precache dist/sw.js (3D works offline after PWA installation); the cache name hash changes with the content.
 GLB: NOT deployed (user decision: a procedural model). The bone adapter is ready — a swap = the same show(spec,side).
+=== SURFACING ASSESSMENT II IN THE UI (2026-08-15/16) ===
+This whole layer came out of one observation: the engine knew more than the screen showed. The
+defect pattern was the same every time — a HAND-WRITTEN LIST where the model already has its own.
+So was the fix: derive the list from the single source.
+
+DERIVED LISTS, NOT WRITTEN ONES
+ - The test-selection screen held four literals, so the engine's fifth test (lying-down, V11/D2) was
+   computable but UNREACHABLE. Now `Object.keys(DIAG)`.
+ - `OBS_PROBY` in obs-model.js was a SECOND hand-written list of four tests, next to `OBS_FAZY`.
+   They drifted at the first opportunity: the card rendered, while the form and the interpretation
+   did not know the test. Now `Object.keys(OBS_FAZY)`. The symptom was misleading — four history
+   scenarios yielded IDENTICAL prediction fingerprints for lying-down not because history does not
+   matter, but because the compared lists were EMPTY.
+ - The `zuma`/`kim` maneuvers needed NO work: the maneuver list reads `CANALS[canal].maneuvers`, so
+   they appeared by themselves when the engine brought them.
+ Gates: man:dom N1-N3 and AK5. Failing-first proof: restoring the literals loses lying-down.
+ NOTE: the golden does NOT pin the test-selection screen in diagnostics mode, nor the Bárány card in
+ anterior-canal mode — rebaselining after both changes produced ZERO differences. Hence GATES.
+
+POSITIONAL HISTORY (BLT) — A QUESTION WITH NOWHERE TO ASK IT
+`state.bltScenario` existed since V5, but without a switch the R8 watershed was unreachable. The
+switch enters BOTH tracks at once — the scenario also feeds `interp-deps`, because the switch alone
+would give a screen where the arrow says one thing and the conclusion another. It enters as a
+CLOSURE in the injector; a stateless injector (oracles, learning track) gets `undefined` →
+"textbook", so the path without a scenario stays bit-identical.
+Cards shown ONLY for `SCEN_DRIVEN` tests. Each carries φ₀ COMPUTED by `bltInit` (146°/173°/220°/
+200° at rest), not written in: it is a RESULT, not a label.
+
+ONE CLAIM ABOUT DURATION, NOT TWO
+The Bárány card said "< 1 min" for the ANTERIOR canal, the chip of the same test "≈1 min", and the
+engine measures 61.25 s. Both fields now come straight from `featsByVariant`. Gate barany:check
+JT1-JT3, with the reverse sensitivity control.
+
+THREE MEASUREMENT CARDS
+ - NULL PLANE (V12/D3) — only for the roll test and a cupular mechanism. The null at ±8.7° is
+   SHARED by the heavy and the light cupula; the DIRECTION on either side separates them.
+ - SYMPTOM BAR (V17/D5) — vertigo ~ |xi|, nausea ~ 100(1−exp(−sum|xi|dt/25)), threshold 0.03.
+   `man.cum` does NOT exist on this branch — the dose is computed from `man.sim` and memoized on the
+   simulation object, deliberately WITHOUT adding a field to `computeManSim`.
+ - RESIDUAL DIZZINESS — only for the `residual` outcome, source [H26]. The only place in the app
+   where we advise against TREATMENT (suppressants delay compensation), not against a maneuver.
+
+CONTINUOUS SESSION (D1) — OPT-IN MODE
+`state.session === null` is the BIT-IDENTICAL path. WHY THE TWO MUST EXCLUDE EACH OTHER: the session
+and the `fatigueFactor` multiplier describe THE SAME phenomenon — measured 0.621/0.400/0.266 vs
+0.630/0.406/0.270, agreement below 1.5 %. Applied together they SQUARE the fatigue (0.391 instead of
+0.621). The effective value goes to the DOM as `data-fatfactor` — a gate without an observable
+quantity guards nothing (the first MC2 passed even with the code broken; the failing-first proof
+caught it).
+ACT BOUNDARY: an act ends ON MOVING TO INTERPRETATION (the user's clinical decision). Idempotent per
+(test, side, provocation count): without it, navigation alone would treat the patient. No
+canal-matching rule is needed — measured: any test's act moves the debris.
+
+DEBRIS CLOUD (V20/D9) AND SESSION SEEDING (V19)
+The cloud card renders ONLY on the final step and OUTSIDE a session. DEVIATION FROM MAIN: main keeps
+the toggle outside `#app` in `#sessionbar`, which futureUI does not have. Golden footprint measured:
+the card's content (+374 chars) in 18 final-step keys; the rest of the touched keys is whitespace.
+Seeding the session from a scenario RESTARTS the chain. Trap: `bondFrac = settled ? 1 : 0` — a bond
+of 0 for `neutral` would give a FALSE lying-down 0.077. With the session on, the card stops asking
+about history and reads the debris state via `sessionPreview`.
+
+SOURCE NUMBERING DRIFTED BETWEEN BRANCHES — and it caught two wrong citations in the cards.
+futureUI: [H26] Özgirgin · [H27] Bhattacharyya · [H28] Newman-Toker · [H29] Cochrane. main has
+Cochrane under [H28]. When porting content from main, source numbers must be checked against THIS
+branch's bibliography, not copied.
+
+CITATION CONVENTION AND THE SOURCE GATE (npm run zrodla:check)
+The rule follows a measurement, not taste: of the 130 citations in `src`, 83 are BARE `[Hnn]` with no
+name — in the engine's comments the number IS the reference, and forcing a name would bloat them for
+nothing. Hence the convention: A NUMBER MAY STAND ALONE, but if a source designation accompanies it,
+the designation goes DIRECTLY AFTER the number and carries a YEAR. This is why the gate NEEDS NO
+dictionary of names — the designation is simply whatever follows the number, and the year tells a
+citation from prose: a new source with a new name works with nothing added anywhere.
+The gate covers `src` AND the four documents (engine_doc and view_doc, PL and EN), and guards five things:
+  • every cited number has a definition, and no bibliography entry is dead;
+  • the designation standing after a number matches the definition — this is the rule that would have
+    caught both wrong citations in the cards;
+  • THE BRACKET CLOSES ON THE NUMBER. Measured at rollout: SIX citations of the form `[Hnn Author YEAR]`
+    and `[Hnn; Other 1984; Third 2008]`. The `[Hnn]` pattern could not see them, so they sat outside
+    EVERY measurement — they did not even count as citations. A silent absence is worse than an error;
+  • A SIGNATURE FIGURE belongs to one work. This is the only rule that would have caught the bug in the
+    DEBRIS CLOUD chapter: the figures (56% vs 21%, OR 4.42) are the property of [H29], yet stood beside
+    the number of a paper about stroke — the number stood ALONE there, so the number↔name comparison had
+    nothing to compare. The owner is DERIVED from the bibliography, not written down. Only a figure with
+    ITS OWN STRUCTURE counts as a token (an odds ratio, a percentage range, "x% vs y%"): the measurement
+    with bare values produced a false alarm — "15°/s" from the head-shaking entry hit the unrelated
+    sentence "spvV 15°/s";
+  • the PL and EN mirrors cite the same numbers the same number of times.
+WHAT THE GATE DOES NOT DO: it does not judge whether a work says what is written next to it. That stays
+with the reader — which is why the 95 in-chapter references were reviewed by hand (2026-08-16). Three
+attributions were corrected: the Cochrane figures [H28]→[H29]; the caloric↔vHIT dissociation
+[H20]→[H20][H21], because the Ménière criteria are symptom-based and say nothing about the vHIT; and the
+auditory axis [H24]→[H28], because GRACE-3 discusses the "plus" but does not introduce it.
+
+THE ANTERIOR CANAL: THE SIDE NO LONGER FOLLOWS FROM THE POSITION (2026-08-16, after V26)
+The Dix card in anterior mode computed the side as `otherSide(A)` — "the OPPOSITE ear, the LARP/RALP
+plane" — and launched the Yacovino maneuver for that same side. That is COPLANAR-PAIR reasoning: it
+governs the vHIT and the rotational reflex, where the drive is a shared endolymph flow. In BPPV the
+drive comes from ONE canal's own debris and does not carry over to the partner. The consequence was
+therapeutic: the app sent the maneuver to the ear derived from head positioning.
+The `NYS_SHOW.anterior.t` mask hid this — the anterior candidate was excluded on torsion, so the wrong
+vertical sign never got to do damage. V26 removed the mask and the defect surfaced: the model produced
+an UPBEAT with torsion toward the HEALTHY ear. Measured resting drives: right Dix AC-P +0.0382 vs
+AC-L −0.0312; head-hang (yaw 0) +0.0116 for BOTH sides.
+WHAT CHANGED: `effSide === A` (the card draws the anterior canal of the examined ear — that is the one
+with a positive drive in this pose), and the side is left to the TORSION. Three card sentences were
+rewritten to the query's content: provocation is often bilateral ([H33] 9/12), the upper pole beats
+toward the affected ear ([H32]), the torsion is invisible in 57% of patients ([H31]), and apogeotropic
+posterior-canal BPPV of the other side looks the same.
+A NEW CONCEPT IN THE INTERPRETATION MODEL — AN OPTIONAL FEATURE: its PRESENCE decides, its ABSENCE does
+not exclude. Without it, "torsion: zero" would rule out the anterior canal in most patients who have it.
+SCOPE PROOF for the rebaseline: `pose` 360 and `shell` 22 UNCHANGED, `_meta` (incl. domErr) unchanged,
+`engine` 1 key (`dyn`), `dom` 20 of 214 — all anterior-related: 6 Yacovino guide screens, 2 head-hang
+cards, 4 interpretation screens, 8 learning screens. Zero added, zero removed.
