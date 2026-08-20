@@ -35,6 +35,7 @@ const state={
   hintsPreset:null,                                // aktywny preset/tryb (klucz HINTS_PRESETS lub "neuritis") — podświetlenie + dynamiczna ramka
   hintsPlane:"HC", hintsHitCanal:"horizontal",     // vHIT: wybrana płaszczyzna (HC/RALP/LARP) · kanał ostatniego pchnięcia
   hintsGrace:false,                                // D8/V22: karta taksonomii GRACE-3 rozwinięta (details; wzorzec hintsAdvanced — bez re-renderu)
+  hintsVmCrit:false,                               // V28: karta kryteriów migreny przedsionkowej rozwinięta (ten sam wzorzec details co hintsGrace)
   hintsSCDS:null,                                  // SCDS: ostatni bodziec (obiekt pressureStimulus) lub null
   // --- Blok 12: BADANIE HINTS/HINTS+ Z KWALIFIKACJA. Czyta je src/app/hints-model.js (czysty),
   //     pisze WYLACZNIE src/app/hints-state.js. Osobne od pol symulatora wyzej i to jest cala

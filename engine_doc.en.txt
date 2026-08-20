@@ -3037,6 +3037,99 @@ ORACLE: npm run dva:check (tools/dva-check.mjs) - a NEW gate. Before V27 NO tool
   snapshot:check (0 changes in the golden) - so without this gate it would be entirely unguarded. It holds
   the invariant "the flag NEVER fires when either ear has a gain of at least 0.6".
 
+=== THE DIAGNOSTIC CRITERIA FOR VESTIBULAR MIGRAINE — CLOSING THE GRACE CARD'S DANGLING POINTER (V28, 2026-08-20) — [H46] Lempert 2022 ===
+The GRACE card (D8/V22) pointed, in the s-EVS column of the "Test of choice" row, to "vestibular-
+migraine criteria". Those criteria WERE NOWHERE IN THE PROGRAM — and that is a measurement, not an
+impression: before this change the whole repo (excluding dist/, node_modules/ and android/) gave
+"ICHD" 0 hits, "photophob" 0, "phonophob" 0, "at least 5" 0, "5 minutes" 0. The only "criteria" in
+the application were those for BPPV per Bárány/ICVD 2015 — a different entity. The clinician was
+handed the instruction "apply the criteria" that the application could not honour.
+
+WHY NO ORACLE CAUGHT IT. That sentence carried NO source number at all, and the zrodla:check gate
+compares a number against the marker standing next to it — "a citation without a number" is its
+explicitly declared boundary. The golden saw the sentence byte for byte, but the golden guards
+WORDING, not whether a promise is covered. The hole was therefore structurally invisible to all
+27 gates at once.
+
+WHAT WAS ADDED.
+ (a) The [H46] entry in both bibliographies — a consensus document of the Committee for
+     Classification of Vestibular Disorders of the Bárány Society and the Migraine Classification
+     Subcommittee of the IHS. The 2012 criteria WERE LEFT UNCHANGED in it; the literature review is
+     new, particularly in the comments section, so citing them to this paper means citing 2012
+     content. The entry carries the
+     full set: four criteria of the definite form, THREE criteria of the probable form, the list of
+     qualifying vestibular symptoms, the intensity definitions and the duration distribution with
+     the counting rule for attacks lasting seconds.
+ (b) vmCriteriaCard() — a new <details> card on the HINTS screen, directly under the GRACE card;
+     the same pattern as hintsGrace (the hintsVmCrit state field, no re-render). The pointer from
+     the GRACE card now leads to a card standing immediately beneath it. The card COMPUTES NOTHING
+     and makes no diagnosis.
+ (c) The CPN card in diagnostics: the sentence "the most common benign mimic" was an epidemiological
+     claim WITH NO SOURCE. It is replaced by what the source actually says — [H46] Lempert 2022 —
+     together with an explicit note on the boundary (point 1 below).
+ (d) The comment on the vmInterictal preset in neuro-vor.js — a correction against the source,
+     point 3 below.
+
+THREE SOURCE BOUNDARIES, MEASURED IN THE FULL TEXT, NOT ASSUMED.
+ 1. The paper DOES NOT USE the term "central positional nystagmus" and does not split the attack
+    nystagmus into central and peripheral. The CPN card therefore does not cite it for the word
+    "central" — it cites it for what actually stands there: vestibular migraine may be PURELY
+    POSITIONAL and then mimics BPPV, and that a benign mimic is diagnosed AFTER a central cause has
+    been ruled out, not instead of it. TWO CORRECTIONS AFTER THE CLINICAL REVIEW, both in the same
+    place: (i) the superlative "most common" is gone, because the source does not carry it — and so
+    is the frequency grading altogether, because "a common mimic of persistent downbeat" is still
+    uncovered epidemiology, now with a citation number beside it, which is worse than an openly
+    unsourced claim; (ii) THE DIFFERENTIATING DETAIL (persistence, constant velocity, the 30°/s
+    threshold) WAS TAKEN OFF THIS CARD and moved to the criteria card. The first V28 version put it
+    on the "Management" line of a red-flag card, right after "do NOT reposition, refer for MRI" —
+    and there the features "persistent, slow" read as AN ESCAPE HATCH from referring, all the more
+    so because they are the very features by which the card DEFINES central nystagmus a dozen lines
+    above, and because nobody measures a 30°/s threshold at the bedside without VOG. The card now
+    carries the discipline idiom this application already has in jamCard: a diagnosis of EXCLUSION,
+    the default path remains MRI.
+ 2. THE ICHD-3 ITEM NUMBER IS NOT IN THIS PAPER. It only says the entity was included in the
+    ICHD-3 APPENDIX as the first step for new diagnoses; the number A1.6.6 comes from ICHD-3 itself
+    and would need its own source, so it is not in the application. ICHD-3 does not know the
+    probable form at all.
+ 3. SECTION 4.5 DOES NOT SAY THE INTERICTAL EXAMINATION IS NORMAL. It says findings CAN BE
+    pathological during or shortly after an episode, and that between attacks they are NOT
+    SUFFICIENTLY SPECIFIC to serve as a criterion — abnormalities are ALLOWED, merely stripped of
+    diagnostic power. The comment on the vmInterictal preset claimed "the examination COMPLETELY
+    NORMAL between attacks"; that claim is now marked as a DIDACTIC SIMPLIFICATION of the preset,
+    not a thesis of that paper. The GRACE card's row on interictal examination IS LEFT UNTOUCHED,
+    because it is a faithful digest of [H24] Edlow 2023 — the two sources speak here at different
+    levels of detail, and substituting one for the other would falsify both. The instrumental rule
+    the source REALLY gives works only toward EXCLUSION: PROFOUND ABNORMALITIES in the symptom-free
+    interval — SEVERE hearing loss or complete unilateral or bilateral vestibular loss — usually
+    indicate ANOTHER cause ("profound" qualifies the ABNORMALITIES in the source; the hearing loss
+    is "severe").
+
+THE CONTRAST WORTH NAMING. When the criteria for Menière's disease are met — especially with
+audiometrically documented unilateral hearing loss — Menière's disease is diagnosed by the
+criteria of [H20] Lopez-Escamez 2015, even in the presence of migraine symptoms; BOTH diagnoses are
+made only with TWO DIFFERENT TYPES OF ATTACKS. And the other way round: migraine symptoms during a
+vertigo attack prove nothing, because in patients with migraine caloric testing itself OFTEN
+triggers a migraine attack within a day. This is the counter-rule against the naive classifier
+"there are migraine symptoms, so this is vestibular migraine" — which is why the criteria card
+carries it
+
+WHAT THIS CHANGE DOES NOT DO. The engine STILL DOES NOT MODEL vestibular migraine and that
+declaration stands — not one parameter and not one branch of physics was added; the vmInterictal
+preset still has an empty params:{}. The criteria are PARAPHRASED, because the source licence is
+CC BY-NC 4.0 and not CC BY: a verbatim reprint in a product distributed for a fee would be a
+separate decision, not a side effect.
+
+PROOF OF SCOPE (measured before the rebaseline, not estimated after it): snapshot:check lit up 26
+keys and NOT ONE of them lies in the physics layer — 24 are dom/hints/preset/*, dom/hints/scenario/*
+and dom/hints/nerve/* (the static GRACE card hangs on EVERY simulator screen, so a new card beneath
+it moves them all), and 2 are dom/diag/dix/P/central and dom/diag/dix/L/central (the CPN card). The
+engine, pose and shell layers: 0 changed keys. That is the entire content of the sentence "the
+substantive correction was free for the physics" — measurable, not declared.
+ORACLES: zrodla:check with a raised OCZEKIWANE constant (a new entry, new citations in the code and
+in both documentation mirrors); the remaining 26 gates unchanged, including hints:dom and
+hints:check, which touch neither the GRACE card nor the new one, because they work on the clinical
+HINTS examination screens rather than on the simulator.
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -3397,6 +3490,95 @@ ORACLE: npm run dva:check (tools/dva-check.mjs) - a NEW gate. Before V27 NO tool
         across the literature because of definitions and instruments (30-40% [H19] / 33% [H44] / 50-70%
         here / ~80% DISCOHAT / 81% [H41]) — the engine reproduces NONE of these numbers and claims none
         as its own.
+
+[H46] Lempert T, Olesen J, Furman J, Waterston J, Seemungal B, Carey J, Bisdorff A, Versino M,
+      Evers S, Kheradmand A, Newman-Toker D (2022). "Vestibular migraine: Diagnostic criteria
+      (Update)." J Vestib Res 32(1):1-6. doi:10.3233/VES-201644. PMID 34719447. PMC9249276.
+      Licence CC BY-NC 4.0 — NonCommercial; this is not CC BY, so a verbatim reprint of the
+      criteria in a commercial product needs a separate decision (the engine PARAPHRASES them).
+      -> THE DIAGNOSTIC CRITERIA FOR VESTIBULAR MIGRAINE — a joint document of the Committee for
+        Classification of Vestibular Disorders of the Bárány Society and the Migraine
+        Classification Subcommittee of the IHS. An update of the 2012 paper in which THE CRITERIA
+        THEMSELVES WERE LEFT UNCHANGED — the literature review is new, particularly in the comments
+        section ("particularly", not "only"); citing the criteria to this paper means citing 2012
+        content.
+        THE DEFINITE FORM, four criteria: (A) at least 5 episodes of vestibular symptoms of
+        moderate or severe intensity, lasting 5 min - 72 h; (B) migraine with or without aura per
+        ICHD-3, current or past; (C) at least one migraine feature in at least half of the
+        episodes — headache with at least two of four features (unilateral, pulsating, moderate
+        or severe, aggravated by routine physical activity) OR photophobia TOGETHER with
+        phonophobia, OR visual aura; (D) not better accounted for by another vestibular diagnosis
+        or by another ICHD diagnosis.
+        THE PROBABLE FORM HAS THREE CRITERIA, NOT FOUR: (A) as above; (B) ONLY ONE of criteria B
+        and C of the definite form is fulfilled — either the migraine history or the migraine
+        features during the episode, not both; (C) no better explanation. The role of criterion D
+        is carried by C here, because B and C of the definite form are condensed into one.
+        INTENSITY (definitions from the source): moderate = symptoms interfere with but do not
+        prohibit daily activities; severe = daily activities cannot be continued. The criteria
+        provide no "mild" grade (it would not satisfy criterion A). QUALIFYING symptoms are the vestibular ones of the Bárány
+        classification: spontaneous vertigo (internal and external), positional, visually induced
+        and head motion-induced — while dizziness alone qualifies ONLY as head motion-induced
+        dizziness WITH NAUSEA (the nausea is a condition). DURATION DISTRIBUTION: about 30% of
+        patients have attacks lasting minutes, 30% hours, 30% several days, and 10% only seconds —
+        in the last group the episode duration is taken as THE WHOLE PERIOD OVER WHICH the brief
+        in the last group the episode duration is taken as THE WHOLE PERIOD OVER WHICH the brief
+        attacks recur, not the length of a single one. In some patients full recovery takes up to
+        four weeks, but THE CORE of the episode rarely exceeds 72 h — and it is the core that
+        criterion A counts.
+        SECTION 4.7 — THE MOST IMPORTANT ONE FOR OTOREPO: vestibular migraine MAY BE PURELY
+        POSITIONAL and then it MIMICS BPPV. Three axes of separation, all clinical: its positional
+        nystagmus is USUALLY PERSISTENT, of CONSTANT velocity, mostly low to moderate, rarely
+        exceeding 30°/s (the contrast with the crescendo-decrescendo of free debris is OURS — the
+        source describes only the persistence and the constant velocity, and never uses the word
+        "crescendo"); the SYMPTOMATIC PERIOD — not the single attack — tends to be SHORTER (minutes
+        to days, not weeks) and the recurrences MORE FREQUENT (several times per year versus once
+        every few years).
+        DIRECT OBSERVATION OF THE NYSTAGMUS IN THE ACUTE PHASE may be required to settle it.
+        The converse relation is in the same paragraph: typical BPPV is MORE COMMON in patients
+        with migraine, for unclear reasons — the paper gives no figure here, so this must not be
+        turned into a claim about absolute frequency; the practical conclusion is: "it is migraine"
+        does not excuse skipping the positional test, and a positive Dix-Hallpike does not rule out
+        coexisting vestibular migraine.
+        the exception, so "it is migraine" does not excuse skipping the positional test, or vice
+        versa.
+        SOURCE BOUNDARIES — measured in the full text while adding this entry, not assumed:
+        (1) the paper DOES NOT USE the term "central positional nystagmus" and does not split the
+        attack nystagmus into central and peripheral; the description quoted above is the ONLY
+        descriptive handle it gives. (2) THE ICHD-3 ITEM NUMBER (A1.6.6) IS NOT IN THIS PAPER —
+        it only says the entity entered the ICHD-3 APPENDIX (2013 beta and 2018) as the first step
+        for new diagnoses; the number needs its own source. The probable form is not in ICHD-3 at
+        all. (3) Section 4.5 DOES NOT SAY the interictal examination is normal: it says findings
+        can be pathological during or shortly after an episode, and that interictal results are
+        NOT SUFFICIENTLY SPECIFIC to serve as a criterion — which is not the same as "normal".
+        (4) The instrumental rule works ONLY in the ruling-out direction: PROFOUND ABNORMALITIES in
+        the symptom-free interval — SEVERE hearing loss or complete unilateral or bilateral
+        vestibular loss — USUALLY indicate ANOTHER cause. MIND THE ADJECTIVE, because the first
+        version of this entry got it wrong: in the source "profound" qualifies the ABNORMALITIES,
+        while the hearing loss is "severe" (71-90 dB), not "profound" (> 90 dB). Moving the
+        adjective onto the wrong noun tightened the rule by a whole audiometric grade and collided
+        with section 4.6, which states that hearing loss in vestibular migraine does NOT progress to
+        profound levels — a profound threshold would make the rule nearly tautological.
+        (5) The paper gives NO percentage for instrumental testing and
+        never names vHIT, VEMP, SVV or VNG — the diagnosis rests entirely on the clinical picture
+        as reported by the patient; there is no biomarker.
+        DIFFERENTIAL RULINGS STRAIGHT FROM THE TEXT: when the criteria for Menière's disease are
+        met — especially with audiometrically documented unilateral hearing loss — MENIÈRE'S is
+        diagnosed even in the presence of migraine symptoms (headache, photophobia and even auras
+        are common during Menière attacks). BOTH diagnoses are made ONLY in a patient who has TWO
+        DIFFERENT TYPES OF ATTACKS: one fulfilling the vestibular-migraine criteria, the other
+        Menière's — that condition dropped out of the first version of this entry, which made the
+        rule read as "Menière always wins". Vertebrobasilar TIA is considered especially in older
+        patients, and the features favouring it are: vascular risk factors, sudden onset, a TOTAL
+        history of attacks shorter than one year, and angiographic or Doppler evidence of vascular
+        pathology in the vertebral or proximal basilar artery; sudden neck pain should raise
+        vertebral artery dissection. Vestibular paroxysmia gives attacks of seconds recurring many
+        times a day, responding to carbamazepine. THE COUNTER-RULE FOR A NAIVE CLASSIFIER: caloric
+        stimulation OFTEN triggers a migraine attack within 24 h in patients with migraine, so
+        migraine symptoms AFTER VESTIBULAR PROVOCATION DO NOT PROVE this diagnosis (criterion C
+        speaks of spontaneous attacks). Epidemiology: 1-2.7% of the general population, 11% of
+        dizziness-clinic patients, 13% of headache-clinic patients; 65-85% are women. More than half
+        have a comorbid psychiatric disorder — that last figure comes from the section on
+        psychiatric dizziness, not from the epidemiological one.
 
 === DEBRIS CLOUD — the multi-particle ensemble (D9/V20, 2026-08-16) ===
 ORCHESTRATION ABOVE THE ENGINE, no physics (zero edits to vestibular.js): the cloud = N=9

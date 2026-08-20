@@ -2854,6 +2854,88 @@ WYROCZNIA: npm run dva:check (tools/dva-check.mjs) - NOWA bramka. Przed V27 ZADE
   snapshot:check NIEWIDZIALNA (0 zmian w golden) - czyli bez tej bramki bylaby calkiem niepilnowana.
   Pilnuje niezmiennika "flaga NIGDY nie pada, gdy ktorekolwiek ucho ma gain co najmniej 0,6".
 
+=== KRYTERIA MIGRENY PRZEDSIONKOWEJ — DOMKNIĘCIE ODSYŁACZA KARTY GRACE (V28, 2026-08-20) — [H46] Lempert 2022 ===
+Karta GRACE (D8/V22) odsyłała w kolumnie s-EVS, w wierszu „Badanie z wyboru", do „kryteriów migreny
+przedsionkowej". Tych kryteriów NIE BYŁO W PROGRAMIE NIGDZIE — i to jest pomiar, nie wrażenie: przed
+tą zmianą całe repo (bez dist/, node_modules/ i android/) dawało „ICHD" 0 trafień, „fotofobi" 0,
+„fonofobi" 0, „co najmniej 5" 0, „5 minut" 0. Jedyne „kryteria" w aplikacji dotyczyły BPPV wg
+Bárány/ICVD 2015 — innej jednostki. Klinicysta dostawał wskazówkę „zastosuj kryteria", której
+aplikacja nie umiała spełnić.
+
+DLACZEGO NIE ZŁAPAŁA TEGO ŻADNA WYROCZNIA. Przy tamtym zdaniu nie stał ŻADEN numer źródła, a bramka
+zrodla:check porównuje numer z oznaczeniem stojącym obok — „cytat bez numeru" to jej jawnie
+zadeklarowana granica. Golden widział to zdanie bajtowo, ale golden pilnuje BRZMIENIA, nie tego, czy
+obietnica ma pokrycie. Dziura była więc strukturalnie niewidzialna dla wszystkich 27 bramek naraz.
+
+CO DOSZŁO.
+ (a) Wpis [H46] w obu bibliografiach — dokument konsensusu Komitetu Klasyfikacji Zaburzeń
+     Przedsionkowych Bárány Society i Podkomitetu Klasyfikacji Migreny IHS. Kryteria z 2012
+     POZOSTAWIONO W NIM BEZ ZMIANY; nowy jest przegląd piśmiennictwa, przede wszystkim w sekcji
+     komentarzy — więc cytując je za
+     tą pracą, cytuje się treść z 2012. Wpis niesie komplet: cztery kryteria postaci pewnej, TRZY
+     kryteria postaci prawdopodobnej, listę kwalifikujących się objawów przedsionkowych, definicje
+     nasilenia oraz rozkład czasu trwania z regułą liczenia napadów sekundowych.
+ (b) vmCriteriaCard() — nowa karta <details> na ekranie HINTS, tuż pod kartą GRACE; ten sam wzorzec
+     co hintsGrace (pole stanu hintsVmCrit, bez re-renderu). Odsyłacz z karty GRACE prowadzi teraz
+     do karty stojącej bezpośrednio pod nim. Karta NICZEGO NIE LICZY i nie stawia rozpoznania.
+ (c) Karta CPN w diagnostyce: zdanie „najczęstszy łagodny mimik" było twierdzeniem epidemiologicznym
+     BEZ ŹRÓDŁA. Zastąpione tym, co źródło naprawdę mówi — [H46] Lempert 2022 — wraz z jawną notą
+     o granicy (punkt 1 niżej).
+ (d) Komentarz presetu vmInterictal w neuro-vor.js — sprostowanie wobec źródła, punkt 3 niżej.
+
+TRZY GRANICE ŹRÓDŁA, ZMIERZONE W PEŁNYM TEKŚCIE, NIE ZAŁOŻONE.
+ 1. Praca NIE UŻYWA terminu „ośrodkowy oczopląs pozycyjny" i nie dzieli oczopląsu napadu na
+    ośrodkowy i obwodowy. Karta CPN nie cytuje jej więc dla słowa „ośrodkowy" — cytuje ją dla tego,
+    co tam faktycznie stoi: migrena przedsionkowa bywa CZYSTO POZYCYJNA i wtedy naśladuje BPPV,
+    a łagodny mimik rozpoznaje się PO wykluczeniu przyczyny ośrodkowej, nie zamiast niego.
+    DWIE POPRAWKI PO RECENZJI KLINICZNEJ, obie w tym samym miejscu: (i) superlatyw „najczęstszy"
+    zniknął, bo tego źródło nie niesie — ale sam stopień częstości też, bo „częsty mimik uporczywego
+    downbeatu" to nadal niepokryta epidemiologia, tyle że z numerem stojącym obok, czyli gorzej niż
+    twierdzenie jawnie bezźródłowe; (ii) SZCZEGÓŁ RÓŻNICUJĄCY (utrwalenie, stała prędkość, próg
+    30°/s) ZDJĘTO Z TEJ KARTY i przeniesiono na kartę kryteriów. Pierwsza wersja V28 wstawiła go
+    w linię „Postępowanie" karty czerwonoflagowej, tuż za „NIE wykonuj repozycji, skieruj na MRI" —
+    a tam cechy „utrwalony, wolny" czytają się jako FURTKA do nieskierowania, zwłaszcza że są to te
+    same cechy, którymi kilkanaście linijek wyżej karta DEFINIUJE oczopląs ośrodkowy, a progu 30°/s
+    przy łóżku nikt bez VOG nie zmierzy. Karta niesie dziś idiom dyscypliny, który ta aplikacja ma
+    już w jamCard: rozpoznanie z WYKLUCZENIA, domyślna ścieżka pozostaje MRI.
+ 2. NUMERU POZYCJI ICHD-3 W TEJ PRACY NIE MA. Mówi ona tylko, że jednostkę włączono do ANEKSU
+    ICHD-3 jako pierwszy krok dla nowych rozpoznań; numer A1.6.6 pochodzi z samej ICHD-3 i wymagałby
+    własnego źródła, więc w aplikacji go nie ma. Postaci prawdopodobnej ICHD-3 nie zna w ogóle.
+ 3. SEKCJA 4.5 NIE MÓWI, ŻE BADANIE MIĘDZYNAPADOWE JEST PRAWIDŁOWE. Mówi, że wyniki BYWAJĄ
+    nieprawidłowe w napadzie lub tuż po nim, a między napadami NIE SĄ DOŚĆ SWOISTE, by służyć za
+    kryterium — nieprawidłowości są DOPUSZCZONE, tylko pozbawione mocy rozpoznawczej. Komentarz
+    presetu vmInterictal twierdził „badanie MIĘDZYNAPADOWO CAŁKOWICIE PRAWIDŁOWE"; twierdzenie to
+    jest teraz oznaczone jako UPROSZCZENIE DYDAKTYCZNE presetu, a nie teza tamtej pracy. Wiersz
+    karty GRACE o badaniu międzynapadowym ZOSTAJE NIETKNIĘTY, bo jest wiernym streszczeniem
+    [H24] Edlow 2023 — dwa źródła mówią tu z różną szczegółowością i podmiana jednego drugim
+    fałszowałaby oba. Reguła instrumentalna, którą źródło NAPRAWDĘ daje, działa wyłącznie ku
+    WYKLUCZENIU: NASILONE nieprawidłowości w okresie bezobjawowym — ZNACZNY niedosłuch albo
+    całkowite jedno- lub obustronne wypadnięcie czynności przedsionka — wskazują zwykle na INNĄ
+    przyczynę („profound" określa w źródle NIEPRAWIDŁOWOŚCI, niedosłuch jest „severe").
+
+KONTRAST, KTÓRY WARTO NAZWAĆ. Przy spełnionych kryteriach choroby Ménière'a — zwłaszcza przy
+udokumentowanym audiometrycznie jednostronnym niedosłuchu — rozpoznaje się chorobę Ménière'a wg
+kryteriów [H20] Lopez-Escamez 2015, nawet gdy obecne są objawy migrenowe; OBA rozpoznania stawia
+się tylko przy DWÓCH RÓŻNYCH TYPACH NAPADÓW. W drugą stronę: objawy migrenowe podczas napadu
+zawrotów niczego nie dowodzą, bo u chorych na migrenę sama próba kaloryczna CZĘSTO wyzwala napad
+migreny w ciągu doby. To jest kontr-reguła dla naiwnego klasyfikatora „są objawy migrenowe, więc
+to migrena przedsionkowa" — i dlatego karta kryteriów niesie ją wprost, a nie tylko w dokumentacji.
+CZEGO TA ZMIANA NIE ROBI. Silnik migreny przedsionkowej NADAL NIE MODELUJE i deklaracja ta zostaje
+w mocy — nie przybył ani jeden parametr, ani jedna gałąź fizyki; preset vmInterictal ma dalej pusty
+params:{}. Kryteria są PARAFRAZOWANE, bo licencja źródła to CC BY-NC 4.0, a nie CC BY: dosłowny
+przedruk w produkcie dystrybuowanym odpłatnie byłby osobną decyzją, a nie skutkiem ubocznym.
+
+DOWÓD ZAKRESU (zmierzony przed rebaseline, nie oszacowany po nim): snapshot:check zapalił 26 kluczy
+i ANI JEDEN z nich nie leży w warstwie fizyki — 24 to dom/hints/preset/* i dom/hints/scenario/*
+oraz dom/hints/nerve/* (statyczna karta GRACE wisi na KAŻDYM ekranie symulatora, więc nowa karta
+pod nią rusza je wszystkie), a 2 to dom/diag/dix/P/central i dom/diag/dix/L/central (karta CPN).
+Warstwy engine, pose i shell: 0 zmienionych kluczy. To jest cała treść zdania „poprawka merytoryczna
+była dla fizyki darmowa" — mierzalna, a nie deklarowana.
+WYROCZNIE: zrodla:check z podniesioną stałą OCZEKIWANE (nowy wpis, nowe cytowania w kodzie
+i w obu lustrach dokumentacji); pozostałe 26 bramek bez zmian, w tym hints:dom i hints:check, które
+karty GRACE ani nowej karty nie dotykają, bo pracują na ekranach klinicznego badania HINTS, a nie
+na symulatorze.
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -3196,6 +3278,87 @@ WYROCZNIA: npm run dva:check (tools/dva-check.mjs) - NOWA bramka. Przed V27 ZADE
         nie oznaczy. UWAGA: częstości oscylopsji w piśmiennictwie rozjeżdżają się z powodu definicji
         i narzędzia (30–40% [H19] / 33% [H44] / 50–70% tu / ~80% DISCOHAT / 81% [H41]) — silnik nie
         odtwarza ŻADNEJ z tych liczb i żadnej nie podaje jako swojej.
+
+[H46] Lempert T, Olesen J, Furman J, Waterston J, Seemungal B, Carey J, Bisdorff A, Versino M,
+      Evers S, Kheradmand A, Newman-Toker D (2022). „Vestibular migraine: Diagnostic criteria
+      (Update)." J Vestib Res 32(1):1–6. doi:10.3233/VES-201644. PMID 34719447. PMC9249276.
+      Licencja CC BY-NC 4.0 — NIEkomercyjna; to nie jest CC BY, więc dosłowny przedruk kryteriów
+      w produkcie komercyjnym wymaga osobnej decyzji (w silniku kryteria są PARAFRAZOWANE).
+      → KRYTERIA MIGRENY PRZEDSIONKOWEJ — wspólny dokument Komitetu Klasyfikacji Zaburzeń
+        Przedsionkowych Bárány Society i Podkomitetu Klasyfikacji Migreny IHS. Aktualizacja pracy
+        z 2012, w której SAME KRYTERIA POZOSTAWIONO BEZ ZMIANY — nowy jest przegląd piśmiennictwa,
+        przede wszystkim w sekcji komentarzy („particularly", nie „only"); cytując kryteria za tą pracą, cytuje się treść z 2012.
+        POSTAĆ PEWNA, cztery kryteria: (A) co najmniej 5 epizodów objawów przedsionkowych
+        o nasileniu umiarkowanym lub ciężkim, trwających 5 min – 72 h; (B) migrena z aurą lub bez
+        aury wg ICHD-3, obecnie albo w wywiadzie; (C) co najmniej jedna cecha migrenowa w co
+        najmniej połowie epizodów — ból głowy z co najmniej dwiema z czterech cech (jednostronny,
+        pulsujący, umiarkowany lub ciężki, nasilany rutynową aktywnością fizyczną) ALBO
+        światłowstręt RAZEM z fonofobią, ALBO aura wzrokowa; (D) obraz nie jest lepiej wyjaśniony
+        przez inne rozpoznanie przedsionkowe ani przez inne rozpoznanie ICHD.
+        POSTAĆ PRAWDOPODOBNA MA TRZY KRYTERIA, NIE CZTERY: (A) jak wyżej; (B) spełnione jest
+        TYLKO JEDNO z kryteriów B i C postaci pewnej — albo wywiad migrenowy, albo cechy
+        migrenowe w epizodzie, nie oba; (C) brak lepszego wyjaśnienia. Funkcję kryterium D
+        przejmuje tu C, bo B i C postaci pewnej skondensowano w jedno.
+        NASILENIE (definicje ze źródła): umiarkowane = objawy zakłócają codzienne czynności, ale
+        ich nie uniemożliwiają; ciężkie = codziennych czynności nie da się kontynuować. Stopnia
+        „łagodnego" kryteria nie przewidują (nie spełnia kryterium A). KWALIFIKUJĄ SIĘ objawy przedsionkowe wg klasyfikacji
+        Bárány: zawrót samoistny (wewnętrzny i zewnętrzny), pozycyjny, wywołany bodźcem wzrokowym
+        oraz wywołany ruchem głowy — a samo oszołomienie TYLKO jako wywołane ruchem głowy
+        Z NUDNOŚCIAMI (nudności są warunkiem). ROZKŁAD CZASU TRWANIA: około 30% chorych ma napady
+        minutowe, 30% godzinne, 30% wielodniowe, a 10% wyłącznie sekundowe — u tych ostatnich za
+        czas epizodu przyjmuje się CAŁY OKRES NAWRACANIA krótkich napadów, nie długość jednego.
+        czas epizodu przyjmuje się CAŁY OKRES NAWRACANIA krótkich napadów, nie długość jednego.
+        U części chorych pełny powrót do zdrowia zajmuje do czterech tygodni, ale RDZEŃ epizodu
+        rzadko przekracza 72 h — i to rdzeń liczy kryterium A.
+        SEKCJA 4.7 — NAJWAŻNIEJSZA DLA OTOREPO: migrena przedsionkowa BYWA CZYSTO POZYCYJNA
+        i wtedy NAŚLADUJE BPPV. Trzy osie odróżnienia, wszystkie kliniczne: oczopląs pozycyjny
+        jest w niej ZWYKLE UTRWALONY, o STAŁEJ prędkości, przeważnie małej lub umiarkowanej, rzadko
+        przekraczającej 30°/s (kontrast z krescendo-dekrescendo wolnego złogu jest NASZ — źródło
+        opisuje samo utrwalenie i stałą prędkość, słowa „krescendo" nie używa); OKRES OBJAWOWY —
+        nie pojedynczy napad — bywa KRÓTSZY (minuty–dni, nie tygodnie), a nawroty CZĘSTSZE (kilka
+        razy w roku wobec raz na kilka lat).
+        Do rozstrzygnięcia bywa konieczna BEZPOŚREDNIA OBSERWACJA OCZOPLĄSU W FAZIE OSTREJ.
+        Zależność odwrotna jest w tym samym akapicie: typowe BPPV występuje CZĘŚCIEJ u chorych
+        na migrenę, z przyczyn niejasnych — praca nie podaje tu żadnej liczby, więc nie wolno z tego
+        robić twierdzenia o częstości bezwzględnej; wniosek praktyczny brzmi: „to migrena" nie
+        zwalnia z wykonania próby pozycyjnej, a dodatni Dix-Hallpike nie wyklucza współistniejącej
+        migreny przedsionkowej.
+        GRANICE ŹRÓDŁA — zmierzone w pełnym tekście przy dopisywaniu wpisu, nie założone:
+        (1) praca NIE UŻYWA terminu „ośrodkowy oczopląs pozycyjny" i nie dzieli oczopląsu napadu
+        na ośrodkowy i obwodowy; przytoczony wyżej opis to JEDYNY uchwyt opisowy, jaki daje.
+        (2) NUMERU POZYCJI ICHD-3 (A1.6.6) W TEJ PRACY NIE MA — mówi ona tylko, że jednostkę
+        włączono do ANEKSU ICHD-3 (2013 beta i 2018) jako pierwszy krok dla nowych rozpoznań;
+        numer wymaga własnego źródła. Postaci prawdopodobnej w ICHD-3 nie ma w ogóle.
+        (3) Sekcja 4.5 NIE MÓWI, że badanie międzynapadowe jest prawidłowe: mówi, że wyniki bywają
+        za kryterium — to nie to samo co „norma". (4) Reguła instrumentalna działa WYŁĄCZNIE
+        w stronę wykluczenia: NASILONE nieprawidłowości w okresie bezobjawowym — ZNACZNY niedosłuch
+        albo całkowite jedno- lub obustronne wypadnięcie czynności przedsionka — wskazują ZWYKLE
+        na INNĄ przyczynę. UWAGA NA PRZYMIOTNIK, bo pierwsza wersja tego wpisu miała tu błąd:
+        w źródle „profound" określa NIEPRAWIDŁOWOŚCI, a niedosłuch jest „severe" — po polsku
+        ZNACZNY (71–90 dB), nie GŁĘBOKI (> 90 dB). Przesunięcie przymiotnika na niewłaściwy
+        rzeczownik zaostrzało regułę o cały stopień skali audiometrycznej, a przy tym kolidowało
+        z sekcją 4.6, która mówi, że niedosłuch w migrenie przedsionkowej NIE postępuje do stopnia
+        głębokiego — próg głęboki czyniłby regułę niemal tautologiczną.
+        (5) Praca nie podaje ŻADNEGO odsetka dla badań instrumentalnych i nie wymienia z nazwy
+        vHIT, VEMP, SVV ani VNG — rozpoznanie stawia się wyłącznie z obrazu klinicznego zgłoszonego
+        przez chorego, biomarkera nie ma.
+        ROZSTRZYGNIĘCIA RÓŻNICOWE WPROST Z TEKSTU: przy spełnionych kryteriach choroby Ménière'a —
+        zwłaszcza przy udokumentowanym audiometrycznie jednostronnym niedosłuchu — rozpoznaje się
+        MÉNIÈRE'A, nawet gdy obecne są objawy migrenowe (bóle, światłowstręt, a nawet aury bywają
+        częste w napadzie Ménière'a). OBA rozpoznania stawia się TYLKO u chorego mającego DWA RÓŻNE
+        TYPY NAPADÓW: jeden spełniający kryteria migreny przedsionkowej, drugi kryteria Ménière'a —
+        ten warunek wypadł z pierwszej wersji wpisu, przez co reguła czytała się jako „Ménière
+        wygrywa zawsze". TIA kręgowo-podstawne rozważa się zwłaszcza u osób starszych, a przemawiają
+        za nim: czynniki ryzyka naczyniowego, nagły początek, CAŁA historia napadów krótsza niż rok
+        oraz dowód patologii naczyniowej (angiografia lub USG doppler) w tętnicy kręgowej albo
+        bliższym odcinku podstawnej; nagły ból karku każe myśleć o rozwarstwieniu tętnicy kręgowej.
+        Napadowica przedsionkowa daje napady sekundowe wielokrotnie w ciągu doby, z odpowiedzią
+        na karbamazepinę. KONTR-REGUŁA DLA NAIWNEGO KLASYFIKATORA: próba kaloryczna CZĘSTO wyzwala
+        napad migreny w ciągu 24 h u chorych na migrenę, więc objawy migrenowe PO PROWOKACJI
+        PRZEDSIONKOWEJ nie dowodzą tego rozpoznania (kryterium C mówi o napadach samoistnych).
+        Epidemiologia: 1–2,7% populacji ogólnej, 11% chorych poradni zawrotowych, 13% poradni bólu
+        głowy; 65–85% to kobiety. Ponad połowa chorych ma współistniejące zaburzenie psychiczne —
+        ta ostatnia liczba pochodzi z sekcji o zawrotach psychogennych, nie z epidemiologicznej.
 
 === CHMURA ZŁOGU — ensemble wielocząstkowy (D9/V20, 2026-08-16) ===
 ORKIESTRACJA NAD SILNIKIEM, bez fizyki (zero edycji vestibular.js): chmura = N=9 niezależnych

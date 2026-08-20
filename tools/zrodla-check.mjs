@@ -341,7 +341,34 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 132;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
+const OCZEKIWANE = 147;  /* 2026-08-20, etap V28 (kryteria migreny przedsionkowej): 132 -> 147.
+                            PIETNASCIE nowych cytowan, policzonych przez --ile PO wstawieniu, nie
+                            oszacowanych. Bibliografia 45 -> 46 ([H46] Lempert 2022 - dokument
+                            konsensusu Barany Society i IHS). Rozbicie:
+                              +2 svg-screens.js karta CPN - "[H46] Lempert 2022" w napisie t(),
+                                 czyli PO JEDNYM w polowce PL i EN (napis stoi w jednej linii zrodla),
+                              +4 svg-screens.js nota karty vmCriteriaCard - "[H20] Lopez-Escamez 2015"
+                                 i "[H46] Lempert 2022", oba razy po dwa (PL+EN),
+                              +1 neuro-vor.js komentarz presetu vmInterictal - "[H46] Lempert 2022",
+                              +4 engine_doc.txt rozdzial V28 - naglowek i tresc: dwa razy
+                                 "[H46] Lempert 2022", raz "[H24] Edlow 2023", raz
+                                 "[H20] Lopez-Escamez 2015",
+                              +4 engine_doc.en.txt - lustro tego samego rozdzialu, ta sama czworka.
+                            NIE licza sie do tej sumy: same wpisy bibliograficzne (+0, linie wpisu sa
+                            pomijane przez zbierz) oraz "Wpis [H46] w obu bibliografiach" w rozdziale
+                            (+0 jako para, bo po numerze stoi mala litera - ale +1 do DOC4 w KAZDYM
+                            lustrze, wiec zdanie musi stac w obu jezykach; stoi).
+                            PULAPKA ZMIERZONA PRZY TYM ETAPIE, warta zapisania: pierwsza wersja
+                            rozdzialu miala zdanie zawijajace sie tak, ze "[H20]" wypadalo na POCZATEK
+                            linii. Parser bibliografia() czyta KAZDA linie zaczynajaca sie od ^[Hnn]
+                            jako POCZATEK WPISU - a poniewaz rozdzialy stoja PRZED wpisami, ta linia
+                            stawala sie definicja H20, a prawdziwy wpis Lopez-Escameza byl potem
+                            ODRZUCANY przez regule "pierwsze wystapienie wygrywa". Bramka byla przy tym
+                            ZIELONA, bo zdanie przypadkiem zawieralo nazwisko - czyli cicha korupcja
+                            zrodla prawdy, gorsza od czerwonej. Regula: w rozdziale numer NIGDY nie
+                            stoi w kolumnie 0.
+                            (Zapis wczesniejszy zachowany nizej.)
+                            ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
                             8-16 futureUI, wszystkie zielone. Nie ma tu dwoch numeracji — [H28] to
                             Newman-Toker, [H29] Cochrane 2014 (slot zwolniony przez scalenie [H17]/[H29]
                             w Etapie 1), a cytowania main przenumerowane. Byly: 54 (main) / 88 (futureUI).

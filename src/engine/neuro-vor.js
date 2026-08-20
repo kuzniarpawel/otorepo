@@ -942,6 +942,18 @@ export const NeuroVOR = (()=>{
       // PRAWIDŁOWYM — rozpoznanie stawia WYWIAD (napadowość, migrenowość), nie HINTS. Parametry celowo
       // puste (zdrowy pacjent): lekcja polega na tym, że applicable=false i verdictNote mówią wprost,
       // że triada HINTS niczego tu nie wnosi. Zamyka lukę s-EVS bez nowej fizyki.
+      // V28 — SPROSTOWANIE WOBEC ŹRÓDŁA KRYTERIALNEGO [H46] Lempert 2022: „badanie międzynapadowo
+      // CAŁKOWICIE PRAWIDŁOWE" jest UPROSZCZENIEM DYDAKTYCZNYM tego presetu, nie tezą tamtej pracy.
+      // Sekcja 4.5 mówi co innego: wyniki BYWAJĄ nieprawidłowe w napadzie lub tuż po nim, a między
+      // napadami NIE SĄ DOŚĆ SWOISTE, by być kryterium — czyli nieprawidłowości są DOPUSZCZONE,
+      // tylko pozbawione mocy rozpoznawczej. Pusty params:{} zostaje, bo lekcja presetu dotyczy
+      // STOSOWALNOŚCI HINTS, a nie czułości badania. Reguła instrumentalna, którą źródło NAPRAWDĘ
+      // daje, działa wyłącznie ku wykluczeniu: NASILONE nieprawidłowości w okresie bezobjawowym —
+      // ZNACZNY niedosłuch albo całkowite jedno- lub obustronne wypadnięcie czynności przedsionka —
+      // wskazują ZWYKLE na INNĄ przyczynę. W źródle „profound" określa NIEPRAWIDŁOWOŚCI, a niedosłuch
+      // jest „severe" (znaczny, 71–90 dB), nie „profound" (głęboki, > 90 dB) — przymiotnik łatwo tu
+      // przesunąć o cały stopień skali audiometrycznej i pierwsza wersja V28 właśnie to zrobiła.
+      // Same kryteria (5 epizodów, 5 min – 72 h, cechy migrenowe) są w karcie vmCriteriaCard.
       params:{}, episodic:true },
     // ===== ETAP N5 (ocena II, D3/D7/D9) — nowe osie: słuch, downbeat, zawroty rezydualne =====
     labyrinthitisR:{ get label(){return tr("Labyrinthitis — ucho P (OBWÓD + niedosłuch)","Labyrinthitis — R ear (PERIPHERAL + hearing loss)");}, side:"P",
