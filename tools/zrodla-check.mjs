@@ -341,10 +341,17 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 101;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
+const OCZEKIWANE = 107;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
                             8-16 futureUI, wszystkie zielone. Nie ma tu dwoch numeracji — [H28] to
                             Newman-Toker, [H29] Cochrane 2014 (slot zwolniony przez scalenie [H17]/[H29]
-                            w Etapie 1), a cytowania main przenumerowane. Byly: 54 (main) / 88 (futureUI). */
+                            w Etapie 1), a cytowania main przenumerowane. Byly: 54 (main) / 88 (futureUI).
+                            2026-08-20, etap V26 (HSN): 101 -> 107. SZESC nowych cytowan, wszystkie
+                            zielone i wszystkie policzone RECZNIE, nie przepisane z komunikatu:
+                              +1 neuro-vor.js — "[H25] Hain 1987" (numer STAL SAM, dopisano oznaczenie
+                                 z rokiem, wiec bramka zaczela go widziec; praca bez zmian),
+                              +2 neuro-vor.js — "[H40] Katsarkas 2000" przy hsn() i przy clinicalReadout,
+                              +3 dokumentacja — naglowek rozdzialu V26 w engine_doc.txt i .en.txt
+                                 oraz odsylacz w tresci. Bibliografia urosla 39 -> 40 wpisow. */
 if (process.argv.includes('--ile')) {
   console.log(`przypadków: ${ok + bledy.length} (zielonych ${ok}, czerwonych ${bledy.length})`);
   bledy.forEach(b => console.log('  ' + b));

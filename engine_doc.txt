@@ -2603,9 +2603,10 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
        z ASYMETRII POBUDZENIOWEJ (modEx obu stron; strona hamowana obcięta — Ewald II), HSN_K=20, ładowanie
        1−exp(−cykle/6), zanik τ z postRotational (kompensacja SKRACA emergentnie: 15→4.95 s). Emergenty
        zweryfikowane: ostry UVH 9.3°/s ku zdrowemu; SKOMPENSOWANY UVH — ten sam HSN przy sponcie 0
-       (utajona asymetria, jak kaloryka bez irygacji); BVH 0; Ménière irritative 0. Model MONOfazowy;
+       (utajona asymetria, jak kaloryka bez irygacji); BVH 0; Ménière irritative 0.
        „perverted HSN" świadomie POZA modelem (flaga z verticalBeat odpalałaby fałszywie dla obwodowego
-       neuronitis górnego) → OGRANICZENIA.
+       neuronitis górnego) → OGRANICZENIA. Model był MONOfazowy do etapu V26 (niżej), który wyprowadził
+       fazę 2 z pary tauVS+integratorTau.
      • shimp(p,spec,{headVel=150}) [H23] — cel związany z głową; sakada ANTYkompensacyjna = gain·amp
        (jej BRAK = ubytek; reguła odwrotna do HIMP), cięcie gain<0.5, kierunek +q/qn (przeciwny do
        catch-upu). Plus gainApparent w headImpulse(): min(1.1, gain + 0.6·covertFrac·deficit) — sakady
@@ -2709,6 +2710,58 @@ KONWENCJA CYTOWANIA (ujednolicona 2026-08-16, pilnowana przez npm run zrodla:che
 stać sam, ale jeśli towarzyszy mu oznaczenie źródła, oznaczenie idzie BEZPOŚREDNIO PO numerze
 i niesie ROK. Nawias zamyka się na numerze — źródła bez numeru dopisuje się PO nim, po średniku.
 Bramka obejmuje src oraz engine_doc i view_doc w obu językach.
+
+=== HSN: PRÓG PRĘDKOŚCI I DWUFAZOWOŚĆ (V26, 2026-08-20) — [H40] Katsarkas 2000 ===
+Praca Katsarkasa stawia dwie tezy, których etap N4 nie odtwarzał. Obie są teraz w hsn().
+
+(b) PRÓG PRĘDKOŚCI POTRZĄSANIA — HSN_VEL_MIN=180 °/s, HSN_VEL_DEF=150 °/s.
+  Katsarkas (n=51, stymulacja całego ciała 1/6 Hz, 90–220°/s): bias powstaje przy KAŻDEJ prędkości,
+  ale jego KIERUNEK błądzi raz ku uchu zdrowemu, raz ku choremu, dopóki potrząsanie nie przekroczy
+  ~180°/s; dopiero powyżej progu faza wolna leży ku stronie CHOREJ u wszystkich z biasem >5°/s.
+  Stąd kliniczna chwiejność kierunku pierwszej fazy — klinicysta rzadko osiąga 180°/s.
+  W SILNIKU: nowe pola `velMin` i `directionReliable`; karta przy prędkości podprogowej pisze
+  „KIERUNKU NIE MA CZYM POTWIERDZIĆ", a znak obwodowy schodzi z „HSN ku stronie zdrowej" na
+  „HSN obecny — kierunku nie różnicuj przy tej prędkości". Domyślne 150 °/s zostaje ŚWIADOMIE
+  poniżej progu: tak wygląda typowe badanie przyłóżkowe, więc ostrzeżenie ma być domyślnie widoczne.
+  Prędkość jest PROTOKOŁEM, nie cechą chorego → drugi argument clinicalReadout(p,{hsnPeakVel}),
+  a nie klucz makePatient.
+  GRANICA ZADEKLAROWANA (zmierzona sondą, nie domysł): `asym` jest w tym modelu NIEZALEŻNE od
+  prędkości — mod = gain·S_HZ·Ω po obu stronach, więc Ω skraca się w ilorazie, a nasycenie MOD_MAX=310
+  wymagałoby Ω>387 °/s, czyli poza protokołem (zmierzone: spv0 identyczne dla 90 i 220 °/s).
+  Próg jest zatem warstwą WIARYGODNOŚCI nad fizyką, a nie zmianą fizyki. Silnik jest deterministyczny,
+  więc samego BŁĄDZENIA kierunku nie umie pokazać i nie udaje, że umie.
+
+(c) DWUFAZOWOŚĆ Z PARY STAŁYCH CZASOWYCH — HSN_PH2_K=0.35, funkcja hsnPhase2().
+  Katsarkas: mono- lub dwufazowy przebieg HSN to odbicie interakcji dwóch stałych — „velocity storage"
+  i „gaze holding". Obie BYŁY już w silniku (tauVS=15 s, integratorTau=25 s), lecz hsn() używał tylko
+  pierwszej. Faza 2 jest teraz z tej pary WYPROWADZONA:
+      v(t) = spv0·e^(−t/τ_vs) − K·spv0·(e^(−t/τ_gh) − e^(−t/τ_vs))
+  Nawias znika w t=0 → SZCZYT FAZY 1 zostaje spv0 CO DO BITU (dowód zakresu: pola
+  spv0/asym/tau/beatEar/dir/present/charge/cycles/peakVel identyczne u wszystkich 19 pacjentów golden).
+  Zamknięte postacie: t_cross = ln(1+1/K)/(1/τ_vs−1/τ_gh); t_peak = ln((1+K)τ_gh/(K·τ_vs))/(1/τ_vs−1/τ_gh).
+  ODWRÓCENIE istnieje wyłącznie gdy τ_gh > τ_vs. EMERGENT: staje się WIDOCZNE (≥VIS_THRESH=2 °/s)
+  dopiero, gdy kompensacja skróci velocity storage — ostry UVH (τ_vs 15 wobec τ_gh 25) daje szczyt
+  fazy 2 0,14 °/s = niewidoczny → MONOfazowy, a ten sam pacjent skompensowany (τ_vs 4,95) daje
+  2,13 °/s → DWUfazowy. W baterii golden jedynym dwufazowym jest `timeline/neuritisR/d21rec`
+  (regeneracja, τ_vs 5,25 s → faza 2 2,01 °/s, odwrócenie po 9,0 s, szczyt 19,4 s).
+  Przy integratorze NIESZCZELNYM (ośrodek, τ_gh < τ_vs) składowa niesie ZNAK FAZY 1 — odwrócenia nie
+  ma, faza 1 gaśnie wolniej.
+  STATUS: to PREDYKCJA MODELU. Katsarkas podaje MECHANIZM (dwie stałe), nie te progi widoczności ani
+  wartość K — HSN_PH2_K=0.35 jest kalibracją tego silnika, dobraną tak, by faza 2 wypadła w opisanym
+  klinicznie paśmie (słabsza i dłuższa od fazy 1), nie liczbą z pracy.
+
+WYROCZNIA: `npm run hsn:check` (tools/hsn-check.mjs, 55 przypadków) — NOWA bramka, bo złoty snapshot
+  pina hsn() TYLKO przy domyślnych 150 °/s (harness woła `NV.hsn(p)` bez opcji), więc ani próg
+  (179 wobec 180 °/s), ani przełącznik mono↔dwufazowy nie były przez nic strzeżone: skasowanie
+  `directionReliable` albo odwrócenie warunku τ_gh>τ_vs zostawiłoby wszystkie 27 bramek zielone.
+  Bramka sprawdza oba brzegi progu, przelicza t_cross i t_peak OD NOWA z definicji, wymusza emergent
+  (odwrócenie rośnie z kompensacją) i pilnuje rozdziału PL/EN w zdaniu karty.
+AUDYT GOLDEN (dowód zakresu, nie wrażenie): 216 zmienionych liści = 190 DODANYCH pól
+  (velMin/directionReliable/tauGaze/biphasic/phase2 × 19 pacjentów × hsn i clinicalReadout.hsn)
+  + 8 zdań `findings` + 8 znaków `peripheralSigns` + 1 nowe zdanie (dwufazowe u d21rec) + 8 ekranów
+  DOM, które te zdania wyświetlają. ZERO zmian w spv0/asym/tau/beatEar/dir/present/charge/cycles/
+  peakVel oraz w verdict i localization — sprawdzone polami, u wszystkich 19 pacjentów.
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -2979,6 +3032,16 @@ Bramka obejmuje src oraz engine_doc i view_doc w obu językach.
         („efekt kolejności"); stąd zalecenie, by zaczynać od testu supine roll. Dix–Hallpike może
         przemieścić złóg JUŻ ZNAJDUJĄCY SIĘ w kanale poziomym; test roll nie rusza złogu w kanałach
         pionowych. To niezależne, symulacyjne potwierdzenie R10 i zjawiska nr 1 wpisu V25.
+[H40] Katsarkas A, Smith H, Galiana H (2000). „Head-shaking nystagmus (HSN): the theoretical explanation
+      and the experimental proof." Acta Otolaryngol 120(2):177–181. doi:10.1080/000164800750000865.
+      PMID 11603767.
+      → n=51 z obwodowym ubytkiem (43 częściowy, 11 całkowity jednostronny), stymulacja sinusoidalna
+        CAŁEGO CIAŁA 1/6 Hz przy 90–220°/s. (1) Bias powstaje u wszystkich, ale KIERUNEK błądzi na obie
+        strony, dopóki prędkość nie przekroczy ~180°/s; powyżej progu faza wolna leży ku stronie CHOREJ
+        u wszystkich z biasem >5°/s — stąd kliniczna chwiejność kierunku pierwszej fazy HSN.
+        (2) Mono- i dwufazowość HSN to odbicie interakcji DWÓCH stałych czasowych: „velocity storage"
+        i „gaze holding". Podstawa progu HSN_VEL_MIN i funkcji hsnPhase2() (etap V26).
+
 
 
 

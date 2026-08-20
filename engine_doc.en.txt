@@ -2775,9 +2775,10 @@ VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Sc
        EXCITATORY ASYMMETRY (modEx of both sides; the inhibited side clipped — Ewald II), HSN_K=20, charging
        1−exp(−cycles/6), decay with the τ from postRotational (compensation SHORTENS it emergently: 15→4.95 s).
        Emergents verified: an acute UVH 9.3°/s toward the healthy ear; a COMPENSATED UVH — the same HSN at spont 0
-       (a latent asymmetry, like the caloric without irrigation); BVH 0; irritative Ménière's 0. A MONOphasic model;
+       (a latent asymmetry, like the caloric without irrigation); BVH 0; irritative Ménière's 0.
        "perverted HSN" deliberately OUTSIDE the model (a flag from verticalBeat would fire falsely for a peripheral
-       superior neuritis) → CAVEATS.
+       superior neuritis) → CAVEATS. The model was MONOphasic until stage V26 (below), which derived phase 2
+       from the tauVS+integratorTau pair.
      • shimp(p,spec,{headVel=150}) [H23] — a head-fixed target; the ANTI-compensatory saccade = gain·amp
        (its ABSENCE = a deficit; the rule inverted vs HIMP), cutoff gain<0.5, direction +q/qn (opposite to the
        catch-up). Plus gainApparent in headImpulse(): min(1.1, gain + 0.6·covertFrac·deficit) — covert saccades
@@ -2885,6 +2886,60 @@ but if a source designation accompanies it, the designation goes DIRECTLY AFTER 
 a YEAR. The bracket closes on the number — sources without a number are added AFTER it, past a
 semicolon. The gate covers src plus engine_doc and view_doc in both languages; details and declared
 limits → view_doc.
+
+=== HSN: THE VELOCITY THRESHOLD AND BIPHASIC BEHAVIOUR (V26, 2026-08-20) — [H40] Katsarkas 2000 ===
+Katsarkas makes two claims that stage N4 did not reproduce. Both are now in hsn().
+
+(b) HEAD-SHAKING VELOCITY THRESHOLD — HSN_VEL_MIN=180 deg/s, HSN_VEL_DEF=150 deg/s.
+  Katsarkas (n=51, whole-body sinusoidal stimulation at 1/6 Hz, 90-220 deg/s): a bias arises at EVERY
+  velocity, but its DIRECTION wanders — now toward the healthy ear, now toward the affected one — until
+  shaking exceeds ~180 deg/s; only above the threshold does the slow phase lie toward the AFFECTED side
+  in every patient with a bias >5 deg/s. Hence the clinical lability of the first phase's direction:
+  a clinician rarely reaches 180 deg/s.
+  IN THE ENGINE: new fields `velMin` and `directionReliable`; below the threshold the card states that
+  the direction CANNOT BE TRUSTED, and the peripheral sign drops from "HSN toward the healthy side" to
+  "HSN present — do not read the direction at this shaking velocity". The default of 150 deg/s stays
+  DELIBERATELY below the threshold: that is what a typical bedside examination looks like, so the
+  warning is meant to be visible by default. Velocity is a PROTOCOL, not a patient trait → the second
+  argument clinicalReadout(p,{hsnPeakVel}), not a makePatient key.
+  DECLARED LIMIT (measured with a probe, not assumed): `asym` is INDEPENDENT of velocity in this model —
+  mod = gain·S_HZ·Ω on both sides, so Ω cancels in the ratio, and the MOD_MAX=310 saturation would
+  require Ω>387 deg/s, i.e. outside the protocol (measured: spv0 identical at 90 and 220 deg/s).
+  The threshold is therefore a RELIABILITY layer above the physics, not a change to the physics. The
+  engine is deterministic, so it cannot show the wandering itself — and does not pretend to.
+
+(c) BIPHASIC BEHAVIOUR FROM THE TIME-CONSTANT PAIR — HSN_PH2_K=0.35, function hsnPhase2().
+  Katsarkas: the monophasic or biphasic course of HSN reflects an interaction of two time constants —
+  "velocity storage" and "gaze holding". Both were ALREADY in the engine (tauVS=15 s, integratorTau=25 s),
+  but hsn() used only the first. Phase 2 is now DERIVED from that pair:
+      v(t) = spv0·e^(−t/τ_vs) − K·spv0·(e^(−t/τ_gh) − e^(−t/τ_vs))
+  The bracket vanishes at t=0 → the PHASE-1 PEAK stays spv0 BIT FOR BIT (scope proof: the fields
+  spv0/asym/tau/beatEar/dir/present/charge/cycles/peakVel are identical across all 19 golden patients).
+  Closed forms: t_cross = ln(1+1/K)/(1/τ_vs−1/τ_gh); t_peak = ln((1+K)τ_gh/(K·τ_vs))/(1/τ_vs−1/τ_gh).
+  A REVERSAL exists only when τ_gh > τ_vs. EMERGENT: it becomes VISIBLE (≥VIS_THRESH=2 deg/s) only once
+  compensation has shortened velocity storage — an acute UVH (τ_vs 15 vs τ_gh 25) gives a phase-2 peak of
+  0.14 deg/s = invisible → MONOphasic, while the same patient compensated (τ_vs 4.95) gives 2.13 deg/s →
+  BIPHASIC. In the golden battery the only biphasic patient is `timeline/neuritisR/d21rec` (recovery,
+  τ_vs 5.25 s → phase 2 of 2.01 deg/s, reversal after 9.0 s, peak at 19.4 s).
+  With a LEAKY integrator (central, τ_gh < τ_vs) the component carries the SIGN OF PHASE 1 — there is no
+  reversal and phase 1 simply decays more slowly.
+  STATUS: this is a MODEL PREDICTION. Katsarkas gives the MECHANISM (two time constants), not these
+  visibility thresholds nor the value of K — HSN_PH2_K=0.35 is a calibration of this engine, chosen so
+  that phase 2 lands in the clinically described band (weaker and longer than phase 1), not a number
+  taken from the paper.
+
+ORACLE: `npm run hsn:check` (tools/hsn-check.mjs, 55 cases) — a NEW gate, because the golden snapshot
+  pins hsn() ONLY at the default 150 deg/s (the harness calls `NV.hsn(p)` with no options), so neither
+  the threshold (179 vs 180 deg/s) nor the mono↔biphasic switch was guarded by anything: deleting
+  `directionReliable` or inverting the τ_gh>τ_vs condition would have left all 27 gates green. The gate
+  checks both edges of the threshold, recomputes t_cross and t_peak FROM the definitions, forces the
+  emergent (the reversal grows with compensation) and guards the PL/EN split in the card sentence.
+GOLDEN AUDIT (scope proof, not an impression): 216 changed leaves = 190 ADDED fields
+  (velMin/directionReliable/tauGaze/biphasic/phase2 × 19 patients × hsn and clinicalReadout.hsn)
+  + 8 `findings` sentences + 8 `peripheralSigns` + 1 new sentence (biphasic in d21rec) + 8 DOM screens
+  that display those sentences. ZERO changes to spv0/asym/tau/beatEar/dir/present/charge/cycles/peakVel
+  or to verdict and localization — verified field by field across all 19 patients.
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -3167,6 +3222,17 @@ limits → view_doc.
         The Dix-Hallpike can displace debris ALREADY PRESENT in the horizontal canal; the roll test does
         not move debris in the vertical canals. This is independent, simulation-based confirmation of R10
         and of phenomenon No. 1 in the V25 entry.
+[H40] Katsarkas A, Smith H, Galiana H (2000). "Head-shaking nystagmus (HSN): the theoretical explanation
+      and the experimental proof." Acta Otolaryngol 120(2):177-181. doi:10.1080/000164800750000865.
+      PMID 11603767.
+      -> n=51 with a peripheral deficit (43 partial, 11 total unilateral), whole-body sinusoidal
+        stimulation at 1/6 Hz over 90-220 deg/s. (1) A bias arises in every patient, but its DIRECTION
+        wanders to either side until the velocity exceeds ~180 deg/s; above the threshold the slow phase
+        lies toward the AFFECTED side in all patients with a bias >5 deg/s — hence the clinical lability
+        of the first HSN phase's direction. (2) The monophasic and biphasic character of HSN reflects an
+        interaction of TWO time constants: "velocity storage" and "gaze holding". The basis for the
+        HSN_VEL_MIN threshold and the hsnPhase2() function (stage V26).
+
 
 
 

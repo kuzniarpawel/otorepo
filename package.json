@@ -15,6 +15,7 @@
     "bridge:check": "node tools/bridge-check.mjs",
     "view:check": "node tools/view-check.mjs",
     "zrodla:check": "node tools/zrodla-check.mjs",
+    "hsn:check": "node tools/hsn-check.mjs",
     "copy:web": "node -e \"const fs=require('fs');fs.rmSync('www',{recursive:true,force:true});fs.cpSync('dist','www',{recursive:true})\"",
     "sync": "npm run build && npm run copy:web && cap sync",
     "open": "cap open android",
@@ -38,8 +39,7 @@
     "opis:check": "node tools/opis-check.mjs",
     "opis:dom": "node tools/opis-dom.mjs",
     "pwa:check": "node tools/pwa-check.mjs",
-    "pwa:dom": "node tools/pwa-dom.mjs",
-    "zrodla:check": "node tools/zrodla-check.mjs"
+    "pwa:dom": "node tools/pwa-dom.mjs"
   },
   "repository": {
     "type": "git",

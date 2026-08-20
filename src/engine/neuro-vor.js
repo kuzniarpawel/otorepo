@@ -460,20 +460,59 @@ export const NeuroVOR = (()=>{
     return { tauBase: base, tau: base*(1 - DVS_FRAC*c), c, shortened: c>0 };
   }
 
-  // ETAP N4 (ocena II, D1) — OCZOPLĄS POSZARPANIOWY (head-shaking nystagmus, HSN). [H25]
+  // ETAP N4 (ocena II, D1) — OCZOPLĄS POSZARPANIOWY (head-shaking nystagmus, HSN). [H25] Hain 1987
   // Potrząsanie głową ~2 Hz ładuje velocity storage ASYMETRYCZNIE przez rektyfikację Ewalda II: przy
   // prędkości potrząsania strona hamowana jest obcięta, więc ładunek niesie modulacja POBUDZENIOWA obu
   // stron (modEx). Po zatrzymaniu magazyn rozładowuje się oczopląsem KU UCHU ZDROWEMU (większy ładunek),
   // z zanikiem exp(−t/τ) — a τ pochodzi z postRotational, więc kompensacja SKRACA zanik EMERGENTNIE.
   // Kliniczna wartość: jak kaloryka, ODSŁANIA SKOMPENSOWANY ubytek (utajona asymetria przy zerowym
-  // sponcie) bez irygacji; zero w BVH (symetria) i w drażnieniu Ménière'a (gain 1:1). Model MONOfazowy
-  // (bez odwrócenia dwufazowego); „perverted HSN" (pionowy po poziomym potrząsaniu = ośrodek) świadomie
-  // POZA modelem — flaga z verticalBeat odpalałaby fałszywie dla obwodowego neuronitis GÓRNEGO.
+  // sponcie) bez irygacji; zero w BVH (symetria) i w drażnieniu Ménière'a (gain 1:1). „perverted HSN"
+  // (pionowy po poziomym potrząsaniu = ośrodek) świadomie POZA modelem — flaga z verticalBeat
+  // odpalałaby fałszywie dla obwodowego neuronitis GÓRNEGO.
+  //
+  // ═══ DWIE TEZY KATSARKASA — [H40] Katsarkas 2000 ═══
+  // (b) PRÓG PRĘDKOŚCI. Bias powstaje przy KAŻDEJ prędkości, ale jego KIERUNEK błądzi raz ku uchu
+  //     zdrowemu, raz ku choremu, dopóki potrząsanie nie przekroczy ~180°/s; dopiero powyżej progu
+  //     faza wolna leży ku stronie CHOREJ u wszystkich z biasem >5°/s. Ten silnik jest
+  //     DETERMINISTYCZNY, więc chwiejności NIE fabrykujemy — przestajemy natomiast deklarować
+  //     kierunek NA PEWNO (`directionReliable`), a karta mówi to wprost.
+  //     GRANICA ZADEKLAROWANA (zmierzona sondą, nie domysł): `asym` jest w tym modelu NIEZALEŻNE od
+  //     prędkości — mod = gain·S_HZ·Ω po obu stronach, więc Ω skraca się w ilorazie, a nasycenie
+  //     MOD_MAX=310 wymagałoby Ω>387°/s, czyli poza protokołem. Próg jest zatem warstwą
+  //     WIARYGODNOŚCI nad fizyką, a nie zmianą fizyki; odwrócenia kierunku poniżej progu ten model
+  //     nie umie pokazać i nie udaje, że umie.
+  // (c) DWUFAZOWOŚĆ = INTERAKCJA DWÓCH STAŁYCH CZASOWYCH: velocity storage (tauVS) i utrzymania
+  //     spojrzenia (integratorTau, etap 4a). Faza 2 jest WYPROWADZONA z tej pary, nie dopisana obok:
+  //         v(t) = spv0·e^(−t/τ_vs) − K·spv0·(e^(−t/τ_gh) − e^(−t/τ_vs))
+  //     Nawias znika w t=0, więc SZCZYT FAZY 1 zostaje spv0 CO DO BITU (golden fazy 1 nietknięty).
+  //     Odwrócenie istnieje wyłącznie gdy τ_gh > τ_vs — i wtedy EMERGENTNIE wychodzi, że staje się
+  //     WIDOCZNE (≥VIS_THRESH) dopiero, gdy kompensacja skróci velocity storage: ostry UVH
+  //     (τ_vs 15 wobec τ_gh 25) daje szczyt fazy 2 ~0,14°/s = niewidoczny → MONOfazowy, a TEN SAM
+  //     pacjent skompensowany (τ_vs 4,95) daje ~2,1°/s → DWUfazowy. Przy integratorze NIESZCZELNYM
+  //     (ośrodek, τ_gh < τ_vs) składowa niesie ZNAK FAZY 1 — odwrócenia nie ma, faza 1 gaśnie wolniej.
+  //     To PREDYKCJA MODELU: Katsarkas podaje mechanizm (dwie stałe), nie te progi widoczności.
   const HSN_K = 20;          // °/s — skala szczytowego HSN przy pełnej asymetrii ładunku (pasmo 5–15°/s w UVH)
   const HSN_CYC = 6;         // stała ładowania (w cyklach potrząsania): charge = 1−exp(−cycles/HSN_CYC)
+  const HSN_VEL_DEF = 150;   // °/s — DOMYŚLNE potrząsanie przyłóżkowe (~2 Hz). Zostaje PONIŻEJ progu
+                             // świadomie: tak wygląda typowe badanie, więc ostrzeżenie ma być widoczne.
+  const HSN_VEL_MIN = 180;   // °/s — próg wiarygodności KIERUNKU [H40] Katsarkas 2000
+  const HSN_PH2_K = 0.35;    // udział składowej integratora spojrzenia, odniesiony do szczytu fazy 1
+  // Faza 2 (odwrócenie) z pary stałych czasowych. Zwraca szczyt CO DO WARTOŚCI BEZWZGLĘDNEJ;
+  // kierunek fazy 2 jest z definicji PRZECIWNY do fazy 1, więc nie ma go po co liczyć osobno.
+  function hsnPhase2(spv0, tauVS, tauGaze){
+    const K = HSN_PH2_K, dk = 1/tauVS - 1/tauGaze;
+    if(!(dk > 1e-9) || !(spv0 > 0)) return { exists:false, tCross:null, tPeak:null, spvPeak:0, present:false };
+    const tCross = Math.log(1 + 1/K)/dk;                        // v(t) przechodzi przez zero
+    const tPeak  = Math.log((1+K)*tauGaze/(K*tauVS))/dk;        // maksimum składowej przeciwnej
+    const spvPeak = spv0*(K*Math.exp(-tPeak/tauGaze) - (1+K)*Math.exp(-tPeak/tauVS));
+    return { exists:true, tCross, tPeak, spvPeak, present: spvPeak >= VIS_THRESH };
+  }
   function hsn(p, opts){
     opts = opts||{};
-    const vel = opts.peakVel||150, cycles = opts.cycles==null ? 20 : Math.max(0, opts.cycles);
+    // peakVel czytane TĄ SAMĄ regułą co cycles (==null → domyślna). Przy dawnym `||` prędkość 0
+    // cicho wracała do 150, czyli „nie potrząsaj wcale" dawało pełnowymiarowy oczopląs.
+    const vel = opts.peakVel==null ? HSN_VEL_DEF : Math.max(0, opts.peakVel);
+    const cycles = opts.cycles==null ? 20 : Math.max(0, opts.cycles);
     const mR = excited(p.toneR, p.gainR, vel).mod, mL = excited(p.toneL, p.gainL, vel).mod;
     const denom = mR + mL;
     const asym = denom>0 ? (mR - mL)/denom : 0;              // >0: prawy magazyn większy (ubytek L)
@@ -482,8 +521,15 @@ export const NeuroVOR = (()=>{
     const spv0 = HSN_K*Math.abs(asym)*charge;
     const present = spv0 >= VIS_THRESH;
     const beatEar = present ? (asym>0 ? "P" : "L") : null;   // ku uchu o większym ładunku (zdrowemu)
-    return { peakVel:vel, cycles, asym, charge, spv0, tau:pr.tau, tauBase:pr.tauBase,
-      beatEar, dir: beatEar ? (Math.sign((beatEar==="P"?1:-1)*camRx())||0) : 0, present };
+    const tauGaze = Math.max(0.2, p.integratorTau||25);      // ta sama reguła co gazeEvoked (jedno źródło)
+    const ph = hsnPhase2(present ? spv0 : 0, pr.tau, tauGaze);
+    const ph2Ear = (ph.present && beatEar) ? (beatEar==="P" ? "L" : "P") : null;
+    return { peakVel:vel, velMin:HSN_VEL_MIN, cycles, asym, charge, spv0, tau:pr.tau, tauBase:pr.tauBase,
+      beatEar, dir: beatEar ? (Math.sign((beatEar==="P"?1:-1)*camRx())||0) : 0, present,
+      directionReliable: present && vel >= HSN_VEL_MIN, tauGaze, biphasic: ph.present,
+      phase2: { present:ph.present, exists:ph.exists, spvPeak:ph.spvPeak, tCross:ph.tCross,
+        tPeak:ph.tPeak, beatEar:ph2Ear,
+        dir: ph2Ear ? (Math.sign((ph2Ear==="P"?1:-1)*camRx())||0) : 0 } };
   }
 
   // spec: 'P'/'L' (poziomy, zgodność wsteczna) LUB {canal,ear} — dowolny z 6 kanałów (HC/przedni/tylny × L/P).
@@ -1047,7 +1093,10 @@ export const NeuroVOR = (()=>{
   // ETAP 7 (E5) — SYNTEZA KLINICZNA: pełny odczyt z parametrów (objawy + sygnały obwód/ośrodek +
   // niejednoznaczności + lokalizacja). Reużywa hints/caloricBattery/vhitPlane/observe/skew/pressureStimulus.
   // Narzędzie DYDAKTYCZNE, nie diagnostyczne. [H8][H21]
-  function clinicalReadout(p){
+  function clinicalReadout(p, opts){
+    // Drugi argument to PROTOKÓŁ BADANIA (jak je wykonano), nie cecha pacjenta — dlatego prędkość
+    // potrząsania nie jest kluczem makePatient. Brak → domyślne HSN_VEL_DEF. [H40] Katsarkas 2000
+    const proto = opts||{};
     const R1 = x => Math.round(x*10)/10;
     const side = e => e==="P" ? tr("prawej","right") : e==="L" ? tr("lewej","left") : null;
     const h = hints(p), cal = caloricBattery(p);
@@ -1162,10 +1211,19 @@ export const NeuroVOR = (()=>{
     }
 
     // ETAP N4 — dodatkowe testy przyłóżkowe: HSN (velocity storage), pościg (kłaczek), DVA (skarga pacjenta).
-    const hs = hsn(p), spu = smoothPursuit(p), dv = dva(p);
+    const hs = hsn(p, proto.hsnPeakVel==null ? undefined : { peakVel: proto.hsnPeakVel }), spu = smoothPursuit(p), dv = dva(p);
     if(hs.present){
-      findings.push(tr(`HSN (po potrząsaniu głową): ${R1(hs.spv0)}°/s ku stronie ${side(hs.beatEar)}, zanik τ≈${R1(hs.tau)} s — utajona asymetria velocity storage${dark.spv<VIS_THRESH?" (odsłania SKOMPENSOWANY ubytek)":""}.`,`HSN (after head shaking): ${R1(hs.spv0)}°/s toward the ${side(hs.beatEar)} side, decay τ≈${R1(hs.tau)} s — latent velocity-storage asymmetry${dark.spv<VIS_THRESH?" (unmasks a COMPENSATED deficit)":""}.`));
-      peripheralSigns.push(tr("HSN ku stronie zdrowej (asymetria obwodowa)","HSN toward the healthy side (peripheral asymmetry)"));
+      // Fraza kierunku liczona RAZ i wstawiana do obu wersji językowych — ten sam wzorzec co side()
+      // wyżej: tr() rozwiązuje się do bieżącego języka, więc wybrana gałąź jest spójna.
+      const kier = hs.directionReliable
+        ? tr(`ku stronie ${side(hs.beatEar)}`,`toward the ${side(hs.beatEar)} side`)
+        : tr(`pozornie ku stronie ${side(hs.beatEar)}, ale przy potrząsaniu ${R1(hs.peakVel)}°/s KIERUNKU NIE MA CZYM POTWIERDZIĆ (poniżej ${hs.velMin}°/s bias błądzi na obie strony)`,
+             `apparently toward the ${side(hs.beatEar)} side, but at a shaking velocity of ${R1(hs.peakVel)}°/s the DIRECTION CANNOT BE TRUSTED (below ${hs.velMin}°/s the bias wanders to either side)`);
+      findings.push(tr(`HSN (po potrząsaniu głową): ${R1(hs.spv0)}°/s ${kier}, zanik τ≈${R1(hs.tau)} s — utajona asymetria velocity storage${dark.spv<VIS_THRESH?" (odsłania SKOMPENSOWANY ubytek)":""}.`,`HSN (after head shaking): ${R1(hs.spv0)}°/s ${kier}, decay τ≈${R1(hs.tau)} s — latent velocity-storage asymmetry${dark.spv<VIS_THRESH?" (unmasks a COMPENSATED deficit)":""}.`));
+      if(hs.biphasic) findings.push(tr(`HSN DWUFAZOWY: po ~${R1(hs.phase2.tCross)} s kierunek odwraca się ku stronie ${side(hs.phase2.beatEar)} (szczyt ${R1(hs.phase2.spvPeak)}°/s ok. ${R1(hs.phase2.tPeak)} s) — to interakcja velocity storage (τ≈${R1(hs.tau)} s) z integratorem spojrzenia (τ≈${R1(hs.tauGaze)} s), a NIE druga zmiana chorobowa.`,`BIPHASIC HSN: after ~${R1(hs.phase2.tCross)} s the direction reverses toward the ${side(hs.phase2.beatEar)} side (peak ${R1(hs.phase2.spvPeak)}°/s at about ${R1(hs.phase2.tPeak)} s) — this is an interaction of velocity storage (τ≈${R1(hs.tau)} s) with the gaze-holding integrator (τ≈${R1(hs.tauGaze)} s), NOT a second lesion.`));
+      peripheralSigns.push(hs.directionReliable
+        ? tr("HSN ku stronie zdrowej (asymetria obwodowa)","HSN toward the healthy side (peripheral asymmetry)")
+        : tr("HSN obecny (asymetria obwodowa) — kierunku nie różnicuj przy tej prędkości potrząsania","HSN present (peripheral asymmetry) — do not read the direction at this shaking velocity"));
     }
     if(spu.saccadic){
       findings.push(tr(`Pościg SAKADYCZNY (gain ${R1(spu.pursuitGain)}) — kłaczek/móżdżek; współistnieje z brakiem supresji fiksacją (jeden obwód).`,`SACCADIC pursuit (gain ${R1(spu.pursuitGain)}) — flocculus/cerebellum; co-occurs with absent fixation suppression (one circuit).`));
