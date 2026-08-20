@@ -658,15 +658,47 @@ export const NeuroVOR = (()=>{
   }
 
   // ETAP N4 (ocena II, D10) — DVA / DYNAMICZNA OSTROŚĆ WZROKU (oscylopsja jako SKARGA pacjenta).
-  // Utrata ostrości przy ruchu głowy ∝ niedomiar gain HF (nienaprawialny kompensacją — spójnie z headImpulse).
-  // BVH: ~4 linie logMAR (ciężka, oscylopsja definicyjna [H19]); skompensowany UVH: ~2 linie (graniczny);
-  // zdrowy: 0. Trzecia demonstracja trwałości ubytku (obok kaloryki i vHIT) — tym razem jako objaw. (Guinand 2012)
+  // Utrata ostrości przy ruchu głowy ∝ niedomiar gain w PCHNIĘCIU BIERNYM (headImpulse — jedno źródło).
+  // BVH: ~4 linie logMAR; UVH: ~2–3 linie; zdrowy: 0. Rząd wielkości zgodny z [H41] Guinand 2012
+  // (ostrość statyczna minus dynamiczna; tam mierzona PODCZAS CHODU — patrz granica bodźca niżej).
+  //
+  // ═══ ETAP V27 — OSCYLOPSJA WYMAGA OBUSTRONNOŚCI, NIE SAMEJ WIELKOŚCI UBYTKU ═══
+  // Do V27 pole `oscillopsia` było czystym progiem na logMARLoss, więc padało u KAŻDEGO dość dużego
+  // ubytku — także JEDNOSTRONNEGO. Zmierzone: pacjent z martwym uchem prawym i zdrowym lewym
+  // (gain 0.158/0.842) dawał logMAR 0.300 i dostawał etykietę oscylopsji, podczas gdy ten sam
+  // clinicalReadout dwa pola dalej orzekał `localization: "nerw GÓRNY po stronie prawej"`. Karta
+  // przeczyła sama sobie w jednym akapicie.
+  // Oś objawu jest OBUSTRONNOŚĆ, nie magnituda: [H45] Karabulut 2023 (metaanaliza) — oscylopsja
+  // u 22% przewlekłych UVH wobec 50–70% w ubytku obustronnym, „jeden błędnik często wystarcza do
+  // stabilizacji spojrzenia"; [H41] Guinand 2012 — 81% BV wobec 9% UVL. Dlatego próg 0.3 ZOSTAJE,
+  // ale jego dziedzinę zawęża kryterium C [H19] Strupp 2017 (vHIT poziomy <0.6 OBUSTRONNIE).
+  // Obustronność liczona z OBU gainów OSOBNO, NIGDY ze średniej — średnia myli „jedno ucho zero
+  // + jedno jedynka" z „oba po połowie", a to są dwaj różni chorzy.
+  // PRÓG 0.3 NIE JEST od Guinanda i nie wolno go tak cytować: ta praca stwierdza WPROST brak
+  // korelacji utraty ostrości z NASILENIEM oscylopsji (replikacje: Hermann 2018, van Dooren 2019,
+  // Anson 2018). Próg broni się jako klasyfikator BINARNY — [H44] Geisinger 2024: chorzy BVL
+  // ZGŁASZAJĄCY oscylopsję tracili 4.5±0.79 linii wobec 2.6±0.56 bez skargi (p<0.01), przy BRAKU
+  // różnicy gain w którymkolwiek z 6 kanałów. Czyli: gain NIE jest predyktorem, DVA jest.
+  // EMERGENT (nie nowy parametr): obustronność wychodzi ZA DARMO z dwuusznej estymaty prędkości
+  // w headImpulse (W_IN=1/3, Ewald II) — martwy błędnik po jednej stronie i tak zostawia drugie
+  // ucho ≈0.84, bo estymatę niesie ucho zdrowe; dopiero prawdziwy ubytek OBUSTRONNY wpycha oba
+  // odczyty pod 0.6. Fizyka z etapu N7 okazała się detektorem obustronności.
+  // GRANICE ZADEKLAROWANE: (1) NIEZGODNOŚĆ BODŹCA — Guinand mierzył chód, silnik liczy z pchnięcia
+  // biernego; 0.6 i 0.1 logMAR/linia to PROXY DYDAKTYCZNE, nie kalibracja (pełnego tekstu nie było
+  // czym skalibrować — praca płatna, abstrakt nie podaje średnich logMAR). (2) FAŁSZ UJEMNY PRZYJĘTY
+  // ŚWIADOMIE: ~22% przewlekłych UVH zgłasza oscylopsję [H45] — bramka ich NIE oznaczy. (3) Silnik
+  // nie różnicuje pochodzenia: pacjent ośrodkowy z niskim gainem obustronnie dostaje flagę tak samo,
+  // choć Geisinger sugeruje wymóg pochodzenia OBWODOWEGO — to zmiana FIZYKI, świadomie odłożona.
+  // (4) Strategia sakadowa (sakady ukryte ratują widzenie mimo niskiego gain — Ramaioli 2014) jest
+  // POZA modelem; `gainApparent` jest dziś produkowany i NIEkonsumowany — otwarty trop.
+  const BVP_CUT = 0.6;       // kryterium C [H19] Strupp 2017 — vHIT poziomy <0.6 OBUSTRONNIE = ubytek obustronny
   function dva(p){
     const gP = headImpulse(p,"P").gain, gL = headImpulse(p,"L").gain;
     const meanGain = (gP+gL)/2;
     const logMARLoss = Math.max(0, 0.6*(1-meanGain));
+    const obustronny = gP < BVP_CUT && gL < BVP_CUT;        // OBA osobno — nie średnia
     return { meanGain, logMARLoss, linesLost: Math.round(logMARLoss/0.1),
-      abnormal: logMARLoss>=0.2, oscillopsia: logMARLoss>=0.3 };
+      abnormal: logMARLoss>=0.2, oscillopsia: obustronny && logMARLoss>=0.3 };
   }
 
   // vHIT całej PŁASZCZYZNY (HC/RALP/LARP): dwa pobudzeniowe pchnięcia — po jednym na każdy kanał pary.

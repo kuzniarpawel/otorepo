@@ -341,10 +341,16 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 107;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
+const OCZEKIWANE = 113;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
                             8-16 futureUI, wszystkie zielone. Nie ma tu dwoch numeracji — [H28] to
                             Newman-Toker, [H29] Cochrane 2014 (slot zwolniony przez scalenie [H17]/[H29]
                             w Etapie 1), a cytowania main przenumerowane. Byly: 54 (main) / 88 (futureUI).
+                            2026-08-20, etap V27a (bramka obustronnosci w dva()): 107 -> 113.
+                            SZESC nowych cytowan, wszystkie zielone, policzone przez --ile:
+                            bibliografia 40 -> 43 ([H41] Guinand 2012, [H44] Geisinger 2024,
+                            [H45] Karabulut 2023) plus odsylacze w komentarzu dva(). Uwaga:
+                            "(Guinand 2012)" bylo cytatem SAMYM NAZWISKIEM, wiec bramka go NIE
+                            LICZYLA - zamiana na [H41] Guinand 2012 sama z siebie podnosi licznik.
                             2026-08-20, etap V26 (HSN): 101 -> 107. SZESC nowych cytowan, wszystkie
                             zielone i wszystkie policzone RECZNIE, nie przepisane z komunikatu:
                               +1 neuro-vor.js — "[H25] Hain 1987" (numer STAL SAM, dopisano oznaczenie

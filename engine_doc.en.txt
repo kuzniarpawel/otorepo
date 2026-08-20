@@ -2940,6 +2940,49 @@ GOLDEN AUDIT (scope proof, not an impression): 216 changed leaves = 190 ADDED fi
   that display those sentences. ZERO changes to spv0/asym/tau/beatEar/dir/present/charge/cycles/peakVel
   or to verdict and localization — verified field by field across all 19 patients.
 
+[H41] Guinand N, Pijnenburg M, Janssen M, Kingma H (2012). "Visual acuity while walking and oscillopsia
+      severity in healthy subjects and patients with unilateral and bilateral vestibular function loss."
+      Arch Otolaryngol Head Neck Surg 138(3):301-306. doi:10.1001/archoto.2012.4. PMID 22431876.
+      -> THE SOURCE BEHIND THE COMMENT AT dva(). Three arms — 37 patients with a BILATERAL deficit,
+        11 with a UNILATERAL one, 57 healthy — i.e. the same three-tier axis as "healthy 0 / UVH ~2-3
+        lines / BVH ~4 lines". Outcome measure: static MINUS dynamic acuity, measured WHILE WALKING on
+        a treadmill at 2, 4 and 6 km/h. Moderate-to-severe oscillopsia in 81% of bilateral patients versus
+        9% of unilateral ones — this is the basis for the BILATERALITY axis in the `oscillopsia` field
+        (stage V27).
+        SOURCE LIMIT, to be quoted TOGETHER with the paper: "Differences in VA did not correlate with
+        oscillopsia severity scores in patients with BV (P>.05 for all comparisons)" — acuity loss does
+        NOT predict the SEVERITY of the complaint (replications: Hermann 2018 PMID 30042725, van Dooren
+        2019 PMID 31105632, Anson 2018 PMID 29599743). This paper must therefore NEVER be placed beside
+        the 0.3 threshold or the 0.6/0.2 constants — only beside the order of magnitude of acuity loss
+        and beside the 81%/9% contrast.
+        BEWARE A MIX-UP: Guinand is also the sixth author of [H23] van Dooren 2022 (SHIMP in BVH) — a
+        DIFFERENT paper, year and subject; Janssen appears in BOTH. The journal was then named Arch
+        Otolaryngol Head Neck Surg (not "JAMA Otolaryngol") and must stay so.
+
+[H44] Geisinger D, Elyoseph Z, Zaltzman R, Mintz M, Gordon CR (2024). "Functional impact of bilateral
+      vestibular loss and the unexplained complaint of oscillopsia." Front Neurol 15:1365369.
+      doi:10.3389/fneur.2024.1365369. PMC11070540.
+      -> RESCUES THE 0.3 THRESHOLD AS A BINARY CLASSIFIER while REFUTING gain as a predictor. n=15 with a
+        peripheral bilateral deficit: 5/15 (33%) reported oscillopsia; between reporters and non-reporters
+        there was NO difference in VOR gain in ANY of the 6 canals (p>0.05 six times), yet DVA loss differed clearly:
+        4.5±0.79 versus 2.6±0.56 lines (p<0.01). So the literature rejects "greater loss -> more severe
+        oscillopsia" (see [H41]) while SUPPORTING "greater loss -> higher probability of the complaint" —
+        and the latter is what the engine does. The authors' claim that oscillopsia requires a deficit of
+        PERIPHERAL and sudden rather than central and progressive origin is NOT modelled here (an open
+        limit of stage V27).
+
+[H45] Karabulut M, Van Laer L, Hallemans A, Vereeck L, Van Rompaey V, Viechtbauer W, Melliti A,
+      van Stiphout L, Mohamad A, Perez Fornos A, Guinand N, Devocht E, van de Berg R (2023). "Chronic
+      symptoms in patients with unilateral vestibular hypofunction: systematic review and meta-analysis."
+      Front Neurol 14:1177314. doi:10.3389/fneur.2023.1177314. PMID 37483440.
+      -> THE STRONGEST BASIS FOR THE BILATERALITY AXIS. Pooled prevalence of oscillopsia in CHRONIC
+        UNILATERAL hypofunction: 22% (151 patients) versus 50-70% in bilateral loss, with the authors'
+        comment that "one vestibular organ might often be sufficient to enable gaze stabilization". This
+        justifies the bilaterality gate in dva() — and simultaneously defines its DELIBERATELY ACCEPTED
+        FALSE NEGATIVE: those 22% will not be flagged. NOTE: reported oscillopsia frequencies diverge
+        across the literature because of definitions and instruments (30-40% [H19] / 33% [H44] / 50-70%
+        here / ~80% DISCOHAT / 81% [H41]) — the engine reproduces NONE of these numbers and claims none
+        as its own.
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.

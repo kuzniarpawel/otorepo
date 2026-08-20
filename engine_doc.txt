@@ -2762,6 +2762,45 @@ AUDYT GOLDEN (dowód zakresu, nie wrażenie): 216 zmienionych liści = 190 DODAN
   DOM, które te zdania wyświetlają. ZERO zmian w spv0/asym/tau/beatEar/dir/present/charge/cycles/
   peakVel oraz w verdict i localization — sprawdzone polami, u wszystkich 19 pacjentów.
 
+[H41] Guinand N, Pijnenburg M, Janssen M, Kingma H (2012). „Visual acuity while walking and oscillopsia
+      severity in healthy subjects and patients with unilateral and bilateral vestibular function loss."
+      Arch Otolaryngol Head Neck Surg 138(3):301–306. doi:10.1001/archoto.2012.4. PMID 22431876.
+      → ŹRÓDŁO KOMENTARZA PRZY dva(). Trzy ramiona — 37 chorych z ubytkiem OBUSTRONNYM, 11 z JEDNOSTRONNYM,
+        57 zdrowych — czyli ta sama trójdzielna oś, co „zdrowy 0 / UVH ~2–3 linie / BVH ~4 linie". Zmienna
+        wynikowa: ostrość statyczna MINUS dynamiczna, mierzona podczas CHODU na bieżni 2, 4 i 6 km/h.
+        Oscylopsja umiarkowana-do-skrajnej u 81% chorych obustronnych wobec 9% jednostronnych — to jest
+        podstawa osi OBUSTRONNOŚCI w polu `oscillopsia` (etap V27).
+        GRANICA ŹRÓDŁA, którą trzeba cytować RAZEM z pracą: „Differences in VA did not correlate with
+        oscillopsia severity scores in patients with BV (P>0,05 for all comparisons)" — czyli utrata
+        ostrości NIE przewiduje NASILENIA skargi (replikacje: Hermann 2018 PMID 30042725, van Dooren 2019
+        PMID 31105632, Anson 2018 PMID 29599743). Dlatego tej pracy NIE WOLNO stawiać przy progu 0.3 ani
+        przy stałych 0.6/0.2 — wolno przy rzędzie wielkości utraty ostrości i przy kontraście 81%/9%.
+        UWAGA NA POMYŁKĘ: Guinand jest też szóstym autorem [H23] van Dooren 2022 (SHIMP w BVH) — to INNA
+        praca, inny rok i inny przedmiot; Janssen występuje w OBU. Czasopismo nosiło wtedy nazwę Arch
+        Otolaryngol Head Neck Surg (nie „JAMA Otolaryngol") i tak ma zostać.
+
+[H44] Geisinger D, Elyoseph Z, Zaltzman R, Mintz M, Gordon CR (2024). „Functional impact of bilateral
+      vestibular loss and the unexplained complaint of oscillopsia." Front Neurol 15:1365369.
+      doi:10.3389/fneur.2024.1365369. PMC11070540.
+      → RATUJE PRÓG 0.3 JAKO KLASYFIKATOR BINARNY i zarazem OBALA gain jako predyktor. n=15 z obwodowym
+        ubytkiem obustronnym: oscylopsję zgłaszało 5/15 (33%); między zgłaszającymi a niezgłaszającymi
+        NIE BYŁO różnicy gain VOR w ŻADNYM z 6 kanałów (p>0,05 sześciokrotnie), ale utrata DVA różniła
+        się wyraźnie: 4,5±0,79 wobec 2,6±0,56 linii (p<0,01). Czyli literatura odrzuca „większa utrata →
+        cięższa oscylopsja" (patrz [H41]), a WSPIERA „większa utrata → większe prawdopodobieństwo skargi" —
+        i to drugie robi silnik. Teza autorów, że oscylopsja wymaga ubytku pochodzenia OBWODOWEGO i nagłego,
+        a nie ośrodkowego i postępującego, jest w silniku NIEODWZOROWANA (granica otwarta etapu V27).
+
+[H45] Karabulut M, Van Laer L, Hallemans A, Vereeck L, Van Rompaey V, Viechtbauer W, Melliti A,
+      van Stiphout L, Mohamad A, Perez Fornos A, Guinand N, Devocht E, van de Berg R (2023). „Chronic
+      symptoms in patients with unilateral vestibular hypofunction: systematic review and meta-analysis."
+      Front Neurol 14:1177314. doi:10.3389/fneur.2023.1177314. PMID 37483440.
+      → NAJMOCNIEJSZA PODSTAWA OSI OBUSTRONNOŚCI. Zbiorcza częstość oscylopsji w PRZEWLEKŁYM ubytku
+        JEDNOSTRONNYM: 22% (151 chorych) wobec 50–70% w ubytku obustronnym, z komentarzem autorów
+        „one vestibular organ might often be sufficient to enable gaze stabilization". Uzasadnia bramkę
+        obustronności w dva() — i zarazem wyznacza jej ŚWIADOMIE PRZYJĘTY FAŁSZ UJEMNY: tych 22% silnik
+        nie oznaczy. UWAGA: częstości oscylopsji w piśmiennictwie rozjeżdżają się z powodu definicji
+        i narzędzia (30–40% [H19] / 33% [H44] / 50–70% tu / ~80% DISCOHAT / 81% [H41]) — silnik nie
+        odtwarza ŻADNEJ z tych liczb i żadnej nie podaje jako swojej.
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
