@@ -471,7 +471,7 @@ function arrowGlyph(nys){
    podprogowa (< XI_CARD). Mapa opisuje geometrię TEGO modelu (jeden atlas, ramka Reida). */
 function bltWatershedSVG(side, curPhi0){
   const pts=bltZones(side);
-  const cx=150, cy=126, R=88, W=20;
+  const cx=186, cy=126, R=88, W=20;   // środek przesunięty w prawo: cały opis mieści się po lewej (wcześniej „ujście (267°)” wychodziło poza viewBox)
   const pt=(deg,r)=>{ const a=deg*Math.PI/180; return {x:cx+(r??R)*Math.sin(a), y:cy-(r??R)*Math.cos(a)}; };
   const arc=(a0,a1,color,op)=>{ const p0=pt(a0), p1=pt(a1);
     return `<path d="M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${R} ${R} 0 ${(a1-a0)>180?1:0} 1 ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}" stroke="${color}" stroke-width="${W}" fill="none" stroke-linecap="butt" opacity="${op}"/>`; };
@@ -481,21 +481,29 @@ function bltWatershedSVG(side, curPhi0){
     else run.a1=p.phi0+2.5; }
   const col={choung:"#3a8f6f", reversed:"#b0813f", mixed:"#8a93a6"};
   const arcs=segs.map(s=>arc(Math.max(3,s.a0), Math.min(267.3,s.a1), col[s.zone], s.sub?0.33:0.95)).join("");
-  const tick=(deg)=>{ const p0=pt(deg,R-14), p1=pt(deg,R+14);
+  const tick=(deg)=>{ const p0=pt(deg,R-12), p1=pt(deg,R+12);
     return `<line x1="${p0.x.toFixed(1)}" y1="${p0.y.toFixed(1)}" x2="${p1.x.toFixed(1)}" y2="${p1.y.toFixed(1)}" stroke="var(--muted)" stroke-width="1.4"/>`; };
   const label=(deg,txt,r)=>{ const p=pt(deg,r??R+24), anchor=p.x>cx+6?"start":(p.x<cx-6?"end":"middle");
     return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" font-size="10" fill="var(--muted)" text-anchor="${anchor}" dominant-baseline="middle">${txt}</text>`; };
+  /* Wododział (190°) i spoczynek (199,8°) dzieli 9,8° — przy R=88 to ~15 px łuku na ~100 px tekstu,
+     więc PROMIENIOWO napisy nachodziły na siebie. Idą w wolny lewy dół jako pionowy stos z odnośnikami
+     do znaczników; odnośniki się nie przecinają (spoczynek wyżej, wododział niżej). Sama mapa bez zmian. */
+  const LX=140, Y_REST=230, Y_WSHED=248;
+  const leader=(deg,r0,y1)=>{ const p=pt(deg,r0);
+    return `<line x1="${p.x.toFixed(1)}" y1="${p.y.toFixed(1)}" x2="${LX+4}" y2="${y1}" stroke="var(--muted)" stroke-width="1" opacity=".7"/>`; };
+  const stackLabel=(y,txt)=>`<text x="${LX}" y="${y}" font-size="10" fill="var(--muted)" text-anchor="end" dominant-baseline="middle">${txt}</text>`;
   const rest=pt(199.8);
   const restDot=`<circle cx="${rest.x.toFixed(1)}" cy="${rest.y.toFixed(1)}" r="4" fill="#D4DEE8" stroke="#22303e" stroke-width="1.2"/>`;
   const cur = curPhi0!=null ? (()=>{ const c=pt(curPhi0);
     return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="6" fill="var(--primary)" stroke="#fff" stroke-width="2"/>`; })() : "";
-  return `<svg viewBox="0 0 300 252" style="width:100%;max-width:340px;display:block;margin:0 auto">
+  return `<svg viewBox="0 0 300 264" style="width:100%;max-width:340px;display:block;margin:0 auto">
     ${arcs}
     ${tick(3)}${tick(267.3)}${tick(190)}
     ${label(3, t("bańka (φ=3°)","ampulla (φ=3°)"))}
-    ${label(267.3, t("ujście (267°)","exit (267°)"))}
-    ${label(190, t("wododział skłonu 190°","bow watershed 190°"))}
-    ${restDot}${label(199.8, t("spoczynek 199,8°","rest 199.8°"), R+34)}
+    ${label(267.3, t("ujście (267°)","exit (267°)"), R+18)}
+    ${leader(199.8, R+11, Y_REST)}${stackLabel(Y_REST, t("spoczynek 199,8°","rest 199.8°"))}
+    ${leader(190, R+12, Y_WSHED)}${stackLabel(Y_WSHED, t("wododział skłonu 190°","bow watershed 190°"))}
+    ${restDot}
     ${cur}${curPhi0!=null?label(curPhi0, "φ₀", R-30):""}
     <text x="${cx}" y="${cy-6}" font-size="11" fill="var(--muted)" text-anchor="middle">${t("kanał poziomy","horizontal canal")}</text>
     <text x="${cx}" y="${cy+10}" font-size="10" fill="var(--muted)" text-anchor="middle">${t("strona","side")} ${side==="P"?t("prawa","right"):t("lewa","left")}</text>
