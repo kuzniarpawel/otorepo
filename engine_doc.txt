@@ -2762,45 +2762,93 @@ AUDYT GOLDEN (dowód zakresu, nie wrażenie): 216 zmienionych liści = 190 DODAN
   DOM, które te zdania wyświetlają. ZERO zmian w spv0/asym/tau/beatEar/dir/present/charge/cycles/
   peakVel oraz w verdict i localization — sprawdzone polami, u wszystkich 19 pacjentów.
 
-[H41] Guinand N, Pijnenburg M, Janssen M, Kingma H (2012). „Visual acuity while walking and oscillopsia
-      severity in healthy subjects and patients with unilateral and bilateral vestibular function loss."
-      Arch Otolaryngol Head Neck Surg 138(3):301–306. doi:10.1001/archoto.2012.4. PMID 22431876.
-      → ŹRÓDŁO KOMENTARZA PRZY dva(). Trzy ramiona — 37 chorych z ubytkiem OBUSTRONNYM, 11 z JEDNOSTRONNYM,
-        57 zdrowych — czyli ta sama trójdzielna oś, co „zdrowy 0 / UVH ~2–3 linie / BVH ~4 linie". Zmienna
-        wynikowa: ostrość statyczna MINUS dynamiczna, mierzona podczas CHODU na bieżni 2, 4 i 6 km/h.
-        Oscylopsja umiarkowana-do-skrajnej u 81% chorych obustronnych wobec 9% jednostronnych — to jest
-        podstawa osi OBUSTRONNOŚCI w polu `oscillopsia` (etap V27).
-        GRANICA ŹRÓDŁA, którą trzeba cytować RAZEM z pracą: „Differences in VA did not correlate with
-        oscillopsia severity scores in patients with BV (P>0,05 for all comparisons)" — czyli utrata
-        ostrości NIE przewiduje NASILENIA skargi (replikacje: Hermann 2018 PMID 30042725, van Dooren 2019
-        PMID 31105632, Anson 2018 PMID 29599743). Dlatego tej pracy NIE WOLNO stawiać przy progu 0.3 ani
-        przy stałych 0.6/0.2 — wolno przy rzędzie wielkości utraty ostrości i przy kontraście 81%/9%.
-        UWAGA NA POMYŁKĘ: Guinand jest też szóstym autorem [H23] van Dooren 2022 (SHIMP w BVH) — to INNA
-        praca, inny rok i inny przedmiot; Janssen występuje w OBU. Czasopismo nosiło wtedy nazwę Arch
-        Otolaryngol Head Neck Surg (nie „JAMA Otolaryngol") i tak ma zostać.
 
-[H44] Geisinger D, Elyoseph Z, Zaltzman R, Mintz M, Gordon CR (2024). „Functional impact of bilateral
-      vestibular loss and the unexplained complaint of oscillopsia." Front Neurol 15:1365369.
-      doi:10.3389/fneur.2024.1365369. PMC11070540.
-      → RATUJE PRÓG 0.3 JAKO KLASYFIKATOR BINARNY i zarazem OBALA gain jako predyktor. n=15 z obwodowym
-        ubytkiem obustronnym: oscylopsję zgłaszało 5/15 (33%); między zgłaszającymi a niezgłaszającymi
-        NIE BYŁO różnicy gain VOR w ŻADNYM z 6 kanałów (p>0,05 sześciokrotnie), ale utrata DVA różniła
-        się wyraźnie: 4,5±0,79 wobec 2,6±0,56 linii (p<0,01). Czyli literatura odrzuca „większa utrata →
-        cięższa oscylopsja" (patrz [H41]), a WSPIERA „większa utrata → większe prawdopodobieństwo skargi" —
-        i to drugie robi silnik. Teza autorów, że oscylopsja wymaga ubytku pochodzenia OBWODOWEGO i nagłego,
-        a nie ośrodkowego i postępującego, jest w silniku NIEODWZOROWANA (granica otwarta etapu V27).
+=== OSCYLOPSJA WYMAGA OBUSTRONNOSCI + REDAKCJA ZDANIA DVA (V27, 2026-08-20) ===
+Trzy zmiany w warstwie DVA, wszystkie wymuszone przez zrodla, zadna nie dokłada parametru swobodnego.
 
-[H45] Karabulut M, Van Laer L, Hallemans A, Vereeck L, Van Rompaey V, Viechtbauer W, Melliti A,
-      van Stiphout L, Mohamad A, Perez Fornos A, Guinand N, Devocht E, van de Berg R (2023). „Chronic
-      symptoms in patients with unilateral vestibular hypofunction: systematic review and meta-analysis."
-      Front Neurol 14:1177314. doi:10.3389/fneur.2023.1177314. PMID 37483440.
-      → NAJMOCNIEJSZA PODSTAWA OSI OBUSTRONNOŚCI. Zbiorcza częstość oscylopsji w PRZEWLEKŁYM ubytku
-        JEDNOSTRONNYM: 22% (151 chorych) wobec 50–70% w ubytku obustronnym, z komentarzem autorów
-        „one vestibular organ might often be sufficient to enable gaze stabilization". Uzasadnia bramkę
-        obustronności w dva() — i zarazem wyznacza jej ŚWIADOMIE PRZYJĘTY FAŁSZ UJEMNY: tych 22% silnik
-        nie oznaczy. UWAGA: częstości oscylopsji w piśmiennictwie rozjeżdżają się z powodu definicji
-        i narzędzia (30–40% [H19] / 33% [H44] / 50–70% tu / ~80% DISCOHAT / 81% [H41]) — silnik nie
-        odtwarza ŻADNEJ z tych liczb i żadnej nie podaje jako swojej.
+(a) NUMER DLA GUINANDA - [H41] Guinand 2012 zamiast golego "(Guinand 2012)".
+  Cytat samym nazwiskiem byl NIEJEDNOZNACZNY: grupa z Maastricht wydala w 2012 dwie prace o oscylopsji,
+  a w ich wlasnym pismiennictwie ta funkcjonuje jako "Guinand et al. 2012b". Rozstrzygniete na rzecz
+  PMID 22431876 dwoma rozlacznymi dowodami: (1) SKLAD GRUP - 37 obustronnych / 11 jednostronnych /
+  57 zdrowych, czyli dokladnie trojdzielna os komentarza, podczas gdy praca konkurencyjna (PMID 22844867,
+  jakosc zycia) ma JEDNO ramie n=39 bez kontroli; (2) ta druga W OGOLE NIE MIERZY OSTROSCI - jej narzedzia
+  to SF-36, DHI, FES-I i kwestionariusz, zero logMAR. Pole kandydatow zamkniete: PubMed daje na 2012 tylko
+  cztery prace Guinanda, dwie pozostale to zaburzenia smaku po tonsillektomii i technika implantu.
+  Zapis golym nazwiskiem byl dla bramki zrodla:check NIEWIDZIALNY - to jej zadeklarowany martwy punkt.
+
+(b) REDAKCJA ZDANIA DVA - dwa niezalezne defekty tekstu, oba usuniete.
+  - "skarga definicyjna BVH" -> opis MECHANIZMU. Kryterium A [H19] Strupp 2017 czyni oscylopsje JEDNA
+    Z DWOCH alternatyw przy obowiazkowej kotwicy niestabilnosci, a sam dokument podaje 30-40% zglaszajacych.
+    Karta ma mowic, co pacjent czuje i dlaczego, a nie oglaszac rozpoznanie z innej osi czasowej.
+  - "kompensacja tego NIE naprawia (gain HF trwaly)" -> "sama kompensacja osrodkowa tego NIE naprawia
+    (gain w PASYWNYM pchnieciu pozostaje niski) - cwiczenia stabilizacji spojrzenia to osobna droga,
+    poza tym modelem." Powod: zdanie wisi na dv.abnormal, wiec padalo u PRZEWLEKLEGO SKOMPENSOWANEGO
+    UVH - czyli w populacji zalecenia 2 [H42] Hall 2022 (jakosc dowodow I, sila STRONG "should offer").
+    Klinicysta czytal "nie ma czego rehabilitowac". Teza FIZYCZNA zostaje, bo jest prawdziwa o modelu:
+    comp to scisly no-op dla dva() (zmierzone: comp 0 i comp 1 daja identyczny logMAR 0,2721, bit w bit;
+    nawet timeline(...,{recovery:true}) po 365 dniach rusza go o 0,006). Wadliwe byly DWA SLOWA:
+    "kompensacja" bez kwalifikatora (u [H42] to pojecie NADRZEDNE, obejmujace trening) i "trwaly"
+    jako twierdzenie fizjologiczne. "Pasywny" broni sie u zrodla - [H43] Schubert 2008: gain przy obrocie
+    AKTYWNYM rosnie u kazdego, przy PASYWNYM pchnieciu nie poprawia sie istotnie, a headImpulse() modeluje
+    wlasnie pchniecie bierne. Slowo "trwaly" jest mocniejsze niz dowody (Lacour 2020 - wzrost gainu takze
+    biernego przy rehabilitacji zaczetej ponizej 2 tygodni). Odnosnikow w zdaniu NIE MA: warstwa findings
+    nie cytuje z konwencji (0 z 25 wywolan).
+
+(c) OSCYLOPSJA - BRAMKA OBUSTRONNOSCI. oscillopsia = (gP<0.6 && gL<0.6) && logMARLoss>=0.3, BVP_CUT=0.6.
+  DEFEKT, KTORY TO WYWOLAL (zmierzony, nie wydedukowany): pacjent z martwym uchem prawym i zdrowym lewym
+  (gain 0,158/0,842) dawal logMAR dokladnie 0,300 i dostawal etykiete "OSCYLOPSJA (skarga definicyjna
+  BVH)", podczas gdy ten sam clinicalReadout orzekal localization "nerw GORNY po stronie prawej"
+  i verdict "peripheral" - sprzecznosc w jednym akapicie, w narzedziu dydaktycznym. Symetrycznie
+  w druga strone: bilateralLoss(0,5) (gain 0,542/0,542 - ubytek bezspornie OBUSTRONNY) flagi NIE dostawal.
+  Prog mylil sie w obie strony na brzegach.
+  OS OBJAWU TO OBUSTRONNOSC, NIE MAGNITUDA: [H45] Karabulut 2023 (metaanaliza) - 22% w przewleklym
+  ubytku jednostronnym wobec 50-70% w obustronnym, "one vestibular organ might often be sufficient to
+  enable gaze stabilization"; [H41] Guinand 2012 - 81% wobec 9%. Dziedzine progu zaweza wiec kryterium C
+  [H19] Strupp 2017 (vHIT poziomy ponizej 0,6 OBUSTRONNIE). Obustronnosc liczona z OBU gainow OSOBNO,
+  NIGDY ze sredniej - srednia myli "jedno ucho zero + jedno jedynka" z "oba po polowie".
+  CZEGO TA ZMIANA NIE ROBI: prog 0,3 ZOSTAJE i NIE pochodzi od Guinanda. Ta praca stwierdza wprost brak
+  korelacji utraty ostrosci z NASILENIEM oscylopsji (i replikuja to Hermann 2018, van Dooren 2019,
+  Anson 2018) - ale to jest twierdzenie o STOPNIOWANIU, a pole oscillopsia jest klasyfikatorem BINARNYM.
+  Twierdzenie dychotomiczne przetestowal [H44] Geisinger 2024 i POTWIERDZIL: zglaszajacy tracili
+  4,5+/-0,79 linii wobec 2,6+/-0,56 (p<0,01), przy BRAKU roznicy gain w ktorymkolwiek z 6 kanalow.
+  Czyli gain nie jest predyktorem, DVA jest. Stalych 0,6 / 0,2 / 0,3 NIE ruszono - nie ma czym
+  kalibrowac (praca platna, abstrakt nie podaje srednich logMAR per grupa).
+  EMERGENT: obustronnosc wychodzi ZA DARMO z dwuusznej estymaty predkosci w headImpulse (W_IN=1/3,
+  Ewald II z obcieciem hamowania) - martwy blednik po jednej stronie i tak zostawia drugie ucho okolo
+  0,84, bo estymate niesie ucho zdrowe; dopiero prawdziwy ubytek obustronny wpycha OBA odczyty pod 0,6.
+  Fizyka wprowadzona w N7 dla innego celu okazala sie detektorem obustronnosci. Stala 0,6 nie jest w tym
+  modelu nowa: silnik deklarowal ja DWA RAZY (komentarz przy GAIN_CUT i przy abnormal w headImpulse)
+  i ani razu nie egzekwowal - V27 domyka ja w trzecim miejscu.
+  PRODUKT UBOCZNY WART NAZWANIA: oba gainy ponizej 0,6 implikuja logMAR powyzej 0,24, wiec koniunkcja
+  z progiem 0,3 zostawia pas 0,24-0,30, w ktorym pacjent JEST obustronny, a flagi nie dostaje
+  (bilateralLoss(0,5) = 0,275). To odtwarza fakt, ze skarge zglasza tylko czesc chorych na BVP - klasy
+  pacjenta, ktorej silnik wczesniej nie umial wygenerowac.
+  WLASNOSC BEZPIECZENSTWA: nowy predykat jest SCISLYM PODZBIOREM starego (koniunkcja), wiec moze
+  wylacznie ODEBRAC etykiete, nigdy jej dodac. abnormal nietkniety, wiec zbior pacjentow, u ktorych
+  zdanie DVA w ogole pada, nie zmienia sie wcale.
+  GRANICE ZADEKLAROWANE: (1) NIEZGODNOSC BODZCA - [H41] mierzyl ostrosc podczas CHODU (ruch czynny,
+  przewidywalny, z udzialem otolitow i propriocepcji), a silnik liczy z pchniecia BIERNEGO; 0,6 i
+  0,1 logMAR/linia to PROXY DYDAKTYCZNE, nie kalibracja. (2) FALSZ UJEMNY PRZYJETY SWIADOMIE - okolo 22%
+  przewleklych UVH zglasza oscylopsje [H45], bramka ich nie oznaczy. (3) POCHODZENIE nierozrozniane:
+  pacjent osrodkowy z niskim gainem obustronnie dostaje flage tak samo (zmierzone: gain 0,112/0,112
+  przy fixationGain 0 -> flaga pada), choc [H44] sugeruje wymog pochodzenia obwodowego; odwrotnie tez
+  nie wolno twierdzic, ze przyczyny osrodkowe oscylopsji nie daja - downbeat jest jej klasyczna
+  przyczyna. (4) STRATEGIA SAKADOWA poza modelem: Ramaioli 2014 pokazal chorego czytajacego na 93%
+  mimo gain 0,59, bo mial sakady ukryte w 60% ruchow; gainApparent jest dzis w silniku PRODUKOWANY
+  I NIEKONSUMOWANY - otwarty trop na osobny etap.
+
+DOWOD ZAKRESU (dwie warstwy rozdzielone celowo, zeby bylo widac, ze poprawka merytoryczna byla DARMOWA):
+  - FIZYKA (bramka obustronnosci): 0 zmienionych, 0 dodanych, 0 usunietych kluczy. Zweryfikowane polami:
+    meanGain/logMARLoss/linesLost/abnormal/oscillopsia identyczne w 190 porownaniach (19 pacjentow x
+    2 sciezki x 5 pol). Flage zachowuja dokladnie dwaj obustronni: scenario/bvh i bilateral.
+  - TEKST (redakcja zdania): 14 zmienionych lisci - 8 zdan findings w warstwie engine i 6 ekranow dom.
+    To zmiana TEKSTU, nie zachowania; w dom['lab/skutek'] zdanie stoi po obu stronach diffu, wiec golden
+    pokazuje je jako znikniecie i pojawienie sie naraz.
+WYROCZNIA: npm run dva:check (tools/dva-check.mjs) - NOWA bramka. Przed V27 ZADEN tools/*-check.mjs
+  nie asertowal na dva/logMARLoss/oscillopsia ani na tekst zdania DVA, a sama poprawka fizyki jest dla
+  snapshot:check NIEWIDZIALNA (0 zmian w golden) - czyli bez tej bramki bylaby calkiem niepilnowana.
+  Pilnuje niezmiennika "flaga NIGDY nie pada, gdy ktorekolwiek ucho ma gain co najmniej 0,6".
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -3081,8 +3129,68 @@ AUDYT GOLDEN (dowód zakresu, nie wrażenie): 216 zmienionych liści = 190 DODAN
         (2) Mono- i dwufazowość HSN to odbicie interakcji DWÓCH stałych czasowych: „velocity storage"
         i „gaze holding". Podstawa progu HSN_VEL_MIN i funkcji hsnPhase2() (etap V26).
 
+[H41] Guinand N, Pijnenburg M, Janssen M, Kingma H (2012). „Visual acuity while walking and oscillopsia
+      severity in healthy subjects and patients with unilateral and bilateral vestibular function loss."
+      Arch Otolaryngol Head Neck Surg 138(3):301–306. doi:10.1001/archoto.2012.4. PMID 22431876.
+      → ŹRÓDŁO KOMENTARZA PRZY dva(). Trzy ramiona — 37 chorych z ubytkiem OBUSTRONNYM, 11 z JEDNOSTRONNYM,
+        57 zdrowych — czyli ta sama trójdzielna oś, co „zdrowy 0 / UVH ~2–3 linie / BVH ~4 linie". Zmienna
+        wynikowa: ostrość statyczna MINUS dynamiczna, mierzona podczas CHODU na bieżni 2, 4 i 6 km/h.
+        Oscylopsja umiarkowana-do-skrajnej u 81% chorych obustronnych wobec 9% jednostronnych — to jest
+        podstawa osi OBUSTRONNOŚCI w polu `oscillopsia` (etap V27).
+        GRANICA ŹRÓDŁA, którą trzeba cytować RAZEM z pracą: „Differences in VA did not correlate with
+        oscillopsia severity scores in patients with BV (P>0,05 for all comparisons)" — czyli utrata
+        ostrości NIE przewiduje NASILENIA skargi (replikacje: Hermann 2018 PMID 30042725, van Dooren 2019
+        PMID 31105632, Anson 2018 PMID 29599743). Dlatego tej pracy NIE WOLNO stawiać przy progu 0.3 ani
+        przy stałych 0.6/0.2 — wolno przy rzędzie wielkości utraty ostrości i przy kontraście 81%/9%.
+        UWAGA NA POMYŁKĘ: Guinand jest też szóstym autorem [H23] van Dooren 2022 (SHIMP w BVH) — to INNA
+        praca, inny rok i inny przedmiot; Janssen występuje w OBU. Czasopismo nosiło wtedy nazwę Arch
+        Otolaryngol Head Neck Surg (nie „JAMA Otolaryngol") i tak ma zostać.
 
+[H42] Hall CD, Herdman SJ, Whitney SL, Anson ER, Carender WJ, Hoppes CW, Cass SP, Christy JB, Cohen HS,
+      Fife TD, Furman JM, Shepard NT, Clendaniel RA, Dishman JD, Goebel JA, Meldrum D, Ryan C, Wallace RL,
+      Woodward NJ (2022). „Vestibular Rehabilitation for Peripheral Vestibular Hypofunction: An Updated
+      Clinical Practice Guideline From the Academy of Neurologic Physical Therapy of the American Physical
+      Therapy Association." J Neurol Phys Ther 46(2):118–177. doi:10.1097/NPT.0000000000000382. PMID 34864777.
+      → WYTYCZNE, nie kazuistyka: przegląd systematyczny 6 baz do czerwca 2020, 67 prac. Zalecenie 2 —
+        klinicysta POWINIEN zaproponować rehabilitację przedsionkową w jedno- i obustronnym ubytku
+        (jakość dowodów I, siła STRONG). Zalecenie 4 — NIE stosować sakad ani pościgu W IZOLACJI, bez ruchu
+        głowy (I, STRONG, przewaga szkody nad korzyścią), z jawną notą, że nie dotyczy to sakad
+        KOMPENSACYJNYCH po pchnięciu głową. Kompensacja jest tam pojęciem NADRZĘDNYM (adaptacja gainu
+        rezydualnego + substytucja + habituacja + kontrola postawy) — dlatego zdanie karty musi mówić
+        „sama kompensacja OŚRODKOWA", inaczej przeczy wytycznym. Powód redakcji zdania DVA w etapie V27.
 
+[H43] Schubert MC, Migliaccio AA, Clendaniel RA, Allak A, Carey JP (2008). „Mechanism of dynamic visual
+      acuity recovery with vestibular rehabilitation." Arch Phys Med Rehabil 89(3):500–507.
+      doi:10.1016/j.apmr.2007.11.010. PMID 18295629.
+      → PRACA ROZSTRZYGAJĄCA, KTÓRY gain się poprawia. n=5 chorych + 4 kontrole, średnio 5 wizyt przez
+        66 dni: DVA poprawiło się u wszystkich (średnio 51%), gain aVOR przy obrocie AKTYWNYM wzrósł
+        u każdego, a gain przy PASYWNYM pchnięciu głową NIE poprawił się istotnie. To jedyna podstawa,
+        na której zdanie karty może dalej twierdzić, że ubytek nie znika — bo headImpulse() modeluje
+        pchnięcie BIERNE. Zarazem powód, dla którego wypadło słowo „trwały": Lacour 2020 (PMID 31637477)
+        pokazał wzrost gainu także BIERNEGO, gdy rehabilitację zaczęto w oknie <2 tygodni.
+
+[H44] Geisinger D, Elyoseph Z, Zaltzman R, Mintz M, Gordon CR (2024). „Functional impact of bilateral
+      vestibular loss and the unexplained complaint of oscillopsia." Front Neurol 15:1365369.
+      doi:10.3389/fneur.2024.1365369. PMC11070540.
+      → RATUJE PRÓG 0.3 JAKO KLASYFIKATOR BINARNY i zarazem OBALA gain jako predyktor. n=15 z obwodowym
+        ubytkiem obustronnym: oscylopsję zgłaszało 5/15 (33%); między zgłaszającymi a niezgłaszającymi
+        NIE BYŁO różnicy gain VOR w ŻADNYM z 6 kanałów (p>0,05 sześciokrotnie), ale utrata DVA różniła
+        się wyraźnie: 4,5±0,79 wobec 2,6±0,56 linii (p<0,01). Czyli literatura odrzuca „większa utrata →
+        cięższa oscylopsja" (patrz [H41]), a WSPIERA „większa utrata → większe prawdopodobieństwo skargi" —
+        i to drugie robi silnik. Teza autorów, że oscylopsja wymaga ubytku pochodzenia OBWODOWEGO i nagłego,
+        a nie ośrodkowego i postępującego, jest w silniku NIEODWZOROWANA (granica otwarta etapu V27).
+
+[H45] Karabulut M, Van Laer L, Hallemans A, Vereeck L, Van Rompaey V, Viechtbauer W, Melliti A,
+      van Stiphout L, Mohamad A, Perez Fornos A, Guinand N, Devocht E, van de Berg R (2023). „Chronic
+      symptoms in patients with unilateral vestibular hypofunction: systematic review and meta-analysis."
+      Front Neurol 14:1177314. doi:10.3389/fneur.2023.1177314. PMID 37483440.
+      → NAJMOCNIEJSZA PODSTAWA OSI OBUSTRONNOŚCI. Zbiorcza częstość oscylopsji w PRZEWLEKŁYM ubytku
+        JEDNOSTRONNYM: 22% (151 chorych) wobec 50–70% w ubytku obustronnym, z komentarzem autorów
+        „one vestibular organ might often be sufficient to enable gaze stabilization". Uzasadnia bramkę
+        obustronności w dva() — i zarazem wyznacza jej ŚWIADOMIE PRZYJĘTY FAŁSZ UJEMNY: tych 22% silnik
+        nie oznaczy. UWAGA: częstości oscylopsji w piśmiennictwie rozjeżdżają się z powodu definicji
+        i narzędzia (30–40% [H19] / 33% [H44] / 50–70% tu / ~80% DISCOHAT / 81% [H41]) — silnik nie
+        odtwarza ŻADNEJ z tych liczb i żadnej nie podaje jako swojej.
 
 === CHMURA ZŁOGU — ensemble wielocząstkowy (D9/V20, 2026-08-16) ===
 ORKIESTRACJA NAD SILNIKIEM, bez fizyki (zero edycji vestibular.js): chmura = N=9 niezależnych

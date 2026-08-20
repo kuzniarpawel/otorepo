@@ -341,7 +341,7 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 113;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
+const OCZEKIWANE = 132;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 47 z rozdzialow Blokow
                             8-16 futureUI, wszystkie zielone. Nie ma tu dwoch numeracji — [H28] to
                             Newman-Toker, [H29] Cochrane 2014 (slot zwolniony przez scalenie [H17]/[H29]
                             w Etapie 1), a cytowania main przenumerowane. Byly: 54 (main) / 88 (futureUI).
@@ -351,6 +351,19 @@ const OCZEKIWANE = 113;  /* ZMIERZONE na SCALONYM drzewie (Etap 3): 54 z main + 
                             [H45] Karabulut 2023) plus odsylacze w komentarzu dva(). Uwaga:
                             "(Guinand 2012)" bylo cytatem SAMYM NAZWISKIEM, wiec bramka go NIE
                             LICZYLA - zamiana na [H41] Guinand 2012 sama z siebie podnosi licznik.
+                            2026-08-20, etap V27b (redakcja zdania DVA + rozdzial): 113 -> 132.
+                            DZIEWIETNASCIE nowych cytowan: bibliografia 43 -> 45 ([H42] Hall 2022,
+                            [H43] Schubert 2008) plus odsylacze przy zdaniu karty i rozdzial V27
+                            w engine_doc.txt i engine_doc.en.txt (lustro PL/EN symetryczne).
+                            (Historyczny zapis sprzed rozbicia na dwa commity: 107 -> 132.)
+                            NIEUZYWANE JUZ, zostawione dla ciagu: DWADZIESCIA PIEC nowych cytowan,
+                            wszystkie zielone, policzone przez --ile po wstawieniu, nie oszacowane:
+                            bibliografia urosla 40 -> 45 ([H41] Guinand 2012, [H42] Hall 2022,
+                            [H43] Schubert 2008, [H44] Geisinger 2024, [H45] Karabulut 2023), doszly
+                            odsylacze w komentarzach dva() i przy zdaniu karty, oraz rozdzial V27
+                            w engine_doc.txt i engine_doc.en.txt (lustro PL/EN symetryczne).
+                            Uwaga: "(Guinand 2012)" bylo cytatem SAMYM NAZWISKIEM, wiec bramka go
+                            NIE LICZYLA - zamiana na [H41] Guinand 2012 sama z siebie podnosi licznik.
                             2026-08-20, etap V26 (HSN): 101 -> 107. SZESC nowych cytowan, wszystkie
                             zielone i wszystkie policzone RECZNIE, nie przepisane z komunikatu:
                               +1 neuro-vor.js — "[H25] Hain 1987" (numer STAL SAM, dopisano oznaczenie

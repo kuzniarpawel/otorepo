@@ -2940,49 +2940,97 @@ GOLDEN AUDIT (scope proof, not an impression): 216 changed leaves = 190 ADDED fi
   that display those sentences. ZERO changes to spv0/asym/tau/beatEar/dir/present/charge/cycles/peakVel
   or to verdict and localization — verified field by field across all 19 patients.
 
-[H41] Guinand N, Pijnenburg M, Janssen M, Kingma H (2012). "Visual acuity while walking and oscillopsia
-      severity in healthy subjects and patients with unilateral and bilateral vestibular function loss."
-      Arch Otolaryngol Head Neck Surg 138(3):301-306. doi:10.1001/archoto.2012.4. PMID 22431876.
-      -> THE SOURCE BEHIND THE COMMENT AT dva(). Three arms — 37 patients with a BILATERAL deficit,
-        11 with a UNILATERAL one, 57 healthy — i.e. the same three-tier axis as "healthy 0 / UVH ~2-3
-        lines / BVH ~4 lines". Outcome measure: static MINUS dynamic acuity, measured WHILE WALKING on
-        a treadmill at 2, 4 and 6 km/h. Moderate-to-severe oscillopsia in 81% of bilateral patients versus
-        9% of unilateral ones — this is the basis for the BILATERALITY axis in the `oscillopsia` field
-        (stage V27).
-        SOURCE LIMIT, to be quoted TOGETHER with the paper: "Differences in VA did not correlate with
-        oscillopsia severity scores in patients with BV (P>.05 for all comparisons)" — acuity loss does
-        NOT predict the SEVERITY of the complaint (replications: Hermann 2018 PMID 30042725, van Dooren
-        2019 PMID 31105632, Anson 2018 PMID 29599743). This paper must therefore NEVER be placed beside
-        the 0.3 threshold or the 0.6/0.2 constants — only beside the order of magnitude of acuity loss
-        and beside the 81%/9% contrast.
-        BEWARE A MIX-UP: Guinand is also the sixth author of [H23] van Dooren 2022 (SHIMP in BVH) — a
-        DIFFERENT paper, year and subject; Janssen appears in BOTH. The journal was then named Arch
-        Otolaryngol Head Neck Surg (not "JAMA Otolaryngol") and must stay so.
 
-[H44] Geisinger D, Elyoseph Z, Zaltzman R, Mintz M, Gordon CR (2024). "Functional impact of bilateral
-      vestibular loss and the unexplained complaint of oscillopsia." Front Neurol 15:1365369.
-      doi:10.3389/fneur.2024.1365369. PMC11070540.
-      -> RESCUES THE 0.3 THRESHOLD AS A BINARY CLASSIFIER while REFUTING gain as a predictor. n=15 with a
-        peripheral bilateral deficit: 5/15 (33%) reported oscillopsia; between reporters and non-reporters
-        there was NO difference in VOR gain in ANY of the 6 canals (p>0.05 six times), yet DVA loss differed clearly:
-        4.5±0.79 versus 2.6±0.56 lines (p<0.01). So the literature rejects "greater loss -> more severe
-        oscillopsia" (see [H41]) while SUPPORTING "greater loss -> higher probability of the complaint" —
-        and the latter is what the engine does. The authors' claim that oscillopsia requires a deficit of
-        PERIPHERAL and sudden rather than central and progressive origin is NOT modelled here (an open
-        limit of stage V27).
+=== OSCILLOPSIA REQUIRES BILATERALITY + REWRITING THE DVA SENTENCE (V27, 2026-08-20) ===
+Three changes in the DVA layer, all forced by the sources, none of which adds a free parameter.
 
-[H45] Karabulut M, Van Laer L, Hallemans A, Vereeck L, Van Rompaey V, Viechtbauer W, Melliti A,
-      van Stiphout L, Mohamad A, Perez Fornos A, Guinand N, Devocht E, van de Berg R (2023). "Chronic
-      symptoms in patients with unilateral vestibular hypofunction: systematic review and meta-analysis."
-      Front Neurol 14:1177314. doi:10.3389/fneur.2023.1177314. PMID 37483440.
-      -> THE STRONGEST BASIS FOR THE BILATERALITY AXIS. Pooled prevalence of oscillopsia in CHRONIC
-        UNILATERAL hypofunction: 22% (151 patients) versus 50-70% in bilateral loss, with the authors'
-        comment that "one vestibular organ might often be sufficient to enable gaze stabilization". This
-        justifies the bilaterality gate in dva() — and simultaneously defines its DELIBERATELY ACCEPTED
-        FALSE NEGATIVE: those 22% will not be flagged. NOTE: reported oscillopsia frequencies diverge
-        across the literature because of definitions and instruments (30-40% [H19] / 33% [H44] / 50-70%
-        here / ~80% DISCOHAT / 81% [H41]) — the engine reproduces NONE of these numbers and claims none
-        as its own.
+(a) A NUMBER FOR GUINAND - [H41] Guinand 2012 instead of a bare "(Guinand 2012)".
+  A bare-name citation was AMBIGUOUS: the Maastricht group published two 2012 papers on oscillopsia, and
+  in their own literature this one is referred to as "Guinand et al. 2012b". Settled in favour of
+  PMID 22431876 by two disjoint proofs: (1) GROUP COMPOSITION - 37 bilateral / 11 unilateral / 57 healthy,
+  exactly the three-tier axis of the comment, whereas the competing paper (PMID 22844867, quality of life)
+  has ONE arm of n=39 with no controls; (2) that second paper DOES NOT MEASURE ACUITY AT ALL - its
+  instruments are SF-36, DHI, FES-I and a questionnaire, zero logMAR. The candidate field is closed:
+  PubMed lists only four Guinand papers for 2012, the other two being taste disorders after tonsillectomy
+  and an implant surgical technique. A bare-name citation was INVISIBLE to the zrodla:check gate - that is
+  its declared blind spot.
+
+(b) REWRITING THE DVA SENTENCE - two independent textual defects, both removed.
+  - "the defining BVH complaint" -> a description of the MECHANISM. Criterion A of [H19] Strupp 2017 makes
+    oscillopsia ONE OF TWO alternatives alongside the mandatory unsteadiness anchor, and the document
+    itself reports 30-40% of patients complaining of it. The card should say what the patient feels and
+    why, not announce a diagnosis from a different time axis.
+  - "compensation does NOT repair this (HF gain is permanent)" -> "central compensation ALONE does not
+    repair this (gain in the PASSIVE impulse stays low) - gaze-stabilisation exercises are a separate
+    route, outside this model." Reason: the sentence hangs on dv.abnormal, so it fired for a CHRONIC
+    COMPENSATED UVH - i.e. in the population of recommendation 2 in [H42] Hall 2022 (evidence quality I,
+    strength STRONG "should offer"). A clinician read it as "there is nothing to rehabilitate". The
+    PHYSICAL claim stays, because it is true of the model: comp is a strict no-op for dva() (measured:
+    comp 0 and comp 1 give an identical logMAR of 0.2721, bit for bit; even timeline(...,{recovery:true})
+    after 365 days moves it by 0.006). Two WORDS were at fault: "compensation" without a qualifier (in
+    [H42] it is an UMBRELLA term that includes training) and "permanent" as a physiological claim.
+    "Passive" is defensible at the source - [H43] Schubert 2008: gain during ACTIVE rotation rose in every
+    patient, while during the PASSIVE impulse it did not improve significantly, and headImpulse() models
+    exactly the passive impulse. The word "permanent" was stronger than the evidence (Lacour 2020 - a rise
+    in passive gain too when rehabilitation began within 2 weeks). There are NO references in the sentence:
+    by convention the findings layer does not cite (0 of 25 calls).
+
+(c) OSCILLOPSIA - A BILATERALITY GATE. oscillopsia = (gP<0.6 && gL<0.6) && logMARLoss>=0.3, BVP_CUT=0.6.
+  THE DEFECT THAT PROMPTED IT (measured, not deduced): a patient with a dead right ear and a healthy left
+  one (gain 0.158/0.842) produced a logMAR of exactly 0.300 and received the label "OSCILLOPSIA (the
+  defining BVH complaint)", while the same clinicalReadout reported localization "SUPERIOR nerve on the
+  right" and verdict "peripheral" - a contradiction inside one paragraph, in a teaching tool. Symmetrically
+  in the other direction: bilateralLoss(0.5) (gain 0.542/0.542 - an unambiguously BILATERAL deficit) got no
+  flag at all. The threshold erred in both directions at the edges.
+  THE AXIS OF THE SYMPTOM IS BILATERALITY, NOT MAGNITUDE: [H45] Karabulut 2023 (meta-analysis) - 22% in
+  chronic unilateral hypofunction versus 50-70% in bilateral loss, "one vestibular organ might often be
+  sufficient to enable gaze stabilization"; [H41] Guinand 2012 - 81% versus 9%. The domain of the threshold
+  is therefore narrowed by criterion C of [H19] Strupp 2017 (horizontal vHIT below 0.6 BILATERALLY).
+  Bilaterality is computed from BOTH gains SEPARATELY, NEVER from the mean - a mean confuses "one ear at
+  zero plus one at unity" with "both at half".
+  WHAT THIS CHANGE DOES NOT DO: the 0.3 threshold STAYS and does NOT come from Guinand. That paper states
+  explicitly that acuity loss does not correlate with the SEVERITY of oscillopsia (replicated by Hermann
+  2018, van Dooren 2019, Anson 2018) - but that is a claim about GRADING, whereas the oscillopsia field is
+  a BINARY classifier. The dichotomous claim was tested by [H44] Geisinger 2024 and CONFIRMED: reporters
+  lost 4.5+/-0.79 lines versus 2.6+/-0.56 (p<0.01), with NO difference in gain in any of the 6 canals.
+  So gain is not a predictor, DVA is. The constants 0.6 / 0.2 / 0.3 were NOT touched - there is nothing to
+  calibrate them with (the paper is paywalled and the abstract gives no per-group logMAR means).
+  EMERGENT: bilaterality comes FOR FREE out of the binaural velocity estimate in headImpulse (W_IN=1/3,
+  Ewald II with inhibitory clipping) - a dead labyrinth on one side still leaves the other ear at about
+  0.84, because the healthy ear carries the estimate; only a genuinely bilateral deficit pushes BOTH
+  readings below 0.6. Physics introduced in N7 for another purpose turns out to be a bilaterality detector.
+  The constant 0.6 is not new in this model: the engine declared it TWICE (in the comment at GAIN_CUT and
+  at abnormal in headImpulse) and never enforced it - V27 closes it in a third place.
+  A BY-PRODUCT WORTH NAMING: both gains below 0.6 imply a logMAR above 0.24, so the conjunction with the
+  0.3 threshold leaves a band of 0.24-0.30 in which the patient IS bilateral yet receives no flag
+  (bilateralLoss(0.5) = 0.275). This reproduces the fact that only a fraction of BVP patients complain -
+  a class of patient the engine previously could not generate.
+  A SAFETY PROPERTY: the new predicate is a STRICT SUBSET of the old one (a conjunction), so it can only
+  REMOVE a label, never add one. abnormal is untouched, so the set of patients for whom the DVA sentence
+  appears at all does not change.
+  DECLARED LIMITS: (1) STIMULUS MISMATCH - [H41] measured acuity during WALKING (active, predictable
+  movement involving otoliths and proprioception), while the engine computes from a PASSIVE impulse; 0.6
+  and 0.1 logMAR/line are TEACHING PROXIES, not a calibration. (2) A DELIBERATELY ACCEPTED FALSE NEGATIVE -
+  about 22% of chronic UVH patients report oscillopsia [H45] and the gate will not flag them. (3) ORIGIN is
+  not distinguished: a central patient with a low bilateral gain is flagged just the same (measured: gain
+  0.112/0.112 with fixationGain 0 -> the flag fires), although [H44] suggests a requirement of peripheral
+  origin; conversely one must not claim that central causes do not produce oscillopsia - downbeat nystagmus
+  is a classic cause. (4) SACCADIC STRATEGY is outside the model: Ramaioli 2014 showed a patient reading at
+  93% despite a gain of 0.59, because covert saccades occurred in 60% of movements; gainApparent is today
+  PRODUCED AND UNCONSUMED in the engine - an open lead for a separate stage.
+
+SCOPE PROOF (two layers deliberately separated, to make visible that the substantive fix was FREE):
+  - PHYSICS (the bilaterality gate): 0 changed, 0 added, 0 removed keys. Verified field by field:
+    meanGain/logMARLoss/linesLost/abnormal/oscillopsia identical across 190 comparisons (19 patients x
+    2 paths x 5 fields). Exactly two bilateral patients keep the flag: scenario/bvh and bilateral.
+  - TEXT (the sentence rewrite): 14 changed leaves - 8 findings sentences in the engine layer and 6 dom
+    screens. This is a change of TEXT, not of behaviour; in dom['lab/skutek'] the sentence stands on both
+    sides of the diff, so the golden shows it as a disappearance and an appearance at once.
+ORACLE: npm run dva:check (tools/dva-check.mjs) - a NEW gate. Before V27 NO tools/*-check.mjs asserted on
+  dva/logMARLoss/oscillopsia or on the text of the DVA sentence, and the physics fix itself is INVISIBLE to
+  snapshot:check (0 changes in the golden) - so without this gate it would be entirely unguarded. It holds
+  the invariant "the flag NEVER fires when either ear has a gain of at least 0.6".
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -3276,8 +3324,73 @@ GOLDEN AUDIT (scope proof, not an impression): 216 changed leaves = 190 ADDED fi
         interaction of TWO time constants: "velocity storage" and "gaze holding". The basis for the
         HSN_VEL_MIN threshold and the hsnPhase2() function (stage V26).
 
+[H41] Guinand N, Pijnenburg M, Janssen M, Kingma H (2012). "Visual acuity while walking and oscillopsia
+      severity in healthy subjects and patients with unilateral and bilateral vestibular function loss."
+      Arch Otolaryngol Head Neck Surg 138(3):301-306. doi:10.1001/archoto.2012.4. PMID 22431876.
+      -> THE SOURCE BEHIND THE COMMENT AT dva(). Three arms — 37 patients with a BILATERAL deficit,
+        11 with a UNILATERAL one, 57 healthy — i.e. the same three-tier axis as "healthy 0 / UVH ~2-3
+        lines / BVH ~4 lines". Outcome measure: static MINUS dynamic acuity, measured WHILE WALKING on
+        a treadmill at 2, 4 and 6 km/h. Moderate-to-severe oscillopsia in 81% of bilateral patients versus
+        9% of unilateral ones — this is the basis for the BILATERALITY axis in the `oscillopsia` field
+        (stage V27).
+        SOURCE LIMIT, to be quoted TOGETHER with the paper: "Differences in VA did not correlate with
+        oscillopsia severity scores in patients with BV (P>.05 for all comparisons)" — acuity loss does
+        NOT predict the SEVERITY of the complaint (replications: Hermann 2018 PMID 30042725, van Dooren
+        2019 PMID 31105632, Anson 2018 PMID 29599743). This paper must therefore NEVER be placed beside
+        the 0.3 threshold or the 0.6/0.2 constants — only beside the order of magnitude of acuity loss
+        and beside the 81%/9% contrast.
+        BEWARE A MIX-UP: Guinand is also the sixth author of [H23] van Dooren 2022 (SHIMP in BVH) — a
+        DIFFERENT paper, year and subject; Janssen appears in BOTH. The journal was then named Arch
+        Otolaryngol Head Neck Surg (not "JAMA Otolaryngol") and must stay so.
 
+[H42] Hall CD, Herdman SJ, Whitney SL, Anson ER, Carender WJ, Hoppes CW, Cass SP, Christy JB, Cohen HS,
+      Fife TD, Furman JM, Shepard NT, Clendaniel RA, Dishman JD, Goebel JA, Meldrum D, Ryan C, Wallace RL,
+      Woodward NJ (2022). "Vestibular Rehabilitation for Peripheral Vestibular Hypofunction: An Updated
+      Clinical Practice Guideline From the Academy of Neurologic Physical Therapy of the American Physical
+      Therapy Association." J Neurol Phys Ther 46(2):118-177. doi:10.1097/NPT.0000000000000382. PMID 34864777.
+      -> A GUIDELINE, not a case series: a systematic review of 6 databases through June 2020, 67 papers.
+        Recommendation 2 — clinicians SHOULD offer vestibular rehabilitation in unilateral and bilateral
+        hypofunction (evidence quality I, strength STRONG). Recommendation 4 — do NOT use saccades or
+        pursuit IN ISOLATION, without head movement (I, STRONG, harm outweighs benefit), with an explicit
+        note that this does not concern COMPENSATORY saccades after a head impulse. Compensation is an
+        UMBRELLA term there (adaptation of residual gain + substitution + habituation + postural control) —
+        which is why the card must say "central compensation ALONE", otherwise it contradicts the guideline.
+        The reason for rewriting the DVA sentence in stage V27.
 
+[H43] Schubert MC, Migliaccio AA, Clendaniel RA, Allak A, Carey JP (2008). "Mechanism of dynamic visual
+      acuity recovery with vestibular rehabilitation." Arch Phys Med Rehabil 89(3):500-507.
+      doi:10.1016/j.apmr.2007.11.010. PMID 18295629.
+      -> THE PAPER THAT SETTLES WHICH gain improves. n=5 patients + 4 controls, on average 5 visits over
+        66 days: DVA improved in everyone (mean 51%), aVOR gain during ACTIVE head rotation rose in every
+        patient, while gain during the PASSIVE head thrust did NOT improve significantly. This is the only
+        ground on which the card may still claim the deficit does not vanish — because headImpulse() models
+        the PASSIVE impulse. It is equally the reason the word "permanent" was dropped: Lacour 2020
+        (PMID 31637477) showed a rise in PASSIVE gain too when rehabilitation began within 2 weeks.
+
+[H44] Geisinger D, Elyoseph Z, Zaltzman R, Mintz M, Gordon CR (2024). "Functional impact of bilateral
+      vestibular loss and the unexplained complaint of oscillopsia." Front Neurol 15:1365369.
+      doi:10.3389/fneur.2024.1365369. PMC11070540.
+      -> RESCUES THE 0.3 THRESHOLD AS A BINARY CLASSIFIER while REFUTING gain as a predictor. n=15 with a
+        peripheral bilateral deficit: 5/15 (33%) reported oscillopsia; between reporters and non-reporters
+        there was NO difference in VOR gain in ANY of the 6 canals (p>0.05 six times), yet DVA loss differed clearly:
+        4.5±0.79 versus 2.6±0.56 lines (p<0.01). So the literature rejects "greater loss -> more severe
+        oscillopsia" (see [H41]) while SUPPORTING "greater loss -> higher probability of the complaint" —
+        and the latter is what the engine does. The authors' claim that oscillopsia requires a deficit of
+        PERIPHERAL and sudden rather than central and progressive origin is NOT modelled here (an open
+        limit of stage V27).
+
+[H45] Karabulut M, Van Laer L, Hallemans A, Vereeck L, Van Rompaey V, Viechtbauer W, Melliti A,
+      van Stiphout L, Mohamad A, Perez Fornos A, Guinand N, Devocht E, van de Berg R (2023). "Chronic
+      symptoms in patients with unilateral vestibular hypofunction: systematic review and meta-analysis."
+      Front Neurol 14:1177314. doi:10.3389/fneur.2023.1177314. PMID 37483440.
+      -> THE STRONGEST BASIS FOR THE BILATERALITY AXIS. Pooled prevalence of oscillopsia in CHRONIC
+        UNILATERAL hypofunction: 22% (151 patients) versus 50-70% in bilateral loss, with the authors'
+        comment that "one vestibular organ might often be sufficient to enable gaze stabilization". This
+        justifies the bilaterality gate in dva() — and simultaneously defines its DELIBERATELY ACCEPTED
+        FALSE NEGATIVE: those 22% will not be flagged. NOTE: reported oscillopsia frequencies diverge
+        across the literature because of definitions and instruments (30-40% [H19] / 33% [H44] / 50-70%
+        here / ~80% DISCOHAT / 81% [H41]) — the engine reproduces NONE of these numbers and claims none
+        as its own.
 
 === DEBRIS CLOUD — the multi-particle ensemble (D9/V20, 2026-08-16) ===
 ORCHESTRATION ABOVE THE ENGINE, no physics (zero edits to vestibular.js): the cloud = N=9

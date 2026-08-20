@@ -1262,7 +1262,18 @@ export const NeuroVOR = (()=>{
       centralSigns.push(tr("pościg sakadyczny (kłaczek/móżdżek)","saccadic pursuit (flocculus/cerebellum)"));
     }
     if(dv.abnormal){
-      findings.push(tr(`DVA: utrata ~${dv.linesLost} linii ostrości przy ruchu głowy${dv.oscillopsia?" — OSCYLOPSJA (skarga definicyjna BVH)":""}; kompensacja tego NIE naprawia (gain HF trwały).`,`DVA: loss of ~${dv.linesLost} acuity lines with head movement${dv.oscillopsia?" — OSCILLOPSIA (the defining BVH complaint)":""}; compensation does NOT repair this (HF gain is permanent).`));
+      // V27: dwie poprawki tekstu, obie wymuszone przez źródła. (1) „skarga definicyjna BVH" znikła —
+      // kryterium A [H19] Strupp 2017 czyni oscylopsję JEDNĄ Z DWÓCH alternatyw przy obowiązkowej
+      // kotwicy niestabilności, a sam dokument podaje 30–40% zgłaszających; karta ma opisywać
+      // MECHANIZM, nie ogłaszać rozpoznanie. (2) „kompensacja tego NIE naprawia (gain HF trwały)"
+      // padało u PRZEWLEKŁEGO SKOMPENSOWANEGO UVH, czyli w populacji zalecenia 2 [H42] Hall 2022
+      // (jakość dowodów I, siła STRONG „should offer") — czytane jako „nie ma czego rehabilitować".
+      // Teza fizyczna jest prawdziwa O MODELU (comp to ścisły no-op dla dva()), więc zostaje, ale
+      // z dwoma kwalifikatorami: KTÓRA kompensacja i W JAKIM pchnięciu. Słowo „trwały" wypadło —
+      // [H43] Schubert 2008 broni tylko tego, że gain w pchnięciu BIERNYM nie poprawia się istotnie
+      // (przy AKTYWNYM obrocie rośnie u każdego), a Lacour 2020 pokazał wzrost także biernego
+      // w oknie <2 tyg. Odnośników w zdaniu NIE MA — warstwa `findings` nie cytuje z konwencji.
+      findings.push(tr(`DVA: utrata ~${dv.linesLost} linii ostrości przy ruchu głowy${dv.oscillopsia?" — OSCYLOPSJA (obraz ucieka przy ruchu głowy: oba błędniki bez rezerwy)":""}; sama kompensacja ośrodkowa tego NIE naprawia (gain w PASYWNYM pchnięciu pozostaje niski) — ćwiczenia stabilizacji spojrzenia to osobna droga, poza tym modelem.`,`DVA: loss of ~${dv.linesLost} acuity lines with head movement${dv.oscillopsia?" — OSCILLOPSIA (the image slips with head movement: neither labyrinth has reserve)":""}; central compensation ALONE does not repair this (gain in the PASSIVE impulse stays low) — gaze-stabilisation exercises are a separate route, outside this model.`));
     }
 
     // lokalizacja (z wzorca vHIT + kaloryki). Nerw GÓRNY (ucho E) = kanał poziomy-E + przedni-E; przedni-P leży

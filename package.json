@@ -16,6 +16,7 @@
     "view:check": "node tools/view-check.mjs",
     "zrodla:check": "node tools/zrodla-check.mjs",
     "hsn:check": "node tools/hsn-check.mjs",
+    "dva:check": "node tools/dva-check.mjs",
     "copy:web": "node -e \"const fs=require('fs');fs.rmSync('www',{recursive:true,force:true});fs.cpSync('dist','www',{recursive:true})\"",
     "sync": "npm run build && npm run copy:web && cap sync",
     "open": "cap open android",
