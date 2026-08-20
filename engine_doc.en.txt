@@ -2783,6 +2783,12 @@ VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Sc
        (its ABSENCE = a deficit; the rule inverted vs HIMP), cutoff gain<0.5, direction +q/qn (opposite to the
        catch-up). Plus gainApparent in headImpulse(): min(1.1, gain + 0.6·covertFrac·deficit) — covert saccades
        INFLATE the HIMP gain; a compensated UVH: HIMP 0.74 (pseudo-normal) vs SHIMP 0.35 (the truth).
+       NOTE — THE NUMBERS IN THIS ENTRY ARE HISTORICAL (the state after N4): the CONTAM coefficient was
+       RECALIBRATED 0.6 → 0.75 in stage N7 (below, "A COORDINATED recalibration"), because at 0.6 the
+       apparent HIMP gain did not rise above the 0.8 threshold, so no pseudo-normal appeared. After the
+       recalibration the same patient gives HIMP 0.81 versus SHIMP 0.28. THE CODE HAS 0.75 (neuro-vor.js,
+       the CONTAM constant) — the 0.6 here is kept deliberately, as a trace of the stage, not as a
+       description of the current state.
      • smoothPursuit(p,{targetVel=20}) — pursuit as the SECOND HALF of the flocculus: pursuitGain by default derived
        from fixationGain/FIX_HEALTHY(0.65) → "saccadic pursuit ≡ failure of fixation suppression" FOLLOWS from a
        single parameter (a didactic gem); p.pursuitGain (null=derived) for explicit dissociations. saccadic when

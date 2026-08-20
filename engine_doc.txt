@@ -2611,6 +2611,11 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
        (jej BRAK = ubytek; reguła odwrotna do HIMP), cięcie gain<0.5, kierunek +q/qn (przeciwny do
        catch-upu). Plus gainApparent w headImpulse(): min(1.1, gain + 0.6·covertFrac·deficit) — sakady
        ukryte ZAWYŻAJĄ gain HIMP; skompensowany UVH: HIMP 0.74 (pseudo-norma) vs SHIMP 0.35 (prawda).
+       UWAGA — LICZBY TEGO WPISU SĄ HISTORYCZNE (stan po N4): współczynnik CONTAM został REKALIBROWANY
+       0.6 → 0.75 w etapie N7 (niżej, „Rekalibracja SKOORDYNOWANA"), bo przy 0.6 pozorny gain HIMP nie
+       windował się nad próg 0.8, czyli pseudo-norma nie powstawała. Po rekalibracji ten sam pacjent
+       daje HIMP 0.81 wobec SHIMP 0.28. KOD MA 0.75 (neuro-vor.js, stała CONTAM) — zapis 0.6 zostaje tu
+       świadomie, jako ślad etapu, a nie jako opis stanu bieżącego.
      • smoothPursuit(p,{targetVel=20}) — pościg jako DRUGA POŁOWA kłaczka: pursuitGain domyślnie pochodna
        fixationGain/FIX_HEALTHY(0.65) → „pościg sakadyczny ≡ brak supresji fiksacją" WYNIKA z jednego
        parametru (perła dydaktyczna); p.pursuitGain (null=pochodna) na jawne dysocjacje. saccadic gdy
