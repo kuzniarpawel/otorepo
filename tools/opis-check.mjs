@@ -31,7 +31,9 @@ const eq = (tag, a, b) => T(tag, JSON.stringify(a) === JSON.stringify(b), `oczek
 
 /* Przypadek odniesienia — pełny przebieg: wywiad, opisana próba, interpretacja, manewr, kontrola. */
 const PELNY = () => ({
-  triage: { przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] },
+  // D-CZAS (2026-08-21): doszlo piate pytanie kwalifikacji (czas od poczatku) — przypadek
+  // odniesienia dostaje odpowiedz, zeby byl KOMPLETNY tak jak przed zmiana.
+  triage: { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', flagi: ['brak'] },
   testKey: 'dix', canal: 'posterior', side: 'P', sideZrodlo: 'wybrany',
   variant: 'canalo', variantZrodlo: 'wyprowadzony',
   dixObs: 'post', dixRep: 0, diagCentral: false, size: 'medium', trybCzasu: 'staly', decisionSeq: 4,
@@ -535,7 +537,12 @@ const TXT = (s) => tekst(raport(s, D(s)));
 }
 
 /* ═══════════ WYNIK ═══════════ */
-const OCZEKIWANE = 355;   // +2: dwie fazy proby lying-down (polozenie/siad) weszly do enumeracji opisu
+/* D-CZAS (2026-08-21): 355 -> 357. Sekcja opisu „Wywiad i kwalifikacja" wylicza JEDEN WIERSZ NA
+   AKTYWNE PYTANIE kwalifikacji (opis-model.js, petla po `aktywne`), a doszlo piate pytanie —
+   o czas od poczatku objawow. Przyrost jest wiec MECHANICZNY i wprost proporcjonalny: nowy wiersz
+   w generowanym opisie, sprawdzany w dwoch miejscach. Zmierzone, nie oszacowane: licznik pokazywal
+   357 juz PRZED poprawieniem przypadku odniesienia w tym pliku i po niej sie nie zmienil. */
+const OCZEKIWANE = 357;   // +2: dwie fazy proby lying-down (polozenie/siad) weszly do enumeracji opisu
 if (ok !== OCZEKIWANE) bledy.push(`LICZBA PRZYPADKÓW: ${ok}, oczekiwano ${OCZEKIWANE} — dopisz albo popraw zakres, ale nie po cichu`);
 if (bledy.length) { console.error(`✗ opis:check — ${bledy.length} błędów (${ok} przeszło)`); for (const b of bledy) console.error('  ' + b); process.exit(1); }
 console.log(`✓ opis:check — ${ok} przypadków`);

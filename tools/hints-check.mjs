@@ -39,14 +39,21 @@ const D = hintsDeps();
 const TRIAGE = {
   pusty: {},
   niepelny: { przebieg: 'ciagle' },                                        // bez oczopląsu i bez flag
-  avs: { przebieg: 'ciagle', oczoplas: 'obecny', flagi: ['brak'] },
-  pseudoAVS: { przebieg: 'ciagle', oczoplas: 'brak', flagi: ['brak'] },
-  oczoplasNieoceniony: { przebieg: 'ciagle', oczoplas: 'nieoceniony', flagi: ['brak'] },
-  tEVS: { przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] },
-  sEVS: { przebieg: 'napadowe', wyzwalacz: 'samoistny', flagi: ['brak'] },
+  /* D-CZAS (2026-08-21): doszlo piate pytanie kwalifikacji — o CZAS OD POCZATKU objawow — wiec
+     dawne komplety odpowiedzi PRZESTALY byc kompletne, a kwalifikacja HINTS czyta kompletnosc
+     triage'u. Bramka zlapala to OSMIOMA bledami naraz i mialy racje: to nie jest zmiana kosmetyczna,
+     tylko realne nastepstwo dolozenia pytania wymaganego.
+     Fikstury dostaja odpowiedz tam, gdzie pytanie JEST zadawane (przebieg ustalony i rozny od
+     "nieznane"). Trzy zostaja bez niej CELOWO: "pusty" i "niepelny" maja byc niekompletne z
+     zalozenia, a "nieznany" tego pytania w ogole nie dostaje. */
+  avs: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'obecny', flagi: ['brak'] },
+  pseudoAVS: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'brak', flagi: ['brak'] },
+  oczoplasNieoceniony: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'nieoceniony', flagi: ['brak'] },
+  tEVS: { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', flagi: ['brak'] },
+  sEVS: { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'samoistny', flagi: ['brak'] },
   nieznany: { przebieg: 'nieznane', flagi: ['brak'] },
-  czerwonaAtaksja: { przebieg: 'ciagle', oczoplas: 'obecny', flagi: ['ataksja'] },
-  czerwonaPiecD: { przebieg: 'ciagle', oczoplas: 'obecny', flagi: ['pieciod'] },
+  czerwonaAtaksja: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'obecny', flagi: ['ataksja'] },
+  czerwonaPiecD: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'obecny', flagi: ['pieciod'] },
 };
 const TRIAGE_IDS = Object.keys(TRIAGE);
 const PRZESZK = [null, 'tak', 'nie'];

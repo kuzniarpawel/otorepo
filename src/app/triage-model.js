@@ -20,6 +20,16 @@
  * Czerwone flagi biją wszystko: „każda ataksja chodu = OŚRODEK", 5 D (dyplopia, dyzartria,
  * dysfagia, dysfonia, dysmetria). GRACE-3 dotyczy zawrotów ostrych, poniżej 2 tygodni.
  *
+ * ═══ OŚ CZASU SPROWADZONA DO ICVD (D-CZAS, 2026-08-21) ═══
+ * Nazwy t-EVS / s-EVS / pseudo-AVS pochodzą z GRACE-3 i NIE SĄ terminami ICVD — zmierzone:
+ * w korpusie 19 dokumentów konsensusu ciągi „t-EVS", „s-EVS", „pseudo-AVS" i „GRACE" mają
+ * PO ZERO trafień. Same PASMA CZASOWE mają natomiast źródło ICVD i teraz są z nim zgodne —
+ * [H61] Kaski 2025 definiuje TRZY zespoły kardynalne: AVS (jednofazowy, DNI DO TYGODNI),
+ * EVS (nawracające napady, każdy SEKUNDY DO DNI) i CVS (objawy CO NAJMNIEJ 3 MIESIĄCE).
+ * CVS ma od tego etapu WŁASNY węzeł; wcześniej nie istniał, a chory przewlekły wpadał do
+ * pseudo-AVS. Dodano też pytanie o CZAS OD POCZĄTKU — próg „poniżej 2 tygodni" stał dotąd
+ * wyłącznie w tym komentarzu, więc nie był ani egzekwowany, ani pokazywany klinicyście.
+ *
  * ═══ MODUŁ JEST CZYSTY ═══
  * ZERO importów, zero DOM, odpowiedzi wchodzą argumentem — jak flow-model.js. Dzięki temu
  * tools/triage-check.mjs sprawdza go w gołym Node na PEŁNYM iloczynie kartezjańskim odpowiedzi,
@@ -38,13 +48,46 @@ export const TRIAGE_QUESTIONS = [
     pl: 'Jak przebiegają zawroty?', en: 'What is the time course of the dizziness?',
     plHint: 'czas trwania decyduje o tym, które badanie ma sens',
     enHint: 'the time course decides which examination makes sense',
+    /* D-CZAS (2026-08-21): pasma czasowe sprowadzone do OSI ICVD. [H61] Kaski 2025 definiuje trzy
+       zespoły kardynalne jednym zdaniem: AVS = choroby JEDNOFAZOWE o ostrym początku trwające DNI
+       DO TYGODNI; EVS = nawracające napady, każdy trwający SEKUNDY DO DNI; CVS = objawy utrzymujące
+       się CO NAJMNIEJ 3 MIESIĄCE.
+       CO BYŁO ŹLE, ZMIERZONE triageResult() przed zmianą: opcja napadowa mówiła „sekundy do MINUT",
+       czyli ucinała EVS o kilka rzędów wielkości. Chory z napadami GODZINNYMI — a więc migrena
+       przedsionkowa (5 min – 72 h) i choroba Ménière'a (20 min – 12/24 h), dwie najczęstsze
+       jednostki tej grupy — nie miał opcji zgodnej z prawdą: „ciągle, BEZ PRZERW" jest u niego
+       fałszem. Wybierając ją, trafiał do `pseudoAVS`, a węzeł `sEVS`, który go opisuje i renderuje
+       kartę kryteriów, był osiągalny WYŁĄCZNIE po odpowiedzi niezgodnej z prawdą.
+       CVS NIE MIAŁ ŻADNEJ OPCJI — trzeci zespół kardynalny ICVD nie istniał w kwestionariuszu,
+       a chory przewlekły lądował w `pseudoAVS` i dostawał radę „szukaj poza układem przedsionkowym",
+       podczas gdy PPPD, obustronna westybulopatia i presbywestybulopatia są zdefiniowane
+       dokładnie tam. */
     opcje: [
-      { v: 'napadowe', pl: 'Napadowo — sekundy do minut, między napadami wyraźnie lepiej',
-        en: 'Episodic — seconds to minutes, clearly better between attacks' },
-      { v: 'ciagle', pl: 'Ciągle — od godzin lub dni, bez przerw',
-        en: 'Continuous — for hours or days, without breaks' },
+      { v: 'napadowe', pl: 'Napadowo — napady od sekund do dni, między napadami wyraźnie lepiej',
+        en: 'Episodic — attacks lasting seconds to days, clearly better between attacks' },
+      { v: 'ciagle', pl: 'Ciągle — bez przerw od początku, co najmniej dobę (dni do tygodni)',
+        en: 'Continuous — without breaks since onset, at least 24 h (days to weeks)' },
+      { v: 'przewlekle', pl: 'Przewlekle — objawy utrzymują się od 3 miesięcy lub dłużej',
+        en: 'Chronic — symptoms persisting for 3 months or longer' },
       { v: 'nieznane', pl: 'Nie wiem / nie da się ustalić',
         en: 'Not known / cannot be established' },
+    ],
+  },
+  {
+    /* D-CZAS: pytanie o CZAS OD POCZĄTKU. Taksonomia czas-i-wyzwalacze, na której stoi cała ta
+       kwalifikacja, została zbudowana dla chorych z zawrotami trwającymi PONIŻEJ 2 TYGODNI —
+       a kwestionariusz NIGDY o to nie pytał: próg istniał wyłącznie w komentarzu na początku tego
+       pliku, więc nie był egzekwowany ani nawet pokazywany. Pytanie NIE ZMIENIA kategorii ani
+       ścieżki (to by było przestrojenie klasyfikatora, nie naprawa luki) — dokłada UWAGĘ o granicy
+       stosowalności tam, gdzie ta granica jest przekroczona. */
+    id: 'odkiedy', typ: 'jeden', gdy: a => a.przebieg && a.przebieg !== 'nieznane',
+    pl: 'Od jak dawna trwają objawy?', en: 'How long have the symptoms been present?',
+    plHint: 'taksonomia czas-i-wyzwalacze powstała dla zawrotów trwających poniżej 2 tygodni',
+    enHint: 'the timing-and-triggers taxonomy was built for dizziness lasting under 2 weeks',
+    opcje: [
+      { v: 'ostre', pl: 'Poniżej 2 tygodni od początku', en: 'Less than 2 weeks since onset' },
+      { v: 'dluzej', pl: '2 tygodnie lub dłużej', en: '2 weeks or longer' },
+      { v: 'nieznane', pl: 'Nie wiem / nie da się ustalić', en: 'Not known / cannot be established' },
     ],
   },
   {
@@ -149,7 +192,22 @@ function powod(qid, wartosc) {
   return { qid, wartosc, pl: `${q.pl}: ${o.pl}`, en: `${q.en}: ${o.en}` };
 }
 
+/* D-CZAS: pytanie „od kiedy" NIE zmienia kategorii ani ścieżki — dokłada uwagę o granicy
+   stosowalności taksonomii tam, gdzie ta granica jest przekroczona. Opakowanie zamiast dopisywania
+   uwagi w każdej z ośmiu gałęzi: gałąź czerwonej flagi jest wyłączona, bo pilna ocena obowiązuje
+   niezależnie od tego, jak długo trwają objawy. */
 export function triageResult(odp) {
+  const w = triageResultCore(odp);
+  const a = odp || {};
+  if (a.odkiedy === 'dluzej' && w.kategoria !== 'czerwona') {
+    w.uwagi = [...(w.uwagi || []),
+      P('Objawy trwają 2 tygodnie lub dłużej — POZA oknem, dla którego zbudowano taksonomię czas-i-wyzwalacze. Kwalifikacja pozostaje pomocna, ale przestaje być narzędziem oceny OSTRYCH zawrotów; rozważ jednostki przewlekłe i tor przewlekły zamiast ostrego.',
+        'Symptoms have lasted 2 weeks or longer — OUTSIDE the period for which the timing-and-triggers taxonomy was built. The triage remains useful, but it is no longer a tool for assessing ACUTE dizziness; consider chronic entities and a chronic pathway rather than an acute one.')];
+  }
+  return w;
+}
+
+function triageResultCore(odp) {
   const a = odp || {};
   const flagi = czerwoneFlagi(a);
   const powody = [];
@@ -205,6 +263,27 @@ export function triageResult(odp) {
       uwagi: [
         P('Pomocne pytanie: czy między napadami pacjent czuje się dobrze, czy zawroty trwają bez przerwy od początku?',
           'A helpful question: does the patient feel well between attacks, or has the dizziness been continuous since onset?'),
+      ],
+    };
+  }
+
+  /* 2b. PRZEWLEKŁE — trzeci zespół kardynalny ICVD (CVS), do 2026-08-21 NIEOBECNY w kwestionariuszu.
+         [H61] Kaski 2025: „conditions in which symptoms persist for a minimum of 3 months".
+         Ten węzeł NIE PROPONUJE ŻADNEJ ŚCIEŻKI — ani prób pozycyjnych, ani HINTS — bo obie odpowiadają
+         na pytania o zespół NAPADOWY albo OSTRY. Nazywa natomiast jednostki, które ICVD definiuje
+         właśnie tutaj, żeby chory nie został odesłany „poza układ przedsionkowy". */
+  if (a.przebieg === 'przewlekle') {
+    powody.push(powod('przebieg', 'przewlekle'));
+    return {
+      kategoria: 'CVS', sciezka: null, pewnosc: 'srednia', flagi, powody,
+      tytul: P('Przewlekły zespół przedsionkowy — poza zakresem symulacji', 'Chronic vestibular syndrome — outside the simulation'),
+      tresc: P('Objawy utrzymujące się od 3 miesięcy lub dłużej to PRZEWLEKŁY zespół przedsionkowy — trzeci z zespołów kardynalnych klasyfikacji ICVD [H61] Kaski 2025. Ani próby pozycyjne, ani HINTS nie są tu badaniem z wyboru: pierwsze odpowiadają na pytanie o napad, drugie o ostry zespół z oczopląsem. Silnik OTOREPO żadnej z tych jednostek nie modeluje.',
+               'Symptoms persisting for 3 months or longer are a CHRONIC vestibular syndrome — the third cardinal syndrome of the ICVD classification [H61] Kaski 2025. Neither positional testing nor HINTS is the examination of choice here: the former answers a question about an attack, the latter about an acute syndrome with nystagmus. The OTOREPO engine models none of these entities.'),
+      uwagi: [
+        P('Jednostki ICVD zdefiniowane w tym oknie czasowym: przetrwały postawno-percepcyjny zawrót głowy (PPPD, kryterium A żąda objawów przez większość dni przez 3 miesiące lub dłużej) — [H50] Staab 2017; obustronna westybulopatia — [H19] Strupp 2017; presbywestybulopatia (wiek ≥ 60 lat) — [H53] Agrawal 2019.',
+          'ICVD entities defined in this time range: persistent postural-perceptual dizziness (PPPD, criterion A requires symptoms on most days for 3 months or longer) — [H50] Staab 2017; bilateral vestibulopathy — [H19] Strupp 2017; presbyvestibulopathy (age ≥ 60) — [H53] Agrawal 2019.'),
+        P('To NIE JEST powód, by szukać przyczyny poza układem przedsionkowym. PPPD jest w swojej pracy nazwane wprost przewlekłym CZYNNOŚCIOWYM zaburzeniem przedsionkowym i NIE JEST rozpoznaniem z wykluczenia — nieprawidłowy wynik badania go NIE WYKLUCZA.',
+          'This is NOT a reason to look for a cause outside the vestibular system. PPPD is called, in its own paper, a chronic FUNCTIONAL vestibular disorder, and it is NOT a diagnosis of exclusion — an abnormal test result does NOT rule it out.'),
       ],
     };
   }
@@ -282,8 +361,13 @@ export function triageResult(odp) {
       tresc: P('Ciągłe zawroty BEZ widocznego oczopląsu to nie jest sytuacja dla HINTS. Oczopląs obwodowy bywa całkowicie tłumiony patrzeniem — oceń ponownie po zniesieniu fiksacji (okulary Frenzla, ciemność, oftalmoskop z zasłoniętym drugim okiem).',
                'Continuous dizziness WITHOUT visible nystagmus is not a situation for HINTS. Peripheral nystagmus can be completely suppressed by fixation — reassess after removing fixation (Frenzel goggles, darkness, ophthalmoscope with the other eye covered).'),
       uwagi: [
-        P('Jeśli po zniesieniu fiksacji oczopląsu nadal nie ma, HINTS nie ma zastosowania — szukaj przyczyny poza układem przedsionkowym i oceń chód.',
-          'If there is still no nystagmus after removing fixation, HINTS does not apply — look for a cause outside the vestibular system and assess gait.'),
+        /* D-CZAS: dawne brzmienie kończyło się radą „szukaj przyczyny POZA układem przedsionkowym".
+           Jest to prawdziwe dla zespołu OSTREGO bez oczopląsu, ale ta sama gałąź łapała dotąd chorych
+           PRZEWLEKŁYCH, którym ICVD przypisuje jednostki jak najbardziej przedsionkowe. Odkąd CVS ma
+           własny węzeł, rada zostaje — ale z jawnym zastrzeżeniem, żeby nie czytała się szerzej,
+           niż wolno. */
+        P('Jeśli po zniesieniu fiksacji oczopląsu nadal nie ma, HINTS nie ma zastosowania — oceń chód i rozważ przyczynę spoza układu przedsionkowego. ZASTRZEŻENIE: dotyczy to zespołu OSTREGO. Jeśli objawy trwają od 3 miesięcy lub dłużej, wróć do pierwszego pytania i wybierz przebieg przewlekły — ICVD definiuje w tym oknie jednostki przedsionkowe (PPPD, obustronna westybulopatia, presbywestybulopatia).',
+          'If there is still no nystagmus after removing fixation, HINTS does not apply — assess gait and consider a cause outside the vestibular system. CAVEAT: this applies to an ACUTE syndrome. If the symptoms have lasted 3 months or longer, go back to the first question and choose the chronic time course — ICVD defines vestibular entities in that range (PPPD, bilateral vestibulopathy, presbyvestibulopathy).'),
       ],
     };
   }

@@ -68,8 +68,10 @@
 .tw--czerwona .tw__ttl{ color:var(--crit); }
 .tw--tEVS, .tw--AVS{ border-left-color:var(--ok); }
 .tw--tEVS .tw__ttl, .tw--AVS .tw__ttl{ color:var(--ok); }
-.tw--sEVS, .tw--pseudoAVS, .tw--niepewna{ border-left-color:var(--warn); }
-.tw--sEVS .tw__ttl, .tw--pseudoAVS .tw__ttl, .tw--niepewna .tw__ttl{ color:var(--warn); }
+/* D-CZAS: CVS (przewlekły zespół przedsionkowy) dołączony do grupy „poza zakresem symulacji" —
+   ten sam ton co sEVS, bo tak samo NIE proponuje ścieżki, tylko nazywa jednostki. */
+.tw--sEVS, .tw--pseudoAVS, .tw--niepewna, .tw--CVS{ border-left-color:var(--warn); }
+.tw--sEVS .tw__ttl, .tw--pseudoAVS .tw__ttl, .tw--niepewna .tw__ttl, .tw--CVS .tw__ttl{ color:var(--warn); }
 .tw--wtoku{ border-left-color:var(--line-strong); }
 .tw--wtoku .tw__ttl{ color:var(--muted); font-size:15px; }
 

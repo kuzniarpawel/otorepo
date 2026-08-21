@@ -404,7 +404,14 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 194;  /* 2026-08-21, etap D-MRI (decyzja uzytkownika): 186 -> 194.
+const OCZEKIWANE = 205;  /* 2026-08-21, etap D-CZAS (decyzja uzytkownika): 194 -> 205.
+                            JEDENASCIE nowych cytowan z oznaczeniem, wszystkie w triage-model.js
+                            i w obu jezykach: nowy wezel CVS niesie "[H61] Kaski 2025" (zrodlo osi
+                            trzech zespolow kardynalnych) oraz "[H50] Staab 2017", "[H19] Strupp 2017"
+                            i "[H53] Agrawal 2019" (jednostki, ktore ICVD definiuje w oknie
+                            przewleklym), a poprawiona uwaga pseudoAVS odsyla do tego samego wezla.
+                            Policzone przez --ile PO wstawieniu, nie oszacowane.
+                            2026-08-21, etap D-MRI (decyzja uzytkownika): 186 -> 194.
                             OSIEM nowych cytowan z oznaczeniem "[H58] Kim 2022", w czterech miejscach
                             i obu jezykach: triage-model.js (nowa tresc o falszywie ujemnym DWI oraz
                             DRUGA uwaga o wyzszej czulosci badania klinicznego), hints-model.js

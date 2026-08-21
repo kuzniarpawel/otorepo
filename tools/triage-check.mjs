@@ -22,7 +22,15 @@ const T = (tag, warunek, opis) => { if (warunek) ok++; else bledy.push(`${tag}: 
 const eq = (tag, a, b) => T(tag, JSON.stringify(a) === JSON.stringify(b), `oczekiwano ${JSON.stringify(b)}, jest ${JSON.stringify(a)}`);
 
 /* ============ 1. Kształt kwestionariusza ============ */
-eq('KS1/pytania', TRIAGE_IDS, ['przebieg', 'wyzwalacz', 'oczoplas', 'flagi']);
+/* D-CZAS (2026-08-21): doszlo PIATE pytanie `odkiedy` (czas od poczatku objawow). Stoi ZARAZ PO
+   `przebieg`, bo dotyczy tej samej osi czasu i ma byc widoczne, zanim klinicysta wybierze wyzwalacz. */
+eq('KS1/pytania', TRIAGE_IDS, ['przebieg', 'odkiedy', 'wyzwalacz', 'oczoplas', 'flagi']);
+eq('KS1b/przebieg-osie-ICVD', triageQuestion('przebieg').opcje.map(o => o.v),
+  ['napadowe', 'ciagle', 'przewlekle', 'nieznane']);
+T('KS1c/CVS-osiagalny', triageResult({ przebieg: 'przewlekle', flagi: ['brak'] }).kategoria === 'CVS',
+  'trzeci zespol kardynalny ICVD (CVS) musi miec wlasny wezel, a nie wpadac do pseudoAVS');
+T('KS1d/EVS-do-dni', /dni|days/.test(triageQuestion('przebieg').opcje[0].pl + triageQuestion('przebieg').opcje[0].en),
+  '[H61] Kaski 2025: napady EVS trwaja SEKUNDY DO DNI — pasmo uciete na minutach zsylalo migrene i Meniere\'a poza wlasny wezel');
 T('KS2/dwujezyczne', TRIAGE_QUESTIONS.every(q => q.pl && q.en && q.plHint && q.enHint
   && (q.opcje || []).every(o => o.pl && o.en)), 'każde pytanie i każda opcja muszą mieć PL i EN');
 // „Odpowiedź «nie wiem / nie można ocenić» jest zawsze dostępna, gdy ma znaczenie kliniczne."
@@ -50,20 +58,30 @@ eq('FL8/czerwone-liczy', czerwoneFlagi({ flagi: ['ataksja', 'bolGlowy'] }), ['at
 
 /* ============ 3. Przepływ pytań ============ */
 eq('PP1/pierwsze', nextQuestionId({}), 'przebieg');
-eq('PP2/napadowe-pyta-o-wyzwalacz', nextQuestionId({ przebieg: 'napadowe' }), 'wyzwalacz');
-eq('PP3/ciagle-pyta-o-oczoplas', nextQuestionId({ przebieg: 'ciagle' }), 'oczoplas');
+/* D-CZAS: po 'przebieg' pyta teraz 'odkiedy' — dotyczy tej samej osi czasu, wiec stoi zaraz za nim. */
+eq('PP2/napadowe-pyta-o-odkiedy', nextQuestionId({ przebieg: 'napadowe' }), 'odkiedy');
+eq('PP2b/napadowe-potem-wyzwalacz', nextQuestionId({ przebieg: 'napadowe', odkiedy: 'ostre' }), 'wyzwalacz');
+eq('PP3/ciagle-pyta-o-odkiedy', nextQuestionId({ przebieg: 'ciagle' }), 'odkiedy');
+eq('PP3b/ciagle-potem-oczoplas', nextQuestionId({ przebieg: 'ciagle', odkiedy: 'ostre' }), 'oczoplas');
 // Pytanie o wyzwalacz NIE MA sensu przy zawrotach ciągłych i odwrotnie — warunkowe znikają.
-eq('PP4/ciagle-pomija-wyzwalacz', activeQuestions({ przebieg: 'ciagle' }).map(q => q.id), ['przebieg', 'oczoplas', 'flagi']);
-eq('PP5/napadowe-pomija-oczoplas', activeQuestions({ przebieg: 'napadowe' }).map(q => q.id), ['przebieg', 'wyzwalacz', 'flagi']);
+eq('PP4/ciagle-pomija-wyzwalacz', activeQuestions({ przebieg: 'ciagle' }).map(q => q.id), ['przebieg', 'odkiedy', 'oczoplas', 'flagi']);
+eq('PP5/napadowe-pomija-oczoplas', activeQuestions({ przebieg: 'napadowe' }).map(q => q.id), ['przebieg', 'odkiedy', 'wyzwalacz', 'flagi']);
 eq('PP6/nieznane-pomija-oba', activeQuestions({ przebieg: 'nieznane' }).map(q => q.id), ['przebieg', 'flagi']);
-eq('PP7/na-koncu-flagi', nextQuestionId({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny' }), 'flagi');
-T('PP8/komplet', triageComplete({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] }), 'komplet odpowiedzi');
+eq('PP7/na-koncu-flagi', nextQuestionId({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny' }), 'flagi');
+T('PP8/komplet', triageComplete({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', flagi: ['brak'] }), 'komplet odpowiedzi');
+/* D-CZAS: CVS pomija wyzwalacz I oczoplas — oba pytaja o zespol napadowy albo ostry. */
+eq('PP10/przewlekle-pomija-oba', activeQuestions({ przebieg: 'przewlekle' }).map(q => q.id), ['przebieg', 'odkiedy', 'flagi']);
 T('PP9/pusta-lista-flag-to-brak-odpowiedzi', !triageComplete({ przebieg: 'nieznane', flagi: [] }),
   'pusta lista flag NIE jest odpowiedzią — „nie stwierdzono" wymaga świadomego kliknięcia');
 
 /* ============ 4. NIEZMIENNIKI na pełnym iloczynie kartezjańskim ============ */
+/* D-CZAS: doszly DWIE nowe wartosci `przebieg` ('przewlekle') i CALY nowy wymiar `odkiedy`.
+   To nie jest kosmetyka listy: petla nizej buduje iloczyn kartezjanski, wiec pominiecie tu nowego
+   wymiaru zostawiloby nowa galaz NIEPRZEORANA przy ZIELONEJ bramce — dokladnie ta pulapka byla
+   zapisana w planie jako ryzyko etapu. */
 const WART = {
-  przebieg: [undefined, 'napadowe', 'ciagle', 'nieznane'],
+  przebieg: [undefined, 'napadowe', 'ciagle', 'przewlekle', 'nieznane'],
+  odkiedy: [undefined, 'ostre', 'dluzej', 'nieznane'],
   wyzwalacz: [undefined, 'pozycyjny', 'samoistny', 'nieznane'],
   oczoplas: [undefined, 'obecny', 'brak', 'nieoceniony'],
 };
@@ -73,8 +91,8 @@ for (let m = 1; m < (1 << FLAGI_POJ.length); m++)
   ZESTAWY_FLAG.push(FLAGI_POJ.filter((_, i) => m & (1 << i)));
 
 const kombinacje = [];
-for (const p of WART.przebieg) for (const w of WART.wyzwalacz) for (const o of WART.oczoplas) for (const f of ZESTAWY_FLAG)
-  kombinacje.push({ przebieg: p, wyzwalacz: w, oczoplas: o, flagi: f });
+for (const p of WART.przebieg) for (const d of WART.odkiedy) for (const w of WART.wyzwalacz) for (const o of WART.oczoplas) for (const f of ZESTAWY_FLAG)
+  kombinacje.push({ przebieg: p, odkiedy: d, wyzwalacz: w, oczoplas: o, flagi: f });
 
 const zlamane = { hintsPrzyNapadach: [], flagaBezPilnej: [], flagaZeSciezka: [], zlaSciezka: [], bezPowodu: [],
   bezTekstu: [], zlyPowod: [], hintsBezOczoplasu: [], diagPrzyCiagle: [] };
@@ -125,7 +143,7 @@ T('IN8/HINTS-tylko-AVS-z-oczoplasem', !zlamane.hintsBezOczoplasu.length,
   `${zlamane.hintsBezOczoplasu.length} kombinacji, np. ${zlamane.hintsBezOczoplasu[0]}`);
 T('IN9/proby-pozycyjne-nie-przy-ciaglych', !zlamane.diagPrzyCiagle.length,
   `${zlamane.diagPrzyCiagle.length} kombinacji, np. ${zlamane.diagPrzyCiagle[0]}`);
-T('IN10/iloczyn-niepusty', kombinacje.length === 4 * 4 * 4 * (3 + 31),
+T('IN10/iloczyn-niepusty', kombinacje.length === 5 * 4 * 4 * 4 * (3 + 31),
   `iloczyn ma ${kombinacje.length} kombinacji — jeśli spadł, niezmienniki przestały być wyczerpujące`);
 
 /* ============ 5. Konkretne rozstrzygnięcia kliniczne ============ */
@@ -226,11 +244,18 @@ if (bledy.length) {
   for (const b of bledy) console.error('  · ' + b);
   process.exit(1);
 }
-/* D-MRI (2026-08-21): 62 -> 64. DWA nowe przypadki, oba w bloku czerwonej flagi: KL2e (ocena SERYJNA
+/* D-CZAS (2026-08-21): 64 -> 70. SZESC nowych przypadkow po dodaniu piatego pytania `odkiedy`
+   i trzeciej wartosci `przebieg` ('przewlekle' = CVS): KS1b (kolejnosc wartosci osi ICVD),
+   KS1c (CVS ma WLASNY wezel, a nie wpada do pseudoAVS), KS1d (pasmo EVS siega DNI, nie minut),
+   PP2b i PP3b (przeplyw po nowym pytaniu) oraz PP10 (CVS pomija wyzwalacz i oczoplas).
+   ILOCZYN KOMBINACJI 2176 -> 10880: doszedl caly wymiar `odkiedy` (4 wartosci) i jedna wartosc
+   `przebieg`. To bylo ZAPISANE W PLANIE JAKO RYZYKO — piate pytanie dodane bez ruszenia petli
+   przeszloby NIEPRZEORANE przy zielonej bramce.
+   D-MRI (2026-08-21): 62 -> 64. DWA nowe przypadki, oba w bloku czerwonej flagi: KL2e (ocena SERYJNA
    z numerem [H58] zamiast wlasnego interwalu) i KL2f (druga implikacja tej samej liczby u Kima —
    badanie kliniczne ma w fazie ostrej wyzsza czulosc niz obrazowanie). KL2d ZOSTAJE, ale pilnuje juz
    odsetka ze zrodla (12-50%), a nie liczby "48-72", ktora w calym korpusie ICVD ma 0 trafien. */
-const OCZEKIWANE = 64;
+const OCZEKIWANE = 70;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);
