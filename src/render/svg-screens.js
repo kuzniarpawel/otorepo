@@ -2146,6 +2146,26 @@ function renderTriage(){
   const uwagi = gotowe && (w.uwagi||[]).length
     ? `<ul class="tw__uwagi">${w.uwagi.map(u=>`<li>${t(u.pl,u.en)}</li>`).join("")}</ul>` : "";
 
+  /* V28c — KARTA KRYTERIÓW NA WĘŹLE s-EVS. Liść `wyzwalacz==="samoistny"` jest JEDYNYM w całym
+     drzewie kwalifikacji z `sciezka:null`: wymienia migrenę przedsionkową, chorobę Ménière'a i TIA
+     tylnego kręgu, mówi uczciwie „silnik ich nie modeluje" — i na tym się kończy, nie oferując
+     NICZEGO do zrobienia. Kryteria trafiły w V28 na ekran symulatora HINTS, czyli o jeden ekran
+     dalej niż potrzeba: tamten ekran jest właśnie tym, o którym TEN węzeł mówi „HINTS też nie jest
+     właściwy". Tu jest ich miejsce kliniczne — to dokładnie ten pacjent i ten moment.
+     ROZWINIĘTA (argument `true`), bo zwinięty <details> na ekranie, na który klinicysta trafia raz,
+     powtarzałby wadę pierwotnego umiejscowienia: treść o najwyższej wartości decyzyjnej zostawałaby
+     za kliknięciem. Karta NIE przechyla różnicowania ku migrenie — jej blok WYKLUCZEŃ niesie regułę
+     choroby Ménière'a i czerwone flagi TIA, czyli dwie pozostałe pozycje z tego samego zdania
+     modelu; dlatego stoi tu CAŁA, a nie w postaci wyciągu.
+     JEDNO ŹRÓDŁO: ta sama funkcja co na ekranie HINTS, zero drugiego literału — sprzeczność między
+     dwoma miejscami jest strukturalnie niemożliwa. Pole stanu nazywa się `hintsVmCrit` mimo dwóch
+     miejsc użycia; nazwa jest historyczna i świadomie NIE zmieniana razem z wpięciem, żeby diff
+     niósł jedną rzecz naraz. MODEL POZOSTAJE CZYSTY: `triage-model.js` nie wie o tej karcie,
+     więc `triage:check` (62 przypadki + 2176 kombinacji) jest tą zmianą nietknięty. */
+  const kryteriaVM = gotowe && w.kategoria === "sEVS"
+    ? `<div class="note" style="margin-top:10px">${t("Poniżej kryteria pierwszej z wymienionych jednostek. Karta niesie też blok wykluczeń — regułę choroby Ménière'a i czerwone flagi TIA tylnego kręgu, czyli dwie pozostałe.", "Below are the criteria for the first of the entities listed. The card also carries an exclusion block — the Menière rule and the red flags of vertebrobasilar TIA, that is, the other two.")}</div>${vmCriteriaCard(true)}`
+    : "";
+
   const wynik = gotowe
     ? `<section class="card tw tw--${w.kategoria}" data-flow-anchor="triage" tabindex="-1">
         <div class="tw__ttl">${flagi.length?"⚠ ":""}${t(w.tytul.pl,w.tytul.en)}</div>
@@ -2169,7 +2189,7 @@ function renderTriage(){
       <div class="col col--ctl">
         ${pytania.map(q=>triageQuestionHTML(q,odp,nastepne)).join("")}
       </div>
-      <div class="col col--viz">${wynik}</div>
+      <div class="col col--viz">${wynik}${kryteriaVM}</div>
     </div>
     <div class="disclaimer">${t('<b>Kwalifikacja wskazuje ŚCIEŻKĘ BADANIA, nie rozpoznanie.</b> Opiera się na taksonomii czas-i-wyzwalacze z wytycznych GRACE-3 (Edlow i wsp., <i>Acad Emerg Med</i> 2023). Nie zastępuje badania ani decyzji klinicysty.',
                               '<b>The triage selects an EXAMINATION PATHWAY, not a diagnosis.</b> It follows the timing-and-triggers taxonomy of the GRACE-3 guideline (Edlow et al., <i>Acad Emerg Med</i> 2023). It does not replace examination or clinician judgment.')}</div>`;

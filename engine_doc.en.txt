@@ -3129,6 +3129,49 @@ ORACLES: zrodla:check with a raised OCZEKIWANE constant (a new entry, new citati
 in both documentation mirrors); the remaining 26 gates unchanged, including hints:dom and
 hints:check, which touch neither the GRACE card nor the new one, because they work on the clinical
 HINTS examination screens rather than on the simulator.
+=== THE CRITERIA CARD WIRED INTO THE s-EVS TRIAGE NODE (V28c, 2026-08-20) ===
+V28 placed the criteria card on the HINTS SIMULATOR screen, because that is where the GRACE card's
+pointer came from. Clinically that is one screen too far, and it can be shown from the repo itself
+rather than from taste: the leaf `wyzwalacz==="samoistny"` in triage-model.js returns
+`kategoria:'sEVS'`, `sciezka:null`, names vestibular migraine, Menière's disease and vertebrobasilar
+TIA, honestly says "the engine does not model them" — and ends there, offering NOTHING to do. It is
+the ONLY leaf of the tree with an empty pathway. What is more, its own note reads "HINTS is not
+appropriate either: it applies to a continuous vestibular syndrome with nystagmus, not to attacks" —
+so the criteria stood on the very screen that this same node tells the clinician not to go to.
+
+WHAT WAS DONE: `renderTriage` renders `vmCriteriaCard(true)` under the result card when — and only
+when — `gotowe && w.kategoria==="sEVS"`. Above the card stands one sentence tying it to the node's
+content: that these are the criteria of the FIRST of the three entities listed, and that the
+exclusion block carries the other two.
+
+WHY EXPANDED. The `true` argument forces it open. A collapsed <details> on a screen the clinician
+reaches once in the workflow would repeat exactly the flaw of the original placement: the content
+with the highest decision value would stay behind a click nobody makes.
+
+WHY THIS DOES NOT TILT THE DIFFERENTIAL TOWARD MIGRAINE — a predictable objection, worth answering
+outright. The card is not a digest about one entity: its EXCLUSION block (the content of criterion D)
+carries the Menière rule together with the two-different-types-of-attacks condition, and the full set
+of vertebrobasilar TIA red flags including vertebral artery dissection. Those are EXACTLY the other
+two items from the same sentence of the model. The card therefore serves the node's whole three-way
+split, not one third of it — which is why it stands here in full rather than as an extract.
+
+ONE SOURCE, NO SECOND LITERAL: it is the same function as on the HINTS screen. A divergence between
+the two places is structurally impossible rather than guarded by vigilance — the same convention as
+"the label and the arrow from one ξ" (V5) and "act ≡ card bit for bit" (V19).
+
+THE MODEL STAYS PURE. `triage-model.js` knows nothing of this card; the change is in the renderer
+only. Proof, not declaration: `triage:check` (62 cases + 2176 combinations checked by invariants) is
+UNTOUCHED by this change and green.
+
+PROOF OF SCOPE: snapshot:check lit up EXACTLY ONE key — `dom/triage/sEVS`. Zero keys in the engine,
+pose and shell layers; zero other triage keys. It was also verified IN REVERSE, in the browser, that
+the card is ABSENT from the remaining triage outcomes: tEVS, the red flag, and the "in progress"
+state — the `kategoria==="sEVS"` gate works both ways. `zrodla:check` unchanged (152): the card is
+called a second time, but its strings sit on ONE source line and were already counted.
+
+A BOUNDARY LEFT DELIBERATELY: the state field is named `hintsVmCrit` although it now serves two
+screens. The name is historical; it was not changed together with the wiring, so that the diff
+carries one thing at a time.
 
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular

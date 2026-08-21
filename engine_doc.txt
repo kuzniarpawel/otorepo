@@ -2935,6 +2935,47 @@ WYROCZNIE: zrodla:check z podniesioną stałą OCZEKIWANE (nowy wpis, nowe cytow
 i w obu lustrach dokumentacji); pozostałe 26 bramek bez zmian, w tym hints:dom i hints:check, które
 karty GRACE ani nowej karty nie dotykają, bo pracują na ekranach klinicznego badania HINTS, a nie
 na symulatorze.
+=== KARTA KRYTERIÓW PODPIĘTA DO WĘZŁA s-EVS KWALIFIKACJI (V28c, 2026-08-20) ===
+V28 postawił kartę kryteriów na ekranie SYMULATORA HINTS, bo stamtąd wychodził odsyłacz karty GRACE.
+Klinicznie to o jeden ekran za daleko i można to pokazać z samego repo, bez odwoływania się do gustu:
+liść `wyzwalacz==="samoistny"` w triage-model.js zwraca `kategoria:'sEVS'`, `sciezka:null`, wymienia
+z nazwy migrenę przedsionkową, chorobę Ménière'a i TIA tylnego kręgu, mówi uczciwie „silnik ich nie
+modeluje" — i kończy się, nie oferując NICZEGO do zrobienia. Jest JEDYNYM liściem drzewa z pustą
+ścieżką. Co więcej, jego własna uwaga brzmi „HINTS też nie jest właściwy: dotyczy ciągłego zespołu
+przedsionkowego z oczopląsem, a nie napadów" — czyli kryteria stały dotąd na ekranie, o którym ten
+sam węzeł mówi klinicyście, żeby tam nie szedł.
+
+CO ZROBIONO: `renderTriage` renderuje `vmCriteriaCard(true)` pod kartą wyniku, gdy — i tylko gdy —
+`gotowe && w.kategoria==="sEVS"`. Nad kartą stoi jedno zdanie wiążące ją z treścią węzła: że to
+kryteria PIERWSZEJ z trzech wymienionych jednostek, a blok wykluczeń niesie dwie pozostałe.
+
+DLACZEGO ROZWINIĘTA. Argument `true` wymusza otwarcie. Zwinięty <details> na ekranie, na który
+klinicysta trafia raz w przebiegu, powtarzałby dokładnie wadę pierwotnego umiejscowienia: treść
+o najwyższej wartości decyzyjnej zostawałaby za kliknięciem, którego nikt nie zrobi.
+
+DLACZEGO TO NIE PRZECHYLA RÓŻNICOWANIA KU MIGRENIE — zarzut przewidywalny i wart odpowiedzi wprost.
+Karta nie jest wyciągiem o jednej jednostce: jej blok WYKLUCZEŃ (treść kryterium D) niesie regułę
+choroby Ménière'a wraz z warunkiem dwóch różnych typów napadów oraz komplet czerwonych flag TIA
+kręgowo-podstawnego z rozwarstwieniem tętnicy kręgowej włącznie. To są DOKŁADNIE dwie pozostałe
+pozycje z tego samego zdania modelu. Karta obsługuje więc cały trójpodział węzła, a nie jedną
+trzecią — i dlatego stoi tu w całości, a nie w postaci skrótu.
+
+JEDNO ŹRÓDŁO, ZERO DRUGIEGO LITERAŁU: to ta sama funkcja co na ekranie HINTS. Rozjazd treści między
+dwoma miejscami jest strukturalnie niemożliwy, a nie pilnowany czujnością — ta sama konwencja, co
+przy „napis i strzałka z jednego ξ" (V5) i „akt ≡ karta bit-w-bit" (V19).
+
+MODEL POZOSTAJE CZYSTY. `triage-model.js` nie wie o tej karcie; zmiana jest wyłącznie w rendererze.
+Dowód, nie deklaracja: `triage:check` (62 przypadki + 2176 kombinacji sprawdzonych niezmiennikami)
+jest tą zmianą NIETKNIĘTY i zielony.
+
+DOWÓD ZAKRESU: snapshot:check zapalił DOKŁADNIE JEDEN klucz — `dom/triage/sEVS`. Zero kluczy warstw
+engine, pose i shell; zero pozostałych kluczy triage. Zweryfikowano też ODWROTNIE, w przeglądarce, że
+karty NIE MA na pozostałych wyjściach kwalifikacji: tEVS, czerwona flaga oraz stan „w toku" — bramka
+`kategoria==="sEVS"` działa w obie strony. `zrodla:check` bez zmian (152): karta jest wołana drugi
+raz, ale jej napisy stoją w JEDNEJ linii źródła i były już policzone.
+
+GRANICA ŚWIADOMIE ZOSTAWIONA: pole stanu nazywa się `hintsVmCrit`, choć służy teraz dwóm ekranom.
+Nazwa jest historyczna; nie zmieniono jej razem z wpięciem, żeby diff niósł jedną rzecz naraz.
 
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
