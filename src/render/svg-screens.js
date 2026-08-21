@@ -3436,9 +3436,9 @@ function graceCard(open){
       t("brak — trwa także w SPOCZYNKU (ruch głowy NASILA, ale nie wyzwala)","none — persists at REST (head movement EXACERBATES, does not trigger)"),
       t("brak (napady samoistne); wywiad migrenowy / napadowość","none (spontaneous attacks); migraine history / episodicity"))}
     ${row(t("Oczopląs samoistny","Spontaneous nystagmus"),
-      t("NIE — złóg w spoczynku (restPhi), ξ=0","NO — debris at rest (restPhi), ξ=0"),
+      t("zwykle NIE — złóg w spoczynku (restPhi), ξ=0. <b>WYJĄTEK:</b> oczopląs <b>pseudo-samoistny</b> jest <b>typowy</b> dla BPPV kanału poziomego i bije zwykle ku uchu choremu — [H48] von Brevern 2015. Sam oczopląs w siadzie NIE wyklucza więc t-EVS ani nie kieruje automatycznie do HINTS.","usually NO — debris at rest (restPhi), ξ=0. <b>EXCEPTION:</b> <b>pseudospontaneous</b> nystagmus is <b>typical</b> of horizontal-canal BPPV and usually beats toward the affected ear — [H48] von Brevern 2015. Nystagmus while seated therefore does NOT rule out t-EVS, nor does it automatically route to HINTS."),
       t("TAK — toniczny, w każdej pozycji, nie wyczerpuje się","YES — tonic, in every position, non-fatiguing"),
-      t("międzynapadowo NIE — badanie prawidłowe","interictally NO — the exam is normal"))}
+      t("międzynapadowo <b>NIEROZSTRZYGAJĄCY</b> — wynik <b>bywa nieprawidłowy</b>, zwłaszcza w napadzie lub tuż po nim, ale między napadami <b>nie jest dość swoisty</b>, by być kryterium — [H46] Lempert 2022","interictally <b>NON-DECISIVE</b> — findings <b>can be abnormal</b>, particularly during or shortly after an attack, but between attacks they are <b>not sufficiently specific</b> to serve as a criterion — [H46] Lempert 2022"))}
     ${row(t("Oczopląs prowokowany","Provoked nystagmus"),
       t("TAK: latencja → paroksyzm → wyczerpanie (Dix-Hallpike / Roll)","YES: latency → paroxysm → fatigue (Dix-Hallpike / Roll)"),
       t("obecny stale, pozycją tylko modulowany","present throughout, merely modulated by position"),

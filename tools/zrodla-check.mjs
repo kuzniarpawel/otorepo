@@ -404,7 +404,12 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 176;  /* 2026-08-21, etap E4a (kryteria choroby Meniere'a [H20]): 154 -> 176.
+const OCZEKIWANE = 178;  /* 2026-08-21, etap E5a (dwie poprawki faktow na karcie GRACE): 176 -> 178.
+                            DWA nowe cytowania z oznaczeniem, oba w graceCard: "[H48] von Brevern 2015"
+                            (wyjatek pseudo-samoistny w kolumnie t-EVS) i "[H46] Lempert 2022"
+                            (badanie miedzynapadowe w kolumnie s-EVS). Obie komorki byly NIEPRAWDZIWE
+                            wobec zrodel, ktore projekt juz ma — poprawka faktu, nie decyzja redakcyjna.
+                            2026-08-21, etap E4a (kryteria choroby Meniere'a [H20]): 154 -> 176.
                             DWADZIESCIA DWA nowe przypadki, WSZYSTKIE z dwoch nowych rozdzialow
                             engine_doc (PL + EN) — ZMIERZONE: licznik pokazywal 176 juz PO wstawieniu
                             rozdzialow, a PRZED poprawka atrybucji w svg-screens.js, i po niej sie
