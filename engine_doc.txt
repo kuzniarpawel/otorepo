@@ -2977,6 +2977,53 @@ raz, ale jej napisy stoją w JEDNEJ linii źródła i były już policzone.
 GRANICA ŚWIADOMIE ZOSTAWIONA: pole stanu nazywa się `hintsVmCrit`, choć służy teraz dwóm ekranom.
 Nazwa jest historyczna; nie zmieniono jej razem z wpięciem, żeby diff niósł jedną rzecz naraz.
 
+=== MAPA POKRYCIA ICVD — WSZYSTKIE 19 DOKUMENTÓW KONSENSUSU BÁRÁNY SOCIETY (E0, 2026-08-21) ===
+Ten rozdział jest STANEM POKRYCIA, nie planem. Plan etapów leży w `przesiew_icvd.md` na gałęzi
+`claude/icvd-diagnostic-criteria-203f6a`; materiał źródłowy (pełne teksty i ekstrakcje) — poza repo.
+
+DLACZEGO POWSTAŁ. Do 2026-08-21 program stosował kryteria ICVD, nie mając ich w bazie wiedzy.
+POMIAR na całym repozytorium: 469 miejsc wypowiada się o jednostce chorobowej albo o kryterium
+rozpoznania, z czego 386 (82%) NIE MA przy sobie numeru źródła; 10 z 16 jednostek ICVD nie
+występowało w programie w ogóle. Najostrzejszy przypadek: kryteria BPPV, na których stoi funkcja
+rdzeniowa `baranyClassify`, miały udokumentowany rodowód „pamięć otoneurologiczna" (view_doc.txt),
+a odsyłacz z kodu wskazywał sekcję engine_doc, której nie było. Etap E0 zamyka warstwę
+BIBLIOGRAFICZNĄ tej dziury: nadaje numery, nie zmienia ani jednej linii kodu.
+
+CZTERNAŚCIE DOKUMENTÓW MA TERAZ NUMER I JEST UŻYWANYCH ALBO CZEKA NA UŻYCIE:
+ · objawy przedsionkowe (słownik) ......... [H47] — używany pośrednio przez [H46]; nie nazywany
+ · BPPV ................................... [H48] — RDZEŃ APLIKACJI, dotąd bez numeru (etap E1)
+ · napadowica przedsionkowa ............... [H49] — dziś jedna wzmianka w wykluczeniach karty migreny
+ · PPPD ................................... [H50] — jednostka NIEOBECNA w programie (decyzja D6)
+ · klasyfikacja oczopląsu ................. [H51] — flagi CPN stoją bez źródła w dwóch plikach (E2)
+ · hemodynamiczny zawrót ortostatyczny .... [H52] — NIEOBECNY; styka się z notą 4 kryterium A [H48]
+ · presbywestybulopatia ................... [H53] — NIEOBECNA; niesie sporny próg gain (decyzja D1)
+ · mal de débarquement .................... [H54] — NIEOBECNY; oś różnicowa wobec [H50]
+ · migrena przedsionkowa wieku dziec. ..... [H55] — NIEOBECNA; drugi komplet kryteriów obok [H46]
+ · SCDS ................................... [H56] — jednostka MODELOWANA, ale na [H18], nie na ICVD
+ · choroba lokomocyjna .................... [H57] — NIEOBECNA
+ · naczyniowe zawroty głowy ............... [H58] — czerwone flagi na [H24] i [H8], nie na kryteriach
+ · AUVP / zapalenie nerwu przedsionkowego . [H59] — jednostka MODELOWANA szeroko, bez dokumentu
+ · zawroty szyjne (stanowisko) ............ [H60] — NIEOBECNE; praca ODMAWIA kryteriów
+ · przegląd ICVD 2025 ..................... [H61] — mówi, czego jeszcze nie ma
+
+TRZY DOKUMENTY MIAŁY NUMER JUŻ WCZEŚNIEJ: obustronna westybulopatia [H19], choroba Ménière'a [H20],
+migrena przedsionkowa [H46]. UWAGA: [H19] i [H20] NIOSĄ OPIS JEDNOSTKI, ALE NIE TREŚĆ KRYTERIÓW —
+zmierzone dla [H20]: „30 dB" 0 trafień, „20 min" 0, „12 h" 0. Uzupełnienie to etap E4, nie E0.
+
+DZIEWIĘTNASTY DOKUMENT — pierwotna wersja kryteriów migreny przedsionkowej (Lempert 2012) — NIE
+DOSTAJE NUMERU (decyzja użytkownika 2026-08-21). Kryteria cytujemy za [H46], bo to ich aktualny
+nośnik; wersja z 2012 posłużyła jako DOWÓD, a jej porównanie jest zapisane przy wpisie [H46].
+
+CZEGO TA MAPA NIE PRZESĄDZA. Wpis w bibliografii NIE ZNACZY, że jednostka wchodzi do programu.
+OTOREPO jest aplikacją o BPPV i ostrych zawrotach, nie atlasem otoneurologii — i „świadomie poza
+zakresem" jest tu decyzją tak samo dobrą jak „wchodzi", pod warunkiem że została PODJĘTA I ZAPISANA,
+a nie wynikła z nieznajomości dokumentu. Rozstrzygnięcie per jednostka: etap E6.
+
+SIEDEMDZIESIĄT PIĘĆ KONFLIKTÓW między samymi dokumentami ICVD (34 twarde, 35 napięć, 6 następstw)
+czeka na rozstrzygnięcia użytkownika; osiem z nich blokuje pisanie kolejnych rozdziałów. Do czasu
+ich podjęcia ŻADEN sporny próg nie wchodzi do silnika — w szczególności progi gain niesione przez
+wpisy [H19], [H53] i [H59].
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -3400,6 +3447,396 @@ Nazwa jest historyczna; nie zmieniono jej razem z wpięciem, żeby diff niósł 
         Epidemiologia: 1–2,7% populacji ogólnej, 11% chorych poradni zawrotowych, 13% poradni bólu
         głowy; 65–85% to kobiety. Ponad połowa chorych ma współistniejące zaburzenie psychiczne —
         ta ostatnia liczba pochodzi z sekcji o zawrotach psychogennych, nie z epidemiologicznej.
+      → WERYFIKACJA WOBEC WERSJI PIERWOTNEJ (E0, 2026-08-21). Zdanie „kryteria z 2012 pozostawiono
+        bez zmiany" było dotąd ZREFEROWANE ZA TĄ PRACĄ. Po zdobyciu pełnego tekstu wersji z 2012
+        (Lempert T i wsp., J Vestib Res 22(4):167–172, doi:10.3233/VES-2012-0453, PMID 23142830)
+        porównano oba teksty: kryteria są IDENTYCZNE CO DO SŁOWA, z JEDYNYM wyjątkiem „ICHD" →
+        „ICHD-3" w kryterium B postaci pewnej. Potwierdza to przedmowa wersji 2022. Wersja z 2012
+        NIE DOSTAJE własnego numeru (decyzja użytkownika 2026-08-21): kryteria cytujemy za tą pracą,
+        bo to ich aktualny nośnik; wersja 2012 służy jako DOWÓD, nie jako źródło cytowania.
+        Poza kryteriami wersje SIĘ RÓŻNIĄ: wstęp z 2012 podaje „do 1%" populacji, wstęp z 2022
+        „do 2,7%" — ale sekcja epidemiologii wersji 2022 podaje ZAKRES 1–2,7% i to jego trzyma się
+        wpis wyżej, więc zgodność jest pełna. Sekcja o aurze przemianowana („basilar-type migraine"
+        → „migraine with brainstem aura, formerly termed basilar-type"), sekcja dziecięca
+        rozszerzona o migrenę przedsionkową wieku dziecięcego (patrz H55).
+
+[H47] Bisdorff A, Von Brevern M, Lempert T, Newman-Toker DE (2009). „Classification of vestibular
+      symptoms: Towards an international classification of vestibular disorders — First consensus
+      document of the Committee for the Classification of Vestibular Disorders of the Bárány
+      Society." J Vestib Res 19(1–2):1–13. doi:10.3233/VES-2009-0343. PMID 19893191.
+      LICENCJA: w PDF wydawcy „IOS Press and the authors. All rights reserved" — dostęp wolny
+      (bronze OA), ale BEZ otwartej licencji; przedruk wykluczony, parafraza obowiązkowa.
+      → SŁOWNIK OBJAWÓW PRZEDSIONKOWYCH — pierwszy dokument ICVD i podstawa, z której korzystają
+        WSZYSTKIE pozostałe prace ICVD. Cztery kategorie główne: 1. Zawrót układowy (vertigo),
+        2. Oszołomienie (dizziness), 3. Objawy przedsionkowo-wzrokowe, 4. Objawy posturalne —
+        razem 31 pozycji z drzewem podkategorii, każda z definicją i komentarzem.
+        ZAWRÓT dzieli się na samoistny i wyzwalany (pozycyjny, ruchem głowy, wzrokowo, dźwiękiem,
+        Valsalvą, ortostatyczny); OSZOŁOMIENIE ma symetryczny podział. Kategoria 3 (oscylopsja,
+        opóźnienie wzrokowe, przechył wzrokowy, zamazanie przy ruchu) i kategoria 4 (niestabilność,
+        pulsja kierunkowa, prawie-upadek i upadek związany z równowagą) NIE MAJĄ odpowiednika
+        w warstwie napisów OTOREPO.
+        ODRZUCONE NAZEWNICTWO: praca prowadzi 18 bloków „Terms not used in this nomenclature" —
+        łącznie 25 terminów jawnie odrzuconych. ZMIERZONE 2026-08-21: co najmniej OSIEM późniejszych
+        prac ICVD samo używa terminów z tej listy, część w treści kryterium. Rozjazd nazewniczy jest
+        więc cechą CAŁEGO ICVD, nie wadą naszego programu — i tak trzeba go opisywać.
+        GRANICE ŹRÓDŁA, zmierzone grepem po pełnym tekście: ciąg „central" = 2 trafienia, oba poza
+        znaczeniem kryterialnym („central processing" w opisie układu; wyliczenie populacji
+        laboratoryjnej w komentarzu 3.4) — PRACA NIE DEFINIUJE ŻADNEGO OBJAWU JAKO OŚRODKOWEGO ANI
+        OBWODOWEGO i nie podaje reguły różnicowania; przeciwnie, jej zasada konsensusu mówi wprost,
+        że żaden objaw przedsionkowy nie ma w pełni swoistego znaczenia topologicznego ani
+        nozologicznego. Ciąg „ICD" = 0 trafień, „ICHD" = 1 (samo rozwinięcie skrótu, bez numeru
+        pozycji). LECZENIE: „treat"/„manag"/„Epley"/„repositioning" = 0 trafień każde — praca
+        nie mówi o leczeniu w ogóle. BADANIA INSTRUMENTALNE: „MRI"/„caloric"/„audiome"/„vHIT"/
+        „Hallpike"/„VEMP" = 0 trafień każde; „SVV" = 1, w zdaniu ODGRANICZAJĄCYM. EPIDEMIOLOGIA:
+        „prevalen"/„inciden" = 0, znak „%" = 0 wystąpień w całym pliku.
+        TAKSONOMIA CZAS-I-WYZWALACZE NIE NALEŻY DO TEJ PRACY, mimo że Newman-Toker jest
+        współautorem: „vestibular syndrome"/„acute vestibular"/„episodic vestibular"/„AVS"/„EVS"/
+        „timing"/„red flag"/„GRACE" = 0 trafień każde. Osi AVS/EVS NIE WOLNO cytować za tym
+        dokumentem — jej źródłem jest [H24].
+
+[H48] von Brevern M, Bertholon P, Brandt T, Fife T, Imai T, Nuti D, Newman-Toker D (2015). „Benign
+      paroxysmal positional vertigo: Diagnostic criteria — Consensus document of the Committee for
+      the Classification of Vestibular Disorders of the Bárány Society." J Vestib Res 25(3–4):105–117.
+      doi:10.3233/VES-150553. PMID 26756126.
+      LICENCJA: w PDF wydawcy „IOS Press and the authors. All rights reserved" — jak wyżej.
+      → KRYTERIA BPPV — DOKUMENT, NA KTÓRYM STOI CAŁA APLIKACJA. Do 2026-08-21 praca ta NIE MIAŁA
+        w programie numeru: `baranyClassify` cytowała ją samym nazwiskiem, `barany-check.mjs`
+        odsyłała do sekcji engine_doc, której nie było, a view_doc podawał jako źródło kryteriów
+        „pamięć otoneurologiczną". Ten wpis zamyka rodowód pamięciowy.
+        STRUKTURA: sekcja 2 = zespoły USTALONE, sekcja 3 = WYŁANIAJĄCE SIĘ i atypowe. Każdy podtyp
+        ma cztery kryteria A–D; kryterium D brzmi identycznie w ośmiu zestawach („nie do przypisania
+        innemu zaburzeniu", 8 trafień) i dopuszcza stan współistniejący, jeśli daje się WYRAŹNIE
+        ODRÓŻNIĆ.
+        2.1 KANALOLITIAZA KANAŁU TYLNEGO: (A) nawracające napady zawrotu albo oszołomienia
+        położeniowego prowokowane położeniem się albo obracaniem na plecach; (B) czas napadu
+        < 1 min; (C) oczopląs położeniowy po latencji JEDNEJ LUB KILKU SEKUND w manewrze
+        Dixa-Hallpike'a albo side-lying (diagnostycznym Semonta) — ZŁOŻENIE skrętnego z górnym
+        biegunem ku uchu NIŻEJ i pionowego bijącego KU GÓRZE, trwający typowo < 1 min; (D) jw.
+        2.2 KANALOLITIAZA KANAŁU POZIOMEGO: jak wyżej, ale oczopląs po KRÓTKIEJ LATENCJI ALBO BEZ
+        LATENCJI, w teście supine roll, poziomy, GEOTROPOWY (ku uchu niżej) przy obrocie w obie
+        strony, < 1 min. UWAGA: brak latencji jest tu kryterium JAWNIE DOPUSZCZONYM.
+        PRZYPISY NIOSĄ POŁOWĘ TREŚCI KLINICZNEJ i muszą być czytane razem z kryteriami:
+        nota 8 — latencja może w rzadkich przypadkach sięgać 40 SEKUND; nota 10 — czas oczopląsu
+        zwykle NIE PRZEKRACZA 40 s przed samoistnym wygaśnięciem; nota 11 — obwiednia
+        crescendo-decrescendo; nota 12 — po ustaniu może pojawić się oczopląs ODWRÓCONY o mniejszej
+        intensywności; nota 13 — po powrocie do siadu odwrócenie jest częste, a MĘCZLIWOŚĆ przy
+        powtarzaniu to zjawisko CZĘSTE; nota 9 — skręt wyraźniejszy w oku NIŻEJ, pion w oku WYŻEJ,
+        a przy zachowanej fiksacji oczopląs wygląda na przeważnie skrętny; nota 5 (kanał poziomy) —
+        wyzwalaczem bywają także SZYBKIE BOCZNE OBROTY GŁOWY W POZYCJI WYPROSTOWANEJ.
+        EPIDEMIOLOGIA PODTYPÓW: kanał tylny 80–90%, poziomy 5–30%, przedni 1–2% w dużych seriach
+        (choć nowsze doniesienia sugerują więcej). Prawy błędnik zajęty nieco częściej niż lewy.
+        Obustronna kanalolitiaza tylna nie jest rzadka, częstsza po urazie; PUŁAPKA: jednostronne
+        BPPV MOŻE NAŚLADOWAĆ obustronne przy manewrze bez właściwego ustawienia głowy.
+        BPPV BEZ OCZOPLĄSU: kontrowersyjne, takich chorych KODUJE SIĘ JAKO 3.4 (BPPV możliwe).
+        GEOMETRIA TESTU ROLL: praca podaje uniesienie głowy „o około 30°" — silnik liczy 10,3°
+        (HC_FLEX_DEG). To ROZBIEŻNOŚĆ ZNANA I NIEROZSTRZYGNIĘTA, patrz decyzja D5 w przesiew_icvd.md.
+        CANALITH JAM i UPORCZYWY GEOTROPOWY DCPN: praca oba OPISUJE we wstępie jako zjawiska
+        o niejasnej patofizjologii — canalith jam jako postulowane zablokowanie osklepka, a uporczywy
+        geotropowy DCPN jako obraz NIEZGODNY ani z ruchomym złogiem, ani ze złogiem przy osklepku,
+        wiązany hipotetycznie ze zmianą gęstości osklepka lub endolimfy („ale pozostaje to
+        spekulacją"). NIE SĄ to podtypy kryterialne — silnik oznacza je jako „poza klasyfikacją
+        ICVD" i tak ma zostać.
+
+[H49] Strupp M, Lopez-Escamez JA, Kim JS, Straumann D, Jen JC, Carey J, Bisdorff A, Brandt T (2016).
+      „Vestibular paroxysmia: Diagnostic criteria." J Vestib Res 26(5–6):409–415.
+      doi:10.3233/VES-160589. PMID 28262641. PMC9249278. Licencja CC BY-NC 4.0.
+      → NAPADOWICA PRZEDSIONKOWA. Jednostka wymieniana dziś w programie DOKŁADNIE RAZ — w bloku
+        wykluczeń karty migreny (kryterium D) — i to bez własnego numeru; ten wpis to naprawia.
+        POSTAĆ PEWNA, pięć kryteriów (koniunkcja): (A) co najmniej DZIESIĘĆ napadów SAMOISTNEGO
+        zawrotu, wirowego albo niewirowego; (B) czas trwania KRÓTSZY NIŻ 1 MINUTA; (C) stereotypowa
+        fenomenologia u danego chorego; (D) ODPOWIEDŹ NA KARBAMAZEPINĘ/OKSKARBAZEPINĘ;
+        (E) brak lepszego wyjaśnienia.
+        POSTAĆ PRAWDOPODOBNA MA WŁASNY PEŁNY ZESTAW, nie konstrukcję „N z M": (A) co najmniej PIĘĆ
+        napadów (bez słowa „samoistny"); (B) czas KRÓTSZY NIŻ 5 MINUT; (C) występowanie samoistne
+        ALBO prowokowane określonymi ruchami głowy; (D) stereotypowość; (E) brak lepszego
+        wyjaśnienia. KRYTERIUM LEKOWE ZNIKA — przypis 7 kieruje tu chorego JESZCZE NIELECZONEGO,
+        u którego kryterium D postaci pewnej jest niestosowalne.
+        DAWKI: karbamazepina 200–800 mg/d, okskarbazepina 300–900 mg/d. Częstość napadów: od 30/dobę
+        do kilku/rok; przebieg zwykle > 3 miesięcy.
+        WAŻNE DLA RÓŻNICOWANIA Z BPPV: ruchy wyzwalające TYPOWO NIE MAJĄ WZORCA BPPV, a jeśli
+        manewry pozycyjne są UJEMNE, napadowica pozostaje ważnym rozpoznaniem różnicowym.
+        GRANICA: oczopląs poziomo-skrętny bijący ku uchu zajętemu jest opisany W TRYBIE WARUNKOWYM
+        (nota 6: „jeśli chory jest badany w trakcie napadu, MOŻE być obserwowany") — NIE JEST
+        KRYTERIUM. Praca nie definiuje postaci „możliwej" („possible VP" = 0 trafień).
+
+[H50] Staab JP, Eckhardt-Henn A, Horii A, Jacob R, Strupp M, Brandt T, Bronstein A (2017).
+      „Diagnostic criteria for persistent postural-perceptual dizziness (PPPD) — Consensus document
+      of the Committee for the Classification of Vestibular Disorders of the Bárány Society."
+      J Vestib Res 27(4):191–208. doi:10.3233/VES-170622. PMID 29036855. PMC9249299.
+      Licencja CC BY-NC 4.0.
+      UWAGA BIBLIOGRAFICZNA: strona Bárány Society podaje dla tej pracy strony 113–125 — BŁĘDNIE.
+      Metadane pełnego tekstu i rejestr zgodnie dają 191–208. Zweryfikowano 2026-08-21.
+      → PPPD — PRZEWLEKŁY ZAWRÓT POSTAWNO-PERCEPCYJNY. Pięć kryteriów A–E, wszystkie wymagane.
+        (A) oszołomienie ALBO niestabilność ALBO zawrót niewirujący przez WIĘKSZOŚĆ DNI przez
+        3 MIESIĄCE LUB DŁUŻEJ — operacjonalizacja z noty 2: WIĘCEJ NIŻ 15 Z KAŻDYCH 30 DNI;
+        objawy trwają godzinami, nasilenie faluje, nie muszą trwać cały dzień; SAME sekundowe
+        „rozbłyski" NIE SPEŁNIAJĄ kryterium A. (B) objawy nasilane przez TRZY czynniki — WYMAGANE
+        WSZYSTKIE TRZY: postawa pionowa, ruch czynny lub bierny BEZ WZGLĘDU NA KIERUNEK, oraz
+        ekspozycja na ruchome lub złożone bodźce wzrokowe; unikanie tych czynników MOŻE być uznane
+        za spełnienie. (C) zaburzenie WYZWALANE stanem powodującym zawrót lub zaburzenie równowagi
+        — z odsetkami z noty 6: obwodowe/ośrodkowe zaburzenia przedsionkowe 25–30%, napady migreny
+        przedsionkowej 15–20%, napady paniki lub lęk 15%, wstrząśnienie/whiplash 10–15%, zaburzenia
+        autonomiczne 7%, inne ~3%. (D) istotne cierpienie LUB upośledzenie funkcjonowania.
+        (E) brak lepszego wyjaśnienia.
+        NAJWAŻNIEJSZE DLA PROGRAMU: PPPD NIE JEST ROZPOZNANIEM Z WYKLUCZENIA — praca mówi to wprost
+        („PPPD is NOT a diagnosis of exclusion"), a NIEPRAWIDŁOWY WYNIK BADANIA NIE WYKLUCZA PPPD;
+        przeciwnie, przy spełnionych kryteriach dodatnie wyniki wskazują na trwający czynnik
+        wyzwalający albo chorobę współistniejącą. To ODWROTNOŚĆ logiki, którą program stosuje
+        wszędzie indziej.
+        POSTAĆ PRAWDOPODOBNA NIE ISTNIEJE — podkomitet ŚWIADOMIE ODMÓWIŁ jej zdefiniowania (§4.2.3,
+        „probable" = 2 trafienia, oba w kontekście odmowy). Każde „prawdopodobne PPPD" w programie
+        byłoby wymysłem ponad źródło. To RÓŻNICA wobec [H46], gdzie postać prawdopodobna istnieje.
+        RÓŻNICOWANIE Z MdDS (patrz H54): w MdDS ponowna ekspozycja na ruch bierny PRZEJŚCIOWO
+        ZMNIEJSZA objawy, w PPPD znacznie częściej je NASILA — to cechy definiujące obu jednostek,
+        i to jest oś rozdzielenia. PPPD NIE POWODUJE OSCYLOPSJI.
+
+[H51] Eggers SDZ, Bisdorff A, von Brevern M, Zee DS, Kim JS, Perez-Fernandez N, Welgampola MS,
+      Della Santina CC, Newman-Toker DE (2019). „Classification of vestibular signs and examination
+      techniques: Nystagmus and nystagmus-like movements." J Vestib Res 29(2–3):57–87.
+      doi:10.3233/VES-190658. PMID 31256095. PMC9249296. Licencja CC BY-NC 4.0.
+      → SŁOWNIK OCZOPLĄSU ICVD — najobszerniejszy dokument korpusu (114 tys. znaków), 67 pozycji
+        nazewniczych. Do 2026-08-21 ciąg „Eggers" miał w CAŁYM repozytorium 0 trafień, mimo że
+        program opisuje oczopląs własnymi konwencjami na kilkuset liniach, a SZEŚĆ czerwonych flag
+        ośrodkowego oczopląsu pozycyjnego stoi w DWÓCH niezależnych literałach (svg-screens.js
+        i obs-model.js) BEZ ŹRÓDŁA — i BLOKUJE kartę leczenia. To jest dokument, który za te flagi
+        odpowiada; podpięcie go pod nie jest treścią etapu E2.
+        ZAKRES ISTOTNY DLA PROGRAMU: oczopląs pozycyjny (typy, kierunki, geotropowy/apogeotropowy),
+        samoistny, wywołany spojrzeniem, po potrząsaniu głową, tłumienie fiksacją, oraz techniki
+        badania. Praca ODRADZA termin „headshaking nystagmus" i OGRANICZA użycie terminu „Bruns" —
+        program używa dziś terminów odradzanych (do sprawdzenia w E2).
+        RÓŻNICA WOBEC H48, WAŻNA I NIEROZSTRZYGNIĘTA: Eggers nazywa obraz BPPV FENOTYPEM, podczas
+        gdy nazwa jednostki u von Brevern twierdzi MECHANIZM; obie prace podają też różne liczby
+        dla czasów oczopląsu pozycyjnego, a MĘCZLIWOŚĆ jest u von Brevern cechą peryferyjną,
+        u Eggersa zaś TROPEM OŚRODKOWYM — a silnik używa jej jako różnicownika mechanizmu.
+        Patrz przesiew_icvd.md, konflikty K8 i K19.
+
+[H52] Kim HA, Bisdorff A, Bronstein AM, Lempert T, Rossi-Izquierdo M, Staab JP, Strupp M, Kim JS
+      (2019). „Hemodynamic orthostatic dizziness/vertigo: Diagnostic criteria." J Vestib Res
+      29(2–3):45–56. doi:10.3233/VES-190655. PMID 30883381. PMC9249281. Licencja CC BY-NC 4.0.
+      → HEMODYNAMICZNY ZAWRÓT/OSZOŁOMIENIE ORTOSTATYCZNE. Postać pewna i prawdopodobna, obie
+        wymagają CO NAJMNIEJ 5 EPIZODÓW; postać prawdopodobna wymaga co najmniej jednego objawu
+        z listy czterech. Hipotonia ortostatyczna zdefiniowana jako spadek ciśnienia skurczowego
+        > 20 mmHg i/lub rozkurczowego > 10 mmHg w ciągu 3 MINUT od wstania albo w teście
+        pochyleniowym.
+        WAŻNE ROZRÓŻNIENIE TERMINOLOGICZNE, którego program nie ma: objawy ORTOSTATYCZNE (przy
+        przyjmowaniu pozycji pionowej) to NIE TO SAMO co objawy POZYCYJNE (przy zmianie położenia
+        głowy względem grawitacji, jak w BPPV). Praca uznaje termin „postural dizziness" za
+        NIESPECYFICZNY i ODRADZA jego używanie bez dodatkowego rozróżnienia. Jeśli objawy zaczynają
+        się już w pozycji leżącej — termin „ortostatyczny" jest NIEADEKWATNY.
+        STYK Z BPPV: kryterium D kanalolitiazy w [H48] (nota 4) wprost każe ODRÓŻNIĆ zawrót
+        położeniowy od objawów ortostatycznych obecnych tylko przy wstawaniu. Program tego
+        rozróżnienia dziś nie prowadzi — ciąg „ortostat" ma w src/ 0 trafień.
+
+[H53] Agrawal Y, Van de Berg R, Wuyts F, Walther L, Magnusson M, Oh E, Sharpe M, Strupp M (2019).
+      „Presbyvestibulopathy: Diagnostic criteria — Consensus document of the Classification
+      Committee of the Bárány Society." J Vestib Res 29(4):161–170. doi:10.3233/VES-190672.
+      PMID 31306146. PMC9249286. Licencja CC BY-NC 4.0.
+      → PRESBYWESTYBULOPATIA — obustronna niedoczynność przedsionka związana z wiekiem. JEDEN
+        zestaw kryteriów A–D, BEZ postaci pewnej/prawdopodobnej/możliwej.
+        PRÓG WIEKU: 60 lat i więcej. PRÓG CZYNNOŚCIOWY: gain poziomego VOR w przedziale 0,6–0,8 —
+        czyli MIĘDZY normą a progiem obustronnej westybulopatii z [H19].
+        KONFLIKT PROGÓW, KLUCZOWY DLA SILNIKA: trzy prace ICVD definiują ten sam ubytek kanału
+        poziomego trzema różnymi liczbami, na trzech różnych statystykach i przy różnych albo
+        NIEPODANYCH protokołach bodźca — [H19] BVP < 0,6 (suma maksimów), ta praca 0,6–0,8 (suma
+        średnich), [H59] AUVP < 0,7 (pojedyncza odpowiedź). Silnik ma dziś BVP_CUT 0,6 oraz
+        GAIN_CUT {HC 0,8; pionowe 0,7} opisane nazwiskiem bez numeru. Rozstrzygnięcie = decyzja D1
+        w przesiew_icvd.md; do jej podjęcia ŻADNEGO z tych progów nie wolno przypisać tej pracy.
+        GRANICA: użycie przedziału „between 0.6 and 0.8" zamiast operatorów ostrych sprawia, że
+        gain dokładnie 0,600 wypada z klasyfikacji — patrz konflikt progów w przesiew_icvd.md.
+
+[H54] Cha YH, Baloh RW, Cho C, Magnusson M, Song JJ, Strupp M, Wuyts F, Staab JP (2020). „Mal de
+      débarquement syndrome diagnostic criteria — Consensus document of the Classification
+      Committee of the Bárány Society." J Vestib Res 30(5):285–293. doi:10.3233/VES-200714.
+      PMID 32986636. PMC9249277. Licencja CC BY-NC 4.0.
+      → ZESPÓŁ MAL DE DÉBARQUEMENT. Objawy oscylacji własnej (kołysanie, bujanie, chwianie)
+        rozpoczynające się PO USTANIU biernego ruchu i trwające CO NAJMNIEJ 48 GODZIN.
+        CECHA DEFINIUJĄCA, odróżniająca od PPPD: ponowna ekspozycja na ruch bierny PRZEJŚCIOWO
+        ZMNIEJSZA objawy — w PPPD ekspozycja je NASILA (patrz H50). Wrażliwość na złożone bodźce
+        wzrokowe występuje u WIĘKSZOŚCI chorych z MdDS, ale NIE należy do jego cech rdzeniowych,
+        podczas gdy w PPPD jest cechą definiującą.
+        WOBEC MIGRENY PRZEDSIONKOWEJ: ponad 50% chorych na MdDS NIGDY w życiu nie spełnia kryteriów
+        migreny, a odsetek migreny PRZED początkiem MdDS nie wydaje się wyższy niż populacyjny.
+        REGUŁA WSPÓŁROZPOZNANIA: jeśli spełnione są oddzielnie kryteria obu zaburzeń, migrenę
+        przedsionkową rozpoznaje się DODATKOWO do MdDS, nie zamiast.
+        GRANICA CZASU 48 h: kryterium z 2020 mówi „> 48 h", a ta sama autorka w pracy z 2021 (H57)
+        pisze „co najmniej 48 h" — patrz konflikt następstwa w przesiew_icvd.md.
+
+[H55] van de Berg R, Widdershoven J, Bisdorff A, Evers S, Wiener-Vacher S, Cushing SL, Mack KJ,
+      Kim JS, Jahn K, Strupp M, Lempert T (2021). „Vestibular migraine of childhood and recurrent
+      vertigo of childhood: Diagnostic criteria — Consensus document of the Committee for the
+      Classification of Vestibular Disorders of the Bárány Society and the International Headache
+      Society." J Vestib Res 31(1):1–9. doi:10.3233/VES-200003. PMID 33386837. PMC9249292.
+      Licencja CC BY-NC 4.0.
+      → TRZY JEDNOSTKI WIEKU DZIECIĘCEGO, wszystkie z warunkiem WIEK < 18 LAT.
+        MIGRENA PRZEDSIONKOWA WIEKU DZIECIĘCEGO (VMC): (A) co najmniej PIĘĆ epizodów objawów
+        przedsionkowych o nasileniu umiarkowanym lub ciężkim, 5 min – 72 h; (B) migrena z aurą lub
+        bez, obecnie albo w wywiadzie; (C) co najmniej POŁOWA epizodów z co najmniej jedną cechą
+        migrenową (ból głowy z ≥ 2 z czterech cech ALBO światłowstręt ORAZ fonofobia ALBO aura
+        WZROKOWA); (D) wiek < 18 lat; (E) brak lepszego wyjaśnienia.
+        PRAWDOPODOBNA VMC: (A) co najmniej TRZY epizody, 5 min – 72 h; (B) spełnione DOKŁADNIE JEDNO
+        z kryteriów B i C; (C) wiek < 18 lat; (D) brak lepszego wyjaśnienia.
+        NAWRACAJĄCY ZAWRÓT WIEKU DZIECIĘCEGO (RVC), zastępujący termin „łagodny napadowy zawrót
+        wieku dziecięcego": (A) co najmniej TRZY epizody trwające OD 1 MINUTY do 72 h; (B) NIE jest
+        spełnione ŻADNE z kryteriów B i C dla VMC; (C) wiek < 18 lat; (D) brak lepszego wyjaśnienia.
+        Praca JAWNIE DEKLARUJE, że RVC nie jest jednorodną jednostką, lecz mieszaniną.
+        RÓŻNICE PROGÓW WOBEC WERSJI DOROSŁEJ [H46]: liczba epizodów 5 → 3 dla postaci prawdopodobnej
+        i dla RVC; DOLNA GRANICA CZASU 5 min → 1 MINUTA w RVC. Ta ostatnia różnica ma znaczenie
+        dla programu: u osoby poniżej 18 lat obowiązują DWA komplety kryteriów i ŻADNA REGUŁA
+        PIERWSZEŃSTWA — patrz przesiew_icvd.md.
+        BRAK WYMOGÓW INSTRUMENTALNYCH: §5.5 wprost stwierdza, że prawidłowe badanie neurologiczne,
+        audiometria, funkcja przedsionkowa i EEG — obecne w poprzednich kryteriach — NIE zostały
+        włączone, bo oczopląs, fluktuujący niedosłuch i niedoczynność przedsionka mogą występować
+        także w migrenie przedsionkowej.
+
+[H56] Ward BK, van de Berg R, van Rompaey V, Bisdorff A, Hullar TE, Welgampola MS, Carey JP (2021).
+      „Superior semicircular canal dehiscence syndrome: Diagnostic criteria — Consensus document of
+      the Committee for the Classification of Vestibular Disorders of the Bárány Society."
+      J Vestib Res 31(3):131–141. doi:10.3233/VES-200004. PMID 33522990. PMC9249274.
+      Licencja CC BY-NC 4.0.
+      → ZESPÓŁ ROZSZCZEPU KANAŁU PÓŁKOLISTEGO GÓRNEGO (SCDS) — DOKUMENT KRYTERIALNY ICVD, którego
+        program dotąd nie miał: SCDS opierało się w silniku na [H18] Minor 2000, czyli na pracy
+        źródłowej, NIE na konsensusie.
+        JEDNA POSTAĆ, nazwana „definite SCDS" — postać prawdopodobna i możliwa zostały przez komitet
+        ROZWAŻONE I ODRZUCONE (§4.1). Cztery kryteria połączone koniunkcją:
+        (1) co najmniej JEDEN objaw trzeciego ruchomego okna: nadwrażliwość na przewodnictwo kostne
+        ALBO zawroty/oscylopsja WYWOŁANE DŹWIĘKIEM zsynchronizowane z bodźcem ALBO wywołane
+        CIŚNIENIEM ALBO pulsujący szum uszny; (2) co najmniej JEDEN znak lub wynik badania:
+        oczopląs w płaszczyźnie kanału górnego wywołany dźwiękiem lub zmianą ciśnienia ALBO UJEMNE
+        progi przewodnictwa kostnego w niskich częstotliwościach ALBO WZMOŻONE odpowiedzi VEMP
+        (niskie PROGI cVEMP albo wysokie AMPLITUDY oVEMP); (3) TK kości skroniowej o wysokiej
+        rozdzielczości (preferencyjnie 0,2 mm lub lepiej) z rekonstrukcją w płaszczyźnie kanału
+        ORAZ ortogonalnie do niej, wykazująca dehiscencję; (4) brak lepszego wyjaśnienia.
+        ZASADA KATEGORYCZNA (§4.9): rozpoznania SCDS NIGDY nie wolno oprzeć na samym TK — nawet
+        zoptymalizowane skany dają wyniki fałszywie dodatnie, a TK PRZESZACOWUJE obecność
+        dehiscencji. SAMA DEHISCENCJA ANATOMICZNA NIE WYSTARCZA.
+        PRACA NIE PODAJE ŻADNEJ LICZBOWEJ WARTOŚCI ODCIĘCIA DLA VEMP — progi i amplitudy porównuje
+        się z normami KONKRETNEJ pracowni. Silnik ma stałą VEMP_SCDS = 2.0; tej liczby NIE WOLNO
+        przypisać tej pracy.
+        OBJAWY JAWNIE WYŁĄCZONE Z KRYTERIÓW (§4.2): pełność w uchu, „brain fog", przewlekłe
+        zaburzenie równowagi, zaostrzenie migreny. Dehiscencje kanału TYLNEGO i POZIOMEGO NIE SĄ
+        objęte tymi kryteriami (§4.12).
+
+[H57] Cha YH, Golding JF, Keshavarz B, Furman J, Kim JS, Lopez-Escamez JA, Magnusson M, Yates BJ,
+      Lawson BD (2021). „Motion sickness diagnostic criteria — Consensus document of the
+      Classification Committee of the Bárány Society." J Vestib Res 31(5):327–344.
+      doi:10.3233/VES-200005. PMID 33646187. PMC9249300. Licencja CC BY-NC 4.0.
+      → CHOROBA LOKOMOCYJNA. Praca definiuje CZTERY jednostki, a nie jedną: ostry epizod choroby
+        lokomocyjnej (bodziec = FIZYCZNY RUCH osoby) i ostry epizod VIMS (bodziec = RUCH WZROKOWY),
+        oraz odpowiadające im ZABURZENIA: MSD i VIMSD.
+        OSTRY EPIZOD, kryteria A–D: (A) bodziec wywołuje objaw w co najmniej JEDNEJ z pięciu
+        kategorii o nasileniu WIĘKSZYM NIŻ MINIMALNE — nudności/zaburzenia żołądkowo-jelitowe,
+        zaburzenie termoregulacji, zmiany czuwania, zawroty niewirowe i/lub wirowe, ból głowy
+        i/lub zmęczenie wzroku; (B) objawy POJAWIAJĄ SIĘ W TRAKCIE ruchu i NARASTAJĄ z ekspozycją;
+        (C) ostatecznie USTĘPUJĄ po zaprzestaniu ruchu; (D) brak lepszego wyjaśnienia.
+        ZESTAW A–D JEST JEDEN I TEN SAM dla choroby lokomocyjnej i VIMS — różni je WYŁĄCZNIE rodzaj
+        bodźca w kryterium A.
+        MSD / VIMSD, kryteria A–E: (A) co najmniej PIĘĆ epizodów wyzwolonych tym samym lub podobnym
+        bodźcem; (B) powtarzalne wyzwalanie; (C) nasilenie NIE ZMNIEJSZA SIĘ istotnie po powtarzanej
+        ekspozycji (czyli NIEZDOLNOŚĆ DO HABITUACJI — cecha rdzeniowa); (D) objawy prowadzą do
+        modyfikacji aktywności ALBO unikania ALBO awersyjnych emocji antycypacyjnych; (E) brak
+        lepszego wyjaśnienia. POSTAĆ PRAWDOPODOBNA: 2–4 epizody — to JEDYNA postać stopniowana
+        w całej pracy; dla ostrego epizodu praca NIE PRZEWIDUJE żadnych stopni pewności.
+        ODGRANICZENIE OD MdDS (nota 9): początek objawów MUSI wystąpić W TRAKCIE bodźca i nie może
+        rozpoczynać się wyłącznie po jego ustaniu — MdDS zaczyna się DOPIERO po ustaniu ruchu
+        i trwa co najmniej 48 godzin.
+        REGUŁA WSPÓŁROZPOZNANIA (nota 10): przy współistnieniu z migreną przedsionkową, zapaleniem
+        nerwu przedsionkowego albo PPPD NALEŻY POSTAWIĆ OBA ROZPOZNANIA, nie wybierać jednego.
+        ŁAGODNA choroba lokomocyjna, łatwa do uniknięcia lub bez wpływu na funkcjonowanie, NIE
+        POWINNA być uznawana za zaburzenie (§3.4).
+
+[H58] Kim JS, Newman-Toker DE, Kerber KA, Jahn K, Bertholon P, Waterston J, Lee H, Bisdorff A,
+      Strupp M (2022). „Vascular vertigo and dizziness: Diagnostic criteria." J Vestib Res
+      32(3):205–222. doi:10.3233/VES-210169. PMID 35367974. PMC9249306. Licencja CC BY-NC 4.0.
+      → NACZYNIOWE ZAWROTY GŁOWY — najważniejszy dokument ICVD dla warstwy CZERWONYCH FLAG programu,
+        której twierdzenia stoją dziś na [H24] GRACE-3 i [H8] Kattah, ale NIE na dokumencie
+        kryterialnym.
+        RODZINA OSTRA PRZEDŁUŻONA (≥ 24 h): postać potwierdzona obrazowaniem wymaga (A) objawów
+        ≥ 24 h, (B) DOWODU OBRAZOWEGO niedokrwienia lub krwotoku w mózgu ALBO W UCHU WEWNĘTRZNYM
+        odpowiadającego obrazowi klinicznemu, (C) braku lepszego wyjaśnienia. POSTAĆ PRAWDOPODOBNA
+        NIE WYMAGA ŻADNEGO OBRAZOWANIA — wystarczy (A) plus CO NAJMNIEJ JEDNO z: ogniskowe objawy
+        ośrodkowe albo CIĘŻKA ATAKSJA TUŁOWIA; co najmniej jeden składnik ośrodkowego HINTS;
+        inne ośrodkowe nieprawidłowości okoruchowe; zwiększone ryzyko naczyniowe (ABCD2 ≥ 4 albo
+        migotanie przedsionków).
+        DEFINICJA CIĘŻKIEJ ATAKSJI TUŁOWIA (nota 3), której program nie ma: NIEZDOLNOŚĆ utrzymania
+        wyprostowanej pozycji SIEDZĄCEJ ANI STOJĄCEJ bez podparcia; u chorego niechodzącego bada się
+        siedzenie na noszach ze skrzyżowanymi ramionami. ATAKSJA LEKKA DO UMIARKOWANEJ NIE WYKLUCZA
+        ZMIANY OŚRODKOWEJ.
+        RODZINA PRZEMIJAJĄCA (< 24 h) i „W EWOLUCJI" (oceniany w ciągu 24 h od początku): postać
+        prawdopodobna przemijająca NIE ZAWIERA HINTS na liście B — uzasadnienie w nocie 3: objawy
+        ustąpiły u ok. 73% (63/86) do czasu badania, więc HINTS i MRI mają OGRANICZONĄ przydatność
+        w przemijającym zespole przedsionkowym.
+        PUŁAPKA AICA (nota 5): ~5% udarów AICA daje ostry przedłużony zawrót z niedowładem kanału
+        BEZ ubytku słuchu, naśladując zespół obwodowy; HINTS był ujemny w 5/17 (29,4%) zawałów AICA.
+        ZESPÓŁ UCISKU TĘTNICY KRĘGOWEJ (VACS) ma własny zestaw czterech kryteriów z WYMAGANYM
+        potwierdzeniem instrumentalnym (angiografia dynamiczna ALBO doppler przezczaszkowy podczas
+        prowokującego ruchu głowy). Zespół podkradania podobojczykowego jest JAWNIE WYŁĄCZONY
+        z klasyfikacji, a termin „niewydolność kręgowo-podstawna" NIEZALECANY.
+        WAŻNE: NINDS III oraz ESO NIE uznają izolowanego zawrotu za objaw TIA kręgowo-podstawnego.
+
+[H59] Strupp M, Bisdorff A, Furman J, Hornibrook J, Jahn K, Maire R, Newman-Toker D, Magnusson M
+      (2022). „Acute unilateral vestibulopathy/vestibular neuritis: Diagnostic criteria."
+      J Vestib Res 32(5):389–406. doi:10.3233/VES-220201. PMID 35723133. PMC9661346.
+      Licencja CC BY-NC 4.0.
+      → OSTRA JEDNOSTRONNA WESTYBULOPATIA (AUVP) / ZAPALENIE NERWU PRZEDSIONKOWEGO. Dokument
+        kryterialny dla jednostki, którą program modeluje szeroko (presety neuritisR/L, 148 trafień
+        ciągu „neuronit"/„neuritis" w repozytorium) — ale dotąd BEZ dokumentu kryterialnego,
+        na źródłach [H15] Fetter 1996 i [H22] Musat 2025.
+        NAZWA: praca wprowadza AUVP obok tradycyjnego „zapalenia nerwu przedsionkowego"; ciąg
+        „acute unilateral vestibulopathy" ma dziś w src/ 0 trafień. Czy oba terminy są synonimami
+        i który program ma nosić — patrz decyzja D3 i konflikt nazewniczy w przesiew_icvd.md.
+        SPRZECZNOŚĆ WEWNĄTRZ DOKUMENTU, ZMIERZONA: kryterium instrumentalne występuje w pracy DWA
+        RAZY w NIEZGODNYCH postaciach — nota 12 podaje je jako ALTERNATYWĘ, a §4.4.1 jako
+        KONIUNKCJĘ z trzecim warunkiem. To dwa różne zbiory chorych, a konflikt jest WEWNĄTRZ
+        jednej pracy, więc nie da się go rozstrzygnąć wyborem nowszego źródła. Do rozstrzygnięcia
+        użytkownika — decyzja D2 w przesiew_icvd.md. DO CZASU JEJ PODJĘCIA żaden próg AUVP nie
+        wchodzi do silnika.
+        UWAGA: weryfikacja adwersaryjna ekstrakcji tej pracy przerwała się na błędzie API
+        (2026-08-21) — ekstrakcja `17-strupp2022-auvp.md` NIE PRZESZŁA pełnej kontroli i musi ją
+        przejść przed etapem E4.
+
+[H60] Seemungal BM, Agrawal Y, Bisdorff A, Bronstein A, Cullen KE, Goadsby PJ, Lempert T, Kothari S,
+      Lim PB, Magnusson M, Marcus HJ, Strupp M, Whitney SL (2022). „The Bárány Society position on
+      'Cervical Dizziness'." J Vestib Res 32(6):487–499. doi:10.3233/VES-220202. PMID 36404562.
+      PMC9837683. Licencja CC BY-NC 4.0.
+      → STANOWISKO, NIE KRYTERIA — i to jest jego sedno. Komitet WSTRZYMUJE SIĘ od zaproponowania
+        jakichkolwiek kryteriów rozpoznawczych i jakiejkolwiek swoistej terapii poza badaniem
+        naukowym. Brakuje dowodów na mechanistyczne powiązanie złudzenia ruchu własnego z patologią
+        szyi lub z bólem szyi.
+        CO PRACA MÓWI ZAMIAST: gdy złożony ruch głowy i szyi wyzwala wirowanie, przyczyną jest ALBO
+        częsta jednostka przedsionkowa — MIGRENA albo BPPV — ALBO, rzadziej, stan ośrodkowy,
+        w tym przy ostrym początku rozwarstwienie tętnicy kręgowej z udarem krążenia tylnego.
+        Migrena, w tym przedsionkowa, jest ZDECYDOWANIE najczęstszą przyczyną skojarzenia bólu karku
+        z objawami przedsionkowymi.
+        REGUŁA WYKLUCZENIA (najtwardsza treść operacyjna): zawroty szyjne można WYKLUCZYĆ, jeżeli
+        spełniony jest KTÓRYKOLWIEK z warunków — (1) NIE MA bólu ani dyskomfortu karku; (2) zawroty
+        KIEDYKOLWIEK występują samoistnie ALBO są WYŁĄCZNIE POZYCYJNE. KONSEKWENCJA BEZPOŚREDNIA
+        DLA PROGRAMU: cała pozycyjność BPPV odchodzi do BPPV regułą własną tej pracy.
+        ODPOWIEDŹ NA TERAPIĘ NIE MOŻE BYĆ CZĘŚCIĄ DEFINICJI (§5) — efekty odgórne potrafią same
+        wywołać zawrót i oczopląs.
+        CZEGO PRACA NIE NEGUJE: komitet przyjmuje, że potrzebne są dalsze badania nad rzadkimi
+        przypadkami, w których skurcz mięśni karku wiąże się z niejasnym poczuciem dezorientacji
+        przestrzennej; stanowisko może się zmienić wraz z nowymi dowodami.
+        POZA ZAKRESEM DOKUMENTU, jawnie: szyjny zawrót naczyniowy (uznany za odrębną jednostkę
+        i zespół niezwykle rzadki) oraz whiplash.
+
+[H61] Kaski D, Tarnutzer AA, Agrawal Y, Carey J, Cha YH, Eggers SD, Furman J, Kim HA, Kim JS,
+      Lempert T, López-Escámez JA, Magnusson M, Newman-Toker DE, Seemungal BM, Staab JP, Strupp M,
+      van de Berg R, von Brevern M, Ward BK, Bisdorff A (2025). „The International Classification of
+      Vestibular Disorders: Achievements, challenges, and future directions." J Vestib Res
+      35(3):105–112. doi:10.1177/09574271251313803. PMID 39973600. PMC12231871. Licencja CC BY.
+      → PRZEGLĄD CAŁEGO ICVD — jedyna praca korpusu na licencji CC BY (pozostałe CC BY-NC albo
+        z zastrzeżonymi prawami). NIE JEST dokumentem kryterialnym; wymienia jednostki ICVD wraz
+        z tymi, które nie mają jeszcze opublikowanych kryteriów, i zgłasza znane słabości.
+        WARTOŚĆ DLA PROGRAMU: mówi, czego jeszcze NIE MA — a program nie powinien wyprzedzać
+        dokumentów w przygotowaniu. Zapowiada m.in. REWIZJĘ definicji zawrotu z [H47] (ogłoszoną
+        za niekompletną; poprawka jest ZAPOWIEDZIANA, NIE WPROWADZONA) oraz rewizję kwestii, czy
+        BPPV wymaga OBJAWU, czy wystarcza sam oczopląs.
+        GRANICA ZMIERZONA: praca mówi o „poziomach pewności diagnostycznej", ale ICH NIE NAZYWA —
+        ciągi „definite" i „probable" mają 0 trafień. Nie da się więc za nią zacytować ujednoliconej
+        siatki stopni pewności; w korpusie NIE MA dokumentu harmonizacyjnego, a słowo „probable"
+        znaczy w ICVD co najmniej siedem różnych rzeczy (w tym rzeczy PRZECIWNE w [H19] i [H59]).
+        Każde ujednolicenie w programie będzie DECYZJĄ REDAKCYJNĄ OTOREPO, nie cytatem — i tak
+        musi być opisane.
 
 === CHMURA ZŁOGU — ensemble wielocząstkowy (D9/V20, 2026-08-16) ===
 ORKIESTRACJA NAD SILNIKIEM, bez fizyki (zero edycji vestibular.js): chmura = N=9 niezależnych

@@ -3173,6 +3173,55 @@ A BOUNDARY LEFT DELIBERATELY: the state field is named `hintsVmCrit` although it
 screens. The name is historical; it was not changed together with the wiring, so that the diff
 carries one thing at a time.
 
+=== ICVD COVERAGE MAP — ALL 19 BÁRÁNY SOCIETY CONSENSUS DOCUMENTS (E0, 2026-08-21) ===
+This chapter is a STATE OF COVERAGE, not a plan. The staged plan lives in `przesiew_icvd.md` on the
+branch `claude/icvd-diagnostic-criteria-203f6a`; the source material (full texts and extractions)
+sits outside the repository.
+
+WHY IT EXISTS. Until 2026-08-21 the program applied ICVD criteria without holding them in its
+knowledge base. MEASURED across the whole repository: 469 places make a statement about a disorder
+or about a diagnostic criterion, of which 386 (82%) carry NO source number; 10 of the 16 ICVD
+entities did not occur in the program at all. The sharpest case: the BPPV criteria, on which the
+core function `baranyClassify` stands, had a documented provenance of "otoneurology memory"
+(view_doc), and the pointer from the code named an engine_doc section that did not exist. Stage E0
+closes the BIBLIOGRAPHIC layer of that hole: it assigns numbers and changes not one line of code.
+
+FOURTEEN DOCUMENTS NOW HAVE A NUMBER AND ARE EITHER IN USE OR AWAITING USE:
+ · vestibular symptoms (dictionary) ....... [H47] — used indirectly via [H46]; never named
+ · BPPV ................................... [H48] — CORE OF THE APP, until now unnumbered (E1)
+ · vestibular paroxysmia .................. [H49] — today one mention, in the migraine exclusions
+ · PPPD ................................... [H50] — entity ABSENT from the program (decision D6)
+ · nystagmus classification ............... [H51] — CPN flags stand unsourced in two files (E2)
+ · hemodynamic orthostatic dizziness ...... [H52] — ABSENT; touches note 4 of criterion A in [H48]
+ · presbyvestibulopathy ................... [H53] — ABSENT; carries the disputed gain (decision D1)
+ · mal de débarquement .................... [H54] — ABSENT; the axis that separates it from [H50]
+ · vestibular migraine of childhood ....... [H55] — ABSENT; a second criteria set beside [H46]
+ · SCDS ................................... [H56] — entity MODELLED, but on [H18], not on ICVD
+ · motion sickness ........................ [H57] — ABSENT
+ · vascular vertigo and dizziness ......... [H58] — red flags rest on [H24] and [H8], not criteria
+ · AUVP / vestibular neuritis ............. [H59] — entity MODELLED widely, with no document
+ · cervical dizziness (position paper) .... [H60] — ABSENT; the paper REFUSES to give criteria
+ · ICVD review 2025 ....................... [H61] — states what does not exist yet
+
+THREE DOCUMENTS ALREADY HAD NUMBERS: bilateral vestibulopathy [H19], Menière's disease [H20],
+vestibular migraine [H46]. NOTE: [H19] and [H20] CARRY A DESCRIPTION OF THE ENTITY BUT NOT THE
+CONTENT OF ITS CRITERIA — measured for [H20]: "30 dB" 0 hits, "20 min" 0, "12 h" 0. Completing
+them is stage E4, not E0.
+
+THE NINETEENTH DOCUMENT — the original vestibular migraine criteria (Lempert 2012) — GETS NO NUMBER
+(user's decision, 2026-08-21). The criteria are cited from [H46], their current carrier; the 2012
+version served as EVIDENCE, and the comparison is recorded in the [H46] entry.
+
+WHAT THIS MAP DOES NOT SETTLE. A bibliography entry does NOT mean the entity enters the program.
+OTOREPO is an application about BPPV and acute dizziness, not an atlas of otoneurology — and
+"deliberately out of scope" is as good a decision here as "included", provided it was TAKEN AND
+RECORDED rather than following from not knowing the document. Per-entity resolution: stage E6.
+
+SEVENTY-FIVE CONFLICTS between the ICVD documents themselves (34 hard, 35 tensions, 6 successions)
+await the user's decisions; eight of them block the writing of further chapters. Until they are
+taken, NO disputed threshold enters the engine — in particular the gain thresholds carried by
+entries [H19], [H53] and [H59].
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
@@ -3622,6 +3671,404 @@ carries one thing at a time.
         dizziness-clinic patients, 13% of headache-clinic patients; 65-85% are women. More than half
         have a comorbid psychiatric disorder — that last figure comes from the section on
         psychiatric dizziness, not from the epidemiological one.
+      → VERIFIED AGAINST THE ORIGINAL VERSION (E0, 2026-08-21). The sentence "the criteria of 2012
+        were left unchanged" had until now been REPORTED FROM THIS PAPER. Having obtained the full
+        text of the 2012 version (Lempert T et al., J Vestib Res 22(4):167–172,
+        doi:10.3233/VES-2012-0453, PMID 23142830), both texts were compared: the criteria are
+        IDENTICAL WORD FOR WORD, with the SINGLE exception of "ICHD" → "ICHD-3" in criterion B of
+        the definite form. The preface of the 2022 version confirms this. The 2012 version GETS NO
+        number of its own (user's decision, 2026-08-21): the criteria are cited from this paper as
+        their current carrier, and 2012 serves as EVIDENCE, not as a citation source.
+        OUTSIDE the criteria the versions DO differ: the 2012 introduction says "up to 1%" of the
+        general population, the 2022 introduction "up to 2.7%" — but the epidemiology section of
+        the 2022 version gives the RANGE 1–2.7%, which is what the entry above carries, so the
+        agreement is complete. The aura section was renamed ("basilar-type migraine" → "migraine
+        with brainstem aura, formerly termed basilar-type"), and the childhood section was widened
+        to include vestibular migraine of childhood (see H55).
+
+[H47] Bisdorff A, Von Brevern M, Lempert T, Newman-Toker DE (2009). "Classification of vestibular
+      symptoms: Towards an international classification of vestibular disorders — First consensus
+      document of the Committee for the Classification of Vestibular Disorders of the Bárány
+      Society." J Vestib Res 19(1–2):1–13. doi:10.3233/VES-2009-0343. PMID 19893191.
+      LICENCE: the publisher's PDF states "IOS Press and the authors. All rights reserved" — free
+      to read (bronze OA) but WITHOUT an open licence; reprinting is excluded, paraphrase mandatory.
+      → THE DICTIONARY OF VESTIBULAR SYMPTOMS — the first ICVD document and the basis every other
+        ICVD paper draws on. Four top-level categories: 1. Vertigo, 2. Dizziness, 3. Vestibulo-visual
+        symptoms, 4. Postural symptoms — 31 entries in all, each with a definition and a comment.
+        VERTIGO splits into spontaneous and triggered (positional, head-motion, visually induced,
+        sound-induced, Valsalva-induced, orthostatic); DIZZINESS has a symmetric split. Category 3
+        (oscillopsia, visual lag, visual tilt, movement-induced blur) and category 4 (unsteadiness,
+        directional pulsion, balance-related near-fall and fall) have NO counterpart in the OTOREPO
+        string layer.
+        REJECTED TERMINOLOGY: the paper runs 18 blocks of "Terms not used in this nomenclature" —
+        25 terms explicitly rejected. MEASURED 2026-08-21: at least EIGHT later ICVD papers
+        themselves use terms from that list, some inside the text of a criterion. The terminological
+        drift is therefore a property of ICVD AS A WHOLE, not a defect of our program — and must be
+        described as such.
+        SOURCE BOUNDARIES, measured by grep over the full text: the string "central" = 2 hits, both
+        outside any criterial sense ("central processing" in the description of the system; a
+        laboratory population listed in comment 3.4) — THE PAPER DEFINES NO SYMPTOM AS CENTRAL OR
+        PERIPHERAL and gives no rule for telling them apart; on the contrary, its consensus principle
+        states plainly that no vestibular symptom carries a fully specific topological or nosological
+        meaning. The string "ICD" = 0 hits, "ICHD" = 1 (the expansion of the abbreviation only, with
+        no item number). TREATMENT: "treat"/"manag"/"Epley"/"repositioning" = 0 hits each — the paper
+        does not discuss treatment at all. INSTRUMENTAL TESTING: "MRI"/"caloric"/"audiome"/"vHIT"/
+        "Hallpike"/"VEMP" = 0 hits each; "SVV" = 1, in a DELIMITING sentence. EPIDEMIOLOGY:
+        "prevalen"/"inciden" = 0, the character "%" = 0 occurrences in the whole file.
+        THE TIMING-AND-TRIGGERS TAXONOMY DOES NOT BELONG TO THIS PAPER, although Newman-Toker is a
+        co-author: "vestibular syndrome"/"acute vestibular"/"episodic vestibular"/"AVS"/"EVS"/
+        "timing"/"red flag"/"GRACE" = 0 hits each. The AVS/EVS axis MUST NOT be cited from this
+        document — its source is [H24].
+
+[H48] von Brevern M, Bertholon P, Brandt T, Fife T, Imai T, Nuti D, Newman-Toker D (2015). "Benign
+      paroxysmal positional vertigo: Diagnostic criteria — Consensus document of the Committee for
+      the Classification of Vestibular Disorders of the Bárány Society." J Vestib Res
+      25(3–4):105–117. doi:10.3233/VES-150553. PMID 26756126.
+      LICENCE: the publisher's PDF states "IOS Press and the authors. All rights reserved" — as above.
+      → THE BPPV CRITERIA — THE DOCUMENT THE WHOLE APPLICATION STANDS ON. Until 2026-08-21 this paper
+        had NO number in the program: `baranyClassify` cited it by surname alone, `barany-check.mjs`
+        pointed at an engine_doc section that did not exist, and view_doc named "otoneurology memory"
+        as the source of the criteria. This entry closes that memory-based provenance.
+        STRUCTURE: section 2 = ESTABLISHED syndromes, section 3 = EMERGING and atypical ones. Every
+        subtype has four criteria A–D; criterion D is worded identically across eight sets ("not
+        attributable to another disorder", 8 hits) and allows a comorbid condition provided it can
+        be CLEARLY DISTINGUISHED.
+        2.1 POSTERIOR CANAL CANALOLITHIASIS: (A) recurrent attacks of positional vertigo or
+        positional dizziness provoked by lying down or turning over in the supine position;
+        (B) attack duration < 1 min; (C) positional nystagmus after a latency of ONE OR A FEW SECONDS
+        on the Dix-Hallpike or side-lying (diagnostic Semont) manoeuvre — a COMBINATION of torsional
+        nystagmus with the upper pole beating toward the LOWER ear and vertical nystagmus beating
+        UPWARD, typically lasting < 1 min; (D) as above.
+        2.2 HORIZONTAL CANAL CANALOLITHIASIS: as above, but the nystagmus follows a SHORT LATENCY OR
+        NO LATENCY, on the supine roll test, horizontal, GEOTROPIC (toward the lower ear) with the
+        head turned to either side, < 1 min. NOTE: absence of latency is here an EXPLICITLY ALLOWED
+        criterion.
+        THE NOTES CARRY HALF THE CLINICAL CONTENT and must be read together with the criteria:
+        note 8 — the latency may in rare cases reach 40 SECONDS; note 10 — nystagmus duration usually
+        DOES NOT EXCEED 40 s before it fades spontaneously; note 11 — a crescendo-decrescendo
+        envelope; note 12 — a REVERSED nystagmus of lesser intensity may follow; note 13 — on sitting
+        up, reversal is common, and FATIGABILITY on repetition is a COMMON phenomenon; note 9 — the
+        torsion is more prominent in the LOWER eye, the vertical component in the UPPER eye, and with
+        fixation retained the nystagmus looks predominantly torsional; note 5 (horizontal canal) —
+        RAPID LATERAL HEAD ROTATIONS WHILE ERECT can also act as a trigger.
+        SUBTYPE EPIDEMIOLOGY: posterior canal 80–90%, horizontal 5–30%, anterior 1–2% in large series
+        (though newer reports suggest more). The right labyrinth is affected slightly more often.
+        Bilateral posterior canalolithiasis is not rare and is commoner after trauma; A TRAP:
+        unilateral BPPV CAN MIMIC bilateral disease if the manoeuvre is done without proper head
+        positioning.
+        BPPV WITHOUT NYSTAGMUS: controversial; such patients ARE CODED AS 3.4 (possible BPPV).
+        ROLL TEST GEOMETRY: the paper gives a head elevation of "about 30°" — the engine computes
+        10.3° (HC_FLEX_DEG). This is a KNOWN, UNRESOLVED divergence; see decision D5 in
+        przesiew_icvd.md.
+        CANALITH JAM and PERSISTENT GEOTROPIC DCPN: the paper DESCRIBES both in its introduction as
+        phenomena of unclear pathophysiology — canalith jam as a postulated locking of the cupula,
+        and persistent geotropic DCPN as a picture compatible with NEITHER mobile debris NOR debris
+        on the cupula, tentatively linked to a change in the density of cupula or endolymph ("but
+        this remains speculative"). They are NOT criterial subtypes — the engine marks them as
+        "outside the ICVD classification" and is to keep doing so.
+
+[H49] Strupp M, Lopez-Escamez JA, Kim JS, Straumann D, Jen JC, Carey J, Bisdorff A, Brandt T (2016).
+      "Vestibular paroxysmia: Diagnostic criteria." J Vestib Res 26(5–6):409–415.
+      doi:10.3233/VES-160589. PMID 28262641. PMC9249278. Licence CC BY-NC 4.0.
+      → VESTIBULAR PAROXYSMIA. An entity mentioned in the program EXACTLY ONCE — in the exclusion
+        block of the migraine card (criterion D) — and without a number of its own; this entry fixes
+        that.
+        DEFINITE FORM, five criteria (conjunction): (A) at least TEN attacks of SPONTANEOUS vertigo,
+        spinning or non-spinning; (B) duration SHORTER THAN 1 MINUTE; (C) a stereotyped phenomenology
+        in the given patient; (D) RESPONSE TO CARBAMAZEPINE/OXCARBAZEPINE; (E) no better explanation.
+        THE PROBABLE FORM HAS ITS OWN FULL SET, not an "N of M" construction: (A) at least FIVE
+        attacks (without the word "spontaneous"); (B) duration SHORTER THAN 5 MINUTES; (C) occurring
+        spontaneously OR provoked by particular head movements; (D) stereotypy; (E) no better
+        explanation. THE DRUG CRITERION DISAPPEARS — note 7 sends here the patient NOT YET TREATED,
+        in whom criterion D of the definite form cannot be applied.
+        DOSES: carbamazepine 200–800 mg/day, oxcarbazepine 300–900 mg/day. Attack frequency ranges
+        from 30/day to a few per year; the course is usually longer than 3 months.
+        IMPORTANT FOR DIFFERENTIATION FROM BPPV: the triggering movements TYPICALLY DO NOT FOLLOW A
+        BPPV PATTERN, and if positional manoeuvres are NEGATIVE, paroxysmia remains an important
+        differential.
+        BOUNDARY: the horizontal-torsional nystagmus beating toward the affected ear is described
+        CONDITIONALLY (note 6: "if the patient is examined during an attack, it MAY be observed") —
+        it is NOT a criterion. The paper defines no "possible" form ("possible VP" = 0 hits).
+
+[H50] Staab JP, Eckhardt-Henn A, Horii A, Jacob R, Strupp M, Brandt T, Bronstein A (2017).
+      "Diagnostic criteria for persistent postural-perceptual dizziness (PPPD) — Consensus document
+      of the Committee for the Classification of Vestibular Disorders of the Bárány Society."
+      J Vestib Res 27(4):191–208. doi:10.3233/VES-170622. PMID 29036855. PMC9249299.
+      Licence CC BY-NC 4.0.
+      BIBLIOGRAPHIC NOTE: the Bárány Society web page gives pages 113–125 for this paper —
+      INCORRECTLY. The full-text metadata and the registry agree on 191–208. Verified 2026-08-21.
+      → PPPD — PERSISTENT POSTURAL-PERCEPTUAL DIZZINESS. Five criteria A–E, all required.
+        (A) dizziness OR unsteadiness OR non-spinning vertigo on MOST DAYS for 3 MONTHS OR LONGER —
+        operationalised in note 2 as MORE THAN 15 OF EVERY 30 DAYS; symptoms last hours, wax and
+        wane, and need not be present all day; sekunds-long "flares" ALONE DO NOT SATISFY criterion A.
+        (B) symptoms exacerbated by THREE factors — ALL THREE REQUIRED: upright posture, active or
+        passive motion REGARDLESS OF DIRECTION, and exposure to moving or complex visual stimuli;
+        avoidance of these factors MAY count as fulfilment. (C) the disorder is PRECIPITATED by a
+        condition causing vertigo or imbalance — with the percentages from note 6: peripheral or
+        central vestibular disorders 25–30%, vestibular migraine attacks 15–20%, panic attacks or
+        anxiety 15%, concussion or whiplash 10–15%, autonomic disorders 7%, others ~3%.
+        (D) significant distress OR functional impairment. (E) no better explanation.
+        MOST IMPORTANT FOR THE PROGRAM: PPPD IS NOT A DIAGNOSIS OF EXCLUSION — the paper says so
+        outright, and AN ABNORMAL TEST RESULT DOES NOT RULE PPPD OUT; on the contrary, when the
+        criteria are met, positive findings point to an ongoing precipitant or a comorbid illness.
+        That INVERTS the logic the program applies everywhere else.
+        NO PROBABLE FORM EXISTS — the subcommittee DELIBERATELY DECLINED to define one (§4.2.3,
+        "probable" = 2 hits, both in the context of that refusal). Any "probable PPPD" in the program
+        would be an invention beyond the source. This DIFFERS from [H46], where a probable form does
+        exist.
+        DIFFERENTIATION FROM MdDS (see H54): in MdDS re-exposure to passive motion TEMPORARILY
+        REDUCES symptoms, whereas in PPPD it far more often INTENSIFIES them — these are the defining
+        features of both entities and the axis that separates them. PPPD DOES NOT CAUSE OSCILLOPSIA.
+
+[H51] Eggers SDZ, Bisdorff A, von Brevern M, Zee DS, Kim JS, Perez-Fernandez N, Welgampola MS,
+      Della Santina CC, Newman-Toker DE (2019). "Classification of vestibular signs and examination
+      techniques: Nystagmus and nystagmus-like movements." J Vestib Res 29(2–3):57–87.
+      doi:10.3233/VES-190658. PMID 31256095. PMC9249296. Licence CC BY-NC 4.0.
+      → THE ICVD NYSTAGMUS DICTIONARY — the largest document in the corpus (114k characters),
+        67 naming entries. Until 2026-08-21 the string "Eggers" had 0 hits in the WHOLE repository,
+        even though the program describes nystagmus in its own conventions across hundreds of lines,
+        and SIX red flags of central positional nystagmus stand in TWO independent literals
+        (svg-screens.js and obs-model.js) WITHOUT A SOURCE — and BLOCK the treatment card. This is
+        the document responsible for those flags; wiring it to them is the substance of stage E2.
+        SCOPE RELEVANT TO THE PROGRAM: positional nystagmus (types, directions, geotropic/apogeotropic),
+        spontaneous, gaze-evoked, head-shaking, fixation suppression, and examination techniques.
+        The paper ADVISES AGAINST the term "headshaking nystagmus" and RESTRICTS the use of "Bruns" —
+        the program today uses terms it advises against (to be checked in E2).
+        A DIFFERENCE FROM H48, IMPORTANT AND UNRESOLVED: Eggers calls the BPPV picture a PHENOTYPE,
+        whereas the entity name in von Brevern asserts a MECHANISM; the two papers also give different
+        numbers for positional nystagmus durations, and FATIGABILITY is a peripheral feature in
+        von Brevern but a CENTRAL CLUE in Eggers — while the engine uses it as a mechanism
+        discriminator. See przesiew_icvd.md, conflicts K8 and K19.
+
+[H52] Kim HA, Bisdorff A, Bronstein AM, Lempert T, Rossi-Izquierdo M, Staab JP, Strupp M, Kim JS
+      (2019). "Hemodynamic orthostatic dizziness/vertigo: Diagnostic criteria." J Vestib Res
+      29(2–3):45–56. doi:10.3233/VES-190655. PMID 30883381. PMC9249281. Licence CC BY-NC 4.0.
+      → HEMODYNAMIC ORTHOSTATIC DIZZINESS/VERTIGO. A definite and a probable form, both requiring
+        AT LEAST 5 EPISODES; the probable form requires at least one symptom from a list of four.
+        Orthostatic hypotension is defined as a fall in systolic pressure > 20 mmHg and/or diastolic
+        > 10 mmHg within 3 MINUTES of standing up or on head-up tilt.
+        A TERMINOLOGICAL DISTINCTION THE PROGRAM LACKS: ORTHOSTATIC symptoms (on assuming an upright
+        posture) are NOT THE SAME as POSITIONAL symptoms (on changing head position relative to
+        gravity, as in BPPV). The paper considers "postural dizziness" NON-SPECIFIC and ADVISES
+        AGAINST using it without further qualification. If symptoms already begin while lying down,
+        the term "orthostatic" is INADEQUATE.
+        CONTACT WITH BPPV: criterion D of canalolithiasis in [H48] (note 4) explicitly requires
+        DISTINGUISHING positional vertigo from orthostatic symptoms present only on arising. The
+        program draws no such distinction today — the string "orthostat" has 0 hits in src/.
+
+[H53] Agrawal Y, Van de Berg R, Wuyts F, Walther L, Magnusson M, Oh E, Sharpe M, Strupp M (2019).
+      "Presbyvestibulopathy: Diagnostic criteria — Consensus document of the Classification
+      Committee of the Bárány Society." J Vestib Res 29(4):161–170. doi:10.3233/VES-190672.
+      PMID 31306146. PMC9249286. Licence CC BY-NC 4.0.
+      → PRESBYVESTIBULOPATHY — age-related bilateral vestibular hypofunction. ONE set of criteria
+        A–D, with NO definite/probable/possible forms.
+        AGE THRESHOLD: 60 years and over. FUNCTIONAL THRESHOLD: horizontal VOR gain in the range
+        0.6–0.8 — that is, BETWEEN normal and the bilateral-vestibulopathy threshold of [H19].
+        THE THRESHOLD CONFLICT, CRITICAL FOR THE ENGINE: three ICVD papers define the same horizontal
+        canal deficit with three different numbers, on three different statistics and under differing
+        or UNSTATED stimulus protocols — [H19] BVP < 0.6 (sum of peaks), this paper 0.6–0.8 (sum of
+        means), [H59] AUVP < 0.7 (a single response). The engine today holds BVP_CUT 0.6 and
+        GAIN_CUT {HC 0.8; vertical 0.7}, the latter attributed to a surname with no number.
+        Resolution = decision D1 in przesiew_icvd.md; until it is taken, NONE of these thresholds may
+        be attributed to this paper.
+        BOUNDARY: the use of the range "between 0.6 and 0.8" rather than strict operators means that
+        a gain of exactly 0.600 falls outside the classification — see the threshold conflict in
+        przesiew_icvd.md.
+
+[H54] Cha YH, Baloh RW, Cho C, Magnusson M, Song JJ, Strupp M, Wuyts F, Staab JP (2020). "Mal de
+      débarquement syndrome diagnostic criteria — Consensus document of the Classification Committee
+      of the Bárány Society." J Vestib Res 30(5):285–293. doi:10.3233/VES-200714. PMID 32986636.
+      PMC9249277. Licence CC BY-NC 4.0.
+      → MAL DE DÉBARQUEMENT SYNDROME. Symptoms of self-oscillation (rocking, swaying, bobbing)
+        beginning AFTER the cessation of passive motion and lasting AT LEAST 48 HOURS.
+        THE DEFINING FEATURE that separates it from PPPD: re-exposure to passive motion TEMPORARILY
+        REDUCES the symptoms — in PPPD exposure INTENSIFIES them (see H50). Sensitivity to complex
+        visual stimuli occurs in MOST MdDS patients but is NOT one of its core features, whereas in
+        PPPD it is a defining feature.
+        AGAINST VESTIBULAR MIGRAINE: more than 50% of MdDS patients NEVER in their lives meet the
+        migraine criteria, and the rate of migraine BEFORE the onset of MdDS does not appear higher
+        than the population baseline. RULE FOR CO-DIAGNOSIS: if the criteria for both disorders are
+        separately met, vestibular migraine is diagnosed IN ADDITION to MdDS, not instead of it.
+        THE 48-HOUR BOUNDARY: the 2020 criterion says "> 48 h", while the same first author writes
+        "at least 48 h" in the 2021 paper (H57) — see the succession conflict in przesiew_icvd.md.
+
+[H55] van de Berg R, Widdershoven J, Bisdorff A, Evers S, Wiener-Vacher S, Cushing SL, Mack KJ,
+      Kim JS, Jahn K, Strupp M, Lempert T (2021). "Vestibular migraine of childhood and recurrent
+      vertigo of childhood: Diagnostic criteria — Consensus document of the Committee for the
+      Classification of Vestibular Disorders of the Bárány Society and the International Headache
+      Society." J Vestib Res 31(1):1–9. doi:10.3233/VES-200003. PMID 33386837. PMC9249292.
+      Licence CC BY-NC 4.0.
+      → THREE CHILDHOOD ENTITIES, all carrying the condition AGE < 18 YEARS.
+        VESTIBULAR MIGRAINE OF CHILDHOOD (VMC): (A) at least FIVE episodes of vestibular symptoms of
+        moderate or severe intensity, 5 min – 72 h; (B) migraine with or without aura, current or
+        past; (C) at least HALF the episodes with at least one migraine feature (headache with ≥ 2 of
+        four features OR photophobia AND phonophobia OR VISUAL aura); (D) age < 18; (E) no better
+        explanation.
+        PROBABLE VMC: (A) at least THREE episodes, 5 min – 72 h; (B) EXACTLY ONE of criteria B and C
+        fulfilled; (C) age < 18; (D) no better explanation.
+        RECURRENT VERTIGO OF CHILDHOOD (RVC), replacing the term "benign paroxysmal vertigo of
+        childhood": (A) at least THREE episodes lasting FROM 1 MINUTE to 72 h; (B) NEITHER of
+        criteria B and C for VMC is fulfilled; (C) age < 18; (D) no better explanation. The paper
+        STATES EXPLICITLY that RVC is not a homogeneous entity but a mixture.
+        THRESHOLD DIFFERENCES AGAINST THE ADULT VERSION [H46]: episode count 5 → 3 for the probable
+        form and for RVC; the LOWER TIME BOUND 5 min → 1 MINUTE in RVC. The latter matters for the
+        program: in a person under 18 TWO criteria sets apply and there is NO RULE OF PRECEDENCE —
+        see przesiew_icvd.md.
+        NO INSTRUMENTAL REQUIREMENTS: §5.5 states outright that a normal neurological examination,
+        audiometry, vestibular function and EEG — present in the earlier criteria — were NOT included,
+        because nystagmus, fluctuating hearing loss and vestibular hypofunction can also occur in
+        vestibular migraine.
+
+[H56] Ward BK, van de Berg R, van Rompaey V, Bisdorff A, Hullar TE, Welgampola MS, Carey JP (2021).
+      "Superior semicircular canal dehiscence syndrome: Diagnostic criteria — Consensus document of
+      the Committee for the Classification of Vestibular Disorders of the Bárány Society."
+      J Vestib Res 31(3):131–141. doi:10.3233/VES-200004. PMID 33522990. PMC9249274.
+      Licence CC BY-NC 4.0.
+      → SUPERIOR SEMICIRCULAR CANAL DEHISCENCE SYNDROME (SCDS) — the ICVD criterial document the
+        program did not have: SCDS rested in the engine on [H18] Minor 2000, a primary paper, NOT on
+        a consensus.
+        ONE FORM, named "definite SCDS" — probable and possible forms were CONSIDERED AND REJECTED by
+        the committee (§4.1). Four criteria joined by conjunction:
+        (1) at least ONE third-mobile-window symptom: bone-conduction hyperacusis OR SOUND-INDUCED
+        vertigo/oscillopsia time-locked to the stimulus OR PRESSURE-INDUCED vertigo/oscillopsia OR
+        pulsatile tinnitus; (2) at least ONE sign or test result: nystagmus in the plane of the
+        superior canal evoked by sound or pressure change OR NEGATIVE bone-conduction thresholds at
+        low frequencies OR AUGMENTED VEMP responses (low cVEMP THRESHOLDS or high oVEMP AMPLITUDES);
+        (3) high-resolution temporal bone CT (preferably 0.2 mm or better) with reconstruction in the
+        plane of the superior canal AND orthogonal to it, demonstrating dehiscence; (4) no better
+        explanation.
+        A CATEGORICAL RULE (§4.9): a diagnosis of SCDS must NEVER be based on CT alone — even
+        optimised scans yield false positives, and CT OVERESTIMATES the presence of dehiscence.
+        ANATOMICAL DEHISCENCE ALONE IS NOT ENOUGH.
+        THE PAPER GIVES NO NUMERICAL CUT-OFF FOR VEMP AT ALL — thresholds and amplitudes are compared
+        with the norms of the SPECIFIC laboratory. The engine holds the constant VEMP_SCDS = 2.0;
+        that number MUST NOT be attributed to this paper.
+        SYMPTOMS EXPLICITLY EXCLUDED FROM THE CRITERIA (§4.2): aural fullness, "brain fog", chronic
+        imbalance, worsening of migraine. Dehiscences of the POSTERIOR and HORIZONTAL canals are NOT
+        covered by these criteria (§4.12).
+
+[H57] Cha YH, Golding JF, Keshavarz B, Furman J, Kim JS, Lopez-Escamez JA, Magnusson M, Yates BJ,
+      Lawson BD (2021). "Motion sickness diagnostic criteria — Consensus document of the
+      Classification Committee of the Bárány Society." J Vestib Res 31(5):327–344.
+      doi:10.3233/VES-200005. PMID 33646187. PMC9249300. Licence CC BY-NC 4.0.
+      → MOTION SICKNESS. The paper defines FOUR entities, not one: an acute episode of motion
+        sickness (stimulus = PHYSICAL MOTION of the person) and an acute episode of VIMS
+        (stimulus = VISUAL MOTION), plus the corresponding DISORDERS: MSD and VIMSD.
+        ACUTE EPISODE, criteria A–D: (A) the stimulus provokes a symptom in at least ONE of five
+        categories at GREATER-THAN-MINIMAL severity — nausea/gastrointestinal disturbance,
+        thermoregulatory disturbance, alertness changes, dizziness and/or vertigo, headache and/or
+        eyestrain; (B) symptoms BEGIN DURING the motion and INCREASE with prolonged exposure;
+        (C) they EVENTUALLY RESOLVE after the motion stops; (D) no better explanation.
+        THE A–D SET IS ONE AND THE SAME for motion sickness and for VIMS — they differ ONLY in the
+        kind of stimulus in criterion A.
+        MSD / VIMSD, criteria A–E: (A) at least FIVE episodes provoked by the same or a similar
+        stimulus; (B) reliably reproducible triggering; (C) severity DOES NOT MEANINGFULLY DECREASE
+        with repeated exposure (i.e. FAILURE TO HABITUATE — the core feature); (D) symptoms lead to
+        activity modification OR avoidance OR aversive anticipatory emotions; (E) no better
+        explanation. PROBABLE FORM: 2–4 episodes — the ONLY graded form in the whole paper; for the
+        acute episode the paper provides NO grades of certainty.
+        DELIMITATION FROM MdDS (note 9): symptom onset MUST occur DURING the stimulus and may not
+        begin only after it ceases — MdDS begins ONLY after the motion stops and lasts at least
+        48 hours.
+        RULE FOR CO-DIAGNOSIS (note 10): where it coexists with vestibular migraine, vestibular
+        neuritis or PPPD, BOTH DIAGNOSES ARE TO BE MADE, not one chosen.
+        MILD motion sickness, easily avoided or without functional impact, SHOULD NOT be regarded as
+        a disorder (§3.4).
+
+[H58] Kim JS, Newman-Toker DE, Kerber KA, Jahn K, Bertholon P, Waterston J, Lee H, Bisdorff A,
+      Strupp M (2022). "Vascular vertigo and dizziness: Diagnostic criteria." J Vestib Res
+      32(3):205–222. doi:10.3233/VES-210169. PMID 35367974. PMC9249306. Licence CC BY-NC 4.0.
+      → VASCULAR VERTIGO AND DIZZINESS — the most important ICVD document for the program's RED-FLAG
+        layer, whose statements currently rest on [H24] GRACE-3 and [H8] Kattah, but NOT on a
+        criterial document.
+        THE ACUTE PROLONGED FAMILY (≥ 24 h): the imaging-confirmed form requires (A) symptoms ≥ 24 h,
+        (B) IMAGING EVIDENCE of infarction or haemorrhage in the brain OR IN THE INNER EAR matching
+        the clinical picture, (C) no better explanation. THE PROBABLE FORM REQUIRES NO IMAGING AT
+        ALL — (A) plus AT LEAST ONE of: focal central signs or SEVERE TRUNCAL ATAXIA; at least one
+        central HINTS component; other central oculomotor abnormalities; increased vascular risk
+        (ABCD2 ≥ 4 or atrial fibrillation).
+        THE DEFINITION OF SEVERE TRUNCAL ATAXIA (note 3), which the program lacks: INABILITY to
+        maintain an upright SITTING or STANDING position without support; in a non-ambulatory patient
+        this is tested as sitting upright on a stretcher with the arms crossed. MILD-TO-MODERATE
+        ATAXIA DOES NOT EXCLUDE A CENTRAL LESION.
+        THE TRANSIENT FAMILY (< 24 h) and "IN EVOLUTION" (assessed within 24 h of onset): the
+        probable transient form DOES NOT INCLUDE HINTS in list B — the reason, in note 3, is that
+        symptoms had already resolved in about 73% (63/86) by the time of examination, so HINTS and
+        MRI are of LIMITED use in a transient vestibular syndrome.
+        THE AICA TRAP (note 5): ~5% of AICA strokes produce acute prolonged vertigo with canal paresis
+        and NO hearing loss, mimicking a peripheral syndrome; HINTS was negative in 5/17 (29.4%) of
+        AICA infarcts.
+        VERTEBRAL ARTERY COMPRESSION SYNDROME (VACS) has its own four criteria with MANDATORY
+        instrumental confirmation (dynamic angiography OR transcranial Doppler during the provoking
+        head movement). Subclavian steal is EXPLICITLY EXCLUDED from the classification, and the term
+        "vertebrobasilar insufficiency" is DISCOURAGED.
+        IMPORTANT: NINDS III and the ESO DO NOT accept isolated vertigo as a symptom of
+        vertebrobasilar TIA.
+
+[H59] Strupp M, Bisdorff A, Furman J, Hornibrook J, Jahn K, Maire R, Newman-Toker D, Magnusson M
+      (2022). "Acute unilateral vestibulopathy/vestibular neuritis: Diagnostic criteria."
+      J Vestib Res 32(5):389–406. doi:10.3233/VES-220201. PMID 35723133. PMC9661346.
+      Licence CC BY-NC 4.0.
+      → ACUTE UNILATERAL VESTIBULOPATHY (AUVP) / VESTIBULAR NEURITIS. The criterial document for an
+        entity the program models extensively (presets neuritisR/L, 148 hits of "neuronit"/"neuritis"
+        in the repository) — yet until now WITHOUT a criterial document, resting on [H15] Fetter 1996
+        and [H22] Musat 2025.
+        THE NAME: the paper introduces AUVP alongside the traditional "vestibular neuritis"; the
+        string "acute unilateral vestibulopathy" has 0 hits in src/ today. Whether the two terms are
+        synonyms and which one the program should carry — see decision D3 and the naming conflict in
+        przesiew_icvd.md.
+        AN INTERNAL CONTRADICTION, MEASURED: the instrumental criterion appears TWICE in the paper in
+        INCOMPATIBLE forms — note 12 gives it as a DISJUNCTION, §4.4.1 as a CONJUNCTION with a third
+        condition. These are two different patient sets, and since the conflict is INSIDE one paper it
+        cannot be settled by preferring a newer source. For the user to resolve — decision D2 in
+        przesiew_icvd.md. UNTIL THEN no AUVP threshold enters the engine.
+        NOTE: the adversarial verification of this paper's extraction aborted on an API error
+        (2026-08-21) — the extraction `17-strupp2022-auvp.md` has NOT passed full checking and must
+        do so before stage E4.
+
+[H60] Seemungal BM, Agrawal Y, Bisdorff A, Bronstein A, Cullen KE, Goadsby PJ, Lempert T, Kothari S,
+      Lim PB, Magnusson M, Marcus HJ, Strupp M, Whitney SL (2022). "The Bárány Society position on
+      'Cervical Dizziness'." J Vestib Res 32(6):487–499. doi:10.3233/VES-220202. PMID 36404562.
+      PMC9837683. Licence CC BY-NC 4.0.
+      → A POSITION PAPER, NOT CRITERIA — and that is its point. The committee WITHHOLDS any diagnostic
+        criteria and any specific therapy outside of research. Evidence is lacking for a mechanistic
+        link between the illusion of self-motion and neck pathology or neck pain.
+        WHAT THE PAPER SAYS INSTEAD: when a complex head-and-neck movement triggers spinning, the
+        cause is EITHER a common vestibular entity — MIGRAINE or BPPV — OR, less often, a central
+        condition, including, with acute onset, vertebral artery dissection with posterior
+        circulation stroke. Migraine, including vestibular migraine, is BY FAR the commonest cause of
+        neck pain occurring together with vestibular symptoms.
+        THE EXCLUSION RULE (the hardest operational content): cervical dizziness can be RULED OUT if
+        EITHER condition holds — (1) there is NO neck pain or discomfort; (2) the dizziness EVER
+        occurs spontaneously OR is PURELY POSITIONAL. THE DIRECT CONSEQUENCE FOR THE PROGRAM: all of
+        BPPV's positionality goes to BPPV by this paper's own rule.
+        RESPONSE TO THERAPY CANNOT BE PART OF THE DEFINITION (§5) — top-down effects can themselves
+        produce vertigo and nystagmus.
+        WHAT THE PAPER DOES NOT DENY: the committee accepts that further research is needed into the
+        rare cases in which neck muscle spasm is associated with a vague sense of spatial
+        disorientation; the position may change as new evidence appears.
+        EXPLICITLY OUT OF SCOPE: cervical vascular vertigo (regarded as a separate and exceedingly
+        rare entity) and whiplash.
+
+[H61] Kaski D, Tarnutzer AA, Agrawal Y, Carey J, Cha YH, Eggers SD, Furman J, Kim HA, Kim JS,
+      Lempert T, López-Escámez JA, Magnusson M, Newman-Toker DE, Seemungal BM, Staab JP, Strupp M,
+      van de Berg R, von Brevern M, Ward BK, Bisdorff A (2025). "The International Classification of
+      Vestibular Disorders: Achievements, challenges, and future directions." J Vestib Res
+      35(3):105–112. doi:10.1177/09574271251313803. PMID 39973600. PMC12231871. Licence CC BY.
+      → A REVIEW OF ICVD AS A WHOLE — the only paper in the corpus under CC BY (the rest are CC BY-NC
+        or all-rights-reserved). It is NOT a criterial document; it lists the ICVD entities together
+        with those that have no published criteria yet, and reports known weaknesses.
+        VALUE FOR THE PROGRAM: it says what does NOT yet exist — and the program should not run ahead
+        of documents still in preparation. Among other things it announces a REVISION of the
+        definition of vertigo from [H47] (declared incomplete; the correction is ANNOUNCED, NOT
+        INTRODUCED) and a revision of the question whether BPPV requires a SYMPTOM or nystagmus alone
+        suffices.
+        A MEASURED BOUNDARY: the paper speaks of "levels of diagnostic certainty" but DOES NOT NAME
+        them — the strings "definite" and "probable" have 0 hits. A unified grid of certainty levels
+        therefore cannot be cited from it; the corpus contains NO harmonisation document, and the word
+        "probable" means at least seven different things across ICVD (including OPPOSITE things in
+        [H19] and [H59]). Any unification in the program will be an EDITORIAL DECISION OF OTOREPO,
+        not a citation — and must be described as such.
 
 === DEBRIS CLOUD — the multi-particle ensemble (D9/V20, 2026-08-16) ===
 ORCHESTRATION ABOVE THE ENGINE, no physics (zero edits to vestibular.js): the cloud = N=9
