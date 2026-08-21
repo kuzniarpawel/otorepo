@@ -276,7 +276,9 @@ KLASYFIKACJA BÁRÁNY (CPN) + PANEL SVV/VEMP — ZROBIONE 2026-07-15 (checkpoint
         kierunek spoza kanału / objawy neuro) + schemat UPORCZYWEGO DOWNBEATU (pętla CIĄGŁA startNeuroNys, dir=0 →
         czysty downbeat bez torsji, nie wygasa) + „Repozycja niewskazana" (blokada karty zalecenia). Domyślnie
         obwodowy → golden deterministyczny. [commit #1]
-        [view_doc: KLASYFIKACJA BÁRÁNY / CPN; pełne kryteria Bárány 2015 (BPPV + CPN) = pamięć otoneurologiczna]
+        [view_doc: KLASYFIKACJA BÁRÁNY / CPN; kryteria BPPV = [H48] von Brevern 2015, engine_doc „KRYTERIA BPPV"
+        (etap E1, 2026-08-21 — wcześniej stała tu „pamięć otoneurologiczna"); czerwone flagi CPN nadal bez
+        źródła — etap E2, [H51] Eggers 2019]
  [x] #2 HINTS: panel „Otolity — SVV & VEMP" (renderHints, po odchyleniu skośnym). Wizualizacja gotowych
         NeuroVOR.svv/vemp: linia SVV przechylona ku stronie chorej (ipsiwersyjnie, składowa OTR) + 4 słupki amplitud
         z progiem (cVEMP P/L = woreczek → n. DOLNY; oVEMP P/L = łagiewka → n. GÓRNY). Statyczne; odświeżanie na żywo

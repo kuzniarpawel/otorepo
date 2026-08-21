@@ -36,8 +36,12 @@ segmentem „Obwodowy (BPPV) ↔ Ośrodkowy (CPN)" (state.diagCentral, handler t
    schemat UPORCZYWEGO DOWNBEATU (data-cpnnys: startNys z nysFromGeom("anterior",strona,"cupulo",qSupineYaw(0)) i
    NADPISANYM dir=0 → czysty downbeat bez torsji; persistent=true niesie uporczywą obwiednię), oraz zamiana karty
    „Sugerowane leczenie" na „Repozycja niewskazana" (nie repozycjonuj → neuro + MRI tylnego dołu; mimik: migrena
-   przedsionkowa). Reset diagCentral→false przy openTest/pickTest (świeże wejście w test). Kryteria: pamięć
-   otoneurologiczna „BPPV — kryteria Bárány 2015".
+   przedsionkowa). Reset diagCentral→false przy openTest/pickTest (świeże wejście w test).
+   ŹRÓDŁO KRYTERIÓW: [H48] von Brevern 2015 (Bárány/ICVD); pełna treść z przypisami w engine_doc.txt,
+   rozdział „KRYTERIA BPPV". Do etapu E1 (2026-08-21) stało tu „pamięć otoneurologiczna «BPPV — kryteria
+   Bárány 2015»" — czyli jako źródło kryteriów, na których stoi LICZĄCA karta klasyfikacji, podana była
+   pamięć modelu, a nie praca. Czerwone flagi CPN tej karty NADAL nie mają źródła: to osobny dług,
+   domykany w etapie E2 przez [H51] Eggers 2019.
 
 === PANEL OTOLITOWY — SVV & VEMP (HINTS) ===
 Panelbox w renderHints (po „Odchyleniu skośnym"), widoczny w KAŻDYM trybie (scenariusz + własny). Wizualizuje

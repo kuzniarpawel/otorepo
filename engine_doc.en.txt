@@ -3222,6 +3222,158 @@ await the user's decisions; eight of them block the writing of further chapters.
 taken, NO disputed threshold enters the engine — in particular the gain thresholds carried by
 entries [H19], [H53] and [H59].
 
+=== BPPV CRITERIA — Bárány/ICVD 2015 (E1, 2026-08-21) — [H48] von Brevern 2015 ===
+THIS IS THE SECTION THAT THREE POINTERS NAMED AND THAT DID NOT EXIST. The comment beside
+`baranyClassify` admitted as much ("the old pointer 'engine_doc: KRYTERIA BARANY' named a section
+that does not exist"), `barany-check.mjs` pointed here, and view_doc gave "otoneurology memory" as
+the source of these criteria. The criteria are PARAPHRASED — the paper is all-rights-reserved
+(see the [H48] entry).
+
+HOW THE CLASSIFICATION IS BUILT. Section 2 of the paper = ESTABLISHED syndromes, section 3 =
+EMERGING and controversial ones. In theory each of the three canals may be affected by
+canalolithiasis or cupulolithiasis, giving six combinations per ear; the paper states that all of
+them have been documented by eye-movement recordings and included in the classification EXCEPT
+CUPULOLITHIASIS OF THE ANTERIOR CANAL. That is the only combination outside the catalogue — which
+is why the card labels it "outside the ICVD classification" rather than "emerging" (fix in E1).
+
+CRITERION D (in 3.2 it is C) IS WORDED IDENTICALLY ACROSS EIGHT SETS: "not attributable to another
+disorder" — history and physical and neurological examination do not suggest another vestibular
+disorder OR such a disorder was considered and ruled out by appropriate investigations OR it is
+present as a comorbid condition THAT CAN BE CLEARLY DIFFERENTIATED.
+
+--- SECTION 2: ESTABLISHED SYNDROMES ---
+2.1 POSTERIOR CANAL CANALOLITHIASIS (pc-BPPV)
+  A. recurrent attacks of POSITIONAL vertigo or dizziness, provoked by lying down or turning over
+     in the supine position;
+  B. attack duration < 1 min;
+  C. positional nystagmus elicited AFTER A LATENCY OF ONE OR A FEW SECONDS by the Dix-Hallpike or
+     the side-lying (diagnostic Semont) manoeuvre — a COMBINATION of torsional nystagmus with the
+     upper pole of the eyes beating toward the LOWER ear AND vertical nystagmus beating UPWARD
+     (toward the forehead), typically lasting < 1 minute;
+  D. as above.
+2.2 HORIZONTAL CANAL CANALOLITHIASIS (hc-BPPV)
+  A. as 2.1;  B. attack duration < 1 min;
+  C. positional nystagmus elicited AFTER A SHORT LATENCY OR WITH NO LATENCY on the supine roll test,
+     beating HORIZONTALLY TOWARD THE LOWER ear with the head turned to EITHER side (GEOTROPIC
+     direction-changing nystagmus), lasting < 1 min;   D. as above.
+2.3 HORIZONTAL CANAL CUPULOLITHIASIS (hc-BPPV-cu) — NOTE: THREE CRITERIA, NOT FOUR
+  A. as 2.1;
+  B. positional nystagmus elicited after a brief or no latency on the supine roll test, beating
+     horizontally TOWARD THE UPPER ear with the head turned to either side (APOGEOTROPIC
+     direction-changing nystagmus), lasting > 1 MINUTE;
+  C. not attributable to another disorder.
+  THERE IS NO ATTACK-DURATION CRITERION HERE AT ALL — and this is not an omission of the paraphrase
+  but the structure of the paper: in cupulolithiasis it is the NYSTAGMUS that is timed, not the
+  attack. Note 1 explains why: an attack usually lasts < 1 min because the patient TURNS THE HEAD
+  BACK to a position in which the vertigo stops; if the provoking position is held it lasts longer,
+  and because of the spatial orientation of the affected cupula the patient may have PERSISTING
+  vertigo or dizziness OF LOWER INTENSITY EVEN WHEN UPRIGHT.
+  A MANDATORY EXCLUSION: apogeotropic positional nystagmus ALSO occurs as a sign of CENTRAL
+  vestibular dysfunction, so excluding CNS disease is MANDATORY.
+2.4 PROBABLE BPPV, SPONTANEOUSLY RESOLVED
+  A. as 2.1;  B. attack duration < 1 min;
+  C. NO observable nystagmus and NO vertigo on ANY positional manoeuvre;
+  D. not attributable to another disorder.
+  THE ENGINE DOES NOT KNOW THIS ENTITY. A negative positional test is a "model boundary" for us,
+  while in the paper it can be a DIAGNOSIS. That is not a flaw of the physics — the engine simulates
+  debris, and here the debris is gone — but the negative-result card could mention the possibility.
+  To be settled outside E1.
+
+--- SECTION 3: EMERGING AND CONTROVERSIAL SYNDROMES ---
+3.1 ANTERIOR CANAL CANALOLITHIASIS (ac-BPPV)
+  A. as 2.1;  B. attack duration < 1 min;
+  C. positional nystagmus elicited IMMEDIATELY OR after a latency of one or a few seconds by the
+     Dix-Hallpike manoeuvre (ON ONE OR BOTH SIDES) or in the supine straight head-hanging position,
+     beating PREDOMINANTLY VERTICALLY DOWNWARD and lasting < 1 min;   D. as above.
+  A SPLIT THE ENGINE DOES NOT HAVE: 3.1.1 DEFINITE anterior canalolithiasis — diagnosable on the
+  basis of IMMEDIATE resolution of the positional nystagmus after therapeutic manoeuvres;
+  3.1.2 PROBABLE — diagnosable ONLY after exclusion of CNS disease, when the nystagmus is REFRACTORY
+  to therapeutic manoeuvres. This is response-to-treatment used as a discriminator — the only such
+  instance in the paper.
+3.2 POSTERIOR CANAL CUPULOLITHIASIS (pc-BPPV-cu) — THREE CRITERIA
+  A. as 2.1;
+  B. positional nystagmus elicited after a brief or no latency by a "HALF DIX-HALLPIKE MANOEUVRE",
+     beating torsionally with the upper pole of the eye toward the lower ear AND vertically upward
+     (toward the forehead), lasting > 1 MINUTE;
+  C. not attributable to another disorder.
+  THE TEST POSITION IS A "HALF" DIX-HALLPIKE, NOT THE FULL ONE — the engine provokes this form with
+  the full manoeuvre. The difference is real (a different hang angle) but does NOT change the
+  direction of the nystagmus or the mechanism; recorded as a naming/procedural divergence, not as a
+  physics error.
+3.3 MULTIPLE CANAL LITHIASIS (mc-BPPV)
+  A. as 2.1;  B. attack duration < 1 min;
+  C. positional nystagmus COMPATIBLE WITH CANALOLITHIASIS OF MORE THAN ONE CANAL during the
+     Dix-Hallpike manoeuvre AND the supine roll test;   D. as above.
+  THE ENGINE MODELS ONE CANAL AT A TIME — it does not know this entity. The paper stresses that
+  positional manoeuvres for the vertical AND the horizontal canals must be performed in EVERY
+  patient with positional vertigo, precisely because several canals may be involved.
+3.4 POSSIBLE BPPV
+  A. attacks of positional vertigo MISSING ONE of the criteria of a disorder coded above;
+  B. not attributable to another disorder.
+  THIS IS WHERE patients with BPPV without nystagmus are coded (a controversial matter, see the
+  comment to 2.1), along with cases showing atypical nystagmus.
+
+--- THE NOTES CARRY HALF THE CLINICAL CONTENT ---
+Without its notes this paper's criteria are incomplete. The ones that matter for the engine:
+ · THE LATENCY may in RARE cases reach 40 SECONDS (note 8 to 2.1). The engine's chip says "1–5 s" —
+   that is typicality, not a bound; the paper sets NO upper bound of 5 s.
+ · THE NYSTAGMUS DURATION in 2.1 usually DOES NOT EXCEED 40 SECONDS before it fades spontaneously —
+   while criterion C says "typically < 1 minute". Two different numbers for one entity, both from
+   the source.
+ · A crescendo-decrescendo ENVELOPE (rapid rise, slower decay) — the engine reproduces it
+   emergently from debris physics, not from an annotation.
+ · REVERSAL: after the initial nystagmus stops, a REVERSED nystagmus of lesser intensity may appear;
+   on sitting up reversal is COMMON, and FATIGABILITY on repeated testing is a COMMON phenomenon.
+ · THE APPEARANCE DEPENDS ON GAZE: torsion is more prominent in the LOWER eye, the vertical
+   component in the UPPER eye; with fixation retained the nystagmus looks predominantly TORSIONAL
+   (fixation suppresses torsion less than the vertical component). In HEAD coordinates the movement
+   stays in the canal's plane regardless of eye position.
+ · TRIGGERS BEYOND THE BED: not only lying down but also tilting the head backward or forward, and
+   for the horizontal canal RAPID LATERAL HEAD ROTATIONS WHILE ERECT.
+ · ATTACK DURATION: patients OVERESTIMATE the length of a single attack; mild residual symptoms may
+   last minutes or hours, and attacks may be triggered in series. Vertigo should nonetheless not
+   generally exceed 1 minute — attacks CONSISTENTLY longer should prompt consideration of an
+   alternative or additional diagnosis.
+
+--- TWO DIVERGENCES OF THE ENGINE FROM THE CRITERIA, NAMED RATHER THAN HIDDEN (decisions D4 and D5) ---
+1. THE ANTERIOR CANAL: criterion 3.1 C demands nystagmus lasting < 1 min, and the engine measures
+   61.25 s. THE USER'S DECISION: the physics stays, the divergence is NAMED. The reason: the
+   anterior canal attack in this engine is EMERGENT (the debris starts pressed against the cupula)
+   rather than tuned to a number; a difference of 1.25 s lies within the uncertainty of any clinical
+   measurement and does not change the diagnosis. The trial chip says "Transient (≈1 min)" and tells
+   THE TRUTH ABOUT ITS OWN MODEL — the barany:check gate compares the measurement against the chip's
+   wording exactly so that the chip cannot lie. Restoring a shared "< 60 s" there would trip the gate
+   immediately.
+2. ROLL TEST GEOMETRY: the paper gives a head elevation of "about 30°", the engine computes 10.3°
+   (HC_FLEX_DEG). THE USER'S DECISION: 10.3° stays, with an explicit note. The reason: the engine's
+   angle is derived from CANAL ANATOMY (the IE-Map atlas, Reid's plane), and the engine's own
+   measurement puts the optimum at +10.30° with a 5.9–14.5% loss at 30°. The pedigree of the 30°
+   canon is CALORIC (convection requires the canal vertical; in a positional test there is no
+   convection), and the literature is self-contradictory about its purpose. THE DELIBERATE COST OF
+   THIS DECISION: at 30° a mechanism of pseudo-spontaneous nystagmus operates that does not operate
+   at 10.3° — the engine will therefore not reproduce it, and we must not pretend otherwise.
+
+--- SOURCE BOUNDARIES, MEASURED IN THE FULL TEXT ---
+ · CANALITH JAM and PERSISTENT GEOTROPIC DCPN: the paper DESCRIBES both in its introduction but
+   gives them NO code and NO criteria. Canalith jam is a POSTULATED locking of the cupula; persistent
+   geotropic DCPN is described as a picture compatible with NEITHER mobile debris NOR debris on the
+   cupula, tentatively linked to a change in the density of cupula or endolymph — with the explicit
+   caveat that "this remains speculative". The engine marks them "outside the ICVD classification"
+   and is to keep doing so.
+ · THE ENGINE MODELS THREE ENTITIES OUTSIDE THE CATALOGUE (light cupula, short arm, canalith jam)
+   and ONE combination explicitly excluded from it (anterior canal cupulolithiasis). All four are
+   labelled — that is a condition of the card's honesty, not an ornament.
+ · FOUR CODES THE ENGINE DOES NOT HAVE AT ALL: 2.4, 3.3, 3.4, and the 3.1.1/3.1.2 split.
+
+A LIMIT OF THE PROOF, MEASURED DURING E1 AND WORTH RECORDING: the anterior-canal label fix is NOT
+COVERED BY THE GOLDEN SET. Asked directly, the golden holds NOT ONE key with the anterior canal in
+its cupulolithiasis form (searched: "headhang", "anterior", "przedni" — 0 hits among the keys), and
+the `dom/diag/dix/*/antMode` keys that did light up in E1 lit up for a DIFFERENT reason: the [H48]
+number added to the card's note, which is shared by all subtypes. The fix was therefore verified
+DIRECTLY on the `baranyClassify` function (anterior+cupulo → "outside the ICVD classification", the
+other six combinations bit-for-bit unchanged), not by an oracle. For whoever returns here: this is a
+place for a new golden case, not for trust.
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.

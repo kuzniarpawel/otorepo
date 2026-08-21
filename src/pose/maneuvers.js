@@ -1644,8 +1644,11 @@ function recommend(testKey,variant,mech){
 // Klasyfikacja podtypu BPPV wg kryteriów Bárány Society (ICVD 2015): mapuje (kanał, wariant, strona, tryb downbeat)
 // na formalną etykietę + poziom pewności (established/emerging) + cechy różnicujące (latencja/czas/męczliwość/kierunek/
 // strona chora). Czysta funkcja kliniczna — jak recommend(); zasila kartę „Klasyfikacja" w diagnostyce. NIE zmienia
-// fizyki — synteza z konwencji już zakodowanych w DIAG (latNote/features). [Kryteria źródłowe: Bárány/ICVD 2015 —
-// von Brevern i wsp.; ocena II C: dawny odnośnik „engine_doc: KRYTERIA BARANY" wskazywał sekcję, której nie ma.]
+// fizyki — synteza z konwencji już zakodowanych w DIAG (latNote/features).
+// [H48] von Brevern 2015 — pełne kryteria wszystkich podtypów wraz z przypisami stoją w engine_doc.txt,
+// rozdział „KRYTERIA BPPV". E1 (2026-08-21): do tego etapu ta funkcja cytowała pracę SAMYM NAZWISKIEM,
+// a jej odnośnik wskazywał sekcję engine_doc, KTÓREJ NIE BYŁO — komentarz sam to przyznawał, a rodowód
+// kryteriów podany w view_doc brzmiał „pamięć otoneurologiczna". Numer i rozdział zamykają obie dziury.
 function baranyClassify(canal, variant, side, antMode, mech){
   const S=sideN(side);
   const est={ tier:"established", tierLabel:t("zespół ustalony","established syndrome") };
@@ -1668,8 +1671,18 @@ function baranyClassify(canal, variant, side, antMode, mech){
             [t("Punkt zerowy (null point)","Null point"),t("jednostronny, nie wspólny — różnicuje od kupulopatii","one-sided, not common — differentiates from cupulopathy")],
             [t("Strona chora","Affected side"),`${S} — ${t("SŁABSZA reakcja","WEAKER response")}`]],
       redflag:t("R11: apogeotropia ≠ kupulolitiaza — apo PRZEMIJAJĄCY i męczliwy to wolny złóg w ramieniu bańkowym; uporczywy i powtarzalny — prawdziwa kupulopatia. Faza „zdrowe ucho w dole” testu Roll często czyści ramię (test bywa samoleczący).","R11: apogeotropy ≠ cupulolithiasis — a TRANSIENT, fatiguing apo is free debris in the short (ampullar) arm; persistent and repeatable — true cupulopathy. The Roll test's healthy-ear-down phase often clears the arm (the test can be self-treating).") };
+  /* E1: KUPULOLITIAZA KANAŁU PRZEDNIEGO JEST JAWNIE WYŁĄCZONA Z KLASYFIKACJI — [H48] von Brevern 2015.
+     Praca wylicza sześć kombinacji (trzy kanały × dwa mechanizmy) i mówi wprost, że udokumentowano
+     zapisem ruchów gałek ocznych i WŁĄCZONO do klasyfikacji WSZYSTKIE POZA kupulolitiazą kanału
+     przedniego. Do E1 karta nadawała jej tier „emerging”, co znaczy w tej pracy „opisany, ale
+     niedostatecznie potwierdzony” — czyli twierdziła, że ICVD tę postać ZNA. Nie zna: to jedyna
+     kombinacja z sześciu, której NIE MA w katalogu. Etykieta idzie więc tam, gdzie już stoją light
+     cupula i short arm — „poza klasyfikacją ICVD”. FIZYKA BEZ ZMIAN: to poprawka NAZWY, nie modelu;
+     wiersze cech i tak biorą się z featsByVariant, czyli z tego samego źródła co chipy próby. */
   if(antMode || canal==="anterior")
-    return { ...emg, subtype:t("BPPV kanału przedniego","Anterior-canal BPPV"),
+    return { ...emg, subtype: variant==="cupulo"
+        ? t("Zespół BPPV-podobny — kupulolitiaza kanału przedniego (poza klasyfikacją ICVD)","BPPV-like syndrome — anterior-canal cupulolithiasis (outside the ICVD classification)")
+        : t("BPPV kanału przedniego","Anterior-canal BPPV"),
       /* DWA TWIERDZENIA O TYM SAMYM — ZESPOJONE 2026-08-15 (futureUI), utrzymane przy scaleniu.
          Karta Bárány mówiła dla kanału PRZEDNIEGO „< 1 min" i „po latencji", podczas gdy chip tej
          samej próby mówi (od V8/A6) „Przemijający ≈1 min" i „Latencja krótka/nieobecna", a silnik
@@ -1681,7 +1694,9 @@ function baranyClassify(canal, variant, side, antMode, mech){
       crit:[[t("Latencja","Latency"), variant==="cupulo"?t("brak","none"):featsByVariant("canalo","anterior")[0]],
             [t("Czas trwania","Duration"), variant==="cupulo"?t("uporczywy","persistent"):featsByVariant("canalo","anterior")[1]],
             [t("Męczliwość","Fatigability"), variant==="cupulo"?t("nie","no"):t("tak","yes")],[t("Kierunek","Direction"),t("downbeat + torsja ku uchu choremu (model 0,74 pionu; u chorego często śladowa lub nieobecna)","downbeat + torsion toward the affected ear (model 0.74 of the vertical; often a trace or absent in patients)")],[t("Strona chora","Affected side"),t("niepewna z oczoplasu","uncertain from nystagmus")]],
-      redflag:t("Izolowany downbeat pozycyjny — WYKLUCZ przyczynę ośrodkową (móżdżek, pogranicze czaszkowo-szyjne) przed leczeniem.","Isolated positional downbeat — RULE OUT a central cause (cerebellum, craniocervical junction) before treatment.") };
+      redflag: variant==="cupulo"
+        ? t("Izolowany downbeat pozycyjny — WYKLUCZ przyczynę ośrodkową (móżdżek, pogranicze czaszkowo-szyjne) przed leczeniem. Uwaga nazewnicza: kupulolitiaza kanału przedniego to JEDYNA z sześciu kombinacji kanał×mechanizm, której [H48] von Brevern 2015 NIE WŁĄCZA do klasyfikacji — nie udokumentowano jej zapisem ruchów gałek ocznych. Formalnie raportuj obraz (uporczywy downbeat pozycyjny), nie tę nazwę.","Isolated positional downbeat — RULE OUT a central cause (cerebellum, craniocervical junction) before treatment. A naming caveat: anterior-canal cupulolithiasis is the ONLY one of the six canal×mechanism combinations that [H48] von Brevern 2015 does NOT include in the classification — it has not been documented by eye-movement recordings. Report the picture (persistent positional downbeat) rather than this label.")
+        : t("Izolowany downbeat pozycyjny — WYKLUCZ przyczynę ośrodkową (móżdżek, pogranicze czaszkowo-szyjne) przed leczeniem.","Isolated positional downbeat — RULE OUT a central cause (cerebellum, craniocervical junction) before treatment.") };
   if(canal==="posterior")
     return variant==="canalo"
       ? { ...est, subtype:t("BPPV kanału tylnego — kanalolitiaza","Posterior-canal BPPV — canalithiasis"),

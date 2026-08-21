@@ -10,8 +10,14 @@
  * Użytkownik (klinicysta) rozstrzygnął, że okno symulacji MA udawać czas kliniczny — więc czas
  * trwania przestaje być parametrem wygody animacji i staje się twierdzeniem, które trzeba bramkować.
  *
- * Kryteria: Bárány Society, diagnostyka BPPV (por. engine_doc.txt) — kanalolitiaza: oczopląs
- * ustępuje zwykle w < 1 min; kupulolitiaza: utrzymuje się tak długo, jak utrzymywana jest pozycja.
+ * Kryteria: [H48] von Brevern 2015 (Bárány/ICVD) — kanalolitiaza: czas napadu < 1 min, a oczopląs
+ * „typowo < 1 minuty"; kupulolitiaza: utrzymuje się tak długo, jak utrzymywana jest pozycja.
+ * Pełna treść kryteriów wraz z przypisami: engine_doc.txt, rozdział „KRYTERIA BPPV".
+ * E1 (2026-08-21): do tego etapu ten odnośnik wskazywał sekcję engine_doc, KTÓREJ NIE BYŁO — bramka
+ * pilnowała więc zgodności z dokumentem nieistniejącym. Teraz rozdział istnieje i niesie też DWIE
+ * JAWNIE NAZWANE ROZBIEŻNOŚCI silnika wobec kryteriów (kanał przedni 61,25 s wobec „< 1 min";
+ * geometria testu Roll 10,3° wobec „około 30°"), których ta bramka z założenia NIE ocenia:
+ * porównuje pomiar z OBIETNICĄ CHIPA, a nie z liczbą z pracy — i tak ma zostać.
  *
  * Uruchomienie: npm run barany:check
  */

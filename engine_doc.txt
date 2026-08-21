@@ -3024,6 +3024,147 @@ czeka na rozstrzygnięcia użytkownika; osiem z nich blokuje pisanie kolejnych r
 ich podjęcia ŻADEN sporny próg nie wchodzi do silnika — w szczególności progi gain niesione przez
 wpisy [H19], [H53] i [H59].
 
+=== KRYTERIA BPPV — Bárány/ICVD 2015 (E1, 2026-08-21) — [H48] von Brevern 2015 ===
+TO JEST SEKCJA, NA KTÓRĄ WSKAZYWAŁY TRZY ODSYŁACZE, A KTÓREJ NIE BYŁO. Komentarz przy
+`baranyClassify` sam to przyznawał („dawny odnośnik «engine_doc: KRYTERIA BARANY» wskazywał sekcję,
+której nie ma"), `barany-check.mjs` odsyłała tutaj, a view_doc podawał jako źródło tych kryteriów
+„pamięć otoneurologiczną". Kryteria PARAFRAZOWANE — praca ma zastrzeżone prawa (patrz wpis [H48]).
+
+BUDOWA KLASYFIKACJI. Sekcja 2 pracy = zespoły USTALONE, sekcja 3 = WYŁANIAJĄCE SIĘ i kontrowersyjne.
+Teoretycznie każdy z trzech kanałów może być zajęty kanalolitiazą albo kupulolitiazą, co daje sześć
+kombinacji na ucho; praca stwierdza, że udokumentowano zapisem ruchów gałek ocznych i włączono do
+klasyfikacji WSZYSTKIE POZA KUPULOLITIAZĄ KANAŁU PRZEDNIEGO. To jedyna kombinacja spoza katalogu —
+i dlatego karta oznacza ją „poza klasyfikacją ICVD", a nie „wyłaniająca się" (poprawka etapu E1).
+
+KRYTERIUM D (w 3.2 jest nim C) BRZMI IDENTYCZNIE W OŚMIU ZESTAWACH: „nie do przypisania innemu
+zaburzeniu" — wywiad oraz badanie przedmiotowe i neurologiczne nie sugerują innego zaburzenia
+przedsionkowego ALBO takie zaburzenie rozważono i wykluczono odpowiednimi badaniami ALBO jest ono
+obecne jako stan współistniejący DAJĄCY SIĘ WYRAŹNIE ODRÓŻNIĆ.
+
+--- SEKCJA 2: ZESPOŁY USTALONE ---
+2.1 KANALOLITIAZA KANAŁU TYLNEGO (pc-BPPV)
+  A. nawracające napady zawrotu ALBO oszołomienia POŁOŻENIOWEGO, prowokowane położeniem się albo
+     obracaniem się w pozycji na plecach;
+  B. czas trwania napadów < 1 min;
+  C. oczopląs położeniowy wywołany PO LATENCJI JEDNEJ LUB KILKU SEKUND manewrem Dixa-Hallpike'a albo
+     manewrem side-lying (diagnostycznym Semonta) — ZŁOŻENIE oczopląsu skrętnego z górnym biegunem
+     gałek ku uchu NIŻEJ położonemu ORAZ pionowego bijącego KU GÓRZE (ku czołu), trwający typowo
+     < 1 minuty;
+  D. jak wyżej.
+2.2 KANALOLITIAZA KANAŁU POZIOMEGO (hc-BPPV)
+  A. jak 2.1;  B. czas trwania napadów < 1 min;
+  C. oczopląs położeniowy wywołany PO KRÓTKIEJ LATENCJI ALBO BEZ LATENCJI testem supine roll, bijący
+     POZIOMO KU UCHU NIŻEJ POŁOŻONEMU przy głowie obróconej w KAŻDĄ ze stron (oczopląs GEOTROPOWY
+     zmieniający kierunek), trwający < 1 min;   D. jak wyżej.
+2.3 KUPULOLITIAZA KANAŁU POZIOMEGO (hc-BPPV-cu) — UWAGA: TRZY KRYTERIA, NIE CZTERY
+  A. jak 2.1;
+  B. oczopląs położeniowy wywołany po krótkiej latencji albo bez latencji testem supine roll, bijący
+     poziomo KU UCHU WYŻEJ położonemu przy głowie obróconej w każdą ze stron (APOGEOTROPOWY oczopląs
+     zmieniający kierunek), trwający > 1 MINUTY;
+  C. nie do przypisania innemu zaburzeniu.
+  KRYTERIUM CZASU NAPADU W OGÓLE TU NIE WYSTĘPUJE — i to nie jest przeoczenie parafrazy, tylko
+  budowa pracy: przy kupulolitiazie czas mierzy OCZOPLĄS, nie napad. Nota 1 wyjaśnia dlaczego: napad
+  trwa zwykle < 1 min, bo chory ODWRACA GŁOWĘ do pozycji, w której zawrót ustaje; przy utrzymaniu
+  pozycji prowokującej trwa dłużej, a z powodu orientacji przestrzennej zajętego osklepka chory może
+  mieć UTRZYMUJĄCY SIĘ zawrót lub oszołomienie MNIEJSZEGO NASILENIA TAKŻE W POZYCJI SIEDZĄCEJ.
+  NAKAZ WYKLUCZENIA: apogeotropowy oczopląs położeniowy występuje TAKŻE jako objaw dysfunkcji
+  przedsionkowej OŚRODKOWEJ, więc wykluczenie choroby OUN jest OBOWIĄZKOWE („mandatory").
+2.4 PRAWDOPODOBNE BPPV, KTÓRE USTĄPIŁO SAMOISTNIE
+  A. jak 2.1;  B. czas trwania napadów < 1 min;
+  C. BRAK dostrzegalnego oczopląsu i BRAK zawrotu w JAKIMKOLWIEK manewrze pozycyjnym;
+  D. nie do przypisania innemu zaburzeniu.
+  TEJ JEDNOSTKI SILNIK NIE ZNA. Ujemna próba pozycyjna jest u nas „granicą modelu", a w pracy bywa
+  ROZPOZNANIEM. To nie wada fizyki — silnik symuluje złóg, a tu złogu już nie ma — ale karta wyniku
+  ujemnego mogłaby o tej możliwości wspominać. Do rozstrzygnięcia poza E1.
+
+--- SEKCJA 3: ZESPOŁY WYŁANIAJĄCE SIĘ I KONTROWERSYJNE ---
+3.1 KANALOLITIAZA KANAŁU PRZEDNIEGO (ac-BPPV)
+  A. jak 2.1;  B. czas trwania napadów < 1 min;
+  C. oczopląs położeniowy wywołany NATYCHMIAST ALBO po latencji jednej lub kilku sekund manewrem
+     Dixa-Hallpike'a (PO JEDNEJ ALBO PO OBU STRONACH) albo w pozycji prostego zwisu głowy na
+     plecach, bijący PRZEWAŻNIE PIONOWO W DÓŁ i trwający < 1 min;   D. jak wyżej.
+  PODZIAŁ, KTÓREGO SILNIK NIE MA: 3.1.1 PEWNA kanalolitiaza kanału przedniego — rozpoznawalna na
+  podstawie NATYCHMIASTOWEGO ustąpienia oczopląsu po manewrze leczniczym; 3.1.2 PRAWDOPODOBNA —
+  rozpoznawalna WYŁĄCZNIE po wykluczeniu choroby OUN, gdy oczopląs jest OPORNY na manewry lecznicze.
+  To jest kryterium ODPOWIEDZI NA LECZENIE użyte jako różnicownik — i jedyne takie w tej pracy.
+3.2 KUPULOLITIAZA KANAŁU TYLNEGO (pc-BPPV-cu) — TRZY KRYTERIA
+  A. jak 2.1;
+  B. oczopląs położeniowy wywołany po krótkiej latencji albo bez latencji „POŁÓWKOWYM manewrem
+     Dixa-Hallpike'a", bijący skrętnie z górnym biegunem gałki ku uchu niżej ORAZ pionowo ku górze
+     (ku czołu), trwający > 1 MINUTY;
+  C. nie do przypisania innemu zaburzeniu.
+  POZYCJA BADANIA TO „POŁÓWKOWY" DIX-HALLPIKE, NIE PEŁNY — silnik prowokuje tę postać pełnym
+  manewrem. Różnica jest realna (inny kąt zwisu), ale NIE zmienia kierunku oczopląsu ani mechanizmu;
+  odnotowana jako rozbieżność nazewniczo-proceduralna, nie jako błąd fizyki.
+3.3 LITIAZA WIELU KANAŁÓW (mc-BPPV)
+  A. jak 2.1;  B. czas trwania napadów < 1 min;
+  C. oczopląs położeniowy ZGODNY Z KANALOLITIAZĄ WIĘCEJ NIŻ JEDNEGO KANAŁU podczas manewru
+     Dixa-Hallpike'a ORAZ testu supine roll;   D. jak wyżej.
+  SILNIK MODELUJE JEDEN KANAŁ NARAZ — tej jednostki nie zna. Praca podkreśla przy tym, że manewry
+  pozycyjne dla kanałów pionowych I poziomego trzeba wykonać U KAŻDEGO chorego z zawrotem
+  położeniowym, właśnie dlatego, że zajętych bywa kilka kanałów.
+3.4 MOŻLIWE BPPV
+  A. napady zawrotu położeniowego, w których BRAKUJE JEDNEGO z kryteriów któregoś z zespołów wyżej;
+  B. nie do przypisania innemu zaburzeniu.
+  TU KODUJE SIĘ chorych z BPPV bez oczopląsu (kwestia kontrowersyjna, patrz komentarz do 2.1)
+  oraz przypadki z oczopląsem atypowym.
+
+--- PRZYPISY, KTÓRE NIOSĄ POŁOWĘ TREŚCI KLINICZNEJ ---
+Kryteria bez przypisów są w tej pracy niepełne. Najważniejsze dla silnika:
+ · LATENCJA może w RZADKICH przypadkach sięgać 40 SEKUND (nota 8 przy 2.1). Chip silnika mówi
+   „1–5 s" — to typowość, nie granica; górnej granicy 5 s praca NIE STAWIA.
+ · CZAS OCZOPLĄSU w 2.1 zwykle NIE PRZEKRACZA 40 SEKUND przed samoistnym wygaśnięciem — a kryterium
+   C mówi „typowo < 1 minuty". Dwie różne liczby w tej samej jednostce, obie ze źródła.
+ · OBWIEDNIA crescendo-decrescendo (szybkie narastanie, wolniejszy spadek) — silnik odtwarza ją
+   emergentnie z fizyki złogu, nie z adnotacji.
+ · ODWRÓCENIE: po ustaniu oczopląsu początkowego może pojawić się oczopląs ODWRÓCONY o mniejszej
+   intensywności; po powrocie do siadu odwrócenie jest CZĘSTE, a MĘCZLIWOŚĆ przy powtarzanych
+   badaniach to zjawisko CZĘSTE.
+ · WYGLĄD ZALEŻY OD SPOJRZENIA: skręt wyraźniejszy w oku NIŻEJ, pion w oku WYŻEJ; przy zachowanej
+   fiksacji oczopląs wygląda na przeważnie SKRĘTNY (fiksacja słabiej tłumi skręt niż pion).
+   W układzie GŁOWY ruch pozostaje w płaszczyźnie kanału niezależnie od pozycji gałki.
+ · WYZWALACZE spoza łóżka: nie tylko położenie się, ale też odchylenie głowy do tyłu lub w przód,
+   a dla kanału poziomego SZYBKIE BOCZNE OBROTY GŁOWY W POZYCJI WYPROSTOWANEJ.
+ · CZAS NAPADU: chorzy PRZECENIAJĄ długość pojedynczego napadu; łagodne objawy resztkowe bywają
+   minutowe lub godzinowe, a napady bywają wyzwalane seryjnie. Zawrót NIE POWINIEN jednak zwykle
+   przekraczać 1 minuty — napady STALE dłuższe każą myśleć o innym albo dodatkowym rozpoznaniu.
+
+--- DWIE ROZBIEŻNOŚCI SILNIKA WOBEC KRYTERIÓW, NAZWANE A NIE UKRYTE (decyzje D4 i D5, 2026-08-21) ---
+1. KANAŁ PRZEDNI: kryterium 3.1 C żąda oczopląsu trwającego < 1 min, a silnik mierzy 61,25 s.
+   DECYZJA UŻYTKOWNIKA: fizyka zostaje, rozbieżność zostaje NAZWANA. Powód: napad kanału przedniego
+   jest w tym silniku EMERGENTNY (złóg startuje dociśnięty do osklepka), a nie strojony pod liczbę;
+   różnica 1,25 s mieści się w niepewności każdego pomiaru klinicznego i nie zmienia rozpoznania.
+   Chip próby mówi „Przemijający (≈1 min)" i mówi PRAWDĘ O WŁASNYM MODELU — bramka barany:check
+   porównuje pomiar z treścią chipa właśnie po to, żeby chip nie mógł skłamać. Gdyby ktoś przywrócił
+   tam wspólne „< 60 s", bramka zapali się natychmiast.
+2. GEOMETRIA TESTU ROLL: praca podaje uniesienie głowy „o około 30°", silnik liczy 10,3° (HC_FLEX_DEG).
+   DECYZJA UŻYTKOWNIKA: zostaje 10,3° wraz z jawną notą. Powód: kąt w silniku jest wyprowadzony
+   z ANATOMII KANAŁU (atlas IE-Map, płaszczyzna Reida), a pomiar własny silnika daje optimum przy
+   +10,30° i stratę 5,9–14,5% przy 30°. Rodowód kanonu 30° jest przy tym KALORYCZNY (konwekcja
+   wymaga kanału pionowo; w teście pozycyjnym konwekcji nie ma), a piśmiennictwo jest co do celu
+   sprzeczne. ŚWIADOMY KOSZT TEJ DECYZJI: przy 30° działa mechanizm pseudo-samoistnego oczopląsu,
+   którego przy 10,3° nie ma — silnik go więc nie odtworzy i nie wolno udawać, że odtwarza.
+
+--- GRANICE ŹRÓDŁA, ZMIERZONE W PEŁNYM TEKŚCIE ---
+ · CANALITH JAM i UPORCZYWY GEOTROPOWY DCPN: praca OPISUJE oba we wstępie, ale NIE NADAJE im kodu
+   ani kryteriów. Canalith jam to POSTULOWANE zablokowanie osklepka; uporczywy geotropowy DCPN jest
+   opisany jako obraz NIEZGODNY ani z ruchomym złogiem, ani ze złogiem przy osklepku, wiązany
+   hipotetycznie ze zmianą gęstości osklepka lub endolimfy — z jawnym zastrzeżeniem, że „pozostaje
+   to spekulacją". Silnik oznacza je „poza klasyfikacją ICVD" i tak ma zostać.
+ · SILNIK MODELUJE TRZY JEDNOSTKI SPOZA KATALOGU (light cupula, short arm, canalith jam) i JEDNĄ
+   kombinację jawnie z niego wyłączoną (kupulolitiaza kanału przedniego). Wszystkie cztery są
+   oznaczone — to jest warunek uczciwości karty, nie ozdoba.
+ · CZTERECH KODÓW SILNIK NIE MA W OGÓLE: 2.4, 3.3, 3.4 oraz podziału 3.1.1/3.1.2.
+
+GRANICA DOWODU, ZMIERZONA PRZY E1 I WARTA ZAPISANIA: poprawki etykiety kanału przedniego NIE
+POKRYWA GOLDEN. Zapytany wprost, zbiór złotego wzorca nie ma ANI JEDNEGO klucza z kanałem przednim
+w postaci kupulolitiazy (szukane: „headhang", „anterior", „przedni" — 0 trafień wśród kluczy), a te
+klucze `dom/diag/dix/*/antMode`, które przy E1 się zapaliły, zapaliły się z INNEGO powodu: przez
+dopisanie numeru [H48] do noty karty, wspólnej dla wszystkich podtypów. Poprawka została więc
+zweryfikowana WPROST na funkcji `baranyClassify` (anterior+cupulo → „poza klasyfikacją ICVD",
+pozostałe sześć kombinacji bit-w-bit bez zmian), a nie przez wyrocznię. Kto będzie tu wracał: to
+jest miejsce na nowy przypadek golden, nie na zaufanie.
+
 
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.

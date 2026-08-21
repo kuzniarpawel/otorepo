@@ -38,8 +38,12 @@ segment "Peripheral (BPPV) ↔ Central (CPN)" (state.diagCentral, handler toggle
    a diagram of PERSISTENT DOWNBEAT (data-cpnnys: startNys from nysFromGeom("anterior",side,"cupulo",qSupineYaw(0)) with an
    OVERRIDDEN dir=0 → pure downbeat without torsion; persistent=true carries a persistent envelope), and swapping the
    "Suggested treatment" card for "Repositioning not indicated" (do not reposition → neuro + posterior-fossa MRI; mimic: vestibular
-   migraine). Reset diagCentral→false on openTest/pickTest (fresh entry into a test). Criteria: otoneurology
-   memory "BPPV — Bárány 2015 criteria".
+   migraine). Reset diagCentral→false on openTest/pickTest (fresh entry into a test).
+   SOURCE OF THE CRITERIA: [H48] von Brevern 2015 (Bárány/ICVD); the full text with its notes is in
+   engine_doc.en.txt, chapter "BPPV CRITERIA". Until stage E1 (2026-08-21) this line read "otoneurology
+   memory «BPPV — Bárány 2015 criteria»" — that is, the stated source of the criteria on which the
+   COMPUTING classification card stands was the model's memory rather than the paper. The CPN red flags
+   on that same card STILL have no source: a separate debt, closed in stage E2 via [H51] Eggers 2019.
 
 === OTOLITHIC PANEL — SVV & VEMP (HINTS) ===
 A panelbox in renderHints (after "Skew deviation"), visible in EVERY mode (scenario + custom). It visualizes

@@ -404,7 +404,22 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 152;  /* 2026-08-20, etap V28b (zabramkowanie pulapki parsera): 147 -> 152.
+const OCZEKIWANE = 154;  /* 2026-08-21, etap E1 (kryteria BPPV [H48] von Brevern 2015): 152 -> 154.
+                            DWA nowe przypadki, oba z view_doc — ZMIERZONE, nie oszacowane: po cofnieciu
+                            samych zmian w view_doc.txt/.en licznik wraca do 152 przy WSZYSTKICH
+                            pozostalych zmianach etapu na miejscu. Zrodlem sa dwa nowe cytowania
+                            z oznaczeniem, w obu lustrach: "[H48] von Brevern 2015" (zrodlo kryteriow
+                            karty klasyfikacji, ktora dotad podawala jako zrodlo PAMIEC MODELU) oraz
+                            "[H51] Eggers 2019" (zapowiedz etapu E2 dla czerwonych flag CPN).
+                            ZERO nowych przypadkow z src/ i z engine_doc, mimo ze [H48] doszlo tam
+                            w czterech miejscach — te reguly sa ZBIORCZE, nie per cytowanie.
+                            2026-08-21, etap E0 (bibliografia 19 dokumentow ICVD): 152 -> 152, BEZ ZMIANY.
+                            Bibliografia 46 -> 61 ([H47]-[H61]), ale nowe cytowania sa GOLYMI numerami,
+                            ktore konwencja dopuszcza i ktore nie tworza wlasnego przypadku. Nowe wpisy
+                            sprawdzaja wylacznie reguly ZBIORCZE: BIB2, BIB4, BIB5, ZR4, DOC2 i DOC4.
+                            To jest ZADEKLAROWANA GRANICA tej bramki, a nie jej awaria — i wlasnie
+                            dlatego E0 potrzebowal osobnego dowodu zakresu ze snapshotu.
+                            2026-08-20, etap V28b (zabramkowanie pulapki parsera): 147 -> 152.
                             PIEC nowych przypadkow, wszystkie STALE (nie zaleza od liczby wpisow):
                             BIB4/PL i BIB4/EN (monotonicznosc), BIB5/PL i BIB5/EN (ksztalt definicji)
                             oraz BIB4/kontrola-czulosci. Bramka zweryfikowana KONCOWO-DO-KONCA, nie
