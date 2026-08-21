@@ -25,7 +25,10 @@ nie przedrukowywać — tak jak zrobił to etap V28 dla migreny przedsionkowej.
 Każdą ekstrakcję sprawdził **osobny agent adwersaryjny** wobec pliku źródłowego (liczenie punktów
 kryteriów, kontrola progów co do cyfry, kontrola spójników logicznych, wyrywkowa kontrola pięciu
 twierdzeń grepem). Werdykty: większość „poprawione" — czyli weryfikacja realnie łapała błędy,
-a nie przyklepywała. Jedna weryfikacja (AUVP) padła na błędzie API i wymaga powtórzenia.
+a nie przyklepywała. Jedna weryfikacja (AUVP) padła wtedy na błędzie API; **powtórzona
+i zamknięta 2026-08-21** — trzy usterki znalezione i poprawione, w tym jedno fałszywe twierdzenie
+o silniku (rzekomy brak progu kalorycznego `< 6°/s`, który silnik ma jako `CAL_BILAT`, tyle że
+czyta go wyłącznie obustronnie). Rozstrzygnięcie D2 sprawdzone u źródła i utrzymane w mocy.
 
 Materiał: `scratchpad/icvd/` — 19 plików `NN-*.md` (ekstrakcje), 5 plików `mapa-*.md`,
 4 pliki `konflikty-*.md`.
@@ -325,7 +328,9 @@ tego etapu będzie **decyzją redakcyjną OTOREPO, nie cytatem** — i tak trzeb
   które blokują.
 - **Nie rusza fizyki**, poza etapem E1 pkt 4 (etykieta tier) i ewentualnie D4/D5, jeśli decyzja
   tak każe.
-- **Nie obejmuje weryfikacji AUVP**, która padła na błędzie API — do powtórzenia przed E4.
+- ~~**Nie obejmuje weryfikacji AUVP**, która padła na błędzie API — do powtórzenia przed E4.~~
+  **SPŁACONE 2026-08-21** — patrz §1. Pełny zapis kontroli: sekcja `== KOREKTY WERYFIKATORA ==`
+  w ekstrakcji (katalog korpusu, poza repozytorium).
 - **Nie zna dokumentów ICVD w przygotowaniu.** Kask 2025 wymienia jednostki bez opublikowanych
   kryteriów; program nie powinien ich wyprzedzać.
 
