@@ -74,10 +74,10 @@ const SYNONIMY = { 'GRACE-3': 'Edlow', 'AAO-HNS': 'Otolaryngol Head Neck Surg' }
    i rok bywają w drugiej linii. Zwracamy też NUMERY WIERSZY wpisu — rozdziały to wszystko poza nimi,
    a bibliografia w tym dokumencie NIE stoi na końcu (rozdziały Bloków 8-16 są za nią). */
 function bibliografia(tekst) {
-  const BIB = new Map(); const wiersze = new Set();
+  const BIB = new Map(); const wiersze = new Set(); const start = new Map();
   const linie = tekst.split('\n');
   let biezacy = null, bufor = [], kol = [];
-  const domknij = () => { if (biezacy) { BIB.set(biezacy, bufor.join(' ')); kol.forEach(i => wiersze.add(i)); } };
+  const domknij = () => { if (biezacy) { BIB.set(biezacy, bufor.join(' ')); start.set(biezacy, kol[0]); kol.forEach(i => wiersze.add(i)); } };
   linie.forEach((l, i) => {
     const m = /^\[(H\d+)\]/.exec(l);
     /* PIERWSZE wystąpienie wygrywa, nie ostatnie. `[H24]` zaczyna wiersz DWA RAZY: raz jako wpis
@@ -89,13 +89,76 @@ function bibliografia(tekst) {
     else if (biezacy && !l.trim()) { domknij(); biezacy = null; bufor = []; kol = []; }
   });
   domknij();
-  return { BIB, wiersze };
+  return { BIB, wiersze, start };
 }
 
-const { BIB, wiersze: WIERSZE_BIB_PL } = bibliografia(czytaj('engine_doc.txt'));
-const { BIB: BIB_EN, wiersze: WIERSZE_BIB_EN } = bibliografia(czytaj('engine_doc.en.txt'));
+const { BIB, wiersze: WIERSZE_BIB_PL, start: START_PL } = bibliografia(czytaj('engine_doc.txt'));
+const { BIB: BIB_EN, wiersze: WIERSZE_BIB_EN, start: START_EN } = bibliografia(czytaj('engine_doc.en.txt'));
 T('BIB1/bibliografia-znaleziona', BIB.size >= 20, `w engine_doc.txt znaleziono ${BIB.size} wpisów [Hnn] — spodziewano się kompletu`);
 T('BIB2/bibliografia-en', BIB_EN.size === BIB.size, `engine_doc.en.txt ma ${BIB_EN.size} wpisów wobec ${BIB.size} w PL`);
+
+/* ═══════════ 1b. NUMER W ROZDZIALE NIE MOŻE UDAWAĆ WPISU — PUŁAPKA ZŁAPANA NA SOBIE ═══════════
+   ZMIERZONE 2026-08-20 (etap V28, na własnej edycji): zdanie rozdziału zawinęło się tak, że „[H20]"
+   wypadło w KOLUMNIE 0. Parser wyżej czyta KAŻDĄ linię zaczynającą się od `^[Hnn]` jako POCZĄTEK
+   WPISU, a rozdziały stoją PRZED blokiem wpisów — więc zdanie z rozdziału stało się DEFINICJĄ H20,
+   a prawdziwy wpis Lopez-Escameza został ODRZUCONY przez regułę „pierwsze wystąpienie wygrywa".
+   BRAMKA BYŁA PRZY TYM ZIELONA, bo zatrute zdanie przypadkiem zawierało nazwisko „Lopez-Escamez" —
+   reguła 5 (numer↔oznaczenie) porównywała wtedy definicję SAMĄ ZE SOBĄ. Cicha podmiana źródła
+   prawdy jest gorsza od czerwonej: reszta bramki dalej działa, tylko mierzy nie to, co trzeba.
+   Jedynym śladem był licznik — zatrute linie trafiają do `wiersze`, więc wypadają z DOC3/DOC4
+   i suma spada o kilka przypadków. Nikt nie czyta spadku licznika jako sygnału korupcji.
+
+   CZEGO NIE WOLNO TU SPRAWDZAĆ — zmierzone, nie zgadnięte: reguła „żadna linia rozdziału nie
+   zaczyna się od [Hnn]" ZAPALIŁABY SIĘ NA POPRAWNYM TEKŚCIE. W obu dokumentach istnieje legalna
+   taka linia (`[H24] GRACE-3 2023 …`, lista źródeł w rozdziale Bloku 12) — stoi ZA blokiem wpisów,
+   więc jest nieszkodliwa: chroni ją dokładnie ta sama reguła „pierwsze wystąpienie wygrywa".
+   Bramka krzycząca na poprawny tekst uczy wyłączać wyrocznię, więc zamiast pozycji bezwzględnej
+   sprawdzamy DWA NIEZALEŻNE NIEZMIENNIKI, oba obojętne na tamtą legalną linię.
+
+   NIEZMIENNIK 1 — MONOTONICZNOŚĆ. Wpisy stoją w pliku w kolejności numerycznej, więc numer wiersza
+   przyjętej definicji musi rosnąć razem z numerem [Hnn]. Zatrucie łamie to natychmiast i z dużym
+   marginesem: porwane H20 startowało setki wierszy PRZED H19.
+   NIEZMIENNIK 2 — KSZTAŁT. Każdy opis bibliograficzny niesie znacznik `→` (PL) albo `->` (EN);
+   zmierzone 46/46 w obu plikach. Zdanie wyjęte z rozdziału go nie ma.
+   KONTROLA CZUŁOŚCI (niżej) odtwarza zatrucie W PAMIĘCI, nie dotykając plików, i żąda, żeby OBA
+   niezmienniki je złapały. Bez niej ta sekcja mogłaby kiedyś przechodzić na pusto. */
+{
+  for (const [tag, slownik, startMapa, plik] of [['PL', BIB, START_PL, 'engine_doc.txt'],
+                                                 ['EN', BIB_EN, START_EN, 'engine_doc.en.txt']]) {
+    const kolejne = [...slownik.keys()]
+      .map(h => ({ h, n: Number(h.slice(1)), w: startMapa.get(h) }))
+      .sort((a, b) => a.n - b.n);
+    const zlamane = kolejne.filter((e, i) => i > 0 && e.w < kolejne[i - 1].w)
+      .map(e => `${e.h} (wiersz ${e.w + 1}) stoi PRZED poprzednim wpisem`);
+    T(`BIB4/${tag}/wpisy-w-kolejnosci`, zlamane.length === 0,
+      `definicja przyjęta poza blokiem bibliografii w ${plik} — najpewniej linia rozdziału zaczynająca się od [Hnn] w kolumnie 0: ${zlamane.join(' · ')}`);
+
+    const bezOpisu = [...slownik].filter(([, d]) => !/(→|->)/.test(d)).map(([h]) => h);
+    T(`BIB5/${tag}/definicja-to-opis`, bezOpisu.length === 0,
+      `definicja bez znacznika opisu (→ / ->) w ${plik} — to nie jest wpis bibliograficzny, tylko zdanie z rozdziału: ${bezOpisu.join(', ')}`);
+  }
+
+  const NL = String.fromCharCode(10);
+  const oryginal = czytaj('engine_doc.txt');
+  const zatruty = (() => {
+    const linie = oryginal.split(NL);
+    const blok = linie.findIndex(l => /^\[H1\]/.test(l));           // początek bloku wpisów
+    const ofiara = linie.findIndex((l, i) => i < blok && l.includes('[H20]'));
+    if (ofiara < 0) return oryginal;                                // nie ma czego zatruć
+    // dokładnie ta usterka co w V28: przełamanie wiersza tak, że numer ląduje w KOLUMNIE 0
+    linie[ofiara] = linie[ofiara].replace(/\s*\[H20\]/, NL + '[H20]');
+    return linie.join(NL);
+  })();
+  const probny = bibliografia(zatruty);
+  const kol = [...probny.BIB.keys()].map(h => ({ n: Number(h.slice(1)), w: probny.start.get(h) }))
+    .sort((a, b) => a.n - b.n);
+  const wykrytaMonotonicznosc = kol.some((e, i) => i > 0 && e.w < kol[i - 1].w);
+  const wykrytyKsztalt = !/(→|->)/.test(probny.BIB.get('H20') || '→');
+  T('BIB4/kontrola-czulosci', zatruty !== oryginal && wykrytaMonotonicznosc && wykrytyKsztalt,
+    `sekcja przestała cokolwiek pilnować: ${zatruty === oryginal
+      ? 'syntetycznego zatrucia NIE DAŁO SIĘ WSTRZYKNĄĆ — w rozdziałach nie ma już wiersza z [H20]; przenieś kontrolę na inny numer'
+      : `zatrucie H20 nie zostało wykryte (monotoniczność ${wykrytaMonotonicznosc}, kształt ${wykrytyKsztalt})`}`);
+}
 
 /* ═══════════ 2. SKĄD ZBIERAMY CYTOWANIA ═══════════ */
 function zbierz(plik, tekst, pomin = new Set()) {
@@ -341,7 +404,15 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 147;  /* 2026-08-20, etap V28 (kryteria migreny przedsionkowej): 132 -> 147.
+const OCZEKIWANE = 152;  /* 2026-08-20, etap V28b (zabramkowanie pulapki parsera): 147 -> 152.
+                            PIEC nowych przypadkow, wszystkie STALE (nie zaleza od liczby wpisow):
+                            BIB4/PL i BIB4/EN (monotonicznosc), BIB5/PL i BIB5/EN (ksztalt definicji)
+                            oraz BIB4/kontrola-czulosci. Bramka zweryfikowana KONCOWO-DO-KONCA, nie
+                            tylko kontrola w pamieci: zatrucie prawdziwego engine_doc.txt przez
+                            przelamanie wiersza tak, by "[H20]" wypadlo w kolumnie 0, daje DWA bledy
+                            (BIB4/PL i BIB5/PL) i wskazuje wiersz. Przedtem ta sama edycja przechodzila
+                            na ZIELONO.
+                            2026-08-20, etap V28 (kryteria migreny przedsionkowej): 132 -> 147.
                             PIETNASCIE nowych cytowan, policzonych przez --ile PO wstawieniu, nie
                             oszacowanych. Bibliografia 45 -> 46 ([H46] Lempert 2022 - dokument
                             konsensusu Barany Society i IHS). Rozbicie:
