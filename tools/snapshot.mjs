@@ -985,6 +985,7 @@ function domOracle(h, win) {
       ['poziom#prawoWDole', 'p1'], ['pion#prawoWDole', 'zero'],
       ['poziom#lewoWDole', 'p1'], ['pion#lewoWDole', 'zero']]);
 
+
     /* Krok „Interpretacja" na WŁASNYM EKRANIE (Blok 9). Pinujemy stany, w których ekran mówi
        RÓŻNE rzeczy o tym, CZEGO MODEL NIE POTRAFI — bo to najłatwiejsze do cichego zgubienia:
        `bowlean-dwuznaczny` (dwie RÓWNORZĘDNE hipotezy, nie ranking), `headhang-bez-strony`
@@ -1105,12 +1106,20 @@ function domOracle(h, win) {
       for (const f of (flagi || [])) h.toggleTriageFlaga(f);
       h.render();
     });
+    /* D-CZAS (2026-08-21) dołożyło PIĄTE pytanie — o czas od początku objawów — i te fikstury
+       przestały być kompletne. Skutek był ZMIERZONY na złotym wzorcu, a nie teoretyczny: pięć
+       ekranów przestało dochodzić do werdyktu i zamarło na nieodpowiedzianym pytaniu, przez co
+       `triage/tEVS`, `triage/sEVS` i `triage/czerwona` stały się BAJT W BAJT IDENTYCZNE (6143
+       znaki), a `triage/AVS` i `triage/pseudoAVS` też (6162). Rozróżnienie, o które ta sekcja
+       jawnie prosi w akapicie wyżej („czerwona to ten sam komplet co tEVS, różniący się WYŁĄCZNIE
+       ataksją"), przestało być przypięte czymkolwiek — a wyrocznia była zielona, bo golden
+       przebazowano razem ze zmianą. `pusty` zostaje bez odpowiedzi CELOWO: pinuje ekran startowy. */
     tri('pusty', {});
-    tri('tEVS', { przebieg: 'napadowe', wyzwalacz: 'pozycyjny' }, ['brak']);
-    tri('czerwona', { przebieg: 'napadowe', wyzwalacz: 'pozycyjny' }, ['ataksja']);
-    tri('AVS', { przebieg: 'ciagle', oczoplas: 'obecny' }, ['brak']);
-    tri('pseudoAVS', { przebieg: 'ciagle', oczoplas: 'brak' }, ['brak']);
-    tri('sEVS', { przebieg: 'napadowe', wyzwalacz: 'samoistny' }, ['brak']);
+    tri('tEVS', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny' }, ['brak']);
+    tri('czerwona', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny' }, ['ataksja']);
+    tri('AVS', { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'obecny' }, ['brak']);
+    tri('pseudoAVS', { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'brak' }, ['brak']);
+    tri('sEVS', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'samoistny' }, ['brak']);
     try { h.resetTriage(); } catch { /* przywróć czysty stan dla kolejnych warstw */ }
   }
 
@@ -1234,10 +1243,18 @@ function domOracle(h, win) {
         hintsPominiecie: null, hintsPrzeszkolenie: null, hintsKrok: null, hintsBlad: null,
         hintsCustom: null, hintsScenario: 'neuritisR', screen: 'setup', mode: 'treat' });
     };
+    /* To samo następstwo D-CZAS, ale groźniejsze, bo dotyka SZESNASTU kluczy: `kwalifikacjaHints`
+       czyta `triageComplete`, więc bez odpowiedzi „od kiedy" bramka odmawiała wejścia i
+       `zacznijBadanieHints()` zostawiało harness na ekranie kwalifikacji. Złoty wzorzec zamroził
+       wtedy EKRAN ODMOWY pod kluczami `hintsBad/*` — zmierzone: `hintsBad/pierwsza`, `/hit-sakada`
+       i `/skew` miały identyczne 8286 znaków i wszystkie zawierały „Nie wpuszczono do badania".
+       Całe pokrycie ekranu badania HINTS i jedenastu kart wyniku zniknęło po cichu przy zielonej
+       wyroczni — dokładnie ta klasa luki, dla której powstała notatka o `hintsBad` w Bloku 12. */
     const kwalifikuj = () => {
       czystyH();
       h.goHintsKwal();
-      h.setTriage('przebieg', 'ciagle'); h.setTriage('oczoplas', 'obecny'); h.toggleTriageFlaga('brak');
+      h.setTriage('przebieg', 'ciagle'); h.setTriage('odkiedy', 'ostre');
+      h.setTriage('oczoplas', 'obecny'); h.toggleTriageFlaga('brak');
       h.ustawPrzeszkolenieHints('tak');
     };
     // Kwalifikacja: cztery stany, bo cztery różne karty wyniku i cztery różne zestawy przycisków.

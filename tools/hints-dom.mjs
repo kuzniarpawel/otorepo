@@ -74,8 +74,18 @@ function czysty() {
   A('render')();
 }
 // Kwalifikacja POTWIERDZONA droga uzytkownika (odpowiedzi, nie wstrzykniety stan).
+/* D-CZAS (2026-08-21) doloczylo PIATE pytanie kwalifikacji — o czas od poczatku objawow — i tym
+   samym ten komplet odpowiedzi przestal byc kompletny. `kwalifikacjaHints` czyta `triageComplete`,
+   wiec bramka slusznie odmawiala wejscia: status schodzil na 'brak', ekran zostawal na `hintsKwal`,
+   a za nim leciala kaskada 21 bledow sekcji B/C/D/G — bo do ekranu badania nie dalo sie w ogole
+   dojsc. Ta sama poprawka trafila wtedy do `tools/hints-check.mjs` (fikstury `avs`, `pseudoAVS`,
+   `tEVS`, `sEVS`, `czerwona*`), ale TEN plik zostal pominiety — bramka `hints:dom` byla czerwona
+   od commita b50d7d2 do 2026-08-21. `odkiedy: 'ostre'` jest tu jedyna uczciwa odpowiedzia:
+   fikstura opisuje chorego z AVS, ktory ma isc na HINTS, a taksonomia czas-i-wyzwalacze powstala
+   dla zawrotow ponizej 2 tygodni. */
 function potwierdz() {
-  A('setTriage')('przebieg', 'ciagle'); A('setTriage')('oczoplas', 'obecny'); A('toggleTriageFlaga')('brak');
+  A('setTriage')('przebieg', 'ciagle'); A('setTriage')('odkiedy', 'ostre');
+  A('setTriage')('oczoplas', 'obecny'); A('toggleTriageFlaga')('brak');
   A('ustawPrzeszkolenieHints')('tak');
 }
 const W_MODULE = () => st.screen === 'hints' || st.screen === 'hintsBad' || st.screen === 'hintsWyn';
