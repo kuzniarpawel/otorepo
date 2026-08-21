@@ -985,6 +985,34 @@ function domOracle(h, win) {
       ['poziom#prawoWDole', 'p1'], ['pion#prawoWDole', 'zero'],
       ['poziom#lewoWDole', 'p1'], ['pion#lewoWDole', 'zero']]);
 
+    /* ═══ KANAŁ PRZEDNI × KUPULOLITIAZA — jedyna kombinacja POZA klasyfikacją ICVD ═══
+       Dług zapisany jawnie w commicie E1 („to miejsce na nowy przypadek golden") i domykany tutaj.
+       E1 zmienił etykietę tej jednej postaci — [H48] von Brevern 2015 wylicza sześć kombinacji
+       kanał × mechanizm i mówi wprost, że udokumentowano zapisem ruchów gałek i WŁĄCZONO do
+       klasyfikacji wszystkie POZA kupulolitiazą kanału przedniego — a poprawkę zweryfikowano
+       wtedy WPROST na funkcji `baranyClassify`, bo golden jej nie widział.
+       DLACZEGO NIE WIDZIAŁ, ZMIERZONE: klucze `diag/headhang/{P,L}/cupulo` w złotym wzorcu SĄ
+       (wbrew temu, co mówi commit E1 — tam napisano „0 trafień", i to była pomyłka), ale karty
+       klasyfikacji NIE ZAWIERAJĄ: `renderDiag` podmienia ją na `kartaBezOpisu`, dopóki
+       `obsPoparcie` zwraca poziom „brak", a tamte klucze wchodzą na ekran próby bez jednego
+       dotknięcia formularza obserwacji. Trafienie na „kupulolitiaza kanału przedniego" w ich
+       wartości pochodzi z noty `recommend()`, nie z karty Bárány.
+       Dlatego ten przypadek OPISUJE obraz: uporczywy downbeat bez latencji i bez męczliwości,
+       czyli komplet wag 3 osi kierunku i dynamiki → poparcie „pełne" → karta z plakietką tieru.
+       Mechanizm bierze się z PRZYJĘCIA wyprowadzenia (`przyjmijMechanizm`), a nie z nadpisania —
+       inaczej klucz pinowałby decyzję harnessu zamiast wniosku modelu. */
+    grab('diag/headhang-kupulo/P', () => {
+      czystyObs();
+      if (h.openTest) h.openTest('headhang'); else Object.assign(h.state, { testKey: 'headhang' });
+      if (h.setDiagSide) h.setDiagSide('P');
+      for (const [k, w] of [['poziom#jedyna', 'zero'], ['pion#jedyna', 'm1'], ['torsja#jedyna', 'p1'],
+        ['latencja', 'brak'], ['czasTrwania', 'powyzej1min'], ['meczliwosc', 'bezZmian']]) h.setObsPole('headhang', k, w);
+      h.goInterpret();
+      h.przyjmijMechanizm();
+      h.idzDoProby('headhang');                    // powrót na ekran próby PRZYCISKIEM ekranu interpretacji
+      h.render();
+    });
+
 
     /* Krok „Interpretacja" na WŁASNYM EKRANIE (Blok 9). Pinujemy stany, w których ekran mówi
        RÓŻNE rzeczy o tym, CZEGO MODEL NIE POTRAFI — bo to najłatwiejsze do cichego zgubienia:

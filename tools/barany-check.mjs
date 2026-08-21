@@ -23,6 +23,7 @@
  */
 import { engineXi, xiEnvelope, provokeQ, featsByVariant, DIAG, baranyClassify } from '../src/pose/maneuvers.js';
 import { Vestibular } from '../src/engine/vestibular.js';
+import { state } from '../src/app/state.js';   // sekcja 6 pyta o etykiety, wiec musi je zobaczyc w OBU jezykach
 
 let ok = 0; const bledy = [];
 const T = (tag, w, opis) => { if (w) ok++; else bledy.push(`${tag}: ${opis}`); };
@@ -165,6 +166,48 @@ for (const canal of KANALY) {
   }
 }
 
+/* ============ 6. KTORA Z SZESCIU KOMBINACJI STOI POZA KATALOGIEM ICVD ============
+   Golden PRZYPINA napis, ale nie wyraza RELACJI — ten sam argument, ktory otwiera ten plik.
+   Nowy klucz `dom/diag/headhang-kupulo/P` pinuje JEDEN ekran; tutaj pilnujemy twierdzenia, ktore
+   ten ekran ma niesc: [H48] von Brevern 2015 wylicza szesc kombinacji kanal x mechanizm i mowi,
+   ze udokumentowano zapisem ruchow galek i WLACZONO do klasyfikacji wszystkie POZA kupulolitiaza
+   kanalu przedniego. Bramka liczy wiec, ILE kombinacji nosi znacznik „poza klasyfikacja" — jesli
+   ktos dopisze go drugiej albo zdejmie z tej jednej, liczba przestanie sie zgadzac.
+   OBA JEZYKI, bo etykieta jest twierdzeniem klinicznym w kazdym z nich, a lustro EN rozjezdza sie
+   najciszej. Kontrola w druga strone (KL5): rodzenstwo anterior+canalo NIE MOZE zlapac tej uwagi —
+   poprawka E1 dotyczy jednej postaci, nie calego kanalu.
+   KL6 wiaze dwie DROGI do tej samej karty: `antMode` (downbeat w Dix-Hallpike'u) i jawny kanal
+   przedni musza dawac ten sam podtyp — inaczej ta sama chora dostawalaby dwie rozne nazwy
+   zaleznie od tego, ktora proba ja tu przyprowadzila. */
+{
+  const jezykPrzed = state.lang;
+  const KOMB = [];
+  for (const canal of KANALY) for (const variant of ['canalo', 'cupulo']) KOMB.push([canal, variant]);
+  const ZNACZNIK = { pl: /poza klasyfikacją ICVD/, en: /outside the ICVD classification/ };
+  const UWAGA    = { pl: /JEDYNA z sześciu kombinacji/, en: /ONLY one of the six canal/ };
+  for (const lang of ['pl', 'en']) {
+    state.lang = lang;
+    const poza = KOMB.filter(([c, v]) => ZNACZNIK[lang].test(baranyClassify(c, v, 'P', false).subtype));
+    T(`KL1/${lang}/dokladnie-jedna-poza-katalogiem`, poza.length === 1,
+      `znacznik „poza klasyfikacja" nosi ${poza.length} z 6 kombinacji (${poza.map(x => x.join('+')).join(', ')}) — praca wyklucza DOKLADNIE jedna`);
+    T(`KL2/${lang}/to-przedni-kupulo`, poza.length === 1 && poza[0][0] === 'anterior' && poza[0][1] === 'cupulo',
+      `poza katalogiem stoi ${poza.map(x => x.join('+')).join(', ')}, a wykluczona jest anterior+cupulo`);
+    const przednia = baranyClassify('anterior', 'cupulo', 'P', false);
+    T(`KL3/${lang}/uwaga-nazewnicza-nazwana`, UWAGA[lang].test(String(przednia.redflag || '')),
+      'czerwona flaga tej postaci musi POWIEDZIEC, dlaczego nazwa jest problematyczna — sam znacznik w podtypie to za malo');
+    T(`KL4/${lang}/uwaga-ma-numer`, /\[H48\]/.test(String(przednia.redflag || '')),
+      'uwaga nazewnicza bez numeru zrodla czyta sie jak nasz poglad, a jest cytatem z pracy');
+    const rodzenstwo = baranyClassify('anterior', 'canalo', 'P', false);
+    T(`KL5/${lang}/rodzenstwo-nietkniete`,
+      !ZNACZNIK[lang].test(rodzenstwo.subtype) && !UWAGA[lang].test(String(rodzenstwo.redflag || '')),
+      'kanalolitiaza kanalu przedniego JEST w katalogu — nie wolno jej dolozyc uwagi o wykluczeniu');
+    T(`KL6/${lang}/antMode-ta-sama-karta`,
+      baranyClassify('posterior', 'cupulo', 'P', true).subtype === przednia.subtype,
+      'downbeat w Dix-Hallpike’u prowadzi do kanalu przedniego — podtyp musi byc ten sam co przy jawnym kanale');
+  }
+  state.lang = jezykPrzed;
+}
+
 const razem = ok + bledy.length;
 console.log(`\nOTOREPO — czas trwania oczopląsu wobec kryteriów Bárány`);
 console.log(`przypadki     : ${razem}`);
@@ -179,7 +222,7 @@ if (bledy.length) {
   process.exit(1);
 }
 
-const OCZEKIWANE = 49;   /* 44 + 5: JT1/JT2 (przedni) + JT3 x3 kanaly — jedno zrodlo twierdzenia o czasie */
+const OCZEKIWANE = 61;   /* 49 + 12: sekcja 6 (KL1-KL6 x dwa jezyki) — ktora z szesciu kombinacji stoi poza katalogiem ICVD */
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);
