@@ -3166,6 +3166,300 @@ pozostałe sześć kombinacji bit-w-bit bez zmian), a nie przez wyrocznię. Kto 
 jest miejsce na nowy przypadek golden, nie na zaufanie.
 
 
+=== KRYTERIA CHOROBY MÉNIÈRE'A — konsensus pięciu towarzystw 2015 (E4a, 2026-08-21) — [H20] Lopez-Escamez 2015 ===
+WPIS [H20] Lopez-Escamez 2015 ISTNIAŁ W BIBLIOGRAFII OD DAWNA, ALE TREŚCI KRYTERIÓW NIE NIÓSŁ.
+To jest pomiar, nie wrażenie. W `engine_doc.txt` przed tą zmianą: „35 dB" 0 trafień, „co najmniej
+dwa" 0, „audiogram" 0, „Tumarkin" 0; „30 dB", „20 min" i „12 h" po JEDNYM trafieniu — i wszystkie
+trzy padają w tym samym zdaniu rozdziału E0, które ten brak ODNOTOWUJE, a nie w treści kryteriów.
+W całym `src/`: „30 dB" 0, „35 dB" 0, „20 min" 0, „12 h" 0, „Tumarkin" 0. Kontrast jest ostry:
+sama NAZWA choroby pada w `src/` 62 RAZY w pięciu plikach — w liściu `sEVS` drzewa kwalifikacji,
+w presetach `meniereP`/`meniereL` symulatora HINTS, w lokalizacji `clinicalReadout`, w suwakach
+laboratorium i na karcie GRACE — a program nie potrafił powiedzieć, PO CZYM SIĘ TĘ CHOROBĘ
+ROZPOZNAJE. Kryteria PARAFRAZOWANE: stopka wydawcy w PDF brzmi „IOS Press and the
+authors. All rights reserved", z zezwoleniem na wydruk/pobranie do UŻYTKU INDYWIDUALNEGO — czyli
+tak jak przy [H48] von Brevern 2015, dosłowny przedruk w dystrybuowanym produkcie byłby osobną
+decyzją, a nie skutkiem ubocznym.
+
+CZYJ TO DOKUMENT. Nie jest to praca samego Bárány Society. Kryteria sformułowano WSPÓLNIE:
+Komitet Klasyfikacji Bárány Society, Japan Society for Equilibrium Research, European Academy of
+Otology and Neurotology (EAONO), Komitet Równowagi American Academy of Otolaryngology-Head and
+Neck Surgery (AAO-HNS) oraz Korean Balance Society. Powstawały ITERACYJNIE przez cztery lata
+(2010-14). GRANICA TEGO ZDANIA, BO ŁATWO JĄ PRZEKROCZYĆ: praca mówi TYLKO tyle, że Komitet Równowagi
+AAO-HNS był WSPÓŁAUTOREM tych kryteriów. NIE MÓWI, że AAO-HNS je przyjęło, że do nich odsyła, ani
+że „kryteria Bárány" i „kryteria AAO-HNS" znaczą po 2015 roku TO SAMO — takiego zdania w tekście NIE
+MA i nie wolno go stąd zacytować. To, co praca o AAO-HNS mówi wprost, idzie w drugą stronę: jej
+własne wytyczne z 1972/1985/1995 stoją w Appendix 2 jako PRZEDRUK HISTORYCZNY (patrz niżej), poza
+klasyfikacją z 2015.
+
+DWIE KATEGORIE, NIE CZTERY. Klasyfikacja z 2015 zna DOKŁADNIE dwie postaci: PEWNĄ i PRAWDOPODOBNĄ.
+Zmierzone: „possible" 1 trafienie, „certain" 2 — i WSZYSTKIE trzy leżą w aneksach, czyli w
+kryteriach HISTORYCZNYCH. Kategorii „możliwa" ani „potwierdzona (histopatologicznie)" ta praca
+NIE MA. Nie ma też stopniowania: „staging" 0 trafień, „functional level" 0.
+
+--- POSTAĆ PEWNA (definite) — CZTERY KRYTERIA, KONIUNKCJA ---
+  A. DWA LUB WIĘCEJ SAMOISTNYCH napadów zawrotu, każdy trwający OD 20 MINUT DO 12 GODZIN;
+  B. AUDIOMETRYCZNIE UDOKUMENTOWANY niedosłuch odbiorczy nisko- DO ŚREDNIOczęstotliwościowego
+     (źródło podaje ZAKRES „low- to medium-frequency", nie alternatywę) w JEDNYM uchu, wyznaczający ucho chore, stwierdzony PRZY CO NAJMNIEJ JEDNEJ OKAZJI —
+     przed, w trakcie ALBO po jednym z napadów zawrotu;
+  C. FLUKTUUJĄCE objawy uszne (słuch, szum uszny albo uczucie pełności) w uchu CHORYM;
+  D. obraz nie jest LEPIEJ WYJAŚNIONY przez inne rozpoznanie przedsionkowe.
+
+PROGI AUDIOMETRYCZNE — CO DO CYFRY, BO TU TKWI CAŁA MOC KRYTERIUM B (przypis 4).
+ · JEDNOSTRONNIE: progi tonalne dla dźwięku przewodzonego DROGĄ KOSTNĄ w uchu chorym GORSZE niż
+   w uchu przeciwnym o CO NAJMNIEJ 30 dB HL — na KAŻDEJ z DWÓCH SĄSIADUJĄCYCH częstotliwości
+   PONIŻEJ 2000 Hz. To jest próg RÓŻNICY MIĘDZYUSZNEJ, nie próg bezwzględny.
+ · OBUSTRONNIE: gdy niedosłuch niskoczęstotliwościowy jest po obu stronach, różnica przestaje
+   działać — wtedy BEZWZGLĘDNE progi kostne muszą wynosić CO NAJMNIEJ 35 dB HL na każdej z dwóch
+   sąsiadujących częstotliwości poniżej 2000 Hz.
+ · GRANICA ŹRÓDŁA W ŚRODKU KRYTERIUM B — I DLATEGO „CO DO CYFRY" DOTYCZY POŁOWY ZAKRESU. Kryterium B
+   żąda niedosłuchu „nisko- DO ŚREDNIOczęstotliwościowego", ale przypis (4) definiuje progami
+   WYŁĄCZNIE „Low-frequency SNHL" i obie liczby wiąże z częstotliwościami PONIŻEJ 2000 Hz. Zmierzone:
+   „medium-frequency" 1 trafienie (abstrakt), „mediumfrequency" 1 (samo kryterium B; brak łącznika to
+   artefakt łamania wiersza w PDF), W PRZYPISIE 4 ANI JEDNEGO; „contiguous" 2, oba przy progach
+   niskoczęstotliwościowych. PROGU DLA CZĘŚCI „ŚREDNIO" PRACA NIE PODAJE. To jest dokładnie to
+   miejsce, w którym baza wiedzy najłatwiej dopisze liczbę z pamięci — nie wolno.
+ · WZMOCNIENIE, NIE WARUNEK: jeśli dostępnych jest kilka audiogramów, wykazanie POWROTU słuchu
+   niskoczęstotliwościowego w którymś punkcie czasu DODATKOWO WSPIERA rozpoznanie — praca stawia
+   to jako wzmocnienie, nie jako wymóg.
+ · Obustronny SYNCHRONICZNY niedosłuch (symetryczny albo nie) u części chorych WYSTĘPUJE, ale każe
+   pomyśleć o chorobie autoimmunologicznej ucha wewnętrznego; wolno postępujący przez lata może
+   przemawiać za migreną jako alternatywnym wyjaśnieniem napadów ALBO za stanem współistniejącym.
+   Obustronny niedosłuch niskoczęstotliwościowy bywa też wczesnym obrazem niezespołowej postępującej
+   głuchoty DFNA6/14 (gen WFS1) — ale z tą grupą mutacji NIE wiązano napadów zawrotu.
+ · Po kilku napadach niedosłuch obejmuje także częstotliwości średnie i wysokie, prowadząc do
+   niedosłuchu PANTONALNEGO — czyli obraz „nisko-/średnioczęstotliwościowy" jest obrazem WCZESNYM.
+
+--- POSTAĆ PRAWDOPODOBNA (probable) — I FAKT REDAKCYJNY, KTÓREGO NIE WOLNO CICHO POPRAWIĆ ---
+  A. DWA LUB WIĘCEJ napadów zawrotu ALBO OSZOŁOMIENIA, każdy trwający OD 20 MINUT DO 24 GODZIN;
+  B. FLUKTUUJĄCE objawy uszne (słuch, szum uszny albo uczucie pełności) w uchu chorym;
+  D. obraz nie jest LEPIEJ WYJAŚNIONY przez inne rozpoznanie przedsionkowe.
+
+W DRUKOWANYM WYKAZIE POSTACI PRAWDOPODOBNEJ NIE MA PUNKTU C. Lista biegnie A → B → D. Punkt B
+niesie TREŚĆ kryterium C postaci pewnej (objawy uszne), a litera D zostaje literą D — więc luka
+jest POŚRODKU, nie na końcu, i nie jest to ani czysta renumeracja, ani czyste zachowanie liter.
+Że nie zginął żaden PUNKT, widać z abstraktu pracy: opisuje on postać prawdopodobną jako epizodyczne
+objawy przedsionkowe (zawrót lub oszołomienie) skojarzone z fluktuującymi objawami usznymi w okresie
+od 20 minut do 24 godzin — dwa elementy dodatnie plus wykluczenie, dokładnie tyle, ile stoi w
+wykazie. Zginęła LITERA, nie kryterium. RENUMERACJA NA A/B/C BYŁABY NASZĄ REDAKCJĄ, NIE TREŚCIĄ
+ŹRÓDŁA — i dlatego w tej bazie wiedzy litery zostają wierne: A, B, D.
+
+TRZY RÓŻNICE WOBEC POSTACI PEWNEJ — plus jedno słowo, które znika.
+ 1. OBJAW KWALIFIKUJĄCY: zawrót ALBO OSZOŁOMIENIE (postać pewna: wyłącznie zawrót).
+ 2. GÓRNA GRANICA CZASU: 24 GODZINY zamiast 12. Dolna granica 20 minut jest w obu ta sama.
+ 3. BRAK JAKIEGOKOLWIEK KRYTERIUM AUDIOMETRYCZNEGO — postać prawdopodobna NIE WYMAGA AUDIOGRAMU.
+    Odpada całe kryterium B postaci pewnej wraz z progami 30/35 dB HL.
+ (·) ZNIKA TEŻ SŁOWO „SAMOISTNY": postać pewna żąda „spontaneous episodes", postać prawdopodobna
+    mówi o napadach bez tego przymiotnika. Formalnie nie jest to osobne kryterium, tylko usunięty
+    wymóg wewnątrz kryterium A — ale rozluźnia je realnie.
+ Dwie dalsze różnice, mniejsze, też zmierzone i warte odnotowania: przypis (1) postaci
+ prawdopodobnej ŻĄDA, by objawy uszne były zgłoszone PODCZAS napadu (treść kryterium C postaci
+ pewnej takiego obostrzenia nie stawia) i DOPUSZCZA w pierwszych latach niedosłuch PRZEWODZENIOWY
+ albo MIESZANY; a jej lista różnicowa jest KRÓTSZA — przypis (2) nie wymienia napadowicy
+ przedsionkowej ani nawracającej jednostronnej westybulopatii, choć przypis (9) postaci pewnej
+ wymienia obie, i mówi „nie wyjaśniają ZESPOŁU KLINICZNEGO", gdzie przypis (9) mówi „nie wyjaśniają
+ ROZPOZNANIA". Praca nie komentuje, czy te różnice są zamierzone.
+
+NAPIĘCIE WEWNĘTRZNE PRACY — DWA MIEJSCA, ZAPISANE JAKO FAKT, NIE JAKO ZARZUT.
+ · Przypis (1) postaci PEWNEJ mówi wprost, że napadowe oszołomienie i niestabilność NIE SĄ uważane
+   za kryteria definiujące tę chorobę — a kryterium A postaci PRAWDOPODOBNEJ dopuszcza oszołomienie.
+   Praca tej rozbieżności nie komentuje i OSZOŁOMIENIA NIE DEFINIUJE: definiuje wyłącznie zawrót,
+   przez odesłanie do słownika objawów [H47] Bisdorff 2009.
+ · Przypis (4) mówi, że ucho chore wyznacza niedosłuch z kryterium B — a postać prawdopodobna
+   kryterium B audiometrycznego nie ma, mimo że jej punkt B mówi o „uchu CHORYM". JAK WYZNACZYĆ
+   UCHO CHORE W POSTACI PRAWDOPODOBNEJ, PRACA NIE PODAJE. To jest granica źródła, a nie miejsce
+   do wypełnienia z pamięci otoneurologicznej.
+
+--- PRZYPISY, KTÓRE NIOSĄ TREŚĆ KLINICZNĄ (postać pewna, 1-9) ---
+ · CZAS NAPADU JEST ZDEFINIOWANY OPERACYJNIE (przypis 3): to CZAS, PRZEZ KTÓRY CHORY MUSI POZOSTAWAĆ
+   W SPOCZYNKU I NIE MOŻE SIĘ PORUSZAĆ. Nie „jak długo źle się czuł" — i to jest jedyny powód, dla
+   którego widełki 20 min - 12 h dają się w ogóle zebrać z wywiadu. Napad KRÓTSZY niż 20 minut albo
+   DŁUŻSZY niż 12 godzin się zdarza, ale ŻADEN z tych obrazów nie jest częsty i każdy każe rozważyć
+   inne zaburzenia. Praca dodaje, że czas bywa trudny do określenia, bo po napadzie utrzymują się
+   objawy RESZTKOWE.
+ · KRÓTKIE NAPADY WYZWALANE ZMIANĄ POZYCJI GŁOWY MAJĄ NASUWAĆ INNE PRZYCZYNY, w tym BPPV (przypis 3)
+   — źródło samo odsyła stąd z powrotem do rdzenia OTOREPO i do [H48] von Brevern 2015. Gdy krótkie
+   napady występują, są zwykle SAMOISTNE.
+ · ZJAWISKO TULLIA I WRAŻLIWOŚĆ CIŚNIENIOWA NIE WYKLUCZAJĄ TEJ CHOROBY (przypis 2): część chorych ma
+   napady zawrotu trwające sekundy do minut, wyzwalane dźwiękiem o dużym natężeniu i niskiej
+   częstotliwości oraz zmianami ciśnienia. Praca wiąże je z PÓŹNIEJSZYM okresem choroby i tłumaczy
+   hipotetycznie zaawansowanym wodniakiem, który zbliża błędnik błoniasty do płytki strzemiączka.
+   DOTYKA TO WPROST GAŁĘZI SCDS W SILNIKU: Tullio NIE JEST tu patognomoniczny dla trzeciego okna,
+   a Tabela 1 wymienia zespoły trzeciego okna wśród jednostek naśladujących. Kontrola swoistości
+   należy do [H56] Ward 2021 i [H18] Minor 2000, nie do tej pracy.
+ · OPÓŹNIONA CHOROBA MÉNIÈRE'A (przypis 5): niedosłuch odbiorczy może WYPRZEDZAĆ napady zawrotu
+   o miesiące albo lata. Wariant ten nazywano „opóźnionym wodniakiem", ale praca mówi wprost, że
+   TERMINEM PREFEROWANYM JEST „OPÓŹNIONA CHOROBA MÉNIÈRE'A", bo wodniak jest znaleziskiem
+   PATOLOGICZNYM, a nie rozpoznaniem klinicznym. Kierunek odwrotny też występuje: zawrót może
+   wyprzedzać niedosłuch o tygodnie lub miesiące, ale szum uszny albo uczucie pełności zwykle
+   towarzyszą już PIERWSZEMU napadowi.
+ · ZWIĄZEK CZASOWY W CIĄGU 24 GODZIN (przypis 6): chory nierzadko sam zauważa związek niedosłuchu
+   z napadem — zwykle jako ZMIANĘ SŁUCHU W CIĄGU 24 GODZIN od napadu. W pierwszych latach niedosłuch
+   fluktuuje SAMOISTNIE; po powtarzających się napadach może postępować i UTRWALIĆ SIĘ, a napady
+   zawrotu przestają być wtedy powiązane z objawami usznymi.
+ · NAPADY TUMARKINA (przypis 7): nagła utrata odruchów przedsionkowo-rdzeniowych dająca NAGŁE UPADKI,
+   rzadziej lateropulsję, trwająca SEKUNDY albo — rzadko — kilka minut (drop attacks przedsionkowe,
+   przełomy otolitowe, przełomy otolitowe Tumarkina). Osi tej OTOREPO dziś nie ma.
+ · SZUM I PEŁNOŚĆ (przypis 8): nasilenie szumu albo uczucia pełności w uchu chorym CZĘSTO towarzyszy
+   napadowi w pierwszych latach; szum bywa UTRWALONY, gdy niedosłuch stanie się trwały.
+ · RÓŻNICOWANIE (przypis 9): TIA, migrena przedsionkowa, napadowica przedsionkowa, nawracająca
+   jednostronna westybulopatia i inne zaburzenia przedsionkowe. MRI MOŻE BYĆ KONIECZNE, by wykluczyć
+   schwannoma przedsionkowego albo guza worka endolimfatycznego — MRI nigdy nie jest tu kryterium
+   ROZPOZNANIA, zawsze narzędziem WYKLUCZENIA. Tabela 1 wymienia 15 jednostek naśladujących.
+
+RODZINNA CHOROBA MÉNIÈRE'A (komentarz 4.3) — TO NIE JEST OSOBNA KATEGORIA DIAGNOSTYCZNA.
+Praca nie tworzy trzeciej postaci obok pewnej i prawdopodobnej. Daje DEFINICJĘ OPERACYJNĄ: postać
+rodzinną należy ROZWAŻYĆ, jeśli CO NAJMNIEJ JEDEN inny krewny — PIERWSZEGO ALBO DRUGIEGO stopnia —
+spełnia WSZYSTKIE kryteria postaci pewnej ALBO prawdopodobnej. Występuje u 8-9% przypadków
+sporadycznych w populacjach pochodzenia europejskiego; większość opisanych rodzin ma dziedziczenie
+autosomalne dominujące, ale występuje heterogenność genetyczna (także mitochondrialne i recesywne).
+Wywiad rodzinny obejmujący niedosłuch odbiorczy, migrenę albo nawracające zawroty u kilku członków
+rodziny UZASADNIA badanie rodzinne. Innymi słowy: „rodzinna" opisuje KONTEKST chorego, którego
+rozpoznanie i tak postawiono wg tych samych czterech (albo trzech) kryteriów.
+
+ANEKSY TO PRZEDRUKI HISTORYCZNE — NAJŁATWIEJSZA WPADKA W CAŁYM TYM PLIKU.
+Praca przedrukowuje w Appendix 1 kryteria Japan Society for Equilibrium Research z 1974 roku
+(trzy warunki; rozpoznanie „pewne" = 1-3, „podejrzewane albo niepewne" = 1 i 3 ALBO 2 i 3),
+a w Appendix 2 skalę AAO-HNS z 1995 roku (certain / definite / probable / possible). ŻADEN Z TYCH
+ZESTAWÓW NIE NALEŻY DO KLASYFIKACJI Z 2015 ROKU. W jednym pliku PDF stoją więc TRZY różne siatki
+kategorii, a dwie z nich są nieaktualne — stąd bierze się cała rodzina pomyłek typu „możliwa choroba
+Ménière'a wg Bárány" albo „wykluczenie OUN jest kryterium Bárány". Obie te frazy pochodzą
+z aneksów.
+
+--- CO Z TEGO MODELUJE SILNIK: NIC — I TO NIE JEST WADA, TYLKO INNA OŚ ---
+Silnik liczy `meniere(ear, opts)` w `src/engine/neuro-vor.js` (MENIERE_PHASE w linii 151, funkcja
+w 157-168) jako MODEL TONU BŁĘDNIKA W NAPADZIE: cztery fazy — `irritative` (ton 150, gain 1,0),
+`nullpoint` (ton R0, gain 1,0), `paretic` (ton 0, gain 0,5), `interictal` (ton R0, gain 1,0) — plus
+`caloricLoss` domyślnie 0,55 i JAWNIE podane `lesionEar`. Z tego emergentnie wychodzi odwrócenie
+kierunku oczopląsu i dysocjacja kaloryka↔vHIT, a preset `meniereP`/`meniereL` w `src/app/actions.js`
+(linie 93-94) pokazuje fazę drażnienia.
+
+ŻADNEJ Z TYCH OSI [H20] Lopez-Escamez 2015 NIE NIESIE. Zmierzone w pełnym tekście: „irritative"
+0 trafień, „paretic" 0, „recovery nystagmus" 0, „caloric" 0, „vHIT" 0, „head impulse" 0, „VEMP" 0.
+Słowo „nystagmus" pada 2 razy i ANI RAZU w kryteriach — raz we wstępie, w wyliczeniu trwających prac
+ICVD, raz w przedrukowanych kryteriach japońskich z 1974.
+
+RÓŻNICA JEST STRUKTURALNA, NIE ILOŚCIOWA, i trzeba ją nazwać tak wprost, jak rozdział migreny
+przedsionkowej mówi „silnik tej jednostki nie modeluje". SILNIK MODELUJE OCZOPLĄS NAPADU. KRYTERIA
+STAWIA SIĘ Z WYWIADU I AUDIOMETRII. Te dwa zbiory nie mają CZĘŚCI WSPÓLNEJ: kryteria nie wymagają
+ŻADNEGO badania czynności przedsionka, a silnik nie ma ŻADNEJ z wielkości, których kryteria żądają.
+Praktyczny skutek jest dwustronny i obowiązuje w obie strony:
+ 1. Ta praca NIE MOŻE służyć za walidację fazowego modelu oczopląsu. Wpis [H20] jest ZŁOŻONY z dwóch
+    prac — Lopez-Escamez 2015 ORAZ McClure 1981 „Recovery nystagmus in Ménière's disease" — a jego
+    linia podsumowania mówi „napadowe fazy oczopląsu (drażnienie→porażenie→powrotny)". ZMIERZONE
+    WYŻEJ ZERA dla tych trzech słów znaczą TYLE, że TA CZĘŚĆ NIE POCHODZI Z PRACY Z 2015 ROKU. Że
+    pochodzi z McCLURE'A 1981, WYNIKA Z KSZTAŁTU WPISU (są w nim dwie prace, a druga ma to w tytule),
+    a NIE Z POMIARU: tekstu McClure'a w tym przeglądzie NIE MA, więc jego treści nie wolno tu
+    cytować. To jest dokładnie taki kształt odsyłacza, przy którym najłatwiej przypisać jednej
+    pracy zdanie drugiej — kto cytuje `[H20]` przy fazach, cytuje McClure'a; kto cytuje `[H20]` przy
+    kryteriach, cytuje Lopez-Escameza. Numer jest wspólny, prace nie.
+ 2. KRYTERIUM B JEST DZIŚ W MODELU NIEWYRAŻALNE, i to twardo. Oś słuchu w silniku to `hearingL`
+    /`hearingR` — wielkość BEZWYMIAROWA 0..1 (`src/engine/neuro-vor.js` linie 1130-1131), czytana
+    progiem przy teście pocierania palców. Kryterium B żąda progów PRZEWODNICTWA KOSTNEGO w dB HL,
+    na KONKRETNYCH sąsiadujących częstotliwościach poniżej 2000 Hz, w porównaniu międzyusznym albo
+    bezwzględnym. Model nie ma ani osi częstotliwości, ani skali dB, ani przewodnictwa kostnego —
+    więc kryterium B nie jest „jeszcze niezaimplementowane", tylko NIEPRZEDSTAWIALNE bez nowej osi.
+    Karta kryteriów jest z tego powodu w pełni wykonalna (nic nie liczy), a wyliczanie rozpoznania
+    z parametrów silnika NIE JEST.
+ 3. Zdania w silniku o „wzorcu Ménière'a" (dysocjacja kaloryka↔vHIT: `neuro-vor.js` 914, 1306,
+    1327-1330; suwaki w `src/app/lab-model.js` 90-91) nie mają w tej pracy ANI OPARCIA, ANI
+    ZAPRZECZENIA — kryteria po prostu o tej osi milczą. Jeśli mają kiedyś dostać numer, musi to być
+    numer INNEJ pracy.
+
+--- GRANICE ŹRÓDŁA, ZMIERZONE W PEŁNYM TEKŚCIE ---
+ · LECZENIA TA PRACA NIE ZAWIERA — ANI JEDNEGO ZDANIA. „betahistine" 0 trafień, „diuretic" 0,
+   „gentamicin" 0, „rehabilitation" 0, „prophyla" 0. „treatment" 2 trafienia i „therapy" 2 — i każde
+   z nich jest KONTEKSTEM HISTORYCZNYM ALBO TYTUŁEM: wzmianka, że wytyczne AAO-HNS z 1972/1985/1995
+   służyły ocenie skuteczności leczenia zachowawczego i operacyjnego, wzmianka o grupie roboczej
+   EAONO przygotowującej europejskie wytyczne diagnostyki i leczenia, oraz tytuł pozycji [5]
+   w bibliografii. Praca jest dokumentem WYŁĄCZNIE ROZPOZNAWCZYM i nie wolno z niej cytować
+   postępowania. (Odpowiedź na leczenie nie jest tu też — inaczej niż w 3.1.1/3.1.2 u [H48]
+   von Brevern 2015 — użyta jako różnicownik.)
+ · SŁOWA „CENTRAL" TA PRACA WE WŁASNYM TEKŚCIE NIE UŻYWA ANI RAZU, a „peripheral" nie używa nigdzie
+   (0 trafień). „central" ma 2 trafienia: jedno to nazwa szpitala w TYTULE pozycji bibliograficznej,
+   drugie to Appendix 1 — przedrukowane kryteria japońskie z 1974 („Exclusion of central nervous
+   system involvement"). ZDANIA O WYKLUCZENIU OUN NIE WOLNO PRZYPISYWAĆ PRACY Z 2015. Uwaga na
+   właściwą siłę tego zdania: praca nie posługuje się DYCHOTOMIĄ ośrodkowe/obwodowe i nie nazywa
+   choroby Ménière'a „obwodową" — ale MERYTORYCZNIE wykluczenia przyczyny naczyniowej żąda i to
+   szeroko, w przypisie (9) oraz w komentarzu 4.6 (TIA, udar, zawał AICA, MRI z MRA przy klinicznie
+   istotnej wątpliwości). Brakuje SŁOWA i OSI, nie ostrożności.
+ · MIGRENA PRZEDSIONKOWA NIE JEST W TEJ PRACY STANEM WSPÓŁISTNIEJĄCYM — I TO JEST ROZRÓŻNIENIE
+   CO DO SŁOWA. Zdanie o współistnieniu wymienia MIGRENĘ (bez przymiotnika), BPPV i niektóre postacie
+   układowych chorób autoimmunologicznych: są one „uważane za stany współistniejące i NIE WYJAŚNIAJĄ
+   rozpoznania" choroby Ménière'a. MIGRENA PRZEDSIONKOWA stoi natomiast w zdaniu SĄSIEDNIM, na liście
+   RÓŻNICOWEJ, obok TIA i napadowicy przedsionkowej, i figuruje w Tabeli 1 jednostek naśladujących.
+   Praca stawia więc migrenę i migrenę przedsionkową po DWÓCH RÓŻNYCH stronach: pierwsza nie
+   unieważnia rozpoznania, druga jest rozpoznaniem KONKURENCYJNYM. Kto zwinie te dwa zdania w jedno,
+   dostanie twierdzenie, którego w źródle nie ma.
+ · REGUŁY PIERWSZEŃSTWA WOBEC MIGRENY PRZEDSIONKOWEJ TA PRACA NIE USTANAWIA. Zmierzone: „two
+   different types" 0 trafień, „even if" 0, „should be diagnosed" 0, „precedence" 0. Reguła
+   „rozpoznaje się chorobę Ménière'a, nawet gdy w napadach występują objawy migrenowe; OBA
+   rozpoznania tylko przy dwóch różnych typach napadów" należy do [H46] Lempert 2022 (sekcja
+   o nakładaniu się z chorobą Ménière'a) — a [H20] Lopez-Escamez 2015 jest tam pracą, DO KTÓREJ
+   Lempert odsyła po same kryteria. Właściwe cytowanie wygląda więc tak, jak w rozdziale V28
+   powyżej: numer [H20] przyklejony do słowa „KRYTERIÓW", a nie do reguły.
+ · CO PRACA NAPRAWDĘ DAJE O MIGRENIE (komentarz 4.4) — i to jest treść nadająca się do karty:
+   fluktuujący niedosłuch, szum i uczucie ciśnienia w uchu MOGĄ wystąpić w migrenie przedsionkowej,
+   ale niedosłuch odbiorczy w migrenie TYPOWO NIE POSTĘPUJE przez lata do niedosłuchu znacznego;
+   gdy w migrenie przedsionkowej niedosłuch się rozwija, jest CZĘSTO OBUSTRONNY, podczas gdy zajęcie
+   OBU uszu OD POCZĄTKU jest w chorobie Ménière'a RZADKIE. Migrenowy ból głowy i fonofobia MOGĄ
+   występować podczas napadów choroby Ménière'a, a związek patofizjologiczny obu jednostek pozostaje
+   NIEJASNY.
+ · KODÓW KLASYFIKACYJNYCH PRACA NIE PODAJE: „ICD" 0 trafień, „ICHD" 0, „H81" 0. Jedyny akronim
+   klasyfikacyjny to ICVD.
+ · O DZIECIACH PRACA NIE MÓWI NIC („child" 0, „pediatric" 0). Jedyne odniesienia wiekowe to trzecia
+   do siódmej dekady jako wiek początku i starszy wiek jako czynnik ryzyka naczyniowego.
+ · WODNIAK NIE JEST KRYTERIUM (komentarz 4.2). MRI 3 T z chelatem gadolinu uwidacznia wodniak
+   w 93% uszu objawowych, ALE TAKŻE W 65% bezobjawowych uszu przeciwnych — praca podaje tę parę
+   liczb jako OGRANICZENIE SWOISTOŚCI, nie jako argument za obrazowaniem. Elektrokochleografia
+   koreluje z wodniakiem w ślimaku, ale fluktuacja objawów ogranicza jej przydatność we wczesnym
+   przebiegu. Już we wstępie praca mówi, że sam wodniak NIE TŁUMACZY wszystkich cech klinicznych.
+
+--- KONFLIKT POZOSTAWIONY OTWARTY: 12 GODZIN vs 24 GODZINY ---
+NIE ROZSTRZYGAMY GO — opisujemy, bo dotyczy struktury klasyfikacji, a nie parametru silnika.
+Postać PEWNA żąda napadów 20 min - 12 h; postać PRAWDOPODOBNA dopuszcza 20 min - 24 h, ale
+NIE WYMAGA AUDIOGRAMU. Skutek jest paradoksalny w kierunku, który ma znaczenie kliniczne: chory
+z napadami trwającymi 18 godzin, z UDOKUMENTOWANYM audiometrycznie jednostronnym niedosłuchem
+niskoczęstotliwościowym i fluktuującymi objawami usznymi, NIE MOŻE dostać postaci pewnej — wypada
+na kryterium A — więc ląduje w postaci prawdopodobnej, dokładnie tam, gdzie ląduje chory bez
+żadnego audiogramu. LEPSZA DOKUMENTACJA NIE KUPUJE MU WYŻSZEGO STOPNIA PEWNOŚCI, a jego audiogram
+nie jest w tej kategorii przez nic czytany. Kategorii pośredniej klasyfikacja nie ma. Osobno:
+napad trwający 30 godzin wypada POZA OBIE postaci. Praca tego napięcia nie komentuje; do
+rozstrzygnięcia przez użytkownika, czy karta ma je nazywać wprost, czy tylko odtwarzać widełki.
+
+--- CO SIĘ Z TYM DALEJ STYKA (bez przesądzania decyzji) ---
+ · WIDEŁKI CZASOWE NIE RÓŻNICUJĄ WOBEC MIGRENY PRZEDSIONKOWEJ, wbrew intuicji. Przedział 20 min - 12 h
+   leży W CAŁOŚCI wewnątrz przedziału 5 min - 72 h z [H46] Lempert 2022. Rozstrzyga AUDIOGRAM
+   (kryterium B) i fluktuacja objawów usznych (kryterium C), nie długość napadu. Jedyna zmierzona
+   różnica ILOŚCIOWA leży gdzie indziej: choroba Ménière'a wymaga ≥ 2 napadów, migrena przedsionkowa
+   ≥ 5. NIE JEST TO JEDNAK DYSKRYMINATOR DO UŻYCIA BEZ DECYZJI UŻYTKOWNIKA: przegląd zapisał tę parę
+   jako KONFLIKT TWARDY K9 (progi 2 / 3 / 2-4 / 5 / 10 w dziewiętnastu dokumentach ICVD), którego
+   sedno jest odwrotne do intuicji — przy 2. napadzie osiągalna jest PRAWDOPODOBNA choroba Ménière'a
+   (bez audiogramu), a migrena przedsionkowa dopiero przy 5., więc kolejność „odblokowywania"
+   rozpoznań jest funkcją PROGU, a nie patofizjologii. Rozstrzygnięcie należy do użytkownika (§E).
+ · NAPADOWICA PRZEDSIONKOWA [H49] Strupp 2016 jest wykluczona STRUKTURALNIE przez dolną granicę
+   20 minut (jej napady są sekundowe) — ale przypis (2) postaci prawdopodobnej i tak jej nie wymienia.
+ · „NAWRACAJĄCA JEDNOSTRONNA WESTYBULOPATIA" z przypisu (9) NIE MA W TEJ PRACY DEFINICJI ANI
+   ODSYŁACZA, a w 2015 nie było dla niej dokumentu ICVD. Nie jest to to samo co ostra jednostronna
+   westybulopatia — nazwy nie wolno sklejać.
+ · Komentarz 4.6 (TIA i udar) jest NIEZALEŻNYM potwierdzeniem osi, którą OTOREPO już niesie za
+   [H24] Edlow 2023 — nic dziwnego, David E. Newman-Toker jest współautorem OBU dokumentów. Nowe
+   wobec dzisiejszej karty są tam liczby: do 42% zawałów AICA poprzedza zwiastunowy TIA; większość
+   udarów po TIA pada w ciągu 90 dni; u 15-20% osób tętnica słuchowa wewnętrzna odchodzi wprost od
+   podstawnej, więc objawy mieszane mogą zwiastować zamknięcie podstawnej. Hierarchia zdania
+   o czujności jest w źródle podrzędna, nie równorzędna: TRZONEM jest bardzo krótki CAŁKOWITY czas
+   trwania choroby (< 3-6 miesięcy, zwłaszcza < 30 dni), a „mniej niż 5 epizodów" i „profil crescendo"
+   są jego podrzędnikiem połączonym spójnikiem ALBO — nie są samodzielnymi czerwonymi flagami.
+   Osobnym, równoległym zdaniem są czynniki ryzyka naczyniowego i zgłoszenie się na SOR.
+
+GRANICA DOWODU, WARTA ZAPISANIA. Ten rozdział NIE ZMIENIA ANI JEDNEJ LINII FIZYKI i nie może być
+przez golden potwierdzony ani obalony — snapshot pilnuje wartości silnika, a tu żadna wartość nie
+powstaje. Jedyną bramką, która ten rozdział w ogóle widzi, jest `zrodla:check`, i widzi wyłącznie
+zgodność numeru [H20] z jego oznaczeniem, a nie zgodność treści z pracą. Weryfikacja merytoryczna
+została więc wykonana WPROST na pełnym tekście, wyszukiwaniem ciągów z policzonymi trafieniami
+(liczby stoją przy każdym twierdzeniu wyżej) — i tak samo trzeba będzie ją powtórzyć, jeśli ktoś
+ten rozdział kiedyś rozszerzy. To jest miejsce na kartę kryteriów podpiętą do liścia `sEVS` —
+dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na zaufanie do pamięci.
+
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
      → spoczynkowa aktywność aferentów kanałowych (~90 imp./s) → R0; podstawa push-pull.

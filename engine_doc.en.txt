@@ -3375,6 +3375,301 @@ other six combinations bit-for-bit unchanged), not by an oracle. For whoever ret
 place for a new golden case, not for trust.
 
 
+=== MÉNIÈRE'S DISEASE CRITERIA — a five-society consensus 2015 (E4a, 2026-08-21) — [H20] Lopez-Escamez 2015 ===
+THE [H20] Lopez-Escamez 2015 ENTRY HAD BEEN IN THE BIBLIOGRAPHY FOR A LONG TIME AND CARRIED NONE OF
+THE CRITERIA. That is a measurement, not an impression. In `engine_doc.txt` before this change:
+"35 dB" 0 hits, "co najmniej dwa" 0, "audiogram" 0, "Tumarkin" 0; "30 dB", "20 min" and "12 h" one
+hit each — and all three fall in the same sentence of the E0 chapter that RECORDS the absence, not
+in any statement of the criteria. Across all of `src/`: "30 dB" 0, "35 dB" 0, "20 min" 0, "12 h" 0,
+"Tumarkin" 0. The contrast is sharp: the NAME of the disease occurs in `src/` 62 TIMES across five
+files — the `sEVS` leaf of the triage tree, the `meniereP`/`meniereL` presets of the HINTS simulator,
+the `clinicalReadout` localization, the laboratory sliders and the GRACE card — while the program
+could not say HOW THE DISEASE IS DIAGNOSED. The criteria are PARAPHRASED: the publisher's footer in the
+PDF reads "IOS Press and the authors. All rights reserved", permitting printing/downloading for
+INDIVIDUAL USE — so, as with [H48] von Brevern 2015, a verbatim reprint in a distributed product
+would be a separate decision, not a side effect.
+
+WHOSE DOCUMENT THIS IS. It is not a Bárány Society paper alone. The criteria were formulated
+JOINTLY by the Classification Committee of the Bárány Society, the Japan Society for Equilibrium
+Research, the European Academy of Otology and Neurotology (EAONO), the Equilibrium Committee of the
+American Academy of Otolaryngology-Head and Neck Surgery (AAO-HNS) and the Korean Balance Society,
+ITERATIVELY over four years (2010-14). THE LIMIT OF THAT SENTENCE, BECAUSE IT IS EASY TO OVERSTEP:
+the paper says ONLY that the AAO-HNS Equilibrium Committee CO-AUTHORED these criteria. It does NOT
+say that the AAO-HNS adopted them, that it points to them, or that "the Bárány criteria" and "the
+AAO-HNS criteria" mean THE SAME THING after 2015 — no such sentence is in the text and none may be
+cited from here. What the paper does say about the AAO-HNS runs the other way: its own guidelines of
+1972/1985/1995 stand in Appendix 2 as a HISTORICAL REPRINT (see below), outside the 2015
+classification.
+
+TWO CATEGORIES, NOT FOUR. The 2015 classification knows EXACTLY two forms: DEFINITE and PROBABLE.
+Measured: "possible" 1 hit, "certain" 2 — and ALL three lie in the appendices, i.e. in the HISTORICAL
+criteria. This paper has NO "possible" and no "certain (histopathologically confirmed)" category. Nor
+does it stage: "staging" 0 hits, "functional level" 0.
+
+--- DEFINITE MD — FOUR CRITERIA, A CONJUNCTION ---
+  A. TWO OR MORE SPONTANEOUS episodes of vertigo, each lasting FROM 20 MINUTES TO 12 HOURS;
+  B. AUDIOMETRICALLY DOCUMENTED low- to medium-frequency sensorineural hearing loss in ONE ear,
+     defining the affected ear, on AT LEAST ONE OCCASION — before, during OR after one of the
+     episodes of vertigo;
+  C. FLUCTUATING aural symptoms (hearing, tinnitus or fullness) in the AFFECTED ear;
+  D. not BETTER ACCOUNTED FOR by another vestibular diagnosis.
+
+THE AUDIOMETRIC THRESHOLDS — TO THE DIGIT, BECAUSE THAT IS WHERE CRITERION B'S FORCE LIES (note 4).
+ · UNILATERAL: pure-tone thresholds for BONE-CONDUCTED sound WORSE in the affected ear than in the
+   contralateral ear by AT LEAST 30 dB HL — at EACH of TWO CONTIGUOUS frequencies BELOW 2000 Hz.
+   This is an INTERAURAL DIFFERENCE threshold, not an absolute one.
+ · BILATERAL: when the low-frequency loss is bilateral the difference stops working — then the
+   ABSOLUTE bone-conduction thresholds must be AT LEAST 35 dB HL at each of two contiguous
+   frequencies below 2000 Hz.
+ · A BOUNDARY OF THE SOURCE INSIDE CRITERION B — WHICH IS WHY "TO THE DIGIT" COVERS HALF THE RANGE.
+   Criterion B demands "low- to MEDIUM-frequency" hearing loss, yet note (4) defines thresholds ONLY
+   for "Low-frequency SNHL" and ties both numbers to frequencies BELOW 2000 Hz. Measured:
+   "medium-frequency" 1 hit (the abstract), "mediumfrequency" 1 (criterion B itself; the missing
+   hyphen is a PDF line-break artefact), NOT ONE in note 4; "contiguous" 2, both at the low-frequency
+   thresholds. THE PAPER GIVES NO THRESHOLD FOR THE "MEDIUM" PART. This is precisely the place where
+   a knowledge base most easily writes a number from memory — it must not.
+ · A REINFORCEMENT, NOT A REQUIREMENT: if multiple audiograms are available, demonstrating RECOVERY
+   of the low-frequency loss at some point in time FURTHER SUPPORTS the diagnosis — the paper offers
+   this as support, not as a condition.
+ · Bilateral SYNCHRONOUS loss (symmetric or asymmetric) does occur in some patients, but should raise
+   concern for autoimmune inner ear disease; when progressing slowly over years it may favour migraine
+   as an alternate explanation of the vertigo episodes OR a comorbid condition. Bilateral
+   low-frequency loss is also seen in early non-syndromic progressive deafness DFNA6/14 (WFS1 gene) —
+   but vertigo attacks have NOT been associated with that group of mutations.
+ · After several episodes the loss also involves the middle and high frequencies, leading to PAN-TONAL
+   hearing loss — so the "low- to medium-frequency" picture is an EARLY picture.
+
+--- PROBABLE MD — AND A REDACTIONAL FACT THAT MUST NOT BE QUIETLY FIXED ---
+  A. TWO OR MORE episodes of vertigo OR DIZZINESS, each lasting FROM 20 MINUTES TO 24 HOURS;
+  B. FLUCTUATING aural symptoms (hearing, tinnitus or fullness) in the affected ear;
+  D. not BETTER ACCOUNTED FOR by another vestibular diagnosis.
+
+THE PRINTED LIST FOR PROBABLE MD HAS NO ITEM C. It runs A → B → D. Item B carries the CONTENT of
+definite criterion C (aural symptoms), while the letter D stays D — so the gap is IN THE MIDDLE, not
+at the end, and this is neither a clean renumbering nor a clean preservation of letters. That no ITEM
+was lost is visible from the paper's abstract: it describes probable MD as episodic vestibular
+symptoms (vertigo or dizziness) associated with fluctuating aural symptoms over a period from 20
+minutes to 24 hours — two positive elements plus an exclusion, exactly as many as the list holds.
+A LETTER went missing, not a criterion. RENUMBERING TO A/B/C WOULD BE OUR EDITING, NOT THE SOURCE'S
+CONTENT — which is why the letters stay faithful here: A, B, D.
+
+THREE DIFFERENCES FROM THE DEFINITE FORM — plus one word that disappears.
+ 1. THE QUALIFYING SYMPTOM: vertigo OR DIZZINESS (definite: vertigo only).
+ 2. THE UPPER TIME BOUND: 24 HOURS instead of 12. The lower bound of 20 minutes is the same in both.
+ 3. NO AUDIOMETRIC CRITERION OF ANY KIND — probable MD REQUIRES NO AUDIOGRAM. The whole of definite
+    criterion B falls away, together with the 30/35 dB HL thresholds.
+ (·) THE WORD "SPONTANEOUS" ALSO DISAPPEARS: definite MD demands "spontaneous episodes", probable MD
+    speaks of episodes without that adjective. Formally this is not a separate criterion but a
+    requirement removed from inside criterion A — yet it genuinely loosens it.
+ Two further, smaller differences, also measured and worth recording: note (1) of the probable form
+ REQUIRES the aural symptoms to be reported DURING the episode (the wording of definite criterion C
+ imposes no such constraint) and ALLOWS conductive or mixed hearing loss in the first years; and its
+ differential list is SHORTER — note (2) omits vestibular paroxysmia and recurrent unilateral
+ vestibulopathy, both of which note (9) of the definite form lists, and it says they "do not explain
+ the CLINICAL SYNDROME", where note (9) says they "do not explain the DIAGNOSIS". The paper does not
+ comment on whether these differences are deliberate.
+
+AN INTERNAL TENSION IN THE PAPER — TWO PLACES, RECORDED AS FACT, NOT AS AN ACCUSATION.
+ · Note (1) of the DEFINITE form states plainly that episodic dizziness and unsteadiness are NOT
+   considered criteria defining this disease — while criterion A of the PROBABLE form admits
+   dizziness. The paper does not comment on the discrepancy and DOES NOT DEFINE DIZZINESS: it defines
+   vertigo only, by reference to the symptom glossary [H47] Bisdorff 2009.
+ · Note (4) says the affected ear is determined by the hearing loss of criterion B — yet probable MD
+   has no audiometric criterion B, although its item B speaks of the "AFFECTED ear". HOW TO DETERMINE
+   THE AFFECTED EAR IN PROBABLE MD, THE PAPER DOES NOT SAY. That is a boundary of the source, not a
+   blank to be filled from otoneurological memory.
+
+--- THE NOTES THAT CARRY CLINICAL CONTENT (definite form, 1-9) ---
+ · EPISODE DURATION IS DEFINED OPERATIONALLY (note 3): it is THE TIME THE PATIENT HAS TO BE AT REST
+   AND CANNOT MOVE. Not "how long they felt unwell" — and that is the only reason the 20 min - 12 h
+   window can be elicited from a history at all. Episodes SHORTER than 20 minutes or LONGER than
+   12 hours do occur, but NEITHER is a common finding and each should prompt consideration of other
+   disorders. The paper adds that the duration can be hard to define because RESIDUAL symptoms persist
+   after an episode.
+ · BRIEF EPISODES TRIGGERED BY POSITIONAL CHANGES OF THE HEAD SHOULD SUGGEST OTHER CAUSES, such as
+   BPPV (note 3) — the source itself points from here back to OTOREPO's core and to [H48] von Brevern
+   2015. When short episodes do occur, they are usually SPONTANEOUS.
+ · THE TULLIO PHENOMENON AND PRESSURE SENSITIVITY DO NOT EXCLUDE THIS DISEASE (note 2): some patients
+   have episodes of vertigo lasting seconds to minutes, triggered by high-intensity low-frequency
+   sound and by pressure changes. The paper places these LATER in the disease and explains them
+   tentatively by advanced hydrops bringing the membranous labyrinth close to the stapes footplate.
+   THIS TOUCHES THE ENGINE'S SCDS BRANCH DIRECTLY: Tullio is NOT pathognomonic of a third window here,
+   and Table 1 lists third-window syndromes among the mimics. Checking specificity belongs to
+   [H56] Ward 2021 and [H18] Minor 2000, not to this paper.
+ · DELAYED MÉNIÈRE'S DISEASE (note 5): sensorineural hearing loss may ANTEDATE the vertigo episodes by
+   months or years. This variant has been called "delayed hydrops", but the paper states plainly that
+   THE PREFERRED TERM IS "DELAYED MD", because hydrops is a PATHOLOGICAL finding, not a clinical
+   diagnosis. The reverse order occurs too: episodic vertigo may precede the hearing loss by weeks or
+   months, but tinnitus or aural fullness is usually associated with the FIRST episode of vertigo.
+ · A TEMPORAL ASSOCIATION WITHIN 24 HOURS (note 6): patients not infrequently observe the link between
+   hearing and the episode themselves — generally as a CHANGE IN HEARING WITHIN 24 HOURS of the
+   episode. In the first few years the loss fluctuates SPONTANEOUSLY; after repeated attacks it may
+   progress and become PERMANENT, and the vertigo episodes then cease to be related to the aural
+   symptoms.
+ · TUMARKIN ATTACKS (note 7): a sudden loss of vestibulo-spinal reflexes producing SUDDEN FALLS, less
+   often lateropulsion, lasting SECONDS or — rarely — a few minutes (vestibular drop attacks, otolithic
+   crises, Tumarkin's otolithic crises). OTOREPO has no such axis today.
+ · TINNITUS AND FULLNESS (note 8): an increase of tinnitus or aural fullness in the affected ear is
+   OFTEN associated with the episode in the first years; tinnitus may become PERSISTENT once the
+   hearing loss is permanent.
+ · THE DIFFERENTIAL (note 9): TIA, vestibular migraine, vestibular paroxysmia, recurrent unilateral
+   vestibulopathy and other vestibular disorders. MRI MAY BE REQUIRED to exclude vestibular schwannoma
+   or endolymphatic sac tumour — MRI is never a criterion OF DIAGNOSIS here, always a tool OF
+   EXCLUSION. Table 1 lists 15 mimicking entities.
+
+FAMILIAL MÉNIÈRE'S DISEASE (comment 4.3) — THIS IS NOT A SEPARATE DIAGNOSTIC CATEGORY.
+The paper does not create a third form beside definite and probable. It gives an OPERATIONAL
+DEFINITION: familial MD should be CONSIDERED if AT LEAST ONE other relative — FIRST OR SECOND
+degree — fulfils ALL the criteria of definite OR probable MD. It is seen in 8-9% of sporadic cases in
+populations of European descent; most described families show autosomal dominant inheritance, but
+familial MD is genetically heterogeneous (mitochondrial and recessive patterns also occur). A family
+history of sensorineural hearing loss, migraine or recurrent vertigo in several members JUSTIFIES a
+familial investigation. In other words: "familial" describes the patient's CONTEXT, whose diagnosis
+was still made by the same four (or three) criteria.
+
+THE APPENDICES ARE HISTORICAL REPRINTS — THE EASIEST TRAP IN THE WHOLE FILE.
+Appendix 1 reprints the Japan Society for Equilibrium Research criteria of 1974 (three conditions;
+"definite" = 1-3, "suspicious or uncertain" = 1 and 3 OR 2 and 3), and Appendix 2 the AAO-HNS scale of
+1995 (certain / definite / probable / possible). NEITHER SET BELONGS TO THE 2015 CLASSIFICATION. One
+PDF therefore holds THREE different category grids, two of them obsolete — which is where the whole
+family of errors like "possible Ménière's disease per Bárány" or "CNS exclusion is a Bárány criterion"
+comes from. Both phrases come from the appendices.
+
+--- WHAT THE ENGINE MODELS OF THIS: NOTHING — AND THAT IS NOT A FLAW BUT A DIFFERENT AXIS ---
+The engine computes `meniere(ear, opts)` in `src/engine/neuro-vor.js` (MENIERE_PHASE at line 151, the
+function at 157-168) as A MODEL OF LABYRINTHINE TONE DURING AN ATTACK: four phases — `irritative`
+(tone 150, gain 1.0), `nullpoint` (tone R0, gain 1.0), `paretic` (tone 0, gain 0.5), `interictal`
+(tone R0, gain 1.0) — plus `caloricLoss` defaulting to 0.55 and an EXPLICIT `lesionEar`. Reversal of
+the nystagmus direction and the caloric↔vHIT dissociation fall out of that emergently, and the
+`meniereP`/`meniereL` preset in `src/app/actions.js` (lines 93-94) shows the irritative phase.
+
+NONE OF THOSE AXES IS CARRIED BY [H20] Lopez-Escamez 2015. Measured in the full text: "irritative"
+0 hits, "paretic" 0, "recovery nystagmus" 0, "caloric" 0, "vHIT" 0, "head impulse" 0, "VEMP" 0. The
+word "nystagmus" occurs twice and NEVER in the criteria — once in the introduction, in a list of ICVD
+work in progress, once in the reprinted Japanese criteria of 1974.
+
+THE DIFFERENCE IS STRUCTURAL, NOT QUANTITATIVE, and must be named as plainly as the vestibular
+migraine chapter says "the engine does not model this entity". THE ENGINE MODELS THE NYSTAGMUS OF THE
+ATTACK. THE CRITERIA ARE MADE FROM HISTORY AND AUDIOMETRY. The two sets have NO INTERSECTION: the
+criteria require NO test of vestibular function at all, and the engine holds NONE of the quantities
+the criteria demand. The practical consequence runs both ways:
+ 1. This paper CANNOT serve as validation for the phase model of the nystagmus. The [H20] entry is
+    COMPOSITE — Lopez-Escamez 2015 AND McClure 1981, "Recovery nystagmus in Ménière's disease" — and
+    its summary line reads "the paroxysmal nystagmus phases (irritation→paresis→recovery)". The zeros
+    measured above for those three words mean ONLY THIS: THAT PART DOES NOT COME FROM THE 2015 PAPER.
+    That it comes from McCLURE 1981 FOLLOWS FROM THE SHAPE OF THE ENTRY (it holds two papers, and the
+    second carries this in its title), NOT FROM A MEASUREMENT: McClure's text is NOT part of this
+    review, so nothing may be cited from it here. This is exactly the shape of pointer under which
+    one most easily attributes to one
+    paper a sentence belonging to the other — cite `[H20]` beside the phases and you cite McClure;
+    cite `[H20]` beside the criteria and you cite Lopez-Escamez. The number is shared, the papers are
+    not.
+ 2. CRITERION B IS INEXPRESSIBLE IN TODAY'S MODEL, and hard so. The hearing axis in the engine is
+    `hearingL`/`hearingR` — a DIMENSIONLESS 0..1 quantity (`src/engine/neuro-vor.js` lines 1130-1131),
+    read through a finger-rub threshold. Criterion B demands BONE-CONDUCTION thresholds in dB HL, at
+    NAMED contiguous frequencies below 2000 Hz, compared interaurally or absolutely. The model has no
+    frequency axis, no dB scale and no bone conduction — so criterion B is not "not yet implemented"
+    but UNREPRESENTABLE without a new axis. A criteria CARD is therefore entirely feasible (it
+    computes nothing); DERIVING the diagnosis from engine parameters IS NOT.
+ 3. The engine's sentences about a "Ménière pattern" (the caloric↔vHIT dissociation: `neuro-vor.js`
+    914, 1306, 1327-1330; the sliders in `src/app/lab-model.js` 90-91) have NEITHER SUPPORT NOR
+    CONTRADICTION in this paper — the criteria are simply silent on that axis. If they are ever to
+    carry a number, it must be the number of ANOTHER paper.
+
+--- SOURCE BOUNDARIES, MEASURED IN THE FULL TEXT ---
+ · THIS PAPER CONTAINS NO TREATMENT — NOT ONE SENTENCE. "betahistine" 0 hits, "diuretic" 0,
+   "gentamicin" 0, "rehabilitation" 0, "prophyla" 0. "treatment" 2 hits and "therapy" 2 — and every
+   one of them is HISTORICAL CONTEXT OR A TITLE: a mention that the AAO-HNS guidelines of 1972/1985/
+   1995 served to evaluate the effectiveness of medical and surgical treatments, a mention of an EAONO
+   working group preparing European guidelines for diagnosis and treatment, and the title of reference
+   [5]. This is a PURELY DIAGNOSTIC document and no management may be cited from it. (Unlike 3.1.1/
+   3.1.2 in [H48] von Brevern 2015, response to treatment is not used here as a discriminator either.)
+ · THIS PAPER NEVER USES THE WORD "CENTRAL" IN ITS OWN TEXT, and never uses "peripheral" anywhere
+   (0 hits). "central" has 2 hits: one is a hospital name in the TITLE of a bibliographic entry, the
+   other is Appendix 1 — the reprinted Japanese criteria of 1974 ("Exclusion of central nervous system
+   involvement"). THE CNS-EXCLUSION SENTENCE MUST NOT BE ATTRIBUTED TO THE 2015 PAPER. Note the exact
+   force of this: the paper does not use the central/peripheral DICHOTOMY and does not call Ménière's
+   disease "peripheral" — but IN SUBSTANCE it demands exclusion of a vascular cause, and demands it
+   broadly, in note (9) and in comment 4.6 (TIA, stroke, AICA infarction, MRI with MRA where
+   clinically important doubt exists). What is missing is the WORD and the AXIS, not the caution.
+ · VESTIBULAR MIGRAINE IS NOT A COMORBID CONDITION IN THIS PAPER — AND THE DISTINCTION IS WORD FOR
+   WORD. The comorbidity sentence names MIGRAINE (no adjective), BPPV and some forms of systemic
+   autoimmune conditions: these "are considered co-morbidities and DO NOT EXPLAIN the diagnosis" of
+   MD. VESTIBULAR MIGRAINE stands instead in the ADJACENT sentence, on the DIFFERENTIAL list beside
+   TIA and vestibular paroxysmia, and appears in Table 1 of mimics. The paper therefore puts migraine
+   and vestibular migraine on TWO DIFFERENT SIDES: the first does not invalidate the diagnosis, the
+   second is a COMPETING diagnosis. Collapse the two sentences into one and you get a claim the source
+   does not make.
+ · THIS PAPER ESTABLISHES NO RULE OF PRECEDENCE OVER VESTIBULAR MIGRAINE. Measured: "two different
+   types" 0 hits, "even if" 0, "should be diagnosed" 0, "precedence" 0. The rule "Ménière's disease
+   should be diagnosed even if migraine symptoms occur during the attacks; BOTH diagnoses only in
+   patients with two different types of attacks" belongs to [H46] Lempert 2022 (its section on overlap
+   with Ménière's disease) — where [H20] Lopez-Escamez 2015 is the paper Lempert points to FOR THE
+   CRITERIA THEMSELVES. The correct citation therefore looks the way it does in chapter V28 above:
+   the number [H20] attached to the word "CRITERIA", not to the rule.
+ · WHAT THE PAPER DOES GIVE ABOUT MIGRAINE (comment 4.4) — and this is card-worthy content:
+   fluctuating hearing loss, tinnitus and aural pressure MAY occur in vestibular migraine, but
+   sensorineural loss in migraine does NOT TYPICALLY PROGRESS over the years to severe loss; when
+   hearing loss does develop in vestibular migraine it is OFTEN BILATERAL, whereas involvement of BOTH
+   ears FROM THE ONSET is RARE in Ménière's disease. Migraine headache and phonophobia MAY be present
+   during Ménière attacks, and the pathophysiological relationship between the two remains UNCLEAR.
+ · THE PAPER GIVES NO CLASSIFICATION CODES: "ICD" 0 hits, "ICHD" 0, "H81" 0. The only classification
+   acronym is ICVD.
+ · THE PAPER SAYS NOTHING ABOUT CHILDREN ("child" 0, "pediatric" 0). The only age references are the
+   third to seventh decade as age of onset and older age as a vascular risk factor.
+ · HYDROPS IS NOT A CRITERION (comment 4.2). 3 T MRI with a gadolinium chelate visualises hydrops in
+   93% of symptomatic ears BUT ALSO IN 65% of asymptomatic contralateral ears — the paper offers this
+   pair as a LIMIT OF SPECIFICITY, not as an argument for imaging. Electrocochleography correlates
+   with cochlear hydrops, but the fluctuating symptoms limit its usefulness early in the course. The
+   introduction already states that hydrops per se DOES NOT EXPLAIN all clinical features.
+
+--- A CONFLICT LEFT OPEN: 12 HOURS vs 24 HOURS ---
+WE DO NOT SETTLE IT — we describe it, because it concerns the structure of the classification, not an
+engine parameter. DEFINITE MD demands episodes of 20 min - 12 h; PROBABLE MD allows 20 min - 24 h but
+REQUIRES NO AUDIOGRAM. The consequence is paradoxical in the direction that matters clinically: a
+patient with 18-hour episodes, with AUDIOMETRICALLY DOCUMENTED unilateral low-frequency hearing loss
+and fluctuating aural symptoms, CANNOT be definite — he fails criterion A — and so lands in probable,
+exactly where a patient with no audiogram at all lands. BETTER DOCUMENTATION BUYS HIM NO HIGHER
+DEGREE OF CERTAINTY, and in that category his audiogram is read by nothing. The classification has no
+intermediate category. Separately: an episode lasting 30 hours falls OUTSIDE BOTH forms. The paper
+does not comment on this tension; it is for the user to decide whether a card should name it outright
+or merely reproduce the windows.
+
+--- WHAT THIS ABUTS (without prejudging any decision) ---
+ · THE TIME WINDOWS DO NOT DISCRIMINATE AGAINST VESTIBULAR MIGRAINE, contrary to intuition. The
+   interval 20 min - 12 h lies ENTIRELY INSIDE the 5 min - 72 h of [H46] Lempert 2022. What
+   discriminates is the AUDIOGRAM (criterion B) and the fluctuation of aural symptoms (criterion C),
+   not the length of the attack. The only measured QUANTITATIVE difference lies elsewhere: Ménière's
+   disease requires ≥ 2 episodes, vestibular migraine ≥ 5. THAT IS NOT A DISCRIMINATOR TO BE USED
+   WITHOUT THE USER'S DECISION: the review filed this pair as HARD CONFLICT K9 (thresholds of
+   2 / 3 / 2-4 / 5 / 10 across the nineteen ICVD documents), whose point is the reverse of the
+   intuition — at the 2nd episode PROBABLE Ménière's disease is already reachable (with no
+   audiogram), vestibular migraine only at the 5th, so the order in which diagnoses "unlock" is a
+   function of the THRESHOLD, not of pathophysiology. The decision belongs to the user (§E).
+ · VESTIBULAR PAROXYSMIA [H49] Strupp 2016 is excluded STRUCTURALLY by the lower bound of 20 minutes
+   (its attacks last seconds) — yet note (2) of the probable form does not list it anyway.
+ · "RECURRENT UNILATERAL VESTIBULOPATHY" in note (9) HAS NO DEFINITION AND NO REFERENCE IN THIS PAPER,
+   and in 2015 no ICVD document existed for it. It is not the same as acute unilateral vestibulopathy
+   and the names must not be merged.
+ · Comment 4.6 (TIA and stroke) is an INDEPENDENT confirmation of the axis OTOREPO already carries via
+   [H24] Edlow 2023 — unsurprisingly, since David E. Newman-Toker co-authored BOTH documents. New
+   relative to today's card are its numbers: up to 42% of AICA infarctions are preceded by a
+   premonitory TIA; most strokes after TIA fall within 90 days; in 15-20% of individuals the internal
+   auditory artery arises directly from the basilar, so mixed symptoms may herald basilar occlusion.
+   The sentence about vigilance is SUBORDINATE in the source, not coordinate: its TRUNK is a very
+   short TOTAL illness duration (< 3-6 months, especially < 30 days), while "fewer than 5 episodes"
+   and "a crescendo profile" are its subordinate clause joined by OR — they are not standalone red
+   flags. Vascular risk factors and presentation to acute care are a separate, parallel sentence.
+
+A LIMIT OF THE PROOF, WORTH RECORDING. This chapter CHANGES NOT ONE LINE OF PHYSICS and can be
+neither confirmed nor refuted by the golden set — the snapshot guards engine values, and here no value
+arises. The only gate that sees this chapter at all is `zrodla:check`, and it sees only that the
+number [H20] agrees with its label, not that the content agrees with the paper. The substantive
+verification was therefore performed DIRECTLY on the full text, by string searches with counted hits
+(the numbers stand beside every claim above) — and will have to be repeated the same way if anyone
+ever extends this chapter. This is the place for a criteria card wired into the `sEVS` leaf — exactly
+where V28c wired the vestibular migraine card — and not a place for trust in memory.
+
 [H1] Goldberg JM, Fernández C (1971). "Physiology of peripheral neurons innervating semicircular
      canals of the squirrel monkey, I–III." J Neurophysiol 34(4):635–684.
      → resting activity of canal afferents (~90 imp./s) → R0; the basis for push-pull.

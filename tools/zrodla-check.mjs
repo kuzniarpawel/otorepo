@@ -404,7 +404,14 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 154;  /* 2026-08-21, etap E1 (kryteria BPPV [H48] von Brevern 2015): 152 -> 154.
+const OCZEKIWANE = 176;  /* 2026-08-21, etap E4a (kryteria choroby Meniere'a [H20]): 154 -> 176.
+                            DWADZIESCIA DWA nowe przypadki, WSZYSTKIE z dwoch nowych rozdzialow
+                            engine_doc (PL + EN) — ZMIERZONE: licznik pokazywal 176 juz PO wstawieniu
+                            rozdzialow, a PRZED poprawka atrybucji w svg-screens.js, i po niej sie
+                            NIE ZMIENIL. Poprawka atrybucji byla PRZESUNIECIEM odsylacza wewnatrz
+                            jednej linii (numer przykleil sie do REGULY, a nalezy do KRYTERIOW),
+                            wiec liczba wystapien "[H20] Lopez-Escamez 2015" w src zostala ta sama.
+                            2026-08-21, etap E1 (kryteria BPPV [H48] von Brevern 2015): 152 -> 154.
                             DWA nowe przypadki, oba z view_doc — ZMIERZONE, nie oszacowane: po cofnieciu
                             samych zmian w view_doc.txt/.en licznik wraca do 152 przy WSZYSTKICH
                             pozostalych zmianach etapu na miejscu. Zrodlem sa dwa nowe cytowania
