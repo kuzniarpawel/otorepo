@@ -404,7 +404,14 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 186;  /* 2026-08-21, etapy D-REP + D-ATX + D-CPN (decyzje uzytkownika): 178 -> 186.
+const OCZEKIWANE = 194;  /* 2026-08-21, etap D-MRI (decyzja uzytkownika): 186 -> 194.
+                            OSIEM nowych cytowan z oznaczeniem "[H58] Kim 2022", w czterech miejscach
+                            i obu jezykach: triage-model.js (nowa tresc o falszywie ujemnym DWI oraz
+                            DRUGA uwaga o wyzszej czulosci badania klinicznego), hints-model.js
+                            (ta sama tresc w komunikacie HINTS) i svg-screens.js (skrot na karcie
+                            GRACE). Zastapiony napis nie mial ZADNEGO numeru — interwal "48-72 h"
+                            byl NASZ: ciag "48-72" ma w calym korpusie 19 dokumentow ICVD 0 trafien.
+                            2026-08-21, etapy D-REP + D-ATX + D-CPN (decyzje uzytkownika): 178 -> 186.
                             OSIEM nowych cytowan Z OZNACZENIEM, w trzech plikach: src/app/cpn-model.js
                             (nowy modul tresci karty CPN — "[H48] von Brevern 2015" w kontrapunkcie
                             downbeatu, oba jezyki), src/app/triage-model.js ("[H58] Kim 2022" przy

@@ -456,8 +456,8 @@ export const WNIOSEK_IDS = Object.keys(WNIOSKI);
 export const OSTRZEZENIE = {
   tytulPl: 'Cechy przemawiające za przyczyną ośrodkową',
   tytulEn: 'Features arguing for a central cause',
-  trescPl: 'Wymagana pilna ocena neurologiczna. Obrazowanie: MRI z dyfuzją (DWI) i angiografią (MRA); tomografia komputerowa NIE nadaje się do wykluczenia udaru tylnego dołu. Wczesne MRI bywa fałszywie ujemne — przy utrzymującym się podejrzeniu powtórz badanie po 48–72 h.',
-  trescEn: 'Urgent neurological evaluation is required. Imaging: MRI with diffusion (DWI) and angiography (MRA); CT is NOT suitable for ruling out a posterior-fossa stroke. Early MRI can be false-negative — if suspicion persists, repeat after 48–72 h.',
+  trescPl: 'Wymagana pilna ocena neurologiczna. Obrazowanie: MRI z dyfuzją (DWI) i angiografią (MRA); tomografia komputerowa NIE nadaje się do wykluczenia udaru tylnego dołu. Wczesne MRI bywa fałszywie ujemne — DWI jest fałszywie ujemne u 12–50% chorych w pierwszych 48 h (przy udarach ≤ 10 mm nawet 53%), więc przy prawidłowym pierwszym badaniu i utrzymującym się podejrzeniu potrzebna jest ocena SERYJNA; odstępu powtórzenia źródło nie podaje — [H58] Kim 2022.',
+  trescEn: 'Urgent neurological evaluation is required. Imaging: MRI with diffusion (DWI) and angiography (MRA); CT is NOT suitable for ruling out a posterior-fossa stroke. Early MRI can be false-negative — DWI is falsely negative in 12–50% within the first 48 h (up to 53% for strokes ≤ 10 mm), so if the first scan is normal and suspicion persists, SERIAL evaluation is required; the source gives no repeat interval — [H58] Kim 2022.',
 };
 
 /* Zastrzeżenia — rzeczy, które odbierają wynikowi wartość uspokajającą, ale NIE znoszą cechy

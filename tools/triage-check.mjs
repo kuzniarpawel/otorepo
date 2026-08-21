@@ -144,8 +144,17 @@ const R = (o) => triageResult(o);
   T('KL2b/mowi-o-osrodku', /OŚRODKOWĄ/.test(w.tresc.pl), 'komunikat musi wskazać przyczynę ośrodkową');
   T('KL2c/bez-CT', /NIE nadaje się|CT is NOT/.test(w.uwagi.map(u => u.pl + u.en).join(' ')),
     'GRACE-3: tomografia NIE nadaje się do wykluczenia udaru tylnego dołu');
-  T('KL2d/fałszywie-ujemne-MRI', /48–72/.test(w.uwagi.map(u => u.pl).join(' ')),
-    'wczesne MRI bywa fałszywie ujemne — trzeba to powiedzieć');
+  /* D-MRI (2026-08-21): bramka pilnowała LICZBY „48–72", której ŻADEN z 19 dokumentów ICVD nie
+     niesie (ciąg „48–72" i „48-72" = 0 trafień w całym korpusie) — czyli mroziła NASZ interwał jako
+     gdyby był cytatem. Teraz pilnuje tego, co niesie [H58] Kim 2022: odsetka wyników fałszywie
+     ujemnych ORAZ żądania oceny SERYJNEJ. Numer źródła jest częścią asercji — gdyby ktoś wrócił do
+     interwału bez pokrycia, bramka zapali się natychmiast. */
+  T('KL2d/fałszywie-ujemne-MRI', /12–50 ?%/.test(w.uwagi.map(u => u.pl).join(' ')),
+    'trzeba podać odsetek fałszywie ujemnych wczesnych DWI ze źródła (12–50% w pierwszych 48 h)');
+  T('KL2e/MRI-ocena-seryjna', /SERYJN/i.test(w.uwagi.map(u => u.pl).join(' ')) && /\[H58\]/.test(w.uwagi.map(u => u.pl).join(' ')),
+    '[H58] Kim 2022 żąda oceny SERYJNEJ i NIE podaje odstępu — komunikat musi mówić to, a nie własny interwał');
+  T('KL2f/badanie-kliniczne-czulsze', /WYŻSZĄ czułość niż obrazowanie/.test(w.uwagi.map(u => u.pl).join(' ')),
+    'druga implikacja tej samej liczby u [H58]: badanie kliniczne ma w fazie ostrej wyższą czułość niż obrazowanie');
 }
 {
   const w = R({ przebieg: 'ciagle', oczoplas: 'obecny', flagi: ['brak'] });
@@ -217,7 +226,11 @@ if (bledy.length) {
   for (const b of bledy) console.error('  · ' + b);
   process.exit(1);
 }
-const OCZEKIWANE = 62;
+/* D-MRI (2026-08-21): 62 -> 64. DWA nowe przypadki, oba w bloku czerwonej flagi: KL2e (ocena SERYJNA
+   z numerem [H58] zamiast wlasnego interwalu) i KL2f (druga implikacja tej samej liczby u Kima —
+   badanie kliniczne ma w fazie ostrej wyzsza czulosc niz obrazowanie). KL2d ZOSTAJE, ale pilnuje juz
+   odsetka ze zrodla (12-50%), a nie liczby "48-72", ktora w calym korpusie ICVD ma 0 trafien. */
+const OCZEKIWANE = 64;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

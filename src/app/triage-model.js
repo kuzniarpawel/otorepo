@@ -180,8 +180,13 @@ export function triageResult(odp) {
       uwagi: [
         P('Obrazowanie: MRI z dyfuzją (DWI) i angiografią (MRA). Tomografia komputerowa NIE nadaje się do wykluczenia udaru tylnego dołu.',
           'Imaging: MRI with diffusion (DWI) and angiography (MRA). CT is NOT suitable for ruling out a posterior-fossa stroke.'),
-        P('Wczesne MRI bywa fałszywie ujemne — przy utrzymującym się podejrzeniu powtórz badanie po 48–72 h.',
-          'Early MRI can be false-negative — if suspicion persists, repeat after 48–72 h.'),
+        /* D-MRI (2026-08-21): wcześniej stało tu „powtórz badanie po 48–72 h". Ciąg „48–72" ma
+           w korpusie 19 dokumentów ICVD ZERO trafień — interwał był NASZ, nie źródłowy. [H58]
+           Kim 2022 podaje liczby WŁASNE i NIE PODAJE odstępu powtórzenia; żąda oceny SERYJNEJ. */
+        P('Wczesne MRI bywa fałszywie ujemne: początkowe badanie z dyfuzją (DWI) jest fałszywie ujemne u 12–50% chorych w pierwszych 48 h, a przy udarach małych (≤ 10 mm) sięga 53% wobec 7,8% przy większych. Przy prawidłowym pierwszym DWI i utrzymującym się podejrzeniu potrzebna jest ocena SERYJNA — [H58] Kim 2022 nie podaje odstępu, po jakim należy ją powtórzyć.',
+          'Early MRI can be false-negative: initial diffusion-weighted imaging (DWI) is falsely negative in 12–50% of patients within the first 48 h, and with small (≤ 10 mm) strokes this reaches 53% versus 7.8% for larger ones. If the first DWI is normal and suspicion persists, SERIAL evaluation is required — [H58] Kim 2022 gives no interval at which to repeat it.'),
+        P('Druga konsekwencja tej samej liczby, ważniejsza przy łóżku: wysoki odsetek wyników fałszywie ujemnych PODNOSI wagę systematycznego badania klinicznego, które w fazie ostrej ma WYŻSZĄ czułość niż obrazowanie — [H58] Kim 2022.',
+          'The second consequence of that same figure, and the more important one at the bedside: a high false-negative rate RAISES the weight of a systematic clinical examination, which in the acute phase has HIGHER sensitivity than imaging — [H58] Kim 2022.'),
       ],
     };
   }

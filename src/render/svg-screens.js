@@ -3454,7 +3454,7 @@ function graceCard(open){
       t("NIE międzynapadowo — rozpoznanie z WYWIADU","NOT interictally — the diagnosis comes from the HISTORY"))}
     ${row(t("Badanie z wyboru","Test of choice"),
       t("Dix-Hallpike → Epley; Roll → Gufoni. NIE HINTS, NIE CT","Dix-Hallpike → Epley; Roll → Gufoni. NOT HINTS, NOT CT"),
-      t("HINTS(+); wątpliwość → MRI DWI+MRA (wczesne MRI bywa fałszywie ujemne — powtórz 48–72 h); NIE CT","HINTS(+); if in doubt → MRI DWI+MRA (early MRI can be falsely negative — repeat at 48–72 h); NOT CT"),
+      t("HINTS(+); wątpliwość → MRI DWI+MRA (DWI fałszywie ujemne u 12–50% w pierwszych 48 h → ocena SERYJNA, [H58] Kim 2022); NIE CT","HINTS(+); if in doubt → MRI DWI+MRA (DWI falsely negative in 12–50% within the first 48 h → SERIAL evaluation, [H58] Kim 2022); NOT CT"),
       t("kryteria migreny przedsionkowej (karta niżej) vs TIA tylnego kręgu; 5 D (dyplopia, dyzartria, dysfagia, dysfonia, dysmetria)","vestibular-migraine criteria (card below) vs posterior-circulation TIA; the 5 Ds (diplopia, dysarthria, dysphagia, dysphonia, dysmetria)"))}
     ${row(t("Pułapka / flaga","Pitfall / flag"),
       t("CPN: downbeat bez latencji, niemęczliwy → MRI (Diagnostyka → widok „Ośrodkowy”)","CPN: a downbeat without latency, non-fatiguing → MRI (Diagnostics → the „Central” view)"),
