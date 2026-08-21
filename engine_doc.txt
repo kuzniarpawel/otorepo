@@ -4219,15 +4219,37 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
         NAZWA: praca wprowadza AUVP obok tradycyjnego „zapalenia nerwu przedsionkowego"; ciąg
         „acute unilateral vestibulopathy" ma dziś w src/ 0 trafień. Czy oba terminy są synonimami
         i który program ma nosić — patrz decyzja D3 i konflikt nazewniczy w przesiew_icvd.md.
-        SPRZECZNOŚĆ WEWNĄTRZ DOKUMENTU, ZMIERZONA: kryterium instrumentalne występuje w pracy DWA
-        RAZY w NIEZGODNYCH postaciach — nota 12 podaje je jako ALTERNATYWĘ, a §4.4.1 jako
-        KONIUNKCJĘ z trzecim warunkiem. To dwa różne zbiory chorych, a konflikt jest WEWNĄTRZ
-        jednej pracy, więc nie da się go rozstrzygnąć wyborem nowszego źródła. Do rozstrzygnięcia
-        użytkownika — decyzja D2 w przesiew_icvd.md. DO CZASU JEJ PODJĘCIA żaden próg AUVP nie
-        wchodzi do silnika.
-        UWAGA: weryfikacja adwersaryjna ekstrakcji tej pracy przerwała się na błędzie API
-        (2026-08-21) — ekstrakcja `17-strupp2022-auvp.md` NIE PRZESZŁA pełnej kontroli i musi ją
-        przejść przed etapem E4.
+        DECYZJA D2 — ROZSTRZYGNIĘTA 2026-08-21 „WG ZALECEŃ Z PRACY", I ROZSTRZYGNIĘCIE OKAZAŁO SIĘ
+        INNE, NIŻ ZAKŁADAŁO ZGŁOSZENIE. Zgłoszono to jako sprzeczność wewnątrz dokumentu: nota 12
+        podaje kryterium instrumentalne jako ALTERNATYWĘ („gain < 0,7 dla vHIT **i/lub** różnica
+        międzystronna > 0,3 **i/lub** różnica kaloryczna > 25%"), a rozdział o vHIT jako KONIUNKCJĘ
+        z trzecim warunkiem („gain **poniżej** 0,7 **oraz** różnica międzystronna **powyżej** 0,3;
+        **powinny też wystąpić sakady** w trakcie badania"). Po przeczytaniu OBU miejsc w pełnym
+        tekście wraz z kryteriami: TO NIE JEST SPRZECZNOŚĆ MIĘDZY DWIEMA WERSJAMI KRYTERIUM, bo
+        ŻADNA Z TYCH LICZB NIE JEST KRYTERIUM.
+        KRYTERIUM C BRZMI JAKOŚCIOWO i nie zawiera ani jednej liczby: „jednoznaczny dowód obniżonej
+        czynności VOR po stronie przeciwnej do kierunku fazy szybkiej oczopląsu samoistnego".
+        Liczby żyją wyłącznie w nocie 12 i w rozdziale o vHIT — a komitet poprzedza je zdaniem,
+        które rozstrzyga sprawę wprost: NIE MA DOTĄD ZGODY CO DO PATOLOGICZNYCH WARTOŚCI ODCIĘCIA
+        dla vHIT ani dla próby kalorycznej, wyniki ZALEŻĄ OD APARATURY I SYSTEMU ANALIZY, więc
+        badania MUSZĄ OPIERAĆ SIĘ NA NORMACH PRACOWNI ALBO DANYCH PRODUCENTA. Sama nota 12 nazywa
+        swoje liczby „WORKING APPROXIMATION", a rozdział o vHIT dopowiada, że wzmocnienia z vHIT
+        należy traktować jako PRZYBLIŻENIA zależne od sprzętu i techniki.
+        DWA CZYTANIA ODPOWIADAJĄ TEŻ NA RÓŻNE PYTANIA: nota 12 — „co uznać za patologiczne w OBU
+        badaniach naraz (vHIT albo kaloryka)"; rozdział o vHIT — „co jest ISTOTNYM UBYTKIEM VOR
+        w samym vHIT". Stąd koniunkcja i dodatkowy warunek sakad w tym drugim.
+        CO Z TEGO WYNIKA DLA SILNIKA — I JEST TO ZALECENIE SAMEJ PRACY, NIE NASZ WYBÓR: ŻADNA
+        z tych liczb NIE WCHODZI do silnika jako próg kryterialny AUVP, bo praca żadnej za taki nie
+        uznaje. Gdyby program kiedykolwiek podał „0,7" jako „próg ICVD dla AUVP", byłoby to
+        twierdzenie MOCNIEJSZE niż źródło. Wolno natomiast zapisać jedno i drugie jako
+        PRZYBLIŻENIA ROBOCZE, z jawną notą o zależności od pracowni — i tak są tu zapisane.
+        WARUNEK, KTÓREGO NIE MIAŁO ŻADNE Z DWÓCH ZGŁOSZONYCH CZYTAŃ: „powinny też wystąpić SAKADY
+        w trakcie badania". Sam spadek wzmocnienia bez sakad nie jest w tym rozdziale opisem
+        istotnego ubytku.
+        WERYFIKACJA: adwersaryjna kontrola ekstrakcji `17-strupp2022-auvp.md` przerwała się
+        2026-08-21 na błędzie API. Część ROZSTRZYGAJĄCA dla tej decyzji — treść kryteriów A–F oraz
+        oba miejsca z liczbami — została odczytana i sprawdzona bezpośrednio w pełnym tekście przy
+        podejmowaniu D2. Reszta ekstrakcji nadal czeka na pełną kontrolę przed etapem E4b.
 
 [H60] Seemungal BM, Agrawal Y, Bisdorff A, Bronstein A, Cullen KE, Goadsby PJ, Lempert T, Kothari S,
       Lim PB, Magnusson M, Marcus HJ, Strupp M, Whitney SL (2022). „The Bárány Society position on

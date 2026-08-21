@@ -4464,14 +4464,38 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
         string "acute unilateral vestibulopathy" has 0 hits in src/ today. Whether the two terms are
         synonyms and which one the program should carry — see decision D3 and the naming conflict in
         przesiew_icvd.md.
-        AN INTERNAL CONTRADICTION, MEASURED: the instrumental criterion appears TWICE in the paper in
-        INCOMPATIBLE forms — note 12 gives it as a DISJUNCTION, §4.4.1 as a CONJUNCTION with a third
-        condition. These are two different patient sets, and since the conflict is INSIDE one paper it
-        cannot be settled by preferring a newer source. For the user to resolve — decision D2 in
-        przesiew_icvd.md. UNTIL THEN no AUVP threshold enters the engine.
-        NOTE: the adversarial verification of this paper's extraction aborted on an API error
-        (2026-08-21) — the extraction `17-strupp2022-auvp.md` has NOT passed full checking and must
-        do so before stage E4.
+        DECISION D2 — RESOLVED 2026-08-21 "PER THE PAPER", AND THE RESOLUTION TURNED OUT TO DIFFER
+        FROM WHAT THE REPORT ASSUMED. It was raised as an internal contradiction: note 12 gives the
+        instrumental criterion as a DISJUNCTION ("gain < 0.7 for vHIT **and/or** a side difference
+        of > 0.3 **and/or** a caloric side difference of > 25%"), while the vHIT section gives it as
+        a CONJUNCTION with a third condition ("the gain should be **less than** 0.7 **and** the
+        side-difference **greater than** 0.3. **There should also be saccades** during the test").
+        Having read BOTH passages in full together with the criteria: THIS IS NOT A CONTRADICTION
+        BETWEEN TWO VERSIONS OF A CRITERION, because NEITHER NUMBER IS A CRITERION.
+        CRITERION C IS QUALITATIVE and contains no number at all: "unambiguous evidence of reduced
+        VOR function on the side opposite the direction of the fast phase of the spontaneous
+        nystagmus". The numbers live only in note 12 and in the vHIT section — and the committee
+        prefaces them with the sentence that settles the matter outright: there is SO FAR NO GENERAL
+        AGREEMENT ON PATHOLOGICAL CUT-OFF VALUES for vHIT or caloric testing, calculations DEPEND ON
+        THE EQUIPMENT AND ANALYSING SYSTEM, and investigations therefore HAVE TO RELY ON LABORATORY
+        STANDARDS OR MANUFACTURERS' DATA. Note 12 itself calls its figures a "working approximation",
+        and the vHIT section adds that vHIT gains should be seen as APPROXIMATIONS dependent on
+        equipment and technique.
+        THE TWO READINGS ALSO ANSWER DIFFERENT QUESTIONS: note 12 — "what counts as pathological
+        across BOTH tests (vHIT or caloric)"; the vHIT section — "what counts as a SIGNIFICANT VOR
+        DEFICIT on vHIT itself". Hence the conjunction and the extra saccade condition in the latter.
+        WHAT FOLLOWS FOR THE ENGINE — AND IT IS THE PAPER'S OWN RECOMMENDATION, NOT OUR CHOICE:
+        NEITHER number enters the engine as a criterial AUVP threshold, because the paper treats
+        neither as one. Were the program ever to present "0.7" as "the ICVD threshold for AUVP",
+        that would be a claim STRONGER than the source. Both may be recorded as WORKING
+        APPROXIMATIONS with an explicit note about laboratory dependence — and so they are here.
+        A CONDITION NEITHER OF THE TWO REPORTED READINGS CARRIED: "there should also be SACCADES
+        during the test". A fall in gain without saccades is not, in that section, a description of
+        a significant deficit.
+        VERIFICATION: the adversarial check of the extraction `17-strupp2022-auvp.md` aborted on an
+        API error on 2026-08-21. The part DECISIVE for this decision — the text of criteria A–F and
+        both passages carrying numbers — was read and checked directly in the full text while taking
+        D2. The remainder of the extraction still awaits full checking before stage E4b.
 
 [H60] Seemungal BM, Agrawal Y, Bisdorff A, Bronstein A, Cullen KE, Goadsby PJ, Lempert T, Kothari S,
       Lim PB, Magnusson M, Marcus HJ, Strupp M, Whitney SL (2022). "The Bárány Society position on
