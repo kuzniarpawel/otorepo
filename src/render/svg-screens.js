@@ -9,6 +9,7 @@ import { SIDE, sideN, otherSide, yacovino, gufoniApo, MANEUVERS, CANALS, CANAL_O
          persistentOf, mechLabels, SHORT_PHI0, PRIORS, examPhaseNys, examAnswerKey, TEVS_REST, tevsDemoSim, JAM_DEMO, jamDemo, poseNeck, HC_TILT_TXT } from '../pose/maneuvers.js';
 import { spvTrace } from '../engine/spv-bridge.js';   // D8/V22: pierwsza konsumpcja UI mostu SPV (V13)
 import { state } from '../app/state.js';
+import { CPN_TROPY, CPN_REGULA_TRIADY, CPN_KONTRAPUNKT_DOWNBEAT } from '../app/cpn-model.js';   // D-CPN: JEDNO źródło treści klinicznej karty CPN
 import { poparcie, POWODY_BRAKU, ostrzezenieDownbeat, ostrzezenieSkretny, wnioskowanieDix, wartoscInstancji,
          POWODY_NIEWIARYGODNOSCI,
          OBS_POLA, OBS_FAZY_OPIS, instancjeStosowalne, kompletnosc, spojnosc, flagi, FLAGI,
@@ -2668,17 +2669,21 @@ function diagClassifyCard(canal, v, side, antMode, mech, wsparcie){   // 5. i 6.
       <div style="margin-bottom:2px">${cls.crit.map(chip).join("")}</div>
       ${cls.redflag?`<div class="note" style="color:var(--ant)"><b>⚠</b> ${cls.redflag}</div>`:""}
       <div class="note">${t('Kryteria Bárány Society (ICVD 2015) — [H48] von Brevern 2015. „Zespół ustalony" = podtyp z sekcji 2 pracy; „wyłaniający się/atypowy" = sekcja 3, czyli opisany, ale niedostatecznie potwierdzony — potwierdź i wyklucz przyczynę ośrodkową. Postaci opisane jako „poza klasyfikacją ICVD" nie należą do żadnej z tych dwóch sekcji.','Bárány Society criteria (ICVD 2015) — [H48] von Brevern 2015. "Established syndrome" = a subtype from section 2 of the paper; "emerging/atypical" = section 3, i.e. described but insufficiently confirmed — confirm and rule out a central cause. Forms labelled "outside the ICVD classification" belong to neither section.')}</div>`;
+  /* D-CPN: treść kliniczna tej karty pochodzi WYŁĄCZNIE z cpn-model.js. Renderer układa ją wg pola
+     `rzad` — źródło [H51] Eggers 2019 stawia objawy neurologiczne PIERWSZE i typowe, a resztę
+     traktuje jako drugą linię („in their absence"). Numery źródeł idą z pola `zrodlo`; tropy bez
+     pokrycia świadomie NIE dostają numeru. */
+  const cpnLista=(rzad)=>`<ul style="margin:6px 0 0;padding-left:18px;line-height:1.5">${
+    CPN_TROPY.filter(x=>x.rzad===rzad).map(x=>`<li style="margin:0 0 6px">${t(x.pl,x.en)}${
+      x.zrodlo.length?` <span style="color:var(--muted)">${x.zrodlo.map(z=>`[${z}]`).join(" ")}</span>`:""}</li>`).join("")}</ul>`;
   const cpn=`
       <div class="redflag" style="margin-top:0"><b>${t("⚠ Ośrodkowy oczopląs pozycyjny (CPN) — to NIE BPPV.","⚠ Central positional nystagmus (CPN) — this is NOT BPPV.")}</b>
-        ${t("Rozpoznaj po cechach nietypowych dla złogu:","Recognize it by features atypical for debris:")}
-        <ul style="margin:8px 0 0;padding-left:18px;line-height:1.5">
-          <li>${t("<b>Bez latencji</b> — pojawia się natychmiast po ułożeniu.","<b>No latency</b> — appears immediately after positioning.")}</li>
-          <li>${t("<b>Uporczywy</b> — trwa, dopóki utrzymana jest pozycja (nie narasta i nie wygasa).","<b>Persistent</b> — lasts as long as the position is held (does not crescendo or fade).")}</li>
-          <li>${t("<b>Niemęczliwy</b> — nie słabnie przy powtórzeniach prowokacji.","<b>Non-fatiguing</b> — does not weaken on repeated provocations.")}</li>
-          <li>${t("<b>Czysto pionowy</b> (zwłaszcza <b>downbeat</b>) lub czysto skrętny; kierunek <b>niepasujący do żadnego kanału</b>.","<b>Purely vertical</b> (especially <b>downbeat</b>) or purely torsional; a direction <b>not matching any canal</b>.")}</li>
-          <li>${t("Obecny w wielu pozycjach / w pozycji neutralnej; oczopląs bywa zmienny kierunkowo.","Present in many positions / in the neutral position; the nystagmus may be direction-changing.")}</li>
-          <li>${t("Objawy towarzyszące: dyzartria, ataksja, dwojenie, zaburzenia spojrzenia.","Accompanying signs: dysarthria, ataxia, diplopia, gaze disturbances.")}</li>
-        </ul></div>
+        ${t("Rozpoznaj po cechach nietypowych dla złogu — w kolejności, jaką narzuca źródło:","Recognize it by features atypical for debris — in the order the source imposes:")}
+        ${cpnLista(1)}
+        <div class="note" style="color:var(--text);margin:8px 0 2px">${t("W ich BRAKU — wskazówki drugiej linii:","IN THEIR ABSENCE — second-line clues:")}</div>
+        ${cpnLista(2)}
+        <div class="note" style="color:var(--text);margin-top:9px">${t(CPN_REGULA_TRIADY.pl, CPN_REGULA_TRIADY.en)}</div>
+        <div class="note" style="color:var(--text);margin-top:7px">${t(CPN_KONTRAPUNKT_DOWNBEAT.pl, CPN_KONTRAPUNKT_DOWNBEAT.en)}</div></div>
       <div class="panelbox" style="margin-top:10px"><h4>${t("Wzorzec: uporczywy downbeat (poglądowo)","Pattern: persistent downbeat (illustrative)")}</h4>
         <div class="eyesrow">${earMark("P")}<div class="eyeswrap" data-cpnnys>${eyesSVG()}</div>${earMark("L")}</div>
         <div class="nyslabel"><span class="arrow">↓</span><span>${t("downbeat · uporczywy · bez latencji","downbeat · persistent · no latency")}</span></div></div>

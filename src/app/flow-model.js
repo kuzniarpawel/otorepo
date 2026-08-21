@@ -202,8 +202,15 @@ export function maneuverDrift(s) {
 
   if (bylUstalony(was, 'central') && was.central !== now.central) {
     out.push(now.central
-      ? { pole: 'central', pl: 'przełączono na obraz OŚRODKOWY (CPN) — repozycja jest wtedy przeciwwskazana',
-          en: 'switched to the CENTRAL picture (CPN) — repositioning is then contraindicated', waga: 'krytyczna' }
+      /* D-REP (2026-08-21): wcześniej stało tu „repozycja jest wtedy przeciwwskazana". ŻADEN dokument
+         ICVD nie stawia przeciwwskazania — [H48] von Brevern 2015 stawia OBOWIĄZEK wykluczenia choroby
+         OUN („it is mandatory to exclude CNS disease"), a sekcja 3.1.2 tej samej pracy zakłada, że
+         manewry leczniczne BYWAJĄ wykonane i to ich BEZSKUTECZNOŚĆ jest przesłanką. Zachowujemy więc
+         zachowanie programu (nie leczymy obrazu ośrodkowego jak BPPV), ale przestajemy przypisywać
+         źródłom zakaz, którego nie wydały. Wartość modelu `zgodnosc:'przeciwwskazany'` zostaje —
+         to identyfikator gałęzi, nie cytat. */
+      ? { pole: 'central', pl: 'przełączono na obraz OŚRODKOWY (CPN) — wykluczenie choroby OUN jest wtedy OBOWIĄZKOWE [H48] von Brevern 2015, a rozpoznanie BPPV nie jest postawione, więc repozycji nie wykonuje się jako jego leczenia',
+          en: 'switched to the CENTRAL picture (CPN) — excluding CNS disease is then MANDATORY [H48] von Brevern 2015, and since no BPPV diagnosis has been made, repositioning is not performed as its treatment', waga: 'krytyczna' }
       : { pole: 'central', pl: 'wrócono do obrazu obwodowego (BPPV)',
           en: 'returned to the peripheral picture (BPPV)', waga: 'zwykla' });
   }

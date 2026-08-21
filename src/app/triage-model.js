@@ -164,9 +164,17 @@ export function triageResult(odp) {
     return {
       kategoria: 'czerwona', sciezka: null, pewnosc: 'wysoka', flagi, powody,
       tytul: P('Pilna ocena — nie wykonuj repozycji', 'Urgent evaluation — do not perform repositioning'),
+      /* D-ATX (2026-08-21): wcześniej stało tu „przemawia za przyczyną OŚRODKOWĄ NIEZALEŻNIE od
+         pozostałych cech". [H58] Kim 2022 formułuje to WĘŻEJ i jednocześnie mówi zdanie w DRUGĄ
+         STRONĘ. Postacią kryterialną jest ataksja CIĘŻKA TUŁOWIA, zdefiniowana twardo: chory NIE
+         UTRZYMA pozycji siedzącej ANI stojącej BEZ PODPARCIA — i jest ona JEDNĄ z pozycji listy
+         „co najmniej jedno z poniższych", a nie samodzielnym rozstrzygnięciem. Osobno praca mówi,
+         że ataksja LEKKA DO UMIARKOWANEJ NIE WYKLUCZA zmiany ośrodkowej. Zawężamy więc TWIERDZENIE,
+         ale NIE zawężamy WEJŚCIA: opcja „ataksja" w kwestionariuszu zostaje szeroka (bramka KS6),
+         bo zdanie o nieczułości działa właśnie na korzyść czujności. */
       tresc: ataksja
-        ? P('Ataksja chodu przy ostrych zawrotach przemawia za przyczyną OŚRODKOWĄ niezależnie od pozostałych cech. Wymaga pilnej oceny neurologicznej i obrazowania — nie manewru repozycyjnego.',
-            'Gait ataxia in acute dizziness argues for a CENTRAL cause regardless of the other features. It requires urgent neurological evaluation and imaging — not a repositioning maneuver.')
+        ? P('Ataksja chodu przy ostrych zawrotach każe pilnie wykluczyć przyczynę OŚRODKOWĄ. Postacią o mocy kryterium jest ataksja CIĘŻKA TUŁOWIA — chory nie utrzyma pozycji siedzącej ani stojącej bez podparcia; u Kima jest ona jedną z pozycji listy „co najmniej jedno z poniższych", a nie samodzielnym rozstrzygnięciem — [H58] Kim 2022. Uwaga w drugą stronę, z tej samej pracy: ataksja LEKKA lub UMIARKOWANA NIE WYKLUCZA zmiany ośrodkowej, więc jej łagodność nie jest powodem do uspokojenia. Wymaga pilnej oceny neurologicznej i obrazowania — nie manewru repozycyjnego.',
+            'Gait ataxia in acute dizziness calls for urgent exclusion of a CENTRAL cause. The form carrying criterial weight is SEVERE TRUNCAL ataxia — the patient cannot maintain an upright sitting or standing posture without support; in Kim it is one item on the "at least one of the following" list, not a decision on its own — [H58] Kim 2022. The converse, from the same paper: MILD to MODERATE ataxia does NOT exclude a central lesion, so its mildness is no reason for reassurance. It requires urgent neurological evaluation and imaging — not a repositioning maneuver.')
         : P('Zaznaczono objaw, który wykracza poza obraz obwodowy. Zanim rozważysz próby pozycyjne albo HINTS, potrzebna jest pilna ocena neurologiczna.',
             'You marked a feature that goes beyond a peripheral picture. Before considering positional testing or HINTS, urgent neurological evaluation is needed.'),
       uwagi: [

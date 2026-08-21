@@ -404,7 +404,15 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 178;  /* 2026-08-21, etap E5a (dwie poprawki faktow na karcie GRACE): 176 -> 178.
+const OCZEKIWANE = 186;  /* 2026-08-21, etapy D-REP + D-ATX + D-CPN (decyzje uzytkownika): 178 -> 186.
+                            OSIEM nowych cytowan Z OZNACZENIEM, w trzech plikach: src/app/cpn-model.js
+                            (nowy modul tresci karty CPN — "[H48] von Brevern 2015" w kontrapunkcie
+                            downbeatu, oba jezyki), src/app/triage-model.js ("[H58] Kim 2022" przy
+                            zawezonym twierdzeniu o ataksji, oba jezyki) i src/app/flow-model.js
+                            ("[H48] von Brevern 2015" przy obowiazku wykluczenia OUN, oba jezyki).
+                            Numery w polu `zrodlo` modulu cpn-model.js sa GOLE i przypadku nie tworza —
+                            konwencja je dopuszcza. Policzone przez --ile PO wstawieniu.
+                            2026-08-21, etap E5a (dwie poprawki faktow na karcie GRACE): 176 -> 178.
                             DWA nowe cytowania z oznaczeniem, oba w graceCard: "[H48] von Brevern 2015"
                             (wyjatek pseudo-samoistny w kolumnie t-EVS) i "[H46] Lempert 2022"
                             (badanie miedzynapadowe w kolumnie s-EVS). Obie komorki byly NIEPRAWDZIWE
