@@ -3617,7 +3617,12 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
         AVS z oczopląsem samoistnym → HINTS(+) TYLKO u przeszkolonych; pseudo-AVS bez oczopląsu → znieś fiksację,
         każda ataksja chodu = OŚRODEK) · s-EVS (samoistny epizodyczny → migrena przedsionkowa, TIA tylnego kręgu).
         NIE stosować CT do wykluczenia udaru (MRI DWI+MRA dla ośrodek/niejednoznaczny; wczesne MRI fałszywie ujemne
-        → powtórzyć 48–72 h); czerwone flagi 5 D (dyplopia, dyzartria, dysfagia, dysfonia, dysmetria). Rama
+        → powtórzyć 48–72 h); czerwone flagi 5 D (dyplopia, dyzartria, dysfagia, dysfonia, dysmetria).
+        RODOWÓD „5 D" (D-5D rozstrzygnięte 2026-08-22, K7-C1): nazwa jest mnemotechniką tej pracy,
+        spoza korpusu ICVD — 0 rzeczywistych trafień nazwy w 19 dokumentach, więc brzmienia nie da
+        się sprawdzić sondą; pokrycie FUNKCJI w korpusie dają [H58] Kim 2022 (ogniskowe objawy
+        ośrodkowe jako kryterium B poz. 1, lista otwarta „e.g.") i [H59] Strupp 2022 (noty 13-14,
+        w tym „dysarthrophonia"; dysfonia samodzielnie nie pada w korpusie nigdzie). Rama
         dydaktyczna + autorytet dla całego różnicowania OTOREPO (HINTS + BPPV); migrena przedsionkowa (s-EVS)
         CELOWO nie modelowana — flagowana jako różnicowa. (Od N1: preset vmInterictal pokazuje s-EVS
         międzynapadowo — badanie prawidłowe, rozpoznanie z wywiadu.)

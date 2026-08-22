@@ -501,7 +501,15 @@ const licznikProzy = (cyt) => {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 276;  /* 2026-08-22, K7-B1: 271 -> 276. PIEC asercji sekcji 8b (BIB6) —
+const OCZEKIWANE = 278;  /* 2026-08-22, K7-C1 (D-5D rozstrzygniete, wariant A doprecyzowany):
+                            276 -> 278. DWA cytowania z oznaczeniem w naglowku modulu
+                            src/app/triage-model.js — "[H58] Kim 2022" i "[H59] Strupp 2022"
+                            w zmierzonym RODOWODZIE mnemotechniki 5 D (nazwa spoza korpusu,
+                            funkcja pokryta kryterium B poz. 1 [H58] i notami 13-14 [H59]).
+                            Rownolegly dopisek w adnotacji [H24] engine_doc (oba lustra) licznika
+                            NIE rusza — proza wpisu bibliograficznego, czyta ja BIB6 (agregat).
+                            Zmierzone przez --ile: 278.
+                            POPRZEDNIO: 2026-08-22, K7-B1: 271 -> 276. PIEC asercji sekcji 8b (BIB6) —
                             MARTWE POLE ZAMKNIETE. Proza pod wpisami bibliografii (noty E3a pod
                             [H53], nota erraty pod [H19], dopiski K7 pod [H52]/[H61], PMID
                             Lacoura pod [H43]) jest odtad czytana: zgodnosc numer-nazwisko

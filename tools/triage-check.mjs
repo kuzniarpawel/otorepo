@@ -43,6 +43,18 @@ T('KS5/flagi-bezwarunkowe', typeof triageQuestion('flagi').gdy !== 'function',
 T('KS6/ataksja-jest', triageQuestion('flagi').opcje.some(o => o.v === 'ataksja'),
   'GRACE-3 stawia ataksję chodu najwyżej: każda ataksja = ośrodek');
 T('KS7/5D-jest', triageQuestion('flagi').opcje.some(o => /5 D|5 Ds/.test(o.pl + o.en)), 'lista 5 D');
+/* KS7b (K7-C1, 2026-08-22): KS7 pinuje samą NAZWĘ — i to na SKLEJCE o.pl + o.en, więc podmiana
+   SKŁADU pięciu pojęć (albo usunięcie nazwy z jednego lustra) przechodziła na zielono. To ta sama
+   pułapka sklejonych luster, którą D-CT złapało przy KL2c. KS7b pinuje SKŁAD, każde lustro OSOBNO.
+   Rodowód składu (decyzja użytkownika, wariant A): nagłówek modułu triage-model.js. */
+{
+  const o = triageQuestion('flagi').opcje.find(x => /5 D|5 Ds/.test(x.pl + x.en));
+  const ma = (s, wzorce) => wzorce.every(r => r.test(s || ''));
+  T('KS7b/5D-sklad-per-lustro', !!o
+    && ma(o.pl, [/5 D/, /dyplopi/i, /dyzartri/i, /dysfagi/i, /dysfoni/i, /dysmetri/i])
+    && ma(o.en, [/5 Ds/, /diplopi/i, /dysarthri/i, /dysphagi/i, /dysphoni/i, /dysmetri/i]),
+    'skład 5 D (dyplopia, dyzartria, dysfagia, dysfonia, dysmetria) musi stać w PL i EN OSOBNO');
+}
 T('KS8/brak-wylaczny', triageQuestion('flagi').opcje.find(o => o.v === 'brak').wylaczna === true,
   '„nie stwierdzono" musi być opcją wyłączną');
 
@@ -356,7 +368,8 @@ if (bledy.length) {
    ILOCZYN SIE NIE ZMIENIL (43520): pole `atlas` nie dolozylo wymiaru pytania, bo nie jest pytaniem.
    CZEGO TU NIE MA I DLACZEGO: sprawdzenia, czy klucz ISTNIEJE w atlasie. To robi ATL7a w
    `atlas:check` — ten plik nie importuje `atlas-model.js` i ma zostac lisciem grafu. */
-const OCZEKIWANE = 87;
+const OCZEKIWANE = 88;  /* 2026-08-22, K7-C1: 87 -> 88 — doszła KS7b (skład 5 D pinowany w każdym
+                           lustrze osobno; KS7 pinuje tylko nazwę i to na sklejce pl+en). */
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

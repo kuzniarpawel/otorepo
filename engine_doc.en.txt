@@ -3827,7 +3827,12 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
         nystagmus → remove fixation, any gait ataxia = CENTRAL) · s-EVS (spontaneous episodic → vestibular migraine,
         posterior-circulation TIA). Do NOT use CT to exclude stroke (MRI DWI+MRA for central/equivocal; early MRI
         false-negative → repeat 48–72 h); the 5 Ds red flags (diplopia, dysarthria, dysphagia, dysphonia,
-        dysmetria). An educational framing + authority for all of OTOREPO's differentiation (HINTS + BPPV);
+        dysmetria). PEDIGREE OF THE "5 Ds" (D-5D settled 2026-08-22, K7-C1): the name is this paper's
+        mnemonic, from outside the ICVD corpus — 0 real hits for the name across the 19 documents, so
+        its wording cannot be probed; the FUNCTION is covered in the corpus by [H58] Kim 2022 (focal
+        central signs as criterion B item 1, an open list — "e.g.") and [H59] Strupp 2022 (notes 13-14,
+        including "dysarthrophonia"; dysphonia on its own appears nowhere in the corpus).
+        An educational framing + authority for all of OTOREPO's differentiation (HINTS + BPPV);
         vestibular migraine (s-EVS) DELIBERATELY not modelled — flagged as a differential. (Since N1: the
         vmInterictal preset shows s-EVS between attacks — a normal examination, the diagnosis comes from the history.)
         TIME BANDS of the syndromes (added 2026-08-16 for the V22/D8 GRACE card — from the paper's

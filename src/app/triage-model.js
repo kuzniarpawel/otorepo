@@ -19,6 +19,15 @@
  *             silnik OTOREPO tego CELOWO nie modeluje (engine_doc [H24])
  * Czerwone flagi biją wszystko: „każda ataksja chodu = OŚRODEK", 5 D (dyplopia, dyzartria,
  * dysfagia, dysfonia, dysmetria). GRACE-3 dotyczy zawrotów ostrych, poniżej 2 tygodni.
+ * ═══ RODOWÓD „5 D" — ZMIERZONY (D-5D, decyzja użytkownika 2026-08-22, K7-C1, wariant A) ═══
+ * Nazwa „5 D" to mnemotechnika GRACE-3 (papier spoza korpusu ICVD — brzmienia nie da się
+ * sprawdzić sondą; sama nazwa: 0 rzeczywistych trafień w 19 pracach). FUNKCJA flagi ma pokrycie:
+ * [H58] Kim 2022 niesie ogniskowe objawy ośrodkowe jako kryterium B poz. 1 z listą OTWARTĄ
+ * („e.g." — więc nasze szersze sito NIE jest sprzeczne ze źródłem; wspólne: dyzartria+dysfagia),
+ * a [H59] Strupp 2022 w notach 13-14 pokrywa pojęciowo dwojenie, dyzartrofonię i połykanie
+ * („dysarthrophonia" — 1 trafienie; dysfonia SAMODZIELNIE nie pada w korpusie nigdzie,
+ * dysmetria u Kima użyta ODWROTNIE: jej brak nie uspokaja). Skład i nazwa zostają NASZE —
+ * świadomie, z tym zapisem zamiast podmiany; skład pinuje KS7b w obu lustrach OSOBNO.
  *
  * ═══ OŚ CZASU SPROWADZONA DO ICVD (D-CZAS, 2026-08-21) ═══
  * Nazwy t-EVS / s-EVS / pseudo-AVS pochodzą z GRACE-3 i NIE SĄ terminami ICVD — zmierzone:
@@ -172,6 +181,8 @@ export const TRIAGE_QUESTIONS = [
       // GRACE-3 stawia to najwyżej: KAŻDA ataksja chodu w ostrych zawrotach przemawia za ośrodkiem.
       { v: 'ataksja', pl: 'Ataksja chodu — pacjent nie stoi ani nie chodzi bez podparcia',
         en: 'Gait ataxia — the patient cannot stand or walk unaided' },
+      // Nazwa i skład 5 D = konwencja GRACE-3/OTOREPO, nie cytat z korpusu — rodowód zmierzony
+      // w nagłówku modułu (K7-C1); skład pinuje KS7b per lustro.
       { v: 'pieciod', pl: 'Którekolwiek z 5 D: dyplopia, dyzartria, dysfagia, dysfonia, dysmetria',
         en: 'Any of the 5 Ds: diplopia, dysarthria, dysphagia, dysphonia, dysmetria' },
       { v: 'ogniskowe', pl: 'Inne ogniskowe objawy neurologiczne (niedowład, zaburzenia czucia, porażenie nerwu czaszkowego)',

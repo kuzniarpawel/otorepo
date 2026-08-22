@@ -65,10 +65,22 @@ po E3a) · **E4b** (AUVP) · **E5** (kwalifikacja) · **E7** (słownik).
 **Domknięte po tej liście:** **E6** — Atlas otoneurologiczny, razem z rozstrzygnięciem D6
 i wariantem A okna HINTS (patrz §5 E6).
 
-**Otwarte decyzje użytkownika — trzy:** D3 („probable") · **D-5D** (twierdzenie „5 D" bez pokrycia
-w korpusie) · **D-MEN** (12 h vs 24 h). Otwarte pozostaje też **D8** (zawroty szyjne), które nigdy
-nie weszło do tego zestawienia: E6 dał tej pracy wpis atlasu o typie `stanowisko`, ale NIE
-rozstrzygnął, czy program ma wyciągnąć z niej konsekwencje dla okablowania karku (B8).
+**Otwarte decyzje użytkownika — dwie:** D3 („probable") · **D-MEN** (12 h vs 24 h). Otwarte
+pozostaje też **D8** (zawroty szyjne), które nigdy nie weszło do tego zestawienia: E6 dał tej
+pracy wpis atlasu o typie `stanowisko`, ale NIE rozstrzygnął, czy program ma wyciągnąć z niej
+konsekwencje dla okablowania karku (B8).
+**D-5D ROZSTRZYGNIĘTE 2026-08-22 (decyzja użytkownika, kontrola K7-C1) — wariant A doprecyzowany.**
+Nazwa i skład zostają NASZE, rodowód dopisany w trzech miejscach zamiast podmiany: nagłówek modułu
+`triage-model.js` (pełny zmierzony rodowód), komentarz przy opcji `pieciod` i adnotacja `[H24]`
+w obu lustrach `engine_doc`. Treść rodowodu: nazwa „5 D" to mnemotechnika GRACE-3 spoza korpusu
+(0 rzeczywistych trafień w 19 pracach — sondą niesprawdzalna), a pokrycie FUNKCJI dają `[H58]`
+kryterium B poz. 1 (lista otwarta „e.g.", więc szersze sito niesprzeczne ze źródłem) i `[H59]`
+noty 13–14 (w tym „dysarthrophonia"; dysfonia samodzielnie nie pada w korpusie nigdzie). Doszła
+bramka **KS7b** pinująca SKŁAD pięciu pojęć w każdym lustrze OSOBNO — KS7 pinowała tylko nazwę
+i to na sklejce pl+en (pułapka luster z D-CT). Warianty B (zrównać z `[H58]`) i C (rozbić na dwie
+flagi) odrzucone z pomiarów kontroli K7: B zwęża sito, którego źródło nie każe zwężać, C jest
+najdroższy przy zerowej różnicy funkcjonalnej (podwójny strażnik iloczynu IN10+ATL7b). Zero zmian
+napisów UI — 0 z 32 kluczy golden.
 
 **TRZY POZYCJE ZNALEZIONE PRZY PISANIU ATLASU — jedna już zamknięta, dwie otwarte.** Wszystkie są
 rozjazdami WEWNĄTRZ jednej pracy, więc nie da się ich zamknąć wyborem „nowszego źródła"; trzecią
@@ -624,7 +636,9 @@ nie tylko brak źródła.
 > w `c3ebf18`.
 >
 > **E5a zrobione osobno (`e446f1c`):** dwie komórki karty GRACE były **nieprawdziwe** wobec źródeł,
-> które program już miał. **Reszta E5 — 97 miejsc bez numeru — zostaje**, razem z D-5D, D-ORTO i D-CT.
+> które program już miał. **Reszta E5 — 97 miejsc bez numeru — zostaje**, ~~razem z D-5D, D-ORTO
+> i D-CT~~ *(dopisek 2026-08-22: wszystkie trzy decyzje tego zdania są już rozstrzygnięte —
+> D-ORTO `d0f0a3b`, D-CT `9332244`, D-5D kontrola K7-C1; zostaje samo „97 miejsc")*.
 
 ---
 
