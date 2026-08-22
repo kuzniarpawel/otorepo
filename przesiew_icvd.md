@@ -30,8 +30,10 @@ i zamknięta 2026-08-21** — trzy usterki znalezione i poprawione, w tym jedno 
 o silniku (rzekomy brak progu kalorycznego `< 6°/s`, który silnik ma jako `CAL_BILAT`, tyle że
 czyta go wyłącznie obustronnie). Rozstrzygnięcie D2 sprawdzone u źródła i utrzymane w mocy.
 
-Materiał: `scratchpad/icvd/` — 19 plików `NN-*.md` (ekstrakcje), 5 plików `mapa-*.md`,
-4 pliki `konflikty-*.md`.
+Materiał leży TRWALE w `Otorepo_code/icvd-korpus/` (poza repozytorium — licencje; katalog ma
+własny `README.md`): `zrodla-pelny-tekst/` · `ekstrakcje/` (19 plików `NN-*.md`) ·
+`mapa-programu/` (5 audytów) · `konflikty/` (4 pliki) · `plany/` · `narzedzia/`.
+**Zapis samej kontroli wrócił do repozytorium:** `weryfikacja_ekstrakcji_icvd.md`.
 
 ---
 
@@ -139,7 +141,7 @@ Rozkład: **34 twarde** (prace mówią rzeczy wzajemnie sprzeczne) · **35 napi�
 ale wymaga jawnej decyzji redakcyjnej) · **6 następstw** (praca późniejsza świadomie zmienia
 wcześniejszą — to nie konflikt, to wersja, ale trzeba wiedzieć, którą cytować).
 
-Pełne opisy z obiema stronami, liczbami i wariantami rozstrzygnięcia: `konflikty-*.md`.
+Pełne opisy z obiema stronami, liczbami i wariantami rozstrzygnięcia: `icvd-korpus/konflikty/`.
 
 ### 4.1. Decyzje BLOKUJĄCE — bez nich nie da się napisać bazy wiedzy
 
@@ -329,8 +331,9 @@ tego etapu będzie **decyzją redakcyjną OTOREPO, nie cytatem** — i tak trzeb
 - **Nie rusza fizyki**, poza etapem E1 pkt 4 (etykieta tier) i ewentualnie D4/D5, jeśli decyzja
   tak każe.
 - ~~**Nie obejmuje weryfikacji AUVP**, która padła na błędzie API — do powtórzenia przed E4.~~
-  **SPŁACONE 2026-08-21** — patrz §1. Pełny zapis kontroli: sekcja `== KOREKTY WERYFIKATORA ==`
-  w ekstrakcji (katalog korpusu, poza repozytorium).
+  **SPŁACONE 2026-08-21** — patrz §1. Pełny zapis kontroli, z liczbami trafień i numerami
+  wierszy, stoi **w repozytorium**: `weryfikacja_ekstrakcji_icvd.md` §4. Zapis w ekstrakcji
+  (sekcja `== KOREKTY WERYFIKATORA ==`, katalog korpusu) zostaje jako wersja przy materiale.
 - **Nie zna dokumentów ICVD w przygotowaniu.** Kask 2025 wymienia jednostki bez opublikowanych
   kryteriów; program nie powinien ich wyprzedzać.
 
