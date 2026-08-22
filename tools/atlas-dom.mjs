@@ -248,6 +248,8 @@ T('A0/uchwyt', !!H.goAtlas && !!H.otworzWpisAtlasu, 'atlas musi być sterowalny 
     'okno HINTS nadal renderuje kwestionariusz kwalifikacji — wariant A polega dokładnie na tym, że go tu nie ma');
   T('H2/karta-kroku1', /data-hqkrok1/.test(pusty), 'brak karty kroku 1 — użytkownik nie ma jak wrócić do kwalifikacji');
   T('H3/krok1-prowadzi', /openTriage\(\)/.test(pusty), 'karta kroku 1 nie prowadzi do ekranu kwalifikacji');
+  T('H3b/okno-nazywa-sie-badaniem', pusty.includes('HINTS / HINTS+ — badanie'),
+    'okno nadal nazywa sie „kwalifikacja", choc kwalifikacja z niego wyszla — to byla polowa pytania o uklad tego okna');
   T('H4/przeszkolenie-zostaje', /hqprzesz/.test(pusty),
     'pytanie o przeszkolenie zniknęło — dotyczy BADAJĄCEGO, więc jego miejsce jest właśnie tutaj, w kroku 2');
 

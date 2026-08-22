@@ -2071,7 +2071,7 @@ function renderHintsKwal(){
 
   $("#app").innerHTML=`
     <div class="ghead"><button class="iconbtn" onclick="goArea('start')" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="ttl"><b>${t("HINTS / HINTS+ — kwalifikacja","HINTS / HINTS+ — qualification")}</b><span>${t("ostry zespół przedsionkowy · przeszkolenie · wejście do badania","acute vestibular syndrome · training · entry to the examination")}</span></div></div>
+      <div class="ttl"><b>${t("HINTS / HINTS+ — badanie","HINTS / HINTS+ — examination")}</b><span>${t("krok 2 · przeszkolenie · pułapki · wejście do badania","step 2 · training · pitfalls · entry to the examination")}</span></div></div>
     <div class="pagegrid hqgrid">
       <div class="col col--ctl">
         <p class="hqlead">${t("HINTS ma zastosowanie w CIĄGŁYCH zawrotach z utrzymującym się oczopląsem samoistnym. O tym, czy tak jest u tego chorego, rozstrzyga kwalifikacja wstępna — to jest krok pierwszy i ma własny ekran.",

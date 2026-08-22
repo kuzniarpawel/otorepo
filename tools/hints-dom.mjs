@@ -357,7 +357,11 @@ const EKRANY = [
   EKRANY[1][1]();
   T('I2/EN-instrukcja', /Ask the patient to look at your nose/.test(tekst()), 'instrukcja musi byc przetlumaczona');
   EKRANY[0][1]();
-  T('I3/EN-kwalifikacja', /HINTS \/ HINTS\+ — qualification/.test(tekst()), 'naglowek kwalifikacji musi byc przetlumaczony');
+  /* WARIANT A (E6): okno przestalo byc kwestionariuszem, wiec przestalo sie nazywac „kwalifikacja".
+     Naglowek mowi teraz „HINTS / HINTS+ — examination", a kwalifikacja ma wlasny ekran (krok 1).
+     TWIERDZENIE ZOSTAJE TO SAMO — naglowek tego okna musi byc przetlumaczony; zmienil sie tylko
+     napis, ktorego szukamy. To nie jest osłabienie bramki, tylko nadazenie za nazwa ekranu. */
+  T('I3/EN-okno-badania', /HINTS \/ HINTS\+ — examination/.test(tekst()), 'naglowek okna badania musi byc przetlumaczony');
   st.lang = 'pl';
 }
 
