@@ -37,7 +37,22 @@ import { ATLAS } from '../src/app/atlas-model.js';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : d; };
-const KORPUS = opt('--korpus', resolve(ROOT, '..', '..', '..', 'icvd-korpus'));
+/* Domyślnie szukamy katalogu icvd-korpus, wspinając się po przodkach ROOT: repo bywa katalogiem
+   kanonicznym (Otorepo_code/files) ALBO worktree (files/.claude/worktrees/<nazwa>), więc sztywna
+   liczba '..' nie trafiała z żadnej lokalizacji (zmierzone 2026-08-22: z worktree celowała
+   w files/icvd-korpus, z kanonicznego — w OneDrive/icvd-korpus). Jawne --korpus zawsze wygrywa. */
+const szukajKorpusu = () => {
+  let d = ROOT;
+  for (let i = 0; i < 7; i++) {
+    const k = resolve(d, 'icvd-korpus');
+    if (existsSync(k)) return k;
+    const wyzej = resolve(d, '..');
+    if (wyzej === d) break;
+    d = wyzej;
+  }
+  return resolve(ROOT, '..', 'icvd-korpus'); // komunikat odmowy pokaże, dokąd celowano
+};
+const KORPUS = opt('--korpus', szukajKorpusu());
 const PROG = parseInt(opt('--prog', '10'), 10);
 const POKAZ = parseInt(opt('--pokaz', '12'), 10);
 
