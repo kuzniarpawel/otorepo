@@ -323,6 +323,12 @@ const OBWOD_PELNY = { hit: 'sakadaP', oczoplas: 'jednokierunkowy', skew: 'brakOd
   T('G1/ostrzezenie-jest', !!p.ostrzezenie, 'przy cesze alarmowej ostrzeżenie musi istnieć');
   T('G2/mowi-o-MRI', /MRI/.test(p.ostrzezenie.trescPl) && /MRI/.test(p.ostrzezenie.trescEn), 'ostrzeżenie musi wskazać właściwe badanie obrazowe');
   T('G3/odradza-tomografie', /tomografia/i.test(p.ostrzezenie.trescPl) && /\bCT\b/.test(p.ostrzezenie.trescEn), 'ostrzeżenie musi powiedzieć, że tomografia nie wyklucza udaru tylnego dołu');
+  /* G3b (K7-A5, 2026-08-22): CZŁON POZYTYWNY zdania o TK — „zalecana do wykrycia krwotoku" —
+     był broniony wyłącznie po polsku (KL2g pilnuje karty triage, E6b pilnuje DOM-u polskiego,
+     golden jest PL-only). Usunięcie członu z trescEn przechodziło na zielono przez wszystko:
+     G3 zaspokaja się członem NEGATYWNYM („CT is NOT suitable"). Dokładnie ta klasa dziury —
+     jednostronne lustro — którą D-CT usunęło na karcie triage kontrolą czułości. */
+  T('G3b/krwotok-w-obu-lustrach', /KRWOTOK/i.test(p.ostrzezenie.trescPl) && /HAEMORRHAGE/i.test(p.ostrzezenie.trescEn), 'człon pozytywny (TK zalecana do wykrycia krwotoku) musi stać w OBU lustrach ostrzeżenia');
   T('G4/falszywie-ujemne-MRI', /48/.test(p.ostrzezenie.trescPl) && /48/.test(p.ostrzezenie.trescEn), 'ostrzeżenie musi wspomnieć o fałszywie ujemnym wczesnym MRI');
   T('G5/tytul-w-obu-jezykach', !!(OSTRZEZENIE.tytulPl && OSTRZEZENIE.tytulEn && OSTRZEZENIE.tytulPl !== OSTRZEZENIE.tytulEn), 'ostrzeżenie ma tytuł w obu językach');
   T('G6/czulosc-bez-alarmu', podsumowanieHints(stanB(OBWOD_PELNY), D).ostrzezenie === null, 'kontrola: bez cech alarmowych ostrzeżenia nie ma');
@@ -414,7 +420,8 @@ const OBWOD_PELNY = { hit: 'sakadaP', oczoplas: 'jednokierunkowy', skew: 'brakOd
 }
 
 /* ═══════════ K. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 135;
+const OCZEKIWANE = 136;  /* 2026-08-22, K7-A5: 135 -> 136 — doszła asercja G3b (człon pozytywny
+                            zdania o TK w OBU lustrach stałej OSTRZEZENIE). */
 if (bledy.length) {
   console.error(`✗ hints:check — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));
