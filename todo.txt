@@ -1,9 +1,12 @@
 ==========================================================================
  OTOREPO — lista zadań (todo)
  Aplikacja: repozycja otolitów (BPPV) + diagnostyka; MODULARNA (Vite + src/ moduły ES, PWA)
- Pliki: index.html + src/ (9 modułów) · otorepo.html (monolit = źródło złotego snapshotu, zamrożony)
+ Pliki: index.html + src/ (50 plików .js w katalogach app/engine/pose/render/runtime; „9 modułów"
+        było stanem z 2026-07) · otorepo.html (monolit = źródło złotego snapshotu, zamrożony)
         · todo.txt · engine_doc.txt (silnik) · view_doc.txt (wizualizacja)
- Ostatnia aktualizacja: 2026-07-15 (klasyfikacja Bárány/ICVD + różnicowanie ośrodkowe CPN w diagnostyce;
+ Ostatnia aktualizacja: 2026-08-22 (przegląd dokumentacji: nagłówek dogoniony do stanu repo;
+        wpisy R1/R2/R4b, HINTS „plus", head-shaking i pakowanie PWA dostały domknięcia z datami)
+ Poprzednio: 2026-07-15 (klasyfikacja Bárány/ICVD + różnicowanie ośrodkowe CPN w diagnostyce;
         panel otolitowy SVV & VEMP w HINTS — wizualizacja gotowych NeuroVOR.svv/vemp)
 ==========================================================================
 
@@ -12,6 +15,8 @@ Konwencje techniczne:
     npm run snapshot:check  (golden DOM/engine/pose w jsdom) ·
     npm run bridge:check    (most kwaternionów OTOREPO↔Three) ·
     npm run view:check      (kierunki ekranowe SVG↔3D).
+    [DOPISEK 2026-08-22: trójka wyżej to RDZEŃ, nie całość — konwencja objęła z czasem ~29 bramek
+    *:check/*:dom w package.json (m.in. obs, barany, zrodla, triage, hints, atlas); pełna lista: npm run.]
     Build: npm run build (Vite + tools/build-dist.mjs → dist/ + sw.js z hashem cache).
 - Silniki = moduły `src/engine/{vestibular,neuro-vor}.js` (BPPV / VOR toniczny/ośrodkowy, HINTS) — czyste,
     BEZ DOM, importowalne w czystym node (harness offline .mjs); golden snapshot zastąpił dawny vlab.mjs.
@@ -44,8 +49,9 @@ SILNIK (fizyka) — rozszerzenia wg korzyść/koszt:
  [→] Inne stany (push-pull / excited:false): jednostronna westybulopatia + oczopląs OŚRODKOWY —
         ZROBIONE 2026-07-07 jako moduł NeuroVOR (patrz ZROBIONE / engine_doc „MODUŁ NeuroVOR").
 
-RÓŻNICOWANIE OŚRODEK↔OBWÓD (moduł NeuroVOR — rozszerzenia): rdzeń UKOŃCZONY (blok niżej); pozostały tylko
- pozycje OPCJONALNE (HINTS „plus"/AICA, rebound, head-shaking) — patrz sekcja „(opc.)" po bloku poniżej.
+RÓŻNICOWANIE OŚRODEK↔OBWÓD (moduł NeuroVOR — rozszerzenia): rdzeń UKOŃCZONY (blok niżej); pozostała
+ tylko pozycja OPCJONALNA rebound — HINTS „plus"/AICA i head-shaking ZROBIONE w silniku (patrz
+ sekcja „(opc.)" po bloku poniżej; dopiski 2026-08-22).
 
 ============================================================================
  >>> „MATEMATYCZNY PACJENT" + NEUROANATOMIA — UKOŃCZONE (silnik 2026-07-09, UI 2026-07-10) <<<
@@ -199,10 +205,16 @@ FAZA UI (po silniku, budowana raz z pełnym zakresem) — ZROBIONE 2026-07-10 (t
         twardo „ośrodek” pod zielonym werdyktem — sprzeczność).
 ============================================================================
 
- [ ] (opc.) HINTS „plus" — ubytek słuchu (AICA) jako dodatkowy parametr różnicujący.
+ [x] (opc.) HINTS „plus" — ubytek słuchu (AICA) jako dodatkowy parametr różnicujący.
+        ZROBIONE (dopisek 2026-08-22): oś słuchowa hearingL/R (etap N5) + scenariusze labyrinthitisR/aicaR
+        w silniku; suwaki „Słuch (HINTS-plus)" w trybie Własnym (PARAM_SPEC); składowa 'sluch'
+        „Przesiewowa ocena słuchu (HINTS „plus")" w klinicznym torze (src/app/hints-model.js).
  [→] (opc.) vHIT: sakady COVERT vs OVERT — ZROBIONE 2026-07-08 (kompensacja dynamiczna; podział czasowy sakady).
  [ ] (opc.) Rebound nystagmus i asymetria integratora (pion/poziom).
- [ ] (opc.) Head-shaking nystagmus — demaskowanie utajonej asymetrii velocity storage po kompensacji.
+ [x] (opc.) Head-shaking nystagmus — demaskowanie utajonej asymetrii velocity storage po kompensacji.
+        ZROBIONE W SILNIKU (etap N4, 2026-08-13; dopisek 2026-08-22): hsn() z dwufazowością z pary
+        tauVS+integratorTau i progiem wiarygodności 180°/s + bramka hsn:check (55 przypadków).
+        Do UI świadomie NIEPODPIĘTE (view_doc „CO SILNIK JUŻ UMIE…") — wpięcie = osobna decyzja.
 
 WALIDACJA / modelowanie kliniczne (otwarte):
  [x] Epley "front-loaded": cząstka osiągała wyjście za wcześnie → oczopląs liberacyjny w krokach 4/5 pod-reprezentowany.
@@ -231,7 +243,10 @@ SENSORY / KAMERA (przyszłość, po wizualizacji):
         DeviceOrientation (iOS, Euler->kwaternion) | replay. Kalibracja "głowa neutralnie -> tap=zero".
  [ ] Śledzenie oczu: MediaPipe Iris/FaceLandmarker lokalnie (WASM, ~3 MB -> osobny leniwie ładowany asset,
         rdzeń zostaje single-file). Pozycja tęczówki -> ξ(t) -> nakładka "zmierzone vs przewidziane".
- [ ] Pakowanie PWA over HTTPS (lub Capacitor/TWA) dla sensorów; tryb schematyczny może zostać file://.
+ [x] Pakowanie PWA over HTTPS (lub Capacitor/TWA) dla sensorów; tryb schematyczny może zostać file://.
+        ZROBIONE I WYDAWANE (dopisek 2026-08-22): PWA na GitHub Pages (workflow pages.yml, sw.js +
+        manifest.json) + Android przez Capacitor (capacitor.config.json, android/). Część SENSOROWA
+        ma własne, nadal otwarte pozycje wyżej (OrientationSource, śledzenie oczu).
     Zastrzeżenia kliniczne: RGB ~30 fps != VNG/Frenzel (IR, wysokie fps, brak fiksacji); żyro dryfuje; magnetometr
     zaszumiony w pomieszczeniach; MediaPipe nie testowany na chorobach oczu. Narzędzie dydaktyczne, nie pomiar SPV.
 
@@ -278,7 +293,8 @@ KLASYFIKACJA BÁRÁNY (CPN) + PANEL SVV/VEMP — ZROBIONE 2026-07-15 (checkpoint
         obwodowy → golden deterministyczny. [commit #1]
         [view_doc: KLASYFIKACJA BÁRÁNY / CPN; kryteria BPPV = [H48] von Brevern 2015, engine_doc „KRYTERIA BPPV"
         (etap E1, 2026-08-21 — wcześniej stała tu „pamięć otoneurologiczna"); czerwone flagi CPN nadal bez
-        źródła — etap E2, [H51] Eggers 2019]
+        źródła — etap E2, [H51] Eggers 2019] (DOPISEK 2026-08-22: dług karty spłacony w 1223f25/D-CPN —
+        źródła per trop w src/app/cpn-model.js; dla E2 zostaje warstwa FLAGI w obs-model.js)
  [x] #2 HINTS: panel „Otolity — SVV & VEMP" (renderHints, po odchyleniu skośnym). Wizualizacja gotowych
         NeuroVOR.svv/vemp: linia SVV przechylona ku stronie chorej (ipsiwersyjnie, składowa OTR) + 4 słupki amplitud
         z progiem (cVEMP P/L = woreczek → n. DOLNY; oVEMP P/L = łagiewka → n. GÓRNY). Statyczne; odświeżanie na żywo
@@ -426,15 +442,19 @@ NAPRAWIONE:
         (patrz R2 niżej) — komentarze doprowadzone do stanu faktycznego.
 
 DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE zmieniam bez zgody):
- [ ] R1 ŁUK 180° JEST KRÓTSZY NIŻ REALNY KANAŁ — minimum grawitacyjne w pozycji prowokującej leży poza końcem
+ [x] R1 ŁUK 180° JEST KRÓTSZY NIŻ REALNY KANAŁ — minimum grawitacyjne w pozycji prowokującej leży poza końcem
         łuku (Dix φ_eq≈190°, head-hang ≈194°, roll ≈210°), więc cząstka zawsze dobija do odnogi. Skutki:
         brak ODWRÓCENIA przy siadaniu po Dix–Hallpike'u (kryterium Bárány, deklarowane w engine_doc);
         kroki 3–4 Epleya fizycznie jałowe (ξ 0,06 → aplikacja nie pokazuje oczopląsu w kroku 4);
         test roll z uchem zdrowym w dole OPRÓŻNIA kanał poziomy. phiExit=240 naprawia część, ale psuje
         Semonta/Yacovino/Gufoniego geo → potrzebna skoordynowana rekalibracja, nie zmiana jednej stałej.
- [ ] R2 BASCULE NIGDY NIE CZYŚCI (φ 90→11→78→3→51, exited=false) i wpada w gałąź renderu od Gufoniego apo,
+        ZAMKNIĘTE 2026-08-05 (831a928; dopisek 2026-08-22): rekalibracja wykonana jako ARC_SPAN per kanał
+        {tylny 318,8° / przedni 281,1° / poziomy 267,3°} — patrz engine_doc „R1 ZAMKNIĘTE".
+ [x] R2 BASCULE NIGDY NIE CZYŚCI (φ 90→11→78→3→51, exited=false) i wpada w gałąź renderu od Gufoniego apo,
         choć instrukcja kroku obiecuje przeniesienie złogu do łagiewki. Mechanizmem Bascule jest bezwładnościowe
         oderwanie od osklepka — model przetłumiony, grawitacyjny, tego nie zawiera.
+        DIAGNOZA POTWIERDZONA, LICZBY NIEAKTUALNE — to jest R7, zamknięte 2026-08-05 (8dd18b5; dopisek
+        2026-08-22): Bascule wychodzi w kroku 5, 12/12 manewrów czyści (patrz engine_doc R7 i „R2-STARE").
  [ ] R3 STAŁE SKALIBROWANE TYLKO DLA KANAŁU TYLNEGO. Kanał poziomy wychodzi z latencją 2,30 s (dłuższą niż
         tylny 1,95 s) i najsłabszym oczopląsem (ξ 0,518 vs 0,810), a klinicznie HC-BPPV ma latencję
         najkrótszą/nieobecną i oczopląs najsilniejszy. Należy tu TEŻ odwrócona asymetria rollu (|ξ| chore
@@ -630,9 +650,12 @@ DO DECYZJI (opisane w engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R1–R3, NIE
         krok 5 wypracowuje własne 0.376 po 1.8 s, a złóg wychodzi właśnie w nim. Wdrożono znacznik
         „oczopląs liberacyjny" na karcie frontalnej, zapalany w kroku ekspulsji wg FIZYKI (manExitStep).
         Szczegóły i rozkład po manewrach: engine_doc „ZNANE ROZBIEŻNOŚCI KLINICZNE" R5.
- [ ] R4b HOLDY WYPROWADZONE Z SILNIKA — ZAPROJEKTOWANE I PRZELICZONE, WDROŻENIE ODŁOŻONE (decyzja USERA
+ [x] R4b HOLDY WYPROWADZONE Z SILNIKA — ZAPROJEKTOWANE I PRZELICZONE, WDROŻENIE ODŁOŻONE (decyzja USERA
         2026-08-05). Zastąpić `cap` w maneuverTimeline holdem wyprowadzonym z silnika. Cały rachunek niżej
         jest zmierzony — przy wdrożeniu NIE trzeba go odtwarzać, trzeba tylko domknąć LUKI 1-3.
+        WDROŻONE tego samego dnia (831a928; dopisek 2026-08-22) i rozszerzone w ocenie II: derivedHold
+        z HOLD_STEPS (ta sama siatka co SPEC niżej) + UNTIMED_STEPS + strażnik tauP·1,1; cap 12 s nie
+        istnieje. LUKI 1-2 domknięte, LUKA 3 bezprzedmiotowa po R7. Rachunek niżej zostaje jako zapis.
 
      SPEC (USER): hold = najmniejsza wartość z {30,45,60,75,90,105,120} s, przy której silnik wyprowadza złóg
         do łagiewki. Czyli: próg silnika → zaokrąglenie W GÓRĘ do kroku 15 s → podłoga 30 s.

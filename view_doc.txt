@@ -45,7 +45,10 @@ segmentem „Obwodowy (BPPV) ↔ Ośrodkowy (CPN)" (state.diagCentral, handler t
    rozdział „KRYTERIA BPPV". Do etapu E1 (2026-08-21) stało tu „pamięć otoneurologiczna «BPPV — kryteria
    Bárány 2015»" — czyli jako źródło kryteriów, na których stoi LICZĄCA karta klasyfikacji, podana była
    pamięć modelu, a nie praca. Czerwone flagi CPN tej karty NADAL nie mają źródła: to osobny dług,
-   domykany w etapie E2 przez [H51] Eggers 2019.
+   domykany w etapie E2 przez [H51] Eggers 2019. [DOPISEK 2026-08-22: dług KARTY spłacony już
+   w 1223f25 (D-CPN, 2026-08-21, dwie godziny po zdaniu wyżej) — treść kliniczna widoku CPN
+   pochodzi odtąd wyłącznie z src/app/cpn-model.js, z polem zrodlo per trop (numery prac przy
+   wierszach; dwa tropy świadomie bez numeru). Dla E2 zostaje uźródłowienie FLAGI w obs-model.js.]
 
 === PANEL OTOLITOWY — SVV & VEMP (HINTS) ===
 Panelbox w renderHints (po „Odchyleniu skośnym"), widoczny w KAŻDYM trybie (scenariusz + własny). Wizualizuje

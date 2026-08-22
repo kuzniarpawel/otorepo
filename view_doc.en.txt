@@ -48,6 +48,10 @@ segment "Peripheral (BPPV) ↔ Central (CPN)" (state.diagCentral, handler toggle
    memory «BPPV — Bárány 2015 criteria»" — that is, the stated source of the criteria on which the
    COMPUTING classification card stands was the model's memory rather than the paper. The CPN red flags
    on that same card STILL have no source: a separate debt, closed in stage E2 via [H51] Eggers 2019.
+   [ADDED 2026-08-22: the CARD's debt was in fact repaid in 1223f25 (D-CPN, 2026-08-21, two hours
+   after the sentence above) — the clinical content of the CPN view has since come exclusively from
+   src/app/cpn-model.js, with a zrodlo field per clue (paper numbers on the rows; two clues
+   deliberately without a number). What remains for E2 is sourcing FLAGI in obs-model.js.]
 
 === OTOLITHIC PANEL — SVV & VEMP (HINTS) ===
 A panelbox in renderHints (after "Skew deviation"), visible in EVERY mode (scenario + custom). It visualizes
