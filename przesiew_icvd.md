@@ -63,13 +63,12 @@ doprowadza ten dokument do zgodności z tym, co już się wykonało).
 **Zostaje z planu:** **E2** (częściowo wyprzedzony przez D-CPN — patrz §3.2) · **E3** (czeka na D1) ·
 **E4b** (AUVP) · **E5** (kwalifikacja) · **E6** (czeka na D6) · **E7** (słownik).
 
-**Otwarte decyzje użytkownika — siedem:** D1 (progi gain, zreformułowany po D2 — §3.3) ·
-D3 („probable") · D6 (zakres 10 nieobecnych jednostek) · **D-5D** (twierdzenie „5 D" bez pokrycia
-w korpusie) · **D-ORTO** (rozgraniczenie z hemodynamicznymi zawrotami ortostatycznymi) ·
-**D-MEN** (12 h vs 24 h) · **D-CT** (program mówi „CT NIE nadaje się", a `[H58]` dodaje wskazanie
-do wykrywania krwotoków — połowa wskazująca zgubiona).
+**Otwarte decyzje użytkownika — pięć:** D3 („probable") · D6 (zakres 10 nieobecnych jednostek) ·
+**D-5D** (twierdzenie „5 D" bez pokrycia w korpusie) · **D-MEN** (12 h vs 24 h) · **D-CT** (program
+mówi „CT NIE nadaje się", a `[H58]` dodaje wskazanie do wykrywania krwotoków — połowa zgubiona).
 
-Rozstrzygnięte w trakcie: D2 (§4.1) · D4 (§3.5) · D5 (§4.1) · D7 (§4.2).
+Rozstrzygnięte w trakcie: D2 (§4.1) · D4 (§3.5) · D5 (§4.1) · D7 (§4.2) · **D1** (§3.3, etap E3a —
+pytanie było źle postawione) · **D-ORTO** (§5 E5, wariant A — szóste pytanie kwalifikacji).
 
 ---
 
@@ -464,7 +463,22 @@ tam, gdzie czerwone flagi; Bisdorff 2009 pod progi czasowe i nazwy objawów.
 stosowalności GRACE-3 („poniżej 2 tygodni") stoi wyłącznie w komentarzu. To luka logiczna,
 nie tylko brak źródła.
 
-> **TA LUKA JEST ZAMKNIĘTA — D-CZAS, `b50d7d2` (2026-08-21).** Kwestionariusz **pyta**: piąte
+> **DRUGA LUKA TEJ SEKCJI — ZAMKNIĘTA (D-ORTO, wariant A, 2026-08-22).** Kwestionariusz nie pytał
+> o nic ortostatycznego (zmierzone: 11 sond po `src/`, wszystkie zero), a oś wyzwalacza wchłaniała
+> chorego z hemodynamicznym zawrotem ortostatycznym: opcja pozycyjna mówi „zmiana pozycji głowy
+> **lub ciała**", a wstanie z łóżka jest zmianą pozycji ciała.
+> **Narzędzie wzięte wprost ze źródła, nie wymyślone:** nota 1 `[H52]` Kim 2019 mówi, że samo
+> wstawanie jest wyzwalaczem **niejednoznacznym** (niesie ze sobą ruch głowy), i podaje sposób
+> rozstrzygnięcia — zapytać, czy objawy występują **także przy kładzeniu się albo obracaniu
+> w łóżku**. Szóste pytanie `ortostaza` niesie dokładnie to zdanie.
+> **Pytanie NIE ZMIENIA ścieżki** (wzorzec pytania `odkiedy`), i to jest **wymóg źródła**: §5.4
+> `[H52]` niesie jedyne w całym dokumencie „should be performed" i każe wykonać próbę pozycyjną
+> u chorego z zawrotem ortostatycznym **nawet gdy jego zawrót nie jest pozycyjny**. Pilnuje tego
+> nowa bramka **KL9** — kontrola czułości wykonana: po ściągnięciu ścieżki zapalają się obie gałęzie.
+> **Żadnej liczby nie wpisano** — progi mmHg mają u `[H52]` rangę **noty**, kryterium B brzmi
+> jakościowo, a nota 4 sama ostrzega, że powtarzalność hipotonii w teście pochyleniowym jest niska.
+>
+> **PIERWSZA LUKA — ZAMKNIĘTA WCZEŚNIEJ, D-CZAS, `b50d7d2` (2026-08-21).** Kwestionariusz **pyta**: piąte
 > pytanie kwalifikacji, `src/app/triage-model.js:88` („Poniżej 2 tygodni od początku"). Oś czasu
 > sprowadzono przy okazji do `[H61]` — trzecie pasmo (CVS) i węzeł przewlekły. Iloczyn kombinacji
 > bramki 2176 → 10880. **Nauka wyciągnięta i warta powtórzenia:** dołożenie **wymaganego** pytania

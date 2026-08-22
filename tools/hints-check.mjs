@@ -49,7 +49,7 @@ const TRIAGE = {
   avs: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'obecny', flagi: ['brak'] },
   pseudoAVS: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'brak', flagi: ['brak'] },
   oczoplasNieoceniony: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'nieoceniony', flagi: ['brak'] },
-  tEVS: { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', flagi: ['brak'] },
+  tEVS: { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', ortostaza: 'tak', flagi: ['brak'] },
   sEVS: { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'samoistny', flagi: ['brak'] },
   nieznany: { przebieg: 'nieznane', flagi: ['brak'] },
   czerwonaAtaksja: { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'obecny', flagi: ['ataksja'] },

@@ -62,7 +62,7 @@ const bajty = () => win.localStorage.getItem(KLUCZ) || '';
    argumentem; wywołanie dwuargumentowe zapisuje rekord pod kluczem pola i cicho psuje przypadek. */
 function przebieg() {
   H.goArea('diag');
-  H.openTriage(); H.setTriage('przebieg', 'napadowe'); H.setTriage('wyzwalacz', 'pozycyjny'); H.toggleTriageFlaga('brak');
+  H.openTriage(); H.setTriage('przebieg', 'napadowe'); H.setTriage('wyzwalacz', 'pozycyjny'); H.setTriage('ortostaza', 'tak'); H.toggleTriageFlaga('brak');
   H.openTest('dix'); H.setDiagSide('P');
   H.goObs();
   H.setObsPole('dix', 'wystapil', 'tak');

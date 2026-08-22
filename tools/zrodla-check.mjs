@@ -404,7 +404,15 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 214;  /* 2026-08-22, etap E3a (decyzja uzytkownika D1): 205 -> 214.
+const OCZEKIWANE = 217;  /* 2026-08-22, etap D-ORTO (decyzja uzytkownika, wariant A): 214 -> 217.
+                            TRZY cytowania "[H52] Kim 2019" Z OZNACZENIEM, wszystkie w
+                            src/app/triage-model.js: dwa w tresci UWAGI (lustro PL i EN) i jedno
+                            w komentarzu przy nowym pytaniu `ortostaza`. Pozostale wystapienia
+                            [H52] w tym komentarzu sa GOLE (numer bez oznaczenia), wiec licznika
+                            nie ruszaja — konwencja na to pozwala.
+                            Zmierzone: po cofnieciu samego triage-model.js licznik wraca do 214.
+
+                            2026-08-22, etap E3a (decyzja uzytkownika D1): 205 -> 214.
                             DZIEWIEC cytowan netto, ROZLOZONE NA DWA PLIKI — zmierzone przez
                             podstawianie wersji z HEAD, nie oszacowane. Pomiar jest ADDYTYWNY:
                               pelna zmiana 214 | bez neuro-vor.js 207 (czyli silnik wnosi +7)

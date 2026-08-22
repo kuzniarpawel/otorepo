@@ -33,7 +33,7 @@ const eq = (tag, a, b) => T(tag, JSON.stringify(a) === JSON.stringify(b), `oczek
 const PELNY = () => ({
   // D-CZAS (2026-08-21): doszlo piate pytanie kwalifikacji (czas od poczatku) — przypadek
   // odniesienia dostaje odpowiedz, zeby byl KOMPLETNY tak jak przed zmiana.
-  triage: { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', flagi: ['brak'] },
+  triage: { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', ortostaza: 'tak', flagi: ['brak'] },
   testKey: 'dix', canal: 'posterior', side: 'P', sideZrodlo: 'wybrany',
   variant: 'canalo', variantZrodlo: 'wyprowadzony',
   dixObs: 'post', dixRep: 0, diagCentral: false, size: 'medium', trybCzasu: 'staly', decisionSeq: 4,
@@ -542,7 +542,10 @@ const TXT = (s) => tekst(raport(s, D(s)));
    o czas od poczatku objawow. Przyrost jest wiec MECHANICZNY i wprost proporcjonalny: nowy wiersz
    w generowanym opisie, sprawdzany w dwoch miejscach. Zmierzone, nie oszacowane: licznik pokazywal
    357 juz PRZED poprawieniem przypadku odniesienia w tym pliku i po niej sie nie zmienil. */
-const OCZEKIWANE = 357;   // +2: dwie fazy proby lying-down (polozenie/siad) weszly do enumeracji opisu
+const OCZEKIWANE = 359;   /* D-ORTO (2026-08-22): +2 — nowe pytanie kwalifikacji `ortostaza` wchodzi
+                             do enumeracji opisu w OBU jezykach. Zmierzone: po cofnieciu samego
+                             triage-model.js licznik wraca do 357.
+                             Wczesniej 357: +2 za dwie fazy proby lying-down (polozenie/siad). */
 if (ok !== OCZEKIWANE) bledy.push(`LICZBA PRZYPADKÓW: ${ok}, oczekiwano ${OCZEKIWANE} — dopisz albo popraw zakres, ale nie po cichu`);
 if (bledy.length) { console.error(`✗ opis:check — ${bledy.length} błędów (${ok} przeszło)`); for (const b of bledy) console.error('  ' + b); process.exit(1); }
 console.log(`✓ opis:check — ${ok} przypadków`);

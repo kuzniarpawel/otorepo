@@ -1143,8 +1143,8 @@ function domOracle(h, win) {
        ataksją"), przestało być przypięte czymkolwiek — a wyrocznia była zielona, bo golden
        przebazowano razem ze zmianą. `pusty` zostaje bez odpowiedzi CELOWO: pinuje ekran startowy. */
     tri('pusty', {});
-    tri('tEVS', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny' }, ['brak']);
-    tri('czerwona', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny' }, ['ataksja']);
+    tri('tEVS', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', ortostaza: 'tak' }, ['brak']);
+    tri('czerwona', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', ortostaza: 'tak' }, ['ataksja']);
     tri('AVS', { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'obecny' }, ['brak']);
     tri('pseudoAVS', { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'brak' }, ['brak']);
     tri('sEVS', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'samoistny' }, ['brak']);
@@ -1289,7 +1289,7 @@ function domOracle(h, win) {
     grab('hintsKwal/pusta', () => { czystyH(); h.goHintsKwal(); });
     grab('hintsKwal/odradzana-BPPV', () => {
       czystyH(); h.goHintsKwal();
-      h.setTriage('przebieg', 'napadowe'); h.setTriage('wyzwalacz', 'pozycyjny'); h.toggleTriageFlaga('brak');
+      h.setTriage('przebieg', 'napadowe'); h.setTriage('wyzwalacz', 'pozycyjny'); h.setTriage('ortostaza', 'tak'); h.toggleTriageFlaga('brak');
     });
     grab('hintsKwal/czerwona-flaga', () => {
       czystyH(); h.goHintsKwal();
@@ -1621,6 +1621,7 @@ function shellOracle(h, win) {
     h.openTriage && h.openTriage();
     h.setTriage && h.setTriage('przebieg', 'napadowe');
     h.setTriage && h.setTriage('wyzwalacz', 'pozycyjny');
+    h.setTriage && h.setTriage('ortostaza', 'tak');
     h.toggleTriageFlaga && h.toggleTriageFlaga('ataksja');
     h.openTest && h.openTest('dix');            // uzytkownik idzie dalej mimo flagi
     h.syncShell && h.syncShell();

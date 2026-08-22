@@ -177,7 +177,7 @@ st.lang = 'pl';
   st.flow = { testSeen: false, obsSeen: false, interpretSeen: false, maneuver: null };
   st.labEksperyment = null; st.labA = null; st.labB = null;
   const kroki = [];
-  H.openTriage(); H.setTriage('przebieg', 'napadowe'); H.setTriage('wyzwalacz', 'pozycyjny'); H.toggleTriageFlaga('brak'); kroki.push('wywiad');
+  H.openTriage(); H.setTriage('przebieg', 'napadowe'); H.setTriage('wyzwalacz', 'pozycyjny'); H.setTriage('ortostaza', 'tak'); H.toggleTriageFlaga('brak'); kroki.push('wywiad');
   H.openTest('dix'); H.setDiagSide('P'); kroki.push('proba');
   H.goObs(); H.setObsPole('pion#jedyna', 'p1'); H.setObsPole('torsja#jedyna', 'p1'); H.setObsPole('poziom#jedyna', 'zero');
   H.setObsPole('latencja', '1-5s'); H.setObsPole('czasTrwania', 'ponizej1min'); H.setObsPole('meczliwosc', 'slabnie'); kroki.push('oczoplas');

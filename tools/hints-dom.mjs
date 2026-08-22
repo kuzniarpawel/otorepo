@@ -126,7 +126,7 @@ czysty(); A('setTriage')('przebieg', 'ciagle'); A('setTriage')('oczoplas', 'obec
 win.triageGo('hints');
 eq('A/triageGo-AVS', st.screen, 'hintsKwal');
 // KONTROLA CZULOSCI: obraz BPPV nie otwiera nawet ekranu kwalifikacji HINTS.
-czysty(); A('setTriage')('przebieg', 'napadowe'); A('setTriage')('wyzwalacz', 'pozycyjny'); A('toggleTriageFlaga')('brak');
+czysty(); A('setTriage')('przebieg', 'napadowe'); A('setTriage')('wyzwalacz', 'pozycyjny'); A('setTriage')('ortostaza', 'tak'); A('toggleTriageFlaga')('brak');
 win.triageGo('hints');
 T('A/triageGo-BPPV-zatrzymana', st.screen !== 'hintsKwal', 'kwalifikacja BPPV nie ma prawa prowadzic do HINTS');
 // Kafelki ekranu startowego wolaja bramke, a nie skrot do symulatora.

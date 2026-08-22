@@ -218,7 +218,7 @@ T('A0/uchwyt', !!H.goNauka && !!H.otworzPrzypadek && !!H.odpowiedzNauki,
   H.goArea('diag');
   H.openTest('dix'); H.setDiagSide('L'); H.setVariant('cupulo');
   H.goObs(); H.setObsPole('pion#jedyna', 'm1'); H.setObsPole('torsja#jedyna', 'm1');
-  H.setTriage('przebieg', 'napadowe'); H.setTriage('wyzwalacz', 'pozycyjny');
+  H.setTriage('przebieg', 'napadowe'); H.setTriage('wyzwalacz', 'pozycyjny'); H.setTriage('ortostaza', 'tak');
   const przed = odcisk();
   T('G1/pacjent-niezerowy', /"variant","cupulo"/.test(przed) && /"side","L"/.test(przed),
     'kontrola: pacjent musi mieć niezerowy stan, inaczej test niczego nie dowodzi');

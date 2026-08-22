@@ -105,6 +105,49 @@ export const TRIAGE_QUESTIONS = [
     ],
   },
   {
+    /* D-ORTO, wariant A (decyzja użytkownika 2026-08-22) — ROZRÓŻNIENIE ZAWROTU POZYCYJNEGO
+       OD ORTOSTATYCZNEGO. Do tego etapu program nie pytał o nic ortostatycznego (zmierzone:
+       'ortostat', 'orthostat', 'blood pressure', 'POTS', 'omdlen' w src/ = 0 trafień), a oś
+       wyzwalacza wchłaniała chorego z hemodynamicznym zawrotem ortostatycznym: opcja pozycyjna
+       mówi „zmiana pozycji głowy LUB CIAŁA", a wstanie z łóżka jest zmianą pozycji ciała.
+
+       NARZĘDZIE JEST ZE ŹRÓDŁA, NIE NASZE. Nota 1 [H52] Kim 2019 mówi wprost, że samo wstawanie
+       jest wyzwalaczem NIEJEDNOZNACZNYM, bo niesie ze sobą ruch głowy — i podaje gotowy sposób
+       rozstrzygnięcia: zapytać chorego, czy objawy występują TAKŻE przy kładzeniu się albo
+       obracaniu w łóżku; jeśli tak, są raczej pozycyjne niż ortostatyczne.
+
+       PYTANIE NIE ZMIENIA kategorii, ścieżki ani pewności — wzorzec pytania `odkiedy` (wyżej).
+       Dokłada UWAGĘ, i to jest WYMÓG ŹRÓDŁA, nie nasza ostrożność: §5.4 [H52] niesie jedyne
+       w całym dokumencie „should be performed" i każe wykonać próbę pozycyjną u chorego
+       z zawrotem ortostatycznym NAWET wtedy, gdy jego zawrót nie jest pozycyjny. Wariant, który
+       zamieniłby jedno badanie na drugie, byłby wprost sprzeczny z pracą.
+
+       ŻADNEJ LICZBY TU NIE MA I TO JEST ŚWIADOME. Progi hemodynamiczne (nota 3 [H52]: spadek
+       skurczowego 20 mmHg albo rozkurczowego 10 mmHg w 3 min i dalsze) mają rangę NOTY, a samo
+       kryterium B brzmi jakościowo. Nota 4 dodaje, że powtarzalność hipotonii ortostatycznej
+       w teście pochyleniowym jest NISKA — dlatego postać prawdopodobną wolno rozpoznać BEZ
+       udokumentowanego pomiaru. Źródło samo ostrzega przed traktowaniem liczby jako rozstrzygającej.
+
+       WARUNEK OBEJMUJE TAKŻE 'nieznane'. Chory z zawrotem ortostatycznym może zgodnie z prawdą
+       wybrać „nie wiem / niejednoznacznie" — nota 1 [H52] wprost nazywa ten wyzwalacz
+       niejednoznacznym. Gdyby warunek objął samo 'pozycyjny', pytanie omijałoby dokładnie tych
+       chorych, których dotyczy. */
+    id: 'ortostaza', typ: 'jeden',
+    gdy: a => a.przebieg === 'napadowe' && (a.wyzwalacz === 'pozycyjny' || a.wyzwalacz === 'nieznane'),
+    pl: 'Czy objawy występują TAKŻE przy kładzeniu się albo obracaniu w łóżku?',
+    en: 'Do the symptoms ALSO occur on lying down or turning over in bed?',
+    plHint: 'samo wstawanie niesie ze sobą ruch głowy, więc nie odróżnia pozycyjnego od ortostatycznego',
+    enHint: 'arising itself carries head motion, so it does not separate positional from orthostatic',
+    opcje: [
+      { v: 'tak', pl: 'Tak — także przy kładzeniu się lub obracaniu w łóżku',
+        en: 'Yes — also on lying down or turning over in bed' },
+      { v: 'nie', pl: 'Nie — wyłącznie przy wstawaniu',
+        en: 'No — only on arising' },
+      { v: 'nieznane', pl: 'Nie wiem / nie da się ustalić',
+        en: 'Not known / cannot be established' },
+    ],
+  },
+  {
     id: 'oczoplas', typ: 'jeden', gdy: a => a.przebieg === 'ciagle',
     pl: 'Czy w spoczynku widać oczopląs samoistny?', en: 'Is spontaneous nystagmus visible at rest?',
     plHint: 'HINTS ma zastosowanie wyłącznie przy utrzymującym się oczopląsie',
@@ -199,6 +242,16 @@ function powod(qid, wartosc) {
 export function triageResult(odp) {
   const w = triageResultCore(odp);
   const a = odp || {};
+  /* D-ORTO: uwaga dokładana WYŁĄCZNIE przy odpowiedzi 'nie' — czyli tam, gdzie objawy występują
+     tylko przy wstawaniu i rozpoznanie ortostatyczne wchodzi w grę. Odpowiedź 'tak' potwierdza
+     ścieżkę, którą program już wybrał, więc uwagi nie dostaje (ta sama zasada co przy `odkiedy`:
+     nota pada tam, gdzie coś się zmienia). Gałąź czerwonej flagi wyłączona — pilna ocena
+     obowiązuje niezależnie od tego, czy zawrót jest ortostatyczny. */
+  if (a.ortostaza === 'nie' && w.kategoria !== 'czerwona') {
+    w.uwagi = [...(w.uwagi || []),
+      P('Objawy WYŁĄCZNIE przy wstawaniu, a nie przy kładzeniu się ani obracaniu w łóżku, przemawiają za hemodynamicznym zawrotem ortostatycznym — rozważ pomiar ciśnienia i tętna przy pionizacji [H52] Kim 2019. Próbę pozycyjną wykonaj MIMO TO: źródło wprost tego wymaga, bo BPPV kanałów pionowych daje objaw i przy siadaniu z leżenia, i przy kładzeniu się z siadu.',
+        'Symptoms ONLY on arising, and not on lying down or turning over in bed, point towards hemodynamic orthostatic dizziness — consider measuring blood pressure and pulse on standing [H52] Kim 2019. Perform the positional test ANYWAY: the source explicitly requires it, because vertical-canal BPPV produces symptoms both on sitting up from supine and on lying down from sitting.')];
+  }
   if (a.odkiedy === 'dluzej' && w.kategoria !== 'czerwona') {
     w.uwagi = [...(w.uwagi || []),
       P('Objawy trwają 2 tygodnie lub dłużej — POZA oknem, dla którego zbudowano taksonomię czas-i-wyzwalacze. Kwalifikacja pozostaje pomocna, ale przestaje być narzędziem oceny OSTRYCH zawrotów; rozważ jednostki przewlekłe i tor przewlekły zamiast ostrego.',

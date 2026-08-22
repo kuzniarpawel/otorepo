@@ -24,7 +24,7 @@ const eq = (tag, a, b) => T(tag, JSON.stringify(a) === JSON.stringify(b), `oczek
 /* ============ 1. Kształt kwestionariusza ============ */
 /* D-CZAS (2026-08-21): doszlo PIATE pytanie `odkiedy` (czas od poczatku objawow). Stoi ZARAZ PO
    `przebieg`, bo dotyczy tej samej osi czasu i ma byc widoczne, zanim klinicysta wybierze wyzwalacz. */
-eq('KS1/pytania', TRIAGE_IDS, ['przebieg', 'odkiedy', 'wyzwalacz', 'oczoplas', 'flagi']);
+eq('KS1/pytania', TRIAGE_IDS, ['przebieg', 'odkiedy', 'wyzwalacz', 'ortostaza', 'oczoplas', 'flagi']);
 eq('KS1b/przebieg-osie-ICVD', triageQuestion('przebieg').opcje.map(o => o.v),
   ['napadowe', 'ciagle', 'przewlekle', 'nieznane']);
 T('KS1c/CVS-osiagalny', triageResult({ przebieg: 'przewlekle', flagi: ['brak'] }).kategoria === 'CVS',
@@ -34,7 +34,7 @@ T('KS1d/EVS-do-dni', /dni|days/.test(triageQuestion('przebieg').opcje[0].pl + tr
 T('KS2/dwujezyczne', TRIAGE_QUESTIONS.every(q => q.pl && q.en && q.plHint && q.enHint
   && (q.opcje || []).every(o => o.pl && o.en)), 'każde pytanie i każda opcja muszą mieć PL i EN');
 // „Odpowiedź «nie wiem / nie można ocenić» jest zawsze dostępna, gdy ma znaczenie kliniczne."
-for (const id of ['przebieg', 'wyzwalacz', 'oczoplas'])
+for (const id of ['przebieg', 'wyzwalacz', 'ortostaza', 'oczoplas'])
   T(`KS3/${id}-niewiem`, triageQuestion(id).opcje.some(o => /nieznane|nieoceniony/.test(o.v)),
     'pytanie rozstrzygające musi mieć wyjście „nie wiem"');
 T('KS4/flagi-wielokrotne', triageQuestion('flagi').typ === 'wielokrotny', 'czerwone flagi to wybór wielokrotny');
@@ -67,8 +67,15 @@ eq('PP3b/ciagle-potem-oczoplas', nextQuestionId({ przebieg: 'ciagle', odkiedy: '
 eq('PP4/ciagle-pomija-wyzwalacz', activeQuestions({ przebieg: 'ciagle' }).map(q => q.id), ['przebieg', 'odkiedy', 'oczoplas', 'flagi']);
 eq('PP5/napadowe-pomija-oczoplas', activeQuestions({ przebieg: 'napadowe' }).map(q => q.id), ['przebieg', 'odkiedy', 'wyzwalacz', 'flagi']);
 eq('PP6/nieznane-pomija-oba', activeQuestions({ przebieg: 'nieznane' }).map(q => q.id), ['przebieg', 'flagi']);
-eq('PP7/na-koncu-flagi', nextQuestionId({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny' }), 'flagi');
-T('PP8/komplet', triageComplete({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', flagi: ['brak'] }), 'komplet odpowiedzi');
+/* D-ORTO: miedzy 'wyzwalacz' a 'flagi' wchodzi teraz 'ortostaza' — ale TYLKO przy wyzwalaczu
+   pozycyjnym albo niejasnym. PP7a pilnuje, ze pytanie sie pojawia; PP7b, ze przy wyzwalaczu
+   SAMOISTNYM go NIE MA (chory bez zwiazku z pozycja nie ma czego rozroznaic). */
+eq('PP7a/po-wyzwalaczu-ortostaza', nextQuestionId({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny' }), 'ortostaza');
+eq('PP7b/samoistny-pomija-ortostaze', nextQuestionId({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'samoistny' }), 'flagi');
+eq('PP7/na-koncu-flagi', nextQuestionId({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', ortostaza: 'tak' }), 'flagi');
+T('PP8/komplet', triageComplete({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', ortostaza: 'tak', flagi: ['brak'] }), 'komplet odpowiedzi');
+T('PP8b/bez-ortostazy-niekomplet', !triageComplete({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', flagi: ['brak'] }),
+  'przy wyzwalaczu pozycyjnym komplet WYMAGA odpowiedzi o ortostazie — inaczej fikstury cicho pinowalyby ekran sprzed rozgalezienia');
 /* D-CZAS: CVS pomija wyzwalacz I oczoplas — oba pytaja o zespol napadowy albo ostry. */
 eq('PP10/przewlekle-pomija-oba', activeQuestions({ przebieg: 'przewlekle' }).map(q => q.id), ['przebieg', 'odkiedy', 'flagi']);
 T('PP9/pusta-lista-flag-to-brak-odpowiedzi', !triageComplete({ przebieg: 'nieznane', flagi: [] }),
@@ -79,10 +86,13 @@ T('PP9/pusta-lista-flag-to-brak-odpowiedzi', !triageComplete({ przebieg: 'niezna
    To nie jest kosmetyka listy: petla nizej buduje iloczyn kartezjanski, wiec pominiecie tu nowego
    wymiaru zostawiloby nowa galaz NIEPRZEORANA przy ZIELONEJ bramce — dokladnie ta pulapka byla
    zapisana w planie jako ryzyko etapu. */
+/* D-ORTO: doszedl wymiar `ortostaza`. Ta sama pulapka co przy D-CZAS — pominiecie go tutaj
+   zostawiloby nowa galaz NIEPRZEORANA przy ZIELONEJ bramce. */
 const WART = {
   przebieg: [undefined, 'napadowe', 'ciagle', 'przewlekle', 'nieznane'],
   odkiedy: [undefined, 'ostre', 'dluzej', 'nieznane'],
   wyzwalacz: [undefined, 'pozycyjny', 'samoistny', 'nieznane'],
+  ortostaza: [undefined, 'tak', 'nie', 'nieznane'],
   oczoplas: [undefined, 'obecny', 'brak', 'nieoceniony'],
 };
 const FLAGI_POJ = ['ataksja', 'pieciod', 'ogniskowe', 'bolGlowy', 'niedoslych'];
@@ -91,8 +101,8 @@ for (let m = 1; m < (1 << FLAGI_POJ.length); m++)
   ZESTAWY_FLAG.push(FLAGI_POJ.filter((_, i) => m & (1 << i)));
 
 const kombinacje = [];
-for (const p of WART.przebieg) for (const d of WART.odkiedy) for (const w of WART.wyzwalacz) for (const o of WART.oczoplas) for (const f of ZESTAWY_FLAG)
-  kombinacje.push({ przebieg: p, odkiedy: d, wyzwalacz: w, oczoplas: o, flagi: f });
+for (const p of WART.przebieg) for (const d of WART.odkiedy) for (const w of WART.wyzwalacz) for (const r of WART.ortostaza) for (const o of WART.oczoplas) for (const f of ZESTAWY_FLAG)
+  kombinacje.push({ przebieg: p, odkiedy: d, wyzwalacz: w, ortostaza: r, oczoplas: o, flagi: f });
 
 const zlamane = { hintsPrzyNapadach: [], flagaBezPilnej: [], flagaZeSciezka: [], zlaSciezka: [], bezPowodu: [],
   bezTekstu: [], zlyPowod: [], hintsBezOczoplasu: [], diagPrzyCiagle: [] };
@@ -143,7 +153,10 @@ T('IN8/HINTS-tylko-AVS-z-oczoplasem', !zlamane.hintsBezOczoplasu.length,
   `${zlamane.hintsBezOczoplasu.length} kombinacji, np. ${zlamane.hintsBezOczoplasu[0]}`);
 T('IN9/proby-pozycyjne-nie-przy-ciaglych', !zlamane.diagPrzyCiagle.length,
   `${zlamane.diagPrzyCiagle.length} kombinacji, np. ${zlamane.diagPrzyCiagle[0]}`);
-T('IN10/iloczyn-niepusty', kombinacje.length === 5 * 4 * 4 * 4 * (3 + 31),
+/* D-ORTO: 5 * 4 * 4 * 4 * 4 * 34 = 43520 (bylo 10880). Czwarta czworka to nowy wymiar
+   `ortostaza` — iloczyn rosnie DOKLADNIE czterokrotnie, bo pytanie ma trzy wartosci plus
+   undefined, i zaden inny wymiar sie nie zmienil. */
+T('IN10/iloczyn-niepusty', kombinacje.length === 5 * 4 * 4 * 4 * 4 * (3 + 31),
   `iloczyn ma ${kombinacje.length} kombinacji — jeśli spadł, niezmienniki przestały być wyczerpujące`);
 
 /* ============ 5. Konkretne rozstrzygnięcia kliniczne ============ */
@@ -200,6 +213,23 @@ const R = (o) => triageResult(o);
   const w = R({ przebieg: 'nieznane', flagi: ['brak'] });
   eq('KL7/nieznany-przebieg', [w.kategoria, w.sciezka], ['niepewna', null]);
 }
+/* D-ORTO KL9 — SEDNO WARIANTU A. Odpowiedz o ortostazie DOKLADA UWAGE i NIE RUSZA klasyfikatora.
+   To nie jest ostroznosc, tylko wymog zrodla: §5.4 [H52] Kim 2019 niesie jedyne w calym dokumencie
+   „should be performed" i kaze wykonac probe pozycyjna u chorego z zawrotem ortostatycznym NAWET
+   gdy jego zawrot nie jest pozycyjny. Gdyby odpowiedz 'nie' sciagala chorego ze sciezki prob
+   pozycyjnych, program bylby WPROST sprzeczny z praca. Sprawdzane na obu galeziach, w ktorych
+   pytanie w ogole zyje. */
+for (const wyz of ['pozycyjny', 'nieznane']) {
+  const baza = { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: wyz, flagi: ['brak'] };
+  const tak = R({ ...baza, ortostaza: 'tak' }), nie = R({ ...baza, ortostaza: 'nie' });
+  eq(`KL9/${wyz}-ortostaza-nie-rusza-sciezki`,
+    [tak.kategoria, tak.sciezka, tak.pewnosc], [nie.kategoria, nie.sciezka, nie.pewnosc]);
+  T(`KL9b/${wyz}-nie-dokłada-uwage`, nie.uwagi.length === tak.uwagi.length + 1
+    && /ortostatyczn|orthostatic/.test(nie.uwagi[nie.uwagi.length - 1].pl + nie.uwagi[nie.uwagi.length - 1].en),
+    'odpowiedz „wylacznie przy wstawaniu" ma dolozyc DOKLADNIE JEDNA uwage, i to o ortostazie');
+  T(`KL9c/${wyz}-uwaga-zada-proby-mimo-to`, /MIMO TO|ANYWAY/.test(nie.uwagi[nie.uwagi.length - 1].pl + nie.uwagi[nie.uwagi.length - 1].en),
+    'uwaga MUSI powiedziec, ze probe pozycyjna wykonuje sie mimo to — inaczej program odradza badanie, ktore zrodlo NAKAZUJE');
+}
 {
   // Niejasny wyzwalacz: próba pozycyjna jest tania i rozstrzygająca, ale HINTS dalej odpada.
   const w = R({ przebieg: 'napadowe', wyzwalacz: 'nieznane', flagi: ['brak'] });
@@ -248,6 +278,11 @@ if (bledy.length) {
    i trzeciej wartosci `przebieg` ('przewlekle' = CVS): KS1b (kolejnosc wartosci osi ICVD),
    KS1c (CVS ma WLASNY wezel, a nie wpada do pseudoAVS), KS1d (pasmo EVS siega DNI, nie minut),
    PP2b i PP3b (przeplyw po nowym pytaniu) oraz PP10 (CVS pomija wyzwalacz i oczoplas).
+   D-ORTO (2026-08-22, wariant A): ILOCZYN 10880 -> 43520. Doszedl caly wymiar `ortostaza`
+   (4 wartosci: tak / nie / nieznane / bez odpowiedzi). Nowe twierdzenia: PP7a (pytanie pojawia
+   sie po wyzwalaczu pozycyjnym), PP7b (przy SAMOISTNYM go NIE MA), PP8b (bez odpowiedzi komplet
+   NIE jest osiagniety) oraz KL9 (odpowiedz NIE ZMIENIA kategorii, sciezki ani pewnosci —
+   dokłada wylacznie uwage; wzorzec pytania `odkiedy`).
    ILOCZYN KOMBINACJI 2176 -> 10880: doszedl caly wymiar `odkiedy` (4 wartosci) i jedna wartosc
    `przebieg`. To bylo ZAPISANE W PLANIE JAKO RYZYKO — piate pytanie dodane bez ruszenia petli
    przeszloby NIEPRZEORANE przy zielonej bramce.
@@ -255,7 +290,7 @@ if (bledy.length) {
    z numerem [H58] zamiast wlasnego interwalu) i KL2f (druga implikacja tej samej liczby u Kima —
    badanie kliniczne ma w fazie ostrej wyzsza czulosc niz obrazowanie). KL2d ZOSTAJE, ale pilnuje juz
    odsetka ze zrodla (12-50%), a nie liczby "48-72", ktora w calym korpusie ICVD ma 0 trafien. */
-const OCZEKIWANE = 70;
+const OCZEKIWANE = 80;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);
