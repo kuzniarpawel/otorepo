@@ -2375,7 +2375,13 @@ API PUBLICZNE (zwracane z modułu)
    kaloryczna ciepła+zimna DANEGO ucha < 6 °/s (= CAL_BILAT) · fotel obrotowy gain ≤ 0.1 z fazą ≥ 15° i stałą
    czasową ≤ 6 s (NIE modelowany; liczby po erracie 2023 do pracy Bárány — pełna nota erraty we wpisie
    bibliograficznym; do 2026-08-22 stało tu przederratowe „gain < 0.1 z fazą > 68°", czyli brzmienie z 2017,
-   które cytuje też praca z 2022). W SILNIKU: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) obustronnie; „vHIT patolog." to NIE próg gain
+   które cytuje też praca z 2022). MELDUNEK ZAMYKAJĄCY E3 (K7-C4, 2026-08-22): silnik NIE modeluje
+   stymulacji sinusoidalnej fotela i NIE MA żadnej stałej progu fazy — trzecia opcja kryterium C
+   [H19] Strupp 2017 pozostaje ŚWIADOMIE poza warstwą silnika, jej liczby po erracie żyją w warstwie
+   atlasu (wpis obustronnej westybulopatii), a tauVS silnika jest parametrem wygaszania velocity
+   storage, nie testem. Ewentualne domodelowanie testu fotela (gain i faza przy 0.1 Hz są wyliczalne
+   z velocity storage) to osobna decyzja o nowej fizyce, nie zaległość tego przesiewu.
+   W SILNIKU: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) obustronnie; „vHIT patolog." to NIE próg gain
    wprost, lecz amplituda sakady korygującej ≥ 2.5° w headImpulse (dla amp 15° ≈ gain ≤ 0.83 — czulsze niż 0.6,
    właściwe dla POJEDYNCZEGO kanału). Jedynie próg kaloryczny 6 °/s jest zakodowany numerycznie (CAL_BILAT →
    caloricBattery.bilateralWeak). SHIMP zaimplementowany (N4/N7). UWAGA: losowy preset bilateralLoss(r(0.6,1)) daje

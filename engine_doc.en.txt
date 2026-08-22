@@ -2544,7 +2544,13 @@ PUBLIC API (returned from the module)
    sum of warm+cold for a GIVEN ear < 6 °/s (= CAL_BILAT) · rotatory-chair gain ≤ 0.1 with phase lead ≥ 15° and
    time constant ≤ 6 s (NOT modelled; post-erratum 2023 numbers for the Bárány paper — full erratum note in the
    bibliography entry; until 2026-08-22 this read the pre-erratum "gain < 0.1 with phase lead > 68°", i.e. the 2017
-   wording, which the 2022 paper also cites). IN THE ENGINE: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) bilaterally; "pathological vHIT" is NOT a
+   wording, which the 2022 paper also cites). CLOSING REPORT FOR E3 (K7-C4, 2026-08-22): the engine does
+   NOT model sinusoidal rotatory-chair stimulation and has NO phase-lead constant of any kind — the third
+   option of criterion C in [H19] Strupp 2017 stays DELIBERATELY outside the engine layer, its post-erratum
+   figures live in the atlas layer (the bilateral-vestibulopathy entry), and the engine's tauVS is a
+   velocity-storage decay parameter, not a test. Modelling the chair test one day (gain and phase at 0.1 Hz
+   are derivable from velocity storage) is a separate new-physics decision, not a leftover of this screen.
+   IN THE ENGINE: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) bilaterally; "pathological vHIT" is NOT a
    direct gain cutoff but a corrective-saccade amplitude ≥ 2.5° in headImpulse (for amp 15° ≈ gain ≤ 0.83 — more
    sensitive than 0.6, appropriate for a SINGLE canal). Only the caloric 6 °/s threshold is encoded numerically
    (CAL_BILAT → caloricBattery.bilateralWeak). SHIMP implemented (N4/N7). NOTE: the random preset bilateralLoss(r(0.6,1))

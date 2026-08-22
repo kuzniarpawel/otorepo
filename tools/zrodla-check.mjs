@@ -501,7 +501,12 @@ const licznikProzy = (cyt) => {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 280;  /* 2026-08-22, K7-C2 (D3 rozstrzygniete zapisem granicy): 278 -> 280.
+const OCZEKIWANE = 282;  /* 2026-08-22, K7-C4a (fotel obrotowy — meldunek zamykajacy E3):
+                            280 -> 282. DWA cytowania "[H19] Strupp 2017" w meldunku rozdzialu
+                            bilateralLoss (engine_doc PL + EN): silnik swiadomie nie modeluje
+                            stymulacji sinusoidalnej i nie ma stalej progu fazy; liczby po
+                            erracie zyja w atlasie. Zmierzone przez --ile: 282.
+                            POPRZEDNIO: 2026-08-22, K7-C2 (D3 rozstrzygniete zapisem granicy): 278 -> 280.
                             DWA cytowania "[H59] Strupp 2022" w nowej granicy rdzenia wpisu bvp
                             (src/app/atlas-model.js, granicePl + graniceEn) — narzedzie
                             przylozkowe po przeciwnych stronach linii pelna/prawdopodobna.

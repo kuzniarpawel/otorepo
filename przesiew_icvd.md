@@ -610,7 +610,11 @@ Jeśli D1 zmienia liczbę — rebaseline z dowodem zakresu i osobnym commitem.
 >
 > **Zostaje z E3:** `VEMP_AR` i `VEMP_THRESH` (norma pracowniana **poza korpusem ICVD** — żaden z 19
 > dokumentów progu asymetrii VEMP nie stanowi; `[H56]` wprost każe ustalać odcięcia per pracownia),
-> progi fotela obrotowego oraz nazwiska bez numeru: **Rosengren 2019**, **Lee 2006**, **Lacour 2020**.
+> ~~progi fotela obrotowego~~ oraz nazwiska bez numeru: **Rosengren 2019**, **Lee 2006**, **Lacour 2020**.
+> *(K7-C4a, 2026-08-22: progi fotela ZAMKNIĘTE jawnym meldunkiem w rozdziale `bilateralLoss` obu
+> luster — silnik świadomie nie modeluje stymulacji sinusoidalnej i nie ma stałej progu fazy;
+> liczby po erracie żyją w atlasie, `tauVS` to parametr wygaszania, nie test. `VEMP_AR` dostał
+> kotwicę `[H56]` już w K7-A6.)*
 
 ---
 
