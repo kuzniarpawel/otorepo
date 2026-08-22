@@ -35,7 +35,10 @@
    neurological or ocular motor symptoms or signs are TYPICALLY PRESENT to suggest a diagnosis other
    than BPPV", a dopiero potem: „IN THEIR ABSENCE, several clues suggest a central cause". Objawy
    neurologiczne są więc PIERWSZE i typowe, a pozostałe tropy to DRUGI RZĄD. Karta stawiała je na
-   szóstym, ostatnim miejscu; model obserwacji nie ma ich wcale. */
+   szóstym, ostatnim miejscu; model obserwacji nie ma ich wcale.
+   RANGA Tych ZDAŃ U ŹRÓDŁA (K7-D-b): oba stoją w bloku „Comment:" do pozycji 2.3.1.3 słownika —
+   nie w linii definicji ani w kryterium. To komentarz konsensusowy pracy, która sama nie podaje
+   żadnego algorytmu ani punktacji różnicowania ośrodkowe/obwodowe (granice wpisu atlasu). */
 export const CPN_TROPY = [
   {
     id: 'neuro', rzad: 1, flaga: null, zrodlo: ['H51'],

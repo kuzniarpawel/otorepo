@@ -303,10 +303,13 @@ for (const wyz of ['pozycyjny', 'nieznane']) {
 }
 {
   // Brak potwierdzenia „nie stwierdzono flag" obniża pewność, choć ścieżka zostaje ta sama.
+  // K7-D-b: tagi tego bloku nazywały się KL9/KL9b i kolidowały z blokiem ortostazy D-ORTO wyżej
+  // (dwa niezwiązane bloki pod jednym numerem) — przemianowane na KL11/KL11b, sama nazwa, zero
+  // zmian w asercjach i liczności.
   const zFlaga = R({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] });
   const bez = R({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny' });
-  eq('KL9/pewnosc-spada-bez-przegladu-flag', [zFlaga.pewnosc, bez.pewnosc], ['wysoka', 'srednia']);
-  eq('KL9b/sciezka-ta-sama', [zFlaga.sciezka, bez.sciezka], ['diag', 'diag']);
+  eq('KL11/pewnosc-spada-bez-przegladu-flag', [zFlaga.pewnosc, bez.pewnosc], ['wysoka', 'srednia']);
+  eq('KL11b/sciezka-ta-sama', [zFlaga.sciezka, bez.sciezka], ['diag', 'diag']);
 }
 T('KL10/bramka-sciezki', sciezkaDozwolona({ przebieg: 'ciagle', oczoplas: 'obecny', flagi: ['brak'] }, 'hints')
   && !sciezkaDozwolona({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] }, 'hints'),
