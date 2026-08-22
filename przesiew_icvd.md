@@ -542,13 +542,24 @@ Jeśli D1 zmienia liczbę — rebaseline z dowodem zakresu i osobnym commitem.
 > dwa **osierocone odsyłacze do „McGarvie 2015"** w `engine_doc` (obie wersje językowe), które
 > przypisywały mu wszystkie trzy liczby, w tym pionowe 0,7 właśnie ogłoszone bez pokrycia.
 >
-> **DŁUG ZNALEZIONY PRZEZ KONTROLĘ, NIEZAMKNIĘTY — MARTWE POLE BRAMKI.** Cała ta zmiana w `engine_doc`
+> ~~**DŁUG ZNALEZIONY PRZEZ KONTROLĘ, NIEZAMKNIĘTY — MARTWE POLE BRAMKI.**~~ Cała ta zmiana w `engine_doc`
 > leży jako wiersze **wcięte pod wpisem `[H53]`**, a parser `bibliografia()` dokleja każdy taki wiersz
-> do *definicji wpisu* i pomija go w zliczaniu. Skutek: `zrodla:check` **nie czyta** tego fragmentu —
-> nie liczy cytowań, nie sprawdza zgodności numer↔nazwisko, nie porównuje lustra PL/EN. Sonda
-> rozstrzygająca: wstrzyknięte celowo błędne `[H19] Kattah 2009` przechodzi na zielono. Lustro
+> do *definicji wpisu* i pomija go w zliczaniu. Skutek: `zrodla:check` **nie czytał** tego fragmentu —
+> nie liczył cytowań, nie sprawdzał zgodności numer↔nazwisko, nie porównywał lustra PL/EN. Sonda
+> rozstrzygająca: wstrzyknięte celowo błędne `[H19] Kattah 2009` przechodziło na zielono. Lustro
 > faktycznie się rozjechało (`[H19]` PL 20 / EN 19) i zostało **wyrównane ręcznie** — bramka tego nie
-> złapała. To jest osobna naprawa, do rozstrzygnięcia: rozszerzyć parser czy przenieść prozę poza wpis.
+> złapała. Do rozstrzygnięcia było: rozszerzyć parser czy przenieść prozę poza wpis.
+>
+> **DŁUG ZAMKNIĘTY 2026-08-22 (kontrola powtórna, K7-B1) — wariantem „rozszerzyć parser".**
+> Nowa sekcja 8b bramki (`BIB6`, pięć asercji, architektura agregatowa jak `DOC4`) czyta prozę
+> pod wpisami: zgodność numer↔nazwisko w obu lustrach, równość cytowań **per wpis** PL/EN,
+> strażnik zasięgu i kontrola czułości, która wstrzykuje **dokładnie sondę z tego zapisu**
+> (`[H19] Kattah 2009` w prozę `[H53]`, w pamięci) i żąda wykrycia przez **obie** reguły naraz.
+> Pomiar przy wdrożeniu: **43 cytowania w prozie na lustro** (PL i EN identycznie), 18 wpisów
+> z `[Hnn]`, asymetrii per wpis **zero** — więc włączenie reguły nie wymagało żadnej korekty
+> treści. `OCZEKIWANE` 271 → 276, arytmetyka w dzienniku stałej. Wybór wariantu „parser", nie
+> „przenieść prozę": proza-przy-wpisie to świadoma konwencja dokumentu (nota erraty NALEŻY do
+> wpisu `[H19]`), a przenosiny obu luster ryzykowałyby pułapkę kolumny 0 opisaną przy V28.
 >
 > **Zostaje z E3:** `VEMP_AR` i `VEMP_THRESH` (norma pracowniana **poza korpusem ICVD** — żaden z 19
 > dokumentów progu asymetrii VEMP nie stanowi; `[H56]` wprost każe ustalać odcięcia per pracownia),

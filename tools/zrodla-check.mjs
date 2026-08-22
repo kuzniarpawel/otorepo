@@ -75,9 +75,13 @@ const SYNONIMY = { 'GRACE-3': 'Edlow', 'AAO-HNS': 'Otolaryngol Head Neck Surg' }
    a bibliografia w tym dokumencie NIE stoi na końcu (rozdziały Bloków 8-16 są za nią). */
 function bibliografia(tekst) {
   const BIB = new Map(); const wiersze = new Set(); const start = new Map();
+  /* `przypis` mapuje KAŻDY wiersz wpisu na jego numer — sekcja 8b (BIB6) czyta z niej prozę
+     pod wpisami, którą zbierz() celowo pomija. Dodane w K7-B1; wcześniej ta proza była
+     martwym polem bramki (dowód i historia — dziennik przy OCZEKIWANE, wpis E3a). */
+  const przypis = new Map();
   const linie = tekst.split('\n');
   let biezacy = null, bufor = [], kol = [];
-  const domknij = () => { if (biezacy) { BIB.set(biezacy, bufor.join(' ')); start.set(biezacy, kol[0]); kol.forEach(i => wiersze.add(i)); } };
+  const domknij = () => { if (biezacy) { BIB.set(biezacy, bufor.join(' ')); start.set(biezacy, kol[0]); kol.forEach(i => { wiersze.add(i); przypis.set(i, biezacy); }); } };
   linie.forEach((l, i) => {
     const m = /^\[(H\d+)\]/.exec(l);
     /* PIERWSZE wystąpienie wygrywa, nie ostatnie. `[H24]` zaczyna wiersz DWA RAZY: raz jako wpis
@@ -89,11 +93,11 @@ function bibliografia(tekst) {
     else if (biezacy && !l.trim()) { domknij(); biezacy = null; bufor = []; kol = []; }
   });
   domknij();
-  return { BIB, wiersze, start };
+  return { BIB, wiersze, start, przypis };
 }
 
-const { BIB, wiersze: WIERSZE_BIB_PL, start: START_PL } = bibliografia(czytaj('engine_doc.txt'));
-const { BIB: BIB_EN, wiersze: WIERSZE_BIB_EN, start: START_EN } = bibliografia(czytaj('engine_doc.en.txt'));
+const { BIB, wiersze: WIERSZE_BIB_PL, start: START_PL, przypis: PRZYPIS_PL } = bibliografia(czytaj('engine_doc.txt'));
+const { BIB: BIB_EN, wiersze: WIERSZE_BIB_EN, start: START_EN, przypis: PRZYPIS_EN } = bibliografia(czytaj('engine_doc.en.txt'));
 T('BIB1/bibliografia-znaleziona', BIB.size >= 20, `w engine_doc.txt znaleziono ${BIB.size} wpisów [Hnn] — spodziewano się kompletu`);
 T('BIB2/bibliografia-en', BIB_EN.size === BIB.size, `engine_doc.en.txt ma ${BIB_EN.size} wpisów wobec ${BIB.size} w PL`);
 
@@ -403,8 +407,109 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
     `dokumentacja PL i EN cytuje różną liczbę razy: ${rozjazd.join(' · ')}`);
 }
 
+/* ═══════════ 8b. PROZA POD WPISAMI PRZESTAJE BYĆ MARTWYM POLEM — BIB6 (K7-B1) ═══════════
+   HISTORIA DŁUGU: zbierz() celowo pomija wiersze bibliografii (bibliografia jest ŹRÓDŁEM, nie
+   przedmiotem skanu) — ale wpisy niosą też PROZĘ: noty E3a pod [H53], notę erraty pod [H19],
+   dopiski K7-A2/A4 pod [H52] i [H61], PMID Lacoura pod [H43]. Ta proza nie była zliczana,
+   sprawdzana numer↔nazwisko ani porównywana między lustrami. Dowód (dziennik E3a niżej):
+   wstrzyknięte tam celowo błędne „[H19] Kattah 2009" przechodziło na zielono, a realny rozjazd
+   lustra [H19] PL 20 / EN 19 zaszedł NIEWYKRYTY i został wyrównany ręcznie.
+   ARCHITEKTURA LICZNIKA — AGREGAT, świadomie: jedna asercja na regułę i lustro (jak DOC4),
+   nie przypadek per cytowanie (jak ZR2/DOC3). Proza wpisów to warstwa dopisków — rośnie przy
+   każdym przeglądzie — a licznik OCZEKIWANE nie powinien ruszać się od każdego dopisku;
+   ruszać ma się od NIEZGODNOŚCI. Zmierzone przy wdrożeniu: 43 cytowania w prozie na lustro
+   (PL i EN identycznie), 18 wpisów z co najmniej jednym [Hnn], asymetrii per wpis ZERO.
+   CZEGO TA SEKCJA NIE SPRAWDZA: tokenu definicji (pierwszy [Hnn] wpisu to jego numer, nie
+   cytowanie) ani prozy w rozdziałach (to robota DOC1–DOC4). */
+function cytProzyWpisow(tekst, bib) {
+  const linie = tekst.split('\n'); const out = [];
+  for (const [i, wpis] of bib.przypis) {
+    for (const m of linie[i].matchAll(/\[(H\d+)\]/g)) {
+      if (i === bib.start.get(wpis) && m.index === 0) continue;   // token definicji, nie cytowanie
+      out.push({ wpis, h: m[1], poz: m.index, linia: linie[i], wiersz: i + 1 });
+    }
+  }
+  return out;
+}
+function zleOznaczeniaProzy(cyt, slownik) {
+  let sprawdzone = 0; const zle = [];
+  for (const c of cyt) {
+    const def = slownik.get(c.h);
+    if (!def) { zle.push(`${c.h} bez definicji (proza wpisu ${c.wpis}, w. ${c.wiersz})`); continue; }
+    /* ta sama sygnatura oznaczenia co w zgodnoscOznaczen() — nazwisko + rok w zasięgu 30 znaków */
+    const po = c.linia.slice(c.poz + c.h.length + 2).replace(/^[\s:—·)(,;.-]+/, '');
+    const m = /^([A-ZŁŚŻŹĆÓĘĄŃÖ][A-Za-zŁłŚśŻżŹźĆćÓóĘęĄąŃńÖö'’-]*(?:-[A-Z][A-Za-z]*)?)/.exec(po);
+    if (!m) continue;
+    const ozn = m[1];
+    if (ozn.length < 3) continue;
+    if (!SYNONIMY[ozn] && !/^[^]{0,30}(19|20)\d\d/.test(po)) continue;
+    sprawdzone++;
+    if (!bez(def).includes(bez(SYNONIMY[ozn] || ozn)))
+      zle.push(`„[${c.h}] ${ozn}" w prozie wpisu ${c.wpis} (w. ${c.wiersz}), a definicja ${c.h} mówi o czym innym`);
+  }
+  return { sprawdzone, zle };
+}
+const licznikProzy = (cyt) => {
+  const m = new Map();
+  for (const c of cyt) { const k = `${c.wpis}→${c.h}`; m.set(k, (m.get(k) || 0) + 1); }
+  return m;
+};
+{
+  const cytPl = cytProzyWpisow(czytaj('engine_doc.txt'), { przypis: PRZYPIS_PL, start: START_PL });
+  const cytEn = cytProzyWpisow(czytaj('engine_doc.en.txt'), { przypis: PRZYPIS_EN, start: START_EN });
+
+  const zPl = zleOznaczeniaProzy(cytPl, BIB);
+  const zEn = zleOznaczeniaProzy(cytEn, BIB_EN);
+  T('BIB6/PL/zgodnosc-w-prozie-wpisow', zPl.zle.length === 0,
+    `proza wpisów PL cytuje niezgodnie z bibliografią: ${zPl.zle.slice(0, 4).join(' · ')}`);
+  T('BIB6/EN/zgodnosc-w-prozie-wpisow', zEn.zle.length === 0,
+    `proza wpisów EN cytuje niezgodnie z bibliografią: ${zEn.zle.slice(0, 4).join(' · ')}`);
+
+  const lp = licznikProzy(cytPl), le = licznikProzy(cytEn);
+  const rozjazd = [...new Set([...lp.keys(), ...le.keys()])]
+    .filter(k => (lp.get(k) || 0) !== (le.get(k) || 0))
+    .map(k => `${k}: PL ${lp.get(k) || 0} ≠ EN ${le.get(k) || 0}`);
+  T('BIB6/lustro-prozy-wpisow', rozjazd.length === 0,
+    `proza wpisów cytuje w lustrach różną liczbę razy: ${rozjazd.join(' · ')}`);
+
+  T('BIB6/zasieg-zywy', cytPl.length >= 20 && cytEn.length >= 20,
+    `w prozie wpisów znaleziono PL ${cytPl.length} / EN ${cytEn.length} cytowań — sekcja przestała cokolwiek czytać`);
+
+  /* KONTROLA CZUŁOŚCI — dokładnie sonda z zapisu długu, tym razem W PAMIĘCI: do prozy wpisu
+     [H53] w PL wstrzykujemy „[H19] Kattah 2009" i żądamy, by złapały to OBIE reguły naraz —
+     zgodność (Kattah nie jest w definicji H19) i lustro (PL zyskuje H53→H19, EN nie). */
+  const NL = String.fromCharCode(10);
+  const oryginal = czytaj('engine_doc.txt');
+  const linie = oryginal.split(NL);
+  const ofiara = [...PRZYPIS_PL].find(([i, h]) => h === 'H53' && i !== START_PL.get('H53'));
+  const zatruty = ofiara ? (() => {
+    const kopia = [...linie];
+    kopia[ofiara[0]] += ' Wg [H19] Kattah 2009.';
+    return kopia.join(NL);
+  })() : oryginal;
+  const probny = bibliografia(zatruty);
+  const cytProbny = cytProzyWpisow(zatruty, { przypis: probny.przypis, start: probny.start });
+  const wykrytaZgodnosc = zleOznaczeniaProzy(cytProbny, probny.BIB).zle.some(z => /H19.*Kattah|Kattah/.test(z));
+  const lProbny = licznikProzy(cytProbny);
+  const wykrytyLustro = (lProbny.get('H53→H19') || 0) !== (le.get('H53→H19') || 0);
+  T('BIB6/kontrola-czulosci', zatruty !== oryginal && wykrytaZgodnosc && wykrytyLustro,
+    zatruty === oryginal
+      ? 'syntetycznego zatrucia NIE DAŁO SIĘ WSTRZYKNĄĆ — wpis [H53] nie ma już prozy; przenieś kontrolę na inny wpis'
+      : `zatrucie prozy [H53] nie zostało wykryte (zgodność ${wykrytaZgodnosc}, lustro ${wykrytyLustro}) — sekcja przestała pilnować`);
+}
+
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 271;  /* 2026-08-22, K7-A6: 270 -> 271. JEDNO cytowanie "[H56] Ward 2021"
+const OCZEKIWANE = 276;  /* 2026-08-22, K7-B1: 271 -> 276. PIEC asercji sekcji 8b (BIB6) —
+                            MARTWE POLE ZAMKNIETE. Proza pod wpisami bibliografii (noty E3a pod
+                            [H53], nota erraty pod [H19], dopiski K7 pod [H52]/[H61], PMID
+                            Lacoura pod [H43]) jest odtad czytana: zgodnosc numer-nazwisko
+                            (PL + EN), rownosc luster per wpis, straznik zasiegu i kontrola
+                            czulosci odtwarzajaca sonde z zapisu dlugu ("[H19] Kattah 2009"
+                            wstrzykniete w proze [H53] W PAMIECI musi zapalic OBIE reguly).
+                            Architektura AGREGATOWA (jak DOC4): dopisek w prozie wpisu NIE rusza
+                            licznika — rusza go dopiero niezgodnosc. Zmierzone przy wdrozeniu:
+                            43 cytowania/lustro, 18 wpisow z [Hnn], asymetrii ZERO; --ile: 276.
+                            POPRZEDNIO: 2026-08-22, K7-A6: 270 -> 271. JEDNO cytowanie "[H56] Ward 2021"
                             w komentarzu przy VEMP_AR (src/engine/neuro-vor.js) — kotwica dla
                             deklaracji "norma pracowniana, poza korpusem ICVD": [H56] wprost
                             kaze ustalac odciecia VEMP per pracownia (2 zdania w pelnym tekscie,
@@ -512,6 +617,9 @@ const OCZEKIWANE = 271;  /* 2026-08-22, K7-A6: 270 -> 271. JEDNO cytowanie "[H56
                             nie sprawdza zgodnosci numer-nazwisko, nie porownuje lustra PL/EN).
                             Dowod: wstrzykniete tam celowo bledne "[H19] Kattah 2009" przechodzi na
                             zielono. Dlug zapisany w przesiew_icvd.md przy etapie E3a.
+                            [DLUG ZAMKNIETY 2026-08-22 w K7-B1 — sekcja 8b (BIB6) czyta te proze,
+                            a kontrola czulosci wstrzykuje dokladnie te sama sonde i zada jej
+                            wykrycia przez OBIE reguly naraz.]
                             ZADNEJ LICZBY PROGU NIE ZMIENIONO: snapshot:check identyczny ze zlotym
                             wzorcem. Zmieniono RANGE (granica normy vs kryterium) i RODOWOD.
                             2026-08-21, etap D-CZAS (decyzja uzytkownika): 194 -> 205.
