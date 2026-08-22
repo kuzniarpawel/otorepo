@@ -7,11 +7,15 @@
  Zasada: jedno źródło prawdy 3D wspólne z silnikiem (układ głowy x=prawo, y=góra, z=nos).
          Ścieżka SVG jest w pełni offline (bez three.js); ścieżka 3D dokłada three.js jako
          leniwie ładowany chunk (Etap 3–5) — DOMYŚLNA gdy WebGL dostępny, SVG = fallback.
- Ostatnia aktualizacja: 2026-08-14 (przeglad po ocenie II silnikow: twierdzenia ILOSCIOWE przeliczone
+ Ostatnia aktualizacja: 2026-08-22 (przegląd dokumentacji: warstwa widoku dogania E6 — dopisany
+        SZÓSTY obszar ATLAS z dwoma ekranami, kliniczny tor HINTS (kwalifikacja o SZEŚCIU pytaniach,
+        okno kroku 2, badanie i wynik) oraz szósty kafel startu; patrz sekcje „KLINICZNY TOR HINTS"
+        i „ATLAS OTONEUROLOGICZNY" niżej)
+ Poprzednio: 2026-08-14 (przeglad po ocenie II silnikow: twierdzenia ILOSCIOWE przeliczone
         na nowym silniku — cap 12 s zniknal na rzecz derivedHold, luk kanalu jest ARC_SPAN per kanal
         zamiast wspolnego 178°, CUP_WEAK 0,6 -> 0,45, chipy Barany per kanal; nazwane dwie rzeczy,
         ktore wymiana silnika po cichu zmienila: sufit 24 s wedrowki otolitu i martwy prog phiToFrac)
- Poprzednio: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN;
+ Wcześniej: 2026-07-15 (karta klasyfikacji Bárány/ICVD + różnicowanie ośrodkowe CPN;
         panel otolitowy SVV & VEMP w HINTS)
 ==========================================================================
 
@@ -97,6 +101,10 @@ Silnik przyjmuje `size` ("small"|"medium"|"big"; medium=r1=baza) skalujący dyna
    Zmienność latencji/siły wg rozmiaru: „Extremely Long Latency BPPV" (Res Vestib Sci, 2017).
 
 === RÓŻNICOWANIE OŚRODEK↔OBWÓD — UI „HINTS" (moduł silnika: NeuroVOR) ===
+ [DOPISEK 2026-08-22, przegląd dokumentacji] Ta sekcja opisuje SYMULATOR. „Trzecia zakładka" niżej
+ znaczy: trzecia obok Repozycji i Diagnostyki WEWNĄTRZ obszaru Diagnostyka — powłoka ma od E6
+ SZEŚĆ obszarów (patrz NAWIGACJA MIEDZY OBSZARAMI). Kliniczny tor HINTS — kwalifikacja wstępna
+ i badanie przy pacjencie — to OSOBNE ekrany, opisane w sekcji „KLINICZNY TOR HINTS" niżej.
 Trzecia zakładka (obok Repozycji i Diagnostyki). state.screen==="hints"; renderHints() rysuje:
  - selektor scenariusza (NeuroVOR.SCENARIOS) + karta WERDYKTU (hintsVerdictHTML: verdict obwód/ośrodek,
    tagi HI·N·TS zielony/czerwony, blok INFARCT dla ośrodka).
@@ -174,8 +182,29 @@ wrażenie, że symulator pokazuje wszystko, co model liczy. NIEPODPIĘTE do UI s
   alexanderGrade (stopnie I-III) · vhitPlane · caloricBattery · directionChanging.
 Wpięcie któregokolwiek z nich to osobna decyzja projektowa — ten dokument opisuje ekran, jaki jest.
 
---------------------------------------------------------------------------
- Scene3D  (etap A)
+--- KLINICZNY TOR HINTS — KWALIFIKACJA I BADANIE PRZY PACJENCIE (D-CZAS/D-ORTO/E6c/E6e; dopisane 2026-08-22) ---
+Cztery ekrany POZA symulatorem, dla klinicysty badającego pacjenta (obszar Diagnostyka, mode diag/hints):
+ - KROK 1 — „Wywiad — kwalifikacja wstępna" (state.screen==="triage", openTriage; wejście: kafel 5
+   startu „Przypadek nietypowy" — po E6c, wcześniej kafel prowadził wprost do HINTS). SZEŚĆ pytań
+   z triage-model.js (TRIAGE_QUESTIONS): przebieg · odkiedy (D-CZAS) ·
+   wyzwalacz · ortostaza (D-ORTO) · oczoplas · flagi. Kolumna wyniku: karta werdyktu tw--{kategoria}
+   z pewnością kwalifikacji, linki destynacji do atlasu (atlasLinkiHTML — węzły sEVS/CVS wymieniają
+   jednostki, których silnik nie modeluje), a na węźle sEVS pełna karta kryteriów vmCriteriaCard
+   (V28c — ta sama funkcja co w symulatorze, zero drugiego literału). Zmiana wcześniejszej odpowiedzi
+   unieważnia późniejsze (setTriage). Disclaimer: ścieżka badania wg GRACE-3, nie rozpoznanie.
+ - KROK 2 — „HINTS / HINTS+ — badanie" (state.screen==="hintsKwal", goHintsKwal; wejście: kafel 2
+   startu „Ciągłe zawroty od godzin lub dni"). Po wariancie A
+   (E6c) NIE jest już kwestionariuszem: pokazuje kartę werdyktu kroku 1 (z powrotem do niego),
+   przeszkolenie i pułapki, wejście do badania przez bramkę wolnoBadac (zacznijBadanieHints) oraz —
+   przy werdykcie „odradzana" — wyjście do atlasu (atlasLinkiHTML), które OPUSZCZA tryb HINTS,
+   więc nie jest kolejną drogą omijającą bramkę. Nazwa okna od E6e mówi to, co okno robi.
+ - BADANIE — „Badanie HINTS / HINTS+" (state.screen==="hintsBad"): oś składowych (hxkrok), karta
+   bieżącej składowej, tabela odpowiedzi; klinicysta ZAPISUJE obserwacje, aplikacja nie ocenia za
+   niego. WYNIK — „Wynik badania HINTS / HINTS+" (state.screen==="hintsWyn", pokazWynikHints):
+   ewentualne ostrzeżenie (role="alert") stoi NAD wnioskiem, potem karta wniosku hww--{wniosek},
+   listy „wspiera obwód / cechy alarmowe / nieocenione / nic nie rozstrzyga" i zastrzeżenia.
+ Wyrocznie toru: triage:check (asercje KL*, w tym KL9 wariantu A i KL2c/KL2g/KL2h z D-CT) oraz
+ hints:check + hints:dom; ekrany toru pinuje też golden (klucze dom/hintsKwal/* i dom/hintsBad/*).
 --------------------------------------------------------------------------
 HEAD_POINTS — anatomiczne punkty głowy (jednostkowe, układ głowy):
    nose[0,0,1] top[0,1,0] chin[0,-1,0] earR[1,0,0] earL[-1,0,0]
@@ -299,6 +328,10 @@ screenAngleCW(p) -> stopnie
  NA TELEFONIE karta idzie NAD karty trybu — przez przestawienie CAŁEJ kolumny bocznej w kontenerze
  flex, bo order przestawia elementy wyłącznie wewnątrz jednego kontenera (paczka miała order:-1 na
  samej karcie i to nie działało: zmierzone y=927 px, czyli pod kartami trybu).
+ [DOPISEK E6/E6c, 2026-08-22] Kafli szybkiego startu jest SZEŚĆ. Piąty („Przypadek nietypowy")
+ prowadzi do kwalifikacji (openTriage), NIE do HINTS — do E6c szedł wprost do goHintsKwal, czyli
+ przypadek z definicji najmniej pasujący do HINTS był doń wstępnie przypisywany. Szósty („Atlas
+ otoneurologiczny", ton katlas) woła goAtlas() i otwiera szósty obszar (sekcja ATLAS niżej).
 === SCENA KLINICZNA — EKRANY POZOSTALE (rest-scene.css, tura 3 paczki projektowej) ===
  Zakres: Kontrola po manewrze, Opis badania i zapis sesji, Nauka (biblioteka + lekcja),
  Laboratorium (lista + eksperyment). Import w index.css PO clinic-scene.css; arkusz nadpisuje
@@ -389,6 +422,31 @@ ZALEŻNOŚCI
  SZYNA BOCZNA pojawia sie od `@media (min-width:1200px)`; ponizej ma `display:none`, a nawigacje
  przejmuje `.bottomnav`. Panel podgladu w Claude Code ma ~500 px szerokosci, wiec szyny tam NIE MA
  z zalozenia — to nie usterka, tylko ten sam uklad co na telefonie.
+ [DOPISEK E6b, 2026-08-22] Atlas dolozyl do tej samej mapy atlasLista/atlasWpis → obszar 'atlas'
+ (shell.js:OBSZAR_EKRANU); AREAS w nav-model.js ma od E6 SZESC obszarow (start/diag/learn/lab/
+ atlas/profile), atlas z bar:'rail' — jak Laboratorium, celowo NIE na dolnym pasku telefonu,
+ bo wciagniecie go tam wypchneloby Profil. Bramka K w pwa-dom.mjs bez zmian: ekrany atlas*
+ celowo obsluguje OSOBNA wyrocznia atlas:dom, nie K.
+
+=== ATLAS OTONEUROLOGICZNY — SZÓSTY OBSZAR (E6, 2026-08-22) ===
+Dwa ekrany, oba w renderze SVG (dyspozytor svg-screens.js): atlasLista (renderAtlasLista)
+i atlasWpis (renderAtlasWpis). Wejścia: szósty kafel startu (goAtlas), szyna boczna, linki
+destynacji z kwalifikacji (atlasLinkiHTML na węzłach sEVS/CVS) i wyjście z okna HINTS przy
+werdykcie „odradzana" — to ostatnie OPUSZCZA tryb HINTS, więc nie omija bramki wolnoBadac.
+ - LISTA: szukajka (atlasSzukaj) + dwa filtry — zespół kardynalny (osie AVS/EVS/CVS; celowo bez
+   'wiele' i 'nd', bo to nie jest pytanie klinicysty) i zakres silnika (modelowana /
+   kryteria-bez-modelu / poza-zakresem) + kafle wpisów. Karta „Co program z tym robi" liczy
+   rozkladZakresu() z pól wSilniku (7/7/4); karta „Dlaczego to osobna zakładka" niesie
+   rozłączność ze ścieżką ostrą (GRACE-3/HINTS — rozpoznań się nie mnoży).
+ - WPIS: znacznik typu (jednostka/ramowy/stanowisko) + synonimy (⊘ = termin odradzany w ICVD,
+   z notą) + streszczenie; kryteria punkt po punkcie z przypisami; karta „Progi" pokazuje
+   WYŁĄCZNIE rangi KRYTERIUM i NOTA (RANGI_NA_KARCIE) z kontekstem; „Granice źródła — czego
+   praca NIE mówi"; „Zakres w programie" = pole wSilniku wpisu. Klucz spoza atlasu → cichy
+   powrót na listę (stan nieosiągalny z UI, nie błąd użytkownika).
+ - Treść w CZYSTYM modelu src/app/atlas-model.js (18 wpisów; zero importów, zero DOM); pola
+   stanu POLA_ATLAS w atlas-state.js. Wyrocznie: atlas:check (model + zamknięty słownik
+   wSilniku z dowodem) i atlas:dom (DOM obu ekranów). Disclaimer obu ekranów: atlas niczego
+   nie liczy i nie stawia rozpoznania; kryteria są parafrazą (progi i logika co do znaku).
 === KOMPAKTOWY UKŁAD KROKU REPOZYCJI (renderGuide) — jeden ekran ===
 Wybór strony: pigułka L|P w nagłówku (.sidepill, kolor L=--left/P=--right, aria-pressed), onclick=setGuideSide.
   Usunięto pełnowierszowy sideSel z widoku Repozycji (sideSel nadal w Diagnostyce).

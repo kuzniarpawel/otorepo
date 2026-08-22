@@ -8,11 +8,15 @@
  Principle: a single 3D source of truth shared with the engine (head frame x=right, y=up, z=nose).
          The SVG path is fully offline (no three.js); the 3D path adds three.js as a
          lazy-loaded chunk (Stage 3–5) — DEFAULT when WebGL is available, SVG = fallback.
- Last update: 2026-08-14 (review after the engine assessments II: QUANTITATIVE claims re-measured against
+ Last update: 2026-08-22 (documentation review: the view layer catches up with E6 — the SIXTH area
+        ATLAS with its two screens, the clinical HINTS pathway (a SIX-question triage, the step-2
+        window, the examination and its result) and the sixth start tile; see the sections
+        "CLINICAL HINTS PATHWAY" and "OTONEUROLOGY ATLAS" below)
+ Previously: 2026-08-14 (review after the engine assessments II: QUANTITATIVE claims re-measured against
         the new engine — the 12 s cap gave way to derivedHold, the canal arc is ARC_SPAN per canal instead
         of a shared 178°, CUP_WEAK 0.6 -> 0.45, Bárány chips per canal; two things the engine swap changed
         silently are now named: the 24 s ceiling of the otolith journey and the dead phiToFrac threshold)
- Previously: 2026-07-15 (Bárány/ICVD classification card + central differentiation CPN;
+ Earlier: 2026-07-15 (Bárány/ICVD classification card + central differentiation CPN;
         otolithic SVV & VEMP panel in HINTS)
 ==========================================================================
 
@@ -99,6 +103,11 @@ The engine accepts `size` ("small"|"medium"|"big"; medium=r1=baseline) scaling t
    Latency/strength variability by size: "Extremely Long Latency BPPV" (Res Vestib Sci, 2017).
 
 === CENTRAL↔PERIPHERAL DIFFERENTIATION — UI "HINTS" (engine module: NeuroVOR) ===
+ [ADDED 2026-08-22, documentation review] This section describes the SIMULATOR. "Third tab" below
+ means: third alongside Repositioning and Diagnostics WITHIN the Diagnostics area — since E6 the
+ shell has SIX areas (see NAVIGATION BETWEEN AREAS). The clinical HINTS pathway — the initial
+ triage and the bedside examination — consists of SEPARATE screens, described in the section
+ "CLINICAL HINTS PATHWAY" below.
 Third tab (alongside Repositioning and Diagnostics). state.screen==="hints"; renderHints() draws:
  - scenario selector (NeuroVOR.SCENARIOS) + VERDICT card (hintsVerdictHTML: peripheral/central verdict,
    HI·N·TS tags green/red, INFARCT block for central).
@@ -175,6 +184,34 @@ everything the model computes. Not wired to the UI, among others:
   smoothPursuit · dva (dynamic visual acuity) · posture · compensatePair · timeline (a day axis) ·
   alexanderGrade (grades I-III) · vhitPlane · caloricBattery · directionChanging.
 Wiring any of these up is a separate design decision — this document describes the screen as it is.
+
+--- CLINICAL HINTS PATHWAY — TRIAGE AND BEDSIDE EXAMINATION (D-CZAS/D-ORTO/E6c/E6e; added 2026-08-22) ---
+Four screens OUTSIDE the simulator, for a clinician examining a patient (Diagnostics area, mode diag/hints):
+ - STEP 1 — "History — initial triage" (state.screen==="triage", openTriage; entry: start tile 5
+   "Atypical case" — since E6c; before that the tile led straight to HINTS). SIX questions from
+   triage-model.js (TRIAGE_QUESTIONS): przebieg · odkiedy (D-CZAS) ·
+   wyzwalacz · ortostaza (D-ORTO) · oczoplas · flagi. The result column: a verdict card
+   tw--{kategoria} with the triage confidence, destination links to the atlas (atlasLinkiHTML —
+   the sEVS/CVS nodes list entities the engine does not model), and on the sEVS node the full
+   criteria card vmCriteriaCard
+   (V28c — the same function as in the simulator, no second literal). Changing an earlier answer
+   invalidates the later ones (setTriage). Disclaimer: an examination pathway per GRACE-3, not a diagnosis.
+ - STEP 2 — "HINTS / HINTS+ — examination" (state.screen==="hintsKwal", goHintsKwal; entry: start
+   tile 2 "Continuous vertigo for hours or days"). After variant A
+   (E6c) it is NO longer a questionnaire: it shows the step-1 verdict card (with a way back to it),
+   the training and the pitfalls, the entry to the examination through the wolnoBadac gate
+   (zacznijBadanieHints), and — on the "advised against" verdict — an exit to the atlas
+   (atlasLinkiHTML), which LEAVES the HINTS mode,
+   so it is not yet another route around the gate. Since E6e the window's name says what the window does.
+ - EXAMINATION — "HINTS / HINTS+ examination" (state.screen==="hintsBad"): the component axis
+   (hxkrok), the current-component card, the answer table; the clinician RECORDS observations, the
+   app does not judge for them. RESULT — "HINTS / HINTS+ result" (state.screen==="hintsWyn",
+   pokazWynikHints): any warning (role="alert") stands ABOVE the conclusion, then the conclusion
+   card hww--{wniosek}, the lists "supports peripheral / alarm features / not assessed / settles
+   nothing" and the caveats.
+ Pathway oracles: triage:check (the KL* assertions, incl. KL9 of variant A and KL2c/KL2g/KL2h of
+ D-CT) plus hints:check + hints:dom; the pathway screens are also pinned by the golden snapshot
+ (dom/hintsKwal/* and dom/hintsBad/* keys).
 
 --------------------------------------------------------------------------
  Scene3D  (stage A)
@@ -303,6 +340,10 @@ screenAngleCW(p) -> degrees
  ON THE PHONE the card goes ABOVE the mode cards — by reordering the WHOLE side column inside a flex
  container, because order only reorders items within one container (the package had order:-1 on the card
  itself and it did nothing: measured y=927 px, i.e. below the mode cards).
+ [ADDED E6/E6c, 2026-08-22] There are SIX quick-start tiles. The fifth ("Atypical case") leads to
+ the triage (openTriage), NOT to HINTS — until E6c it went straight to goHintsKwal, i.e. the case
+ least fitting HINTS by definition was pre-assigned to HINTS. The sixth ("Otoneurology atlas",
+ tone katlas) calls goAtlas() and opens the sixth area (see the ATLAS section below).
  [x] STAGE C: full body (trunk+neck+limbs) as a 3D projection — DONE (figProj/bodyJoints, see the
         figProj ARCHITECTURE below and the SESSION SUMMARY 2026-07-02). Free camera choice (K4) remains
         in migracja_3d.txt as a project for the future.
@@ -395,6 +436,35 @@ DEPENDENCIES
  THE SIDE RAIL appears from `@media (min-width:1200px)`; below that it is `display:none` and
  `.bottomnav` takes over navigation. The Claude Code preview pane is ~500 px wide, so the rail is
  NOT there by design — it is not a defect, just the same layout as on a phone.
+ [ADDED E6b, 2026-08-22] The atlas added atlasLista/atlasWpis → area 'atlas' to this same map
+ (shell.js:OBSZAR_EKRANU); AREAS in nav-model.js has SIX areas since E6 (start/diag/learn/lab/
+ atlas/profile), the atlas with bar:'rail' — like the Laboratory, deliberately NOT on the phone's
+ bottom bar, because pulling it in there would push Profile out. Gate K in pwa-dom.mjs is
+ unchanged: the atlas* screens are deliberately covered by a SEPARATE oracle, atlas:dom, not by K.
+
+=== OTONEUROLOGY ATLAS — THE SIXTH AREA (E6, 2026-08-22) ===
+Two screens, both in the SVG renderer (svg-screens.js dispatcher): atlasLista (renderAtlasLista)
+and atlasWpis (renderAtlasWpis). Entries: the sixth start tile (goAtlas), the side rail, the
+destination links from the triage (atlasLinkiHTML on the sEVS/CVS nodes) and the exit from the
+HINTS window on the "advised against" verdict — the latter LEAVES the HINTS mode, so it does not
+bypass the wolnoBadac gate.
+ - LIST: a search box (atlasSzukaj) + two filters — the cardinal syndrome (AVS/EVS/CVS axes;
+   deliberately without 'wiele' and 'nd', because that is not a clinician's question) and the
+   engine scope (modelowana / kryteria-bez-modelu / poza-zakresem) + entry tiles. The card
+   "What the app does with these" counts rozkladZakresu() from the wSilniku fields (7/7/4);
+   the card "Why this is a separate tab" carries the disjointness from the acute pathway
+   (GRACE-3/HINTS — diagnoses are not multiplied).
+ - ENTRY: the type marker (jednostka/ramowy/stanowisko) + synonyms (⊘ = a term discouraged in
+   the ICVD documents, with a note) + the summary; the criteria point by point with their notes;
+   the "Thresholds" card shows ONLY the CRITERION and NOTE ranks (RANGI_NA_KARCIE) with context;
+   "Source boundaries — what the paper does NOT say"; "Scope within the app" = the entry's
+   wSilniku field. A key from outside the atlas → a silent return to the list (a state
+   unreachable from the UI, not a user error).
+ - The content lives in the PURE model src/app/atlas-model.js (18 entries; zero imports, zero
+   DOM); the state fields POLA_ATLAS in atlas-state.js. Oracles: atlas:check (the model + the
+   closed wSilniku vocabulary with its evidence) and atlas:dom (the DOM of both screens). The
+   disclaimer of both screens: the atlas computes nothing and makes no diagnosis; the criteria
+   are a paraphrase (thresholds and logic reproduced exactly).
 === COMPACT REPOSITIONING STEP LAYOUT (renderGuide) — one screen ===
 Side selection: an L|R pill in the header (.sidepill, color L=--left/R=--right, aria-pressed), onclick=setGuideSide.
   Removed the full-row sideSel from the Repositioning view (sideSel still in Diagnostics).
