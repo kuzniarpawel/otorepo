@@ -2994,14 +2994,26 @@ rdzeniowa `baranyClassify`, miały udokumentowany rodowód „pamięć otoneurol
 a odsyłacz z kodu wskazywał sekcję engine_doc, której nie było. Etap E0 zamyka warstwę
 BIBLIOGRAFICZNĄ tej dziury: nadaje numery, nie zmienia ani jednej linii kodu.
 
-CZTERNAŚCIE DOKUMENTÓW MA TERAZ NUMER I JEST UŻYWANYCH ALBO CZEKA NA UŻYCIE:
+CZTERNAŚCIE DOKUMENTÓW MA TERAZ NUMER I JEST UŻYWANYCH ALBO CZEKA NA UŻYCIE.
+UWAGA — TA LISTA ORZEKAŁA O PROGRAMIE NIEPRAWDĘ i została poprawiona 2026-08-22. Trzy jednostki
+nazywała NIEOBECNYMI, podczas gdy wszystkie trzy weszły już do src/ w etapach D-CZAS i D-ORTO —
+jako SKUTEK UBOCZNY tamtych etapów, nie jako decyzja zakresowa. To jest właśnie ten rodzaj
+zestarzenia, przed którym rejestr D6 ma chronić: pomiar, który sam siebie unieważnił, a nikt go
+nie przeliczył. Przy każdej zmianie w src/ SPRAWDZAĆ, czy ta lista nadal mówi prawdę.
+PISZĄC TU COKOLWIEK: żaden numer źródła NIE MOŻE zacząć wiersza. Pierwsza wersja tej uwagi zawinęła
+się tak, że numer wypadł w kolumnie 0, a parser bibliografii wziął go za DEFINICJĘ wpisu i bramka
+ZR2 zapaliła się natychmiast. To ta sama pułapka, którą zabramkowano w V28b.
  · objawy przedsionkowe (słownik) ......... [H47] — używany pośrednio przez [H46]; nie nazywany
  · BPPV ................................... [H48] — RDZEŃ APLIKACJI, dotąd bez numeru (etap E1)
- · napadowica przedsionkowa ............... [H49] — dziś jedna wzmianka w wykluczeniach karty migreny
- · PPPD ................................... [H50] — jednostka NIEOBECNA w programie (decyzja D6)
+ · napadowica przedsionkowa ............... [H49] — jedna wzmianka w wykluczeniach karty migreny;
+   od 2026-08-22 Z NUMEREM i z oknem czasowym wg kryterium B (było zaniżone do „kilku sekund")
+ · PPPD ................................... [H50] — OBECNA w src/ od etapu D-CZAS: węzeł CVS nazywa
+   ją z numerem i warunkiem wejścia. Zakres (czy modelować) nadal decyzją D6
  · klasyfikacja oczopląsu ................. [H51] — flagi CPN stoją bez źródła w dwóch plikach (E2)
- · hemodynamiczny zawrót ortostatyczny .... [H52] — NIEOBECNY; styka się z notą 4 kryterium A [H48]
- · presbywestybulopatia ................... [H53] — NIEOBECNA; niesie sporny próg gain (decyzja D1)
+ · hemodynamiczny zawrót ortostatyczny .... [H52] — OBECNY w src/ od etapu D-ORTO: szóste pytanie
+   kwalifikacji niesie narzędzie rozróżnienia z noty 1 tej pracy
+ · presbywestybulopatia ................... [H53] — OBECNA w src/ od etapu D-CZAS (węzeł CVS);
+   spór o próg gain ROZSTRZYGNIĘTY w E3a — pasma [H19] i [H53] przylegają, nie konkurują
  · mal de débarquement .................... [H54] — NIEOBECNY; oś różnicowa wobec [H50]
  · migrena przedsionkowa wieku dziec. ..... [H55] — NIEOBECNA; drugi komplet kryteriów obok [H46]
  · SCDS ................................... [H56] — jednostka MODELOWANA, ale na [H18], nie na ICVD

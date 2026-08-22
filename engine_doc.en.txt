@@ -3191,14 +3191,26 @@ core function `baranyClassify` stands, had a documented provenance of "otoneurol
 (view_doc), and the pointer from the code named an engine_doc section that did not exist. Stage E0
 closes the BIBLIOGRAPHIC layer of that hole: it assigns numbers and changes not one line of code.
 
-FOURTEEN DOCUMENTS NOW HAVE A NUMBER AND ARE EITHER IN USE OR AWAITING USE:
+FOURTEEN DOCUMENTS NOW HAVE A NUMBER AND ARE EITHER IN USE OR AWAITING USE.
+NOTE — THIS LIST STATED SOMETHING UNTRUE ABOUT THE PROGRAM and was corrected on 2026-08-22. Three
+entities were called ABSENT while all three had already entered src/ in stages D-CZAS and D-ORTO —
+as a SIDE EFFECT of those stages, not as a scope decision. This is exactly the kind of staleness the
+D6 ledger exists to prevent: a measurement that invalidated itself and nobody recounted it. On every
+change to src/, CHECK whether this list still tells the truth.
+WHEN WRITING HERE: no source number MAY begin a line. The first version of this note wrapped so that
+a number fell in column 0, the bibliography parser read it as an ENTRY DEFINITION and gate ZR2 fired
+at once. That is the same trap gated in V28b.
  · vestibular symptoms (dictionary) ....... [H47] — used indirectly via [H46]; never named
  · BPPV ................................... [H48] — CORE OF THE APP, until now unnumbered (E1)
- · vestibular paroxysmia .................. [H49] — today one mention, in the migraine exclusions
- · PPPD ................................... [H50] — entity ABSENT from the program (decision D6)
+ · vestibular paroxysmia .................. [H49] — one mention, in the migraine exclusions; since
+   2026-08-22 WITH A NUMBER and with the time window per criterion B (it was understated to „seconds")
+ · PPPD ................................... [H50] — PRESENT in src/ since stage D-CZAS: the CVS node
+   names it with a number and an entry condition. Scope (whether to model it) is still decision D6
  · nystagmus classification ............... [H51] — CPN flags stand unsourced in two files (E2)
- · hemodynamic orthostatic dizziness ...... [H52] — ABSENT; touches note 4 of criterion A in [H48]
- · presbyvestibulopathy ................... [H53] — ABSENT; carries the disputed gain (decision D1)
+ · hemodynamic orthostatic dizziness ...... [H52] — PRESENT in src/ since stage D-ORTO: the sixth
+   triage question carries the discriminating tool from note 1 of that paper
+ · presbyvestibulopathy ................... [H53] — PRESENT in src/ since stage D-CZAS (CVS node);
+   the gain-threshold dispute was SETTLED in E3a — the bands of [H19] and [H53] abut, they do not compete
  · mal de débarquement .................... [H54] — ABSENT; the axis that separates it from [H50]
  · vestibular migraine of childhood ....... [H55] — ABSENT; a second criteria set beside [H46]
  · SCDS ................................... [H56] — entity MODELLED, but on [H18], not on ICVD

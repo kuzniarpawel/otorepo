@@ -404,7 +404,24 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 225;  /* 2026-08-22, etap D-CT (decyzja uzytkownika, wariant A): 217 -> 225.
+const OCZEKIWANE = 228;  /* 2026-08-22, etap D6-NAPRAWY: 225 -> 228.
+                            TRZY cytowania "[H49] Strupp 2016", WSZYSTKIE w src/render/svg-screens.js
+                            (lustro PL, lustro EN i komentarz przy poprawce). Zmierzone przez
+                            podstawianie wersji z HEAD: bez svg-screens.js licznik wraca do 225,
+                            bez engine_doc zostaje 228 — czyli DOKUMENTACJA WNOSI ZERO NETTO.
+                            UZASADNIENIE TEGO ZERA SPRAWDZONE SONDA, a nie zalozone: wstrzykniete
+                            w mape pokrycia celowo bledne "[H57] Kattah 2009" ZAPALA bramke, wiec
+                            ten fragment JEST czytany. (Inaczej niz proza pod wpisem bibliograficznym
+                            — tam bramka ma martwe pole, opisane nizej przy etapie E3a.) Zero bierze
+                            sie stad, ze usuniete odwolania [H48] w obu lustrach zrownowazyly sie
+                            z trescia dopisana.
+                            POWOD ZMIANY: karta migreny ZANIZALA okno napadowicy do „jednej do kilku
+                            sekund", podczas gdy kryterium B [H49] mowi < 1 minuty (postac pewna)
+                            i < 5 minut (prawdopodobna) — a napis stoi w bloku WYKLUCZEN, wiec chory
+                            z napadem 40-sekundowym byl nim odrzucany. Przy okazji mapa pokrycia ICVD
+                            przestala klamac o [H50], [H52] i [H53] jako "NIEOBECNYCH".
+
+                            2026-08-22, etap D-CT (decyzja uzytkownika, wariant A): 217 -> 225.
                             OSIEM cytowan netto, zmierzone przez podstawianie wersji z HEAD, ADDYTYWNE:
                               pelna zmiana 225 | bez triage-model.js 219 (czyli +6)
                                                | bez hints-model.js  223 (czyli +2)

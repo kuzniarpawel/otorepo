@@ -1148,6 +1148,15 @@ function domOracle(h, win) {
     tri('AVS', { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'obecny' }, ['brak']);
     tri('pseudoAVS', { przebieg: 'ciagle', odkiedy: 'ostre', oczoplas: 'brak' }, ['brak']);
     tri('sEVS', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'samoistny' }, ['brak']);
+    /* D6/LUKA-GOLDEN (2026-08-22): dwie gałęzie NIOSĄCE TREŚĆ KLINICZNĄ nie miały ani jednego klucza.
+       (1) `ortostaza: 'nie'` — cała uwaga o hemodynamicznym zawrocie ortostatycznym z etapu D-ORTO
+           renderowała się WYŁĄCZNIE w tej gałęzi, a wszystkie fikstury podawały 'tak'. Bramka KL9
+           tę treść liczyła, złoty wzorzec jej NIE WIDZIAŁ — czyli mogła zniknąć z ekranu przy
+           zielonej wyroczni. To ta sama klasa luki co przy E1 (kanał przedni × kupulolitiaza).
+       (2) węzeł CVS — jedyne miejsce, gdzie program nazywa PPPD [H50] i presbywestybulopatię [H53],
+           obie z numerem i warunkiem wejścia. Też bez klucza. */
+    tri('tEVS-ortostatyczny', { przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', ortostaza: 'nie' }, ['brak']);
+    tri('CVS', { przebieg: 'przewlekle', odkiedy: 'dluzej' }, ['brak']);
     try { h.resetTriage(); } catch { /* przywróć czysty stan dla kolejnych warstw */ }
   }
 

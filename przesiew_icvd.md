@@ -106,7 +106,17 @@ Rozkład miejsc bez źródła wg obszaru:
 | BPPV / manewry | 69 | 64 | rdzeń aplikacji |
 | Dokumentacja / baza wiedzy | 65 | 37 | bibliografia [H1]–[H46] |
 
-**Jednostki ICVD nieobecne w programie (0 trafień):** PPPD · presbywestybulopatia ·
+> **POMIAR PONIŻEJ JEST OTWIERAJĄCY I DZIŚ NIEAKTUALNY — przeliczony 2026-08-22 na `9332244`.**
+> W bazie wiedzy obecnych jest **10 z 10** (każda ma wpis). W działającym `src/` obecnych jest
+> **pięć**, w trzech rangach: jako **kod** — `[H52]` (obiekt pytania `ortostaza`) i `[H51]` (tablica
+> `CPN_TROPY` z polem rodowodu); jako **tekst** — `[H50]`, `[H53]` i `[H49]`. Czyste zero zostało
+> **pięciu**: MdDS `[H54]` · choroba lokomocyjna `[H57]` · zawroty szyjne `[H60]` · migrena wieku
+> dziecięcego `[H55]` · słownik Bisdorffa `[H47]`.
+> **Trzy z nich weszły jako SKUTEK UBOCZNY innych etapów**, nie jako decyzja zakresowa: `[H51]`
+> z D-CPN, `[H50]` i `[H53]` z D-CZAS, `[H52]` z D-ORTO. Dlatego D6 jest dziś częściowo **wsteczne**:
+> musi zapisać nie tylko co ma wejść, ale i **co już weszło i w jakiej randze**.
+
+**Jednostki ICVD nieobecne w programie (pomiar otwierający, 0 trafień):** PPPD · presbywestybulopatia ·
 mal de débarquement · choroba lokomocyjna · hemodynamiczne zawroty ortostatyczne ·
 zawroty szyjne · migrena przedsionkowa wieku dziecięcego · napadowica przedsionkowa
 (1 wzmianka, bez własnego źródła) · klasyfikacja objawów Bisdorffa · klasyfikacja oczopląsu Eggersa.
