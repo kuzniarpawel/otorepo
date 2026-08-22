@@ -4105,6 +4105,15 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
         STYK Z BPPV: kryterium D kanalolitiazy w [H48] (nota 4) wprost każe ODRÓŻNIĆ zawrót
         położeniowy od objawów ortostatycznych obecnych tylko przy wstawaniu. Program tego
         rozróżnienia dziś nie prowadzi — ciąg „ortostat" ma w src/ 0 trafień.
+        DOPISEK 2026-08-22 (kontrola powtórna K7) — oba zdania powyżej wymagają korekty, brzmienie
+        pierwotne zostaje jako ślad. (1) KOTWICA ŹRÓDŁOWA BYŁA BŁĘDNA: obowiązek odróżnienia od
+        objawów ortostatycznych stoi w [H48] jako NOTA 4 DO KRYTERIUM A kanalolitiazy kanału
+        tylnego (2.1) — kryterium D odsyła wyłącznie do noty 14 (formuła „nie do przypisania").
+        W podtypach 2.3 i 3.2 ta sama treść jest notą 5, nadal przy kryterium A, a formuła „nie
+        do przypisania" nosi tam literę C. (2) ZDANIE O ZERZE TRAFIEŃ JEST NIEWAŻNE OD ETAPU
+        D-ORTO (d0f0a3b, 2026-08-22) — jak i słowa „którego program nie ma" wyżej: rozróżnienie
+        prowadzi dziś SZÓSTE PYTANIE kwalifikacji („ortostaza", narzędzie z noty 1 tej pracy),
+        a mapa pokrycia tego wpisu mówi OBECNY.
 
 [H53] Agrawal Y, Van de Berg R, Wuyts F, Walther L, Magnusson M, Oh E, Sharpe M, Strupp M (2019).
       „Presbyvestibulopathy: Diagnostic criteria — Consensus document of the Classification

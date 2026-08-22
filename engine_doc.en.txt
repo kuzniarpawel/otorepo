@@ -4345,6 +4345,15 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
         CONTACT WITH BPPV: criterion D of canalolithiasis in [H48] (note 4) explicitly requires
         DISTINGUISHING positional vertigo from orthostatic symptoms present only on arising. The
         program draws no such distinction today — the string "orthostat" has 0 hits in src/.
+        ADDENDUM 2026-08-22 (re-audit K7) — both sentences above need correction; the original
+        wording stands as a trace. (1) THE SOURCE ANCHOR WAS WRONG: the duty to distinguish from
+        orthostatic symptoms stands in [H48] as NOTE 4 TO CRITERION A of posterior-canal
+        canalolithiasis (2.1) — criterion D refers only to note 14 (the not-attributable formula).
+        In subtypes 2.3 and 3.2 the same content is note 5, still attached to criterion A, and the
+        not-attributable formula carries the letter C there. (2) THE ZERO-HITS SENTENCE IS VOID
+        SINCE STAGE D-ORTO (d0f0a3b, 2026-08-22) — as are the words "THE PROGRAM LACKS" above: the
+        distinction is drawn today by the SIXTH triage question ("ortostaza", the tool of note 1
+        of this paper), and this entry's coverage map says PRESENT.
 
 [H53] Agrawal Y, Van de Berg R, Wuyts F, Walther L, Magnusson M, Oh E, Sharpe M, Strupp M (2019).
       "Presbyvestibulopathy: Diagnostic criteria — Consensus document of the Classification
