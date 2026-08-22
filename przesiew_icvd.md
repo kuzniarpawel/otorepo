@@ -557,7 +557,8 @@ Jeśli D1 zmienia liczbę — rebaseline z dowodem zakresu i osobnym commitem.
 > (`[H19] Kattah 2009` w prozę `[H53]`, w pamięci) i żąda wykrycia przez **obie** reguły naraz.
 > Pomiar przy wdrożeniu: **43 cytowania w prozie na lustro** (PL i EN identycznie), 18 wpisów
 > z `[Hnn]`, asymetrii per wpis **zero** — więc włączenie reguły nie wymagało żadnej korekty
-> treści. `OCZEKIWANE` 271 → 276, arytmetyka w dzienniku stałej. Wybór wariantu „parser", nie
+> treści. *(Po rebase na E-DOC2, K7-B1b: 44/lustro i 19 wpisów — E-DOC2b dopisało `[H19]`
+> w prozie wpisu `[H23]`, symetrycznie w obu lustrach; reguły pozostały zielone bez korekt.)* `OCZEKIWANE` 271 → 276, arytmetyka w dzienniku stałej. Wybór wariantu „parser", nie
 > „przenieść prozę": proza-przy-wpisie to świadoma konwencja dokumentu (nota erraty NALEŻY do
 > wpisu `[H19]`), a przenosiny obu luster ryzykowałyby pułapkę kolumny 0 opisaną przy V28.
 >

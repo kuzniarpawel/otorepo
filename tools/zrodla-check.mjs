@@ -419,6 +419,8 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
    każdym przeglądzie — a licznik OCZEKIWANE nie powinien ruszać się od każdego dopisku;
    ruszać ma się od NIEZGODNOŚCI. Zmierzone przy wdrożeniu: 43 cytowania w prozie na lustro
    (PL i EN identycznie), 18 wpisów z co najmniej jednym [Hnn], asymetrii per wpis ZERO.
+   PO REBASE NA E-DOC2 (K7-B1b): 44/lustro i 19 wpisów — E-DOC2b dopisało odsyłacz [H19]
+   w prozie wpisu [H23], symetrycznie w obu lustrach, więc reguły pozostały zielone.
    CZEGO TA SEKCJA NIE SPRAWDZA: tokenu definicji (pierwszy [Hnn] wpisu to jego numer, nie
    cytowanie) ani prozy w rozdziałach (to robota DOC1–DOC4). */
 function cytProzyWpisow(tekst, bib) {
@@ -509,6 +511,8 @@ const OCZEKIWANE = 276;  /* 2026-08-22, K7-B1: 271 -> 276. PIEC asercji sekcji 8
                             Architektura AGREGATOWA (jak DOC4): dopisek w prozie wpisu NIE rusza
                             licznika — rusza go dopiero niezgodnosc. Zmierzone przy wdrozeniu:
                             43 cytowania/lustro, 18 wpisow z [Hnn], asymetrii ZERO; --ile: 276.
+                            Po rebase na E-DOC2 (K7-B1b): 44/lustro, 19 wpisow — [H19] w prozie
+                            [H23] z E-DOC2b, symetrycznie; licznik przypadkow BEZ zmian (agregat).
                             POPRZEDNIO: 2026-08-22, K7-A6: 270 -> 271. JEDNO cytowanie "[H56] Ward 2021"
                             w komentarzu przy VEMP_AR (src/engine/neuro-vor.js) — kotwica dla
                             deklaracji "norma pracowniana, poza korpusem ICVD": [H56] wprost
