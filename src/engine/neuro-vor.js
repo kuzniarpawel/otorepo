@@ -426,8 +426,38 @@ export const NeuroVOR = (()=>{
   //   OŚRODEK (udar): kanały zdrowe (gain≈1) → HIT PRAWIDŁOWY (brak sakady) = zły znak (nie uspokaja).
   const S_HZ = 0.8;          // czułość aferentu (Hz na °/s) — kalibracja: obcięcie hamowania ~tone/S ≈112°/s < prędkości vHIT
   const VIS_THRESH = 2;      // próg widoczności klinicznej oczopląsu (°/s) — poniżej: brak jawnego oczopląsu
-  // Progi patologii GAIN vHIT per kanał — publikowane dolne granice normy (McGarvie 2015: HC ~0.8,
-  // kanały pionowe ~0.7); kryterium BVH (obustronnie <0.6 [H19]) pozostaje zaostrzeniem tych progów.
+  // Progi GAIN vHIT per kanał. RANGA I RODOWÓD (etap E3a, decyzja D1) — nota 5 [H19] Strupp 2017
+  // rozróżnia DWA POZIOMY i silnik ma dokładnie te dwa.
+  // (1) GRANICA NORMY. Nota 5, na 60 zdrowych: dolna granica (2 SD poniżej średniej) = 0,79 przy
+  //     80 ms i 0,75 przy 60 ms. GAIN_CUT.horizontal 0,8 to ZAOKRĄGLENIE tej pierwszej — W GÓRĘ,
+  //     czyli w stronę nadrozpoznawania — i NIE jest granicą przy 60 ms. Silnik nie ma osi 60/80 ms
+  //     w ogóle (headImpulse skaluje się prędkością szczytową), więc bierze jeden punkt z dwóch.
+  //     Ta sama nota podaje, że dolna wartość PRAWIDŁOWA u zdrowego sięga 0,65 przy 60 ms — poniżej
+  //     tego progu. Kto tu wróci: to jest znany i przyjęty koszt, nie przeoczenie.
+  // (2) PRÓG KRYTERIALNY BVP <0,6 — ustawiony przez komitet świadomie NIŻEJ od granicy normy
+  //     („taking this into account, the authors agreed"), bo uwzględnia spadek z wiekiem (0,012 na
+  //     dekadę przy 80 ms, 0,017 przy 60 ms). To jest BVP_CUT. Granica normy NIE JEST kryterium ICVD
+  //     i tak jej nie nazywać — [H59] Strupp 2022 mówi wprost, że zgody co do wartości odcięcia nie
+  //     ma i że opierać się należy na normach pracowni.
+  // STATYSTYKA — ŁATWO TU O ZDANIE ZA MOCNE, i pierwsza wersja tego komentarza je miała. Same LINIE
+  //     kryteriów statystyki nie nazywają ([H19] kryt. C: „measured by the video-HIT or scleral-coil
+  //     technique"; [H53] Agrawal 2019 kryt. B.1: „measured by video-HIT"), ALE kryterium C niesie
+  //     przypis 5 i przez niego DELEGUJE statystykę do noty, a nota nazywa DWIE alternatywne: iloraz
+  //     prędkości kątowych albo iloraz pól pod krzywą (AUC). Kryteria nie są statystycznie nieme —
+  //     one odsyłają.
+  // PASMA. 0,6 i 0,8 to zarazem obie krawędzie pasma presbywestybulopatii (kryt. B.1 [H53]: gain
+  //     0,6–0,8 obustronnie, wiek 60 lat i więcej). [H19] i [H53] NIE KONKURUJĄ — to pasma
+  //     przylegające. Jedyną nieciągłością jest sprzeczność [H53] Z SAMĄ SOBĄ co do domknięcia
+  //     brzegu: abstrakt „<0.8 and >0.6" (oba ostre), kryterium „between 0.6 and 0.8"
+  //     (nierozstrzygające), dyskusja „>=0.6 and <0.8" (dolny domknięty). W odczycie z abstraktu
+  //     gain dokładnie 0,600 nie należy do ŻADNEGO pasma.
+  // KANAŁY PIONOWE 0,7 — MELDUNEK ZERO, I NAJCIĘŻSZY PRÓG W TYM BLOKU. Żadna praca ICVD tej liczby
+  //     nie niesie w żadnej randze; nota 5 [H19] mówi, że rolę gain kanałów pionowych „has to be
+  //     further evaluated". To wybór kalibracyjny silnika — ale JEDYNA bramka osi pionowej, wchodząca
+  //     do DWÓCH osi werdyktu: do anyFinding (normal vs peripheral) wprost, a do isolatedVertical
+  //     PRZEZ NEGACJĘ (!vertCanalDeficit). Skutek jest odwrotny do intuicji: próg ZA WYSOKI MASKUJE
+  //     znak ośrodkowy, a ZA NISKI go FABRYKUJE. Zmierzone — werdykt przeskakuje central/peripheral
+  //     dokładnie na 0,70 (gain 0,7137 daje central; 0,6968 daje peripheral).
   const GAIN_CUT = { horizontal:0.8, anterior:0.7, posterior:0.7 };
   const P_MAX = 40;          // °/s — nasycenie pościgu (człon pościgowy vHIT, N7/C5) [H3] Leigh & Zee 2015
   const W_IN = 1/3;          // waga członu HAMOWANEGO w dwuusznej estymacie gain (pobudzenie:hamowanie ~3:1, N7/C5)
@@ -566,8 +596,10 @@ export const NeuroVOR = (()=>{
     const saccadeAmp = ((slip - slipCovered)/Ohm)*amp;       // niedomiar rotacji NIEpokryty pościgiem → catch-up
     // Kryterium PATOLOGII na GAIN per kanał (jak w pracowniach vHIT), NIE na amplitudzie sakady: próg na
     // saccadeAmp dryfował z amplitudą pchnięcia (gain 0.75 → „norma" przy amp 8°, „patologia" przy 15°)
-    // i jednym efektywnym cięciem ~0.83 nadrozpoznawał kanały PIONOWE (publikowane LLN: HC <0.8, pionowe
-    // <0.7 — McGarvie 2015 (bez numeru w tej bibliografii); BVH <0.6 — [H19] Strupp 2017). saccadeAmp/overt/covert zostają: rysują sakadę i podział
+    // i jednym efektywnym cięciem ~0.83 nadrozpoznawał kanały PIONOWE. Progi i ich RANGĘ opisuje
+    // komentarz przy GAIN_CUT: HC 0,8 = ZAOKRĄGLONA W GÓRĘ granica normy z noty 5 [H19] Strupp 2017
+    // (0,79 przy 80 ms; przy 60 ms nota daje 0,75), a NIE kryterium; BVH <0,6 = kryterium C tej samej
+    // pracy. Kanały pionowe 0,7 nie mają pokrycia w ICVD. saccadeAmp/overt/covert zostają: rysują sakadę i podział
     // jawna/ukryta, ale nie orzekają. [H5][H21]
     const abnormal = gain < GAIN_CUT[ex.canal];              // vHIT PATOLOGICZNY (deficyt gain) — NIEZALEŻNY od kompensacji i amplitudy
     // KOMPENSACJA DYNAMICZNA: całość korekty stała, ale przesuwa się w czasie z sakady JAWNEJ (overt —
@@ -826,7 +858,10 @@ export const NeuroVOR = (()=>{
   // ipsilateralnie; oVEMP (oczny) ≈ ŁAGIEWKA (n. GÓRNY). Rozdziela gałęzie nerwu: neuronitis DOLNY → cVEMP↓ +
   // oVEMP prawidłowy; GÓRNY → odwrotnie. Amplituda z funkcji narządu (0..1). AR% = asymetria międzyuszna.
   const VEMP_THRESH=0.3;    // amplituda < 0.3 → „zniesiony"; 0.3..0.65 → „obniżony"; ≥0.65 → „prawidłowy"
-  const VEMP_AR=0.35;       // próg ASYMETRII międzyusznej dla weakEar (górne normy lab.: Rosengren 2019) — ocena II (B2)
+  // próg ASYMETRII międzyusznej dla weakEar (górne normy lab.: Rosengren 2019) — ocena II (B2).
+  // POZA KORPUSEM ICVD: żaden z 19 dokumentów konsensusu nie stanowi progu asymetrii VEMP, więc
+  // to jest norma pracowniana, nie kryterium — nazwisko zostaje bez numeru ŚWIADOMIE (etap E3a, D1).
+  const VEMP_AR=0.35;
   const VEMP_HIGH=1.35;     // ≥1.35 → „wzmożony" — VEMP mierzy w OBIE strony, nie tylko w dół
   const VEMP_SCDS=2.0;      // TRZECIE OKNO (SCDS) → wzrost amplitudy VEMP ipsilateralnie (niski próg cVEMP,
                             // duże n10 oVEMP). To ROZPOZNAWCZA para SCDS; wcześniej sufit amplitudy = 1.0
@@ -868,8 +903,24 @@ export const NeuroVOR = (()=>{
   // CP/DP (to STOSUNKI), istotna dla sumy bezwzględnej (osłabienie obustronne). caloricGain jest OBWODOWY →
   // niezależny od kompensacji ośrodkowej: kaloryka ODSŁANIA skompensowany ubytek (CP trwa, gdy oczopląs znikł).
   const CAL_NORMAL = 20;   // °/s — prawidłowa szczytowa SPV pojedynczej irygacji przy caloricGain=1
-  const CAL_BILAT  = 6;    // °/s — próg (kryt. Bárány): suma ciepła+zimna DANEGO ucha < CAL_BILAT → osłabienie
-  const CP_THRESH  = 25;   // % — istotny niedowład kanału (unilateral weakness)
+  // °/s — kryterium C [H19] Strupp 2017: suma dwutemperaturowa DANEGO ucha < 6 → osłabienie.
+  // ROZJAZD STATYSTYKI BIEGNIE WEWNĄTRZ [H19], NIE MIĘDZY PRACAMI — pierwsza wersja tego komentarza
+  // twierdziła inaczej i było to błędne. Linia kryterium mówi „sum of bithermal max. peak SPV on each
+  // side <6°/sec", ale WŁASNA nota 6 tej samej pracy wyprowadza tę samą liczbę ze ŚREDNICH: „the sum
+  // of the mean SPV ... per ear ... <6°/sec can therefore be considered a safe criterion".
+  // [H59] Strupp 2022 powtarza czytanie noty 6, więc NIE wnosi trzeciej statystyki. [H53] Agrawal 2019
+  // kryt. B.3 używa brzmienia kryterialnego („maximum peak") i dlatego PRZYLEGA: BVP poniżej 6,
+  // presbywestybulopatia od 6 do 25.
+  // CZEGO TEN MODEL NIE ROZSTRZYGA: silnik ma JEDNĄ nominalną szczytową SPV na irygację
+  // (Vcal = CAL_NORMAL * cg * kierunek), więc nie istnieje zbiór, z którego można wziąć maksimum
+  // albo średnią. Rozróżnienie max/mean NIE MA w tym modelu odpowiednika i nie jest tu rozstrzygane —
+  // kod deklaruje krawędź 6, nie przynależność metrologiczną.
+  const CAL_BILAT  = 6;
+  // % — istotny niedowład kanału (unilateral weakness). Pokrycie leżało w TYM SAMYM zdaniu źródła,
+  // z którego wzięto próg 6°/s przy CAL_BILAT, a pierwsza wersja E3a wzięła z niego tylko połowę:
+  // [H59] Strupp 2022 — niedowład przedsionkowy definiuje się zwykle jako asymetrię > 25% między
+  // stronami ALBO bezwzględną sumę < 6°/s. RANGA: proza sekcji o próbie kalorycznej, NIE kryterium.
+  const CP_THRESH  = 25;
   const DP_THRESH  = 30;   // % — istotna przewaga kierunkowa
   function caloricGainOf(p, ear){ const g = ear==="P" ? p.caloricGainR : p.caloricGainL; return Math.max(0, g==null?1:g); }
   function caloricDir(ear, temp){ return (temp==="cold"?-1:1) * (ear==="P"?+1:-1); }   // head-frame +=ku P; COWS

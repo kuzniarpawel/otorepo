@@ -2561,9 +2561,14 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
         przy failsSuppression + gałąź lokalizacji „izolowany brak supresji fiksacji — móżdżek (kłaczek)".
         ZAMIERZONA rozbieżność: czysta lezja kłaczka bez oczopląsu ma hints=„normal" (HINTS wymaga AVS),
         a lokalizację instrumentalną kłaczkową — werdykt przyłóżkowy i lokalizacja to różne osie.
-     #A6 kryterium vHIT na GAIN per kanał: GAIN_CUT={HC:0.8, AC:0.7, PC:0.7} (McGarvie 2015) zamiast progu
+     #A6 kryterium vHIT na GAIN per kanał: GAIN_CUT={HC:0.8, AC:0.7, PC:0.7} zamiast progu
         na amplitudzie sakady (dryfował z headAmp; nadrozpoznawał kanały pionowe — AC gain 0.75 był
         „patologiczny" wbrew LLN). saccadeAmp/overt/covert bez zmian (rysują, nie orzekają).
+        RODOWÓD POPRAWIONY W E3a (2026-08-22): stało tu „(McGarvie 2015)", czyli nazwisko bez numeru,
+        przypisane WSZYSTKIM TRZEM liczbom. Poprawnie: HC 0,8 to zaokrąglona w górę dolna granica
+        normy z noty 5 [H19] Strupp 2017 (0,79 przy 80 ms), a liczba 0,7 dla kanałów PIONOWYCH nie ma
+        pokrycia w żadnej pracy ICVD — ta sama nota mówi, że rolę gain kanałów pionowych „has to be
+        further evaluated". Zostawienie tu nazwiska przeczyłoby komentarzowi przy GAIN_CUT w kodzie.
      #A7 bramka stosowalności GRACE-3: hints() zwraca applicable=hasSpont + verdictNote („poza AVS — werdykt
         instrumentalny"); karta werdyktu drukuje notę. Preset vmInterictal (SCENARIOS, episodic:true; w UI
         przycisk „vmi") — migrena przedsionkowa międzynapadowo: badanie CAŁKOWICIE prawidłowe (s-EVS,
@@ -4070,12 +4075,37 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
         zestaw kryteriów A–D, BEZ postaci pewnej/prawdopodobnej/możliwej.
         PRÓG WIEKU: 60 lat i więcej. PRÓG CZYNNOŚCIOWY: gain poziomego VOR w przedziale 0,6–0,8 —
         czyli MIĘDZY normą a progiem obustronnej westybulopatii z [H19].
-        KONFLIKT PROGÓW, KLUCZOWY DLA SILNIKA: trzy prace ICVD definiują ten sam ubytek kanału
-        poziomego trzema różnymi liczbami, na trzech różnych statystykach i przy różnych albo
-        NIEPODANYCH protokołach bodźca — [H19] BVP < 0,6 (suma maksimów), ta praca 0,6–0,8 (suma
-        średnich), [H59] AUVP < 0,7 (pojedyncza odpowiedź). Silnik ma dziś BVP_CUT 0,6 oraz
-        GAIN_CUT {HC 0,8; pionowe 0,7} opisane nazwiskiem bez numeru. Rozstrzygnięcie = decyzja D1
-        w przesiew_icvd.md; do jej podjęcia ŻADNEGO z tych progów nie wolno przypisać tej pracy.
+        RZEKOMY KONFLIKT PROGÓW — ROZSTRZYGNIĘTY 2026-08-22 (D1), I ZGŁOSZENIE BYŁO ŹLE POSTAWIONE,
+        tak samo jak przy D2. Zgłoszono, że trzy prace definiują ten sam ubytek trzema liczbami na
+        trzech różnych statystykach. Sprawdzone u źródła, kryterium po kryterium:
+        (1) KRYTERIA GAIN NIE NAZYWAJĄ STATYSTYKI W OGÓLE. [H19] kryt. C: „gain <0,6, measured by the
+            video-HIT or scleral-coil technique"; ta praca kryt. B.1: „VOR gain measured by video-HIT
+            between 0.6 and 0.8 bilaterally". Ani słowa o sumach. Przypisanie „suma maksimów" wobec
+            [H19] i „suma średnich" wobec tej pracy było NASZĄ pomyłką — te określenia należą do osi
+            KALORYCZNEJ, nie do gain.
+        (2) NA OSI KALORYCZNEJ OBIE LINIE KRYTERIÓW UŻYWAJĄ TEJ SAMEJ STATYSTYKI i dlatego PRZYLEGAJĄ:
+            [H19] kryt. C — „sum of bithermal max. peak SPV on each side <6°/sec"; ta praca kryt. B.3 —
+            „sum of bithermal maximum peak SPV on each side between 6 and 25°/sec". Ta sama wielkość,
+            ta sama krawędź 6. To NIE są progi konkurujące, tylko PASMA NASILENIA zbudowane celowo.
+        (3) TO SAMO NA OSI GAIN: BVP <0,6, presbywestybulopatia 0,6–0,8.
+            ZASTRZEŻENIE, BEZ KTÓREGO PUNKTY (2) I (3) SĄ ZA MOCNE: ta praca podaje TRZY RÓŻNE
+            operatory brzegowe dla własnych progów — abstrakt „<0.8 and >0.6" oraz „<25°/s and >6°/s"
+            (oba ostre), kryteria „between ... and ..." (nierozstrzygające), dyskusja „>=0.6 and <0.8"
+            (dolny domknięty). Pasma przylegają, ale JEDYNA nieciągłość jest WEWNĄTRZ tej pracy: przy
+            odczycie z abstraktu wartości dokładnie 0,600 i dokładnie 6°/s nie należą do żadnego pasma.
+            Konfliktu MIĘDZY [H19] a tą pracą nie ma — i to jest właściwe brzmienie rozstrzygnięcia.
+        (4) [H59] AUVP 0,7 nie było kryterium już po D2. Na osi kalorycznej podpina „<6°/s" pod sumę
+            ŚREDNICH szczytowych SPV — ale TO NIE JEST trzecia statystyka i pierwsza wersja tego zapisu
+            twierdziła inaczej BŁĘDNIE. Rozjazd biegnie WEWNĄTRZ [H19]: jego linia kryterium mówi
+            „max. peak", a jego WŁASNA nota 6 — ta sama, do której kryterium odsyła — wyprowadza liczbę
+            6 ze ŚREDNICH („the sum of the mean SPV ... per ear ... <6°/sec can therefore be considered
+            a safe criterion"). [H59] powtarza czytanie noty 6, nie zaprzecza mu.
+        SKUTEK DLA SILNIKA — ŻADNEJ LICZBY NIE ZMIENIONO, zmieniono RANGĘ i RODOWÓD. GAIN_CUT {HC 0,8}
+        to ZAOKRĄGLONA W GÓRĘ dolna granica normy z noty 5 [H19] (0,79 przy 80 ms, 0,75 przy 60 ms na
+        60 zdrowych), a nie kryterium; BVP_CUT 0,6 to kryterium C [H19], ustawione przez komitet
+        świadomie NIŻEJ od granicy normy. Obie liczby silnika są zarazem obiema krawędziami pasma tej pracy. GAIN_CUT dla kanałów
+        PIONOWYCH (0,7) pozostaje BEZ POKRYCIA: nota 5 [H19] mówi, że rolę gain kanałów pionowych
+        „has to be further evaluated" — to wybór kalibracyjny silnika i tak jest oznaczony w kodzie.
         GRANICA: użycie przedziału „between 0.6 and 0.8" zamiast operatorów ostrych sprawia, że
         gain dokładnie 0,600 wypada z klasyfikacji — patrz konflikt progów w przesiew_icvd.md.
 

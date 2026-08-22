@@ -171,13 +171,40 @@ Silnik ma dziś `BVP_CUT = 0.6` **oraz** `GAIN_CUT {HC 0.8, pionowe 0.7}` opisan
 „McGarvie 2015 (bez numeru w tej bibliografii)". Trzy liczby w źródłach, dwie w silniku, żadna
 nie jest wprost przypisana do właściwego dokumentu ICVD. **Etap E3, wymaga decyzji użytkownika.**
 
-> **D2 ZMIENIŁ CZYTANIE TEJ TABELI (2026-08-21, `4db7a97`).** Wiersz AUVP `< 0,7` **nie jest
-> kryterium**: kryterium C tej pracy brzmi jakościowo i nie zawiera ani jednej liczby, a komitet
-> wprost odsyła do norm pracowni (patrz §4.1 D2). Po tym rozstrzygnięciu **D1 dotyczy dwóch, nie
-> trzech liczb** — `[H19] < 0,6` i `[H53] 0,6–0,8` — a te dwie nie konkurują ze sobą, tylko
-> **sąsiadują jako pasma nasilenia**. Zostaje pytanie o zastrzeżenie, że stoją na nieporównywalnych
-> statystykach (suma maksimów vs suma średnich). Silnik nadal odsyła tutaj: `engine_doc.txt`
-> przy wpisie `[H53]` mówi „patrz konflikt progów w przesiew_icvd.md".
+> **CAŁA TA TABELA CZYTA SIĘ DZIŚ INACZEJ — D1 ROZSTRZYGNIĘTY 2026-08-22, ZGŁOSZENIE BYŁO ŹLE
+> POSTAWIONE.** Nagłówek „na trzech różnych statystykach" **nie broni się u źródła**, a zdanie
+> o „nieporównywalnych statystykach", które stało w tym miejscu do 2026-08-22, było **naszą
+> pomyłką dwukrotnie**: te określenia należą do osi kalorycznej, nie do gain, a na osi kalorycznej
+> obie prace liczą **tak samo**.
+>
+> 1. **Same linie kryteriów gain statystyki nie nazywają** — `[H19]` kryt. C mówi tylko „measured by
+>    the video-HIT or scleral-coil technique"; `[H53]` kryt. B.1 — „measured by video-HIT". **Ale nie
+>    są statystycznie nieme: one odsyłają.** Kryterium C niesie przypis 5, a nota 5 nazywa **dwie**
+>    alternatywne wielkości — iloraz prędkości kątowych albo iloraz pól pod krzywą (AUC).
+> 2. **Na osi kalorycznej obie linie kryteriów używają tej samej wielkości** — „sum of bithermal
+>    **maximum** peak SPV on each side" — i dlatego **przylegają**: `[H19]` poniżej 6, `[H53]` od 6 do 25.
+> 3. **Na osi gain tak samo:** BVP < 0,6, presbywestybulopatia 0,6–0,8.
+> 4. **Zastrzeżenie, bez którego punkty 2–3 są za mocne:** `[H53]` podaje **trzy różne operatory
+>    brzegowe** dla własnych progów — abstrakt „< 0.8 and > 0.6" (ostre), kryteria „between…and…"
+>    (nierozstrzygające), dyskusja „≥ 0.6 and < 0.8" (dolny domknięty). Pasma przylegają, ale jedyna
+>    nieciągłość jest **wewnątrz `[H53]`**: w odczycie z abstraktu wartości dokładnie 0,600 i dokładnie
+>    6°/s nie należą do żadnego pasma. Konfliktu **między** pracami nie ma — i to jest właściwe
+>    brzmienie rozstrzygnięcia.
+> 5. **`[H59]` nie wnosi trzeciej statystyki** — pierwsza wersja tej notatki twierdziła inaczej i była
+>    błędna. Rozjazd biegnie **wewnątrz `[H19]`**: linia kryterium mówi „max. peak", a jego **własna
+>    nota 6** — ta, do której kryterium odsyła — wyprowadza liczbę 6 ze **średnich**. `[H59]` powtarza
+>    czytanie noty 6, nie zaprzecza mu.
+>
+> **Skutek: żadnej liczby w silniku nie zmieniono** (E3a, `snapshot:check` bit w bit). Zmieniono rangę
+> i rodowód — `GAIN_CUT {HC 0,8}` to **zaokrąglona w górę** dolna granica normy z noty 5 `[H19]`
+> (0,79 przy 80 ms; przy 60 ms nota daje 0,75, a dolna wartość prawidłowa u zdrowego sięga 0,65),
+> nie kryterium; `BVP_CUT 0,6` to kryterium C, ustawione świadomie **niżej**. Obie liczby silnika
+> okazały się zarazem **obiema krawędziami pasma** `[H53]`.
+>
+> Kanały pionowe 0,7 — **meldunek zero**, i to jest **najcięższy próg w tym bloku**, nie przypis:
+> jest jedyną bramką osi pionowej i wchodzi do dwóch osi werdyktu, przy czym do `isolatedVertical`
+> **przez negację**. Próg za wysoki **maskuje** znak ośrodkowy, za niski go **fabrykuje**. Zmierzone:
+> werdykt przeskakuje central↔peripheral dokładnie na 0,70.
 
 ### 3.4. AUVP 2022 przeczy sama sobie
 
@@ -226,7 +253,7 @@ Pełne opisy z obiema stronami, liczbami i wariantami rozstrzygnięcia: `icvd-ko
 
 | # | Konflikt | Warianty |
 |---|---|---|
-| **D1** | **Próg gain vHIT: 0,6 / 0,7 / 0,6–0,8** (§3.3) | (a) próg per jednostka, z jawnym wskazaniem pracy przy każdym; (b) jeden próg silnika + nota o rozrzucie; (c) próg per jednostka **i** ostrzeżenie, że statystyki nie są porównywalne |
+| ~~**D1**~~ | ~~**Próg gain vHIT: 0,6 / 0,7 / 0,6–0,8**~~ (§3.3) — **ROZSTRZYGNIĘTE 2026-08-22: pytanie było ŹLE POSTAWIONE** | Trzy prace **nie** definiują tego samego ubytku trzema statystykami: kryteria gain nie nazywają statystyki w ogóle, a na osi kalorycznej `[H19]` i `[H53]` używają **tej samej** i **przylegają** (poniżej 6 / od 6 do 25). Żadnej liczby nie zmieniono; zmieniono rangę i rodowód — `GAIN_CUT {HC 0,8}` to **dolna granica normy** z noty 5 `[H19]`, nie kryterium. Kanały pionowe 0,7 zostają jawnym **meldunkiem zero**. Etap E3a. |
 | ~~**D2**~~ | ~~**AUVP: alternatywa czy koniunkcja**~~ — **ROZSTRZYGNIĘTE 2026-08-21** | **Pytanie okazało się źle postawione.** Po przeczytaniu obu miejsc wraz z kryteriami: **żadna z tych liczb nie jest kryterium**. Kryterium C brzmi jakościowo („jednoznaczny dowód obniżonej czynności VOR") i nie zawiera liczby; komitet wprost mówi, że **nie ma zgody co do wartości odcięcia** i że trzeba opierać się na **normach pracowni**. Nota 12 sama nazywa swoje liczby „working approximation". Oba czytania odpowiadają przy tym na **różne pytania** (patologia w obu badaniach vs istotny ubytek w samym vHIT). Zapisane jako przybliżenia robocze; **żaden próg nie wchodzi do silnika jako kryterialny** — i to jest zalecenie pracy, nie nasz wybór. Wyszedł przy okazji warunek, którego nie miało żadne ze zgłoszonych czytań: **„powinny też wystąpić sakady"**. |
 | **D3** | **„Probable" znaczy w ICVD co najmniej siedem różnych rzeczy** — w dwóch pracach tego samego pierwszego autora znaczy rzeczy **przeciwne** (BVP 2017: dodatnie znalezisko przyłóżkowe; AUVP 2022: **brak** znaleziska) | (a) nie tłumaczyć jednym słowem — każda jednostka niesie własną definicję; (b) wprowadzić słownik OTOREPO i jawnie odstąpić od terminu źródła; (c) używać wyłącznie cytatu z konkretnej pracy |
 | ~~**D4**~~ | ~~**Kanał przedni 61,25 s vs kryterium „< 1 min"**~~ (§3.5) — **ROZSTRZYGNIĘTE 2026-08-21: wariant (a)** | **Fizyka zostaje, rozbieżność nazwana.** Napad jest emergentny (złóg startuje przy osklepku), a nie strojony pod liczbę; chip „Przemijający (≈1 min)" mówi prawdę o własnym modelu. Zapisane w `ae36e0a`. |
@@ -361,18 +388,47 @@ to jest różnicownik, którego silnik **używa**.
 
 ---
 
-### E3 — Progi ilościowe NeuroVOR · *wymaga decyzji D1 (D2 rozstrzygnięte)*
+### E3 — Progi ilościowe NeuroVOR · **E3a ZROBIONE (D1), reszta ZOSTAJE**
 
 **Cel.** Przypisać każdemu progowi silnika właściwy dokument ICVD albo jawnie nazwać, że progu
 w ICVD nie ma.
 
 **Zakres.** `GAIN_CUT`, `BVP_CUT`, `CAL_BILAT`, `VEMP_AR`, progi kaloryczne i fotela obrotowego.
-Nazwiska bez numeru do rozstrzygnięcia: **McGarvie 2015**, **Rosengren 2019**, **Lee 2006**,
+Nazwiska bez numeru do rozstrzygnięcia: ~~**McGarvie 2015**~~ (zdjęty w E3a — wartości niesie nota 5
+`[H19]`, a pionowe 0,7 nie ma pokrycia), **Rosengren 2019**, **Lee 2006**,
 **Lacour 2020** — każde albo dostaje `[Hnn]`, albo znika jako cytat.
 
 **Dowód.** **Fizyka bit-w-bit** — jeśli decyzja D1 nie zmienia liczb, `snapshot:check` ma dać
 diff pusty, a ruszyć wyłącznie tekst. Wzorzec V27a/V27b: poprawka merytoryczna **darmowa**.
 Jeśli D1 zmienia liczbę — rebaseline z dowodem zakresu i osobnym commitem.
+
+> **E3a ZROBIONE (2026-08-22).** Przewidywanie się sprawdziło: D1 **nie zmienił żadnej liczby**,
+> `snapshot:check` identyczny ze złotym wzorcem, ruszył wyłącznie tekst.
+>
+> **Kontrola adwersaryjna obaliła trzy twierdzenia pierwszej wersji tego etapu** i wszystkie trzy
+> zostały poprawione: (a) „kryteria gain nie nazywają statystyki" — za mocne, kryterium **deleguje**
+> ją przypisem do noty; (b) „`[H59]` to jedyny realny rozjazd" — nieprawda, rozjazd biegnie
+> **wewnątrz `[H19]`**; (c) „silnik liczy jak `[H19]`/`[H53]` (suma maksymalnych)" — **nierozstrzygalne
+> w tym modelu**: silnik ma jedną nominalną szczytową na irygację, więc nie ma zbioru, z którego
+> można wziąć maksimum albo średnią. Komentarz deklarował przynależność metrologiczną, której kod
+> nie może wyrazić.
+>
+> **Domknięte przy okazji:** `CP_THRESH = 25` dostał pokrycie, które leżało **w tym samym zdaniu
+> `[H59]`**, z którego wzięto próg 6°/s — pierwsza wersja wzięła z niego tylko połowę. Usunięte też
+> dwa **osierocone odsyłacze do „McGarvie 2015"** w `engine_doc` (obie wersje językowe), które
+> przypisywały mu wszystkie trzy liczby, w tym pionowe 0,7 właśnie ogłoszone bez pokrycia.
+>
+> **DŁUG ZNALEZIONY PRZEZ KONTROLĘ, NIEZAMKNIĘTY — MARTWE POLE BRAMKI.** Cała ta zmiana w `engine_doc`
+> leży jako wiersze **wcięte pod wpisem `[H53]`**, a parser `bibliografia()` dokleja każdy taki wiersz
+> do *definicji wpisu* i pomija go w zliczaniu. Skutek: `zrodla:check` **nie czyta** tego fragmentu —
+> nie liczy cytowań, nie sprawdza zgodności numer↔nazwisko, nie porównuje lustra PL/EN. Sonda
+> rozstrzygająca: wstrzyknięte celowo błędne `[H19] Kattah 2009` przechodzi na zielono. Lustro
+> faktycznie się rozjechało (`[H19]` PL 20 / EN 19) i zostało **wyrównane ręcznie** — bramka tego nie
+> złapała. To jest osobna naprawa, do rozstrzygnięcia: rozszerzyć parser czy przenieść prozę poza wpis.
+>
+> **Zostaje z E3:** `VEMP_AR` i `VEMP_THRESH` (norma pracowniana **poza korpusem ICVD** — żaden z 19
+> dokumentów progu asymetrii VEMP nie stanowi; `[H56]` wprost każe ustalać odcięcia per pracownia),
+> progi fotela obrotowego oraz nazwiska bez numeru: **Rosengren 2019**, **Lee 2006**, **Lacour 2020**.
 
 ---
 

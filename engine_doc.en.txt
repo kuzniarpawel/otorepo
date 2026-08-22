@@ -2730,9 +2730,14 @@ VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Sc
         with failsSuppression + a localization branch "isolated failure of fixation suppression — cerebellum (flocculus)".
         An INTENDED divergence: a pure flocculus lesion without nystagmus has hints="normal" (HINTS requires AVS)
         alongside an instrumental floccular localization — the bedside verdict and the localization are different axes.
-     #A6 the vHIT criterion on GAIN per canal: GAIN_CUT={HC:0.8, AC:0.7, PC:0.7} (McGarvie 2015) instead of a threshold
+     #A6 the vHIT criterion on GAIN per canal: GAIN_CUT={HC:0.8, AC:0.7, PC:0.7} instead of a threshold
         on the saccade amplitude (it drifted with headAmp; over-called the vertical canals — an AC gain of 0.75 was
         "pathological" against the LLN). saccadeAmp/overt/covert unchanged (they draw, they do not adjudicate).
+        PROVENANCE CORRECTED IN E3a (2026-08-22): this used to read "(McGarvie 2015)", a surname with no
+        number, attributed to ALL THREE figures. Correctly: HC 0.8 is the rounded-up lower limit of normal
+        from note 5 of [H19] Strupp 2017 (0.79 at 80 ms), and the figure 0.7 for the VERTICAL canals has no
+        coverage in any ICVD paper — that same note says the role of vertical-canal gain "has to be further
+        evaluated". Leaving the surname here would contradict the comment at GAIN_CUT in the code.
      #A7 the GRACE-3 applicability gate: hints() returns applicable=hasSpont + verdictNote ("outside AVS — an
         instrumental verdict"); the verdict card prints the note. Preset vmInterictal (SCENARIOS, episodic:true; the
         "vmi" button in the UI) — vestibular migraine between attacks: the examination COMPLETELY normal (s-EVS,
@@ -4311,13 +4316,38 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
         A–D, with NO definite/probable/possible forms.
         AGE THRESHOLD: 60 years and over. FUNCTIONAL THRESHOLD: horizontal VOR gain in the range
         0.6–0.8 — that is, BETWEEN normal and the bilateral-vestibulopathy threshold of [H19].
-        THE THRESHOLD CONFLICT, CRITICAL FOR THE ENGINE: three ICVD papers define the same horizontal
-        canal deficit with three different numbers, on three different statistics and under differing
-        or UNSTATED stimulus protocols — [H19] BVP < 0.6 (sum of peaks), this paper 0.6–0.8 (sum of
-        means), [H59] AUVP < 0.7 (a single response). The engine today holds BVP_CUT 0.6 and
-        GAIN_CUT {HC 0.8; vertical 0.7}, the latter attributed to a surname with no number.
-        Resolution = decision D1 in przesiew_icvd.md; until it is taken, NONE of these thresholds may
-        be attributed to this paper.
+        THE SUPPOSED THRESHOLD CONFLICT — SETTLED 2026-08-22 (D1), AND THE REPORT WAS BADLY POSED,
+        just as it was for D2. The claim was that three papers define the same deficit with three
+        numbers on three different statistics. Checked at the source, criterion by criterion:
+        (1) THE GAIN CRITERIA NAME NO STATISTIC AT ALL. [H19] crit. C: „gain <0.6, measured by the
+            video-HIT or scleral-coil technique"; this paper crit. B.1: „VOR gain measured by video-HIT
+            between 0.6 and 0.8 bilaterally". Not a word about sums. Attributing „sum of peaks" to
+            [H19] and „sum of means" to this paper was OUR error — those descriptors belong to the
+            CALORIC axis, not to gain.
+        (2) ON THE CALORIC AXIS BOTH CRITERION LINES USE THE SAME STATISTIC, which is why they ABUT:
+            [H19] crit. C — „sum of bithermal max. peak SPV on each side <6°/sec"; this paper crit. B.3 —
+            „sum of bithermal maximum peak SPV on each side between 6 and 25°/sec". Same quantity,
+            same edge at 6. These are not competing thresholds but deliberately built SEVERITY BANDS.
+        (3) THE SAME HOLDS ON THE GAIN AXIS: BVP <0.6, presbyvestibulopathy 0.6–0.8.
+            THE CAVEAT WITHOUT WHICH (2) AND (3) ARE TOO STRONG: this paper gives THREE DIFFERENT
+            boundary operators for its own thresholds — the abstract „<0.8 and >0.6" and „<25°/s and
+            >6°/s" (both strict), the criteria „between ... and ..." (undecided), the discussion
+            „>=0.6 and <0.8" (lower bound closed). The bands abut, but the ONE discontinuity lies
+            INSIDE this paper: on the abstract's reading, exactly 0.600 and exactly 6°/s belong to no
+            band at all. There is no conflict BETWEEN [H19] and this paper — that is the correct wording.
+        (4) [H59] AUVP 0.7 ceased to be a criterion at D2. On the caloric axis it pins „<6°/s" to the sum
+            of MEAN peak SPV — but that is NOT a third statistic, and the first version of this entry
+            claimed otherwise IN ERROR. The divergence runs INSIDE [H19]: its criterion line says
+            „max. peak", while its OWN note 6 — the very note the criterion refers to — derives the
+            figure 6 from MEANS („the sum of the mean SPV ... per ear ... <6°/sec can therefore be
+            considered a safe criterion"). [H59] repeats note 6's reading; it does not contradict it.
+        CONSEQUENCE FOR THE ENGINE — NO NUMBER WAS CHANGED; RANK and PROVENANCE were. GAIN_CUT {HC 0.8}
+        is the ROUNDED-UP LOWER LIMIT OF NORMAL from note 5 of [H19] (0.79 at 80 ms, 0.75 at 60 ms in 60
+        healthy subjects), not a criterion; BVP_CUT 0.6 is criterion C of [H19], set by the committee
+        deliberately BELOW the limit of normal. Both engine numbers are also the two edges of this
+        paper's band. GAIN_CUT for the VERTICAL canals (0.7) remains WITHOUT COVERAGE: note 5 of [H19]
+        says the role of vertical-canal gain „has to be further evaluated" — it is an engine calibration
+        choice and is labelled as such in the code.
         BOUNDARY: the use of the range "between 0.6 and 0.8" rather than strict operators means that
         a gain of exactly 0.600 falls outside the classification — see the threshold conflict in
         przesiew_icvd.md.

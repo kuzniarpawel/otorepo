@@ -404,7 +404,36 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 205;  /* 2026-08-21, etap D-CZAS (decyzja uzytkownika): 194 -> 205.
+const OCZEKIWANE = 214;  /* 2026-08-22, etap E3a (decyzja uzytkownika D1): 205 -> 214.
+                            DZIEWIEC cytowan netto, ROZLOZONE NA DWA PLIKI — zmierzone przez
+                            podstawianie wersji z HEAD, nie oszacowane. Pomiar jest ADDYTYWNY:
+                              pelna zmiana 214 | bez neuro-vor.js 207 (czyli silnik wnosi +7)
+                                              | bez engine_doc  212 (czyli dokumentacja wnosi +2)
+                              205 + 7 + 2 = 214.
+                            SILNIK, src/engine/neuro-vor.js: dodano OSIEM cytowan z oznaczeniem —
+                            przy GAIN_CUT trzy ("[H19] Strupp 2017" nota 5 z granica normy,
+                            "[H53] Agrawal 2019" pasmo presbywestybulopatii, "[H59] Strupp 2022"
+                            brak zgody co do odciecia), przy CAL_BILAT trzy (te same prace przy
+                            zapisie STATYSTYKI), przy CP_THRESH jedno ("[H59] Strupp 2022" — prog
+                            25% lezal w TYM SAMYM zdaniu zrodla co prog 6°/s) i jedno w miejscu
+                            uzycia orzekajacego ("[H19] Strupp 2017"). USUNIETO jedno ("[H19] Strupp
+                            2017" ze starego komentarza uzycia). 8 - 1 = 7.
+                            DOKUMENTACJA, engine_doc.txt + .en.txt: +2, po jednym "[H19] Strupp 2017"
+                            w kazdym lustrze — nota przy #A6, ktora zastapila OSIEROCONY odsylacz
+                            "(McGarvie 2015)" przypisujacy temu nazwisku WSZYSTKIE TRZY liczby,
+                            w tym pionowe 0,7 ogloszone w tym samym etapie bez pokrycia.
+                            UWAGA NA PRZYSZLOSC — POMIAR ZLAPAL WLASNA POMYLKE: pierwsza wersja tego
+                            komentarza mowila "6, wszystkie w neuro-vor.js, engine_doc wnosi zero, bo
+                            numery juz tam byly". Liczba byla prawdziwa, UZASADNIENIE FALSZYWE. Zmiany
+                            w engine_doc lezaly wtedy WEWNATRZ wpisu [H53] jako wiersze wciete, a
+                            bibliografia() dokleja kazdy taki wiersz do DEFINICJI wpisu, wiec zbierz()
+                            go POMIJA — bramka tamtego fragmentu W OGOLE NIE CZYTA (nie liczy cytowan,
+                            nie sprawdza zgodnosci numer-nazwisko, nie porownuje lustra PL/EN).
+                            Dowod: wstrzykniete tam celowo bledne "[H19] Kattah 2009" przechodzi na
+                            zielono. Dlug zapisany w przesiew_icvd.md przy etapie E3a.
+                            ZADNEJ LICZBY PROGU NIE ZMIENIONO: snapshot:check identyczny ze zlotym
+                            wzorcem. Zmieniono RANGE (granica normy vs kryterium) i RODOWOD.
+                            2026-08-21, etap D-CZAS (decyzja uzytkownika): 194 -> 205.
                             JEDENASCIE nowych cytowan z oznaczeniem, wszystkie w triage-model.js
                             i w obu jezykach: nowy wezel CVS niesie "[H61] Kaski 2025" (zrodlo osi
                             trzech zespolow kardynalnych) oraz "[H50] Staab 2017", "[H19] Strupp 2017"
