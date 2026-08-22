@@ -1,7 +1,8 @@
 # WERYFIKACJA EKSTRAKCJI ICVD — ZAPIS KONTROLI
 
-Dokument roboczy gałęzi `claude/icvd-diagnostic-criteria-203f6a`. Towarzyszy `przesiew_icvd.md`:
-tamten mówi, **co znaleziono i co z tym zrobić**, ten mówi, **czym to sprawdzono**.
+Towarzyszy `przesiew_icvd.md`: tamten mówi, **co znaleziono i co z tym zrobić**, ten mówi,
+**czym to sprawdzono**. Napisany na gałęzi `claude/icvd-diagnostic-criteria-203f6a`, **stoi na `main`
+od commita `24d9518`** (2026-08-22) — razem z `przesiew_icvd.md`.
 
 Dokument NIE zmienia ani jednej linii kodu. Nie czyta go żadna bramka — jak `przesiew_icvd.md`,
 jest zapisem dla człowieka. Lustra EN świadomie nie ma, z tego samego powodu co przy `przesiew_icvd.md`:

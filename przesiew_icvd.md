@@ -1,10 +1,16 @@
 # PRZESIEW OTOREPO WOBEC KRYTERIÓW ICVD BÁRÁNY SOCIETY
 
-Dokument roboczy gałęzi `claude/icvd-diagnostic-criteria-203f6a`. Powstał 2026-08-21 z kwerendy
-**wszystkich 19 dokumentów konsensusu i stanowisk ICVD** wymienionych na stronie Bárány Society,
-przeczytanych w pełnym tekście pierwotnym.
+Powstał 2026-08-21 z kwerendy **wszystkich 19 dokumentów konsensusu i stanowisk ICVD** wymienionych
+na stronie Bárány Society, przeczytanych w pełnym tekście pierwotnym. Napisany na gałęzi
+`claude/icvd-diagnostic-criteria-203f6a`, **od 2026-08-21 stoi na `main`** — scalenie fast-forward
+`5035f09` → `b6e5203`, potem `24d9518`. Nie jest już dokumentem gałęzi roboczej, tylko zapisem
+przesiewu w linii głównej.
 
 Dokument NIE zmienia ani jednej linii kodu. Jest wejściem do decyzji użytkownika i mapą etapów.
+
+**Konwencja aktualizacji.** Znaleziska i pomiary otwierające zostają w brzmieniu pierwotnym,
+a to, co je zamknęło, dopisuje się obok — z datą i numerem commita. Zapis zmiany, nie zacieranie
+śladu. Gdy pomiar późniejszy wyszedł **inaczej** niż otwierający, mówi się to wprost (§3.2).
 
 ---
 
@@ -35,11 +41,43 @@ własny `README.md`): `zrodla-pelny-tekst/` · `ekstrakcje/` (19 plików `NN-*.m
 `mapa-programu/` (5 audytów) · `konflikty/` (4 pliki) · `plany/` · `narzedzia/`.
 **Zapis samej kontroli wrócił do repozytorium:** `weryfikacja_ekstrakcji_icvd.md`.
 
+### 1.1. STAN WYKONANIA — 2026-08-22
+
+**Dwanaście commitów przesiewu na `main`**, `ee08f99`..`24d9518`, wypchniętych na `origin/main`
+(commit, który dopisuje tę sekcję, jest trzynasty i sam niczego merytorycznie nie zmienia —
+doprowadza ten dokument do zgodności z tym, co już się wykonało).
+
+| Etap / decyzja | Commit | Co zrobił |
+|---|---|---|
+| **E0** | `ee08f99` | bibliografia `[H47]`–`[H61]` + rozdział MAPA POKRYCIA ICVD |
+| **E1** | `ae36e0a` | rozdział KRYTERIA BPPV, `[H48]` przy trzech odsyłaczach, rodowód pamięciowy usunięty, etykieta tier naprawiona |
+| **E4a** | `ca8a649` | kryteria Ménière'a pod istniejący pusty numer `[H20]` + naprawiony błąd atrybucji |
+| **E5a** | `e446f1c` | dwie fałszywe komórki karty GRACE |
+| **D-REP · D-ATX · D-CPN** | `1223f25` | trzy twierdzenia sprowadzone do brzmienia źródeł; nowy `src/app/cpn-model.js` |
+| **D-MRI** | `96d9fa8` | interwał „48–72 h" (nasz, nie źródłowy) zastąpiony liczbami `[H58]` |
+| **D2** | `4db7a97` | AUVP — rozstrzygnięcie, patrz §4.1 |
+| **D-CZAS** | `b50d7d2` + `c3ebf18` | oś czasu sprowadzona do `[H61]`; piąte pytanie kwalifikacji + naprawa unieważnionych fikstur |
+| **E1-DŁUG** | `5a93ea1` | luka golden domknięta, `barany:check` 49 → 61 |
+| *(zapis)* | `b6e5203`, `24d9518` | oba długi opisane; `weryfikacja_ekstrakcji_icvd.md` wraca do repozytorium |
+
+**Zostaje z planu:** **E2** (częściowo wyprzedzony przez D-CPN — patrz §3.2) · **E3** (czeka na D1) ·
+**E4b** (AUVP) · **E5** (kwalifikacja) · **E6** (czeka na D6) · **E7** (słownik).
+
+**Otwarte decyzje użytkownika — siedem:** D1 (progi gain, zreformułowany po D2 — §3.3) ·
+D3 („probable") · D6 (zakres 10 nieobecnych jednostek) · **D-5D** (twierdzenie „5 D" bez pokrycia
+w korpusie) · **D-ORTO** (rozgraniczenie z hemodynamicznymi zawrotami ortostatycznymi) ·
+**D-MEN** (12 h vs 24 h) · **D-CT** (program mówi „CT NIE nadaje się", a `[H58]` dodaje wskazanie
+do wykrywania krwotoków — połowa wskazująca zgubiona).
+
+Rozstrzygnięte w trakcie: D2 (§4.1) · D4 (§3.5) · D5 (§4.1) · D7 (§4.2).
+
 ---
 
 ## 2. CO POKAZAŁ POMIAR
 
-Trzy liczby, wszystkie zmierzone grepem po repozytorium, nie oszacowane:
+Trzy liczby, wszystkie zmierzone grepem po repozytorium, nie oszacowane. **To jest pomiar
+OTWIERAJĄCY, z 2026-08-21** — dwanaście commitów, które po nim poszły, część tych miejsc już
+opatrzyło numerem; liczby zostają tu jako punkt odniesienia, nie jako stan bieżący:
 
 > **469** miejsc w programie wypowiada się o jednostce chorobowej albo o kryterium rozpoznania.
 > **386 z nich (82%) nie ma przy sobie numeru źródła `[Hnn]`.**
@@ -84,6 +122,11 @@ sekcji — czyli **bramka pilnuje zgodności z dokumentem, którego nie ma**.
 To ta sama dziura, którą V28 zamknął dla migreny przedsionkowej — tyle że pod funkcją rdzeniową,
 a nie pod kartą pomocniczą. **Etap E1.**
 
+> **ZAMKNIĘTE — E1, `ae36e0a` (2026-08-21).** Rozdział `KRYTERIA BPPV` powstał (wszystkie osiem
+> podtypów 2.1–2.4 i 3.1–3.4 z kryteriami i przypisami), `[H48]` stoi przy `baranyClassify`,
+> przy karcie i w `tools/barany-check.mjs`, a rodowód „pamięć otoneurologiczna" został usunięty
+> z `view_doc.txt`, lustra EN i `todo.txt` — z zachowaniem noty, **co** tam stało.
+
 ### 3.2. Czerwone flagi CPN — sześć kryteriów, dwa pliki, zero źródeł, i BLOKUJĄ LECZENIE
 
 `svg-screens.js:2675-2680` oraz `obs-model.js:505-513` niosą **tę samą treść w dwóch niezależnych
@@ -95,6 +138,23 @@ klasyfikacji oczopląsu ICVD (Eggers 2019, 114 tys. znaków, najbogatsze źród�
 
 Najwyższe ryzyko kliniczne w całym przesiewie: **twierdzenie, które zatrzymuje leczenie, nie ma
 źródła i istnieje w dwóch kopiach, które mogą się rozejść.** Etap E2.
+
+> **CZĘŚCIOWO ZAMKNIĘTE — D-CPN, `1223f25` (2026-08-21) — a pomiar wyszedł GORZEJ, niż tu napisano.**
+> Literałów było **pięć**, nie dwa (karta diagnostyki, `FLAGI` modelu obserwacji, proza przy schemacie
+> downbeatu, skrót na karcie GRACE, `view_doc`) — i **już się rozeszły**: siedem różnic, z czego trzy
+> zmieniały treść kliniczną. Najcięższa: karta wypisywała „bez latencji" / „uporczywy" / „niemęczliwy"
+> jako trzy **niezależne** czerwone flagi, podczas gdy `obs-model.js` od dawna ma regułę odwrotną —
+> ta triada sama jest opisem **kupulolitiazy** i ostrzega dopiero w towarzystwie innych cech.
+>
+> Treść kliniczna karty pochodzi odtąd **wyłącznie** z `src/app/cpn-model.js`; każdy trop niesie
+> w polu `zrodlo` numer pracy, która go **naprawdę** niesie (`[H51]` Eggers 2019, `[H48]` von Brevern
+> 2015), a trzy tropy bez pokrycia świadomie numeru **nie dostają**. Rozjazd treści jest więc
+> strukturalnie niemożliwy — to było pkt 3 etapu E2.
+>
+> **Co zostaje dla E2:** rozdział klasyfikacji oczopląsu w bazie wiedzy (pkt 1) · źródła przy `FLAGI`
+> w `obs-model.js` (pkt 2 — zmierzone: `[Hnn]` **0 trafień** w tym pliku; D-CPN zostawił go bajt
+> w bajt, bo to on **liczy** i jest bramkowany 942 przypadkami `obs:check`) · kontrola nazewnictwa
+> odradzanego przez Eggersa (pkt 4).
 
 ### 3.3. Oś progów ilościowych pęka najmocniej — funkcja kanału poziomego
 
@@ -110,6 +170,14 @@ statystykach, przy trzech różnych albo **niepodanych** protokołach bodźca:
 Silnik ma dziś `BVP_CUT = 0.6` **oraz** `GAIN_CUT {HC 0.8, pionowe 0.7}` opisane jako
 „McGarvie 2015 (bez numeru w tej bibliografii)". Trzy liczby w źródłach, dwie w silniku, żadna
 nie jest wprost przypisana do właściwego dokumentu ICVD. **Etap E3, wymaga decyzji użytkownika.**
+
+> **D2 ZMIENIŁ CZYTANIE TEJ TABELI (2026-08-21, `4db7a97`).** Wiersz AUVP `< 0,7` **nie jest
+> kryterium**: kryterium C tej pracy brzmi jakościowo i nie zawiera ani jednej liczby, a komitet
+> wprost odsyła do norm pracowni (patrz §4.1 D2). Po tym rozstrzygnięciu **D1 dotyczy dwóch, nie
+> trzech liczb** — `[H19] < 0,6` i `[H53] 0,6–0,8` — a te dwie nie konkurują ze sobą, tylko
+> **sąsiadują jako pasma nasilenia**. Zostaje pytanie o zastrzeżenie, że stoją na nieporównywalnych
+> statystykach (suma maksimów vs suma średnich). Silnik nadal odsyła tutaj: `engine_doc.txt`
+> przy wpisie `[H53]` mówi „patrz konflikt progów w przesiew_icvd.md".
 
 ### 3.4. AUVP 2022 przeczy sama sobie
 
@@ -127,11 +195,22 @@ Teraz jest źródło, którego wtedy nie było: kryterium 3.1 C mówi **„< 1 m
 fizyki — to jawna rozbieżność między modelem a kryterium, którą trzeba albo nazwać w karcie,
 albo rozstrzygnąć. **Wymaga decyzji.**
 
+> **ROZSTRZYGNIĘTE — D4, decyzja użytkownika 2026-08-21, zapisana w `ae36e0a`: wariant (a).**
+> **Fizyka zostaje.** Napad jest emergentny — złóg startuje przy osklepku — a nie strojony pod
+> liczbę; chip „Przemijający (≈1 min)" mówi prawdę o **własnym modelu**. Rozbieżność została
+> **nazwana**, nie ukryta. `barany:check` liczy dziś **61** przypadków (49 → 61 w `5a93ea1`).
+
 ### 3.6. Silnik nadaje tier „emerging" podtypowi, który praca JAWNIE WYKLUCZA
 
 `baranyClassify` przypisuje kupulolitiazie kanału przedniego status „zespół wyłaniający się",
 podczas gdy von Brevern 2015 tę postać **jawnie wyklucza**. „Emerging" znaczy w tej pracy
 „opisany, ale niedostatecznie potwierdzony" — nie „odrzucony". To **błąd etykiety**, nie fizyki.
+
+> **ZAMKNIĘTE — E1, `ae36e0a`.** Etykieta poprawiona na „poza klasyfikacją ICVD" — tam, gdzie stoją
+> już light cupula i short arm. Praca włącza do klasyfikacji wszystkie kombinacje kanał × mechanizm
+> **poza tą jedną**. Poprawka NAZWY, nie modelu: pozostałe sześć kombinacji bit w bit bez zmian.
+> Golden nie pokrywał tego przypadku — luka domknięta osobno w `5a93ea1` (nowy klucz
+> `dom/diag/headhang-kupulo/P` + sekcja 6 bramki, która **liczy**, ile kombinacji nosi ten znacznik).
 
 ---
 
@@ -150,20 +229,21 @@ Pełne opisy z obiema stronami, liczbami i wariantami rozstrzygnięcia: `icvd-ko
 | **D1** | **Próg gain vHIT: 0,6 / 0,7 / 0,6–0,8** (§3.3) | (a) próg per jednostka, z jawnym wskazaniem pracy przy każdym; (b) jeden próg silnika + nota o rozrzucie; (c) próg per jednostka **i** ostrzeżenie, że statystyki nie są porównywalne |
 | ~~**D2**~~ | ~~**AUVP: alternatywa czy koniunkcja**~~ — **ROZSTRZYGNIĘTE 2026-08-21** | **Pytanie okazało się źle postawione.** Po przeczytaniu obu miejsc wraz z kryteriami: **żadna z tych liczb nie jest kryterium**. Kryterium C brzmi jakościowo („jednoznaczny dowód obniżonej czynności VOR") i nie zawiera liczby; komitet wprost mówi, że **nie ma zgody co do wartości odcięcia** i że trzeba opierać się na **normach pracowni**. Nota 12 sama nazywa swoje liczby „working approximation". Oba czytania odpowiadają przy tym na **różne pytania** (patologia w obu badaniach vs istotny ubytek w samym vHIT). Zapisane jako przybliżenia robocze; **żaden próg nie wchodzi do silnika jako kryterialny** — i to jest zalecenie pracy, nie nasz wybór. Wyszedł przy okazji warunek, którego nie miało żadne ze zgłoszonych czytań: **„powinny też wystąpić sakady"**. |
 | **D3** | **„Probable" znaczy w ICVD co najmniej siedem różnych rzeczy** — w dwóch pracach tego samego pierwszego autora znaczy rzeczy **przeciwne** (BVP 2017: dodatnie znalezisko przyłóżkowe; AUVP 2022: **brak** znaleziska) | (a) nie tłumaczyć jednym słowem — każda jednostka niesie własną definicję; (b) wprowadzić słownik OTOREPO i jawnie odstąpić od terminu źródła; (c) używać wyłącznie cytatu z konkretnej pracy |
-| **D4** | **Kanał przedni 61,25 s vs kryterium „< 1 min"** (§3.5) | (a) nazwać rozbieżność w karcie i zostawić fizykę; (b) przestroić model; (c) zmienić chip na wartość zgodną z kryterium |
-| **D5** | **Geometria testu Roll: 30° (ICVD) vs 10,3° (silnik)** — a **30° niesie mechanizm** pseudo-samoistnego oczopląsu | (a) utrzymać 10,3° z notą, że ICVD podaje 30°; (b) wrócić do 30°; (c) rozdzielić: 30° jako poza kliniczna, 10,3° jako oś kanału |
+| ~~**D4**~~ | ~~**Kanał przedni 61,25 s vs kryterium „< 1 min"**~~ (§3.5) — **ROZSTRZYGNIĘTE 2026-08-21: wariant (a)** | **Fizyka zostaje, rozbieżność nazwana.** Napad jest emergentny (złóg startuje przy osklepku), a nie strojony pod liczbę; chip „Przemijający (≈1 min)" mówi prawdę o własnym modelu. Zapisane w `ae36e0a`. |
+| ~~**D5**~~ | ~~**Geometria testu Roll: 30° (ICVD) vs 10,3° (silnik)**~~ — **ROZSTRZYGNIĘTE 2026-08-21: wariant (a)** | **Zostaje 10,3°**, bo kąt jest wyprowadzony z anatomii kanału, a pomiar własny daje optimum przy +10,30° i stratę 5,9–14,5% przy 30°. **Świadomy koszt zapisany:** przy 30° działa mechanizm pseudo-samoistnego oczopląsu, którego przy 10,3° nie ma — silnik go nie odtworzy i nie wolno udawać, że odtwarza. Zapisane w `ae36e0a`. |
 
-**D5 dotyka rozstrzygnięcia, które już raz zapadło** (pomiar silnika: optimum przy +10,30°,
-przy 30° strata 5,9–14,5%; rodowód kanonu 30° uznany za kaloryczny). Nowa okoliczność: kryteria
-ICVD podają 30°, a przy tym kącie działa mechanizm, którego przy 10,3° nie ma. Warto rozstrzygnąć
-ponownie, mając teraz źródło pierwotne.
+**D5 dotykał rozstrzygnięcia, które już raz zapadło** (pomiar silnika: optimum przy +10,30°,
+przy 30° strata 5,9–14,5%; rodowód kanonu 30° uznany za kaloryczny). Nową okolicznością było to,
+że kryteria ICVD podają 30°, a przy tym kącie działa mechanizm, którego przy 10,3° nie ma.
+**Rozstrzygnięte ponownie 2026-08-21, już przy źródle pierwotnym — utrzymano 10,3°**, a mechanizm,
+którego silnik przez to nie odtwarza, zapisano jako świadomy koszt, nie jako przeoczenie.
 
 ### 4.2. Decyzje ZAKRESOWE — co w ogóle wchodzi do programu
 
 | # | Pytanie | Uwaga |
 |---|---|---|
 | **D6** | Które z 10 nieobecnych jednostek ICVD wchodzą do programu, a które zostają **jawnie poza zakresem**? | Najsilniejsi kandydaci: **napadowica przedsionkowa** (jest już w bloku wykluczeń migreny, bez własnego źródła), **PPPD** (domyka warstwę zawrotów resztkowych `[H26]`), **hemodynamiczne ortostatyczne** (kryterium D BPPV wprost każe je odróżnić) |
-| **D7** | Czy nadawać numer `[Hnn]` pracy Lempert 2012, skoro cytujemy 2022? | Wersja 2012 przydaje się jako **dowód**, nie jako źródło cytowania |
+| ~~**D7**~~ | ~~Czy nadawać numer `[Hnn]` pracy Lempert 2012~~ — **ROZSTRZYGNIĘTE 2026-08-21: NIE** | Kryteria cytujemy za `[H46]`, bo to ich aktualny nośnik; wersja 2012 posłużyła jako **dowód**, a porównanie stoi przy wpisie `[H46]`. Dlatego numery E0 kończą się na `[H61]`, nie `[H62]`. Zapisane w `engine_doc.txt` (E0, `ee08f99`). |
 | **D8** | Czy „zawroty szyjne" (stanowisko Seemungala) mają trafić do programu, skoro program ma okablowanie karku (B8)? | Stanowisko **neguje** jednostkę; program nie stawia takiego rozpoznania — ale liczy pozy z pivotem karku |
 
 ### 4.3. Konflikty do rozstrzygnięcia przy pisaniu rozdziałów (nie blokują startu)
@@ -196,10 +276,15 @@ Zasady wspólne, wzięte z dyscypliny projektu (V27/V28):
 
 ---
 
-### E0 — Fundament bibliograficzny · *bez zmian klinicznych*
+### E0 — Fundament bibliograficzny · *bez zmian klinicznych* · **ZROBIONE `ee08f99`**
 
-**Cel.** Nadać numery `[H47]`–`[H62]` szesnastu dokumentom ICVD, których w bibliografii nie ma,
-i uzupełnić dwa istniejące wpisy (`[H19]`, `[H20]`) o treść kryteriów, której nie niosą.
+**Cel.** Nadać numery dokumentom ICVD, których w bibliografii nie ma, i uzupełnić dwa istniejące
+wpisy (`[H19]`, `[H20]`) o treść kryteriów, której nie niosą.
+
+> **WYKONANE INACZEJ, NIŻ ZAPOWIADAŁ TEN PLAN.** Plan mówił `[H47]`–`[H62]`, czyli **szesnaście**
+> numerów. Poszło **piętnaście**, `[H47]`–`[H61]`: Lempert 2012 numeru **nie dostał** (decyzja D7,
+> §4.2). Przy okazji poprawiono dwa błędy metadanych wobec strony towarzystwa — PPPD to
+> 27(4):**191–208**, a pierwszy autor pracy z 2025 to **Kaski D**.
 
 **Wejście.** 19 ekstrakcji z metadanymi zweryfikowanymi w rejestrach (PMID, DOI, PMC, licencja).
 
@@ -217,7 +302,7 @@ i BIB5 (kształt) tego pilnują — ale przy dopisywaniu 16 wpisów naraz ryzyko
 
 ---
 
-### E1 — BPPV: spłata długu podstawowego · *najwyższy priorytet merytoryczny*
+### E1 — BPPV: spłata długu podstawowego · *najwyższy priorytet merytoryczny* · **ZROBIONE `ae36e0a`**
 
 **Cel.** Postawić kryteria von Brevern 2015 tam, gdzie program już dziś twierdzi, że je stosuje.
 
@@ -236,11 +321,18 @@ i BIB5 (kształt) tego pilnują — ale przy dopisywaniu 16 wpisów naraz ryzyko
 `engine`/`pose`**. `barany:check` musi zostać zielony **bez rebaseline** — jeśli zapali się na
 etykiecie tier, to jest właśnie ten błąd i ma się zapalić.
 
-**Do decyzji przed startem:** D4 (kanał przedni), D5 (geometria Roll).
+**Decyzje podjęte przed wykonaniem:** D4 (kanał przedni) i D5 (geometria Roll) — obie na wariant
+(a), patrz §4.1. Obie rozbieżności silnika wobec kryterium zostały **nazwane w rozdziale**, a nie
+usunięte przestrojeniem modelu.
+
+> **DOWÓD ZAKRESU, ZMIERZONY:** `snapshot:check` zapalił dokładnie **pięć** kluczy, wszystkie
+> w warstwie `dom`; **zero** w `plans`, `neuro`, `dyn`, `pose` i `shell` — fizyka nietknięta.
+> `barany:check` został zielony **bez rebaseline**. Granica dowodu też zapisana: poprawki etykiety
+> nie pokrywał wtedy żaden klucz golden — lukę domknięto osobno w `5a93ea1`.
 
 ---
 
-### E2 — Oczopląs: Eggers 2019 pod czerwone flagi CPN · *najwyższe ryzyko kliniczne*
+### E2 — Oczopląs: Eggers 2019 pod czerwone flagi CPN · *najwyższe ryzyko kliniczne* · **CZĘŚCIOWO WYPRZEDZONY**
 
 **Cel.** Podeprzeć źródłem sześć kryteriów, które **blokują leczenie**, i usunąć drugą kopię.
 
@@ -260,9 +352,16 @@ zmienia się źródło i miejsce definicji, nie logika. `snapshot:check` — klu
 **Do decyzji przed startem:** konflikt męczliwości (cecha peryferyjna vs trop ośrodkowy) —
 to jest różnicownik, którego silnik **używa**.
 
+> **PUNKTY 2 I 3 W DUŻEJ CZĘŚCI ZAMKNIĘTE PRZEZ D-CPN (`1223f25`)** — patrz §3.2. Karta ma już
+> jedno źródło (`src/app/cpn-model.js`) i numery `[H51]`/`[H48]` przy tropach, a rozjazd treści
+> jest strukturalnie niemożliwy. **Zostaje:** rozdział klasyfikacji oczopląsu w bazie wiedzy (pkt 1),
+> źródła przy `FLAGI` w `obs-model.js` (pkt 2 — zmierzone `[Hnn]` 0 trafień w tym pliku) oraz
+> kontrola nazewnictwa odradzanego (pkt 4). Konflikt męczliwości nadal **nierozstrzygnięty**;
+> D-CPN zapisał go jako `CPN_REGULA_TRIADY`, czyli nazwał, nie usunął.
+
 ---
 
-### E3 — Progi ilościowe NeuroVOR · *wymaga decyzji D1 i D2*
+### E3 — Progi ilościowe NeuroVOR · *wymaga decyzji D1 (D2 rozstrzygnięte)*
 
 **Cel.** Przypisać każdemu progowi silnika właściwy dokument ICVD albo jawnie nazwać, że progu
 w ICVD nie ma.
@@ -277,17 +376,26 @@ Jeśli D1 zmienia liczbę — rebaseline z dowodem zakresu i osobnym commitem.
 
 ---
 
-### E4 — Ménière i AUVP: treść kryteriów pod istniejące numery
+### E4 — Ménière i AUVP: treść kryteriów pod istniejące numery · **E4a ZROBIONE `ca8a649`, E4b ZOSTAJE**
 
-**Cel.** `[H19]` i `[H20]` istnieją, ale **treści kryteriów nie niosą** (zmierzone: `30 dB` 0 trafień,
-`20 min` 0, `12 h` 0). Program liczy `meniere()` jako model tonu, nie jako model kryteriów.
+**Cel.** `[H19]` i `[H20]` istnieją, ale **treści kryteriów nie niosą** (zmierzone 2026-08-21:
+`30 dB` 0 trafień, `20 min` 0, `12 h` 0). Program liczy `meniere()` jako model tonu, nie jako
+model kryteriów.
 
 **Zakres.** Rozdziały kryterialne dla obu jednostek + rozstrzygnięcie D2 dla AUVP + zmiana nazwy
 (zapalenie nerwu → AUVP; oba terminy dozwolone, skrót niestabilny).
 
+> **E4a — Ménière ZROBIONE (`ca8a649`).** Rozdział `KRYTERIA CHOROBY MÉNIÈRE'A` stoi w bazie wiedzy
+> pod `[H20]`; pomiar otwierający jest już nieaktualny — dziś `30 dB` daje 4 trafienia, `20 min` 9,
+> `12 h` 6. Przy okazji naprawiono **błąd atrybucji**: reguła „dwóch różnych typów napadów" to
+> zdanie `[H46]`, nie `[H20]` (zmierzone: 0 wobec 1 trafienia).
+> **D2 rozstrzygnięte osobno (`4db7a97`)** — patrz §4.1: żaden próg AUVP nie wchodzi do silnika
+> jako kryterialny, i to jest zalecenie pracy, nie nasz wybór.
+> **E4b zostaje:** rozdział kryterialny AUVP i zmiana nazwy. **D-MEN (12 h vs 24 h) nadal otwarte.**
+
 ---
 
-### E5 — Kwalifikacja wstępna: 97 miejsc bez źródła
+### E5 — Kwalifikacja wstępna: 97 miejsc bez źródła · **E5a ZROBIONE `e446f1c`, reszta ZOSTAJE**
 
 **Cel.** Warstwa, którą klinicysta czyta **jako pierwszą**, ma dziś **zero numerów źródeł**
 w napisach. Twierdzenia mocne klinicznie („ataksja chodu przemawia za przyczyną ośrodkową",
@@ -299,6 +407,17 @@ tam, gdzie czerwone flagi; Bisdorff 2009 pod progi czasowe i nazwy objawów.
 **Uwaga zmierzona:** kwestionariusz **nigdy nie pyta o czas od początku objawów**, a okno
 stosowalności GRACE-3 („poniżej 2 tygodni") stoi wyłącznie w komentarzu. To luka logiczna,
 nie tylko brak źródła.
+
+> **TA LUKA JEST ZAMKNIĘTA — D-CZAS, `b50d7d2` (2026-08-21).** Kwestionariusz **pyta**: piąte
+> pytanie kwalifikacji, `src/app/triage-model.js:88` („Poniżej 2 tygodni od początku"). Oś czasu
+> sprowadzono przy okazji do `[H61]` — trzecie pasmo (CVS) i węzeł przewlekły. Iloczyn kombinacji
+> bramki 2176 → 10880. **Nauka wyciągnięta i warta powtórzenia:** dołożenie **wymaganego** pytania
+> unieważniło każdą fiksturę czytającą kompletność — `hints:dom` była od tego commita czerwona,
+> a golden zamroził **11 kluczy pinujących nie ten ekran**, przy zielonej wyroczni. Naprawione
+> w `c3ebf18`.
+>
+> **E5a zrobione osobno (`e446f1c`):** dwie komórki karty GRACE były **nieprawdziwe** wobec źródeł,
+> które program już miał. **Reszta E5 — 97 miejsc bez numeru — zostaje**, razem z D-5D, D-ORTO i D-CT.
 
 ---
 
@@ -342,15 +461,20 @@ tego etapu będzie **decyzją redakcyjną OTOREPO, nie cytatem** — i tak trzeb
 ## 7. KOLEJNOŚĆ I ZALEŻNOŚCI
 
 ```
-E0 (fundament)  ──┬──> E1 (BPPV)     ──> E2 (oczopląs)
-                  ├──> E4 (Ménière/AUVP)
-                  ├──> E5 (kwalifikacja)
-                  └──> E3 (progi)  [czeka na D1, D2]
+E0 (fundament)  ──┬──> E1 (BPPV)     ──> E2 (oczopląs)   [pkt 2,3 zamknięte przez D-CPN]
+   ✔ ee08f99      │     ✔ ae36e0a           ⟳ zostaje pkt 1 i 4
+                  ├──> E4 (Ménière/AUVP)    ✔ E4a ca8a649  ⟳ E4b zostaje
+                  ├──> E5 (kwalifikacja)    ✔ E5a e446f1c  ⟳ reszta zostaje
+                  └──> E3 (progi)  [czeka na D1 — D2 rozstrzygnięte]
                                    E6 (zakres) [czeka na D6]
                                    E7 (słownik) — ostatni
 ```
 
-E0 musi być pierwszy. E1 i E2 są sprzężone (oba dotyczą karty diagnostyki), ale E1 pierwszy,
+E0 musiał być pierwszy. E1 i E2 są sprzężone (oba dotyczą karty diagnostyki), ale E1 pierwszy,
 bo E2 korzysta z jego rozdziału. Reszta jest równoległa.
 
-**Merge do `main`** — po weryfikacji użytkownika, zgodnie z ustaleniem otwierającym.
+**Merge do `main` — WYKONANY 2026-08-21.** Scalenie fast-forward `5035f09` → `b6e5203`, bez commita
+scalającego; przed pushem 27/27 bramek zielonych i build OK. Push wyzwolił GitHub Actions
+i przebudowę PWA — zmiana jest u użytkowników. **Android to osobny tor i krok użytkownika**
+(`npm run sync` + versionCode + podpisany AAB). Kolejne etapy scalają się tak samo: po weryfikacji
+użytkownika, zgodnie z ustaleniem otwierającym.
