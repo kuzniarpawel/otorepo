@@ -171,6 +171,17 @@ pytanie było źle postawione) · **D-ORTO** (§5 E5, wariant A — szóste pyta
 > asercje (KL2c/KL2g/KL2h), wzorem KL2d–KL2f z D-MRI, plus E6b w warstwie DOM.
 > **Poprawiona atrybucja:** komunikat KL2c mówił „GRACE-3", a weryfikowalne pokrycie dają `[H58]`
 > i `[H59]` — GRACE-3 nie należy do korpusu, więc jego brzmienia nie da się sprawdzić sondą.
+>
+> **GRANICA WARIANTU C — ZAPISANA 2026-08-22 (decyzja użytkownika, kontrola K7-C5).** Z wariantu C
+> weszło angio-TK, w zakresie zdania `[H59]` §4.5.2. **Poza kartą** czerwonej flagi i stałą
+> `OSTRZEZENIE` pozostają — decyzją podjętą teraz, przy tym zapisie — wyłącznie: **perfuzyjna
+> TK/MR** (`[H58]` §5.3: pomocna zwłaszcza przy prawidłowym DWI, ale „wydajność diagnostyczna
+> wymaga jeszcze walidacji"; ranga: proza przeglądowa) oraz słabsza **ranga** „można rozważyć"
+> dla obrazowania naczyń — bo sama modalność obrazowania naczyń JUŻ jest na karcie (MRA z `[H58]`
+> i angio-TK z `[H59]`, zmierzone po 1 trafieniu w obu miejscach produkcyjnych). Karta przyłóżkowa
+> niesie zalecenia, nie opcje o niezwalidowanej wydajności; materiał na wypadek przyszłej karty
+> jest kompletny w ekstrakcji `[H58]` §7.8 (korpus). Commit `9332244` intencji odłożenia nie
+> zapisywał — to zdanie jest tą intencją, żeby następna kontrola nie zadała tego samego pytania.
 
 ---
 
