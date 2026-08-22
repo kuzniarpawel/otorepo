@@ -60,8 +60,10 @@ doprowadza ten dokument do zgodności z tym, co już się wykonało).
 | **E1-DŁUG** | `5a93ea1` | luka golden domknięta, `barany:check` 49 → 61 |
 | *(zapis)* | `b6e5203`, `24d9518` | oba długi opisane; `weryfikacja_ekstrakcji_icvd.md` wraca do repozytorium |
 
-**Zostaje z planu:** **E2** (częściowo wyprzedzony przez D-CPN — patrz §3.2) · **E3** (reszta progów
-po E3a) · **E4b** (AUVP) · **E5** (kwalifikacja) · **E7** (słownik).
+**Zostaje z planu:** **E2** (częściowo wyprzedzony przez D-CPN — patrz §3.2) · **E4b** (AUVP) ·
+**E5** (kwalifikacja) · **E7** (słownik). *(E3 wypadł z tej listy 2026-08-22 — domknięty w całości
+przez E3a + kontrolę K7: kotwica VEMP `[H56]`, meldunek fotela, numery `[H62]`/`[H63]`,
+Rosengren potwierdzony; patrz §5 E3.)*
 **Domknięte po tej liście:** **E6** — Atlas otoneurologiczny, razem z rozstrzygnięciem D6
 i wariantem A okna HINTS (patrz §5 E6).
 
@@ -558,7 +560,7 @@ to jest różnicownik, którego silnik **używa**.
 
 ---
 
-### E3 — Progi ilościowe NeuroVOR · **E3a ZROBIONE (D1), reszta ZOSTAJE**
+### E3 — Progi ilościowe NeuroVOR · **DOMKNIĘTY W CAŁOŚCI 2026-08-22 (E3a + kontrola K7)**
 
 **Cel.** Przypisać każdemu progowi silnika właściwy dokument ICVD albo jawnie nazwać, że progu
 w ICVD nie ma.
@@ -610,10 +612,20 @@ Jeśli D1 zmienia liczbę — rebaseline z dowodem zakresu i osobnym commitem.
 >
 > **Zostaje z E3:** `VEMP_AR` i `VEMP_THRESH` (norma pracowniana **poza korpusem ICVD** — żaden z 19
 > dokumentów progu asymetrii VEMP nie stanowi; `[H56]` wprost każe ustalać odcięcia per pracownia),
-> ~~progi fotela obrotowego~~ oraz nazwiska bez numeru: **Rosengren 2019**, ~~**Lee 2006**,
+> ~~progi fotela obrotowego~~ oraz nazwiska bez numeru: ~~**Rosengren 2019**~~, ~~**Lee 2006**,
 > **Lacour 2020**~~ *(K7-C4b: Lee i Lacour dostały numery `[H62]` i `[H63]` — metadane
 > zweryfikowane w rejestrach; wydawca Lacoura ma zamienione pola imię↔nazwisko, uwaga rejestrowa
 > we wpisie)*.
+>
+> **ROSENGREN 2019 — POTWIERDZONE 2026-08-22 (decyzja użytkownika, K7-C4c): wariant „świadomie
+> bez numeru".** E3a wpisał do kodu „nazwisko zostaje bez numeru ŚWIADOMIE" i zarazem zostawił
+> Rosengrena na tej liście — adwersarz kontroli słusznie nazwał to decyzją jeszcze niezapadłą,
+> nie rejestracją. Teraz zapadła: próg `VEMP_AR` jest normą pracownianą **poza korpusem ICVD**
+> (żaden z 19 dokumentów progu asymetrii VEMP nie stanowi), zasadę per-pracownia kotwiczy `[H56]`
+> (K7-A6), a nazwisko w komentarzu pozostaje przywołaniem normy, nie cytatem kryterium — zgodnie
+> z zadeklarowaną granicą bramki („źródło zacytowane samym nazwiskiem, bez `[Hnn]`").
+> **TYM SAMYM E3 JEST DOMKNIĘTY W CAŁOŚCI**: rodowody i rangi progów (E3a), kotwica VEMP (K7-A6),
+> meldunek fotela (K7-C4a), numery Lee/Lacour (K7-C4b), Rosengren potwierdzony (K7-C4c).
 > *(K7-C4a, 2026-08-22: progi fotela ZAMKNIĘTE jawnym meldunkiem w rozdziale `bilateralLoss` obu
 > luster — silnik świadomie nie modeluje stymulacji sinusoidalnej i nie ma stałej progu fazy;
 > liczby po erracie żyją w atlasie, `tauVS` to parametr wygaszania, nie test. `VEMP_AR` dostał
