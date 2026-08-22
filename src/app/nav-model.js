@@ -17,6 +17,9 @@ const ICO = {
   learn:   '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 8.5 12 4.5l9 4-9 4-9-4Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M6.5 10.5v5c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5v-5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
   lab:     '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 3.5v6L5 18a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-8.5v-6" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 3.5h6M8 14h8" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
   profile: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6" stroke="currentColor" stroke-width="1.9"/><path d="M5 20c.9-3.4 3.7-5 7-5s6.1 1.6 7 5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  // Atlas: otwarta księga. Celowo NIE lupa ani litera „i" — obie znaczą już co innego w tym
+  // interfejsie (szukanie, informacja), a obszar ma się czytać jako materiał do CZYTANIA.
+  atlas:   '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6.5C10.4 5.2 8.2 4.5 5 4.5v13c3.2 0 5.4.7 7 2 1.6-1.3 3.8-2 7-2v-13c-3.2 0-5.4.7-7 2Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 6.5v13" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
 };
 
 // bar: 'both' = dolny pasek telefonu ORAZ szyna; 'rail' = tylko szyna (na telefonie dostępne z Profilu).
@@ -34,6 +37,17 @@ export const AREAS = [
     plDesc:'Przypadki i quizy',              enDesc:'Cases and quizzes' },
   { id:'lab',     pl:'Laboratorium', en:'Laboratory',  bar:'rail', ico:ICO.lab,
     plDesc:'Matematyczny pacjent',           enDesc:'Mathematical patient' },
+  /* ATLAS OTONEUROLOGICZNY (E6, decyzja użytkownika 2026-08-22). SZÓSTY obszar, `bar:'rail'` —
+     wzorem Laboratorium. Dwa powody, oba wprost z decyzji:
+     1. ZAKRES JEST ROZŁĄCZNY ze ścieżką ostrą. Program ma ZNAĆ wszystkie jednostki ICVD, ale
+        tam, gdzie stosuje się GRACE-3 i HINTS, rozpoznań się NIE MNOŻY. Własny obszar jest
+        najmocniejszym możliwym zapisem tej rozłączności: atlas nie leży wewnątrz Diagnostyki,
+        więc nie da się w niego wejść „po drodze" do manewru.
+     2. NIE NA PASKU TELEFONU. Pasek ma cztery pozycje i wciągnięcie tam atlasu wypchnęłoby
+        Profil — jedyne wejście do ustawień. Ten dokładny błąd już raz popełniono, gdy pasek
+        brał pierwsze cztery pozycje listy; dlatego pole `bar` jest jawne (patrz nagłówek). */
+  { id:'atlas',   pl:'Atlas',        en:'Atlas',       bar:'rail', ico:ICO.atlas,
+    plDesc:'Jednostki ICVD i kryteria',      enDesc:'ICVD entities and criteria' },
   { id:'profile', pl:'Profil',       en:'Profile',     bar:'both', ico:ICO.profile,
     plDesc:'Język, ruch, informacje',        enDesc:'Language, motion, about' },
 ];

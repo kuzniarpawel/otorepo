@@ -1,0 +1,95 @@
+/* OTOREPO — Atlas otoneurologiczny (E6).
+ *
+ * ZASADA WYGLĄDU, wprost z decyzji użytkownika: atlas jest MATERIAŁEM DO CZYTANIA, a nie ścieżką
+ * kliniczną. Nie wolno mu więc wyglądać jak ekran decyzyjny — żadnych tonów alarmowych, żadnego
+ * przycisku, który wagą typograficzną udaje „zalecaną akcję". Jedyny wyróżniony blok na karcie
+ * wpisu to GRANICE ŹRÓDŁA, bo to pole odróżnia atlas od podręcznika i najłatwiej je przeoczyć.
+ *
+ * PUŁAPKA ROZMIARU PRZYCISKÓW (piąty raz w tym projekcie: Bloki 6, 11, 12, 13): `.recoalt` ma
+ * w legacy.css rozmiar zadeklarowany WYŁĄCZNIE wewnątrz `.recobtns`. Każdy ekran używający jej
+ * poza nią ustawia rozmiar sam, zakresowo po własnym kontenerze — stąd pierwsza reguła niżej.
+ */
+
+.atllink .recoalt, .hqkrok1 .recoalt{
+  appearance:none; cursor:pointer; min-height:var(--tap); padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--r-md); font:inherit; font-size:13.5px; font-weight:700; text-align:left;
+  background:var(--panel2); color:var(--text); border:1px solid var(--line-strong);
+}
+
+/* ══════════ 1. LISTA ══════════ */
+.atlszukaj{ display:block; margin:0 0 var(--sp-2); }
+.atlszukaj__l{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:4px; }
+.atlszukaj__i{
+  width:100%; min-height:var(--tap); padding:var(--sp-2) var(--sp-3); font:inherit; font-size:13.5px;
+  background:var(--panel2); color:var(--text); border:1px solid var(--line-strong); border-radius:var(--r-md);
+}
+.atlfiltr{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:var(--sp-2); }
+/* Chip filtru dziedziczy `.tqopt` z kwalifikacji — ten sam gest znaczy to samo w obu miejscach.
+   Nadpisujemy WYŁĄCZNIE kształt (pigułka zamiast wiersza), nigdy stanu wciśnięcia: stan „wybrany"
+   ma zostać rozpoznawalny tą samą ramką co wszędzie indziej (a11y: nie tylko kolorem). */
+.tqopt--chip{ width:auto; min-height:40px; padding:6px var(--sp-3); border-radius:var(--r-pill); }
+.tqopt--chip .tqopt__txt{ font-size:12.5px; }
+
+.atllista{ list-style:none; margin:var(--sp-3) 0 0; padding:0; display:grid; gap:8px; }
+.atlkafel__b{
+  appearance:none; cursor:pointer; display:grid; width:100%; text-align:left;
+  grid-template-columns:1fr auto; gap:4px var(--sp-2); align-items:center;
+  min-height:56px; padding:var(--sp-2) var(--sp-3);
+  background:var(--panel2); color:var(--text); border:1px solid var(--line-strong);
+  border-radius:var(--r-md); font:inherit;
+}
+.atlkafel__n{ font-size:13.5px; font-weight:700; }
+.atlkafel__z{ display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+.atlkafel__zr{ grid-column:1 / -1; font-size:11.5px; color:var(--muted); }
+
+/* Znacznik zespołu i zakresu. NIE SAMYM KOLOREM — każdy niesie skrót albo słowo, bo tak samo
+   rozstrzygnięto „nie można ocenić" w Bloku 12 i werdykty w Bloku 13. */
+.atlznak{
+  display:inline-block; padding:2px 8px; border-radius:var(--r-pill);
+  font-size:11px; font-weight:700; letter-spacing:.02em;
+  background:var(--panel); color:var(--muted); border:1px solid var(--line);
+}
+.atlznak--AVS{ color:var(--timer); border-color:var(--timer); }
+.atlznak--EVS{ color:var(--post); border-color:var(--post); }
+.atlznak--CVS{ color:var(--acc); border-color:var(--acc); }
+.atlznak--zakres{ font-weight:600; }
+
+.atlzakres__l{ margin:0 0 4px; font-size:13px; }
+
+/* ══════════ 2. KARTA WPISU ══════════ */
+.atlnag__z{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:var(--sp-2); }
+.atlnag__s{ margin:0; font-size:13.5px; line-height:1.55; }
+.atlsyn{ margin:0 0 var(--sp-2); font-size:12.5px; color:var(--muted); }
+/* Termin odradzany dostaje przekreślenie ORAZ znak ⊘ w treści — kolor sam nie niesie tu niczego. */
+.atlsyn__t--odradzany{ text-decoration:line-through; text-decoration-thickness:1px; }
+.atlodradz{ margin-top:var(--sp-2); }
+
+.atlkryt__w{ margin:0 0 var(--sp-2); font-size:12.5px; color:var(--muted); }
+.atlkryt__l{ margin:0; padding-left:18px; line-height:1.55; font-size:13px; }
+.atlkryt__l li{ margin:0 0 6px; }
+.atlprzyp{ margin-top:var(--sp-2); font-size:12.5px; color:var(--muted); }
+.atlprzyp ul{ margin:4px 0 0; padding-left:18px; line-height:1.5; }
+
+.atlprogi__l{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.atlprogi__l li{ font-size:13px; line-height:1.5; }
+.atlprogi__l small{ display:block; font-size:11.5px; color:var(--muted); }
+.atlprogi__r{
+  display:inline-block; margin-left:6px; padding:1px 7px; border-radius:var(--r-pill);
+  font-size:10.5px; font-weight:700; text-transform:lowercase;
+  background:var(--panel); color:var(--muted); border:1px solid var(--line);
+}
+
+/* GRANICE ŹRÓDŁA — jedyny wyróżniony blok karty. Wyróżnienie jest treściowe: to pole mówi, czego
+   praca NIE twierdzi, i jest najczęściej pomijane właśnie dlatego, że brzmi jak brak. */
+.atlgranice{ border-left:3px solid var(--acc); }
+.atlgranice__l{ margin:0; padding-left:18px; line-height:1.55; font-size:13px; }
+.atlgranice__l li{ margin:0 0 6px; }
+
+/* ══════════ 3. LINKI Z KWALIFIKACJI ══════════ */
+.atllink__l{ list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.atllink__b{ width:100%; }
+.atllink__b small{ display:block; font-weight:400; font-size:11.5px; color:var(--muted); }
+
+/* ══════════ 4. KROK 1 W OKNIE HINTS (wariant A) ══════════ */
+.hqkrok1__w{ margin:0 0 var(--sp-2); font-size:13.5px; }
+.hqkrok1 .recoalt{ margin-top:var(--sp-2); }

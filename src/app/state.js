@@ -58,6 +58,17 @@ const state={
   labPorownanie:false,      // czy pokazac panel porownania (uklad „komputer" z dokumentu)
   labOstatniaZmiana:null,   // {parametr, obserwable[], zdaniaDodane[], ...} — POMIAR skutku ostatniej zmiany (kryterium odbioru nr 3)
   labParametr:null,         // parametr rozwiniety do opisu (jednostka + zakres) — kryterium odbioru nr 2
+  // --- E6: ATLAS OTONEUROLOGICZNY. Czyta je src/app/atlas-model.js (czysty), pisze WYLACZNIE
+  //     src/app/atlas-state.js. Pola sa WLASNE, a nie doklejone do `triage` — i to jest ta sama
+  //     zasada co przy Laboratorium: gdyby atlas pisal do pol kwalifikacji, "atlas nie zmienia
+  //     sciezki badania" byloby deklaracja, ktorej NIE DA SIE sprawdzic, bo przeciek siedzialby
+  //     w modelu danych. Osobne pola sprawiaja, ze wyrocznia moze wziac odcisk `triage` przed
+  //     wejsciem do atlasu i po wyjsciu, i zazadac, zeby byl identyczny.
+  atlasWpis:null,           // otwarty wpis (null = lista) — klucz z ATLAS_KLUCZE
+  atlasZespol:null,         // filtr osi [H61]: 'AVS'|'EVS'|'CVS'|null (null = bez ograniczenia)
+  atlasZakres:null,         // filtr rejestru zakresu: 'modelowana'|'kryteria-bez-modelu'|'poza-zakresem'|null
+  atlasSzukaj:'',           // fraza wyszukiwania po nazwach i synonimach (NIE po tresci kryteriow)
+  atlasSkad:null,           // skad przyszedl uzytkownik: 'triage'|null — decyduje o powrocie, nie o tresci
   // --- Blok 13: TRYB NAUKI I BIBLIOTEKA PRZYPADKOW. Czyta je src/app/nauka-model.js (czysty),
   //     pisze WYLACZNIE src/app/nauka-state.js. Zaden inny modul nie ma prawa ich tknac, i to
   //     jest cala separacja torow: rozwiazanie przypadku nie zmienia ANI JEDNEGO pola opisujacego
@@ -88,7 +99,7 @@ const state={
   lang:"en",                                       // język UI: 'en' (domyślny) | 'pl'. Literał=EN; main.js initLang() ustawia wg locale/wyboru na boot. t(pl,en) w src/i18n.js czyta to pole (golden przypina 'pl' w snapshot.mjs)
   // --- Powłoka aplikacji (Blok 1/3). Pola czytane WYŁĄCZNIE przez src/app/shell.js; żadna
   //     wyrocznia nie serializuje obiektu state, więc dokładanie pól jest golden-neutralne.
-  area:"start",                                    // aktywny obszar powłoki: start|diag|learn|lab|profile (Blok 3 wypełnia nawigację)
+  area:"start",                                    // aktywny obszar powłoki: start|diag|learn|lab|atlas|profile (Blok 3 wypełnia nawigację)
   reducedMotion:false,                             // ograniczenie ruchu: preferencja systemowa LUB własny przełącznik (Blok 2)
   stepMapOpen:false,                               // telefon: czy rozwinięta pełna mapa 6 kroków (stepper skrócony do „Krok X z 6")
   // --- Przebieg kliniczny (Blok 5). Czytane przez src/app/flow-model.js (czysty), zapisywane

@@ -67,6 +67,7 @@ export const OBSZAR_EKRANU = {
   start: 'start',
   naukaBib: 'learn', naukaLekcja: 'learn',
   labLista: 'lab', labEksp: 'lab',
+  atlasLista: 'atlas', atlasWpis: 'atlas',
 };
 export const obszarEkranu = (screen) => OBSZAR_EKRANU[screen] || 'diag';
 
@@ -114,6 +115,17 @@ function applyArea(id) {
        obszaru nie da sie juz wejsc do modulu HINTS W OGOLE, a nie tylko „nie da sie bez
        kwalifikacji". Matematyczny pacjent zostal tam, gdzie byl — za kwalifikacja. */
     else if (id === 'lab') { A.goLab ? A.goLab() : (A.goHintsKwal && A.goHintsKwal()); }
+    /* E6: Atlas. Bez tej gałęzi dotknięcie szóstej pozycji szyny NIE ROBIŁOBY NIC — `applyArea`
+       rozpoznaje obszary po nazwie i milczy na nieznanej, więc nowy wpis w `AREAS` byłby
+       przyciskiem bez działania. Ta sama klasa przeoczenia, co przy Bloku 14.
+
+       DRUGA POŁOWA TEJ PUŁAPKI, ZŁAPANA PRZEZ `atlas:dom`: sama gałąź NIE WYSTARCZA. `A` jest
+       wstrzykiwane przez `mountNav(deps)` w main.js, a `A.goAtlas &&` MILCZY, gdy akcji tam nie
+       podano — czyli przycisk dalej nie robi nic, tylko już bez śladu w kodzie tego pliku.
+       Zmierzone: obszar zostawał 'diag', ekran 'setup'. Strażnik `A.x &&` chroni bundel bez
+       akcji, ale zamienia brak wstrzyknięcia w CISZĘ. Dopisując tu obszar, dopisz go RÓWNIEŻ
+       do wywołania `mountNav` — i zostaw wyrocznię, która to sprawdzi. */
+    else if (id === 'atlas') { A.goAtlas && A.goAtlas(); }
   }
   syncShell();
 }
@@ -619,6 +631,12 @@ function areaZeStanu() {
      wynikiem tej funkcji) sprowadzał obszar do „Diagnostyki" natychmiast po wejściu — zmierzone:
      `goLab()` ustawiał area='lab', a `goArea('lab')` kończył z area='diag'. Nawigacja mówiłaby, że
      użytkownik jest w module klinicznym, stojąc na stanowisku fizjologicznym. */
+  /* E6: Atlas ma WŁASNY tryb — ta linia jest tu z tego samego powodu, co linia Laboratorium niżej,
+     i została napisana ZANIM błąd wystąpił, bo komentarz Bloku 14 opisuje go dokładnie: `syncShell`
+     PRZEPISUJE `state.area` wynikiem tej funkcji, więc bez własnej gałęzi `goAtlas()` ustawiałby
+     area='atlas', a pierwszy render sprowadzałby obszar do „Diagnostyki" — nawigacja mówiłaby,
+     że użytkownik stoi w module klinicznym, choć właśnie go z niego wyprowadzono. */
+  if (state.mode === 'atlas') return 'atlas';
   if (state.mode === 'lab') return 'lab';
   if (state.mode === 'hints' && state.area === 'lab') return 'lab';
   if (state.mode === 'hints') return state.hintsCustom ? 'lab' : 'diag';

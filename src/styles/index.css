@@ -21,6 +21,7 @@
 @import './nauka.css';     /* tryb nauki: biblioteka przypadkow i lekcja (Blok 13) */
 @import './opis.css';      /* generator opisu badania i zapis sesji (Blok 15) */
 @import './lab.css';       /* Laboratorium neurootologiczne: eksperymenty i parametry (Blok 14) */
+@import './atlas.css';     /* Atlas otoneurologiczny: jednostki ICVD, kryteria, granice zrodla (E6) */
 @import './pwa.css';       /* pasek nowej wersji aplikacji (Blok 16) */
 /* Ekrany kliniczne w stylu „scena kliniczna" (tura 2 paczki projektowej). MUSI byc po arkuszach
    poszczegolnych ekranow: nadpisuje MATERIAL (szklo, obrys, ton kanalu), nigdy ukladu. */
