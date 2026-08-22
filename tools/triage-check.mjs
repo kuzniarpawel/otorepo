@@ -314,6 +314,19 @@ for (const wyz of ['pozycyjny', 'nieznane']) {
 T('KL10/bramka-sciezki', sciezkaDozwolona({ przebieg: 'ciagle', oczoplas: 'obecny', flagi: ['brak'] }, 'hints')
   && !sciezkaDozwolona({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['brak'] }, 'hints'),
   'bramka ścieżki musi zgadzać się z wynikiem');
+/* KL12 (K7-D8, 2026-08-22): reguła wykluczenia zawrotów szyjnych [H60] w węźle tEVS — pinowana
+   w OBU lustrach OSOBNO (lekcja D-CT/KS7b: golden jest PL-only, a sklejka luster przepuszcza
+   usunięcie jednej strony). Uwaga stoi w RDZENIU węzła, więc jest obecna niezależnie od
+   odpowiedzi na pytanie ortostazy — KL9b (ostatnia uwaga gałęzi „nie" = ortostatyczna)
+   pozostaje nienaruszone. */
+{
+  const w = R({ przebieg: 'napadowe', odkiedy: 'ostre', wyzwalacz: 'pozycyjny', flagi: ['brak'] });
+  const u = w.uwagi.find(x => /szyjne/.test(x.pl));
+  T('KL12/regula-wykluczenia-szyjnych', !!u
+    && /WYŁĄCZNIE pozycyjny/.test(u.pl) && /H60/.test(u.pl)
+    && /EXCLUSIVELY positional/.test(u.en) && /H60/.test(u.en),
+    'węzeł tEVS musi cytować regułę wykluczenia [H60] w obu lustrach OSOBNO');
+}
 
 /* ============ 6. Czystość modułu ============ */
 {
@@ -371,8 +384,10 @@ if (bledy.length) {
    ILOCZYN SIE NIE ZMIENIL (43520): pole `atlas` nie dolozylo wymiaru pytania, bo nie jest pytaniem.
    CZEGO TU NIE MA I DLACZEGO: sprawdzenia, czy klucz ISTNIEJE w atlasie. To robi ATL7a w
    `atlas:check` — ten plik nie importuje `atlas-model.js` i ma zostac lisciem grafu. */
-const OCZEKIWANE = 88;  /* 2026-08-22, K7-C1: 87 -> 88 — doszła KS7b (skład 5 D pinowany w każdym
-                           lustrze osobno; KS7 pinuje tylko nazwę i to na sklejce pl+en). */
+const OCZEKIWANE = 89;  /* 2026-08-22, K7-D8: 88 -> 89 — doszła KL12 (reguła wykluczenia zawrotów
+                           szyjnych [H60] w węźle tEVS, oba lustra osobno).
+                           POPRZEDNIO: 2026-08-22, K7-C1: 87 -> 88 — doszła KS7b (skład 5 D pinowany
+                           w każdym lustrze osobno; KS7 pinuje tylko nazwę na sklejce pl+en). */
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

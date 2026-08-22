@@ -416,6 +416,14 @@ function triageResultCore(odp) {
         uwagi: [
           P('To wskazanie ŚCIEŻKI, nie rozpoznanie. Rozpoznanie wynika z tego, co zobaczysz w próbie — kierunku, latencji i czasu trwania oczopląsu.',
             'This selects a PATHWAY, not a diagnosis. The diagnosis follows from what you see in the test — the direction, latency and duration of the nystagmus.'),
+          /* K7-D8 (decyzja użytkownika 2026-08-22, wariant W2 „uwaga bez destynacji"): reguła
+             wykluczenia z [H60] cytowana tam, gdzie program faktycznie wykonuje pozy z pivotem
+             karku. ŚWIADOMIE bez destynacji atlas:'szyjne' — wspólny renderer chipów niesie
+             napisy „jednostki, które ICVD definiuje", a stanowisko kryteriów ODMAWIA; treść
+             niesie sama uwaga. Terminy w uwadze to terminy PRZYJĘTE pracy (zawroty szyjne /
+             cervical dizziness), nie odradzane. Pinuje KL12 (oba lustra osobno). */
+          P('Obraz WYŁĄCZNIE pozycyjny wyklucza „zawroty szyjne" regułą własną stanowiska Bárány; dodatnia prowokacja ruchem głowy i szyi nie wskazuje na szyję — przyczyną bywa BPPV albo migrena — [H60] Seemungal 2022.',
+            'An EXCLUSIVELY positional picture rules out “cervical dizziness” by the Bárány position statement’s own rule; provocation by combined head-and-neck movement does not point to the neck — BPPV or migraine is the usual cause — [H60] Seemungal 2022.'),
         ],
       };
     }

@@ -469,6 +469,9 @@ export const NeuroVOR = (()=>{
   //      dużej prędkości wiarygodność KANAŁU załamuje się (kanał hamowany wyzerowany, pobudzany nasyca)
   //      i spada z gain → estymator PRZEŁĄCZA się na PROPRIOCEPCJĘ SZYI / efference-copy (COR); waga
   //      w_szyja rośnie z kompensacją c. „Przełącznik" NIE jest zaprogramowany — WYNIKA z wag.
+  //      GRANICA WOBEC [H60] (K7-D8): propriocepcja szyi jest tu WEJŚCIEM KOMPENSACYJNYM po
+  //      uszkodzeniu przedsionka [H12][H13][H14] — [H60] neguje ją jako mechanizm CHOROBY
+  //      („zawrotów szyjnych") i zostawia badaniom; ten model NIE modeluje zawrotów szyjnych.
   //  (2) VELOCITY STORAGE — kompensacja „otwiera zawór" integratora prędkości → krótsza stała czasowa →
   //      oczopląs po obrocie szybciej gaśnie. To OSOBNY układ od integratora utrzymania spojrzenia
   //      (etap 4a): kompensacja skraca velocity storage, a NIE gaze-holding (inaczej fałsz. objaw ośrodkowy).

@@ -3028,7 +3028,8 @@ ZR2 zapaliła się natychmiast. To ta sama pułapka, którą zabramkowano w V28b
  · choroba lokomocyjna .................... [H57] — NIEOBECNA
  · naczyniowe zawroty głowy ............... [H58] — czerwone flagi na [H24] i [H8], nie na kryteriach
  · AUVP / zapalenie nerwu przedsionkowego . [H59] — jednostka MODELOWANA szeroko, bez dokumentu
- · zawroty szyjne (stanowisko) ............ [H60] — NIEOBECNE; praca ODMAWIA kryteriów
+ · zawroty szyjne (stanowisko) ............ [H60] — NIEOBECNE; praca ODMAWIA kryteriów; reguła
+                                            wykluczenia cytowana w kwalifikacji (tEVS, K7-D8)
  · przegląd ICVD 2025 ..................... [H61] — mówi, czego jeszcze nie ma
 
 TRZY DOKUMENTY MIAŁY NUMER JUŻ WCZEŚNIEJ: obustronna westybulopatia [H19], choroba Ménière'a [H20],
@@ -4369,6 +4370,15 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
         przestrzennej; stanowisko może się zmienić wraz z nowymi dowodami.
         POZA ZAKRESEM DOKUMENTU, jawnie: szyjny zawrót naczyniowy (uznany za odrębną jednostkę
         i zespół niezwykle rzadki) oraz whiplash.
+        GRANICA WOBEC SILNIKA (D8 rozstrzygnięte 2026-08-22, K7-D8, wariant W2): praca neguje tor
+        NEUROLOGICZNY (propriocepcja/nocycepcja szyjna jako mechanizm objawu), a o torze
+        NEWTONOWSKIM okablowania karku B8 — ramieniu bezwładności od osi obrotu do błędnika,
+        liczonym z kąta karku — milczy całkowicie (otolith / inertia / canalith / semicircular:
+        po 0 trafień w pełnym tekście), więc okablowanie pozostaje BEZ konsekwencji. Jedyna
+        opisana w pracy konfiguracja czystego ruchu szyi (głowa nieruchoma względem ziemi, tułów
+        obracany pod nią) to ODWROTNOŚĆ pivotu karkowego silnika (tam głowa rusza się na
+        nieruchomym tułowiu) i ma rangę wyłącznie OPCJI BADAWCZEJ. Reguła wykluczenia wyżej jest
+        od K7-D8 cytowana w kwalifikacji (węzeł tEVS), świadomie BEZ destynacji atlasu.
 
 [H61] Kaski D, Tarnutzer AA, Agrawal Y, Carey J, Cha YH, Eggers SD, Furman J, Kim HA, Kim JS,
       Lempert T, López-Escámez JA, Magnusson M, Newman-Toker DE, Seemungal BM, Staab JP, Strupp M,

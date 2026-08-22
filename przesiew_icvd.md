@@ -67,10 +67,23 @@ Rosengren potwierdzony; patrz §5 E3.)*
 **Domknięte po tej liście:** **E6** — Atlas otoneurologiczny, razem z rozstrzygnięciem D6
 i wariantem A okna HINTS (patrz §5 E6).
 
-**Otwarte decyzje użytkownika — z pierwotnego zestawienia ŻADNA.** Otwarte
-pozostaje **D8** (zawroty szyjne), które nigdy nie weszło do tego zestawienia: E6 dał tej
-pracy wpis atlasu o typie `stanowisko`, ale NIE rozstrzygnął, czy program ma wyciągnąć z niej
-konsekwencje dla okablowania karku (B8).
+**Otwarte decyzje użytkownika — ŻADNA.**
+**D8 ROZSTRZYGNIĘTE 2026-08-22 (decyzja użytkownika, kontrola K7-D8) — wariant W2, „uwaga bez
+destynacji". Pytanie było ŹLE POSTAWIONE, jak D1/D2/D6, i to podwójnie:** połowę pierwszą („czy
+zawroty szyjne wchodzą") rozstrzygnął już E6 (wpis `stanowisko`, bramka ATL6f), a połowa druga
+zakładała kolizję `[H60]`↔B8, której pomiar nie znajduje — praca neguje tor NEUROLOGICZNY
+(propriocepcja szyjna → objaw), o torze NEWTONOWSKIM B8 milczy (otolith/inertia/canalith/
+semicircular po 0 trafień). Wykonane: (1) reguła wykluczenia cytowana w węźle tEVS kwalifikacji
+(„obraz WYŁĄCZNIE pozycyjny wyklucza…"), **świadomie bez destynacji atlasu** — wspólny renderer
+chipów niesie napisy „jednostki, które ICVD definiuje", a stanowisko kryteriów ODMAWIA (znalezisko
+adwersarza kontroli); pilnuje nowa bramka **KL12** (oba lustra osobno); (2) granica `[H60]`↔B8
+nazwana w adnotacji bibliograficznej (oba lustra); (3) granica przy wagach `wNeck` NeuroVOR
+(propriocepcja = wejście kompensacyjne, nie mechanizm choroby); (4) errata interpolacji wpisu
+atlasu: „Opcja rozstrzygająca" → „Opcja potwierdzenia badawczego" (źródło: „may then want to
+confirm"; wpis przeczył własnej granicy 3); (5) rider: `wSilnikuDowod` wpisu zaktualizowany po
+autotrafieniach. Warianty W4 (poza badawcza tułów-pod-głową) i W5 (ostrzeżenie karkowe przy
+manewrach) ROZWAŻONE I ODRZUCONE — źródło ich nie niesie (2× potwierdzone adwersaryjnie);
+fizyka B8 i `meniere()`/`wNeck` nietknięte.
 **D-MEN ROZSTRZYGNIĘTE 2026-08-22 (decyzja użytkownika, kontrola K7-C3) — wariant 4 uznany za
 wdrożony, paradoks NAZWANY WPROST.** Kontrola zmierzyła, że wariant 4 tabeli (oba zestawy
 równolegle, punkt po punkcie, bez wydawania etykiety) już działa: wpis atlasu niesie obie postaci
@@ -442,7 +455,7 @@ którego silnik przez to nie odtwarza, zapisano jako świadomy koszt, nie jako p
 |---|---|---|
 | ~~**D6**~~ | ~~Które z 10 nieobecnych jednostek ICVD wchodzą do programu~~ — **ROZSTRZYGNIĘTE 2026-08-22: pytanie było ŹLE POSTAWIONE** | **Wszystkie wchodzą — ale nie tam, gdzie pytanie zakładało.** Program ma ZNAĆ komplet jednostek ICVD; ścieżka OSTRA (GRACE-3, HINTS) pozostaje OGÓLNA i rozpoznań się w niej nie mnoży. Jednostki szczegółowe idą do **Atlasu otoneurologicznego** — szóstego, rozłącznego obszaru. Rejestr zakresu per jednostka przestał być prozą i jest polem `wSilniku`, które bramka liczy: **7 modelowanych / 7 kryteria-bez-modelu / 4 świadomie poza zakresem**. Etap E6. |
 | ~~**D7**~~ | ~~Czy nadawać numer `[Hnn]` pracy Lempert 2012~~ — **ROZSTRZYGNIĘTE 2026-08-21: NIE** | Kryteria cytujemy za `[H46]`, bo to ich aktualny nośnik; wersja 2012 posłużyła jako **dowód**, a porównanie stoi przy wpisie `[H46]`. Dlatego numery E0 kończą się na `[H61]`, nie `[H62]`. Zapisane w `engine_doc.txt` (E0, `ee08f99`). *(Dopisek K7-C4b, 2026-08-22: numery `[H62]`/`[H63]` istnieją od domknięcia E3 — to **inne prace** (Lee 2006, Lacour 2020), nie Lempert 2012; D7 nienaruszone.)* |
-| **D8** | Czy „zawroty szyjne" (stanowisko Seemungala) mają trafić do programu, skoro program ma okablowanie karku (B8)? | Stanowisko **neguje** jednostkę; program nie stawia takiego rozpoznania — ale liczy pozy z pivotem karku |
+| ~~**D8**~~ | ~~Czy „zawroty szyjne" (stanowisko Seemungala) mają trafić do programu, skoro program ma okablowanie karku (B8)?~~ — **ROZSTRZYGNIĘTE 2026-08-22 (K7-D8): pytanie było ŹLE POSTAWIONE** | Połowa pierwsza rozstrzygnięta już przez E6 (wpis `stanowisko`); połowa druga zakładała kolizję, której nie ma — `[H60]` neguje tor NEUROLOGICZNY, o NEWTONOWSKIM B8 milczy. Wykonano wariant W2 „uwaga bez destynacji": reguła wykluczenia w węźle tEVS (bramka KL12), granice `[H60]`↔B8 i `[H60]`↔`wNeck` nazwane, errata „Opcji rozstrzygającej". W4/W5 rozważone i odrzucone — źródło ich nie niesie. Patrz §1.1. |
 
 ### 4.3. Konflikty do rozstrzygnięcia przy pisaniu rozdziałów (nie blokują startu)
 

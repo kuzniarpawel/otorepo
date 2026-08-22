@@ -501,7 +501,15 @@ const licznikProzy = (cyt) => {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 288;  /* 2026-08-22, K7-C4b (Lee i Lacour dostaja numery): 282 -> 288.
+const OCZEKIWANE = 290;  /* 2026-08-22, K7-D8 (D8 rozstrzygniete, wariant W2 "uwaga bez
+                            destynacji"): 288 -> 290. DWA cytowania "[H60] Seemungal 2022"
+                            z oznaczeniem w uwadze wezla tEVS (src/app/triage-model.js, lustro
+                            PL + EN) — regula wykluczenia zawrotow szyjnych cytowana tam, gdzie
+                            program wykonuje pozy z pivotem karku. Goly [H60] w komentarzu
+                            neuro-vor.js i dopiski w adnotacji [H60] engine_doc (proza
+                            bibliografii, BIB6-agregat) licznika nie ruszaja.
+                            Zmierzone przez --ile: 290.
+                            POPRZEDNIO: 2026-08-22, K7-C4b (Lee i Lacour dostaja numery): 282 -> 288.
                             Bibliografia rosnie o DWA wpisy w obu lustrach: [H62] Lee 2006
                             (Neurology 67(7):1178-1183, PMID 17030749 — izolowany zawrot jako
                             jedyny obraz zawalu mozdzku, 25/240) i [H63] Lacour 2020 (Eur Arch

@@ -3225,7 +3225,8 @@ at once. That is the same trap gated in V28b.
  · motion sickness ........................ [H57] — ABSENT
  · vascular vertigo and dizziness ......... [H58] — red flags rest on [H24] and [H8], not criteria
  · AUVP / vestibular neuritis ............. [H59] — entity MODELLED widely, with no document
- · cervical dizziness (position paper) .... [H60] — ABSENT; the paper REFUSES to give criteria
+ · cervical dizziness (position paper) .... [H60] — ABSENT; the paper REFUSES to give criteria;
+                                            the exclusion rule is cited in triage (tEVS, K7-D8)
  · ICVD review 2025 ....................... [H61] — states what does not exist yet
 
 THREE DOCUMENTS ALREADY HAD NUMBERS: bilateral vestibulopathy [H19], Menière's disease [H20],
@@ -4613,6 +4614,16 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
         disorientation; the position may change as new evidence appears.
         EXPLICITLY OUT OF SCOPE: cervical vascular vertigo (regarded as a separate and exceedingly
         rare entity) and whiplash.
+        THE BOUNDARY TOWARDS THE ENGINE (D8 settled 2026-08-22, K7-D8, variant W2): the paper
+        denies the NEUROLOGICAL route (neck proprioception/nociception as the mechanism of the
+        symptom), while about the NEWTONIAN route of the neck wiring B8 — the inertia arm from
+        the rotation axis to the labyrinth, computed from the neck angle — it is entirely silent
+        (otolith / inertia / canalith / semicircular: 0 hits each in the full text), so the wiring
+        stands WITHOUT consequences. The only pure-neck-movement configuration the paper describes
+        (head held still relative to the earth, trunk turned underneath it) is the REVERSE of the
+        engine's neck pivot (there the head moves on a stationary trunk) and carries solely the
+        rank of a RESEARCH OPTION. The exclusion rule above is, as of K7-D8, cited in triage
+        (the tEVS node), deliberately WITHOUT an atlas destination.
 
 [H61] Kaski D, Tarnutzer AA, Agrawal Y, Carey J, Cha YH, Eggers SD, Furman J, Kim HA, Kim JS,
       Lempert T, López-Escámez JA, Magnusson M, Newman-Toker DE, Seemungal BM, Staab JP, Strupp M,
