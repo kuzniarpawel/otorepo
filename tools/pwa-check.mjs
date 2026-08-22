@@ -370,7 +370,14 @@ const CZEKA = (nad = {}) => ({ ...CZYSTY(), aktualizacja: 'czeka', ...nad });
 }
 
 /* ═══════════ WYNIK ═══════════ */
-const OCZEKIWANE = 237;   /* 237 = 236 + 1 (D-CPN, 2026-08-21): bramka F6 biegnie RAZ NA PLIK w src/,
+const OCZEKIWANE = 239;   /* 239 = 237 + 2 (E6, ATLAS, 2026-08-22): bramka F6 biegnie RAZ NA PLIK w src/,
+                             a doszly DWA — src/app/atlas-model.js (tresc 18 wpisow ICVD) i
+                             src/app/atlas-state.js (jedyny pisarz pol `atlas*`). Przyrost jest
+                             MECHANICZNY, nie merytoryczny: zaden nowy zasob nie wchodzi do precache,
+                             bo oba sa czescia bundla src/main.js, ktory w ASSETS juz stoi.
+                             SPRAWDZONE, ze to nie jest przypadek: po usunieciu obu plikow licznik
+                             wraca do 237, a lista ASSETS zostaje bit w bit ta sama. */
+                          /* 237 = 236 + 1 (D-CPN, 2026-08-21): bramka F6 biegnie RAZ NA PLIK w src/,
                              a doszedl src/app/cpn-model.js — czysty modul z trescia kliniczna karty
                              osrodkowego oczoplasu pozycyjnego. Przyrost jest wiec MECHANICZNY (nowy
                              plik = nowy przypadek F6), nie merytoryczny. */

@@ -226,7 +226,35 @@ export function czerwoneFlagi(odp) {
 /* ============ Kwalifikacja ============
    Zwraca ŚCIEŻKĘ BADANIA + uzasadnienie wskazujące, KTÓRE odpowiedzi do niej doprowadziły
    (kryterium odbioru nr 3). `sciezka` jest kluczem trybu aplikacji albo null — null znaczy
-   „aplikacja nie ma tu nic do zaproponowania", a nie „wybierz sobie sam". */
+   „aplikacja nie ma tu nic do zaproponowania", a nie „wybierz sobie sam".
+
+   ═══ POLE `atlas` (E6, 2026-08-22) — DESTYNACJA, NIE DRUGA ŚCIEŻKA ═══
+   `sciezka` BYŁA PRZECIĄŻONA. Pięć z dziewięciu wyjść kończyło się `null`, a `null` znaczyło
+   w nich trzy różne rzeczy: „działaj pilnie, nie czytaj" (czerwona), „odpowiedz najpierw na
+   pytanie" (niepewna, pseudoAVS) oraz — w węzłach sEVS i CVS — „ICVD definiuje tu jednostki,
+   tylko nasz silnik ich nie modeluje". To ostatnie znaczenie jest DESTYNACJĄ, nie ślepym końcem,
+   i od tego etapu ma własne pole.
+
+   POLE NIE BRAMKUJE. `sciezka` zostaje jedynym kluczem trybu, a `sciezkaDozwolona` jedynym
+   warunkiem wejścia — kryterium odbioru nr 1 („HINTS nie jest proponowany przy napadach
+   pozycyjnych") pozostaje nietknięte i nadal sprawdzane na pełnym iloczynie. Atlas nie jest
+   trybem: nie da się przez niego wejść do badania (niezmiennik IN14 żąda, żeby zbiory kluczy
+   atlasu i ścieżek były ROZŁĄCZNE).
+
+   REGUŁA JEDNA: atlas jest destynacją PIERWSZĄ tam, gdzie `sciezka === null`, i WTÓRNĄ tam,
+   gdzie ścieżka jest. Wymienia jednostki, które ICVD definiuje DLA TEGO ZESPOŁU KARDYNALNEGO
+   [H61] Kaski 2025 — a nie te, które akurat przychodzą na myśl.
+
+   PRZY CZERWONEJ FLADZE ATLASU NIE MA I TO JEST DECYZJA, NIE PRZEOCZENIE (użytkownik,
+   2026-08-22). Celem jest tam działanie; materiał do czytania rozcieńcza pilność. Pilnuje tego
+   niezmiennik IN11 na pełnym iloczynie — bo to jest dokładnie ten rodzaj reguły, którą łatwo
+   złamać dobrą intencją („przecież warto dołożyć zawał tylnego kręgu"). Kontrola czułości
+   wykonana: po wstrzyknięciu `atlas: ['naczyniowe']` do węzła czerwonej flagi bramka zapala się
+   na 39680 kombinacjach.
+
+   WIĄZANIE IDZIE PRZEZ NAPIS, NIE PRZEZ IMPORT: tu stoją gołe klucze, a `atlas-model.js` nie
+   wie o kwalifikacji. Oba moduły zostają liśćmi grafu i oba dają się sprawdzić w gołym Node.
+   Cena: literówka daje martwy link zamiast błędu — płaci ją bramka ATL7a w `atlas:check`. */
 const P = (pl, en) => ({ pl, en });
 
 function powod(qid, wartosc) {
@@ -248,6 +276,12 @@ export function triageResult(odp) {
      nota pada tam, gdzie coś się zmienia). Gałąź czerwonej flagi wyłączona — pilna ocena
      obowiązuje niezależnie od tego, czy zawrót jest ortostatyczny. */
   if (a.ortostaza === 'nie' && w.kategoria !== 'czerwona') {
+    /* E6: uwaga D-ORTO NAZYWA jednostkę ([H52] Kim 2019), a od tego etapu ma dokąd prowadzić.
+       Link dokładany DOKŁADNIE tam, gdzie pada uwaga — nie szerzej: przy odpowiedzi 'tak'
+       rozpoznanie ortostatyczne wychodzi z gry, więc wpis atlasu byłby wtedy szumem.
+       To jest wzorzec dla całego pola `atlas`: destynacja idzie za TREŚCIĄ, która już stoi,
+       a nie odwrotnie. */
+    w.atlas = [...(w.atlas || []), 'ortostatyczny'];
     w.uwagi = [...(w.uwagi || []),
       P('Objawy WYŁĄCZNIE przy wstawaniu, a nie przy kładzeniu się ani obracaniu w łóżku, przemawiają za hemodynamicznym zawrotem ortostatycznym — rozważ pomiar ciśnienia i tętna przy pionizacji [H52] Kim 2019. Próbę pozycyjną wykonaj MIMO TO: źródło wprost tego wymaga, bo BPPV kanałów pionowych daje objaw i przy siadaniu z leżenia, i przy kładzeniu się z siadu.',
         'Symptoms ONLY on arising, and not on lying down or turning over in bed, point towards hemodynamic orthostatic dizziness — consider measuring blood pressure and pulse on standing [H52] Kim 2019. Perform the positional test ANYWAY: the source explicitly requires it, because vertical-canal BPPV produces symptoms both on sitting up from supine and on lying down from sitting.')];
@@ -273,7 +307,7 @@ function triageResultCore(odp) {
     for (const v of flagi) { const p = powod('flagi', v); if (p) powody.push(p); }
     const ataksja = flagi.includes('ataksja');
     return {
-      kategoria: 'czerwona', sciezka: null, pewnosc: 'wysoka', flagi, powody,
+      kategoria: 'czerwona', sciezka: null, atlas: [], pewnosc: 'wysoka', flagi, powody,
       tytul: P('Pilna ocena — nie wykonuj repozycji', 'Urgent evaluation — do not perform repositioning'),
       /* D-ATX (2026-08-21): wcześniej stało tu „przemawia za przyczyną OŚRODKOWĄ NIEZALEŻNIE od
          pozostałych cech". [H58] Kim 2022 formułuje to WĘŻEJ i jednocześnie mówi zdanie w DRUGĄ
@@ -323,7 +357,7 @@ function triageResultCore(odp) {
   if (a.przebieg === 'nieznane' || !a.przebieg) {
     if (a.przebieg) powody.push(powod('przebieg', 'nieznane'));
     return {
-      kategoria: 'niepewna', sciezka: null, pewnosc: 'niska', flagi, powody,
+      kategoria: 'niepewna', sciezka: null, atlas: [], pewnosc: 'niska', flagi, powody,
       tytul: P('Ustal najpierw przebieg', 'Establish the time course first'),
       tresc: P('Bez informacji, czy zawroty są napadowe czy ciągłe, żadne z badań nie jest właściwie dobrane: próby pozycyjne odpowiadają na inne pytanie niż HINTS.',
                'Without knowing whether the dizziness is episodic or continuous, neither examination is correctly chosen: positional testing answers a different question than HINTS.'),
@@ -342,7 +376,7 @@ function triageResultCore(odp) {
   if (a.przebieg === 'przewlekle') {
     powody.push(powod('przebieg', 'przewlekle'));
     return {
-      kategoria: 'CVS', sciezka: null, pewnosc: 'srednia', flagi, powody,
+      kategoria: 'CVS', sciezka: null, atlas: ['pppd', 'bvp', 'presbywestybulopatia', 'mdds'], pewnosc: 'srednia', flagi, powody,
       tytul: P('Przewlekły zespół przedsionkowy — poza zakresem symulacji', 'Chronic vestibular syndrome — outside the simulation'),
       tresc: P('Objawy utrzymujące się od 3 miesięcy lub dłużej to PRZEWLEKŁY zespół przedsionkowy — trzeci z zespołów kardynalnych klasyfikacji ICVD [H61] Kaski 2025. Ani próby pozycyjne, ani HINTS nie są tu badaniem z wyboru: pierwsze odpowiadają na pytanie o napad, drugie o ostry zespół z oczopląsem. Silnik OTOREPO żadnej z tych jednostek nie modeluje.',
                'Symptoms persisting for 3 months or longer are a CHRONIC vestibular syndrome — the third cardinal syndrome of the ICVD classification [H61] Kaski 2025. Neither positional testing nor HINTS is the examination of choice here: the former answers a question about an attack, the latter about an acute syndrome with nystagmus. The OTOREPO engine models none of these entities.'),
@@ -364,7 +398,7 @@ function triageResultCore(odp) {
     if (a.wyzwalacz === 'pozycyjny') {
       powody.push(powod('wyzwalacz', 'pozycyjny'));
       return {
-        kategoria: 'tEVS', sciezka: 'diag', pewnosc: brakFlagPotwierdzony ? 'wysoka' : 'srednia', flagi, powody,
+        kategoria: 'tEVS', sciezka: 'diag', atlas: ['bppv'], pewnosc: brakFlagPotwierdzony ? 'wysoka' : 'srednia', flagi, powody,
         tytul: P('Ścieżka: próby pozycyjne', 'Pathway: positional testing'),
         tresc: P('Napadowe zawroty wyzwalane zmianą pozycji to obraz zgodny z BPPV. Właściwym badaniem jest próba pozycyjna: Dix-Hallpike dla kanału tylnego i przedniego, test rolki dla poziomego.',
                  'Episodic dizziness triggered by a change of position matches BPPV. The appropriate examination is positional testing: Dix-Hallpike for the posterior and anterior canals, the roll test for the horizontal canal.'),
@@ -377,7 +411,7 @@ function triageResultCore(odp) {
     if (a.wyzwalacz === 'samoistny') {
       powody.push(powod('wyzwalacz', 'samoistny'));
       return {
-        kategoria: 'sEVS', sciezka: null, pewnosc: 'srednia', flagi, powody,
+        kategoria: 'sEVS', sciezka: null, atlas: ['migrenaPrzedsionkowa', 'meniere', 'paroksyzmia', 'naczyniowe'], pewnosc: 'srednia', flagi, powody,
         tytul: P('Napady samoistne — poza zakresem symulacji', 'Spontaneous attacks — outside the simulation'),
         tresc: P('Napadowe zawroty BEZ wyzwalacza pozycyjnego to inna grupa niż BPPV: przede wszystkim migrena przedsionkowa, choroba Ménière’a i TIA tylnego kręgu. Silnik OTOREPO ich nie modeluje.',
                  'Episodic dizziness WITHOUT a positional trigger is a different group than BPPV: chiefly vestibular migraine, Ménière’s disease and posterior-circulation TIA. The OTOREPO engine does not model them.'),
@@ -392,7 +426,7 @@ function triageResultCore(odp) {
     // wyzwalacz nieznany
     if (a.wyzwalacz) powody.push(powod('wyzwalacz', 'nieznane'));
     return {
-      kategoria: 'niepewna', sciezka: 'diag', pewnosc: 'niska', flagi, powody,
+      kategoria: 'niepewna', sciezka: 'diag', atlas: ['bppv'], pewnosc: 'niska', flagi, powody,
       tytul: P('Ścieżka: próby pozycyjne — z zastrzeżeniem', 'Pathway: positional testing — with a caveat'),
       tresc: P('Przy napadach o niejasnym wyzwalaczu próba pozycyjna jest badaniem tanim i rozstrzygającym: dodatni wynik potwierdza BPPV, ujemny kieruje ku napadom samoistnym (migrena przedsionkowa, Ménière).',
                'When the trigger of the attacks is unclear, a positional test is a cheap and decisive examination: a positive result confirms BPPV, a negative one points toward spontaneous attacks (vestibular migraine, Ménière’s).'),
@@ -408,7 +442,7 @@ function triageResultCore(odp) {
   if (a.oczoplas === 'obecny') {
     powody.push(powod('oczoplas', 'obecny'));
     return {
-      kategoria: 'AVS', sciezka: 'hints', pewnosc: brakFlagPotwierdzony ? 'wysoka' : 'srednia', flagi, powody,
+      kategoria: 'AVS', sciezka: 'hints', atlas: ['auvp', 'naczyniowe'], pewnosc: brakFlagPotwierdzony ? 'wysoka' : 'srednia', flagi, powody,
       tytul: P('Ścieżka: HINTS', 'Pathway: HINTS'),
       tresc: P('Ciągłe zawroty z utrzymującym się oczopląsem samoistnym to ostry zespół przedsionkowy — sytuacja, w której HINTS ma zastosowanie i bywa czulszy niż wczesne MRI.',
                'Continuous dizziness with sustained spontaneous nystagmus is an acute vestibular syndrome — the situation in which HINTS applies and can be more sensitive than early MRI.'),
@@ -423,7 +457,7 @@ function triageResultCore(odp) {
   if (a.oczoplas === 'brak') {
     powody.push(powod('oczoplas', 'brak'));
     return {
-      kategoria: 'pseudoAVS', sciezka: null, pewnosc: 'srednia', flagi, powody,
+      kategoria: 'pseudoAVS', sciezka: null, atlas: ['ramyICVD'], pewnosc: 'srednia', flagi, powody,
       tytul: P('Najpierw znieś fiksację', 'Remove fixation first'),
       tresc: P('Ciągłe zawroty BEZ widocznego oczopląsu to nie jest sytuacja dla HINTS. Oczopląs obwodowy bywa całkowicie tłumiony patrzeniem — oceń ponownie po zniesieniu fiksacji (okulary Frenzla, ciemność, oftalmoskop z zasłoniętym drugim okiem).',
                'Continuous dizziness WITHOUT visible nystagmus is not a situation for HINTS. Peripheral nystagmus can be completely suppressed by fixation — reassess after removing fixation (Frenzel goggles, darkness, ophthalmoscope with the other eye covered).'),
@@ -441,7 +475,7 @@ function triageResultCore(odp) {
   // oczopląs nieoceniony
   if (a.oczoplas) powody.push(powod('oczoplas', 'nieoceniony'));
   return {
-    kategoria: 'niepewna', sciezka: null, pewnosc: 'niska', flagi, powody,
+    kategoria: 'niepewna', sciezka: null, atlas: [], pewnosc: 'niska', flagi, powody,
     tytul: P('Oceń oczopląs przed wyborem badania', 'Assess the nystagmus before choosing the examination'),
     tresc: P('Przy ciągłych zawrotach o dalszym postępowaniu rozstrzyga obecność oczopląsu samoistnego. Bez tej informacji nie da się powiedzieć, czy HINTS jest w ogóle właściwym badaniem.',
              'In continuous dizziness, the presence of spontaneous nystagmus decides what to do next. Without that information it cannot be said whether HINTS is even the right examination.'),

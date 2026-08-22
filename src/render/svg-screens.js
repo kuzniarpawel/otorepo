@@ -37,6 +37,8 @@ import { POZIOMY, POZIOM_IDS, RODZAJE, RODZAJ_IDS, ETAPY, ETAP_IDS, ETAPY_PYTAJA
          odsloniete, informacjaZwrotna, wolnoDalej, postepLekcji, koniecPrzypadku, wynikPrzypadku,
          OCENY, postepBiblioteki, probyPrzypadku, probaGlowna } from '../app/nauka-model.js';
 import { naukaDeps } from '../app/nauka-deps.js';
+import { ZESPOLY, STANY_SILNIKA, STAN_SILNIKA_IDS, RANGI, wpis as wpisAtlasu, filtruj as filtrujAtlas,
+         progiKarty, rozkladZakresu } from '../app/atlas-model.js';
 import { POWODY_ODMOWY } from '../app/nauka-state.js';
 import { PARAMETRY, POWODY_BEZ_SKUTKU, OBSERWABLE, obserwabla, EKSPERYMENTY, eksperyment,
          odchyleniaZeSkutkiem, porownanie, wolnoPokazac, STANOWISKA, STANOWISKO_IDS } from '../app/lab-model.js';
@@ -839,6 +841,8 @@ function render(){
   else if(state.screen==="hintsWyn") renderHintsWyn();
   else if(state.screen==="labLista") renderLabLista();
   else if(state.screen==="labEksp") renderLabEksp();
+  else if(state.screen==="atlasLista") renderAtlasLista();
+  else if(state.screen==="atlasWpis") renderAtlasWpis();
   else if(state.screen==="naukaBib") renderNaukaBib();
   else if(state.screen==="naukaLekcja") renderNaukaLekcja();
   else if(state.screen==="hints") renderHints();
@@ -947,9 +951,25 @@ const START_HINTS = {
            d:()=>t("Tryb ekspercki — pomija wywiad i próbę. Epley, Semont, Bascule, Lempert/BBQ, Gufoni, Yacovino; licznik i kontrola po manewrze.",
                    "Expert mode — skips history and test. Epley, Semont, Bascule, Lempert/BBQ, Gufoni, Yacovino; timer and follow-up after the maneuver.") },
   krisk: { ton:"var(--crit)", t:()=>t("Przypadek nietypowy","Atypical case"),
-           d:()=>t("Cechy niezgodne z klasycznym obrazem i czerwone flagi ośrodkowe. Prowadzi do różnicowania, nie do manewru repozycyjnego.",
-                   "Features that do not fit the classic picture, plus central red flags. Leads to differentiation, not to a repositioning maneuver.") },
+           d:()=>t("Cechy niezgodne z klasycznym obrazem i czerwone flagi ośrodkowe. Prowadzi do kwalifikacji wstępnej, która rozstrzyga, czy właściwe są próby pozycyjne, HINTS, czy poszerzona diagnostyka — nie do manewru repozycyjnego.",
+                   "Features that do not fit the classic picture, plus central red flags. Leads to the initial triage, which decides whether positional testing, HINTS or an extended work-up is appropriate — not to a repositioning maneuver.") },
+  /* E6: szósty kafel. Ton `--ok` celowo NIE alarmowy: atlas jest materiałem do czytania, a nie
+     ścieżką pilną, i nie ma konkurować uwagą z kaflem czerwonych flag. */
+  katlas:{ ton:"var(--ok)", t:()=>t("Atlas otoneurologiczny","Otoneurology atlas"),
+           d:()=>t("Wszystkie jednostki ICVD Bárány Society z kryteriami, progami i granicami źródła. Osobny zakres: w ocenie ostrych zawrotów ścieżka pozostaje ogólna, a rozpoznań się nie mnoży. Atlas niczego nie liczy.",
+                   "All Bárány Society ICVD entities with their criteria, thresholds and source boundaries. A separate scope: in acute dizziness the pathway stays general and diagnoses are not multiplied. The atlas computes nothing.") },
 };
+/* E6 — PIĄTY KAFEL PRZEKIEROWANY, SZÓSTY DOŁOŻONY (2026-08-22).
+   Kafel „Przypadek nietypowy" prowadził wprost do `goHintsKwal()` — czyli przypadek z definicji
+   NAJMNIEJ pasujący do HINTS był wstępnie przypisywany do HINTS, ZANIM padło jakiekolwiek pytanie.
+   To jest dokładnie użycie, któremu `triage-model.js` ma zapobiegać („NIEDOPUSZCZENIE DO
+   NIEWŁAŚCIWEGO UŻYCIA HINTS"). Teraz prowadzi do KWALIFIKACJI, która rozstrzyga sama: próby
+   pozycyjne, HINTS albo atlas. Szósty kafel otwiera Atlas otoneurologiczny.
+
+   PUŁAPKA ZŁAPANA PRZY TEJ ZMIANIE, WARTA ZAPAMIĘTANIA: komentarz `/* *\/` wstawiony do WNĘTRZA
+   literału szablonu nie jest komentarzem — jest TEKSTEM, a backtick w nim rozrywa literał.
+   Komentarz HTML też nie jest rozwiązaniem: trafia do produkcyjnego DOM. Zmierzone — ekran
+   startowy urósł wtedy o 1,8 kB na każdym renderze. Komentarz należy do kodu i stoi TUTAJ. */
 const START_HINT_SPOCZYNEK = { ton:"var(--faint)",
   t:()=>t("Co robi ta karta?","What does this card do?"),
   d:()=>t("Najedź kursorem na kartę trybu albo na szybkie wejście — tutaj pojawi się opis tego, co dana ścieżka faktycznie uruchamia.",
@@ -1129,7 +1149,9 @@ function renderStart(){
             ${startQuick(4, I.cel,  t("Znam kanał i stronę","I know the canal and the side"),
                              t("Szybki wybór manewru","Quick maneuver selection"), "startGo('treat')", "kant")}
             ${startQuick(5, I.uwaga,t("Przypadek nietypowy","Atypical case"),
-                             t("Różnicowanie i czerwone flagi","Differentiation and red flags"), "goHintsKwal()", "krisk")}
+                             t("Kwalifikacja: różnicowanie i czerwone flagi","Triage: differentiation and red flags"), "openTriage()", "krisk")}
+            ${startQuick(6, I.mozg, t("Atlas otoneurologiczny","Otoneurology atlas"),
+                             t("Jednostki ICVD i kryteria rozpoznania","ICVD entities and diagnostic criteria"), "goAtlas()", "katlas")}
           </ul>
         </div>
         <aside class="startside">
@@ -1959,9 +1981,11 @@ function hxTabelaHTML(odp, p){
 }
 
 function renderHintsKwal(){
+  /* WARIANT A: `activeQuestions`/`nextQuestionId` zniknely stad razem z kwestionariuszem — pytania
+     renderuje juz wylacznie `renderTriage` (krok 1). Zostawienie martwych zmiennych bylo tu realnym
+     ryzykiem, a nie balaganem: nastepna osoba zobaczylaby `pytania` w zasiegu i uznala, ze ekran
+     jednak pyta. */
   const odp = state.triage||{};
-  const pytania = activeQuestions(odp);
-  const nastepne = nextQuestionId(odp);
   const k = kwalifikacjaHints(state, hDeps());
   const przesz = state.hintsPrzeszkolenie;
 
@@ -1992,6 +2016,31 @@ function renderHintsKwal(){
         </section>`
       : "";
 
+  /* WARIANT A (E6, decyzja użytkownika 2026-08-22) — OKNO HINTS JEST OKNEM HINTS.
+     Do tego etapu ten ekran renderował CAŁY kwestionariusz kwalifikacji, więc „Diagnostyka
+     HINTS/HINTS+" była w połowie przypadków ekranem, który kończył się zdaniem „HINTS tu nie ma
+     zastosowania". Nazwa okna mówiła wtedy coś innego niż jego treść.
+
+     Kwestionariusz wraca na SWÓJ ekran (`triage`, krok 1), a tutaj zostaje to, co dotyczy
+     BADAJĄCEGO i badania: przeszkolenie, pułapki, wejście. Odpowiedzi są nadal WSPÓLNE
+     (`state.triage` czyta jeden model), więc rozdzielenie jest widokowe, nie danych.
+
+     ODPOWIEDZI SIĘ NIE GUBIĄ I NIE DUBLUJĄ — karta niżej pokazuje werdykt kroku 1 i prowadzi
+     do niego z powrotem. Bez niej użytkownik, który wszedł tu wprost (kafel startowy, `setMode`),
+     zobaczyłby odmowę bez wskazania, gdzie ją zdjąć. */
+  const wynikTriage = triageResult(odp);
+  const kartaKroku1 = `<section class="card hqkrok1" data-hqkrok1="${k.kompletna ? wynikTriage.kategoria : 'niewypelniona'}">
+      <h4>${t("Krok 1 — kwalifikacja wstępna","Step 1 — initial triage")}</h4>
+      ${k.kompletna
+        ? `<p class="hqkrok1__w"><b>${t(wynikTriage.tytul.pl, wynikTriage.tytul.en)}</b></p>
+           <p class="note">${t(wynikTriage.tresc.pl, wynikTriage.tresc.en)}</p>`
+        : `<p class="note">${t("Kwalifikacja nie została wypełniona. Bez odpowiedzi o przebiegu i o oczopląsie samoistnym nie wiadomo, czy HINTS jest tu właściwym badaniem.",
+                                "The triage has not been completed. Without answers about the time course and spontaneous nystagmus it is not known whether HINTS is the right examination here.")}</p>`}
+      <button type="button" class="recoalt" onclick="openTriage()">${k.kompletna
+        ? t("Wróć do kwalifikacji i popraw odpowiedzi","Go back to the triage and change the answers")
+        : t("Wypełnij kwalifikację","Complete the triage")}</button>
+    </section>`;
+
   const odmowa = state.hintsBlad
     ? `<div class="hqblad">${t("Nie wpuszczono do badania.","Entry to the examination was refused.")} ${t(STANY_KWALIFIKACJI[state.hintsBlad].opisPl, STANY_KWALIFIKACJI[state.hintsBlad].opisEn)}</div>`
     : "";
@@ -2002,6 +2051,16 @@ function renderHintsKwal(){
        <button class="recoalt" onclick="otworzLaboratorium()">${t("Matematyczny pacjent (Laboratorium)","Mathematical patient (Laboratory)")}</button>`
     : `<p class="note hqczekam">${t("Badanie otworzy się, gdy kwalifikacja zostanie potwierdzona albo świadomie pominięta.",
                                     "The examination will open once the qualification is confirmed or deliberately skipped.")}</p>`;
+
+  /* TRZECIE WYJŚCIE — E6. Zmierzone przed zmianą: przy werdykcie „odradzana" klinicysta,
+     który BADA PACJENTA, miał na tym ekranie dokładnie dwa ruchy do przodu i oba wchodziły
+     w HINTS (`pozraAplikacja` i `mimoOdradzania` — jedyne dwa powody pominięcia z
+     `badaniePacjenta: true`). Konstrukcja sama pchała ku obejściu bramki.
+     Wyjście do atlasu OPUSZCZA tryb HINTS, więc nie jest ósmą drogą omijającą `wolnoBadac` —
+     ta zostaje jedynymi drzwiami modułu. */
+  const wyjscieDoAtlasu = (k.status === 'odradzana')
+    ? atlasLinkiHTML(wynikTriage.atlas, "Zamiast HINTS — poszerzona diagnostyka otoneurologiczna", "Instead of HINTS — extended otoneurological work-up")
+    : "";
 
   const wynik = `<section class="card hqw hqw--${k.status}" data-hq-status="${k.status}" tabindex="-1">
       <div class="hqw__ttl">${k.czerwona?"⚠ ":""}${t(k.pl,k.en)}</div>
@@ -2015,12 +2074,12 @@ function renderHintsKwal(){
       <div class="ttl"><b>${t("HINTS / HINTS+ — kwalifikacja","HINTS / HINTS+ — qualification")}</b><span>${t("ostry zespół przedsionkowy · przeszkolenie · wejście do badania","acute vestibular syndrome · training · entry to the examination")}</span></div></div>
     <div class="pagegrid hqgrid">
       <div class="col col--ctl">
-        <p class="hqlead">${t("HINTS ma zastosowanie w CIĄGŁYCH zawrotach z utrzymującym się oczopląsem samoistnym. Poniższe pytania są tymi samymi, które zadaje kwalifikacja wstępna — odpowiedzi są wspólne dla całej sesji.",
-                              "HINTS applies to CONTINUOUS dizziness with sustained spontaneous nystagmus. The questions below are the same ones the initial triage asks — the answers are shared across the whole session.")}</p>
-        ${pytania.map(q=>triageQuestionHTML(q,odp,nastepne)).join("")}
+        <p class="hqlead">${t("HINTS ma zastosowanie w CIĄGŁYCH zawrotach z utrzymującym się oczopląsem samoistnym. O tym, czy tak jest u tego chorego, rozstrzyga kwalifikacja wstępna — to jest krok pierwszy i ma własny ekran.",
+                              "HINTS applies to CONTINUOUS dizziness with sustained spontaneous nystagmus. Whether that is the case in this patient is settled by the initial triage — that is step one, and it has its own screen.")}</p>
+        ${kartaKroku1}
         ${kartaPrzeszkolenia}
       </div>
-      <div class="col col--viz">${wynik}${kartaPominiecia}</div>
+      <div class="col col--viz">${wynik}${wyjscieDoAtlasu}${kartaPominiecia}</div>
     </div>
     <div class="disclaimer">${t('<b>Kwalifikacja wskazuje, czy HINTS jest tu właściwym badaniem</b> — nie stawia rozpoznania. Taksonomia czas-i-wyzwalacze wg wytycznych GRACE-3 (Edlow i wsp., <i>Acad Emerg Med</i> 2023).',
                               '<b>The qualification indicates whether HINTS is the right examination here</b> — it makes no diagnosis. Timing-and-triggers taxonomy per the GRACE-3 guideline (Edlow et al., <i>Acad Emerg Med</i> 2023).')}</div>`;
@@ -2124,6 +2183,27 @@ function renderHintsWyn(){
     <div class="disclaimer">${t(p.zastrzezenieKliniczne.pl, p.zastrzezenieKliniczne.en)}</div>`;
 }
 
+/* Linki do Atlasu otoneurologicznego (E6). JEDEN generator na oba ekrany, ktore ich uzywaja —
+   kwalifikacje i okno HINTS. Klucze przychodza z `triageResult().atlas`, czyli z modelu; ten plik
+   nie decyduje, DOKAD sie linkuje, tylko JAK to wyglada.
+
+   NAPIS JEST OSTROZNY I TO JEST TRESC, NIE STYL. Brzmi „ICVD definiuje w tym oknie te jednostki —
+   przeczytaj kryteria", nigdy „to jest PPPD". Kwalifikacja wybiera SCIEZKE BADANIA i nie stawia
+   rozpoznania; link, ktory by je stawial, lamalby te zasade w najczulszym miejscu — na karcie
+   werdyktu, ktora klinicysta czyta jako podsumowanie. */
+function atlasLinkiHTML(klucze, naglowekPl, naglowekEn){
+  const lista = (klucze||[]).map(k=>wpisAtlasu(k)).filter(Boolean);
+  if(!lista.length) return "";
+  return `<section class="card atllink" data-atllink>
+      <h4>${t(naglowekPl,naglowekEn)}</h4>
+      <ul class="atllink__l">${lista.map(w=>`<li><button type="button" class="recoalt atllink__b"
+          data-atllinkklucz="${w.klucz}" onclick="otworzWpisAtlasu('${w.klucz}','triage')">
+          ${t(w.nazwaPl,w.nazwaEn)} <small>${w.zrodlo}</small></button></li>`).join("")}</ul>
+      <p class="note">${t("To sa jednostki, ktore ICVD definiuje dla tego zespolu kardynalnego — do PRZECZYTANIA kryteriow, nie do postawienia rozpoznania. Atlas niczego nie liczy.",
+                          "These are the entities ICVD defines for this cardinal syndrome — to READ the criteria, not to make a diagnosis. The atlas computes nothing.")}</p>
+    </section>`;
+}
+
 function renderTriage(){
   const odp = state.triage||{};
   const pytania = activeQuestions(odp);
@@ -2190,7 +2270,7 @@ function renderTriage(){
       <div class="col col--ctl">
         ${pytania.map(q=>triageQuestionHTML(q,odp,nastepne)).join("")}
       </div>
-      <div class="col col--viz">${wynik}${kryteriaVM}</div>
+      <div class="col col--viz">${wynik}${atlasLinkiHTML(gotowe ? w.atlas : [], "Jednostki ICVD zdefiniowane w tym oknie", "ICVD entities defined in this window")}${kryteriaVM}</div>
     </div>
     <div class="disclaimer">${t('<b>Kwalifikacja wskazuje ŚCIEŻKĘ BADANIA, nie rozpoznanie.</b> Opiera się na taksonomii czas-i-wyzwalacze z wytycznych GRACE-3 (Edlow i wsp., <i>Acad Emerg Med</i> 2023). Nie zastępuje badania ani decyzji klinicysty.',
                               '<b>The triage selects an EXAMINATION PATHWAY, not a diagnosis.</b> It follows the timing-and-triggers taxonomy of the GRACE-3 guideline (Edlow et al., <i>Acad Emerg Med</i> 2023). It does not replace examination or clinician judgment.')}</div>`;
@@ -4198,6 +4278,155 @@ function nFiltrHTML(pole, slownik, ids){
           onclick="ustawFiltrNauki('${pole}','${id}')">${t(slownik[id].pl, slownik[id].en)}</button>`).join("")}
     </div>`;
 }
+/* ============ ATLAS OTONEUROLOGICZNY (E6) ============
+   Decyzja użytkownika 2026-08-22: program ma ZNAĆ wszystkie jednostki ICVD, ale ścieżka OSTRA —
+   ta, na której stoi GRACE-3 i HINTS — pozostaje OGÓLNA. Rozpoznań się tam nie mnoży. Te dwa
+   ekrany są tym drugim, rozłącznym zakresem.
+
+   CO TE EKRANY NIOSĄ, A CZEGO NIE. Nic tu nie liczy i nic nie orzeka — wzorzec `vmCriteriaCard`
+   z V28: karta kryteriów jest wyciągiem, nie kalkulatorem. Nie ma tu ani jednego pola na wynik
+   badania i ani jednego przycisku prowadzącego do modułu HINTS albo do manewru. To jest granica
+   SPRAWDZALNA, nie deklaracja: `atlas-state.js` pisze wyłącznie do pól `atlas*`, więc wyrocznia
+   bierze odcisk `state.triage` przed wejściem tutaj i po wyjściu i żąda, żeby był identyczny. */
+function atlasZnacznik(w){
+  const z = ZESPOLY[w.zespol], s = STANY_SILNIKA[w.wSilniku];
+  return `<span class="atlznak atlznak--${w.zespol}" title="${t(z.opisPl,z.opisEn)}">${t(z.skrotPl,z.skrotEn)}</span>
+          <span class="atlznak atlznak--zakres" title="${t(s.opisPl,s.opisEn)}">${t(s.pl,s.en)}</span>`;
+}
+function atlasKafel(w){
+  return `<li class="atlkafel"><button type="button" class="atlkafel__b" data-atlwpis="${w.klucz}"
+        onclick="otworzWpisAtlasu('${w.klucz}')">
+      <span class="atlkafel__n">${t(w.nazwaPl,w.nazwaEn)}</span>
+      <span class="atlkafel__z">${atlasZnacznik(w)}</span>
+      <span class="atlkafel__zr">${w.zrodlo}</span>
+    </button></li>`;
+}
+function atlasFiltrHTML(etykieta, slownik, klucze, biezacy, akcja){
+  const b = (id,txt)=>`<button type="button" class="tqopt tqopt--chip" aria-pressed="${biezacy===id}"
+      onclick="${akcja}('${id}')"><span class="tqopt__txt">${txt}</span></button>`;
+  return `<div class="atlfiltr" role="group" aria-label="${etykieta}">
+      ${klucze.map(id=>b(id, t(slownik[id].pl, slownik[id].en))).join("")}</div>`;
+}
+
+function renderAtlasLista(){
+  const zespol = state.atlasZespol||null, zakres = state.atlasZakres||null, fraza = state.atlasSzukaj||"";
+  const lista = filtrujAtlas({ zespol, zakres, fraza });
+  const rz = rozkladZakresu();
+  const cokolwiek = !!(zespol||zakres||fraza);
+  /* Oś filtrowania po zespole POMIJA 'wiele' i 'nd'. Nie dlatego, że są mniej ważne — dlatego,
+     że nie są pytaniem klinicysty: nikt nie szuka „jednostek o więcej niż jednym oknie czasowym".
+     Wpisy z tymi wartościami są widoczne na liście bez filtru; filtr ich tylko nie wyodrębnia. */
+  const OSIE = ['AVS','EVS','CVS'];
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="goArea('start')" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t("Atlas otoneurologiczny","Otoneurology atlas")}</b><span>${t("jednostki ICVD · kryteria · granice źródła","ICVD entities · criteria · source boundaries")}</span></div>
+      ${cokolwiek?`<button class="opt opt--inline" onclick="wyczyscFiltryAtlasu()">${t("Wyczyść","Clear")}</button>`:""}</div>
+    <div class="pagegrid atlgrid">
+      <div class="col col--ctl">
+        <p class="nlead">${t("Wszystkie jednostki i dokumenty konsensusu ICVD Bárány Society — każdy z kryteriami, progami i granicami źródła. To jest materiał do CZYTANIA: atlas niczego nie liczy i nie stawia rozpoznania.",
+                             "All entities and consensus documents of the Bárány Society ICVD — each with criteria, thresholds and source boundaries. This is material to READ: the atlas computes nothing and makes no diagnosis.")}</p>
+        <label class="atlszukaj"><span class="atlszukaj__l">${t("Szukaj jednostki","Search for an entity")}</span>
+          <input type="search" class="atlszukaj__i" value="${String(fraza).replace(/"/g,"&quot;")}" data-atlszukaj
+                 placeholder="${t("nazwa albo synonim","name or synonym")}"
+                 oninput="ustawSzukajAtlasu(this.value)"></label>
+        ${atlasFiltrHTML(t("Zespół kardynalny","Cardinal syndrome"), ZESPOLY, OSIE, zespol, 'ustawZespolAtlasu')}
+        ${atlasFiltrHTML(t("Zakres silnika","Engine scope"), STANY_SILNIKA, STAN_SILNIKA_IDS, zakres, 'ustawZakresAtlasu')}
+        ${lista.length
+          ? `<ul class="atllista" data-atllista>${lista.map(atlasKafel).join("")}</ul>`
+          : `<p class="note" data-atlpusto>${t("Żaden wpis nie pasuje do tego zawężenia. Atlas ma komplet jednostek — to filtr, nie brak treści.",
+                                               "No entry matches this filter. The atlas holds the full set of entities — this is the filter, not missing content.")}</p>`}
+      </div>
+      <div class="col col--viz">
+        <section class="card atlzakres" data-atlzakres>
+          <h3>${t("Co program z tym robi","What the app does with these")}</h3>
+          <p class="atlzakres__l">${t(`Modelowanych przez silnik: ${rz.modelowana}`, `Modelled by the engine: ${rz.modelowana}`)}</p>
+          <p class="atlzakres__l">${t(`Kryteria bez modelu: ${rz['kryteria-bez-modelu']}`, `Criteria without a model: ${rz['kryteria-bez-modelu']}`)}</p>
+          <p class="atlzakres__l">${t(`Świadomie poza zakresem silnika: ${rz['poza-zakresem']}`, `Deliberately outside the engine scope: ${rz['poza-zakresem']}`)}</p>
+          <p class="note">${t("„Poza zakresem” jest tu DECYZJĄ, nie przeoczeniem — i dlatego stoi wypisane. Atlas ma jednostkę opisać także wtedy, gdy silnik jej nie modeluje; udawanie, że modeluje, byłoby gorsze niż jej brak.",
+                              "&quot;Outside the scope&quot; is a DECISION here, not an oversight — which is why it is written out. The atlas describes an entity even when the engine does not model it; pretending it did would be worse than leaving it out.")}</p>
+        </section>
+        <section class="card atlgdzie">
+          <h3>${t("Dlaczego to osobna zakładka","Why this is a separate tab")}</h3>
+          <p class="note">${t("W ocenie ostrych zawrotów — tam, gdzie stosuje się GRACE-3 i HINTS — ścieżka pozostaje OGÓLNA i rozpoznań się nie mnoży. Kwalifikacja wstępna linkuje tutaj wtedy, gdy jej węzeł opisuje chorego, którego silnik nie modeluje: napady samoistne i zespół przewlekły.",
+                              "In the assessment of acute dizziness — where GRACE-3 and HINTS apply — the pathway stays GENERAL and diagnoses are not multiplied. The initial triage links here when its node describes a patient the engine does not model: spontaneous attacks and the chronic syndrome.")}</p>
+        </section>
+      </div>
+    </div>
+    <div class="disclaimer">${t('<b>Atlas nie stawia rozpoznania.</b> Kryteria są parafrazą dokumentów konsensusu Bárány Society; progi liczbowe i strukturę logiczną oddano dokładnie. Rozpoznanie stawia klinicysta na podstawie badania, nie na podstawie tej karty.',
+                              '<b>The atlas makes no diagnosis.</b> The criteria are a paraphrase of the Bárány Society consensus documents; numerical thresholds and logical structure are reproduced exactly. The diagnosis is made by the clinician from the examination, not from this card.')}</div>`;
+}
+
+function atlasKryteriumHTML(k){
+  const punkty = (k.punkty||[]).map(p=>`<li><b>${p.litera}</b> — ${t(p.pl,p.en)}</li>`).join("");
+  const przyp = (k.przypisyPl||[]).length
+    ? `<div class="atlprzyp"><b>${t("Przypisy do kryteriów","Notes to the criteria")}</b>
+        <ul>${(k.przypisyPl).map((x,i)=>`<li>${t(x,(k.przypisyEn||[])[i]||x)}</li>`).join("")}</ul></div>`
+    : "";
+  return `<section class="card atlkryt">
+      <h4>${t(k.nazwaPl,k.nazwaEn)}</h4>
+      ${k.wymagane?`<p class="atlkryt__w">${t("Warunek rozpoznania","Requirement")}: <b>${t(k.wymagane,k.wymaganeEn||k.wymagane)}</b></p>`:""}
+      <ul class="atlkryt__l">${punkty}</ul>
+      ${przyp}
+    </section>`;
+}
+
+function renderAtlasWpis(){
+  const w = wpisAtlasu(state.atlasWpis);
+  /* Klucz spoza atlasu NIE jest błędem do zgłoszenia użytkownikowi — to stan nieosiągalny z UI
+     (kafle budują się z listy), więc jedyną drogą tutaj jest ręcznie ustawiony stan albo pomyłka
+     w linku. Wracamy na listę, zamiast rysować pusty ekran, na którym nic nie da się zrobić. */
+  if(!w){ renderAtlasLista(); return; }
+  const progi = progiKarty(w.klucz);
+  const syn = (w.synonimy||[]).length
+    ? `<p class="atlsyn">${t("Synonimy","Synonyms")}: ${(w.synonimy).map(s=>
+        `<span class="atlsyn__t${s.odradzany?" atlsyn__t--odradzany":""}"${s.odradzany?` title="${t(s.uwagaPl,s.uwagaEn)}"`:""}>${t(s.pl,s.en)}${s.odradzany?" ⊘":""}</span>`).join(", ")}</p>`
+    : "";
+  const odradzane = (w.synonimy||[]).filter(s=>s.odradzany);
+  const notaOdradzana = odradzane.length
+    ? `<div class="note atlodradz">${t("Termin oznaczony ⊘ jest w dokumentach ICVD ODRADZANY","A term marked ⊘ is DISCOURAGED in the ICVD documents")}: ${
+        odradzane.map(s=>t(s.uwagaPl,s.uwagaEn)).join(" ")}</div>`
+    : "";
+
+  $("#app").innerHTML=`
+    <div class="ghead"><button class="iconbtn" onclick="wrocZWpisuAtlasu()" aria-label="${t("Wróć","Back")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ttl"><b>${t(w.nazwaPl,w.nazwaEn)}</b><span>${w.zrodlo}</span></div></div>
+    <div class="pagegrid atlgrid" data-atlwpiswidok="${w.klucz}">
+      <div class="col col--ctl">
+        <section class="card atlnag">
+          <div class="atlnag__z">${atlasZnacznik(w)}</div>
+          ${syn}
+          <p class="atlnag__s">${t(w.streszczeniePl,w.streszczenieEn)}</p>
+          ${notaOdradzana}
+        </section>
+        ${(w.kryteria||[]).map(atlasKryteriumHTML).join("")}
+      </div>
+      <div class="col col--viz">
+        ${progi.length?`<section class="card atlprogi" data-atlprogi>
+          <h3>${t("Progi","Thresholds")}</h3>
+          <ul class="atlprogi__l">${progi.map(p=>`<li>
+            <b>${t(p.wielkoscPl,p.wielkoscEn)}</b>: ${p.wartosc}
+            <span class="atlprogi__r" title="${t(RANGI[p.ranga].opisPl,RANGI[p.ranga].opisEn)}">${t(RANGI[p.ranga].pl,RANGI[p.ranga].en)}</span>
+            <small>${t(p.kontekstPl,p.kontekstEn)}</small></li>`).join("")}</ul>
+          <p class="note">${t("Pokazane są progi o randze KRYTERIUM albo NOTY, do której kryterium odsyła. Liczby z omówienia nie wchodzą — komplet pomiarów każdej pracy leży w ekstrakcjach korpusu.",
+                              "Shown are thresholds ranked as a CRITERION, or as a NOTE the criterion refers to. Numbers from the discussion are excluded — the full set of measurements for each paper lives in the corpus extractions.")}</p>
+        </section>`:""}
+        <section class="card atlgranice" data-atlgranice>
+          <h3>${t("Granice źródła — czego praca NIE mówi","Source boundaries — what the paper does NOT say")}</h3>
+          <ul class="atlgranice__l">${(w.granicePl||[]).map((g,i)=>`<li>${t(g,(w.graniceEn||[])[i]||g)}</li>`).join("")}</ul>
+          <p class="note">${t("To pole odróżnia atlas od podręcznika. „Praca nie podaje progu X” jest pełnowartościową odpowiedzią kliniczną — i częściej potrzebną niż sam próg.",
+                              "This field is what separates an atlas from a textbook. &quot;The paper gives no threshold for X&quot; is a fully valid clinical answer — and more often the one you need than the threshold itself.")}</p>
+        </section>
+        <section class="card atlzakres1">
+          <h3>${t("Zakres w programie","Scope within the app")}</h3>
+          <p><b>${t(STANY_SILNIKA[w.wSilniku].pl, STANY_SILNIKA[w.wSilniku].en)}</b> — ${t(STANY_SILNIKA[w.wSilniku].opisPl, STANY_SILNIKA[w.wSilniku].opisEn)}</p>
+        </section>
+      </div>
+    </div>
+    <div class="disclaimer">${t('<b>Kryteria są parafrazą.</b> Progi liczbowe i strukturę logiczną oddano dokładnie, prozy źródła nie przedrukowano. Atlas niczego nie liczy i nie stawia rozpoznania.',
+                              '<b>The criteria are a paraphrase.</b> Numerical thresholds and logical structure are reproduced exactly; the prose of the source is not reprinted. The atlas computes nothing and makes no diagnosis.')}</div>`;
+}
+
 function renderNaukaBib(){
   const filtr = state.naukaFiltr || {poziom:null, rodzaj:null};
   const lista = przypadki(filtr);

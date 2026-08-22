@@ -105,7 +105,11 @@ for (const p of WART.przebieg) for (const d of WART.odkiedy) for (const w of WAR
   kombinacje.push({ przebieg: p, odkiedy: d, wyzwalacz: w, ortostaza: r, oczoplas: o, flagi: f });
 
 const zlamane = { hintsPrzyNapadach: [], flagaBezPilnej: [], flagaZeSciezka: [], zlaSciezka: [], bezPowodu: [],
-  bezTekstu: [], zlyPowod: [], hintsBezOczoplasu: [], diagPrzyCiagle: [] };
+  bezTekstu: [], zlyPowod: [], hintsBezOczoplasu: [], diagPrzyCiagle: [],
+  /* E6: pole `atlas` jest DESTYNACJĄ, nie ścieżką. Trzy niezmienniki niżej pilnują, żeby nim
+     zostało — bo to jest dokładnie ten rodzaj rozróżnienia, które gubi się przy następnej
+     zmianie, jeśli stoi wyłącznie w komentarzu. */
+  flagaZAtlasem: [], atlasZlyKsztalt: [], atlasDuplikat: [] };
 for (const k of kombinacje) {
   const w = triageResult(k);
   const flagi = czerwoneFlagi(k);
@@ -136,6 +140,16 @@ for (const k of kombinacje) {
   if (w.sciezka === 'hints' && !(k.przebieg === 'ciagle' && k.oczoplas === 'obecny')) zlamane.hintsBezOczoplasu.push(opis);
   // Próby pozycyjne nie są odpowiedzią na ciągły zespół przedsionkowy.
   if (w.sciezka === 'diag' && k.przebieg === 'ciagle') zlamane.diagPrzyCiagle.push(opis);
+
+  /* E6 — CZERWONA FLAGA NIE NIESIE ATLASU. Decyzja użytkownika 2026-08-22: przy fladze celem
+     jest DZIAŁANIE, a materiał do czytania rozcieńcza pilność. Reguła jest łatwa do złamania
+     dobrą intencją („przecież warto tu dołożyć zawał tylnego kręgu"), więc stoi na iloczynie,
+     a nie w komentarzu. */
+  if (flagi.length && Array.isArray(w.atlas) && w.atlas.length) zlamane.flagaZAtlasem.push(opis);
+  // Kształt: zawsze tablica napisów, nigdy null ani undefined — ekran nie ma mieć własnego warunku.
+  if (!Array.isArray(w.atlas) || w.atlas.some(x => typeof x !== 'string' || !x)) zlamane.atlasZlyKsztalt.push(opis);
+  // Ten sam wpis dwa razy w jednym węźle znaczy, że dwie gałęzie dołożyły go niezależnie.
+  if (Array.isArray(w.atlas) && new Set(w.atlas).size !== w.atlas.length) zlamane.atlasDuplikat.push(opis);
 }
 T('IN1/kryterium-1-HINTS-nie-przy-napadach', !zlamane.hintsPrzyNapadach.length,
   `${zlamane.hintsPrzyNapadach.length} kombinacji, np. ${zlamane.hintsPrzyNapadach[0]}`);
@@ -158,6 +172,27 @@ T('IN9/proby-pozycyjne-nie-przy-ciaglych', !zlamane.diagPrzyCiagle.length,
    undefined, i zaden inny wymiar sie nie zmienil. */
 T('IN10/iloczyn-niepusty', kombinacje.length === 5 * 4 * 4 * 4 * 4 * (3 + 31),
   `iloczyn ma ${kombinacje.length} kombinacji — jeśli spadł, niezmienniki przestały być wyczerpujące`);
+/* E6 — TRZY NIEZMIENNIKI POLA `atlas`. Nie sprawdzają, czy klucze ISTNIEJĄ (to robi ATL7a
+   w `atlas:check`, bo tam mieszka atlas) — sprawdzają, że pole nie zaczęło zachowywać się
+   jak ścieżka. Rozdział jest celowy: ten plik nie importuje atlasu i ma zostać liściem. */
+T('IN11/czerwona-bez-atlasu', !zlamane.flagaZAtlasem.length,
+  `${zlamane.flagaZAtlasem.length} kombinacji z flagą i linkiem do atlasu, np. ${zlamane.flagaZAtlasem[0]} — przy fladze celem jest działanie, nie czytanie`);
+T('IN12/atlas-zawsze-tablica', !zlamane.atlasZlyKsztalt.length,
+  `${zlamane.atlasZlyKsztalt.length} kombinacji o złym kształcie pola, np. ${zlamane.atlasZlyKsztalt[0]}`);
+T('IN13/atlas-bez-duplikatow', !zlamane.atlasDuplikat.length,
+  `${zlamane.atlasDuplikat.length} kombinacji z powtórzonym kluczem, np. ${zlamane.atlasDuplikat[0]}`);
+/* IN14 — ATLAS NIE JEST ŚCIEŻKĄ. Gdyby kiedyś ktoś „uprościł" model, zwracając klucz atlasu
+   w polu `sciezka`, IN6 by tego NIE złapało dopiero wtedy, gdy ktoś dopisze klucz do listy
+   dozwolonych. To twierdzenie mówi wprost, że zbiory są rozłączne. */
+{
+  const kluczeAtlasu = new Set(kombinacje.flatMap(k => triageResult(k).atlas || []));
+  const sciezki = new Set(kombinacje.map(k => triageResult(k).sciezka).filter(Boolean));
+  const przeciek = [...kluczeAtlasu].filter(x => sciezki.has(x));
+  T('IN14/atlas-rozlaczny-ze-sciezka', !przeciek.length,
+    `klucz atlasu wystąpił jako ścieżka: ${przeciek.join(' · ')} — atlas jest destynacją, nie trybem`);
+  T('IN15/atlas-gdzies-prowadzi', kluczeAtlasu.size >= 4,
+    `kwalifikacja linkuje do ${kluczeAtlasu.size} wpisów — węzły sEVS i CVS mają prowadzić do atlasu, a nie kończyć się ślepo`);
+}
 
 /* ============ 5. Konkretne rozstrzygnięcia kliniczne ============ */
 const R = (o) => triageResult(o);
@@ -311,7 +346,17 @@ if (bledy.length) {
    do wykrycia krwotoku) i KL2h (angio-TK z numerem [H59]). KL2c zostala, ale przestala byc
    JEDYNA: broniła polowy zdania i wlasnie dlatego druga polowa mogla zniknac.
    D-ORTO (2026-08-22, wariant A): 70 -> 80. */
-const OCZEKIWANE = 82;
+/* E6 — ATLAS OTONEUROLOGICZNY (2026-08-22): 82 -> 87. PIEC nowych niezmiennikow, wszystkie o polu
+   `atlas`, wszystkie na PELNYM iloczynie (43520 kombinacji):
+     IN11 czerwona flaga NIE niesie atlasu (decyzja uzytkownika — przy fladze celem jest dzialanie),
+     IN12 pole zawsze jest tablica napisow (ekran nie ma miec wlasnego warunku),
+     IN13 bez duplikatow w wezle (duplikat = dwie galezie dolozyly klucz niezaleznie),
+     IN14 zbiory kluczy atlasu i sciezek sa ROZLACZNE — atlas nie jest trybem,
+     IN15 kwalifikacja gdzies linkuje (inaczej caly etap jest martwy i nikt tego nie zauwazy).
+   ILOCZYN SIE NIE ZMIENIL (43520): pole `atlas` nie dolozylo wymiaru pytania, bo nie jest pytaniem.
+   CZEGO TU NIE MA I DLACZEGO: sprawdzenia, czy klucz ISTNIEJE w atlasie. To robi ATL7a w
+   `atlas:check` — ten plik nie importuje `atlas-model.js` i ma zostac lisciem grafu. */
+const OCZEKIWANE = 87;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

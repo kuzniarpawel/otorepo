@@ -1160,12 +1160,44 @@ function domOracle(h, win) {
     try { h.resetTriage(); } catch { /* przywróć czysty stan dla kolejnych warstw */ }
   }
 
+  /* ATLAS OTONEUROLOGICZNY (E6). Cztery wpisy, DOBRANE, a nie pierwsze z brzegu — każdy pinuje
+     inną rzecz, której nie pilnuje żaden inny klucz:
+       · `bppv`            — jedyna jednostka o zakresie 'modelowana'; gdyby rejestr zakresu
+                              przestał odróżniać modelowane od czytanych, ten klucz to pokaże;
+       · `pppd`            — węzeł CVS linkuje właśnie tutaj, więc karta musi się renderować
+                              także wtedy, gdy przyszło się z kwalifikacji;
+       · `szyjne`          — praca ODMAWIA postawienia kryteriów. Karta bez ani jednego zestawu
+                              kryteriów jest stanem prawidłowym i ma być przypięta, bo inaczej
+                              „naprawa" polegająca na dopisaniu kryteriów przeszłaby bez śladu;
+       · `slownikObjawow`  — dokument RAMOWY (typ 'ramowy', zespol 'nd'), czyli druga gałąź
+                              znacznika; bez niego połowa `atlasZnacznik` byłaby nieprzykryta.
+     Piąty klucz pinuje LISTĘ Z FILTREM: pusta lista po zawężeniu ma mówić, że to filtr, a nie
+     że atlas jest pusty — dwa różne zdania, z których jedno jest nieprawdą. */
+  if (h.goAtlas && h.otworzWpisAtlasu && h.wyczyscFiltryAtlasu) {
+    const czystyA = () => {
+      try { h.wyczyscFiltryAtlasu(); } catch { /* filtry mogą jeszcze nie istnieć */ }
+      Object.assign(h.state, { atlasWpis: null, atlasZespol: null, atlasZakres: null, atlasSzukaj: '', atlasSkad: null });
+    };
+    grab('atlas/lista', () => { czystyA(); h.goAtlas(); });
+    grab('atlas/lista-CVS', () => { czystyA(); h.goAtlas(); h.ustawZespolAtlasu('CVS'); });
+    grab('atlas/lista-pusto', () => { czystyA(); h.goAtlas(); h.ustawSzukajAtlasu('zzzznieistniejaca'); });
+    for (const k of ['bppv', 'pppd', 'szyjne', 'slownikObjawow']) {
+      grab(`atlas/wpis/${k}`, () => { czystyA(); h.otworzWpisAtlasu(k); });
+    }
+    /* WEJŚCIE Z KWALIFIKACJI. Ten sam wpis, inna droga — pinuje, że `atlasSkad` nie przecieka
+       do TREŚCI karty. Gdyby przeciekał, atlas mówiłby co innego zależnie od tego, skąd się
+       przyszło, a to jest dokładnie ta klasa rozjazdu, którą D-CPN znalazł w pięciu literałach. */
+    grab('atlas/wpis/pppd-z-kwalifikacji', () => { czystyA(); h.otworzWpisAtlasu('pppd', 'triage'); });
+    czystyA();
+  }
+
   /* SYMULATOR HINTS stoi od Bloku 12 ZA BRAMKĄ (`openHints`/`openHintsCustom` wołają `wolnoBadac`).
      Harness musi więc wejść tak, jak wchodzi użytkownik — przez świadome pominięcie kwalifikacji
      z powodem „chcę zobaczyć wzorce na modelu". Gdyby zamiast tego wstrzykiwał `screen='hints'`,
      złoty wzorzec przypinałby stany, do których aplikacja nie ma już drogi, a bramka mogłaby
      przestać działać bez jednej czerwonej wyroczni. */
-  const przezBrame = () => { if (h.goHintsKwal) h.goHintsKwal(); if (h.pomijajKwalifikacje) h.pomijajKwalifikacje('symulacja'); };
+    // E6: bez tych nazw w uchwycie klucze atlasu po cichu by się nie nagrały (grab jest w `if`).
+const przezBrame = () => { if (h.goHintsKwal) h.goHintsKwal(); if (h.pomijajKwalifikacje) h.pomijajKwalifikacje('symulacja'); };
   // HINTS — presety
   for (const p of Object.keys(h.HINTS_PRESETS || {})) {
     grab(`hints/preset/${p}`, () => {
@@ -1294,15 +1326,29 @@ function domOracle(h, win) {
       h.setTriage('oczoplas', 'obecny'); h.toggleTriageFlaga('brak');
       h.ustawPrzeszkolenieHints('tak');
     };
+    /* NASTEPSTWO D-CZAS ZNALEZIONE DOPIERO W E6 — DWIE FIKSTURY POD NAZWA, KTOREJ NIE OSIAGALY.
+       `kwalifikuj()` wyzej dostal `odkiedy` w naprawie D-CZAS-FIX, ale te dwa klucze stoja OBOK
+       niego i naprawy nie dostaly. Bez odpowiedzi „od kiedy" `triageComplete` jest falszem, wiec
+       `kwalifikacjaHints` zwracala status 'brak' — a nie 'odradzana' ani 'czerwona'. Klucze
+       nazwane `odradzana-BPPV` i `czerwona-flaga` przez caly ten czas pinowaly EKRAN
+       NIEWYPELNIONEJ KWALIFIKACJI, czyli to samo, co `pusta`.
+       DLACZEGO NIKT TEGO NIE WIDZIAL: ekran renderowal wtedy KWESTIONARIUSZ, wiec trzy klucze
+       roznily sie miedzy soba zaznaczonymi odpowiedziami i wygladaly na trzy rozne stany.
+       Wariant A (E6) kwestionariusz stad zabral i roznica zniknela — zmierzone: `pusta`
+       i `odradzana-BPPV` mialy po 3657 znakow, bajt w bajt. To ta sama klasa luki, ktora
+       D-CZAS-FIX naprawil dla `hintsBad/*`, i ten sam sposob wykrycia: IDENTYCZNE DLUGOSCI.
+       Naprawa jest MERYTORYCZNA, nie rebaseline — fikstury dostaja brakujaca odpowiedz. */
     // Kwalifikacja: cztery stany, bo cztery różne karty wyniku i cztery różne zestawy przycisków.
     grab('hintsKwal/pusta', () => { czystyH(); h.goHintsKwal(); });
     grab('hintsKwal/odradzana-BPPV', () => {
       czystyH(); h.goHintsKwal();
-      h.setTriage('przebieg', 'napadowe'); h.setTriage('wyzwalacz', 'pozycyjny'); h.setTriage('ortostaza', 'tak'); h.toggleTriageFlaga('brak');
+      h.setTriage('przebieg', 'napadowe'); h.setTriage('odkiedy', 'ostre');
+      h.setTriage('wyzwalacz', 'pozycyjny'); h.setTriage('ortostaza', 'tak'); h.toggleTriageFlaga('brak');
     });
     grab('hintsKwal/czerwona-flaga', () => {
       czystyH(); h.goHintsKwal();
-      h.setTriage('przebieg', 'ciagle'); h.setTriage('oczoplas', 'obecny'); h.toggleTriageFlaga('ataksja');
+      h.setTriage('przebieg', 'ciagle'); h.setTriage('odkiedy', 'ostre');
+      h.setTriage('oczoplas', 'obecny'); h.toggleTriageFlaga('ataksja');
     });
     grab('hintsKwal/potwierdzona', () => { kwalifikuj(); });
     grab('hintsKwal/pominieta', () => { czystyH(); h.goHintsKwal(); h.pomijajKwalifikacje('nauka'); });
@@ -1528,6 +1574,11 @@ function shellOracle(h, win) {
   /* Blok 14 przestawil znaczenie obszaru „Laboratorium", wiec te dwa klucze wchodza teraz
      zakladka HINTS: `goArea('diag')` przypina obszar jawnie, a `goHintsKwal()` otwiera drzwi
      modulu. Sens bramki zostaje ten sam — scenariusz mowi, skad przyszedl, zamiast dziedziczyc. */
+  /* E6: SZÓSTY OBSZAR. Klucz pinuje, że `areaZeStanu()` rozpoznaje tryb 'atlas' — bez własnej
+     gałęzi `syncShell` PRZEPISUJE `state.area` i sprowadza obszar do „Diagnostyki", czyli
+     nawigacja mówiłaby, że użytkownik stoi w module klinicznym, choć właśnie go z niego
+     wyprowadzono. Ten dokładny błąd popełniono już przy Bloku 14 (Laboratorium). */
+  grab('atlas', () => { czysty(); h.goAtlas && h.goAtlas(); h.syncShell && h.syncShell(); });
   grab('hintsKwal', () => { czysty(); h.goArea && h.goArea('diag'); h.goHintsKwal && h.goHintsKwal(); h.syncShell && h.syncShell(); });
   grab('hintsBad', () => {
     czysty(); h.goArea && h.goArea('diag'); h.goHintsKwal && h.goHintsKwal(); h.pomijajKwalifikacje && h.pomijajKwalifikacje('nauka');

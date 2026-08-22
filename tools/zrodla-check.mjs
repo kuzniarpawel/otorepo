@@ -404,7 +404,35 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 228;  /* 2026-08-22, etap D6-NAPRAWY: 225 -> 228.
+const OCZEKIWANE = 268;  /* 2026-08-22, etap E6 (ATLAS OTONEUROLOGICZNY): 228 -> 268.
+                            CZTERDZIESCI cytowan, rozlozone na DWA pliki. Arytmetyka ZMIERZONA
+                            przez dokladanie plikow po jednym do czystego HEAD (git archive do
+                            katalogu tymczasowego), a nie oszacowana:
+                              src/app/atlas-model.js  +38 — nowy plik: 18 wpisow ICVD. Kazdy niesie
+                                                            rodowod "[Hnn] Autor ROK" w polu `zrodlo`,
+                                                            a reszta cytowan stoi w tresci kryteriow,
+                                                            granic zrodla i uwag o terminach
+                                                            ODRADZANYCH. Rozklad zmierzony:
+                                                            H61 x5, H54 x5, H51 x4, H47 x4, H57 x3,
+                                                            H20 x3, H19 x3, H60 x2, H52 x2 oraz po
+                                                            jednym H59, H58, H56, H53, H50, H49, H46.
+                              src/app/triage-model.js +2  — "[H61] Kaski 2025" w komentarzu pola
+                                                            `atlas` i "[H52] Kim 2019" przy linku
+                                                            ortostatycznym, ktory idzie za uwaga D-ORTO.
+                              pozostale SIEDEM zmienionych plikow: PO ZERO (state.js, svg-screens.js,
+                              actions.js, nav-model.js, shell.js, main.js, atlas-state.js) — zmierzone,
+                              nie zalozone. W state.js stoi bare "[H61]" bez oznaczenia, wiec bramka
+                              nie liczy go jako przypadku; to jest zgodne z konwencja, nie przeoczenie.
+                            CO TA LICZBA NAPRAWDE MOWI: 268 cytowan przeszlo kontrole zgodnosci
+                            NUMER-NAZWISKO wobec bibliografii. Dla atlasu to jest jedyna maszynowa
+                            kontrola atrybucji, jaka istnieje — bo pelnych tekstow nie ma w repo.
+                            CZEGO TA BRAMKA NIE WIDZI: czy tresc jest PARAFRAZA, czy przedrukiem.
+                            To mierzy osobne narzedzie `tools/atlas-parafraza.mjs`, uruchamiane przy
+                            korpusie; jego wynik zapisuje sie w repozytorium, bo pomiar bez zapisu
+                            jest zapewnieniem, nie dowodem.
+                            DOKUMENTACJA WNOSI ZERO: engine_doc w tym etapie nietkniete.
+
+                            2026-08-22, etap D6-NAPRAWY: 225 -> 228.
                             TRZY cytowania "[H49] Strupp 2016", WSZYSTKIE w src/render/svg-screens.js
                             (lustro PL, lustro EN i komentarz przy poprawce). Zmierzone przez
                             podstawianie wersji z HEAD: bez svg-screens.js licznik wraca do 225,
