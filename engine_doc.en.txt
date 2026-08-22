@@ -3229,10 +3229,24 @@ THE NINETEENTH DOCUMENT — the original vestibular migraine criteria (Lempert 2
 (user's decision, 2026-08-21). The criteria are cited from [H46], their current carrier; the 2012
 version served as EVIDENCE, and the comparison is recorded in the [H46] entry.
 
-WHAT THIS MAP DOES NOT SETTLE. A bibliography entry does NOT mean the entity enters the program.
-OTOREPO is an application about BPPV and acute dizziness, not an atlas of otoneurology — and
-"deliberately out of scope" is as good a decision here as "included", provided it was TAKEN AND
-RECORDED rather than following from not knowing the document. Per-entity resolution: stage E6.
+WHAT THIS MAP DOES NOT SETTLE — AND WHAT WAS SETTLED ON 2026-08-22 (stage E6, user decision).
+A bibliography entry does NOT mean the entity enters the ENGINE. The sentence that stood here
+before — "OTOREPO is an application about BPPV and acute dizziness, not an atlas of otoneurology"
+— is NO LONGER TRUE from this stage and has been replaced. The program is both, but in TWO
+DISJOINT SCOPES, and the whole content of the decision lies in that disjointness:
+  · THE ACUTE PATHWAY — where GRACE-3 and HINTS apply — stays GENERAL. Diagnoses are NOT
+    multiplied there; the initial triage still selects an EXAMINATION PATHWAY, not an entity.
+  · THE OTONEUROLOGY ATLAS (the sixth area of the app) carries ALL 18 consensus documents with
+    their criteria, thresholds and source boundaries. It computes nothing and makes no diagnosis.
+The scope register stopped being prose and became a FIELD the gate counts: every atlas entry
+carries `wSilniku` from the closed set {modelled, criteria-without-a-model, out-of-scope} together
+with MEASURED evidence. State on 2026-08-22: 7 modelled, 7 criteria without a model, 4 deliberately
+outside the engine scope. "Deliberately out of scope" remains as good a decision as "included" —
+but it is now RECORDED IN THE STRUCTURE, not in a paragraph that will age by itself. Exactly that
+kind of ageing hit this list on 2026-08-22 and required a separate repair.
+LINKING: triage nodes that have no pathway now lead to the atlas (spontaneous attacks, the chronic
+syndrome, orthostatic dizziness). AT A RED FLAG THERE IS NO LINK, AND THAT IS A DECISION: the goal
+there is action, and reading material dilutes urgency.
 
 SEVENTY-FIVE CONFLICTS between the ICVD documents themselves (34 hard, 35 tensions, 6 successions)
 await the user's decisions; eight of them block the writing of further chapters. Until they are

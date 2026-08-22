@@ -3031,10 +3031,24 @@ DZIEWIĘTNASTY DOKUMENT — pierwotna wersja kryteriów migreny przedsionkowej (
 DOSTAJE NUMERU (decyzja użytkownika 2026-08-21). Kryteria cytujemy za [H46], bo to ich aktualny
 nośnik; wersja z 2012 posłużyła jako DOWÓD, a jej porównanie jest zapisane przy wpisie [H46].
 
-CZEGO TA MAPA NIE PRZESĄDZA. Wpis w bibliografii NIE ZNACZY, że jednostka wchodzi do programu.
-OTOREPO jest aplikacją o BPPV i ostrych zawrotach, nie atlasem otoneurologii — i „świadomie poza
-zakresem" jest tu decyzją tak samo dobrą jak „wchodzi", pod warunkiem że została PODJĘTA I ZAPISANA,
-a nie wynikła z nieznajomości dokumentu. Rozstrzygnięcie per jednostka: etap E6.
+CZEGO TA MAPA NIE PRZESĄDZA — I CO ROZSTRZYGNIĘTO 2026-08-22 (etap E6, decyzja użytkownika).
+Wpis w bibliografii NIE ZNACZY, że jednostka wchodzi do SILNIKA. Zdanie, które stało tu wcześniej
+— „OTOREPO jest aplikacją o BPPV i ostrych zawrotach, nie atlasem otoneurologii" — od tego etapu
+NIE JEST JUŻ PRAWDZIWE i zostało zastąpione. Program jest jednym i drugim, ale w DWÓCH ROZŁĄCZNYCH
+ZAKRESACH, i cała treść decyzji siedzi w tej rozłączności:
+  · ŚCIEŻKA OSTRA — tam, gdzie stosuje się GRACE-3 i HINTS — pozostaje OGÓLNA. Rozpoznań się tam
+    NIE MNOŻY; kwalifikacja wstępna dalej wybiera ŚCIEŻKĘ BADANIA, a nie jednostkę chorobową.
+  · ATLAS OTONEUROLOGICZNY (szósty obszar aplikacji) niesie WSZYSTKIE 18 dokumentów konsensusu
+    z kryteriami, progami i granicami źródła. Niczego nie liczy i nie stawia rozpoznania.
+Rejestr zakresu przestał być prozą i stał się POLEM, które bramka liczy: każdy wpis atlasu niesie
+`wSilniku` ze zbioru zamkniętego {modelowana, kryteria-bez-modelu, poza-zakresem} razem ze
+ZMIERZONYM dowodem. Stan na 2026-08-22: modelowanych 7, kryteria bez modelu 7, świadomie poza
+zakresem silnika 4. „Świadomie poza zakresem" zostaje decyzją tak samo dobrą jak „wchodzi" —
+ale teraz jest ZAPISANA W STRUKTURZE, a nie w akapicie, który sam się zestarzeje. Dokładnie ten
+rodzaj zestarzenia dotknął tej listy 2026-08-22 i wymagał osobnej naprawy.
+LINKOWANIE: węzły kwalifikacji, które nie mają ścieżki, prowadzą odtąd do atlasu (napady samoistne,
+zespół przewlekły, zawrót ortostatyczny). PRZY CZERWONEJ FLADZE LINKU NIE MA I TO JEST DECYZJA:
+celem jest tam działanie, a materiał do czytania rozcieńcza pilność.
 
 SIEDEMDZIESIĄT PIĘĆ KONFLIKTÓW między samymi dokumentami ICVD (34 twarde, 35 napięć, 6 następstw)
 czeka na rozstrzygnięcia użytkownika; osiem z nich blokuje pisanie kolejnych rozdziałów. Do czasu

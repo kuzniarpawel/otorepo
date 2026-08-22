@@ -60,11 +60,31 @@ doprowadza ten dokument do zgodności z tym, co już się wykonało).
 | **E1-DŁUG** | `5a93ea1` | luka golden domknięta, `barany:check` 49 → 61 |
 | *(zapis)* | `b6e5203`, `24d9518` | oba długi opisane; `weryfikacja_ekstrakcji_icvd.md` wraca do repozytorium |
 
-**Zostaje z planu:** **E2** (częściowo wyprzedzony przez D-CPN — patrz §3.2) · **E3** (czeka na D1) ·
-**E4b** (AUVP) · **E5** (kwalifikacja) · **E6** (czeka na D6) · **E7** (słownik).
+**Zostaje z planu:** **E2** (częściowo wyprzedzony przez D-CPN — patrz §3.2) · **E3** (reszta progów
+po E3a) · **E4b** (AUVP) · **E5** (kwalifikacja) · **E7** (słownik).
+**Domknięte po tej liście:** **E6** — Atlas otoneurologiczny, razem z rozstrzygnięciem D6
+i wariantem A okna HINTS (patrz §5 E6).
 
-**Otwarte decyzje użytkownika — cztery:** D3 („probable") · D6 (zakres 10 nieobecnych jednostek) ·
-**D-5D** (twierdzenie „5 D" bez pokrycia w korpusie) · **D-MEN** (12 h vs 24 h).
+**Otwarte decyzje użytkownika — trzy:** D3 („probable") · **D-5D** (twierdzenie „5 D" bez pokrycia
+w korpusie) · **D-MEN** (12 h vs 24 h). Otwarte pozostaje też **D8** (zawroty szyjne), które nigdy
+nie weszło do tego zestawienia: E6 dał tej pracy wpis atlasu o typie `stanowisko`, ale NIE
+rozstrzygnął, czy program ma wyciągnąć z niej konsekwencje dla okablowania karku (B8).
+
+**TRZY NOWE POZYCJE DO ROZSTRZYGNIĘCIA, znalezione przy pisaniu atlasu** — wszystkie są rozjazdami
+WEWNĄTRZ jednej pracy, więc nie da się ich zamknąć wyborem „nowszego źródła" (pełne opisy obu
+czytań: `sporne.json` przy materiale):
+1. **`[H59]` AUVP — operator łączący progi instrumentalne przy kryterium C.** Nota 12 zapisuje je
+   jako ALTERNATYWĘ, proza §4.4.1 żąda KONIUNKCJI. To ta sama oś, którą zamknęło **D2**, więc karta
+   oddaje ZALECENIE PRACY (żaden próg nie jest kryterialny), a spór zostaje nazwany, nie ukryty.
+2. **`[H59]` AUVP — jak ostro czytać zakaz skew deviation w kryterium E.** Tekst główny mówi
+   „brak skew deviation" bez kwalifikatora; nota i abstrakt dopuszczają małą SD (< 3°) u ok. 20%
+   chorych i piszą „brak WYRAŹNEJ". **Trzy brzmienia w jednej pracy**, a literalne kryterium jest
+   ostrzejsze niż intencja noty.
+3. **`[H19]` BVP — próg fotela obrotowego.** Linia kryteriów żąda KONIUNKCJI, abstrakt pisze
+   „i/lub", a nota podaje INNE liczby (gain < 0,15 przy 0,05–0,1 Hz i Vmax = 60°/s wobec < 0,1 przy
+   0,1 Hz i 50°/s). Do pracy ukazała się **errata** (J Vestib Res 2023;33(1):87), której korpus
+   **nie ma** — więc nie da się sprawdzić, czy którakolwiek wersja została skorygowana. To dotyka
+   reszty etapu **E3** (progi fotela obrotowego stoją tam jako niezamknięte).
 
 Rozstrzygnięte w trakcie: D2 (§4.1) · D4 (§3.5) · D5 (§4.1) · D7 (§4.2) · **D1** (§3.3, etap E3a —
 pytanie było źle postawione) · **D-ORTO** (§5 E5, wariant A — szóste pytanie kwalifikacji) ·
@@ -320,7 +340,7 @@ którego silnik przez to nie odtwarza, zapisano jako świadomy koszt, nie jako p
 
 | # | Pytanie | Uwaga |
 |---|---|---|
-| **D6** | Które z 10 nieobecnych jednostek ICVD wchodzą do programu, a które zostają **jawnie poza zakresem**? | Najsilniejsi kandydaci: **napadowica przedsionkowa** (jest już w bloku wykluczeń migreny, bez własnego źródła), **PPPD** (domyka warstwę zawrotów resztkowych `[H26]`), **hemodynamiczne ortostatyczne** (kryterium D BPPV wprost każe je odróżnić) |
+| ~~**D6**~~ | ~~Które z 10 nieobecnych jednostek ICVD wchodzą do programu~~ — **ROZSTRZYGNIĘTE 2026-08-22: pytanie było ŹLE POSTAWIONE** | **Wszystkie wchodzą — ale nie tam, gdzie pytanie zakładało.** Program ma ZNAĆ komplet jednostek ICVD; ścieżka OSTRA (GRACE-3, HINTS) pozostaje OGÓLNA i rozpoznań się w niej nie mnoży. Jednostki szczegółowe idą do **Atlasu otoneurologicznego** — szóstego, rozłącznego obszaru. Rejestr zakresu per jednostka przestał być prozą i jest polem `wSilniku`, które bramka liczy: **7 modelowanych / 7 kryteria-bez-modelu / 4 świadomie poza zakresem**. Etap E6. |
 | ~~**D7**~~ | ~~Czy nadawać numer `[Hnn]` pracy Lempert 2012~~ — **ROZSTRZYGNIĘTE 2026-08-21: NIE** | Kryteria cytujemy za `[H46]`, bo to ich aktualny nośnik; wersja 2012 posłużyła jako **dowód**, a porównanie stoi przy wpisie `[H46]`. Dlatego numery E0 kończą się na `[H61]`, nie `[H62]`. Zapisane w `engine_doc.txt` (E0, `ee08f99`). |
 | **D8** | Czy „zawroty szyjne" (stanowisko Seemungala) mają trafić do programu, skoro program ma okablowanie karku (B8)? | Stanowisko **neguje** jednostkę; program nie stawia takiego rozpoznania — ale liczy pozy z pivotem karku |
 
@@ -543,10 +563,103 @@ nie tylko brak źródła.
 
 ---
 
-### E6 — Decyzja zakresowa: jednostki nieobecne · *wymaga D6*
+### E6 — Atlas otoneurologiczny · **ZROBIONE** · *D6 rozstrzygnięte*
 
-**Cel.** Dla każdej z 10 nieobecnych jednostek zapisać **jawnie**: wchodzi / poza zakresem —
-i dlaczego. Sam zapis „świadomie poza zakresem" jest produktem: odróżnia decyzję od przeoczenia.
+**Cel pierwotny.** Dla każdej z 10 nieobecnych jednostek zapisać **jawnie**: wchodzi / poza
+zakresem — i dlaczego. Sam zapis „świadomie poza zakresem" jest produktem: odróżnia decyzję
+od przeoczenia.
+
+> **D6 ROZSTRZYGNIĘTE 2026-08-22 (decyzja użytkownika) — I PYTANIE OKAZAŁO SIĘ ŹLE POSTAWIONE,
+> tak jak D1 i D2.** Etap pytał, KTÓRE jednostki wchodzą. Odpowiedź brzmi: **wszystkie — ale nie
+> tam, gdzie pytanie zakładało.** Program ma ZNAĆ komplet jednostek ICVD, natomiast ścieżka OSTRA
+> — ta, na której stoi GRACE-3 i HINTS — pozostaje **OGÓLNA** i rozpoznań się w niej **nie mnoży**.
+> Jednostki szczegółowe mieszkają w osobnym, **rozłącznym** zakresie: szóstym obszarze aplikacji.
+>
+> **DLACZEGO `sciezka: null` BYŁA PRZECIĄŻONA — to jest pomiar, który wyznaczył kształt etapu.**
+> Kwalifikacja ma dziewięć wyjść, z czego **pięć** kończyło się `null`, a `null` znaczyło w nich
+> trzy różne rzeczy: „działaj pilnie, nie czytaj" (czerwona flaga), „odpowiedz najpierw na pytanie"
+> (niepewna, pseudo-AVS) oraz — w węzłach **sEVS** i **CVS** — „ICVD definiuje tu jednostki, tylko
+> nasz silnik ich nie modeluje". To trzecie znaczenie jest **destynacją**, nie ślepym końcem.
+> Węzeł CVS **już wymieniał** PPPD `[H50]`, obustronną westybulopatię `[H19]` i presbywestybulopatię
+> `[H53]` — prozą. Atlas nie dokłada więc twierdzenia klinicznego; **nadaje strukturę zdaniu,
+> które już stało**.
+>
+> **CO POWSTAŁO.** `src/app/atlas-model.js` — **18 wpisów** (14 jednostek, 3 dokumenty ramowe,
+> 1 stanowisko), po jednym na każdy dokument korpusu poza Lempertem 2012 (D7: numeru nie dostaje).
+> Moduł **CZYSTY**: zero importów, zero DOM. Wpis niesie `zrodlo`, `kryteria` (parafraza), `progi`
+> z **rangą**, `granice` źródła, `zespol` wg `[H61]` i `wSilniku`.
+>
+> **REJESTR ZAKRESU PRZESTAŁ BYĆ PROZĄ.** `wSilniku` jest polem ze zbioru zamkniętego
+> {`modelowana`, `kryteria-bez-modelu`, `poza-zakresem`}, każde ze **zmierzonym** dowodem (co
+> grepowano, ile trafień). Rozkład: **7 / 7 / 4**. To jest odpowiedź na E6 uczyniona strukturą —
+> i bezpośrednia odpowiedź na to, co unieważniło mapę pokrycia miesiąc wcześniej: akapit prozy
+> zestarzał się po cichu, pole bramka liczy.
+>
+> **TRZECI TYP DOKUMENTU, KTÓREGO NIE BYŁO W PLANIE.** `[H60]` Seemungal 2022 nie jest ani
+> jednostką (praca **jawnie odmawia** kryteriów), ani dokumentem ramowym (nie jest słownikiem).
+> Pierwsza wersja treści wcisnęła go do „ramowy" i to było **zacieranie**: czytelnik karty bez
+> kryteriów musiałby sam zgadnąć, czemu ich nie ma. Doszła wartość `stanowisko`.
+>
+> **RANGA PROGU** — `kryterium` / `nota` / `proza`. Karta pokazuje dwie pierwsze. Wzięte wprost
+> z lekcji E3a (`GAIN_CUT` wyglądał jak kryterium, a był dolną granicą normy z noty) i D-CT (cel
+> obrazowania stał w prozie, a był treścią kryterium B). Zmierzone: **301 progów → 119**, z czego
+> **14 jest jakościowych** — źródło nie podaje dla nich liczby w ogóle.
+>
+> **ZASIĘG, ZMIERZONY.** `snapshot:check` — **32 klucze**: 4 (ekran startowy), 6 (okno HINTS),
+> 22 (szyna nawigacji). **Zero** w `plans`, `neuro`, `dyn` i `pose` — fizyka nietknięta.
+> `zrodla:check` 228 → 268, arytmetyka rozpisana per plik. `pwa:check` 237 → 239 (przyrost
+> **mechaniczny**: bramka F6 biegnie raz na plik `.js` w `src/`).
+
+> **WARIANT A — OKNO „DIAGNOSTYKA HINTS / HINTS+" PRZESTAŁO BYĆ KWESTIONARIUSZEM.**
+> Do tego etapu `renderHintsKwal` renderował **cały** kwestionariusz kwalifikacji, więc ekran
+> nazwany „HINTS" w połowie przypadków kończył się zdaniem, że HINTS nie ma tu zastosowania —
+> nazwa okna mówiła co innego niż jego treść. Kwestionariusz wrócił na swój ekran (krok 1),
+> a w oknie HINTS został **krok 2**: przeszkolenie, pułapki, wejście do badania + karta
+> pokazująca werdykt kroku 1 i prowadząca do niego z powrotem.
+>
+> **NACISKOWA WADA, KTÓRĄ TO ZDEJMUJE — zmierzona, nie wydedukowana.** Przy werdykcie
+> „odradzana" klinicysta, który **bada pacjenta**, miał na tym ekranie dokładnie **dwa** ruchy
+> do przodu i **oba wchodziły w HINTS** (`pozaAplikacja` i `mimoOdradzania` — jedyne dwa powody
+> pominięcia z `badaniePacjenta: true`). Konstrukcja sama pchała ku obejściu bramki. Trzecie
+> wyjście — do atlasu — **opuszcza tryb HINTS**, więc nie jest ósmą drogą omijającą `wolnoBadac`.
+>
+> **PIĄTY KAFEL STARTOWY BYŁ ŹLE SKIEROWANY.** „Przypadek nietypowy" prowadził wprost do
+> `goHintsKwal()` — czyli przypadek z definicji **najmniej** pasujący do HINTS był wstępnie
+> przypisywany do HINTS, zanim padło jakiekolwiek pytanie. To dokładnie użycie, któremu
+> `triage-model.js` ma zapobiegać. Teraz prowadzi do kwalifikacji. Szósty kafel otwiera Atlas.
+
+> **CZTERY ZNALEZISKA UBOCZNE, WSZYSTKIE ZAMKNIĘTE W TYM ETAPIE.**
+> 1. **DWIE FIKSTURY ZŁOTEGO WZORCA NIGDY NIE OSIĄGAŁY STANU ZE SWOJEJ NAZWY.** `hintsKwal/
+>    odradzana-BPPV` i `hintsKwal/czerwona-flaga` nie podawały odpowiedzi `odkiedy`, więc od etapu
+>    D-CZAS `triageComplete` było fałszem i obie pinowały **ekran niewypełnionej kwalifikacji** —
+>    to samo, co `pusta`. Naprawa D-CZAS-FIX objęła `kwalifikuj()` i klucze `hintsBad/*`, ale
+>    **nie te dwa**, stojące obok. Kwestionariusz to maskował: trzy klucze różniły się zaznaczonymi
+>    odpowiedziami. Wariant A kwestionariusz zabrał i różnica zniknęła — zmierzone: `pusta`
+>    i `odradzana-BPPV` miały po **3657 znaków, bajt w bajt**. Ta sama metoda wykrycia co przy
+>    D-CZAS-FIX: **identyczne długości**.
+> 2. **`goArea('atlas')` NIE DZIAŁAŁO MIMO POPRAWNEJ GAŁĘZI.** `applyArea` ma `A.goAtlas && …`,
+>    ale `A` jest wstrzykiwane przez `mountNav(deps)` — a `goAtlas` tam nie trafiło. Strażnik
+>    `A.x &&` chroni bundel bez akcji, ale zamienia brak wstrzyknięcia w **ciszę**: obszar zostawał
+>    `diag`, ekran `setup`. Złapane przez `atlas:dom`, nie przez czytanie kodu.
+> 3. **KOMENTARZ HTML W SZABLONIE TRAFIAŁ DO PRODUKCYJNEGO DOM.** Notatka dla programisty
+>    wstawiona wewnątrz literału szablonu urosła ekran startowy o **1,8 kB na każdym renderze**.
+>    Przy okazji: `/* */` jest tam **tekstem**, nie komentarzem, a backtick rozrywa literał.
+> 4. **BRAMKA ATL2c BYŁA ŹLE POSTAWIONA — MOJA WŁASNA.** Żądała cyfry w każdym progu i zapaliła
+>    się na czternastu, którym cyfry **nie daje źródło** („rzędu godzin", „dni do tygodni", a we
+>    wpisie MdDS wprost „bez wartości liczbowej"). Wyrocznia w tamtej postaci **nagradzałaby
+>    dopisanie liczby**, której praca nie niesie. Poprawiona: żąda wartości niepustej i kontekstu.
+
+> **GRANICA LICENCYJNA — POMIAR, NIE ZAPEWNIENIE.** Repozytorium jest publiczne, a trzy prace
+> (`[H47]`, `[H20]`, `[H48]`) są wydane przez IOS Press z klauzulą „all rights reserved".
+> Kontrola adwersaryjna znalazła w pierwszej wersji treści **dosłowne przedruki** — najdłuższy
+> **38 słów** z `[H48]`, dalej 28 i 26 z `[H20]` — i wszystkie poprawiła. Ponieważ „poprawione"
+> jest zapewnieniem, powstało narzędzie **`tools/atlas-parafraza.mjs`**: mierzy najdłuższy wspólny
+> ciąg słów między każdym polem angielskim atlasu a pełnym tekstem jego pracy. Uruchamiane przy
+> korpusie (pełne teksty leżą celowo poza repo), bez korpusu **nie udaje wyniku zielonego**.
+> Pomiar po korekcie: **1022 pola, 24 z ciągiem ≥ 10 słów, maksimum 13** — przy czym prace IOS
+> Press są praktycznie czyste (`[H48]` jedno pole 10 słów, `[H20]` i `[H47]` **zero**).
+> Te 24 pola zostały następnie przepisane osobno; **liczby, operatory brzegowe i spójniki logiczne
+> zostają co do znaku** — obniżanie pomiaru kosztem liczby byłoby gorsze niż sam pomiar.
 
 ---
 
