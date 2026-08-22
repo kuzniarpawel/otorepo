@@ -19,7 +19,8 @@ npm run build     # production: vite build + tools/build-dist.mjs → dist/ (man
 npm run preview   # preview the built dist/
 ```
 
-Validation (3 oracles — all must be green before committing):
+Validation (the 3 core oracles below; the full gate set is ~29 npm `*:check`/`*:dom` scripts —
+all must be green before committing, see `npm run`):
 
 ```bash
 npm run snapshot:check   # golden DOM/engine/pose snapshot (jsdom)
@@ -34,7 +35,11 @@ with SVG as the fallback. The built app runs **offline** thanks to the PWA servi
 
 ## What it does
 
-Three tabs:
+Six navigation areas (Home · Diagnostics · Learn · Laboratory · Atlas · Profile). Home carries the
+quick-start tiles and a six-question initial triage (GRACE-3 timing-and-triggers) gating the clinical
+HINTS pathway; **Learn** holds cases and quizzes, **Laboratory** the "mathematical patient", and
+**Atlas** the 18 ICVD entities with criteria, thresholds, and source boundaries. The three clinical
+cores below live inside the Diagnostics area:
 
 - **Repositioning** — select the involved canal (posterior ~85% / horizontal ~10% / anterior ~1–2%), choose the
   maneuver (Epley, Semont, **Bascule** — a liberatory maneuver for posterior-canal cupulolithiasis, Lempert/BBQ,
@@ -76,15 +81,16 @@ A single 3D source of truth (head frame: `x = right, y = up/cranial, z = forward
   and the pathologies **SCDS/Tullio, Ménière's disease, and bilateral vestibulopathy (BVH)**, with a
   **clinical synthesis** (`clinicalReadout`); the interactive **"mathematical patient"** mode (custom parameters,
   sliders, presets, random-patient quiz, save/link) is **ready and wired to the UI**.
-  Documentation: [`engine_doc.en.txt`](engine_doc.en.txt) (the "NeuroVOR MODULE" section, references [H1]–[H22]).
+  Documentation: [`engine_doc.en.txt`](engine_doc.en.txt) (the "NeuroVOR MODULE" section, references [H1]–[H61]).
 - **Visualization** — a single pose source (`poseSpec` in `src/pose/maneuvers.js`) feeds two renderers:
   `Scene3D` + `src/render/svg-screens.js` project the 3D math (quaternions, skeletal FK) orthographically
   into schematic SVG, while `src/render/three-patient.js` draws the silhouette in WebGL (three.js). The axis
   bridge OTOREPO↔Three (`three-bridge.js`) is numerically verified. The camera = the observer (clinician).
   Documentation: [`view_doc.en.txt`](view_doc.en.txt).
-- **Validation** — three offline oracles guard consistency: the golden DOM/engine/pose snapshot
-  (`snapshot:check`), the quaternion bridge (`bridge:check`), and SVG↔3D screen-direction agreement
-  (`view:check`). The engines are pure (DOM-free) and importable in Node.
+- **Validation** — offline oracles guard consistency: the golden DOM/engine/pose snapshot
+  (`snapshot:check`), the quaternion bridge (`bridge:check`), SVG↔3D screen-direction agreement
+  (`view:check`), plus per-area gates grown over time (~29 `*:check`/`*:dom` npm scripts: sources,
+  triage, HINTS, atlas, Bárány durations, observations…). The engines are pure (DOM-free) and importable in Node.
 
 ### Debris size/density (the `size` parameter)
 
@@ -114,11 +120,11 @@ The Diagnostics tab stays at `medium`.
 | `src/pose/maneuvers.js`             | maneuver/test domain + `poseSpec` (single pose source) |
 | `src/render/svg-screens.js`         | SVG renderer (all screens) |
 | `src/render/three-patient.js` + `three-bridge.js` | 3D/WebGL renderer + OTOREPO↔Three axis bridge |
-| `src/app/{state,actions}.js`, `src/runtime/registry.js` | state, UI actions, infrastructure (rAF, wake lock, audio) |
-| `tools/{snapshot,bridge-check,view-check}.mjs` | 3 offline oracles · `tools/build-dist.mjs` — PWA static assets + `sw.js` |
+| `src/app/` (36 modules), `src/runtime/registry.js` | app layer: state, actions, area shell, triage/HINTS/atlas/learn/lab/report models, infrastructure (rAF, wake lock, audio) |
+| `tools/*.mjs` (32 files) | offline oracles/gates (~29 npm `*:check`/`*:dom`) · `tools/build-dist.mjs` — PWA static assets + `sw.js` |
 | `android/`                          | Capacitor wrapper (Android) |
 | `otorepo.html`                      | monolith — **frozen** golden-snapshot source (do not edit) |
-| `engine_doc.en.txt`                 | engine documentation (API, conventions, calibration, references [H1]–[H22]) |
+| `engine_doc.en.txt`                 | engine documentation (API, conventions, calibration, references [H1]–[H61]) |
 | `view_doc.en.txt`                   | visualization-layer documentation (2.5D SVG + 3D) |
 | `todo.txt`                          | task list (open / done, milestones) |
 | `migracja_3d.en.txt`                | historical notes on the 3D migration (Three.js) |
@@ -139,7 +145,7 @@ The engine is a reduced, phenomenological implementation of established BPPV bio
 - Ewald (1892) — Ewald's laws I/II/III.
 - Wu et al. (2021); Della Santina et al. (2005) — canal-plane orientations.
 
-The `NeuroVOR` layer (tonic/central VOR, HINTS, compensation, neuroanatomy) — full references [H1]–[H22] in [`engine_doc.en.txt`](engine_doc.en.txt):
+The `NeuroVOR` layer (tonic/central VOR, HINTS, compensation, neuroanatomy) — full references [H1]–[H61] in [`engine_doc.en.txt`](engine_doc.en.txt):
 
 - Goldberg & Fernández (1971) — resting activity of canal afferents (~90/s).
 - Halmagyi & Curthoys (1988); Weber et al. (2008) — head impulse test (vHIT), corrective saccades.

@@ -19,7 +19,8 @@ npm run build     # produkcja: vite build + tools/build-dist.mjs → dist/ (mani
 npm run preview   # podgląd zbudowanego dist/
 ```
 
-Walidacja (3 wyrocznie — wszystkie muszą być zielone przed commitem):
+Walidacja (poniżej 3 wyrocznie rdzeniowe; pełny zestaw bramek to ~29 skryptów npm `*:check`/`*:dom` —
+wszystkie muszą być zielone przed commitem, patrz `npm run`):
 
 ```bash
 npm run snapshot:check   # złoty snapshot DOM/silnika/pozy (jsdom)
@@ -34,7 +35,11 @@ a SVG stanowi fallback. Zbudowana aplikacja działa **offline** dzięki service 
 
 ## Co robi
 
-Trzy zakładki:
+Sześć obszarów nawigacji (Start · Diagnostyka · Nauka · Laboratorium · Atlas · Profil). Start niesie
+kafle szybkiego wejścia i kwalifikację wstępną z sześcioma pytaniami (taksonomia czas-i-wyzwalacze
+GRACE-3), bramkującą kliniczny tor HINTS; **Nauka** to przypadki i quizy, **Laboratorium** —
+„matematyczny pacjent", **Atlas** — 18 jednostek ICVD z kryteriami, progami i granicami źródła.
+Trzy rdzenie kliniczne poniżej mieszkają w obszarze Diagnostyka:
 
 - **Repozycja** — wybór zajętego kanału (tylny ~85% / poziomy ~10% / przedni ~1–2%), dobór manewru
   (Epley, Semont, **Bascule** — manewr uwalniający dla kupulolitiazy k. tylnego, Lempert/BBQ,
@@ -76,15 +81,16 @@ Jedno źródło prawdy 3D (układ głowy: `x = prawo, y = góra/czaszka, z = prz
   choroba Ménière'a i obustronna westybulopatia (BVH)**, ze **syntezą kliniczną** (`clinicalReadout`); interaktywny
   tryb **„matematycznego pacjenta"** (własne parametry, suwaki, presety, quiz losowego pacjenta, zapis/link)
   jest **gotowy i podłączony do UI**. Dokumentacja: [`engine_doc.txt`](engine_doc.txt)
-  (sekcja „MODUŁ NeuroVOR", odnośniki [H1]–[H22]).
+  (sekcja „MODUŁ NeuroVOR", odnośniki [H1]–[H61]).
 - **Wizualizacja** — jedno źródło pozy (`poseSpec` w `src/pose/maneuvers.js`) zasila dwa renderery:
   `Scene3D` + `src/render/svg-screens.js` rzutują matematykę 3D (kwaterniony, FK szkieletu) ortograficznie
   do schematycznego SVG, a `src/render/three-patient.js` rysuje sylwetkę w WebGL (three.js). Most osi
   OTOREPO↔Three (`three-bridge.js`) jest zweryfikowany liczbowo. Kamera = obserwator (lekarz).
   Dokumentacja: [`view_doc.txt`](view_doc.txt).
-- **Walidacja** — trzy wyrocznie offline strzegą spójności: złoty snapshot DOM/silnika/pozy
-  (`snapshot:check`), most kwaternionów (`bridge:check`) i zgodność kierunków ekranowych SVG↔3D
-  (`view:check`). Silniki są czyste (bez DOM) i importowalne w Node.
+- **Walidacja** — wyrocznie offline strzegą spójności: złoty snapshot DOM/silnika/pozy
+  (`snapshot:check`), most kwaternionów (`bridge:check`), zgodność kierunków ekranowych SVG↔3D
+  (`view:check`) oraz bramki per obszar dokładane z czasem (~29 skryptów `*:check`/`*:dom`:
+  źródła, kwalifikacja, HINTS, atlas, czasy Bárány, obserwacje…). Silniki są czyste (bez DOM) i importowalne w Node.
 
 ### Rozmiar/gęstość złogu (parametr `size`)
 
@@ -114,11 +120,11 @@ prędkość ∝ 1/r² (Stokes). Zakładka Diagnostyki pozostaje przy `medium`.
 | `src/pose/maneuvers.js`             | domena manewrów/testów + `poseSpec` (jedno źródło pozy) |
 | `src/render/svg-screens.js`         | renderer SVG (wszystkie ekrany) |
 | `src/render/three-patient.js` + `three-bridge.js` | renderer 3D/WebGL + most osi OTOREPO↔Three |
-| `src/app/{state,actions}.js`, `src/runtime/registry.js` | stan, akcje UI, infrastruktura (rAF, wake lock, dźwięk) |
-| `tools/{snapshot,bridge-check,view-check}.mjs` | 3 wyrocznie offline · `tools/build-dist.mjs` — statyki PWA + `sw.js` |
+| `src/app/` (36 modułów), `src/runtime/registry.js` | warstwa aplikacji: stan, akcje, powłoka obszarów, modele kwalifikacji/HINTS/atlasu/nauki/laboratorium/opisu, infrastruktura (rAF, wake lock, dźwięk) |
+| `tools/*.mjs` (32 pliki) | wyrocznie/bramki offline (~29 skryptów npm `*:check`/`*:dom`) · `tools/build-dist.mjs` — statyki PWA + `sw.js` |
 | `android/`                          | wrapper Capacitor (Android) |
 | `otorepo.html`                      | monolit — **zamrożone** źródło złotego snapshotu (nie edytować) |
-| `engine_doc.txt`                    | dokumentacja silników (API, konwencje, kalibracja, bibliografia [H1]–[H22]) |
+| `engine_doc.txt`                    | dokumentacja silników (API, konwencje, kalibracja, bibliografia [H1]–[H61]) |
 | `view_doc.txt`                      | dokumentacja warstwy wizualizacji (2.5D SVG + 3D) |
 | `todo.txt`                          | lista zadań (otwarte / zrobione, kamienie milowe) |
 | `migracja_3d.txt`                   | notatki historyczne nt. migracji 3D (Three.js) |
@@ -135,7 +141,7 @@ Silnik jest zredukowaną, fenomenologiczną implementacją uznanych modeli biome
 - Ewald (1892) — prawa Ewalda I/II/III.
 - Wu i wsp. (2021); Della Santina i wsp. (2005) — orientacje płaszczyzn kanałów.
 
-Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS, kompensacja, neuroanatomia) — pełne odnośniki [H1]–[H22] w `engine_doc.txt`:
+Warstwa `NeuroVOR` (VOR toniczny/ośrodkowy, HINTS, kompensacja, neuroanatomia) — pełne odnośniki [H1]–[H61] w `engine_doc.txt`:
 
 - Goldberg & Fernández (1971) — spoczynkowa aktywność aferentów kanałowych (~90/s).
 - Halmagyi & Curthoys (1988); Weber i wsp. (2008) — test pchnięcia głowy (vHIT), sakady korygujące.
