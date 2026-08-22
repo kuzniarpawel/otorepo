@@ -289,8 +289,22 @@ function triageResultCore(odp) {
         : P('Zaznaczono objaw, który wykracza poza obraz obwodowy. Zanim rozważysz próby pozycyjne albo HINTS, potrzebna jest pilna ocena neurologiczna.',
             'You marked a feature that goes beyond a peripheral picture. Before considering positional testing or HINTS, urgent neurological evaluation is needed.'),
       uwagi: [
-        P('Obrazowanie: MRI z dyfuzją (DWI) i angiografią (MRA). Tomografia komputerowa NIE nadaje się do wykluczenia udaru tylnego dołu.',
-          'Imaging: MRI with diffusion (DWI) and angiography (MRA). CT is NOT suitable for ruling out a posterior-fossa stroke.'),
+        /* D-CT, wariant A (decyzja użytkownika 2026-08-22): ZDANIE ŹRÓDŁA JEST DWUCZŁONOWE, a program
+           niósł tylko człon negatywny — czyli mówił klinicyście przy łóżku, że TK „nie nadaje się",
+           nie mówiąc, DO CZEGO się nadaje. Przy chorym z ostrym zawrotem to twierdzenie może
+           pokierować decyzją obrazowania, więc połowa zdania jest tu kosztem klinicznym, nie
+           stylistycznym. [H58] Kim 2022 §5.3: TK ma ograniczoną wartość w wykrywaniu ostrego zawału
+           krążenia tylnego „and is only recommended to detect hemorrhages or other pathologies".
+           [H59] Strupp 2022 §4.5.2 robi to samo zawężenie i dokłada drugą modalność: TK może
+           wykluczyć krwotok, a angio-TK rozpoznaje zwężenie tętnicy kręgowej lub podstawnej.
+           RANGA: sama MODALNOŚĆ TK stoi w obu pracach w prozie przeglądowej — ale CEL obrazowania
+           („dowód niedokrwienia LUB KRWOTOKU") jest u [H58] treścią KRYTERIUM B, i to podnosi wagę
+           zgubionej połowy o piętro. Fraza „Tomografia komputerowa NIE nadaje się" zostaje
+           NIENARUSZONA w jednym kawałku: pilnują jej KL2c i E6/odradza-tomografie, a przeredagowanie
+           jej zgasiłoby obie bramki po cichu.
+           ZNACZNIK ŹRÓDŁA: ta uwaga jako JEDYNA z trzech na tej karcie go nie miała. */
+        P('Obrazowanie: MRI z dyfuzją (DWI) i angiografią (MRA). Tomografia komputerowa NIE nadaje się do wykluczenia udaru tylnego dołu — ma tu wartość OGRANICZONĄ. Jest natomiast ZALECANA do wykrycia KRWOTOKU lub innych patologii — [H58] Kim 2022. Angio-TK rozpoznaje zwężenie tętnicy kręgowej lub podstawnej — [H59] Strupp 2022.',
+          'Imaging: MRI with diffusion (DWI) and angiography (MRA). CT is NOT suitable for ruling out a posterior-fossa stroke — its value here is LIMITED. It IS, however, RECOMMENDED to detect a HAEMORRHAGE or other pathology — [H58] Kim 2022. CT angiography diagnoses vertebral or basilar artery stenosis — [H59] Strupp 2022.'),
         /* D-MRI (2026-08-21): wcześniej stało tu „powtórz badanie po 48–72 h". Ciąg „48–72" ma
            w korpusie 19 dokumentów ICVD ZERO trafień — interwał był NASZ, nie źródłowy. [H58]
            Kim 2022 podaje liczby WŁASNE i NIE PODAJE odstępu powtórzenia; żąda oceny SERYJNEJ. */

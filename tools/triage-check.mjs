@@ -173,8 +173,25 @@ const R = (o) => triageResult(o);
   const w = R({ przebieg: 'napadowe', wyzwalacz: 'pozycyjny', flagi: ['ataksja'] });
   eq('KL2/ataksja-bije-BPPV', [w.kategoria, w.sciezka], ['czerwona', null]);
   T('KL2b/mowi-o-osrodku', /OŚRODKOWĄ/.test(w.tresc.pl), 'komunikat musi wskazać przyczynę ośrodkową');
-  T('KL2c/bez-CT', /NIE nadaje się|CT is NOT/.test(w.uwagi.map(u => u.pl + u.en).join(' ')),
-    'GRACE-3: tomografia NIE nadaje się do wykluczenia udaru tylnego dołu');
+  /* D-CT (2026-08-22, wariant A): KL2c broniła POŁOWY ZDANIA — wymagała członu negatywnego
+     i niczego więcej, więc nic nie stało na straży członu pozytywnego i pozwoliła mu zniknąć.
+     Teraz zdania bronią TRZY asercje, tak jak przy D-MRI rozbiło się na KL2d/KL2e/KL2f.
+     POPRAWIONA TEŻ ATRYBUCJA w komunikacie: stało tu „GRACE-3", a weryfikowalne pokrycie dają
+     [H58] Kim 2022 i [H59] Strupp 2022 — GRACE-3 NIE NALEŻY do korpusu 19 dokumentów ICVD, więc
+     jego brzmienia nie da się sprawdzić sondą. Zostawienie tamtej atrybucji znaczyłoby, że bramka
+     twierdzi o źródle coś, czego nikt nie zmierzył — przy zdaniu, które właśnie dostało numer. */
+  /* LUSTRA SPRAWDZANE OSOBNO, i to jest poprawka znaleziona WŁASNĄ KONTROLĄ CZUŁOŚCI: pierwsza
+     wersja tych asercji sklejała `u.pl + u.en`, więc twierdzenie obecne w JEDNYM tylko lustrze
+     wystarczało. Usunięcie polskiego członu przechodziło na zielono, bo regex zaspokajał się
+     angielskim. Przy zdaniu, które może pokierować decyzją obrazowania, to za mało. */
+  const uwPl = w.uwagi.map(u => u.pl).join(' ');
+  const uwEn = w.uwagi.map(u => u.en).join(' ');
+  T('KL2c/bez-CT', /NIE nadaje się/.test(uwPl) && /CT is NOT/.test(uwEn),
+    '[H58] Kim 2022: tomografia ma OGRANICZONĄ wartość w wykrywaniu zawału krążenia tylnego — w OBU lustrach');
+  T('KL2g/CT-wykrywa-krwotok', /KRWOTOK/.test(uwPl) && /HAEMORRHAGE|HEMORRHAGE/i.test(uwEn),
+    'DRUGA POŁOWA tego samego zdania [H58]: TK jest ZALECANA do wykrycia krwotoku. Bez tej asercji karta odradza badanie, nie mówiąc, do czego ono służy — a to może pokierować decyzją obrazowania');
+  T('KL2h/angio-TK-i-numer', /Angio-TK/i.test(uwPl) && /CT angiography/.test(uwEn) && /\[H59\]/.test(uwPl) && /\[H59\]/.test(uwEn),
+    '[H59] Strupp 2022 dokłada drugą modalność (angio-TK dla zwężenia t. kręgowej/podstawnej); numer jest CZĘŚCIĄ asercji i musi stać w OBU lustrach, żeby powrót do wersji bez pokrycia zapalił bramkę');
   /* D-MRI (2026-08-21): bramka pilnowała LICZBY „48–72", której ŻADEN z 19 dokumentów ICVD nie
      niesie (ciąg „48–72" i „48-72" = 0 trafień w całym korpusie) — czyli mroziła NASZ interwał jako
      gdyby był cytatem. Teraz pilnuje tego, co niesie [H58] Kim 2022: odsetka wyników fałszywie
@@ -290,7 +307,11 @@ if (bledy.length) {
    z numerem [H58] zamiast wlasnego interwalu) i KL2f (druga implikacja tej samej liczby u Kima —
    badanie kliniczne ma w fazie ostrej wyzsza czulosc niz obrazowanie). KL2d ZOSTAJE, ale pilnuje juz
    odsetka ze zrodla (12-50%), a nie liczby "48-72", ktora w calym korpusie ICVD ma 0 trafien. */
-const OCZEKIWANE = 80;
+/* D-CT (2026-08-22, wariant A): 80 -> 82. DWA nowe twierdzenia przy KL2 — KL2g (TK jest ZALECANA
+   do wykrycia krwotoku) i KL2h (angio-TK z numerem [H59]). KL2c zostala, ale przestala byc
+   JEDYNA: broniła polowy zdania i wlasnie dlatego druga polowa mogla zniknac.
+   D-ORTO (2026-08-22, wariant A): 70 -> 80. */
+const OCZEKIWANE = 82;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zmieniasz zakres wyroczni: zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);

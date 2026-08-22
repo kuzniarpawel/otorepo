@@ -63,12 +63,26 @@ doprowadza ten dokument do zgodności z tym, co już się wykonało).
 **Zostaje z planu:** **E2** (częściowo wyprzedzony przez D-CPN — patrz §3.2) · **E3** (czeka na D1) ·
 **E4b** (AUVP) · **E5** (kwalifikacja) · **E6** (czeka na D6) · **E7** (słownik).
 
-**Otwarte decyzje użytkownika — pięć:** D3 („probable") · D6 (zakres 10 nieobecnych jednostek) ·
-**D-5D** (twierdzenie „5 D" bez pokrycia w korpusie) · **D-MEN** (12 h vs 24 h) · **D-CT** (program
-mówi „CT NIE nadaje się", a `[H58]` dodaje wskazanie do wykrywania krwotoków — połowa zgubiona).
+**Otwarte decyzje użytkownika — cztery:** D3 („probable") · D6 (zakres 10 nieobecnych jednostek) ·
+**D-5D** (twierdzenie „5 D" bez pokrycia w korpusie) · **D-MEN** (12 h vs 24 h).
 
 Rozstrzygnięte w trakcie: D2 (§4.1) · D4 (§3.5) · D5 (§4.1) · D7 (§4.2) · **D1** (§3.3, etap E3a —
-pytanie było źle postawione) · **D-ORTO** (§5 E5, wariant A — szóste pytanie kwalifikacji).
+pytanie było źle postawione) · **D-ORTO** (§5 E5, wariant A — szóste pytanie kwalifikacji) ·
+**D-CT** (§5 E5, wariant A — zdanie o TK dopełnione o człon pozytywny).
+
+> **D-CT, wariant A (2026-08-22).** Zdanie źródła jest **dwuczłonowe**, a program niósł tylko człon
+> negatywny: mówił klinicyście przy łóżku, że TK „nie nadaje się", nie mówiąc, **do czego się nadaje**.
+> `[H58]` Kim 2022 §5.3: TK ma ograniczoną wartość w wykrywaniu zawału krążenia tylnego *„and is only
+> recommended to detect hemorrhages or other pathologies"*. `[H59]` Strupp 2022 robi to samo zawężenie
+> i dokłada angio-TK dla zwężenia tętnicy kręgowej lub podstawnej.
+> **Ranga podnosi wagę zgubionej połowy o piętro:** sama modalność TK stoi w prozie przeglądowej, ale
+> **cel** obrazowania — „dowód niedokrwienia **lub krwotoku**" — jest u `[H58]` treścią **kryterium B**.
+> Dopełnione w karcie czerwonej flagi i w stałej `OSTRZEZENIE`, w obu lustrach; uwaga dostała też
+> **znacznik źródła**, którego jako jedyna z trzech nie miała.
+> **Bramka broniła połowy zdania i dlatego druga połowa mogła zniknąć.** KL2c rozbite na trzy
+> asercje (KL2c/KL2g/KL2h), wzorem KL2d–KL2f z D-MRI, plus E6b w warstwie DOM.
+> **Poprawiona atrybucja:** komunikat KL2c mówił „GRACE-3", a weryfikowalne pokrycie dają `[H58]`
+> i `[H59]` — GRACE-3 nie należy do korpusu, więc jego brzmienia nie da się sprawdzić sondą.
 
 ---
 

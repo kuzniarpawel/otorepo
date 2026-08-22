@@ -404,7 +404,23 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 217;  /* 2026-08-22, etap D-ORTO (decyzja uzytkownika, wariant A): 214 -> 217.
+const OCZEKIWANE = 225;  /* 2026-08-22, etap D-CT (decyzja uzytkownika, wariant A): 217 -> 225.
+                            OSIEM cytowan netto, zmierzone przez podstawianie wersji z HEAD, ADDYTYWNE:
+                              pelna zmiana 225 | bez triage-model.js 219 (czyli +6)
+                                               | bez hints-model.js  223 (czyli +2)
+                              217 + 6 + 2 = 225.
+                            Zdanie o TK bylo DWUCZLONOWE u zrodla, a program niosl tylko czlon
+                            negatywny. Doszedl czlon pozytywny — TK ZALECANA do wykrycia krwotoku
+                            ([H58] Kim 2022) i angio-TK dla zwezenia t. kregowej/podstawnej
+                            ([H59] Strupp 2022) — w karcie czerwonej flagi i w stalej OSTRZEZENIE,
+                            w obu lustrach. Uwaga na karcie dostala tez ZNACZNIK ZRODLA, ktorego
+                            jako JEDYNA z trzech nie miala.
+                            PULAPKA KONWENCJI ZLAPANA PRZEZ BRAMKE W TRAKCIE: pierwszy zapis brzmial
+                            „[H58] Kim 2022, [H59] Strupp 2022" — i KON2 slusznie zapalil sie na
+                            „Kim 2022, [H59]", czyli oznaczeniu stojacym PRZED numerem. Rozdzielone
+                            na dwa zdania, kazdy numer niesie wlasne oznaczenie.
+
+                            2026-08-22, etap D-ORTO (decyzja uzytkownika, wariant A): 214 -> 217.
                             TRZY cytowania "[H52] Kim 2019" Z OZNACZENIEM, wszystkie w
                             src/app/triage-model.js: dwa w tresci UWAGI (lustro PL i EN) i jedno
                             w komentarzu przy nowym pytaniu `ortostaza`. Pozostale wystapienia

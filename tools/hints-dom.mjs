@@ -260,6 +260,10 @@ T('E3/rola-alert', /role="alert"/.test(app()), 'ostrzezenie musi byc oznaczone d
 T('E4/wymienia-ceche', /Test naprzemiennego zasłaniania/.test(tekst()), 'ostrzezenie musi nazwac ceche, ktora je wywolala');
 T('E5/mowi-o-MRI', /MRI/.test(tekst()) && /dyfuzją/.test(tekst()), 'ostrzezenie musi wskazac wlasciwe badanie obrazowe');
 T('E6/odradza-tomografie', /tomografia komputerowa NIE nadaje/i.test(tekst()), 'ostrzezenie musi odradzic tomografie');
+/* D-CT (2026-08-22): E6 pilnowala WYLACZNIE czlonu negatywnego, wiec czlon pozytywny mogl zniknac
+   z ekranu przy zielonej bramce — i wlasnie tak sie stalo. E6b domyka zdanie na ekranie. */
+T('E6b/mowi-do-czego-TK-sluzy', /KRWOTOK/i.test(tekst()),
+  'ostrzezenie musi tez powiedziec, DO CZEGO tomografia sluzy — [H58] zaleca ja do wykrycia krwotoku');
 zAlarmem({ hit: 'brakSakady' });
 T('E7/alarm-HIT', /data-hw-ostrzezenie="1"/.test(app()), 'prawidlowy HIT przy oczoplasie to cecha alarmowa');
 zAlarmem({ chod: 'nieStoiBezPodparcia' });
@@ -358,7 +362,8 @@ const EKRANY = [
 }
 
 /* ═══════════ J. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 102;
+/* D-CT (2026-08-22): +1 — E6b/mowi-do-czego-TK-sluzy. E6 pilnowala wylacznie czlonu negatywnego. */
+const OCZEKIWANE = 103;
 if (bledy.length) {
   console.error(`✗ hints:dom — ${bledy.length} bledow (przeszlo ${ok})`);
   bledy.forEach(b => console.error('  ' + b));
