@@ -3813,10 +3813,11 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
       (HIMP) When Diagnosing Bilateral Vestibulopathy." J Clin Med 11(9):2444. doi:10.3390/jcm11092444.
       → BVH THRESHOLDS (Bárány criteria): bilateral HC VOR gain (vHIT) < 0.6 [SHIMP < 0.5] · caloric sum of
         warm+cold for a GIVEN ear < 6 °/s (→ CAL_BILAT) · rotatory-chair gain < 0.1 with phase lead > 68° (NOT
-        modelled). SHIMP = HEAD-fixed target → a normal VOR makes an ANTI-compensatory saccade (its ABSENCE =
+        modelled; PRE-ERRATUM numbers — as cited by this 2022 paper; the 2023 erratum: gain ≤ 0.1, phase lead
+        ≥ 15°, time constant ≤ 6 s — see the erratum note in the [H19] entry above). SHIMP = HEAD-fixed target → a normal VOR makes an ANTI-compensatory saccade (its ABSENCE =
         deficit — rule INVERTED vs HIMP); "covert-saccade killer" (covert ~5% vs ~35%) → cleaner gain (slightly
-        lower → hence the lower 0.5 cutoff). Protocol: peak head velocity > 120 °/s, amplitude 10–30°. SHIMP not
-        implemented (candidate to extend headImpulse: same gain machinery, but presence of a saccade = HEALTHY VOR).
+        lower → hence the lower 0.5 cutoff). Protocol: peak head velocity > 120 °/s, amplitude 10–30°. SHIMP
+        implemented (N4/N7) (the candidate extension of headImpulse: same gain machinery, but presence of a saccade = HEALTHY VOR).
 [H24] Edlow JA, Carpenter C, Akhter M, et al. (2023). "Guidelines for Reasonable and Appropriate Care in the
       Emergency Department 3 (GRACE-3): Acute dizziness and vertigo in the emergency department." Acad Emerg
       Med 30(5):442–486. doi:10.1111/acem.14728. PMID 37166022.

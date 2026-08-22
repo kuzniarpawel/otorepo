@@ -83,6 +83,9 @@ część rozstrzygającą dla decyzji D2 (kryteria A–F i oba miejsca z liczbam
 
 **Metoda:** przeczytanie całego pliku źródłowego (546 wierszy) i całej ekstrakcji (1187 wierszy),
 a następnie przeliczenie każdej liczby, którą ekstrakcja deklaruje — bez opierania się na pamięci.
+*(Dopisek 2026-08-22, przegląd dokumentacji: 1187 to długość ekstrakcji SPRZED naniesienia sekcji
+`== KOREKTY WERYFIKATORA ==` i wstawek śródtekstowych — plik ma 1285 wierszy i miał je już w chwili
+`24d9518`; bliźniacza liczba 546 dla źródła zgadza się co do wiersza i bajta.)*
 
 ### 4.1. Struktura kryteriów — bez zastrzeżeń
 
@@ -150,6 +153,11 @@ nie wartość bezwzględna). To jest kandydat na rozszerzenie, nie na cichą pod
 nota jest w [`src/engine/neuro-vor.js:730`](src/engine/neuro-vor.js). W `engine_doc.txt`
 `directionChanging` stoi w wierszach **2262, 2266 i 2685**, a wiersz 730 tego pliku to zapis
 walidacji odwrócenia oczopląsu przy siadaniu — czyli czytelnik trafiłby na treść z zupełnie innej osi.
+
+*(Dopisek 2026-08-22, przegląd dokumentacji: wszystkie kotwice liniowe §4.4 odnoszą się do bazy
+`5035f09` — deklaruje ją §4.6, ale klauzula stoi dopiero tam, więc dopisuję ją i tu. Na późniejszych
+commitach kotwice się przesunęły (E3a `e7b4e09`, E-DOC `4b8104f`): `CAL_BILAT` w. 918, `bilateralWeak`
+w. 957, nota `directionChanging` w. 762–763, a w `engine_doc.txt` trzecie trafienie w. 2692.)*
 
 **3. Usterka gramatyczna** w parafrazie noty 18 („kryteria jednostronnego niedoczynności" →
 „jednostronnej"). Treść bez zmian.

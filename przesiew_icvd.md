@@ -312,6 +312,7 @@ albo rozstrzygnąć. **Wymaga decyzji.**
 > **Fizyka zostaje.** Napad jest emergentny — złóg startuje przy osklepku — a nie strojony pod
 > liczbę; chip „Przemijający (≈1 min)" mówi prawdę o **własnym modelu**. Rozbieżność została
 > **nazwana**, nie ukryta. `barany:check` liczy dziś **61** przypadków (49 → 61 w `5a93ea1`).
+> *(Dopisek 2026-08-22, przegląd dokumentacji: od `82e3329`/D3-OS bramka liczy **69** przypadków.)*
 
 ### 3.6. Silnik nadaje tier „emerging" podtypowi, który praca JAWNIE WYKLUCZA
 
@@ -399,8 +400,10 @@ Wybrane z 75; reszta w plikach:
 - **Pas 19–25% asymetrii kalorycznej jest niczyj** (19% jeszcze norma, > 25% patologia)
 - **Męczliwość** — u ICVD cecha peryferyjna, u Eggersa **trop ośrodkowy**; silnik używa jej jako różnicownika mechanizmu
 - **Pętla wykluczeń**: ten sam chory spełnia „prawdopodobne BPPV, które ustąpiło samoistnie" **i** „prawdopodobną napadowicę przedsionkową"
-- **Błąd atrybucji do naprawy**: reguła pierwszeństwa Ménière'a nad migreną — sprawdzić, czy karta
-  `vmCriteriaCard` przypisuje ją właściwej pracy
+- ~~**Błąd atrybucji do naprawy**: reguła pierwszeństwa Ménière'a nad migreną — sprawdzić, czy karta
+  `vmCriteriaCard` przypisuje ją właściwej pracy~~ — **SPRAWDZONE I NAPRAWIONE 2026-08-21, `ca8a649`
+  (E4a)**: znacznik `[H20]` stoi przy klauzuli kryteriów, a reguła „dwóch różnych typów napadów" to
+  zdanie `[H46]` (pomiar: 0 wobec 1 trafienia); patrz §1.1 i nota E4a w §5
 
 ---
 
@@ -699,6 +702,9 @@ od przeoczenia.
 > jest zapewnieniem, powstało narzędzie **`tools/atlas-parafraza.mjs`**: mierzy najdłuższy wspólny
 > ciąg słów między każdym polem angielskim atlasu a pełnym tekstem jego pracy. Uruchamiane przy
 > korpusie (pełne teksty leżą celowo poza repo), bez korpusu **nie udaje wyniku zielonego**.
+> *(Dopisek 2026-08-22, przegląd dokumentacji: domyślna ścieżka narzędzia szuka odtąd katalogu
+> `icvd-korpus` w górę drzewa katalogów — wcześniejsze sztywne trzy `..` nie trafiały z żadnej
+> lokalizacji repo, więc pomiar biegł wyłącznie z jawnym `--korpus`, o którym ta nota milczała.)*
 > Pomiar po korekcie: **1022 pola, 24 z ciągiem ≥ 10 słów, maksimum 13** — przy czym prace IOS
 > Press są praktycznie czyste (`[H48]` jedno pole 10 słów, `[H20]` i `[H47]` **zero**).
 > Te 24 pola zostały następnie przepisane osobno; **liczby, operatory brzegowe i spójniki logiczne
@@ -743,8 +749,8 @@ E0 (fundament)  ──┬──> E1 (BPPV)     ──> E2 (oczopląs)   [pkt 2,3
    ✔ ee08f99      │     ✔ ae36e0a           ⟳ zostaje pkt 1 i 4
                   ├──> E4 (Ménière/AUVP)    ✔ E4a ca8a649  ⟳ E4b zostaje
                   ├──> E5 (kwalifikacja)    ✔ E5a e446f1c  ⟳ reszta zostaje
-                  └──> E3 (progi)  [czeka na D1 — D2 rozstrzygnięte]
-                                   E6 (zakres) [czeka na D6]
+                  └──> E3 (progi)     ✔ E3a e7b4e09 (D1 rozstrzygnięty)  ⟳ zostaje VEMP/fotel/nazwiska
+                                   ✔ E6 (atlas) 83a147a..63c3c27 — D6 rozstrzygnięte (f99e6a7)
                                    E7 (słownik) — ostatni
 ```
 

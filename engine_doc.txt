@@ -3602,7 +3602,9 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
       Van Rompaey V, van de Berg R (2022). "Suppression Head Impulse Test (SHIMP) versus Head Impulse Test
       (HIMP) When Diagnosing Bilateral Vestibulopathy." J Clin Med 11(9):2444. doi:10.3390/jcm11092444.
       → PROGI BVH (kryt. Bárány): obustronny gain HC (vHIT) < 0.6 [SHIMP < 0.5] · suma kaloryczna ciepła+zimna
-        DANEGO ucha < 6 °/s (→ CAL_BILAT) · fotel obrotowy gain < 0.1 z fazą > 68° (NIE modelowany). SHIMP = cel
+        DANEGO ucha < 6 °/s (→ CAL_BILAT) · fotel obrotowy gain < 0.1 z fazą > 68° (NIE modelowany; liczby
+        PRZEDERRATOWE — tak cytuje ta praca z 2022; errata 2023: gain ≤ 0.1, faza ≥ 15°, stała czasowa ≤ 6 s —
+        patrz nota erraty we wpisie [H19] wyżej). SHIMP = cel
         związany z GŁOWĄ → prawidłowy VOR daje sakadę ANTYkompensacyjną (jej BRAK = ubytek — reguła ODWROTNA vs
         HIMP); „zabójca sakad ukrytych" (covert ~5% vs ~35%) → czystszy gain (nieco niższy → stąd niższe cięcie
         0.5). Protokół: szczyt prędkości głowy > 120 °/s, amplituda 10–30°. SHIMP zaimplementowany (N4/N7) (kandydat
