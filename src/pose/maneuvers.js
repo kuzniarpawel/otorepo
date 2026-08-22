@@ -1642,7 +1642,7 @@ function recommend(testKey,variant,mech){
        note:t("Apogeotropowy (kupulolitiaza) — manewr Gufoniego (apogeotropowy) przekształca postać w geotropową; następnie ponowny test i leczenie postaci geotropowej. Rolka Lemperta ma sens dopiero PO konwersji — nie działa na złóg związany z osklepkiem. W literaturze opisano też manewry celowane wprost w postać apogeotropową — Zuma e Maia i Kim — próbujące oderwać złóg od osklepka bez etapu konwersji; stosuj według dostępności i własnego doświadczenia.","Apogeotropic (cupulolithiasis) — the Gufoni maneuver (apogeotropic) converts the form into a geotropic one; then re-test and treat the geotropic form. The Lempert roll makes sense only AFTER conversion — it does not act on debris bound to the cupula. The literature also describes maneuvers aimed directly at the apogeotropic form — Zuma e Maia and Kim — which try to detach the debris from the cupula without a conversion stage; use according to availability and your own experience.")};
 }
 // Klasyfikacja podtypu BPPV wg kryteriów Bárány Society (ICVD 2015): mapuje (kanał, wariant, strona, tryb downbeat)
-// na formalną etykietę + poziom pewności (established/emerging) + cechy różnicujące (latencja/czas/męczliwość/kierunek/
+// na formalną etykietę + poziom pewności (established/emerging/poza — trzy wartości od D3-OS) + cechy różnicujące (latencja/czas/męczliwość/kierunek/
 // strona chora). Czysta funkcja kliniczna — jak recommend(); zasila kartę „Klasyfikacja" w diagnostyce. NIE zmienia
 // fizyki — synteza z konwencji już zakodowanych w DIAG (latNote/features).
 // [H48] von Brevern 2015 — pełne kryteria wszystkich podtypów wraz z przypisami stoją w engine_doc.txt,

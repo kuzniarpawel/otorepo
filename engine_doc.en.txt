@@ -4614,9 +4614,19 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
         A MEASURED BOUNDARY: the paper speaks of "levels of diagnostic certainty" but DOES NOT NAME
         them — the strings "definite" and "probable" have 0 hits. A unified grid of certainty levels
         therefore cannot be cited from it; the corpus contains NO harmonisation document, and the word
-        "probable" means at least seven different things across ICVD (including OPPOSITE things in
-        [H19] and [H59]). Any unification in the program will be an EDITORIAL DECISION OF OTOREPO,
-        not a citation — and must be described as such.
+        "probable" means FOURTEEN different things across ICVD (measured 2026-08-22; until the K7
+        re-audit this read "at least seven… including OPPOSITE things" — the D3 diagnosis refuted
+        the "opposition" framing, and fourteen follows from the meaning map once the migraine row
+        is split into its forms). THE CORE OF THE NON-UNIFORMITY: the same bedside HIT with
+        saccades suffices in [H59] as "unambiguous evidence" for the FULL form of AUVP, while in
+        [H19] it NEVER leads to measured BVP (a QUANTITATIVE measurement is required for the BVP
+        diagnosis) — the tool sits on opposite sides of the full/probable line. The direction of
+        the anomaly: [H19] is the ONLY case among ICVD CRITERIA in which "probable" makes a
+        positive finding a NECESSARY condition; [H48], [H52], [H49] and [H20] build "probable"
+        through the ABSENCE of a confirmatory test (outside the ICVD criteria it can differ: the
+        AAO-HNS 1995 annex reprinted in [H20] demands audiometry for "probable" too). Any
+        unification in the program will be an EDITORIAL DECISION OF OTOREPO, not a citation —
+        and must be described as such.
 
 === DEBRIS CLOUD — the multi-particle ensemble (D9/V20, 2026-08-16) ===
 ORCHESTRATION ABOVE THE ENGINE, no physics (zero edits to vestibular.js): the cloud = N=9

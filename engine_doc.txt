@@ -4369,9 +4369,18 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
         GRANICA ZMIERZONA: praca mówi o „poziomach pewności diagnostycznej", ale ICH NIE NAZYWA —
         ciągi „definite" i „probable" mają 0 trafień. Nie da się więc za nią zacytować ujednoliconej
         siatki stopni pewności; w korpusie NIE MA dokumentu harmonizacyjnego, a słowo „probable"
-        znaczy w ICVD co najmniej siedem różnych rzeczy (w tym rzeczy PRZECIWNE w [H19] i [H59]).
-        Każde ujednolicenie w programie będzie DECYZJĄ REDAKCYJNĄ OTOREPO, nie cytatem — i tak
-        musi być opisane.
+        znaczy w ICVD CZTERNAŚCIE różnych rzeczy (pomiar 2026-08-22; do kontroli K7 stało tu
+        „co najmniej siedem… w tym rzeczy PRZECIWNE" — diagnoza D3 obaliła opis „opozycja",
+        a czternastka wychodzi z mapy znaczeń przy rozdzieleniu wiersza migreny i jej postaci).
+        RDZEŃ NIEJEDNOLITOŚCI: ten sam przyłóżkowy HIT z sakadami w [H59] wystarcza jako
+        „jednoznaczny dowód" dla postaci PEŁNEJ AUVP, a w [H19] nie prowadzi do BVP mierzonej
+        NIGDY (dla rozpoznania BVP wymagany jest pomiar ILOŚCIOWY) — narzędzie leży po
+        przeciwnych stronach linii pełna/prawdopodobna. Kierunek anomalii: [H19] jest JEDYNYM
+        wśród KRYTERIÓW ICVD przypadkiem, w którym „probable" czyni znalezisko dodatnie
+        warunkiem KONIECZNYM; [H48], [H52], [H49] i [H20] budują „probable" przez BRAK badania
+        potwierdzającego (poza kryteriami ICVD bywa inaczej: aneks AAO-HNS 1995 przedrukowany
+        w [H20] żąda audiogramu także dla „probable"). Każde ujednolicenie w programie będzie
+        DECYZJĄ REDAKCYJNĄ OTOREPO, nie cytatem — i tak musi być opisane.
 
 === CHMURA ZŁOGU — ensemble wielocząstkowy (D9/V20, 2026-08-16) ===
 ORKIESTRACJA NAD SILNIKIEM, bez fizyki (zero edycji vestibular.js): chmura = N=9 niezależnych
