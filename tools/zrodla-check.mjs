@@ -501,7 +501,14 @@ const licznikProzy = (cyt) => {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 278;  /* 2026-08-22, K7-C1 (D-5D rozstrzygniete, wariant A doprecyzowany):
+const OCZEKIWANE = 280;  /* 2026-08-22, K7-C2 (D3 rozstrzygniete zapisem granicy): 278 -> 280.
+                            DWA cytowania "[H59] Strupp 2022" w nowej granicy rdzenia wpisu bvp
+                            (src/app/atlas-model.js, granicePl + graniceEn) — narzedzie
+                            przylozkowe po przeciwnych stronach linii pelna/prawdopodobna.
+                            Granice bvp zostaja 6/6: granica historyczna erraty (K7-A1) scalona
+                            z granica tresci erraty, zwolniony slot wzial rdzen D3.
+                            Zmierzone przez --ile: 280.
+                            POPRZEDNIO: 2026-08-22, K7-C1 (D-5D rozstrzygniete, wariant A doprecyzowany):
                             276 -> 278. DWA cytowania z oznaczeniem w naglowku modulu
                             src/app/triage-model.js — "[H58] Kim 2022" i "[H59] Strupp 2022"
                             w zmierzonym RODOWODZIE mnemotechniki 5 D (nazwa spoza korpusu,

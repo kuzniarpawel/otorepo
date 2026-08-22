@@ -65,10 +65,19 @@ po E3a) · **E4b** (AUVP) · **E5** (kwalifikacja) · **E7** (słownik).
 **Domknięte po tej liście:** **E6** — Atlas otoneurologiczny, razem z rozstrzygnięciem D6
 i wariantem A okna HINTS (patrz §5 E6).
 
-**Otwarte decyzje użytkownika — dwie:** D3 („probable") · **D-MEN** (12 h vs 24 h). Otwarte
+**Otwarte decyzje użytkownika — jedna:** **D-MEN** (12 h vs 24 h). Otwarte
 pozostaje też **D8** (zawroty szyjne), które nigdy nie weszło do tego zestawienia: E6 dał tej
 pracy wpis atlasu o typie `stanowisko`, ale NIE rozstrzygnął, czy program ma wyciągnąć z niej
 konsekwencje dla okablowania karku (B8).
+**D3 ROZSTRZYGNIĘTE 2026-08-22 (decyzja użytkownika, kontrola K7-C2) — ZAPISEM GRANICY.**
+Program wspólnej skali pewności ICVD nie ma i mieć nie będzie (zmierzone: atlas niesie stopnie
+wyłącznie per praca, jako osobne bloki kryteriów; odmowy stopnia nazwane tam, gdzie zachodzą);
+jedyny nienazwany rozjazd — rdzeń `[H19]`↔`[H59]` — został nazwany w WYSYŁANEJ treści: nowa
+granica źródła wpisu `bvp` atlasu (slot po scalonej granicy erraty; granice zostają 6/6, limit
+ATL3c nietknięty) plus brzmienie po diagnozie w adnotacji `[H61]` engine_doc (K7-A4). Warianty
+odrzucone z pomiarów kontroli: synteza we wpisie `ramyICVD` (przypisywałaby `[H61]` treść, której
+praca nie niesie — jeśli synteza, to jako byt etapu E7) i „tylko naprawy zestarzeń" (odkładał całą
+pozostałą treść decyzji).
 **D-5D ROZSTRZYGNIĘTE 2026-08-22 (decyzja użytkownika, kontrola K7-C1) — wariant A doprecyzowany.**
 Nazwa i skład zostają NASZE, rodowód dopisany w trzech miejscach zamiast podmiany: nagłówek modułu
 `triage-model.js` (pełny zmierzony rodowód), komentarz przy opcji `pieciod` i adnotacja `[H24]`
@@ -354,7 +363,7 @@ Pełne opisy z obiema stronami, liczbami i wariantami rozstrzygnięcia: `icvd-ko
 |---|---|---|
 | ~~**D1**~~ | ~~**Próg gain vHIT: 0,6 / 0,7 / 0,6–0,8**~~ (§3.3) — **ROZSTRZYGNIĘTE 2026-08-22: pytanie było ŹLE POSTAWIONE** | Trzy prace **nie** definiują tego samego ubytku trzema statystykami: kryteria gain nie nazywają statystyki w ogóle, a na osi kalorycznej `[H19]` i `[H53]` używają **tej samej** i **przylegają** (poniżej 6 / od 6 do 25). Żadnej liczby nie zmieniono; zmieniono rangę i rodowód — `GAIN_CUT {HC 0,8}` to **dolna granica normy** z noty 5 `[H19]`, nie kryterium. Kanały pionowe 0,7 zostają jawnym **meldunkiem zero**. Etap E3a. |
 | ~~**D2**~~ | ~~**AUVP: alternatywa czy koniunkcja**~~ — **ROZSTRZYGNIĘTE 2026-08-21** | **Pytanie okazało się źle postawione.** Po przeczytaniu obu miejsc wraz z kryteriami: **żadna z tych liczb nie jest kryterium**. Kryterium C brzmi jakościowo („jednoznaczny dowód obniżonej czynności VOR") i nie zawiera liczby; komitet wprost mówi, że **nie ma zgody co do wartości odcięcia** i że trzeba opierać się na **normach pracowni**. Nota 12 sama nazywa swoje liczby „working approximation". Oba czytania odpowiadają przy tym na **różne pytania** (patologia w obu badaniach vs istotny ubytek w samym vHIT). Zapisane jako przybliżenia robocze; **żaden próg nie wchodzi do silnika jako kryterialny** — i to jest zalecenie pracy, nie nasz wybór. Wyszedł przy okazji warunek, którego nie miało żadne ze zgłoszonych czytań: **„powinny też wystąpić sakady"**. |
-| **D3** | **„Probable" znaczy w ICVD CZTERNAŚCIE różnych rzeczy** (zmierzone 2026-08-22; zgłoszenie mówiło o siedmiu, potem dziesięciu) — a w dwóch pracach tego samego pierwszego autora znaczy rzeczy **przeciwne** | (a) nie tłumaczyć jednym słowem; (b) własny słownik OTOREPO z jawnym odstąpieniem; (c) wyłącznie cytat z konkretnej pracy. **Wszystkie trzy przeszły przez adwersarza i wszystkie padły** — patrz nota niżej |
+| ~~**D3**~~ | ~~**„Probable" znaczy w ICVD CZTERNAŚCIE różnych rzeczy**~~ (zmierzone 2026-08-22; zgłoszenie mówiło o siedmiu, potem dziesięciu) — **ROZSTRZYGNIĘTE 2026-08-22 (K7-C2): ZAPISEM GRANICY** | Trzy warianty pierwotne padły u adwersarza; rozstrzygnięcie poszło czwartą drogą, którą otworzył dopiero E6: **wspólnej skali się nie renderuje** (atlas niesie stopnie per praca, osobnymi blokami kryteriów), a **rdzeń `[H19]`↔`[H59]` został nazwany w wysyłanej treści** — granica źródła wpisu `bvp` + brzmienie po diagnozie w adnotacji `[H61]` (K7-A4). Patrz §1.1 i nota niżej. |
 
 > **DIAGNOZA D3 — CZĘŚCIOWO SIĘ ROZPUSZCZA, ALE ZOSTAJE TWARDY RDZEŃ (2026-08-22).**
 > Opis „opozycja" jest **zły**, a kontrargument o obustronności/jednostronności **upada przy sondzie**.
@@ -383,6 +392,17 @@ Pełne opisy z obiema stronami, liczbami i wariantami rozstrzygnięcia: `icvd-ko
 > wartości na **trzy** (sekcja 2 / sekcja 3 / poza katalogiem), bo `emerging` sklejało „praca to zna,
 > ale nie potwierdziła" z „praca tego nie zna wcale"; oraz **short arm dostał znacznik**, którego jako
 > jedyna z trzech postaci spoza katalogu nie nosił — wbrew własnemu komentarzowi w kodzie.
+>
+> **ROZSTRZYGNIĘCIE — 2026-08-22, kontrola K7-C2 (decyzja użytkownika), zapisem granicy.**
+> E6 rozpuścił strukturalnie lęk przed spłaszczeniem: atlas niesie stopnie WYŁĄCZNIE per praca
+> (osobne bloki kryteriów; PPPD i MdDS mają odmowę stopnia nazwaną we wpisie), a żadna powierzchnia
+> programu nie renderuje wspólnej skali. Zostawał rdzeń — nazwany teraz w wysyłanej treści: granica
+> źródła wpisu `bvp` (K7-C2) i adnotacja `[H61]` w brzmieniu po diagnozie (K7-A4). **Korekta
+> brzmienia za adwersarzem źródłowym kontroli:** wyżej stoi „postaci PEWNEJ" — `[H59]` etykiety
+> „definite" nie zna (kategorie: AUVP / w toku / probable / w wywiadzie), więc zapisy wykonawcze
+> mówią o postaci **PEŁNEJ**; oraz kwalifikator „jedyny wśród **kryteriów** ICVD, w którym probable
+> czyni znalezisko dodatnie warunkiem KONIECZNYM" — bo poza kryteriami korpus ma kontrprzykłady
+> (aneks AAO-HNS 1995 w `[H20]`; „probable" naczyniowe `[H58]` z drogami alternatywnymi).
 | ~~**D4**~~ | ~~**Kanał przedni 61,25 s vs kryterium „< 1 min"**~~ (§3.5) — **ROZSTRZYGNIĘTE 2026-08-21: wariant (a)** | **Fizyka zostaje, rozbieżność nazwana.** Napad jest emergentny (złóg startuje przy osklepku), a nie strojony pod liczbę; chip „Przemijający (≈1 min)" mówi prawdę o własnym modelu. Zapisane w `ae36e0a`. |
 | ~~**D5**~~ | ~~**Geometria testu Roll: 30° (ICVD) vs 10,3° (silnik)**~~ — **ROZSTRZYGNIĘTE 2026-08-21: wariant (a)** | **Zostaje 10,3°**, bo kąt jest wyprowadzony z anatomii kanału, a pomiar własny daje optimum przy +10,30° i stratę 5,9–14,5% przy 30°. **Świadomy koszt zapisany:** przy 30° działa mechanizm pseudo-samoistnego oczopląsu, którego przy 10,3° nie ma — silnik go nie odtworzy i nie wolno udawać, że odtwarza. Zapisane w `ae36e0a`. |
 
