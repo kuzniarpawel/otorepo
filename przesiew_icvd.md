@@ -65,10 +65,21 @@ po E3a) · **E4b** (AUVP) · **E5** (kwalifikacja) · **E7** (słownik).
 **Domknięte po tej liście:** **E6** — Atlas otoneurologiczny, razem z rozstrzygnięciem D6
 i wariantem A okna HINTS (patrz §5 E6).
 
-**Otwarte decyzje użytkownika — jedna:** **D-MEN** (12 h vs 24 h). Otwarte
-pozostaje też **D8** (zawroty szyjne), które nigdy nie weszło do tego zestawienia: E6 dał tej
+**Otwarte decyzje użytkownika — z pierwotnego zestawienia ŻADNA.** Otwarte
+pozostaje **D8** (zawroty szyjne), które nigdy nie weszło do tego zestawienia: E6 dał tej
 pracy wpis atlasu o typie `stanowisko`, ale NIE rozstrzygnął, czy program ma wyciągnąć z niej
 konsekwencje dla okablowania karku (B8).
+**D-MEN ROZSTRZYGNIĘTE 2026-08-22 (decyzja użytkownika, kontrola K7-C3) — wariant 4 uznany za
+wdrożony, paradoks NAZWANY WPROST.** Kontrola zmierzyła, że wariant 4 tabeli (oba zestawy
+równolegle, punkt po punkcie, bez wydawania etykiety) już działa: wpis atlasu niesie obie postaci
+z właściwymi oknami i rangami, a asymetria przypisu 3 jest oddana strukturalnie. Zostało jedno
+pytanie, które baza wiedzy jawnie rezerwowała dla użytkownika — nazwać paradoks czy tylko
+odtwarzać widełki — rozstrzygnięte: NAZWAĆ. Zapis wszedł w kontekst progu kryterialnego
+20 min–24 h postaci prawdopodobnej wpisu atlasu (granice źródła zostały na limicie 6/6 — bez
+ruszania `LIMIT_GRANIC`; mechanizm wybrany spośród trzech zgodnych z bramkami, po tym jak
+adwersarz kontroli zmierzył, że siódma granica zapala `ATL3c` twardo). Fizyka `meniere()`
+nietknięta. Warianty 2 (kodować okna w logice — brak substratu, architektura E6c idzie w przeciwną
+stronę) i 3 (etykieta OTOREPO — słowniki rang atlasu są zamknięte) odrzucone z pomiarów kontroli.
 **D3 ROZSTRZYGNIĘTE 2026-08-22 (decyzja użytkownika, kontrola K7-C2) — ZAPISEM GRANICY.**
 Program wspólnej skali pewności ICVD nie ma i mieć nie będzie (zmierzone: atlas niesie stopnie
 wyłącznie per praca, jako osobne bloki kryteriów; odmowy stopnia nazwane tam, gdzie zachodzą);
@@ -424,7 +435,10 @@ którego silnik przez to nie odtwarza, zapisano jako świadomy koszt, nie jako p
 
 Wybrane z 75; reszta w plikach:
 
-- **Ménière 12 h vs 24 h** — lepiej udokumentowany chory dostaje **niższy** stopień pewności
+- ~~**Ménière 12 h vs 24 h** — lepiej udokumentowany chory dostaje **niższy** stopień pewności~~ —
+  **ROZSTRZYGNIĘTE 2026-08-22 (K7-C3)**, ze ścisłością wymierzoną przez kontrolę: stopnia nie
+  obniża dokumentacja, obniża go CZAS napadu (audiogram chorego 18-godzinnego staje się bezczynny);
+  paradoks nazwany wprost we wpisie atlasu, przy progu 24 h
 - **Liczba wymaganych epizodów: 2 / 3 / 2–4 / 5 / 10** — nierówna poprzeczka dowodowa dla tego samego wywiadu
 - **Dwa różne zegary** — migrena liczy obwiednię serii napadów, BPPV i napadowica pojedynczy napad;
   ten sam chory z sekundowymi zawrotami pozycyjnymi spełnia oba kryteria czasu **jednocześnie**
@@ -615,7 +629,9 @@ model kryteriów.
 > zdanie `[H46]`, nie `[H20]` (zmierzone: 0 wobec 1 trafienia).
 > **D2 rozstrzygnięte osobno (`4db7a97`)** — patrz §4.1: żaden próg AUVP nie wchodzi do silnika
 > jako kryterialny, i to jest zalecenie pracy, nie nasz wybór.
-> **E4b zostaje:** rozdział kryterialny AUVP i zmiana nazwy. **D-MEN (12 h vs 24 h) nadal otwarte.**
+> **E4b zostaje:** rozdział kryterialny AUVP i zmiana nazwy. ~~**D-MEN (12 h vs 24 h) nadal
+> otwarte.**~~ **D-MEN rozstrzygnięte 2026-08-22 (K7-C3)** — patrz §1.1: wariant 4 uznany za
+> wdrożony przez atlas, paradoks 18 h nazwany wprost w kontekście progu 24 h.
 
 ---
 

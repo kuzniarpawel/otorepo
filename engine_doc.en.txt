@@ -3667,6 +3667,11 @@ DEGREE OF CERTAINTY, and in that category his audiogram is read by nothing. The 
 intermediate category. Separately: an episode lasting 30 hours falls OUTSIDE BOTH forms. The paper
 does not comment on this tension; it is for the user to decide whether a card should name it outright
 or merely reproduce the windows.
+SETTLED 2026-08-22 (user decision, re-audit K7-C3): the card NAMES the paradox OUTRIGHT. The record
+stands in the atlas entry for Menière's disease, in the context of the criterial 20 min - 24 h
+threshold of the probable form — where this paradox lives; the entry's source limits stayed at
+their cap and no gate was touched. The card shows both criteria sets side by side, point by point,
+WITHOUT issuing a label — and the physiological attack model in the engine remains untouched.
 
 --- WHAT THIS ABUTS (without prejudging any decision) ---
  · THE TIME WINDOWS DO NOT DISCRIMINATE AGAINST VESTIBULAR MIGRAINE, contrary to intuition. The
