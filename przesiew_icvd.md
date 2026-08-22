@@ -428,7 +428,7 @@ którego silnik przez to nie odtwarza, zapisano jako świadomy koszt, nie jako p
 | # | Pytanie | Uwaga |
 |---|---|---|
 | ~~**D6**~~ | ~~Które z 10 nieobecnych jednostek ICVD wchodzą do programu~~ — **ROZSTRZYGNIĘTE 2026-08-22: pytanie było ŹLE POSTAWIONE** | **Wszystkie wchodzą — ale nie tam, gdzie pytanie zakładało.** Program ma ZNAĆ komplet jednostek ICVD; ścieżka OSTRA (GRACE-3, HINTS) pozostaje OGÓLNA i rozpoznań się w niej nie mnoży. Jednostki szczegółowe idą do **Atlasu otoneurologicznego** — szóstego, rozłącznego obszaru. Rejestr zakresu per jednostka przestał być prozą i jest polem `wSilniku`, które bramka liczy: **7 modelowanych / 7 kryteria-bez-modelu / 4 świadomie poza zakresem**. Etap E6. |
-| ~~**D7**~~ | ~~Czy nadawać numer `[Hnn]` pracy Lempert 2012~~ — **ROZSTRZYGNIĘTE 2026-08-21: NIE** | Kryteria cytujemy za `[H46]`, bo to ich aktualny nośnik; wersja 2012 posłużyła jako **dowód**, a porównanie stoi przy wpisie `[H46]`. Dlatego numery E0 kończą się na `[H61]`, nie `[H62]`. Zapisane w `engine_doc.txt` (E0, `ee08f99`). |
+| ~~**D7**~~ | ~~Czy nadawać numer `[Hnn]` pracy Lempert 2012~~ — **ROZSTRZYGNIĘTE 2026-08-21: NIE** | Kryteria cytujemy za `[H46]`, bo to ich aktualny nośnik; wersja 2012 posłużyła jako **dowód**, a porównanie stoi przy wpisie `[H46]`. Dlatego numery E0 kończą się na `[H61]`, nie `[H62]`. Zapisane w `engine_doc.txt` (E0, `ee08f99`). *(Dopisek K7-C4b, 2026-08-22: numery `[H62]`/`[H63]` istnieją od domknięcia E3 — to **inne prace** (Lee 2006, Lacour 2020), nie Lempert 2012; D7 nienaruszone.)* |
 | **D8** | Czy „zawroty szyjne" (stanowisko Seemungala) mają trafić do programu, skoro program ma okablowanie karku (B8)? | Stanowisko **neguje** jednostkę; program nie stawia takiego rozpoznania — ale liczy pozy z pivotem karku |
 
 ### 4.3. Konflikty do rozstrzygnięcia przy pisaniu rozdziałów (nie blokują startu)
@@ -610,7 +610,10 @@ Jeśli D1 zmienia liczbę — rebaseline z dowodem zakresu i osobnym commitem.
 >
 > **Zostaje z E3:** `VEMP_AR` i `VEMP_THRESH` (norma pracowniana **poza korpusem ICVD** — żaden z 19
 > dokumentów progu asymetrii VEMP nie stanowi; `[H56]` wprost każe ustalać odcięcia per pracownia),
-> ~~progi fotela obrotowego~~ oraz nazwiska bez numeru: **Rosengren 2019**, **Lee 2006**, **Lacour 2020**.
+> ~~progi fotela obrotowego~~ oraz nazwiska bez numeru: **Rosengren 2019**, ~~**Lee 2006**,
+> **Lacour 2020**~~ *(K7-C4b: Lee i Lacour dostały numery `[H62]` i `[H63]` — metadane
+> zweryfikowane w rejestrach; wydawca Lacoura ma zamienione pola imię↔nazwisko, uwaga rejestrowa
+> we wpisie)*.
 > *(K7-C4a, 2026-08-22: progi fotela ZAMKNIĘTE jawnym meldunkiem w rozdziale `bilateralLoss` obu
 > luster — silnik świadomie nie modeluje stymulacji sinusoidalnej i nie ma stałej progu fazy;
 > liczby po erracie żyją w atlasie, `tauVS` to parametr wygaszania, nie test. `VEMP_AR` dostał

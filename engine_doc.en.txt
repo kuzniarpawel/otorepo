@@ -2821,7 +2821,7 @@ VALIDATION STATUS (offline, node — the harness extracts the real Vestibular+Sc
        stroke". LF fluctuation (Ménière's) and the ABG (SCDS) are out of scope → CAVEATS.
      • THE POSTURAL AXIS (D4, GRACE-3 [H24]): posture(p) from the asymmetry of the NUCLEI (vnL/vnR from compensate) —
        IPSILESIONAL veering, Romberg ×2.5 after eye closure (the analogue of removing fixation), ataxia grade 0–3:
-       central+nystagmus → 3 (cannot stand; Lee 2006: it can be the only sign of cerebellar infarction, pushed into
+       central+nystagmus → 3 (cannot stand; [H62] Lee 2006: it can be the only sign of cerebellar infarction, pushed into
        the readout's centralSigns); an acute peripheral → 2; BVH → 2 only without vision (darkOnly — "gait in the
        dark"); compensated → ≤1. hints() UNTOUCHED (gait is a separate GRACE-3 axis, not the triad).
      • SCENARIOS (D3/D7/D9): labyrinthitisR (neuritis+hearingR 0.3 → PERIPHERAL despite a positive "plus"),
@@ -2990,7 +2990,7 @@ Three changes in the DVA layer, all forced by the sources, none of which adds a 
     [H42] it is an UMBRELLA term that includes training) and "permanent" as a physiological claim.
     "Passive" is defensible at the source - [H43] Schubert 2008: gain during ACTIVE rotation rose in every
     patient, while during the PASSIVE impulse it did not improve significantly, and headImpulse() models
-    exactly the passive impulse. The word "permanent" was stronger than the evidence (Lacour 2020 - a rise
+    exactly the passive impulse. The word "permanent" was stronger than the evidence ([H63] Lacour 2020 - a rise
     in passive gain too when rehabilitation began within 2 weeks). There are NO references in the sentence:
     by convention the findings layer does not cite (0 of 25 calls).
 
@@ -4061,7 +4061,7 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
         66 days: DVA improved in everyone (mean 51%), aVOR gain during ACTIVE head rotation rose in every
         patient, while gain during the PASSIVE head thrust did NOT improve significantly. This is the only
         ground on which the card may still claim the deficit does not vanish — because headImpulse() models
-        the PASSIVE impulse. It is equally the reason the word "permanent" was dropped: Lacour 2020
+        the PASSIVE impulse. It is equally the reason the word "permanent" was dropped: [H63] Lacour 2020
         (PMID 31637477) showed a rise in PASSIVE gain too when rehabilitation began within 2 weeks.
 
 [H44] Geisinger D, Elyoseph Z, Zaltzman R, Mintz M, Gordon CR (2024). "Functional impact of bilateral
@@ -4643,6 +4643,27 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
         AAO-HNS 1995 annex reprinted in [H20] demands audiometry for "probable" too). Any
         unification in the program will be an EDITORIAL DECISION OF OTOREPO, not a citation —
         and must be described as such.
+[H62] Lee H, Sohn SI, Cho YW, Lee SR, Ahn BH, Park BR, Baloh RW (2006). "Cerebellar infarction
+      presenting isolated vertigo: frequency and vascular topographical patterns." Neurology
+      67(7):1178–1183. doi:10.1212/01.wnl.0000238500.02302.b4. PMID 17030749.
+      -> ISOLATED VERTIGO AS THE SOLE PICTURE OF CEREBELLAR INFARCTION. A registry of 240
+        consecutive isolated cerebellar infarctions (MRI): 25 patients (10.4%) had a clinical
+        picture suggesting vestibular neuritis; in 24 the isolated prolonged vertigo with
+        imbalance was the ONLY manifestation of the infarction, in 1 — the first, with delayed
+        deficits after 2 days. The anchor for the postural-axis clinical pearl (ataxia can be
+        the only sign of cerebellar infarction), hitherto cited by surname alone. Number
+        assigned in K7-C4b.
+[H63] Lacour M, Tardivet L, Thiry A (2020). "Rehabilitation of dynamic visual acuity in patients
+      with unilateral vestibular hypofunction: earlier is better." Eur Arch Otorhinolaryngol
+      277(1):103–113. doi:10.1007/s00405-019-05690-4. PMID 31637477.
+      -> DVA AFTER UNILATERAL LOSS: a gaze-stabilisation protocol in 28 UVH patients (deficit
+        confirmed by vHIT); the DVA improvement measured under PASSIVE conditions, and the effect
+        dependent on when therapy starts — earlier is better. This is why the word "permanent"
+        was dropped from the DVA sentence (V27): the gain rises for the passive impulse too.
+        A REGISTRY CAUTION (measured when the number was assigned): the publisher's metadata —
+        and PubMed, Europe PMC and Crossref after it — carry the given-name and surname fields
+        SWAPPED ("Michel L, Laurent T, Alain T"); the authors' surnames are Lacour, Tardivet,
+        Thiry. Number assigned in K7-C4b.
 
 === DEBRIS CLOUD — the multi-particle ensemble (D9/V20, 2026-08-16) ===
 ORCHESTRATION ABOVE THE ENGINE, no physics (zero edits to vestibular.js): the cloud = N=9

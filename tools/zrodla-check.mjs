@@ -501,7 +501,20 @@ const licznikProzy = (cyt) => {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 282;  /* 2026-08-22, K7-C4a (fotel obrotowy — meldunek zamykajacy E3):
+const OCZEKIWANE = 288;  /* 2026-08-22, K7-C4b (Lee i Lacour dostaja numery): 282 -> 288.
+                            Bibliografia rosnie o DWA wpisy w obu lustrach: [H62] Lee 2006
+                            (Neurology 67(7):1178-1183, PMID 17030749 — izolowany zawrot jako
+                            jedyny obraz zawalu mozdzku, 25/240) i [H63] Lacour 2020 (Eur Arch
+                            Otorhinolaryngol 277(1):103-113, PMID 31637477 — DVA, wczesniej
+                            znaczy lepiej; metadane wydawcy maja ZAMIENIONE imie/nazwisko,
+                            uwaga rejestrowa we wpisie). SZESC nowych przypadkow:
+                            ZR2 +2 (komentarze neuro-vor.js: os posturalna, DVA) oraz
+                            DOC3 +2 PL i +2 EN (rozdzial osi posturalnej i rozdzial DVA).
+                            Cytowanie w prozie wpisu [H43] ([H63] Lacour 2020) licznika nie
+                            rusza — czyta je BIB6 (agregat), symetrycznie w obu lustrach.
+                            Zmierzone przez --ile: 288. Konwencja E3 domknieta: kazde nazwisko
+                            albo ma numer, albo znika jako cytat.
+                            POPRZEDNIO: 2026-08-22, K7-C4a (fotel obrotowy — meldunek zamykajacy E3):
                             280 -> 282. DWA cytowania "[H19] Strupp 2017" w meldunku rozdzialu
                             bilateralLoss (engine_doc PL + EN): silnik swiadomie nie modeluje
                             stymulacji sinusoidalnej i nie ma stalej progu fazy; liczby po

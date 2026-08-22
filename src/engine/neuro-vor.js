@@ -664,7 +664,7 @@ export const NeuroVOR = (()=>{
   // Wejście westybulospinalne = ta sama asymetria JĄDER (vnL/vnR z compensate), która napędza oczopląs:
   // zbaczanie IPSILEZJONALNE (ku słabszemu jądru), Romberg pogarsza się po zamknięciu oczu (analog
   // zdjęcia fiksacji, iloraz ROMBERG_Q), a stopień ataksji 0–3 wynika z profilu: cechy ośrodkowe →
-  // st. 3 (nie stoi bez pomocy — Lee 2006: bywa JEDYNYM znakiem zawału móżdżku); ostry obwód → st. 2
+  // st. 3 (nie stoi bez pomocy — [H62] Lee 2006: bywa JEDYNYM znakiem zawału móżdżku); ostry obwód → st. 2
   // (zbacza, ale stoi); skompensowany → ≤1; BVH → st. 2 tylko bez kontroli wzroku („chód po ciemku").
   // hints() NIETKNIĘTE — chód to osobna oś GRACE-3, nie składowa triady.
   const SWAY_G = 3, ROMBERG_Q = 2.5;
@@ -1337,7 +1337,7 @@ export const NeuroVOR = (()=>{
       // Teza fizyczna jest prawdziwa O MODELU (comp to ścisły no-op dla dva()), więc zostaje, ale
       // z dwoma kwalifikatorami: KTÓRA kompensacja i W JAKIM pchnięciu. Słowo „trwały" wypadło —
       // [H43] Schubert 2008 broni tylko tego, że gain w pchnięciu BIERNYM nie poprawia się istotnie
-      // (przy AKTYWNYM obrocie rośnie u każdego), a Lacour 2020 pokazał wzrost także biernego
+      // (przy AKTYWNYM obrocie rośnie u każdego), a [H63] Lacour 2020 pokazał wzrost także biernego
       // w oknie <2 tyg. Odnośników w zdaniu NIE MA — warstwa `findings` nie cytuje z konwencji.
       findings.push(tr(`DVA: utrata ~${dv.linesLost} linii ostrości przy ruchu głowy${dv.oscillopsia?" — OSCYLOPSJA (obraz ucieka przy ruchu głowy: oba błędniki bez rezerwy)":""}; sama kompensacja ośrodkowa tego NIE naprawia (gain w PASYWNYM pchnięciu pozostaje niski) — ćwiczenia stabilizacji spojrzenia to osobna droga, poza tym modelem.`,`DVA: loss of ~${dv.linesLost} acuity lines with head movement${dv.oscillopsia?" — OSCILLOPSIA (the image slips with head movement: neither labyrinth has reserve)":""}; central compensation ALONE does not repair this (gain in the PASSIVE impulse stays low) — gaze-stabilisation exercises are a separate route, outside this model.`));
     }

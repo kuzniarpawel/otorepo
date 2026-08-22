@@ -2647,7 +2647,7 @@ STATUS WALIDACJI (offline, node — harness wyodrębnia realne IIFE Vestibular+S
        Fluktuacja LF (Ménière) i ABG (SCDS) poza zakresem → OGRANICZENIA.
      • OŚ POSTURALNA (D4, GRACE-3 [H24]): posture(p) z asymetrii JĄDER (vnL/vnR z compensate) — zbaczanie
        IPSILEZJONALNE, Romberg ×2.5 po zamknięciu oczu (analog zdjęcia fiksacji), ataksja st. 0–3:
-       ośrodek+oczopląs → 3 (nie stoi; Lee 2006: bywa jedynym znakiem zawału móżdżku, push do centralSigns
+       ośrodek+oczopląs → 3 (nie stoi; [H62] Lee 2006: bywa jedynym znakiem zawału móżdżku, push do centralSigns
        readoutu); ostry obwód → 2; BVH → 2 tylko bez wzroku (darkOnly — „chód po ciemku"); skompensowany → ≤1.
        hints() NIETKNIĘTE (chód = osobna oś GRACE-3, nie triada).
      • SCENARIUSZE (D3/D7/D9): labyrinthitisR (neuritis+hearingR 0.3 → PERIPHERAL mimo dodatniego „plus"),
@@ -2808,7 +2808,7 @@ Trzy zmiany w warstwie DVA, wszystkie wymuszone przez zrodla, zadna nie dokłada
     "kompensacja" bez kwalifikatora (u [H42] to pojecie NADRZEDNE, obejmujace trening) i "trwaly"
     jako twierdzenie fizjologiczne. "Pasywny" broni sie u zrodla - [H43] Schubert 2008: gain przy obrocie
     AKTYWNYM rosnie u kazdego, przy PASYWNYM pchnieciu nie poprawia sie istotnie, a headImpulse() modeluje
-    wlasnie pchniecie bierne. Slowo "trwaly" jest mocniejsze niz dowody (Lacour 2020 - wzrost gainu takze
+    wlasnie pchniecie bierne. Slowo "trwaly" jest mocniejsze niz dowody ([H63] Lacour 2020 - wzrost gainu takze
     biernego przy rehabilitacji zaczetej ponizej 2 tygodni). Odnosnikow w zdaniu NIE MA: warstwa findings
     nie cytuje z konwencji (0 z 25 wywolan).
 
@@ -3836,7 +3836,7 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
         66 dni: DVA poprawiło się u wszystkich (średnio 51%), gain aVOR przy obrocie AKTYWNYM wzrósł
         u każdego, a gain przy PASYWNYM pchnięciu głową NIE poprawił się istotnie. To jedyna podstawa,
         na której zdanie karty może dalej twierdzić, że ubytek nie znika — bo headImpulse() modeluje
-        pchnięcie BIERNE. Zarazem powód, dla którego wypadło słowo „trwały": Lacour 2020 (PMID 31637477)
+        pchnięcie BIERNE. Zarazem powód, dla którego wypadło słowo „trwały": [H63] Lacour 2020 (PMID 31637477)
         pokazał wzrost gainu także BIERNEGO, gdy rehabilitację zaczęto w oknie <2 tygodni.
 
 [H44] Geisinger D, Elyoseph Z, Zaltzman R, Mintz M, Gordon CR (2024). „Functional impact of bilateral
@@ -4397,6 +4397,25 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
         potwierdzającego (poza kryteriami ICVD bywa inaczej: aneks AAO-HNS 1995 przedrukowany
         w [H20] żąda audiogramu także dla „probable"). Każde ujednolicenie w programie będzie
         DECYZJĄ REDAKCYJNĄ OTOREPO, nie cytatem — i tak musi być opisane.
+[H62] Lee H, Sohn SI, Cho YW, Lee SR, Ahn BH, Park BR, Baloh RW (2006). „Cerebellar infarction
+      presenting isolated vertigo: frequency and vascular topographical patterns." Neurology
+      67(7):1178–1183. doi:10.1212/01.wnl.0000238500.02302.b4. PMID 17030749.
+      → IZOLOWANY ZAWRÓT JAKO JEDYNY OBRAZ ZAWAŁU MÓŻDŻKU. Rejestr 240 kolejnych izolowanych
+        zawałów móżdżku (MRI): 25 chorych (10,4%) miało obraz kliniczny sugerujący zapalenie nerwu
+        przedsionkowego; u 24 izolowany przedłużony zawrót z zaburzeniem równowagi był JEDYNĄ
+        manifestacją zawału, u 1 — pierwszą, z odroczonym deficytem po 2 dniach. Kotwica dla chwytu
+        klinicznego osi posturalnej (ataksja bywa jedynym znakiem zawału móżdżku), cytowanego dotąd
+        samym nazwiskiem. Numer nadany w K7-C4b.
+[H63] Lacour M, Tardivet L, Thiry A (2020). „Rehabilitation of dynamic visual acuity in patients
+      with unilateral vestibular hypofunction: earlier is better." Eur Arch Otorhinolaryngol
+      277(1):103–113. doi:10.1007/s00405-019-05690-4. PMID 31637477.
+      → DVA PO JEDNOSTRONNYM UBYTKU: protokół stabilizacji spojrzenia u 28 chorych z UVH
+        (deficyt potwierdzony vHIT); poprawa DVA mierzona w warunkach BIERNYCH, a efekt zależny
+        od momentu rozpoczęcia — wcześniej znaczy lepiej. To powód skreślenia słowa „trwały"
+        w zdaniu o DVA (V27): wzrost gainu także przy pchnięciu biernym. UWAGA REJESTROWA
+        (zmierzona przy nadawaniu numeru): metadane wydawcy — i za nimi PubMed, Europe PMC
+        i Crossref — mają ZAMIENIONE pola imię↔nazwisko („Michel L, Laurent T, Alain T");
+        nazwiska autorów brzmią Lacour, Tardivet, Thiry. Numer nadany w K7-C4b.
 
 === CHMURA ZŁOGU — ensemble wielocząstkowy (D9/V20, 2026-08-16) ===
 ORKIESTRACJA NAD SILNIKIEM, bez fizyki (zero edycji vestibular.js): chmura = N=9 niezależnych
