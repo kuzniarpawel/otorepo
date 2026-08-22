@@ -3566,6 +3566,15 @@ dokładnie tam, gdzie V28c podpiął kartę migreny przedsionkowej — a nie na 
 [H19] Strupp M, Kim JS, Murofushi T, Straumann D, Jen JC, Rosengren SM, Della Santina CC, Kingma H (2017).
       "Bilateral vestibulopathy: Diagnostic criteria — Consensus document of the Bárány Society." J Vestib
       Res 27(4):177–189.
+      ERRATA (2023): J Vestib Res 33(1):87, DOI 10.3233/VES-229002, PMID 36336950, PMC9986683.
+      Poprawia JEDNĄ linię — próg fotela obrotowego w kryterium C (str. 179, sekcja 3): gain
+      ≤ 0,1 (było < 0,1), przesunięcie fazy ≥ 15 stopni (było > 68), stała czasowa ≤ 6 s
+      (było < 5 s). Bodziec 0,1 Hz i Vmax 50°/s BEZ ZMIAN, spójnik „oraz" BEZ ZMIAN.
+      CZEGO ERRATA NIE RUSZA: abstraktu (który łączy te same wielkości spójnikiem „i/lub")
+      ani noty o badaniach obrotowych (gain < 0,15 przy 0,05–0,1 Hz i 60°/s). Rozjazd
+      spójnika i trzecia wersja liczbowa ZOSTAJĄ otwarte. Pełny tekst erraty leży w korpusie:
+      icvd-korpus/zrodla-pelny-tekst/07b-strupp2023-bvp-ERRATA.txt (pobrany przez Europe PMC —
+      content.iospress.com odpowiada wyzwaniem Cloudflare).
       → BVH: obustronny ubytek → oscylopsja/niestabilność, BRAK oczopląsu samoistnego, vHIT OBUSTRONNY → bilateralLoss.
 [H20] Lopez-Escamez JA, Carey J, Chung WH, et al. (2015). "Diagnostic criteria for Menière's disease —
       Consensus of the Bárány/AAO-HNS/EAONO/JSER/KBS." J Vestib Res 25(1):1–7; oraz McClure JA, Copp JC,

@@ -70,9 +70,10 @@ w korpusie) · **D-MEN** (12 h vs 24 h). Otwarte pozostaje też **D8** (zawroty 
 nie weszło do tego zestawienia: E6 dał tej pracy wpis atlasu o typie `stanowisko`, ale NIE
 rozstrzygnął, czy program ma wyciągnąć z niej konsekwencje dla okablowania karku (B8).
 
-**TRZY NOWE POZYCJE DO ROZSTRZYGNIĘCIA, znalezione przy pisaniu atlasu** — wszystkie są rozjazdami
-WEWNĄTRZ jednej pracy, więc nie da się ich zamknąć wyborem „nowszego źródła" (pełne opisy obu
-czytań: `sporne.json` przy materiale):
+**TRZY POZYCJE ZNALEZIONE PRZY PISANIU ATLASU — jedna już zamknięta, dwie otwarte.** Wszystkie są
+rozjazdami WEWNĄTRZ jednej pracy, więc nie da się ich zamknąć wyborem „nowszego źródła"; trzecią
+zamknęła częściowo **errata odnaleziona 2026-08-22** (pełne opisy obu czytań: `sporne.json`
+przy materiale):
 1. **`[H59]` AUVP — operator łączący progi instrumentalne przy kryterium C.** Nota 12 zapisuje je
    jako ALTERNATYWĘ, proza §4.4.1 żąda KONIUNKCJI. To ta sama oś, którą zamknęło **D2**, więc karta
    oddaje ZALECENIE PRACY (żaden próg nie jest kryterialny), a spór zostaje nazwany, nie ukryty.
@@ -80,11 +81,42 @@ czytań: `sporne.json` przy materiale):
    „brak skew deviation" bez kwalifikatora; nota i abstrakt dopuszczają małą SD (< 3°) u ok. 20%
    chorych i piszą „brak WYRAŹNEJ". **Trzy brzmienia w jednej pracy**, a literalne kryterium jest
    ostrzejsze niż intencja noty.
-3. **`[H19]` BVP — próg fotela obrotowego.** Linia kryteriów żąda KONIUNKCJI, abstrakt pisze
-   „i/lub", a nota podaje INNE liczby (gain < 0,15 przy 0,05–0,1 Hz i Vmax = 60°/s wobec < 0,1 przy
-   0,1 Hz i 50°/s). Do pracy ukazała się **errata** (J Vestib Res 2023;33(1):87), której korpus
-   **nie ma** — więc nie da się sprawdzić, czy którakolwiek wersja została skorygowana. To dotyka
-   reszty etapu **E3** (progi fotela obrotowego stoją tam jako niezamknięte).
+3. ~~**`[H19]` BVP — próg fotela obrotowego.**~~ **ERRATA ODNALEZIONA I ZASTOSOWANA 2026-08-22 —
+   rozjazd LICZBOWY zamknięty, dwa pozostałe NIE.**
+   > **Errata:** *J Vestib Res* 2023;33(1):87 · DOI **10.3233/VES-229002** · PMID 36336950 ·
+   > PMC9986683. Pobrana przez **Europe PMC**, bo `content.iospress.com` odpowiada wyzwaniem
+   > Cloudflare — ta sama trasa, którą pobrano 15 prac korpusu. Pełny tekst leży w korpusie:
+   > `zrodla-pelny-tekst/07b-strupp2023-bvp-ERRATA.txt`. Wiązanie potwierdzone metadanymi
+   > (`"type": "Erratum for"` → `10.3233/VES-170619`). **Uwaga pomiarowa na przyszłość:**
+   > `fullTextXML` dla tego PMCID zwraca PUSTĄ odpowiedź (`isOpenAccess: N`) — treść jest na
+   > stronie PMC, nie w API pełnych tekstów.
+   >
+   > **Errata zawiera DOKŁADNIE JEDNĄ poprawkę**, do linii kryterium C-3 (str. 179, sekcja 3):
+   >
+   > | wielkość | 2017 | po erracie |
+   > |---|---|---|
+   > | gain poziomego kątowego VOR | `< 0,1` | **`≤ 0,1`** |
+   > | przesunięcie fazy | `> 68°` | **`≥ 15°`** |
+   > | stała czasowa | `< 5 s` | **`≤ 6 s`** |
+   >
+   > Bodziec (0,1 Hz, Vmax = 50°/s) i spójnik ORAZ — bez zmian.
+   >
+   > **To nie jest korekta operatora brzegowego, tylko przesunięcie progu fazy o czynnik ~4,5.**
+   > Przy 68° ten wariant kryterium C był praktycznie nieosiągalny. Ekstrakcja z 2026-08-21
+   > odnotowała niezależnie, że „liczba 68 nie ma w dokumencie żadnego wyprowadzenia ani noty",
+   > i wskazała ten próg jako **najbardziej prawdopodobnego kandydata na treść erraty** —
+   > zgadło się co do miejsca.
+   >
+   > **CZEGO ERRATA NIE ZAMYKA, a co przy niej łatwo uznać za zamknięte:** (a) rozjazd
+   > **spójnika** — abstrakt nadal łączy te wielkości przez „i/lub", errata abstraktu nie rusza;
+   > (b) **trzecia wersja liczbowa z noty** (gain < 0,15 przy 0,05–0,1 Hz i Vmax = 60°/s) —
+   > errata noty nie dotyczy. Oba zostają otwarte i oba stoją w granicach źródła wpisu atlasu.
+   >
+   > **Zastosowane w atlasie**: wpis `bvp` niesie liczby po erracie, a wersja pierwotna **zostaje
+   > jako ślad** w kontekście progów i w granicach źródła — podmiana bez śladu kazałaby czytać,
+   > że praca zawsze tak brzmiała. **Silnik był i jest czysty**: nie ma żadnej stałej progu fazy,
+   > więc żadna liczba w `src/engine/` nie wymagała poprawki. Reszta etapu **E3** (progi fotela
+   > obrotowego jako warstwa silnika) pozostaje niezamknięta.
 
 Rozstrzygnięte w trakcie: D2 (§4.1) · D4 (§3.5) · D5 (§4.1) · D7 (§4.2) · **D1** (§3.3, etap E3a —
 pytanie było źle postawione) · **D-ORTO** (§5 E5, wariant A — szóste pytanie kwalifikacji) ·

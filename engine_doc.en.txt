@@ -3776,6 +3776,15 @@ where V28c wired the vestibular migraine card — and not a place for trust in m
 [H19] Strupp M, Kim JS, Murofushi T, Straumann D, Jen JC, Rosengren SM, Della Santina CC, Kingma H (2017).
       "Bilateral vestibulopathy: Diagnostic criteria — Consensus document of the Bárány Society." J Vestib
       Res 27(4):177–189.
+      ERRATUM (2023): J Vestib Res 33(1):87, DOI 10.3233/VES-229002, PMID 36336950, PMC9986683.
+      It corrects ONE line — the rotatory-chair threshold in criterion C (p. 179, section 3):
+      gain ≤ 0.1 (was < 0.1), phase lead ≥ 15 degrees (was > 68), time constant ≤ 6 s
+      (was < 5 s). The stimulus 0.1 Hz and Vmax 50°/s is UNCHANGED, and so is the conjunction.
+      WHAT THE ERRATUM DOES NOT TOUCH: the abstract (which joins the same quantities with
+      "and/or") nor the note on rotational testing (gain < 0.15 at 0.05–0.1 Hz and 60°/s).
+      The conjunction divergence and the third set of figures REMAIN open. The full text of the
+      erratum is in the corpus: icvd-korpus/zrodla-pelny-tekst/07b-strupp2023-bvp-ERRATA.txt
+      (fetched via Europe PMC — content.iospress.com answers with a Cloudflare challenge).
       → BVH: a bilateral loss → oscillopsia/instability, NO spontaneous nystagmus, a BILATERAL vHIT → bilateralLoss.
 [H20] Lopez-Escamez JA, Carey J, Chung WH, et al. (2015). "Diagnostic criteria for Menière's disease —
       Consensus of the Bárány/AAO-HNS/EAONO/JSER/KBS." J Vestib Res 25(1):1–7; and McClure JA, Copp JC,
