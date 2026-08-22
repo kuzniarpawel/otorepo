@@ -401,9 +401,16 @@ Wybrane z 75; reszta w plikach:
 - **Męczliwość** — u ICVD cecha peryferyjna, u Eggersa **trop ośrodkowy**; silnik używa jej jako różnicownika mechanizmu
 - **Pętla wykluczeń**: ten sam chory spełnia „prawdopodobne BPPV, które ustąpiło samoistnie" **i** „prawdopodobną napadowicę przedsionkową"
 - ~~**Błąd atrybucji do naprawy**: reguła pierwszeństwa Ménière'a nad migreną — sprawdzić, czy karta
-  `vmCriteriaCard` przypisuje ją właściwej pracy~~ — **SPRAWDZONE I NAPRAWIONE 2026-08-21, `ca8a649`
-  (E4a)**: znacznik `[H20]` stoi przy klauzuli kryteriów, a reguła „dwóch różnych typów napadów" to
-  zdanie `[H46]` (pomiar: 0 wobec 1 trafienia); patrz §1.1 i nota E4a w §5
+  `vmCriteriaCard` przypisuje ją właściwej pracy~~ — **SPRAWDZONE I DOMKNIĘTE W DWÓCH KROKACH**
+  (dwa niezależne zapisy zamknięcia z 2026-08-22 — przegląd dokumentacji i kontrola powtórna K7 —
+  scalone przy rebase w jeden): **krok 1, E4a (`ca8a649`, 2026-08-21)** naprawiła twardy błąd —
+  znacznik `[H20]` stoi przy klauzuli kryteriów, a reguła „dwóch różnych typów napadów" to zdanie
+  `[H46]` (pomiar: 0 wobec 1 trafienia); patrz §1.1 i nota E4a w §5. **Krok 2, K7-A3 (2026-08-22)**
+  domknął rezyduum: punkt karty migreny nie miał **dodatniego** odsyłacza przy samej regule
+  ([H46] padał dopiero w nocie zamykającej kartę) — zdania o pierwszeństwie i dwóch typach napadów
+  kończą się teraz „— [H46] Lempert 2022" w obu lustrach, wzorem punktu napadowicy. Atrybucja
+  zmierzona powtórnie na pełnych tekstach: „two different types" / „even if" — praca 03 (Ménière):
+  0/0 trafień, praca 15 (Lempert 2022): 1/1
 
 ---
 

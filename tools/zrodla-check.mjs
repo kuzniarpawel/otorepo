@@ -404,7 +404,13 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 268;  /* 2026-08-22, etap E6 (ATLAS OTONEUROLOGICZNY): 228 -> 268.
+const OCZEKIWANE = 270;  /* 2026-08-22, kontrola powtorna K7-A3: 268 -> 270. DWA cytowania
+                            "[H46] Lempert 2022" w src/render/svg-screens.js — dodatni odsylacz
+                            przy regule pierwszenstwa Meniere'a nad migrena w punkcie karty
+                            migreny (blok wykluczen kryterium D), lustro PL + lustro EN. Twardy
+                            blad atrybucji naprawila E4a; ten krok domyka rezyduum — [H46] padal
+                            na karcie dopiero w nocie zamykajacej. Zmierzone przez --ile: 270.
+                            POPRZEDNIO: 2026-08-22, etap E6 (ATLAS OTONEUROLOGICZNY): 228 -> 268.
                             CZTERDZIESCI cytowan, rozlozone na DWA pliki. Arytmetyka ZMIERZONA
                             przez dokladanie plikow po jednym do czystego HEAD (git archive do
                             katalogu tymczasowego), a nie oszacowana:
