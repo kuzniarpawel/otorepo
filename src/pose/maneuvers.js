@@ -1651,20 +1651,38 @@ function recommend(testKey,variant,mech){
 // kryteriów podany w view_doc brzmiał „pamięć otoneurologiczna". Numer i rozdział zamykają obie dziury.
 function baranyClassify(canal, variant, side, antMode, mech){
   const S=sideN(side);
+  /* D3-OS (2026-08-22): oś miała DWIE wartości na TRZY rozłączne stany źródła i dlatego kłamała.
+     [H48] von Brevern 2015 ma sekcję 2 („established syndromes", 2.1–2.4) i sekcję 3 („Emerging and
+     controversial syndromes", 3.1–3.4) — ale są jeszcze postaci, których ta praca NIE ZNA WCALE
+     albo je WYKLUCZA. Do 2026-08-22 wszystkie trzy niesekcyjne stany dostawały `emerging`, czyli
+     etykietę znaczącą w tej pracy „opisany, ale niedostatecznie potwierdzony" — a więc program
+     twierdził, że ICVD te postaci ZNA. Nie zna. Poprzedni komentarz nazywał to „uczciwie: tier
+     emerging"; nie było to uczciwe, tylko niedokładne.
+     TRZY WARTOŚCI ODPOWIADAJĄ TRZEM STANOM ŹRÓDŁA:
+       established — sekcja 2 [H48]: pc-kanalolitiaza, hc-kanalolitiaza, hc-kupulolitiaza;
+       emerging    — sekcja 3 [H48]: ac-BPPV (3.1) i pc-kupulolitiaza (3.2);
+       poza        — poza katalogiem: kupulolitiaza kanału przedniego (praca ją WYKLUCZA wprost),
+                     light cupula i short arm (praca ich nie klasyfikuje).
+     ZNACZNIK W NAZWIE I WARTOŚĆ OSI SĄ ODTĄD SPRZĘŻONE — pilnuje tego bramka. */
   const est={ tier:"established", tierLabel:t("zespół ustalony","established syndrome") };
   const emg={ tier:"emerging",    tierLabel:t("zespół wyłaniający się / atypowy","emerging / atypical syndrome") };
-  // D4/V16: mechanizmy alternatywne HC — oba POZA klasyfikacją Bárány/ICVD (uczciwie: tier emerging).
+  const poza={ tier:"poza",       tierLabel:t("poza katalogiem ICVD","outside the ICVD catalogue") };
+  // D4/V16: mechanizmy alternatywne HC — oba POZA katalogiem Bárány/ICVD.
   // mechOf degraduje je poza kanałem poziomym, więc gałęzie anterior/posterior ich nie widzą.
   const m = mech==null ? variant : mech;
   if(canal==="horizontal" && !antMode && m==="light")
-    return { ...emg, subtype:t("Zespół BPPV-podobny — light cupula (poza klasyfikacją ICVD)","BPPV-like syndrome — light cupula (outside the ICVD classification)"),
+    return { ...poza, subtype:t("Zespół BPPV-podobny — light cupula (poza klasyfikacją ICVD)","BPPV-like syndrome — light cupula (outside the ICVD classification)"),
       crit:[[t("Latencja","Latency"),t("brak","none")],[t("Czas trwania","Duration"),t("uporczywy (>1 min)","persistent (>1 min)")],[t("Męczliwość","Fatigability"),t("nie","no")],
             [t("Kierunek","Direction"),t("geotropowy (ku uchu w dole) — jak kanalolitiaza, ale TRWAŁY","geotropic (toward the lower ear) — like canalithiasis, but PERSISTENT")],
             [t("Punkt zerowy (null point)","Null point"),t(`wspólny z postacią heavy: ~10–30° ku uchu choremu (model: ${nullTxt(side)})`,`common with the heavy form: ~10–30° toward the affected ear (model: ${nullTxt(side)})`)],
             [t("Strona chora","Affected side"),`${S} — ${t("SILNIEJSZA reakcja + null point","STRONGER response + null point")}`]],
       redflag:t("Trwały geotropowy DCPN BEZ punktu zerowego albo z punktem obustronnym → flaga OŚRODKOWA (co ~8. chory z trwałym geotropowym oczopląsem ma zmianę móżdżku). Manewry repozycyjne nieskuteczne (0% w seriach) — ustępuje samoistnie w dni–tygodnie; „light cupula” to nazwa wzorca, mechanizm nieustalony (5 hipotez) — formalnie raportuj jako uporczywy geotropowy DCPN (poza katalogiem ICVD 2015).","A persistent geotropic DCPN WITHOUT a null point or with a bilateral one → a CENTRAL flag (~1 in 8 patients with persistent geotropic nystagmus has a cerebellar lesion). Repositioning maneuvers are ineffective (0% in series) — resolves spontaneously within days–weeks; \"light cupula\" names a pattern, the mechanism is unsettled (5 hypotheses) — formally report as a persistent geotropic DCPN (outside the ICVD 2015 catalogue).") };
   if(canal==="horizontal" && !antMode && m==="short")
-    return { ...emg, subtype:t("BPPV kanału poziomego — kanalolitiaza ramienia bańkowego (short arm)","Horizontal-canal BPPV — short-arm canalithiasis"),
+    /* D3-OS: short arm jako JEDYNA z trzech postaci spoza katalogu NIE NIOSŁA znacznika, mimo że
+       komentarz przy kanale przednim (niżej) twierdził, że go nosi. Do tego nazwa brzmiała „BPPV
+       kanału poziomego", czyli przedstawiała ją jako postać SKATALOGOWANĄ. Poprawione: znacznik
+       dopisany, oś ustawiona na `poza`. */
+    return { ...poza, subtype:t("Zespół BPPV-podobny — kanalolitiaza ramienia bańkowego (short arm, poza klasyfikacją ICVD)","BPPV-like syndrome — short-arm canalithiasis (outside the ICVD classification)"),
       crit:[[t("Latencja","Latency"),t("krótka","brief")],[t("Czas trwania","Duration"),t("przemijający (przy uchu chorym w dole może trwać — złóg dociśnięty do osklepka)","transient (may last with the affected ear down — debris pressed against the cupula)")],
             [t("Męczliwość","Fatigability"),t("tak — ramię się samooczyszcza","yes — the arm self-clears")],
             [t("Kierunek","Direction"),t("apogeotropowy (ku uchu w górze) — jak kupulolitiaza, ale PRZEMIJAJĄCY","apogeotropic (toward the upper ear) — like cupulolithiasis, but TRANSIENT")],
@@ -1680,7 +1698,10 @@ function baranyClassify(canal, variant, side, antMode, mech){
      cupula i short arm — „poza klasyfikacją ICVD”. FIZYKA BEZ ZMIAN: to poprawka NAZWY, nie modelu;
      wiersze cech i tak biorą się z featsByVariant, czyli z tego samego źródła co chipy próby. */
   if(antMode || canal==="anterior")
-    return { ...emg, subtype: variant==="cupulo"
+    /* D3-OS: rodzeństwo rozjeżdża się na OSI, nie tylko w nazwie. Kanalolitiaza kanału przedniego
+       to sekcja 3.1 [H48] — czyli NAPRAWDĘ zespół wyłaniający się. Kupulolitiaza tego kanału jest
+       z katalogu WYKLUCZONA. Do 2026-08-22 obie dostawały `emerging`. */
+    return { ...(variant==="cupulo" ? poza : emg), subtype: variant==="cupulo"
         ? t("Zespół BPPV-podobny — kupulolitiaza kanału przedniego (poza klasyfikacją ICVD)","BPPV-like syndrome — anterior-canal cupulolithiasis (outside the ICVD classification)")
         : t("BPPV kanału przedniego","Anterior-canal BPPV"),
       /* DWA TWIERDZENIA O TYM SAMYM — ZESPOJONE 2026-08-15 (futureUI), utrzymane przy scaleniu.

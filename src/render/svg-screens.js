@@ -2655,8 +2655,19 @@ function jamCard(side){
 function diagClassifyCard(canal, v, side, antMode, mech, wsparcie){   // 5. i 6. parametr: mechanizm (D4/V16, main) ORAZ wsparcie opisu (Blok 9, futureUI) — dwie różne osie, obie potrzebne
   const central=!!state.diagCentral;
   const cls=baranyClassify(canal, v, side, antMode, mech);
-  const tierBg = cls.tier==="established" ? "rgba(127,227,196,.14)" : "rgba(255,207,143,.16)";
-  const tierFg = cls.tier==="established" ? "#7fe3c4" : "#ffcf8f";
+  /* D3-OS (2026-08-22): oś ma TRZY wartości, więc semafor też. Kolor `poza` jest ODRĘBNY, a nie
+     pożyczony z `emerging` — bo „praca tej postaci nie zna" jest MOCNIEJSZYM zastrzeżeniem niż
+     „praca ją zna, ale nie potwierdziła". Fiolet (--ant) zamiast bursztynu: nie konkuruje z czerwoną
+     flagą, która na tej karcie niesie ryzyko OŚRODKOWE, a nie rodowód etykiety.
+     DOMYŚLNA GAŁĄŹ TO `poza`, NIE `emerging` — nieznana wartość osi ma dawać NAJSŁABSZE twierdzenie,
+     a nie po cichu awansować do sekcji 3. */
+  const TIER_KOLOR = {
+    established: { bg:"rgba(127,227,196,.14)", fg:"#7fe3c4" },
+    emerging:    { bg:"rgba(255,207,143,.16)", fg:"#ffcf8f" },
+    poza:        { bg:"rgba(167,139,250,.16)", fg:"#A78BFA" },
+  };
+  const tierBg = (TIER_KOLOR[cls.tier] || TIER_KOLOR.poza).bg;
+  const tierFg = (TIER_KOLOR[cls.tier] || TIER_KOLOR.poza).fg;
   const seg=`<div class="seg segobs" style="margin-bottom:10px">
       <button class="opt" aria-pressed="${!central}" onclick="toggleDiagCentral(false)"><b>${t("Obwodowy — BPPV","Peripheral — BPPV")}</b><small>${t("klasyfikacja Bárány","Bárány classification")}</small></button>
       <button class="opt" aria-pressed="${central}" onclick="toggleDiagCentral(true)"><b>${t("Ośrodkowy — CPN","Central — CPN")}</b><small>${t("czerwone flagi","red flags")}</small></button>

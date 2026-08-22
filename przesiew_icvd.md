@@ -278,7 +278,35 @@ Pełne opisy z obiema stronami, liczbami i wariantami rozstrzygnięcia: `icvd-ko
 |---|---|---|
 | ~~**D1**~~ | ~~**Próg gain vHIT: 0,6 / 0,7 / 0,6–0,8**~~ (§3.3) — **ROZSTRZYGNIĘTE 2026-08-22: pytanie było ŹLE POSTAWIONE** | Trzy prace **nie** definiują tego samego ubytku trzema statystykami: kryteria gain nie nazywają statystyki w ogóle, a na osi kalorycznej `[H19]` i `[H53]` używają **tej samej** i **przylegają** (poniżej 6 / od 6 do 25). Żadnej liczby nie zmieniono; zmieniono rangę i rodowód — `GAIN_CUT {HC 0,8}` to **dolna granica normy** z noty 5 `[H19]`, nie kryterium. Kanały pionowe 0,7 zostają jawnym **meldunkiem zero**. Etap E3a. |
 | ~~**D2**~~ | ~~**AUVP: alternatywa czy koniunkcja**~~ — **ROZSTRZYGNIĘTE 2026-08-21** | **Pytanie okazało się źle postawione.** Po przeczytaniu obu miejsc wraz z kryteriami: **żadna z tych liczb nie jest kryterium**. Kryterium C brzmi jakościowo („jednoznaczny dowód obniżonej czynności VOR") i nie zawiera liczby; komitet wprost mówi, że **nie ma zgody co do wartości odcięcia** i że trzeba opierać się na **normach pracowni**. Nota 12 sama nazywa swoje liczby „working approximation". Oba czytania odpowiadają przy tym na **różne pytania** (patologia w obu badaniach vs istotny ubytek w samym vHIT). Zapisane jako przybliżenia robocze; **żaden próg nie wchodzi do silnika jako kryterialny** — i to jest zalecenie pracy, nie nasz wybór. Wyszedł przy okazji warunek, którego nie miało żadne ze zgłoszonych czytań: **„powinny też wystąpić sakady"**. |
-| **D3** | **„Probable" znaczy w ICVD co najmniej siedem różnych rzeczy** — w dwóch pracach tego samego pierwszego autora znaczy rzeczy **przeciwne** (BVP 2017: dodatnie znalezisko przyłóżkowe; AUVP 2022: **brak** znaleziska) | (a) nie tłumaczyć jednym słowem — każda jednostka niesie własną definicję; (b) wprowadzić słownik OTOREPO i jawnie odstąpić od terminu źródła; (c) używać wyłącznie cytatu z konkretnej pracy |
+| **D3** | **„Probable" znaczy w ICVD CZTERNAŚCIE różnych rzeczy** (zmierzone 2026-08-22; zgłoszenie mówiło o siedmiu, potem dziesięciu) — a w dwóch pracach tego samego pierwszego autora znaczy rzeczy **przeciwne** | (a) nie tłumaczyć jednym słowem; (b) własny słownik OTOREPO z jawnym odstąpieniem; (c) wyłącznie cytat z konkretnej pracy. **Wszystkie trzy przeszły przez adwersarza i wszystkie padły** — patrz nota niżej |
+
+> **DIAGNOZA D3 — CZĘŚCIOWO SIĘ ROZPUSZCZA, ALE ZOSTAJE TWARDY RDZEŃ (2026-08-22).**
+> Opis „opozycja" jest **zły**, a kontrargument o obustronności/jednostronności **upada przy sondzie**.
+> Tłumaczy to **fenomenologia**: w AUVP dodatnia kotwica zostaje w kryterium B (oczopląs samoistny),
+> więc HIT wolno puścić jako nieobecny; w BVP — zespole przewlekłym bez oczopląsu — kryterium C jest
+> **jedynym znakiem w całym zestawie**, więc musi być dodatnie. Obie prace mają przy tym identyczną
+> epistemologię narzędzia, zapisaną w notach.
+>
+> **Co się NIE rozpuszcza i jest właściwą treścią D3:** ten sam przyłóżkowy HIT z sakadami jest
+> w `[H59]` wystarczający dla postaci **PEWNEJ**, a w `[H19]` nie może dojść do pewnej **nigdy**
+> („quantitative measurement is required for BVP"). Narzędzie leży po **przeciwnych stronach linii
+> pewna/prawdopodobna**. Skutek mierzalny: przy ujemnym HIT i bez pracowni AUVP daje kategorię,
+> BVP nie daje żadnej.
+>
+> **Kierunek zarzutu się odwraca:** `[H19]` jest JEDYNYM przypadkiem w korpusie, w którym „probable"
+> wymaga znaleziska **dodatniego**; `[H48]`, `[H52]`, `[H49]` i `[H20]` budują je przez **brak**
+> badania potwierdzającego. Anomalia siedzi w `[H19]`, nie w `[H59]`. `[H48]` miał wzorzec
+> „probable = nie udało się nic pokazać" już w 2015 (2.4, kryterium C sformułowane negatywnie).
+>
+> **Nowe stopnie, o których zgłoszenie milczało:** „Certain MD" z potwierdzeniem histopatologicznym
+> (jedyna operacja **w górę** w korpusie) · „Possible MD" · aneks japoński 1974 „suspicious or
+> uncertain" · **PPPD i SCDS stopień jawnie ODRZUCAJĄ**. `[H61]` Kaski 2025 **nazywa oś** („levels of
+> diagnostic certainty"), ale ani jednego jej szczebla.
+>
+> **DWIE NAPRAWY NIEZALEŻNE OD WYBORU WARIANTU — WYKONANE (etap D3-OS):** oś `tier` rozbita z dwóch
+> wartości na **trzy** (sekcja 2 / sekcja 3 / poza katalogiem), bo `emerging` sklejało „praca to zna,
+> ale nie potwierdziła" z „praca tego nie zna wcale"; oraz **short arm dostał znacznik**, którego jako
+> jedyna z trzech postaci spoza katalogu nie nosił — wbrew własnemu komentarzowi w kodzie.
 | ~~**D4**~~ | ~~**Kanał przedni 61,25 s vs kryterium „< 1 min"**~~ (§3.5) — **ROZSTRZYGNIĘTE 2026-08-21: wariant (a)** | **Fizyka zostaje, rozbieżność nazwana.** Napad jest emergentny (złóg startuje przy osklepku), a nie strojony pod liczbę; chip „Przemijający (≈1 min)" mówi prawdę o własnym modelu. Zapisane w `ae36e0a`. |
 | ~~**D5**~~ | ~~**Geometria testu Roll: 30° (ICVD) vs 10,3° (silnik)**~~ — **ROZSTRZYGNIĘTE 2026-08-21: wariant (a)** | **Zostaje 10,3°**, bo kąt jest wyprowadzony z anatomii kanału, a pomiar własny daje optimum przy +10,30° i stratę 5,9–14,5% przy 30°. **Świadomy koszt zapisany:** przy 30° działa mechanizm pseudo-samoistnego oczopląsu, którego przy 10,3° nie ma — silnik go nie odtworzy i nie wolno udawać, że odtwarza. Zapisane w `ae36e0a`. |
 

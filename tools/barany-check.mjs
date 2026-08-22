@@ -204,6 +204,32 @@ for (const canal of KANALY) {
     T(`KL6/${lang}/antMode-ta-sama-karta`,
       baranyClassify('posterior', 'cupulo', 'P', true).subtype === przednia.subtype,
       'downbeat w Dix-Hallpike’u prowadzi do kanalu przedniego — podtyp musi byc ten sam co przy jawnym kanale');
+
+    /* D3-OS (2026-08-22): os `tier` miala DWIE wartosci na TRZY rozlaczne stany zrodla, wiec
+       postaci, ktorych [H48] NIE ZNA, dostawaly etykiete znaczaca w tej pracy „opisany, ale
+       niedostatecznie potwierdzony". Ponizsze twierdzenia pilnuja TRZECH rzeczy naraz:
+       ile jest stanow, ktore kombinacje do ktorego naleza, i — najwazniejsze — ze WARTOSC OSI
+       i ZNACZNIK W NAZWIE sa SPRZEZONE. Bez KL9 dalo by sie zdjac znacznik zostawiajac `poza`
+       (albo odwrotnie) i nikt by tego nie zobaczyl: dokladnie tak zniknal znacznik short arm. */
+    const WSZYSTKIE = [...KOMB.map(([c, v]) => [`${c}+${v}`, baranyClassify(c, v, 'P', false)]),
+      ['horizontal+light', baranyClassify('horizontal', 'canalo', 'P', false, 'light')],
+      ['horizontal+short', baranyClassify('horizontal', 'canalo', 'P', false, 'short')]];
+    const pozaKat = WSZYSTKIE.filter(([, r]) => r.tier === 'poza').map(([n]) => n);
+    T(`KL7/${lang}/trzy-postaci-poza-katalogiem`,
+      pozaKat.length === 3 && pozaKat.includes('anterior+cupulo')
+        && pozaKat.includes('horizontal+light') && pozaKat.includes('horizontal+short'),
+      `poza katalogiem stoi [${pozaKat.join(', ')}] — maja byc DOKLADNIE trzy: kupulolitiaza kanalu przedniego (praca ja WYKLUCZA), light cupula i short arm (praca ich nie klasyfikuje)`);
+    const sekcja3 = WSZYSTKIE.filter(([, r]) => r.tier === 'emerging').map(([n]) => n);
+    T(`KL8/${lang}/sekcja-3-to-dwie-postaci`,
+      sekcja3.length === 2 && sekcja3.includes('anterior+canalo') && sekcja3.includes('posterior+cupulo'),
+      `tier „emerging" ma znaczyc SEKCJE 3 [H48] i nic wiecej: 3.1 ac-BPPV oraz 3.2 pc-kupulolitiaza. Jest [${sekcja3.join(', ')}]`);
+    const rozjazd = WSZYSTKIE.filter(([, r]) => (r.tier === 'poza') !== ZNACZNIK[lang].test(r.subtype)).map(([n]) => n);
+    T(`KL9/${lang}/os-i-znacznik-sprzezone`, rozjazd.length === 0,
+      `wartosc osi i znacznik w nazwie musza isc razem; rozjechaly sie na: [${rozjazd.join(', ')}]`);
+    const shortArm = baranyClassify('horizontal', 'canalo', 'P', false, 'short');
+    T(`KL10/${lang}/short-arm-nie-udaje-BPPV`,
+      ZNACZNIK[lang].test(shortArm.subtype) && !/BPPV kanału poziomego|Horizontal-canal BPPV/.test(shortArm.subtype),
+      'short arm STAL bez znacznika i nazywal sie „BPPV kanalu poziomego" — czyli przedstawial sie jako postac SKATALOGOWANA; ta asercja pinuje naprawe');
   }
   state.lang = jezykPrzed;
 }
@@ -222,7 +248,12 @@ if (bledy.length) {
   process.exit(1);
 }
 
-const OCZEKIWANE = 61;   /* 49 + 12: sekcja 6 (KL1-KL6 x dwa jezyki) — ktora z szesciu kombinacji stoi poza katalogiem ICVD */
+/* D3-OS (2026-08-22): 61 -> 69. OSIEM nowych twierdzen — KL7-KL10 x dwa jezyki. Powod: os `tier`
+   miala dwie wartosci na TRZY stany zrodla, a znacznik „poza klasyfikacja" zniknal z short arm,
+   mimo ze komentarz w maneuvers.js twierdzil, ze go nosi. KL9 pilnuje SPRZEZENIA osi ze znacznikiem
+   — to ono chroni przed powtorka tamtego bledu; KL10 pinuje sama naprawe short arm.
+   61 = 49 + 12: sekcja 6 (KL1-KL6 x dwa jezyki) — ktora z szesciu kombinacji stoi poza katalogiem. */
+const OCZEKIWANE = 69;
 if (razem !== OCZEKIWANE) {
   console.error(`\n✗ FAIL — liczba przypadków ${razem} ≠ ${OCZEKIWANE}. Zaktualizuj OCZEKIWANE świadomie.`);
   process.exit(1);
