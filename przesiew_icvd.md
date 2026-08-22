@@ -72,8 +72,10 @@ rozstrzygnął, czy program ma wyciągnąć z niej konsekwencje dla okablowania 
 
 **TRZY POZYCJE ZNALEZIONE PRZY PISANIU ATLASU — jedna już zamknięta, dwie otwarte.** Wszystkie są
 rozjazdami WEWNĄTRZ jednej pracy, więc nie da się ich zamknąć wyborem „nowszego źródła"; trzecią
-zamknęła częściowo **errata odnaleziona 2026-08-22** (pełne opisy obu czytań: `sporne.json`
-przy materiale):
+zamknęła częściowo **errata odnaleziona 2026-08-22** (pełne opisy obu czytań przy materiale:
+`konflikty/konflikty-progi-liczbowe.md` §K2 i `ekstrakcje/17-strupp2022-auvp.md`; do 2026-08-22
+stał tu odsyłacz do `sporne.json` — pliku, który **nigdy nie istniał**, w żadnym drzewie ani
+commicie; sprostowanie: przegląd dokumentacji):
 1. **`[H59]` AUVP — operator łączący progi instrumentalne przy kryterium C.** Nota 12 zapisuje je
    jako ALTERNATYWĘ, proza §4.4.1 żąda KONIUNKCJI. To ta sama oś, którą zamknęło **D2**, więc karta
    oddaje ZALECENIE PRACY (żaden próg nie jest kryterialny), a spór zostaje nazwany, nie ukryty.
@@ -167,6 +169,15 @@ Rozkład miejsc bez źródła wg obszaru:
 > **Trzy z nich weszły jako SKUTEK UBOCZNY innych etapów**, nie jako decyzja zakresowa: `[H51]`
 > z D-CPN, `[H50]` i `[H53]` z D-CZAS, `[H52]` z D-ORTO. Dlatego D6 jest dziś częściowo **wsteczne**:
 > musi zapisać nie tylko co ma wejść, ale i **co już weszło i w jakiej randze**.
+
+> **DOPISEK 2026-08-22, przegląd dokumentacji: PRZELICZENIE POWYŻEJ UNIEWAŻNIŁ JESZCZE TEGO SAMEGO
+> DNIA ETAP E6a (`83a147a`).** Od atlasu żaden z pięciu „czystych zer" nie jest zerem: `[H54]` 5,
+> `[H57]` 3, `[H60]` 2, `[H55]` 1, `[H47]` 7 trafień — wszystkie w `src/app/atlas-model.js`, więc
+> w `src/` obecnych jest **10 z 10**. Dwie ścisłości do samego przeliczenia: pin „na `9332244`"
+> jest o jeden commit za wczesny — nota liczy `[H49]` jako obecny, a ten wszedł do `src/` dopiero
+> w jej własnym commicie `21bdda4`, którego stan faktycznie opisuje; a obowiązek „D6 musi zapisać,
+> co już weszło i w jakiej randze" został **wykonany** — rejestr jest polem `wSilniku` (7/7/4)
+> liczonym przez `atlas:check`, a rejestr D6 zamknął `f99e6a7` (patrz §4.2).
 
 **Jednostki ICVD nieobecne w programie (pomiar otwierający, 0 trafień):** PPPD · presbywestybulopatia ·
 mal de débarquement · choroba lokomocyjna · hemodynamiczne zawroty ortostatyczne ·

@@ -2541,8 +2541,10 @@ PUBLIC API (returned from the module)
    spontaneous nystagmus (distinguishes it from unilateral UVH!), yet a pathological vHIT BILATERALLY (all
    planes); verdict peripheral (no false stroke). Compensation idle. Preset SCENARIOS.bvh.
    BVH THRESHOLDS (Bárány criteria [H19], confirmed [H23]): vHIT bilateral HC gain < 0.6 (SHIMP < 0.5) · caloric
-   sum of warm+cold for a GIVEN ear < 6 °/s (= CAL_BILAT) · rotatory-chair gain < 0.1 with phase lead > 68° (NOT
-   modelled). IN THE ENGINE: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) bilaterally; "pathological vHIT" is NOT a
+   sum of warm+cold for a GIVEN ear < 6 °/s (= CAL_BILAT) · rotatory-chair gain ≤ 0.1 with phase lead ≥ 15° and
+   time constant ≤ 6 s (NOT modelled; post-erratum 2023 numbers for the Bárány paper — full erratum note in the
+   bibliography entry; until 2026-08-22 this read the pre-erratum "gain < 0.1 with phase lead > 68°", i.e. the 2017
+   wording, which the 2022 paper also cites). IN THE ENGINE: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) bilaterally; "pathological vHIT" is NOT a
    direct gain cutoff but a corrective-saccade amplitude ≥ 2.5° in headImpulse (for amp 15° ≈ gain ≤ 0.83 — more
    sensitive than 0.6, appropriate for a SINGLE canal). Only the caloric 6 °/s threshold is encoded numerically
    (CAL_BILAT → caloricBattery.bilateralWeak). SHIMP implemented (N4/N7). NOTE: the random preset bilateralLoss(r(0.6,1))

@@ -2372,8 +2372,10 @@ API PUBLICZNE (zwracane z modułu)
    oczopląsu samoistnego (odróżnia od jednostronnego UVH!), lecz vHIT patolog. OBUSTRONNIE (wszystkie
    płaszczyzny); werdykt peripheral (bez fałszywego udaru). Kompensacja bezczynna. Preset SCENARIOS.bvh.
    PROGI BVH (kryt. Bárány [H19], potwierdzone [H23]): vHIT obustronny gain HC < 0.6 (SHIMP < 0.5) · suma
-   kaloryczna ciepła+zimna DANEGO ucha < 6 °/s (= CAL_BILAT) · fotel obrotowy gain < 0.1 z fazą > 68° (NIE
-   modelowany). W SILNIKU: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) obustronnie; „vHIT patolog." to NIE próg gain
+   kaloryczna ciepła+zimna DANEGO ucha < 6 °/s (= CAL_BILAT) · fotel obrotowy gain ≤ 0.1 z fazą ≥ 15° i stałą
+   czasową ≤ 6 s (NIE modelowany; liczby po erracie 2023 do pracy Bárány — pełna nota erraty we wpisie
+   bibliograficznym; do 2026-08-22 stało tu przederratowe „gain < 0.1 z fazą > 68°", czyli brzmienie z 2017,
+   które cytuje też praca z 2022). W SILNIKU: bilateralLoss(1) → gain 0.35 (< 0.6/0.5) obustronnie; „vHIT patolog." to NIE próg gain
    wprost, lecz amplituda sakady korygującej ≥ 2.5° w headImpulse (dla amp 15° ≈ gain ≤ 0.83 — czulsze niż 0.6,
    właściwe dla POJEDYNCZEGO kanału). Jedynie próg kaloryczny 6 °/s jest zakodowany numerycznie (CAL_BILAT →
    caloricBattery.bilateralWeak). SHIMP zaimplementowany (N4/N7). UWAGA: losowy preset bilateralLoss(r(0.6,1)) daje
