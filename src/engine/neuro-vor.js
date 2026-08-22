@@ -861,6 +861,9 @@ export const NeuroVOR = (()=>{
   // próg ASYMETRII międzyusznej dla weakEar (górne normy lab.: Rosengren 2019) — ocena II (B2).
   // POZA KORPUSEM ICVD: żaden z 19 dokumentów konsensusu nie stanowi progu asymetrii VEMP, więc
   // to jest norma pracowniana, nie kryterium — nazwisko zostaje bez numeru ŚWIADOMIE (etap E3a, D1).
+  // Że tak MA być, mówi sam korpus: [H56] Ward 2021 (kontekst SCDS) każe porównywać progi
+  // i amplitudy VEMP z normami ustalonymi dla aparatury KONKRETNEJ PRACOWNI — dwa zdania
+  // w pełnym tekście, żadne nie podaje liczby. Kotwica dopisana w K7-A6; próg bez zmian.
   const VEMP_AR=0.35;
   const VEMP_HIGH=1.35;     // ≥1.35 → „wzmożony" — VEMP mierzy w OBIE strony, nie tylko w dół
   const VEMP_SCDS=2.0;      // TRZECIE OKNO (SCDS) → wzrost amplitudy VEMP ipsilateralnie (niski próg cVEMP,

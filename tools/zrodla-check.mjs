@@ -404,7 +404,13 @@ function zgodnoscOznaczen(tag, cytowania, slownik, gdzie) {
 }
 
 /* ═══════════ 9. LICZNOŚĆ ═══════════ */
-const OCZEKIWANE = 270;  /* 2026-08-22, kontrola powtorna K7-A3: 268 -> 270. DWA cytowania
+const OCZEKIWANE = 271;  /* 2026-08-22, K7-A6: 270 -> 271. JEDNO cytowanie "[H56] Ward 2021"
+                            w komentarzu przy VEMP_AR (src/engine/neuro-vor.js) — kotwica dla
+                            deklaracji "norma pracowniana, poza korpusem ICVD": [H56] wprost
+                            kaze ustalac odciecia VEMP per pracownia (2 zdania w pelnym tekscie,
+                            zadne bez liczby). Prog i nazwisko Rosengren bez zmian (E3a).
+                            Zmierzone przez --ile: 271.
+                            POPRZEDNIO: 2026-08-22, kontrola powtorna K7-A3: 268 -> 270. DWA cytowania
                             "[H46] Lempert 2022" w src/render/svg-screens.js — dodatni odsylacz
                             przy regule pierwszenstwa Meniere'a nad migrena w punkcie karty
                             migreny (blok wykluczen kryterium D), lustro PL + lustro EN. Twardy
